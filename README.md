@@ -42,7 +42,7 @@ Tre modalità intercambiabili — la varietà è incanalata nel sistema invece c
 | Modalità | Per quando | Principio |
 |---|---|---|
 | 🎯 **Focus** | la testa è piena | una sola scelta possibile, ricompensa immediata |
-| 📊 **Plancia** | dashboard aperta tutto il giorno (desktop) | auto-monitoraggio reattivo, progresso visibile |
+| 📊 **Panoramica** | dashboard aperta tutto il giorno (desktop) | auto-monitoraggio reattivo, progresso visibile |
 | 🌗 **Rituali** | mattina/sera/settimana | struttura esterna al posto della disciplina |
 
 Due **skin** (🌿 Quiete a bassa stimolazione, 🕹️ Arcade ad alta salienza) e modalità

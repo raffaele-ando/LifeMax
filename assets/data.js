@@ -410,12 +410,12 @@ var LM = (function () {
      un effect size con l'avvertenza esplicita dei limiti. */
 
   var METRICHE_ESPERIMENTO = [
-    { id: 'focus',   nome: 'Focus medio (check-in 1–5)',   fonte: 'checkin', campo: 'focus' },
-    { id: 'energia', nome: 'Energia media (check-in 1–5)', fonte: 'checkin', campo: 'energia' },
-    { id: 'umore',   nome: 'Umore medio (check-in 1–5)',   fonte: 'checkin', campo: 'umore' },
-    { id: 'voto',    nome: 'Auto-valutazione area (1–5)',  fonte: 'valutazione' },
-    { id: 'minuti',  nome: 'Minuti dedicati a un’area',fonte: 'minuti' },
-    { id: 'xp',      nome: 'XP del giorno (output totale)', fonte: 'xp' }
+    { id: 'focus',   nome: 'Focus (da check-in, 1–5)',    fonte: 'checkin', campo: 'focus' },
+    { id: 'energia', nome: 'Energia (da check-in, 1–5)',  fonte: 'checkin', campo: 'energia' },
+    { id: 'umore',   nome: 'Umore (da check-in, 1–5)',    fonte: 'checkin', campo: 'umore' },
+    { id: 'voto',    nome: 'Voto a un’area (1–5)',        fonte: 'valutazione' },
+    { id: 'minuti',  nome: 'Minuti dedicati a un’area',   fonte: 'minuti' },
+    { id: 'xp',      nome: 'XP guadagnati nel giorno',    fonte: 'xp' }
   ];
 
   function creaEsperimento(dati) {
@@ -608,7 +608,7 @@ var LM = (function () {
           s.xpPerGiorno[k] = (s.xpPerGiorno[k] || 0) + XP_EVENTI.reviewSera;
         }
         if (rnd() < 0.8) {
-          s.pianoMattina[k] = { compilato: true, intenzione: 'Se alle 9:00 sono alla scrivania, allora inizio dalla MIT senza aprire chat.', ts: parseKey(k).getTime() + 8 * 3600000 };
+          s.pianoMattina[k] = { compilato: true, intenzione: 'Alle 9:00, appena mi siedo alla scrivania, inizio dall’attività più importante senza aprire le chat.', ts: parseKey(k).getTime() + 8 * 3600000 };
           s.xp += XP_EVENTI.pianoMattina;
           s.xpPerGiorno[k] = (s.xpPerGiorno[k] || 0) + XP_EVENTI.pianoMattina;
         }
@@ -623,8 +623,8 @@ var LM = (function () {
         s.reviewSettimana[wk] = {
           vittorie: pick(vittorie),
           blocchi: pick(blocchi),
-          imparato: 'Il contesto batte la forza di volontà: dove studio decide quanto studio.',
-          prossima: 'Proteggere la prima ora del mattino, 5 giorni su 7.',
+          imparato: 'Quando studio fuori casa rendo di più: cambiare ambiente mi aiuta a concentrarmi.',
+          prossima: 'Dedicare la prima ora del mattino allo studio, almeno 5 giorni su 7.',
           ts: parseKey(wk).getTime()
         };
         s.xp += XP_EVENTI.reviewSettimana;
@@ -640,7 +640,7 @@ var LM = (function () {
     /* esperimento demo: sport al mattino → focus */
     s.esperimenti.push({
       id: uid() + 'exp1',
-      nome: 'Sport al mattino → più focus?',
+      nome: 'Fare sport al mattino aumenta il mio focus?',
       intervento: 'Allenamento o camminata veloce prima delle 10:00, poi sessione di lavoro.',
       metrica: 'focus',
       areaId: null,

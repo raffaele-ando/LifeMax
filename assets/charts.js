@@ -378,9 +378,9 @@ var LMCharts = (function () {
     if (primoB > 0) {
       el('rect', { x: X(primoB), y: m.t, width: W - m.r - X(primoB), height: H - m.t - m.b, fill: 'var(--wash-b)' }, svg);
       var tb = el('text', { x: X(primoB) + 6, y: m.t - 8, 'font-size': 11, fill: 'var(--inchiostro-2)', 'font-weight': 600 }, svg);
-      tb.textContent = 'Intervento (B)';
+      tb.textContent = 'Dopo la modifica';
       var ta = el('text', { x: m.l, y: m.t - 8, 'font-size': 11, fill: 'var(--inchiostro-muto)', 'font-weight': 600 }, svg);
-      ta.textContent = 'Baseline (A)';
+      ta.textContent = 'Prima (base)';
     }
 
     /* griglia */
@@ -399,7 +399,7 @@ var LMCharts = (function () {
       if (p.valore === null) return;
       var dot = el('circle', { cx: X(i), cy: Y(p.valore), r: 3.5, fill: p.fase === 'B' ? colB : colA, stroke: 'var(--superficie-1)', 'stroke-width': 2 }, svg);
       dot.addEventListener('mousemove', function (ev) {
-        showTip('<b>' + LM.fmtShort(p.data) + '</b> · fase ' + p.fase + ' · <b>' + fmtNum(p.valore) + '</b>', ev.clientX, ev.clientY);
+        showTip('<b>' + LM.fmtShort(p.data) + '</b> · ' + (p.fase === 'B' ? 'dopo la modifica' : 'prima') + ' · <b>' + fmtNum(p.valore) + '</b>', ev.clientX, ev.clientY);
       });
       dot.addEventListener('mouseleave', hideTip);
     });
