@@ -6,10 +6,12 @@
 <meta name="color-scheme" content="light dark">
 <title>LifeMax — Misura. Ingegnerizza. Massimizza.</title>
 <meta name="description" content="Sistema operativo personale per il miglioramento continuo: cattura istantanea, una sola prossima azione, misurazione a zero frizione, esperimenti N-of-1. Ogni scelta di design è motivata dalla letteratura scientifica.">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='42' fill='%232a78d6'/%3E%3Cpath d='M32 54l12 12 24-28' stroke='white' stroke-width='10' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='1' x2='1' y2='0'%3E%3Cstop offset='0' stop-color='%237c5df0'/%3E%3Cstop offset='.55' stop-color='%234a7bf5'/%3E%3Cstop offset='1' stop-color='%232ab8e8'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect x='2' y='2' width='44' height='44' rx='13' fill='url(%23g)'/%3E%3Cpath d='M12 30.5l7-7 5 5L34.5 18' fill='none' stroke='white' stroke-width='4.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M27.5 17h7.5v7.5' fill='none' stroke='white' stroke-width='4.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
 <link rel="stylesheet" href="assets/app.css">
 </head>
 <body>
+
+<div class="aurora" aria-hidden="true"><i></i><i></i><i></i></div>
 
 <div id="banda-demo"></div>
 
@@ -17,13 +19,13 @@
 
   <!-- navigazione desktop -->
   <aside class="sidebar" aria-label="Navigazione principale">
-    <div class="logo"><span class="logo-dot"></span>LifeMax <small>proto</small></div>
+    <div class="logo" id="logo-blocco">LifeMax <span class="logo-tag">Beta</span></div>
     <nav id="nav-lato"></nav>
-    <div class="sidebar-fondo">
-      <button class="btn btn-ghost btn-mini" id="btn-tema" title="Cambia modalità chiaro/scuro">🌗 Modalità</button>
-      <button class="btn btn-ghost btn-mini" id="btn-skin" title="Cambia skin: Quiete / Arcade">🎨 Skin</button>
-      <button class="btn btn-ghost btn-mini" id="btn-demo" title="Ricarica i dati demo">⟳ Dati demo</button>
-      <button class="btn btn-ghost btn-mini" id="btn-azzera" title="Riparti da zero">⌫ Azzera tutto</button>
+    <div class="sidebar-fondo" id="strumenti">
+      <button class="btn-strumento" id="btn-tema" title="Modalità chiaro / scuro / auto"></button>
+      <button class="btn-strumento" id="btn-skin" title="Skin: Aurora / Arcade"></button>
+      <button class="btn-strumento" id="btn-demo" title="Ricarica i dati demo"></button>
+      <button class="btn-strumento" id="btn-azzera" title="Azzera tutto"></button>
     </div>
   </aside>
 
@@ -35,13 +37,15 @@
 <nav class="tabbar" id="nav-tab" aria-label="Navigazione mobile"></nav>
 
 <!-- cattura istantanea: sempre a un gesto di distanza -->
-<button class="fab" id="fab-cattura" title="Cattura un pensiero (tasto C)" aria-label="Cattura un pensiero">＋</button>
+<button class="fab" id="fab-cattura" title="Cattura un pensiero (tasto C)" aria-label="Cattura un pensiero"></button>
 
 <div class="overlay" id="overlay-cattura" hidden>
   <div class="pannello-cattura" role="dialog" aria-modal="true" aria-label="Cattura rapida">
-    <input type="text" id="input-cattura" placeholder="Scarica il pensiero e torna a ciò che stavi facendo…" autocomplete="off">
+    <div class="corpo-cattura" id="corpo-cattura">
+      <input type="text" id="input-cattura" placeholder="Scarica il pensiero e torna a ciò che stavi facendo…" autocomplete="off">
+    </div>
     <div class="piede">
-      <span><kbd>Invio</kbd> salva nell'inbox · <kbd>Esc</kbd> chiude</span>
+      <span><kbd>Invio</kbd> salva nell'inbox &nbsp;·&nbsp; <kbd>Esc</kbd> chiude</span>
       <span style="margin-left:auto">niente categorie ora: le decidi al triage</span>
     </div>
   </div>
@@ -51,6 +55,7 @@
 
 <div id="onboarding-root"></div>
 
+<script src="assets/icons.js"></script>
 <script src="assets/data.js"></script>
 <script src="assets/charts.js"></script>
 <script src="assets/app.js"></script>

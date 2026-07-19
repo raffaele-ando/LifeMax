@@ -11,6 +11,22 @@
 var LMCharts = (function () {
 
   var NS = 'http://www.w3.org/2000/svg';
+  var RIDOTTO = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* animazione draw-in delle linee (disattivata con reduced-motion) */
+  function drawIn(pathEl, dur) {
+    if (RIDOTTO) return;
+    try {
+      var len = pathEl.getTotalLength();
+      if (!len) return;
+      pathEl.style.strokeDasharray = len;
+      pathEl.style.strokeDashoffset = len;
+      pathEl.getBoundingClientRect();
+      pathEl.style.transition = 'stroke-dashoffset ' + (dur || 700) + 'ms cubic-bezier(.22,1,.36,1)';
+      pathEl.style.strokeDashoffset = '0';
+      setTimeout(function () { pathEl.style.strokeDasharray = 'none'; pathEl.style.transition = ''; }, (dur || 700) + 80);
+    } catch (e) { /* path non ancora in DOM: nessuna animazione */ }
+  }
 
   function el(tag, attrs, parent) {
     var n = document.createElementNS(NS, tag);
@@ -65,24 +81,39 @@ var LMCharts = (function () {
     function X(i) { return pad + (W - 2 * pad) * (punti.length < 2 ? 0.5 : i / (punti.length - 1)); }
     function Y(v) { return H - pad - (H - 2 * pad) * ((v - min) / (max - min || 1)); }
 
-    /* segmenti continui (i null spezzano la linea); i punti isolati
-       — frequenti quando si registra a giorni alterni — diventano pallini,
-       altrimenti la sparkline sembra vuota */
-    var d = '', started = false, ultimo = null;
-    punti.forEach(function (p, i) {
-      if (p.valore === null) { started = false; return; }
-      d += (started ? 'L' : 'M') + X(i).toFixed(1) + ',' + Y(p.valore).toFixed(1);
-      started = true;
-      ultimo = { i: i, v: p.valore };
+    /* la sparkline collega i punti misurati saltando i giorni senza
+       misura (comportamento standard); i pallini marcano i giorni
+       in cui la misura c'è davvero, così la densità resta leggibile */
+    var noti = [];
+    punti.forEach(function (p, i) { if (p.valore !== null) noti.push({ i: i, v: p.valore }); });
+    var d = '', ultimo = noti.length ? noti[noti.length - 1] : null;
+    noti.forEach(function (n, j) {
+      d += (j ? 'L' : 'M') + X(n.i).toFixed(1) + ',' + Y(n.v).toFixed(1);
     });
-    if (d) el('path', { d: d, fill: 'none', stroke: colore, 'stroke-width': 2, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, svg);
-    punti.forEach(function (p, i) {
-      if (p.valore === null) return;
-      var soloPrima = i === 0 || punti[i - 1].valore === null;
-      var soloDopo = i === punti.length - 1 || punti[i + 1].valore === null;
-      if (soloPrima && soloDopo) el('circle', { cx: X(i), cy: Y(p.valore), r: 2, fill: colore }, svg);
+    /* area sfumata sotto la linea (solo estetica: 14% → 0) */
+    if (d) {
+      var gid = 'sg' + Math.random().toString(36).slice(2, 8);
+      var defs = el('defs', {}, svg);
+      var grad = el('linearGradient', { id: gid, x1: 0, y1: 0, x2: 0, y2: 1 }, defs);
+      var s1 = el('stop', { offset: '0', 'stop-opacity': '.16' }, grad); s1.setAttribute('stop-color', colore.indexOf('var(') === 0 ? '#2a78d6' : colore);
+      var s2 = el('stop', { offset: '1', 'stop-opacity': '0' }, grad); s2.setAttribute('stop-color', colore.indexOf('var(') === 0 ? '#2a78d6' : colore);
+      /* area chiusa sulla baseline lungo i punti noti */
+      if (noti.length > 1) {
+        var dArea = 'M' + X(noti[0].i).toFixed(1) + ',' + (H - pad);
+        noti.forEach(function (n) { dArea += 'L' + X(n.i).toFixed(1) + ',' + Y(n.v).toFixed(1); });
+        dArea += 'L' + X(noti[noti.length - 1].i).toFixed(1) + ',' + (H - pad) + 'Z';
+        el('path', { d: dArea, fill: 'url(#' + gid + ')', stroke: 'none' }, svg);
+      }
+      var linea = el('path', { d: d, fill: 'none', stroke: colore, 'stroke-width': 2, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, svg);
+      drawIn(linea);
+    }
+    noti.forEach(function (n) {
+      el('circle', { cx: X(n.i), cy: Y(n.v), r: 1.9, fill: colore }, svg);
     });
-    if (ultimo) el('circle', { cx: X(ultimo.i), cy: Y(ultimo.v), r: 3, fill: colore, stroke: 'var(--superficie-1)', 'stroke-width': 2 }, svg);
+    if (ultimo) {
+      el('circle', { cx: X(ultimo.i), cy: Y(ultimo.v), r: 6.5, fill: colore, opacity: '.16' }, svg);
+      el('circle', { cx: X(ultimo.i), cy: Y(ultimo.v), r: 3, fill: colore, stroke: 'var(--superficie-1)', 'stroke-width': 2 }, svg);
+    }
 
     /* hover leggero: overlay che segue il punto più vicino */
     var hover = el('rect', { x: 0, y: 0, width: W, height: H, fill: 'transparent' }, svg);
@@ -166,7 +197,7 @@ var LMCharts = (function () {
         started = true;
         ultimo = { i: i, v: p.valore };
       });
-      if (d) el('path', { d: d, fill: 'none', stroke: s.colore, 'stroke-width': 2, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, svg);
+      if (d) drawIn(el('path', { d: d, fill: 'none', stroke: s.colore, 'stroke-width': 2, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, svg), 800);
       if (ultimo) {
         el('circle', { cx: X(ultimo.i), cy: Y(ultimo.v), r: 3.5, fill: s.colore, stroke: 'var(--superficie-1)', 'stroke-width': 2 }, svg);
         finali.push({ s: s, y: Y(ultimo.v) });
@@ -230,7 +261,7 @@ var LMCharts = (function () {
       row.className = 'lm-hbar-row';
       var pct = Math.max(0, it.value / max * 100);
       row.innerHTML =
-        '<span class="lm-hbar-label">' + (it.icona ? it.icona + ' ' : '') + esc(it.label) + '</span>' +
+        '<span class="lm-hbar-label" style="--c-riga:' + it.colore + '">' + (it.icona ? it.icona + ' ' : '') + esc(it.label) + '</span>' +
         '<span class="lm-hbar-track"><span class="lm-hbar-fill" style="width:' + pct.toFixed(1) + '%;background:' + it.colore + '"></span></span>' +
         '<span class="lm-hbar-val">' + fmtNum(it.value) + (opts.unita ? '<small> ' + opts.unita + '</small>' : '') + '</span>';
       row.addEventListener('mousemove', function (ev) {
@@ -267,9 +298,10 @@ var LMCharts = (function () {
       vuoto.className = 'lm-cell lm-cell-vuota';
       wrap.appendChild(vuoto);
     }
-    giorni.forEach(function (g) {
+    giorni.forEach(function (g, gi) {
       var c = document.createElement('span');
       c.className = 'lm-cell';
+      c.style.setProperty('--i', gi);
       var bin = g.valore <= 0 ? -1 : Math.min(3, Math.floor(g.valore / max * 4));
       if (bin >= 0) c.style.background = rampa[bin];
       c.setAttribute('data-bin', bin);
@@ -298,9 +330,16 @@ var LMCharts = (function () {
     var S = opts.size || 84, r = (S - 10) / 2, C = 2 * Math.PI * r;
     var svg = el('svg', { width: S, height: S, viewBox: '0 0 ' + S + ' ' + S, role: 'img' }, container);
     el('title', {}, svg).textContent = opts.label || ('Progresso ' + Math.round(pct * 100) + '%');
+    /* stroke con gradiente brand (i grafici-dato restano sulla palette serie) */
+    var rgId = 'rg' + Math.random().toString(36).slice(2, 8);
+    var rgDefs = el('defs', {}, svg);
+    var rgGrad = el('linearGradient', { id: rgId, x1: 0, y1: 1, x2: 1, y2: 0 }, rgDefs);
+    el('stop', { offset: '0', style: 'stop-color:var(--brand-a)' }, rgGrad);
+    el('stop', { offset: '.55', style: 'stop-color:var(--brand-b)' }, rgGrad);
+    el('stop', { offset: '1', style: 'stop-color:var(--brand-c)' }, rgGrad);
     el('circle', { cx: S / 2, cy: S / 2, r: r, fill: 'none', stroke: 'var(--griglia)', 'stroke-width': 6 }, svg);
     var arc = el('circle', {
-      cx: S / 2, cy: S / 2, r: r, fill: 'none', stroke: opts.colore || 'var(--serie-1)',
+      cx: S / 2, cy: S / 2, r: r, fill: 'none', stroke: opts.colore || ('url(#' + rgId + ')'),
       'stroke-width': 6, 'stroke-linecap': 'round',
       'stroke-dasharray': C, 'stroke-dashoffset': C * (1 - Math.max(0, Math.min(1, pct))),
       transform: 'rotate(-90 ' + S / 2 + ' ' + S / 2 + ')'

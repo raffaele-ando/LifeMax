@@ -8,7 +8,7 @@
 
 var LM = (function () {
 
-  var STORAGE_KEY = 'lifemax.v1';
+  var STORAGE_KEY = 'lifemax.v2';
 
   /* ---------- date utils (sempre timezone locale) ---------- */
 
@@ -64,14 +64,14 @@ var LM = (function () {
      se un'area viene filtrata o riordinata in una vista. */
 
   var AREE_DEFAULT = [
-    { id: 'studio',       nome: 'Studio / Università', icona: '📚', slot: 1, sistema: 'Sessioni di studio profondo pianificate la sera prima' },
-    { id: 'salute',       nome: 'Salute & Sport',      icona: '💪', slot: 2, sistema: 'Allenamento o camminata prima delle 10:00' },
-    { id: 'relazioni',    nome: 'Relazioni & Sociale', icona: '🤝', slot: 3, sistema: 'Un contatto significativo al giorno' },
-    { id: 'finanze',      nome: 'Finanze',             icona: '💶', slot: 4, sistema: 'Revisione spese ogni domenica sera' },
-    { id: 'associazioni', nome: 'Associazioni',        icona: '🏛️', slot: 5, sistema: 'Blocco settimanale dedicato, non frammentato' },
-    { id: 'founder',      nome: 'Progetti Founder',    icona: '🚀', slot: 6, sistema: 'Prima ora del mattino sul progetto, prima delle mail' },
-    { id: 'lavoro',       nome: 'Lavoro',              icona: '💼', slot: 7, sistema: 'Chiusura giornata con lista per domani' },
-    { id: 'altro',        nome: 'Altro / Esplorazione',icona: '✨', slot: 8, sistema: 'Spazio libero per la novità: una cosa nuova a settimana' }
+    { id: 'studio',       nome: 'Studio / Università', icona: 'book',      slot: 1, sistema: 'Sessioni di studio profondo pianificate la sera prima' },
+    { id: 'salute',       nome: 'Salute & Sport',      icona: 'heart',     slot: 2, sistema: 'Allenamento o camminata prima delle 10:00' },
+    { id: 'relazioni',    nome: 'Relazioni & Sociale', icona: 'users',     slot: 3, sistema: 'Un contatto significativo al giorno' },
+    { id: 'finanze',      nome: 'Finanze',             icona: 'wallet',    slot: 4, sistema: 'Revisione spese ogni domenica sera' },
+    { id: 'associazioni', nome: 'Associazioni',        icona: 'landmark',  slot: 5, sistema: 'Blocco settimanale dedicato, non frammentato' },
+    { id: 'founder',      nome: 'Progetti Founder',    icona: 'rocket',    slot: 6, sistema: 'Prima ora del mattino sul progetto, prima delle mail' },
+    { id: 'lavoro',       nome: 'Lavoro',              icona: 'briefcase', slot: 7, sistema: 'Chiusura giornata con lista per domani' },
+    { id: 'altro',        nome: 'Altro / Esplorazione',icona: 'sparkles',  slot: 8, sistema: 'Spazio libero per la novità: una cosa nuova a settimana' }
   ];
 
   /* Palette categorica di riferimento (validata: vedi README).
