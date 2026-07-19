@@ -118,6 +118,7 @@ var LM = (function () {
   function statoVuoto() {
     return {
       versione: 1,
+      updatedAt: 0,
       onboarded: false,
       demo: false,
       profilo: { nome: '', visione: '', skin: 'quiete', modo: 'auto' },
@@ -152,6 +153,7 @@ var LM = (function () {
   }
 
   function save() {
+    if (state) state.updatedAt = Date.now();
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) { /* quota: il prototipo resta in RAM */ }
     document.dispatchEvent(new CustomEvent('lm:change'));
   }
@@ -160,6 +162,18 @@ var LM = (function () {
     state = statoVuoto();
     save();
   }
+
+  /* Sostituisce l'intero stato con uno proveniente dal cloud.
+     Preserva updatedAt del documento remoto (non lo rigenera come save),
+     così la logica "l'ultima modifica vince" resta coerente tra dispositivi. */
+  function hydrate(obj) {
+    if (!obj || typeof obj !== 'object') return;
+    state = obj;
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) { /* ignora */ }
+    document.dispatchEvent(new CustomEvent('lm:change'));
+  }
+
+  function snapshot() { return load(); }
 
   function uid() {
     return 'id' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
@@ -671,7 +685,7 @@ var LM = (function () {
     SLOT_COLORI: SLOT_COLORI,
     METRICHE_ESPERIMENTO: METRICHE_ESPERIMENTO,
     XP_EVENTI: XP_EVENTI,
-    load: load, save: save, reset: reset, seedDemo: seedDemo,
+    load: load, save: save, reset: reset, seedDemo: seedDemo, hydrate: hydrate, snapshot: snapshot,
     todayKey: todayKey, dayKey: dayKey, addDays: addDays, lastNDays: lastNDays,
     weekKey: weekKey, weekdayShort: weekdayShort, fmtShort: fmtShort, daysBetween: daysBetween,
     coloreArea: coloreArea, livelloDaXp: livelloDaXp,

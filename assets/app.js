@@ -255,7 +255,57 @@
   function topbar(titolo, sottotitolo, destra) {
     return '<div class="topbar"><div><h1>' + titolo + '</h1>' +
       (sottotitolo ? '<div class="sottotitolo">' + sottotitolo + '</div>' : '') +
-      '</div><div class="spazio"></div>' + (destra || '') + '</div>';
+      '</div><div class="spazio"></div>' + (destra || '') + accountControl() + '</div>';
+  }
+
+  /* ---------- account & sincronizzazione cloud ---------- */
+
+  function accountControl() {
+    var a = window.LM_AUTH || { available: false, user: null };
+    if (a.user) {
+      var iniz = (a.user.name || a.user.email || '?').trim().charAt(0).toUpperCase();
+      var avatar = a.user.photo
+        ? '<img class="avatar" src="' + esc(a.user.photo) + '" alt="" referrerpolicy="no-referrer">'
+        : '<span class="avatar avatar-ph">' + esc(iniz) + '</span>';
+      return '<div class="account" title="' + esc(a.user.email || '') + '">' +
+        '<span class="account-sync" title="Dati sincronizzati sul tuo account Google">' + ICO(a.syncing ? 'cloud' : 'cloudCheck', 15) + '</span>' +
+        avatar +
+        '<button class="btn btn-mini btn-ghost" id="btn-esci" aria-label="Esci">' + ICO('logout', 14) + '</button></div>';
+    }
+    if (a.available) {
+      return '<button class="btn btn-mini btn-accedi" id="btn-accedi">' + GOOGLE_G(16) + ' Accedi</button>';
+    }
+    return '';
+  }
+
+  function wireAccount() {
+    var accedi = document.getElementById('btn-accedi');
+    if (accedi) accedi.addEventListener('click', function () {
+      if (window.LMCloud && window.LMCloud.available) window.LMCloud.signIn();
+    });
+    var esci = document.getElementById('btn-esci');
+    if (esci) esci.addEventListener('click', function () {
+      if (window.LMCloud) window.LMCloud.signOut();
+      toast('Hai effettuato la disconnessione.', 0, 'logout');
+    });
+  }
+
+  function refreshObAccount() {
+    var el = document.getElementById('ob-account');
+    if (!el) return;
+    var a = window.LM_AUTH || { available: false, user: null };
+    if (a.user) {
+      el.innerHTML = '<div class="ob-account-in">' + ICO('cloudCheck', 16) + ' Accesso eseguito come <b>' + esc(a.user.name || a.user.email) + '</b></div>';
+    } else if (a.available) {
+      el.innerHTML = '<button class="btn btn-accedi" id="ob-accedi">' + GOOGLE_G(18) + ' Accedi con Google</button>' +
+        '<div class="ob-account-nota">Accedi per ritrovare i tuoi dati su tutti i dispositivi. Puoi anche continuare senza account e collegarlo più avanti.</div>';
+      var b = document.getElementById('ob-accedi');
+      if (b) b.addEventListener('click', function () {
+        if (window.LMCloud && window.LMCloud.available) window.LMCloud.signIn();
+      });
+    } else {
+      el.innerHTML = '';
+    }
   }
 
   function bandaDemo() {
@@ -1042,7 +1092,9 @@
         '<div class="ob-punto">' + ICO('bolt', 16) + '<span><b>Annota subito.</b> Un tasto per salvare qualsiasi pensiero; deciderai dopo cosa farne.</span></div>' +
         '<div class="ob-punto">' + ICO('target', 16) + '<span><b>Una cosa alla volta.</b> Ti proponiamo la prossima azione, così eviti la paralisi da troppe scelte.</span></div>' +
         '<div class="ob-punto">' + ICO('flask', 16) + '<span><b>Scienza applicata a te.</b> Esperimenti sui tuoi dati per capire cosa funziona davvero, non sulle medie di altri.</span></div>' +
-        '</div>' + illoOrbita() + '</aside>' +
+        '</div>' +
+        '<div id="ob-account" class="ob-account"></div>' +
+        illoOrbita() + '</aside>' +
         '<section class="ob-step"><div class="passi-punti">' +
         [0, 1, 2].map(function (i) { return '<span class="' + (i === passo ? 'attivo' : '') + '"></span>'; }).join('') +
         '</div>' + step + '</section>' +
@@ -1053,6 +1105,8 @@
           '<span class="icona-modo">' + ICO(icona, 20) + '</span>' +
           '<span><span class="titolo-modo">' + nome + '</span><div class="desc-modo">' + desc + '</div></span></button>';
       }
+
+      refreshObAccount();
 
       var demo = document.getElementById('ob-demo');
       if (demo) demo.addEventListener('click', function () { fine(true); });
@@ -1125,11 +1179,35 @@
     else if (v === 'esperimenti') vistaEsperimenti();
     else if (v === 'scienza') vistaScienza();
     $vista.classList.add('vista-enter');
+    wireAccount();
   }
 
   window.addEventListener('hashchange', function () {
     if (vistaCorrente() !== 'rituali') sottoRituale = null;
     render();
+  });
+
+  function staDigitando() {
+    return /input|textarea|select/i.test(document.activeElement && document.activeElement.tagName || '');
+  }
+
+  /* login/logout: aggiorna l'interfaccia. Durante l'onboarding evita di
+     ricostruire i campi (perderebbe ciò che l'utente sta scrivendo): se
+     è arrivato un utente carica i suoi dati, altrimenti aggiorna solo il
+     pulsante di accesso dell'onboarding. */
+  window.addEventListener('lm:auth', function () {
+    var inOnboarding = !!document.getElementById('onboarding-root').innerHTML;
+    var a = window.LM_AUTH || {};
+    if (inOnboarding && !a.user) { refreshObAccount(); return; }
+    if (staDigitando() && !a.user) return;
+    render();
+  });
+
+  /* aggiornamento arrivato da un altro dispositivo */
+  window.addEventListener('lm:remote', function () {
+    if (staDigitando()) return;
+    render();
+    toast('Dati aggiornati da un altro dispositivo.', 0, 'cloudCheck');
   });
 
   /* chrome statico */

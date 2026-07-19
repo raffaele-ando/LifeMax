@@ -1,0 +1,13 @@
+rules_version = '2';
+
+// Regole di sicurezza per LifeMax.
+// Ogni utente autenticato può leggere e scrivere SOLO il proprio documento
+// (users/{uid}), che contiene il suo stato personale sincronizzato.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{uid} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+    // Tutto il resto è negato per default.
+  }
+}

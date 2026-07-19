@@ -68,14 +68,55 @@ Le etichette di evidenza nell'app sono oneste: **alta** = meta-analisi/RCT,
 **media** = studi solidi non conclusivi, **euristica** = pratica clinica ragionevole.
 Il giudice finale è la vista Esperimenti: verifica sul singolo caso, non sulla media.
 
+## Account e sincronizzazione cloud (Firebase)
+
+L'app può funzionare in due modi:
+
+- **Ospite (solo questo dispositivo):** i dati restano in `localStorage`. È il
+  comportamento predefinito e l'unico fallback se Firebase non è raggiungibile.
+- **Con account Google:** accedendo, tutti i dati vengono salvati su Firestore
+  nel documento `users/{uid}` e sincronizzati in tempo reale su ogni dispositivo
+  in cui usi lo stesso account Google.
+
+L'integrazione è **progressive enhancement**: se lo script Firebase non si carica
+(offline, rete bloccata), l'app continua a funzionare in locale senza errori.
+
+### Come funziona la sincronizzazione
+
+- Un solo documento per utente contiene l'intero stato serializzato in JSON.
+- Le modifiche locali vengono salvate sul cloud con un piccolo ritardo (debounce).
+- Un listener in tempo reale (`onSnapshot`) applica le modifiche fatte su altri
+  dispositivi; se stai scrivendo in un campo, l'aggiornamento viene rimandato per
+  non interrompere la digitazione.
+- Conflitti tra dispositivi: vince l'ultima modifica (`updatedAt`). Al primo
+  accesso su un dispositivo, se il cloud ha dati più recenti li adotta; se il
+  cloud è vuoto, carica i dati locali.
+
+### Configurazione lato Firebase (una tantum)
+
+Nella console del progetto `lifemax-9dc63`:
+
+1. **Authentication → Sign-in method:** abilita il provider **Google**.
+2. **Firestore Database:** crea il database (modalità produzione va bene).
+3. **Firestore → Rules:** incolla il contenuto di [`firestore.rules`](firestore.rules)
+   e pubblica. Garantisce che ogni utente acceda solo ai propri dati.
+4. **Authentication → Settings → Authorized domains:** aggiungi il dominio su cui
+   pubblichi l'app (per lo sviluppo locale `localhost` è già autorizzato).
+
+Il login con Google richiede che la pagina sia servita via **http/https** (non
+funziona aprendo il file con `file://`): usa un server statico, anche locale.
+
 ## Struttura
 
 ```
 index.html          shell (nav, overlay cattura, toast)
 assets/app.css      design system: token, 2 skin, chiaro/scuro, mobile
-assets/data.js      stato, XP/streak/esperimenti, seed demo deterministico
+assets/icons.js     iconografia SVG proprietaria + logo Google
+assets/data.js      stato, XP/streak/esperimenti, hydrate/snapshot, seed demo
 assets/charts.js    micro-libreria SVG: sparkline, trend, heatmap, barre, anello, A/B
-assets/app.js       router, 6 viste, onboarding, cattura globale
+assets/app.js       router, 6 viste, onboarding, cattura globale, UI account
+assets/cloud.js     Firebase: accesso Google + sync Firestore (modulo ES)
+firestore.rules     regole di sicurezza (accesso limitato ai propri dati)
 ```
 
 ### Grafici
@@ -89,7 +130,8 @@ ovunque; legenda sempre presente da 2 serie in su.
 
 ## Limiti del prototipo
 
-- Persistenza solo locale (`localStorage`): niente sync né backend.
+- Senza account i dati restano solo in `localStorage` su quel dispositivo; con
+  l'accesso Google vengono sincronizzati via Firestore (vedi sopra).
 - Gli "input automatici" (calendario, wearable, screen time) sono fuori scope qui:
   il modello dati (`minuti[data][area]`, check-in timestampati) è già pronto a riceverli.
 - L'analisi N-of-1 riporta medie ed effect size con avvertenze esplicite; non è
