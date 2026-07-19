@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>LifeMax — Misura. Ingegnerizza. Massimizza.</title>
+<meta name="description" content="Sistema operativo personale per il miglioramento continuo: cattura istantanea, una sola prossima azione, misurazione a zero frizione, esperimenti N-of-1. Ogni scelta di design è motivata dalla letteratura scientifica.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='42' fill='%232a78d6'/%3E%3Cpath d='M32 54l12 12 24-28' stroke='white' stroke-width='10' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="assets/app.css">
+</head>
+<body>
+
+<div id="banda-demo"></div>
+
+<div class="app">
+
+  <!-- navigazione desktop -->
+  <aside class="sidebar" aria-label="Navigazione principale">
+    <div class="logo"><span class="logo-dot"></span>LifeMax <small>proto</small></div>
+    <nav id="nav-lato"></nav>
+    <div class="sidebar-fondo">
+      <button class="btn btn-ghost btn-mini" id="btn-tema" title="Cambia modalità chiaro/scuro">🌗 Modalità</button>
+      <button class="btn btn-ghost btn-mini" id="btn-skin" title="Cambia skin: Quiete / Arcade">🎨 Skin</button>
+      <button class="btn btn-ghost btn-mini" id="btn-demo" title="Ricarica i dati demo">⟳ Dati demo</button>
+      <button class="btn btn-ghost btn-mini" id="btn-azzera" title="Riparti da zero">⌫ Azzera tutto</button>
+    </div>
+  </aside>
+
+  <!-- contenuto -->
+  <main class="main" id="vista" tabindex="-1"></main>
+</div>
+
+<!-- navigazione mobile -->
+<nav class="tabbar" id="nav-tab" aria-label="Navigazione mobile"></nav>
+
+<!-- cattura istantanea: sempre a un gesto di distanza -->
+<button class="fab" id="fab-cattura" title="Cattura un pensiero (tasto C)" aria-label="Cattura un pensiero">＋</button>
+
+<div class="overlay" id="overlay-cattura" hidden>
+  <div class="pannello-cattura" role="dialog" aria-modal="true" aria-label="Cattura rapida">
+    <input type="text" id="input-cattura" placeholder="Scarica il pensiero e torna a ciò che stavi facendo…" autocomplete="off">
+    <div class="piede">
+      <span><kbd>Invio</kbd> salva nell'inbox · <kbd>Esc</kbd> chiude</span>
+      <span style="margin-left:auto">niente categorie ora: le decidi al triage</span>
+    </div>
+  </div>
+</div>
+
+<div class="toast-zona" id="toast-zona" aria-live="polite"></div>
+
+<div id="onboarding-root"></div>
+
+<script src="assets/data.js"></script>
+<script src="assets/charts.js"></script>
+<script src="assets/app.js"></script>
+</body>
+</html>
