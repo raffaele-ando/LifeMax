@@ -42,6 +42,13 @@ function emitUnavailable() {
   window.dispatchEvent(new CustomEvent('lm:auth'));
 }
 
+/* stato del salvataggio cloud: 'idle' | 'saving' | 'saved' | 'error' */
+function emitSync(state, error) {
+  var at = (state === 'saved') ? Date.now() : (window.LM_SYNC && window.LM_SYNC.at) || 0;
+  window.LM_SYNC = { state: state, error: error || '', at: at };
+  window.dispatchEvent(new CustomEvent('lm:sync', { detail: window.LM_SYNC }));
+}
+
 (async function init() {
   try {
     const [appMod, authMod, fsMod] = await Promise.all([
@@ -86,6 +93,7 @@ function emitUnavailable() {
       if (u) {
         currentUser = { uid: u.uid, email: u.email || '', name: u.displayName || '', photo: u.photoURL || '' };
         emitAuth({ syncing: true });
+        emitSync('saving');
         await primaSincronizzazione(u.uid);
         // ascolta i cambiamenti dagli altri dispositivi
         unsubDoc = fsMod.onSnapshot(fsMod.doc(db, 'users', u.uid), function (snap) {
@@ -98,6 +106,7 @@ function emitUnavailable() {
       } else {
         currentUser = null;
         emitAuth();
+        emitSync('idle');
       }
     });
 
@@ -115,7 +124,13 @@ function emitUnavailable() {
 async function primaSincronizzazione(uid) {
   const ref = FSM.doc(db, 'users', uid);
   let snap;
-  try { snap = await FSM.getDoc(ref); } catch (e) { console.warn('LifeMax: lettura cloud non riuscita.', e && e.message); return; }
+  try {
+    snap = await FSM.getDoc(ref);
+  } catch (e) {
+    emitSync('error', erroreLeggibile(e));
+    console.warn('LifeMax: lettura cloud non riuscita.', e && e.message);
+    return;
+  }
   const locale = LM.snapshot();
   const localeAt = locale.updatedAt || 0;
 
@@ -158,6 +173,7 @@ async function push(uid) {
   const s = LM.snapshot();
   const at = s.updatedAt || Date.now();
   lastWrittenAt = at;
+  emitSync('saving');
   try {
     await FSM.setDoc(FSM.doc(db, 'users', uid), {
       data: JSON.stringify(s),
@@ -165,7 +181,18 @@ async function push(uid) {
       email: currentUser ? currentUser.email : '',
       name: currentUser ? currentUser.name : ''
     });
+    emitSync('saved');
   } catch (e) {
+    emitSync('error', erroreLeggibile(e));
     console.warn('LifeMax: salvataggio sul cloud non riuscito.', e && e.message);
   }
+}
+
+/* traduce i codici d'errore Firestore più comuni in messaggi utili */
+function erroreLeggibile(e) {
+  var code = (e && (e.code || e.message)) || '';
+  if (/permission-denied|insufficient/i.test(code)) return 'Permessi Firestore negati: pubblica le regole di sicurezza.';
+  if (/unavailable|not-found|Cloud Firestore API|database/i.test(code)) return 'Database Firestore non raggiungibile: attivalo nella console Firebase.';
+  if (/unauthenticated/i.test(code)) return 'Sessione scaduta: riprova ad accedere.';
+  return 'Salvataggio non riuscito. Controlla la configurazione di Firestore.';
 }

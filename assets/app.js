@@ -273,6 +273,14 @@
 
   /* ---------- footer sidebar (account + impostazioni) ---------- */
 
+  function statoSync() {
+    var y = window.LM_SYNC || { state: 'idle' };
+    if (y.state === 'saving') return { ico: 'cloud', cls: '', testo: 'Sincronizzazione…' };
+    if (y.state === 'error') return { ico: 'cloud', cls: 'sync-errore', testo: 'Sync non riuscita', title: y.error };
+    if (y.state === 'saved') return { ico: 'cloudCheck', cls: 'sync-ok', testo: 'Salvato nel cloud' };
+    return { ico: 'cloudCheck', cls: 'sync-ok', testo: 'Sincronizzato' };
+  }
+
   function footerSidebar() {
     var a = window.LM_AUTH || { available: false, user: null };
     var acct;
@@ -281,9 +289,10 @@
       var avatar = a.user.photo
         ? '<img class="avatar" src="' + esc(a.user.photo) + '" alt="" referrerpolicy="no-referrer">'
         : '<span class="avatar avatar-ph">' + esc(iniz) + '</span>';
+      var y = statoSync();
       acct = '<div class="fondo-account">' + avatar +
         '<div class="fondo-account-testo"><b>' + esc(a.user.name || 'Il tuo account') + '</b>' +
-        '<small>' + ICO('cloudCheck', 12) + ' Sincronizzato</small></div></div>';
+        '<small class="' + y.cls + '"' + (y.title ? ' title="' + esc(y.title) + '"' : '') + '>' + ICO(y.ico, 12) + ' ' + y.testo + '</small></div></div>';
     } else if (a.available) {
       acct = '<button class="btn btn-mini btn-accedi" id="fondo-accedi">' + GOOGLE_G(15) + ' Accedi con Google</button>';
     } else {
@@ -344,8 +353,10 @@
     var a = window.LM_AUTH || { available: false, user: null };
     var acct;
     if (a.user) {
+      var y = statoSync();
       acct = '<div class="menu-account">' + ICO('cloudCheck', 15) + ' Connesso come <b>' + esc(a.user.name || a.user.email) + '</b>' +
-        '<button class="btn btn-mini btn-ghost" id="menu-esci">' + ICO('logout', 14) + ' Esci</button></div>';
+        '<button class="btn btn-mini btn-ghost" id="menu-esci">' + ICO('logout', 14) + ' Esci</button></div>' +
+        '<div class="imp-nota ' + y.cls + '"' + (y.title ? ' title="' + esc(y.title) + '"' : '') + '>' + ICO(y.ico, 13) + ' ' + y.testo + '</div>';
     } else if (a.available) {
       acct = '<button class="btn btn-accedi" id="menu-accedi" style="width:100%;justify-content:center">' + GOOGLE_G(17) + ' Accedi con Google</button>' +
         '<div class="imp-nota">Accedi per ritrovare i tuoi dati su tutti i dispositivi.</div>';
@@ -572,6 +583,52 @@
 
   var sezPlancia = 'riepilogo';
   var periodoTrend = 14;
+  var diarioGiorni = 21;
+
+  /* etichetta relativa del giorno: Oggi / Ieri / "lun 14 lug" */
+  function etichettaGiorno(k) {
+    var t = LM.todayKey();
+    if (k === t) return 'Oggi';
+    if (k === LM.addDays(t, -1)) return 'Ieri';
+    var g = LM.weekdayShort(k);
+    return g.charAt(0).toUpperCase() + g.slice(1) + ' ' + LM.fmtShort(k);
+  }
+
+  function oraDi(ts) {
+    var d = new Date(ts);
+    return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2);
+  }
+
+  /* una riga della timeline del Diario */
+  function eventoDiarioHtml(ev) {
+    var ico, testo, cls = '';
+    if (ev.tipo === 'azione') {
+      var ar = areaById(ev.areaId);
+      ico = '<span class="diario-ico ok">' + ICO('check', 14) + '</span>';
+      testo = 'Completata · <b>' + esc(ev.testo) + '</b>' +
+        ' <span class="diario-area" style="color:' + LM.coloreArea(ar) + '" title="' + esc(ar.nome) + '">' + ICO(ar.icona, 13) + '</span>' +
+        (ev.mit ? ' <span class="tag-mit">' + ICO('star', 9) + 'Priorità</span>' : '');
+    } else if (ev.tipo === 'checkin') {
+      ico = '<span class="diario-ico">' + ICO('bolt', 14) + '</span>';
+      testo = 'Check-in · energia <b>' + ev.energia + '</b> · focus <b>' + ev.focus + '</b> · umore <b>' + ev.umore + '</b>';
+    } else if (ev.tipo === 'mattina') {
+      ico = '<span class="diario-ico">' + ICO('sun', 14) + '</span>';
+      testo = 'Piano del mattino' + (ev.intenzione ? ' · <span class="diario-sec">' + esc(ev.intenzione) + '</span>' : '');
+    } else if (ev.tipo === 'sera') {
+      ico = '<span class="diario-ico">' + ICO('moon', 14) + '</span>';
+      testo = 'Review della sera' +
+        (ev.vittoria ? ' · <span class="diario-sec">andata bene: ' + esc(ev.vittoria) + '</span>' : '') +
+        (ev.blocco ? ' · <span class="diario-sec">ostacolo: ' + esc(ev.blocco) + '</span>' : '');
+    } else if (ev.tipo === 'settimana') {
+      ico = '<span class="diario-ico">' + ICO('calendar', 14) + '</span>';
+      testo = 'Review della settimana' + (ev.imparato ? ' · <span class="diario-sec">' + esc(ev.imparato) + '</span>' : '');
+    } else { /* cattura */
+      ico = '<span class="diario-ico">' + ICO('inbox', 14) + '</span>';
+      testo = 'Annotato · <b>' + esc(ev.testo) + '</b>';
+    }
+    return '<div class="diario-evento">' + ico + '<div class="diario-testo">' + testo + '</div>' +
+      '<span class="diario-ora">' + oraDi(ev.ts) + '</span></div>';
+  }
 
   function vistaPlancia() {
     var s = LM.load();
@@ -604,7 +661,7 @@
 
     /* schede interne: si vede una sezione per volta */
     function segp(id, ico, et) { return '<button data-sez="' + id + '" class="' + (sezPlancia === id ? 'attivo' : '') + '">' + ICO(ico, 15) + et + '</button>'; }
-    html += '<div class="segmenti sez-nav" id="sez-plancia">' + segp('riepilogo', 'dashboard', 'Riepilogo') + segp('aree', 'sparkles', 'Aree') + segp('andamento', 'trendUp', 'Andamento') + '</div>';
+    html += '<div class="segmenti sez-nav" id="sez-plancia">' + segp('riepilogo', 'dashboard', 'Riepilogo') + segp('diario', 'book', 'Diario') + segp('aree', 'sparkles', 'Aree') + segp('andamento', 'trendUp', 'Andamento') + '</div>';
     html += '<div id="sez-corpo"></div>';
 
     $vista.innerHTML = html;
@@ -631,6 +688,7 @@
       var c = document.getElementById('sez-corpo');
       c.classList.remove('vista-enter'); void c.offsetWidth;
       if (sezPlancia === 'riepilogo') sezRiepilogo(c);
+      else if (sezPlancia === 'diario') sezDiario(c);
       else if (sezPlancia === 'aree') sezAree(c);
       else sezAndamento(c);
       c.classList.add('vista-enter');
@@ -725,6 +783,30 @@
       document.getElementById('seg-periodo').querySelectorAll('[data-g]').forEach(function (b) {
         b.addEventListener('click', function () { periodoTrend = +b.getAttribute('data-g'); disegnaSezione(); });
       });
+    }
+
+    /* --- Diario: cronologia di ciò che hai fatto e scritto --- */
+    function sezDiario(c) {
+      var giorni = LM.diario(diarioGiorni);
+      if (!giorni.length) {
+        c.innerHTML = '<div class="card"><div class="vuoto">' + ICO('book', 30) +
+          '<br><b>Il diario è ancora vuoto.</b><br>Completa un’azione o fai un check-in: comparirà qui, giorno per giorno.</div></div>';
+        return;
+      }
+      var totGiorni = LM.giorniConAttivita();
+      var html = '<div class="card diario"><div class="sotto" style="margin-bottom:16px">Tutto ciò che hai fatto e annotato, dal più recente.</div>';
+      giorni.forEach(function (g) {
+        html += '<div class="diario-giorno">' +
+          '<div class="diario-data">' + etichettaGiorno(g.data) + '</div>' +
+          '<div class="diario-eventi">' + g.eventi.map(eventoDiarioHtml).join('') + '</div></div>';
+      });
+      html += '</div>';
+      if (totGiorni > giorni.length) {
+        html += '<div style="text-align:center" class="mt"><button class="btn" id="diario-altro">' + ICO('refresh', 15) + ' Mostra altri giorni</button></div>';
+      }
+      c.innerHTML = html;
+      var b = document.getElementById('diario-altro');
+      if (b) b.addEventListener('click', function () { diarioGiorni += 30; disegnaSezione(); });
     }
   }
 
@@ -1350,6 +1432,20 @@
     if (staDigitando()) return;
     render();
     toast('Dati aggiornati da un altro dispositivo.', 0, 'cloudCheck');
+  });
+
+  /* stato del salvataggio cloud: aggiorna il footer senza ridisegnare la
+     vista (non disturba ciò che stai facendo) e segnala gli errori una volta */
+  var ultimoErroreSync = '';
+  window.addEventListener('lm:sync', function (e) {
+    var fondo = document.getElementById('sidebar-fondo');
+    if (fondo && (window.LM_AUTH || {}).user) { fondo.innerHTML = footerSidebar(); wireFooterSidebar(); }
+    var y = (e && e.detail) || window.LM_SYNC || {};
+    if (y.state === 'error' && y.error && y.error !== ultimoErroreSync) {
+      ultimoErroreSync = y.error;
+      toast(y.error, 0, 'cloud');
+    }
+    if (y.state === 'saved') ultimoErroreSync = '';
   });
 
   /* Esc chiude il pannello se aperto */

@@ -417,6 +417,58 @@ var LM = (function () {
     return vals.reduce(function (x, p) { return x + p.valore; }, 0) / vals.length;
   }
 
+  /* ---------- diario / storico ---------- */
+  /* Ricostruisce la cronologia degli eventi dai dati già registrati
+     (azioni completate, check-in, piani, review, catture), raggruppati
+     per giorno e ordinati dal più recente. Nessun log separato da tenere
+     allineato: la storia è sempre coerente con lo stato reale. */
+
+  function diario(giorniMax) {
+    var s = load();
+    var perGiorno = {};
+    function agg(k, ev) { (perGiorno[k] = perGiorno[k] || []).push(ev); }
+
+    s.azioni.forEach(function (a) {
+      if (!a.done) return;
+      var k = a.doneAt ? dayKey(new Date(a.doneAt)) : a.data;
+      agg(k, { ts: a.doneAt || parseKey(a.data).getTime() + 12 * 3600000, tipo: 'azione', testo: a.testo, areaId: a.areaId, mit: a.mit });
+    });
+    s.checkins.forEach(function (c) {
+      agg(c.data, { ts: c.ts || parseKey(c.data).getTime(), tipo: 'checkin', energia: c.energia, focus: c.focus, umore: c.umore });
+    });
+    Object.keys(s.pianoMattina).forEach(function (k) {
+      var p = s.pianoMattina[k];
+      agg(k, { ts: p.ts || parseKey(k).getTime() + 8 * 3600000, tipo: 'mattina', intenzione: p.intenzione });
+    });
+    Object.keys(s.reviewSera).forEach(function (k) {
+      var r = s.reviewSera[k];
+      agg(k, { ts: r.ts || parseKey(k).getTime() + 21 * 3600000, tipo: 'sera', vittoria: r.vittoria, blocco: r.blocco });
+    });
+    Object.keys(s.reviewSettimana).forEach(function (k) {
+      var r = s.reviewSettimana[k];
+      agg(k, { ts: r.ts || parseKey(k).getTime() + 20 * 3600000, tipo: 'settimana', vittorie: r.vittorie, blocchi: r.blocchi, imparato: r.imparato, prossima: r.prossima });
+    });
+    s.inbox.forEach(function (el) {
+      agg(dayKey(new Date(el.creata)), { ts: el.creata, tipo: 'cattura', testo: el.testo });
+    });
+
+    var giorni = Object.keys(perGiorno).sort().reverse();
+    if (giorniMax) giorni = giorni.slice(0, giorniMax);
+    return giorni.map(function (k) {
+      return { data: k, eventi: perGiorno[k].sort(function (a, b) { return b.ts - a.ts; }) };
+    });
+  }
+
+  function giorniConAttivita() {
+    var s = load();
+    var set = {};
+    s.azioni.forEach(function (a) { if (a.done) set[a.doneAt ? dayKey(new Date(a.doneAt)) : a.data] = 1; });
+    s.checkins.forEach(function (c) { set[c.data] = 1; });
+    Object.keys(s.reviewSera).forEach(function (k) { set[k] = 1; });
+    Object.keys(s.pianoMattina).forEach(function (k) { set[k] = 1; });
+    return Object.keys(set).length;
+  }
+
   /* ---------- motore esperimenti (N-of-1) ---------- */
   /* Un esperimento confronta una metrica esistente tra una fase di
      baseline (A) e una di intervento (B). Onestà scientifica:
@@ -699,6 +751,7 @@ var LM = (function () {
     serieValutazioni: serieValutazioni, serieMinuti: serieMinuti, serieCheckin: serieCheckin,
     serieXp: serieXp, heatmapConsistenza: heatmapConsistenza,
     minutiSettimanaPerArea: minutiSettimanaPerArea, mediaValutazioneArea: mediaValutazioneArea,
+    diario: diario, giorniConAttivita: giorniConAttivita,
     creaEsperimento: creaEsperimento, risultatiEsperimento: risultatiEsperimento,
     uid: uid
   };

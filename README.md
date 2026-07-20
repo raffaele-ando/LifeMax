@@ -106,6 +106,23 @@ Nella console del progetto `lifemax-9dc63`:
 Il login con Google richiede che la pagina sia servita via **http/https** (non
 funziona aprendo il file con `file://`): usa un server statico, anche locale.
 
+### Se il salvataggio cloud non funziona
+
+L'app mostra lo stato di sincronizzazione accanto al tuo nome (footer della
+sidebar su desktop, menu «Altro» su mobile): *Sincronizzazione… → Salvato nel
+cloud*, oppure un messaggio di errore. Se vedi un errore, quasi sempre manca uno
+dei passaggi di configurazione qui sopra:
+
+- **«Database Firestore non raggiungibile»** → il database non è stato creato
+  (punto 2): crealo nella console.
+- **«Permessi Firestore negati»** → le regole non sono pubblicate (punto 3):
+  incolla `firestore.rules` e pubblica.
+- L'accesso funziona ma non salva → verifica che il dominio sia tra quelli
+  autorizzati (punto 4).
+
+Lo storico di tutto ciò che fai e scrivi è nella scheda **Diario** dentro
+Panoramica (azioni completate, check-in, review, note catturate), giorno per giorno.
+
 ## Struttura
 
 ```
