@@ -122,6 +122,16 @@ body {
   min-height: 100vh;
   font-feature-settings: "cv05", "ss01";
   -webkit-font-smoothing: antialiased;
+  overflow-x: clip; /* rete di sicurezza: mai scroll orizzontale della pagina */
+}
+
+/* Le immagini e i grafici non superano mai il contenitore */
+img, svg, canvas, video { max-width: 100%; }
+
+/* Il testo va sempre a capo: nessuna parola lunghissima (URL, token)
+   può forzare la larghezza della pagina */
+h1, h2, h3, p, span, div, a, small, b, label, button, input, textarea, li {
+  overflow-wrap: break-word;
 }
 
 button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
@@ -177,7 +187,7 @@ small { color: var(--inchiostro-2); }
 .app { display: grid; grid-template-columns: 248px 1fr; min-height: 100vh; position: relative; z-index: 1; }
 
 .sidebar {
-  position: sticky; top: 0; height: 100vh;
+  position: sticky; top: 0; height: 100vh; height: 100dvh;
   padding: 22px 14px 16px;
   display: flex; flex-direction: column; gap: 3px;
   background: var(--vetro);
@@ -261,7 +271,25 @@ small { color: var(--inchiostro-2); }
 .btn-strumento-largo:hover { background: color-mix(in srgb, var(--inchiostro-1) 6%, transparent); color: var(--inchiostro-1); }
 .btn-strumento-largo .ico { opacity: .8; }
 
-.main { padding: 30px 34px 100px; max-width: 1120px; width: 100%; margin: 0 auto; position: relative; }
+.main { padding: 30px clamp(16px, 3vw, 40px) 100px; max-width: 1180px; width: 100%; margin: 0 auto; position: relative; min-width: 0; }
+
+/* min-width:0 su tutte le catene flex/grid: senza questo un figlio con
+   contenuto largo (una riga di bottoni, un testo lungo) stira il
+   contenitore oltre lo schermo. È la causa principale degli overflow. */
+.app > *, .main, .card, .topbar, .topbar > div,
+.riga-azione, .riga-inbox, .riga-inbox > div, .voto-area, .voto-area .nome,
+.diario-evento, .diario-testo, .menu-voce, .menu-voce span,
+.nav-item, .nav-item span, .lm-hbar-row, .lm-hbar-label,
+.exp-testa, .card-testa, .eroe2, .eroe2-corpo, .focus-scena, .riga-flex { min-width: 0; }
+
+/* voto-area: se lo spazio è poco, le stelline vanno a capo SOTTO il nome
+   (niente nome schiacciato a una lettera per riga) */
+.voto-area { flex-wrap: wrap; row-gap: 8px; }
+.voto-area .nome { flex: 1 1 145px; min-width: 130px; }
+.voto-area .stelline { flex: 0 0 auto; margin-left: auto; }
+.riga-azione .testo, .riga-inbox .testo, .menu-voce span,
+.diario-testo, .focus-azione { overflow-wrap: anywhere; }
+.nav-item span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .topbar { display: flex; align-items: flex-end; gap: 14px; margin-bottom: 24px; flex-wrap: wrap; }
 .topbar h1 { font-size: 29px; letter-spacing: -0.035em; font-weight: 800; line-height: 1.1; }
@@ -442,7 +470,7 @@ label.campo { display: block; font-size: 12px; font-weight: 700; letter-spacing:
 /* ---------- vista Focus ---------- */
 
 .focus-scena {
-  min-height: calc(100vh - 230px);
+  min-height: min(calc(100dvh - 220px), 600px);
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   text-align: center; gap: 20px; padding: 22px 0;
 }
@@ -831,7 +859,7 @@ kbd {
   background: var(--pagina);
   overflow-y: auto;
 }
-.ob-grid { display: grid; grid-template-columns: 1fr 1.15fr; min-height: 100vh; }
+.ob-grid { display: grid; grid-template-columns: 1fr 1.15fr; min-height: 100vh; min-height: 100dvh; }
 @media (max-width: 940px) { .ob-grid { grid-template-columns: 1fr; } }
 
 .ob-brand {
@@ -936,7 +964,7 @@ kbd {
 }
 .sheet-overlay[hidden] { display: none; }
 .sheet {
-  width: 100%; max-width: 460px; max-height: 88vh; overflow-y: auto;
+  width: 100%; max-width: 460px; max-height: 88vh; max-height: 88dvh; overflow-y: auto;
   background: var(--superficie-1); border: 1px solid var(--bordo);
   border-radius: 20px; box-shadow: var(--e3); padding: 8px 20px 22px;
   animation: entra .3s var(--ease-spring);
@@ -976,7 +1004,7 @@ kbd {
 @media (max-width: 860px) {
   .sheet-overlay { align-items: flex-end; padding: 0; }
   .sheet {
-    max-width: 100%; max-height: 90vh; border-radius: 22px 22px 0 0;
+    max-width: 100%; max-height: 90vh; max-height: 90dvh; border-radius: 22px 22px 0 0;
     padding: 6px 18px calc(24px + env(safe-area-inset-bottom));
     animation: sheetSu .32s var(--ease-out);
   }
