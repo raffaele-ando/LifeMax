@@ -515,13 +515,18 @@
       '<span class="pallino" style="width:8px;height:8px;border-radius:50%;background:' + colArea + ';display:inline-block"></span>' +
       '<span style="color:' + colArea + ';display:inline-flex">' + ICO(area.icona, 15) + '</span> ' + esc(area.nome) + '</div>' +
       (prossima.ifThen ? '<div class="focus-ifthen">' + ICO('bolt', 15) + '<span>' + esc(prossima.ifThen) + '</span></div>' : '') +
-      '<div class="focus-azioni-riga">' +
+      /* gerarchia chiara: un'unica azione dominante, il resto recede */
+      '<div class="focus-primaria">' +
       '<button class="btn btn-ok btn-grande" id="btn-fatto">' + ICO('check', 18) + ' Fatto <small>+' + xpPrevisti + ' XP</small></button>' +
+      '</div>' +
+      '<div class="focus-secondarie">' +
       (timerAttivo
-        ? '<button class="btn btn-grande" id="btn-stop-timer">' + ICO('pause', 17) + ' Ferma e registra</button>'
-        : '<button class="btn btn-grande" id="btn-timer">' + ICO('play', 17) + ' Timer 25′</button>' +
-          '<button class="btn" id="btn-timer-10">10′</button><button class="btn" id="btn-timer-50">50′</button>') +
-      '<button class="btn btn-ghost" id="btn-nonora">Più tardi ' + ICO('arrowRight', 15) + '</button>' +
+        ? '<button class="btn btn-mini" id="btn-stop-timer">' + ICO('pause', 15) + ' Ferma e registra</button>'
+        : '<span class="timer-gruppo">' + ICO('play', 14) + ' Timer' +
+          '<button class="chip-tempo" data-min="25" id="btn-timer">25′</button>' +
+          '<button class="chip-tempo" data-min="10">10′</button>' +
+          '<button class="chip-tempo" data-min="50">50′</button></span>') +
+      '<button class="btn btn-mini btn-ghost" id="btn-nonora">Più tardi ' + ICO('arrowRight', 14) + '</button>' +
       '</div>' +
       '<div class="focus-coda">' +
       (inCoda > 0
@@ -555,15 +560,18 @@
         render();
       });
     } else {
-      document.getElementById('btn-timer').addEventListener('click', function () { avviaTimer(prossima.id, 25); });
-      document.getElementById('btn-timer-10').addEventListener('click', function () { avviaTimer(prossima.id, 10); });
-      document.getElementById('btn-timer-50').addEventListener('click', function () { avviaTimer(prossima.id, 50); });
+      $vista.querySelectorAll('.chip-tempo').forEach(function (b) {
+        b.addEventListener('click', function () { avviaTimer(prossima.id, +b.getAttribute('data-min')); });
+      });
     }
   }
 
   /* ============================================================
      VISTA: PLANCIA
      ============================================================ */
+
+  var sezPlancia = 'riepilogo';
+  var periodoTrend = 14;
 
   function vistaPlancia() {
     var s = LM.load();
@@ -573,124 +581,150 @@
     var fatte = oggi.filter(function (a) { return a.done; }).length;
     var t = LM.todayKey();
     var checkinOggi = s.checkins.filter(function (c) { return c.data === t; }).length;
-    var xpOggi = s.xpPerGiorno[t] || 0;
-    var xpIeri = s.xpPerGiorno[LM.addDays(t, -1)] || 0;
 
-    var html = topbar('Panoramica', 'Qui trovi i dati che hai raccolto: servono a capire cosa funziona per te.',
-      '<span class="chip">' + ICO('calendar', 14) + ' ' + new Date().toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' }) + '</span>');
+    var html = topbar('Panoramica', 'Il quadro dei tuoi dati, una sezione alla volta.');
 
-    /* eroe */
-    html += '<div class="card eroe">' +
+    /* eroe essenziale: anello + XP + tre indicatori come chip (niente
+       muro di didascalie: le spiegazioni stanno nei tooltip) */
+    function chip(ico, testo, cls, titolo) {
+      return '<span class="chip"' + (titolo ? ' title="' + esc(titolo) + '"' : '') + '>' + ICO(ico, 14, cls) + ' ' + testo + '</span>';
+    }
+    html += '<div class="card eroe2">' +
       '<div id="anello-livello" title="Progresso verso il prossimo livello"></div>' +
-      '<div class="eroe-statistiche">' +
-      stat('<span id="xp-contatore">0</span>&nbsp;XP', 'Livello ' + lvl.livello, 'Ti mancano ' + (lvl.prossimo - s.xp) + ' XP al livello ' + (lvl.livello + 1)) +
-      stat(ICO('flame', 22, 'fiamma') + ' ' + st.corrente, 'giorni di fila', 'Un giorno saltato non azzera la serie.') +
-      stat(fatte + '/' + oggi.length, 'azioni oggi', xpOggi >= xpIeri && xpOggi > 0 ? '<span class="delta-ok">▲ meglio di ieri</span>' : xpOggi + ' XP guadagnati oggi') +
-      stat('' + checkinOggi, 'check-in oggi', checkinOggi === 0 ? 'Bastano dieci secondi.' : 'Stai tenendo un buon ritmo.') +
-      '</div>' +
-      '<div><button class="btn btn-primario" data-vai="oggi">' + ICO('target', 16) + ' Vai alla prossima azione</button></div>' +
+      '<div class="eroe2-corpo">' +
+      '<div class="eroe2-xp"><span id="xp-contatore">0</span> <span class="eroe2-unita">XP</span></div>' +
+      '<div class="eroe2-sub">Livello ' + lvl.livello + ' · ancora ' + (lvl.prossimo - s.xp) + ' XP al livello ' + (lvl.livello + 1) + '</div>' +
+      '<div class="eroe2-chips">' +
+      chip('flame', '<b>' + st.corrente + '</b> giorni di fila', 'fiamma', 'Un giorno saltato non azzera la serie.') +
+      chip('check', '<b>' + fatte + '/' + oggi.length + '</b> azioni oggi') +
+      chip('bolt', '<b>' + checkinOggi + '</b> check-in oggi') +
+      '</div></div>' +
+      '<button class="btn btn-primario eroe2-cta" data-vai="oggi">' + ICO('target', 16) + ' Prossima azione</button>' +
       '</div>';
 
-    /* oggi + heatmap */
-    html += '<div class="griglia griglia-2 mt">';
-    html += '<div class="card" style="--i:0"><h2>Oggi <small style="font-weight:500;color:var(--inchiostro-muto)">· al massimo tre azioni</small></h2>' +
-      '<div class="sotto">Inizia dall’azione più importante. Le altre vengono dopo.</div>' +
-      '<div class="lista-azioni" id="lista-oggi"></div>' +
-      '<form id="form-add" class="riga-flex mt-s"><input type="text" id="testo-add" placeholder="Aggiungi un’azione per oggi…" style="flex:1;min-width:160px">' +
-      '<span style="width:140px">' + selectAree('area-add') + '</span>' +
-      '<button class="btn btn-mini btn-primario" type="submit">' + ICO('plus', 14) + '</button></form></div>';
-    html += '<div class="card" style="--i:1"><h2>' + ICO('trendUp', 16) + ' Costanza</h2><div class="sotto">XP per giorno nelle ultime 12 settimane. Conta la costanza nel tempo, più del singolo giorno.</div>' +
-      '<div id="heatmap"></div></div>';
-    html += '</div>';
-
-    /* trend check-in + minuti per area */
-    html += '<div class="griglia griglia-2 mt">';
-    html += '<div class="card" style="--i:0"><h2>' + ICO('bolt', 16) + ' Energia, focus e umore</h2><div class="sotto">Media dei tuoi check-in negli ultimi 14 giorni, su una scala da 1 a 5.</div><div id="trend-checkin"></div></div>';
-    html += '<div class="card" style="--i:1"><h2>' + ICO('clock', 16) + ' Come hai speso il tempo</h2><div class="sotto">Minuti registrati per ciascuna area negli ultimi 7 giorni.</div><div id="hbar-minuti"></div></div>';
-    html += '</div>';
-
-    /* aree */
-    html += '<div class="titolo-sezione">' + ICO('dashboard', 17) + ' Le tue aree</div><div class="griglia griglia-aree" id="griglia-aree"></div>';
+    /* schede interne: si vede una sezione per volta */
+    function segp(id, ico, et) { return '<button data-sez="' + id + '" class="' + (sezPlancia === id ? 'attivo' : '') + '">' + ICO(ico, 15) + et + '</button>'; }
+    html += '<div class="segmenti sez-nav" id="sez-plancia">' + segp('riepilogo', 'dashboard', 'Riepilogo') + segp('aree', 'sparkles', 'Aree') + segp('andamento', 'trendUp', 'Andamento') + '</div>';
+    html += '<div id="sez-corpo"></div>';
 
     $vista.innerHTML = html;
 
     countUp(document.getElementById('xp-contatore'), s.xp);
-    LMCharts.ring(document.getElementById('anello-livello'), lvl.pct, { size: 92, centro: 'L' + lvl.livello, label: 'Livello ' + lvl.livello + ', ' + Math.round(lvl.pct * 100) + '% verso il prossimo' });
-    LMCharts.heatmap(document.getElementById('heatmap'), LM.heatmapConsistenza(12));
+    LMCharts.ring(document.getElementById('anello-livello'), lvl.pct, { size: 96, centro: 'L' + lvl.livello, label: 'Livello ' + lvl.livello + ', ' + Math.round(lvl.pct * 100) + '% verso il prossimo' });
 
-    var dark = document.documentElement.getAttribute('data-mode') === 'dark';
-    LMCharts.trend(document.getElementById('trend-checkin'), [
-      { nome: 'Energia', colore: dark ? '#c98500' : '#eda100', punti: LM.serieCheckin('energia', 14) },
-      { nome: 'Focus',   colore: dark ? '#3987e5' : '#2a78d6', punti: LM.serieCheckin('focus', 14) },
-      { nome: 'Umore',   colore: dark ? '#199e70' : '#1baf7a', punti: LM.serieCheckin('umore', 14) }
-    ], { min: 1, max: 5, label: 'Trend di energia, focus e umore negli ultimi 14 giorni' });
-
-    LMCharts.hbar(document.getElementById('hbar-minuti'),
-      LM.minutiSettimanaPerArea()
-        .sort(function (a, b) { return b.minuti - a.minuti; })
-        .map(function (r) { return { label: r.area.nome, icona: ICO(r.area.icona, 14), value: r.minuti, colore: LM.coloreArea(r.area) }; }),
-      { unita: 'min' });
-
-    /* lista oggi */
-    var lista = document.getElementById('lista-oggi');
-    if (!oggi.length) {
-      lista.innerHTML = '<div class="vuoto" style="padding:14px">Non hai ancora scelto le azioni di oggi. Pianificare la giornata richiede un minuto: <a href="#/rituali">vai ai Rituali</a>.</div>';
-    } else {
-      lista.innerHTML = oggi.map(function (a) {
-        var ar = areaById(a.areaId);
-        return '<div class="riga-azione' + (a.done ? ' fatta' : '') + '">' +
-          '<button class="spunta" data-id="' + a.id + '" aria-label="Completa">' + ICO('check', 13) + '</button>' +
-          '<span class="testo">' + esc(a.testo) + '</span>' +
-          (a.mit ? '<span class="tag-mit">' + ICO('star', 10) + 'Priorità</span>' : '') +
-          '<span class="tag-area" style="--c-area:' + LM.coloreArea(ar) + '" title="' + esc(ar.nome) + '">' + ICO(ar.icona, 15) + '</span>' +
-          '</div>';
-      }).join('');
-      lista.querySelectorAll('.spunta').forEach(function (b) {
-        b.addEventListener('click', function (ev) {
-          var xp = LM.completaAzione(b.getAttribute('data-id'));
-          if (xp) {
-            var r = ev.currentTarget.getBoundingClientRect();
-            flyXp(r.left + r.width / 2, r.top, xp);
-            toast('Azione completata.', xp);
-          }
-          render();
-        });
-      });
-    }
-    document.getElementById('form-add').addEventListener('submit', function (e) {
-      e.preventDefault();
-      var t2 = document.getElementById('testo-add').value.trim();
-      if (!t2) return;
-      LM.aggiungiAzione(t2, document.getElementById('area-add').value, { mit: oggi.length === 0 });
-      render();
+    document.getElementById('sez-plancia').querySelectorAll('[data-sez]').forEach(function (b) {
+      b.addEventListener('click', function () { sezPlancia = b.getAttribute('data-sez'); disegnaSezione(); aggiornaSegP(); });
     });
-
-    /* card aree */
-    var ga = document.getElementById('griglia-aree');
-    ga.innerHTML = areeAttive().map(function (a, i) {
-      var media = LM.mediaValutazioneArea(a.id, 7);
-      var min7 = LM.serieMinuti(a.id, 7).reduce(function (x, p) { return x + p.valore; }, 0);
-      var col = LM.coloreArea(a);
-      return '<div class="card card-area card-hover" style="--i:' + i + ';--c-area:' + col + '">' +
-        '<div class="testata"><span class="icona-area">' + ICO(a.icona, 16) + '</span>' + esc(a.nome) + '</div>' +
-        '<div id="spark-' + a.id + '"></div>' +
-        '<div class="metrica-riga"><b>' + (media ? LMCharts.fmtNum(media) : '—') + '</b> voto medio negli ultimi 7 giorni</div>' +
-        '<div class="metrica-riga"><b>' + min7 + '</b> minuti negli ultimi 7 giorni</div>' +
-        '<div class="sistema-nota">La tua regola: ' + esc(a.sistema) + '</div>' +
-        '</div>';
-    }).join('');
-    areeAttive().forEach(function (a) {
-      LMCharts.sparkline(document.getElementById('spark-' + a.id), LM.serieValutazioni(a.id, 14),
-        { min: 1, max: 5, colore: LM.coloreArea(a), label: 'Auto-valutazione ' + a.nome + ', 14 giorni', unita: '/5' });
-    });
-
     $vista.querySelectorAll('[data-vai]').forEach(function (b) {
       b.addEventListener('click', function () { location.hash = '#/' + b.getAttribute('data-vai'); });
     });
 
-    function stat(val, eti, sub) {
-      return '<div class="stat"><span class="stat-val">' + val + '</span><span class="stat-eti">' + eti + '</span>' +
-        (sub ? '<span class="stat-sub">' + sub + '</span>' : '') + '</div>';
+    disegnaSezione();
+
+    function aggiornaSegP() {
+      document.getElementById('sez-plancia').querySelectorAll('[data-sez]').forEach(function (b) {
+        b.classList.toggle('attivo', b.getAttribute('data-sez') === sezPlancia);
+      });
+    }
+
+    function disegnaSezione() {
+      var c = document.getElementById('sez-corpo');
+      c.classList.remove('vista-enter'); void c.offsetWidth;
+      if (sezPlancia === 'riepilogo') sezRiepilogo(c);
+      else if (sezPlancia === 'aree') sezAree(c);
+      else sezAndamento(c);
+      c.classList.add('vista-enter');
+    }
+
+    /* --- Riepilogo: azioni di oggi + costanza --- */
+    function sezRiepilogo(c) {
+      c.innerHTML = '<div class="griglia griglia-2">' +
+        '<div class="card" style="--i:0"><h2>' + ICO('target', 16) + ' Azioni di oggi</h2>' +
+        '<div class="sotto">Inizia dall’azione più importante. Le altre vengono dopo.</div>' +
+        '<div class="lista-azioni" id="lista-oggi"></div>' +
+        '<form id="form-add" class="riga-flex mt-s"><input type="text" id="testo-add" placeholder="Aggiungi un’azione per oggi…" style="flex:1;min-width:150px">' +
+        '<span style="width:132px">' + selectAree('area-add') + '</span>' +
+        '<button class="btn btn-mini btn-primario" type="submit">' + ICO('plus', 14) + '</button></form></div>' +
+        '<div class="card" style="--i:1"><h2>' + ICO('trendUp', 16) + ' Costanza</h2>' +
+        '<div class="sotto">XP per giorno, ultime 12 settimane. Conta il ritmo nel tempo, più del singolo giorno.</div>' +
+        '<div id="heatmap"></div></div></div>';
+
+      LMCharts.heatmap(document.getElementById('heatmap'), LM.heatmapConsistenza(12));
+
+      var lista = document.getElementById('lista-oggi');
+      if (!oggi.length) {
+        lista.innerHTML = '<div class="vuoto" style="padding:16px 8px">Non hai ancora scelto le azioni di oggi.<br><a href="#/rituali">Pianifica la giornata</a> in un minuto.</div>';
+      } else {
+        lista.innerHTML = oggi.map(function (a) {
+          var ar = areaById(a.areaId);
+          return '<div class="riga-azione' + (a.done ? ' fatta' : '') + '">' +
+            '<button class="spunta" data-id="' + a.id + '" aria-label="Completa">' + ICO('check', 13) + '</button>' +
+            '<span class="testo">' + esc(a.testo) + '</span>' +
+            (a.mit ? '<span class="tag-mit">' + ICO('star', 10) + 'Priorità</span>' : '') +
+            '<span class="tag-area" style="--c-area:' + LM.coloreArea(ar) + '" title="' + esc(ar.nome) + '">' + ICO(ar.icona, 15) + '</span></div>';
+        }).join('');
+        lista.querySelectorAll('.spunta').forEach(function (b) {
+          b.addEventListener('click', function (ev) {
+            var xp = LM.completaAzione(b.getAttribute('data-id'));
+            if (xp) { var r = ev.currentTarget.getBoundingClientRect(); flyXp(r.left + r.width / 2, r.top, xp); toast('Azione completata.', xp); }
+            render();
+          });
+        });
+      }
+      document.getElementById('form-add').addEventListener('submit', function (e) {
+        e.preventDefault();
+        var t2 = document.getElementById('testo-add').value.trim();
+        if (!t2) return;
+        LM.aggiungiAzione(t2, document.getElementById('area-add').value, { mit: oggi.length === 0 });
+        render();
+      });
+    }
+
+    /* --- Aree: griglia delle aree di vita --- */
+    function sezAree(c) {
+      c.innerHTML = '<div class="griglia griglia-aree" id="griglia-aree"></div>';
+      var ga = document.getElementById('griglia-aree');
+      ga.innerHTML = areeAttive().map(function (a, i) {
+        var media = LM.mediaValutazioneArea(a.id, 7);
+        var min7 = LM.serieMinuti(a.id, 7).reduce(function (x, p) { return x + p.valore; }, 0);
+        return '<div class="card card-area card-hover" style="--i:' + i + ';--c-area:' + LM.coloreArea(a) + '">' +
+          '<div class="testata"><span class="icona-area">' + ICO(a.icona, 16) + '</span>' + esc(a.nome) + '</div>' +
+          '<div id="spark-' + a.id + '"></div>' +
+          '<div class="area-metriche"><div><b>' + (media ? LMCharts.fmtNum(media) : '—') + '</b><span>voto medio 7g</span></div>' +
+          '<div><b>' + min7 + '</b><span>minuti 7g</span></div></div>' +
+          '<div class="sistema-nota">' + esc(a.sistema) + '</div></div>';
+      }).join('');
+      areeAttive().forEach(function (a) {
+        LMCharts.sparkline(document.getElementById('spark-' + a.id), LM.serieValutazioni(a.id, 14),
+          { min: 1, max: 5, colore: LM.coloreArea(a), label: 'Auto-valutazione ' + a.nome + ', 14 giorni', unita: '/5' });
+      });
+    }
+
+    /* --- Andamento: check-in nel tempo + minuti per area --- */
+    function sezAndamento(c) {
+      var dark = document.documentElement.getAttribute('data-mode') === 'dark';
+      c.innerHTML = '<div class="card" style="--i:0"><div class="card-testa"><h2>' + ICO('bolt', 16) + ' Energia, focus e umore</h2>' +
+        '<div class="segmenti mini-seg" id="seg-periodo">' +
+        '<button data-g="14" class="' + (periodoTrend === 14 ? 'attivo' : '') + '">14 giorni</button>' +
+        '<button data-g="30" class="' + (periodoTrend === 30 ? 'attivo' : '') + '">30 giorni</button></div></div>' +
+        '<div class="sotto">Media dei tuoi check-in, su una scala da 1 a 5.</div><div id="trend-checkin"></div></div>' +
+        '<div class="card mt" style="--i:1"><h2>' + ICO('clock', 16) + ' Come hai speso il tempo</h2>' +
+        '<div class="sotto">Minuti registrati per ciascuna area negli ultimi 7 giorni.</div><div id="hbar-minuti"></div></div>';
+
+      LMCharts.trend(document.getElementById('trend-checkin'), [
+        { nome: 'Energia', colore: dark ? '#c98500' : '#eda100', punti: LM.serieCheckin('energia', periodoTrend) },
+        { nome: 'Focus',   colore: dark ? '#3987e5' : '#2a78d6', punti: LM.serieCheckin('focus', periodoTrend) },
+        { nome: 'Umore',   colore: dark ? '#199e70' : '#1baf7a', punti: LM.serieCheckin('umore', periodoTrend) }
+      ], { min: 1, max: 5, label: 'Andamento di energia, focus e umore' });
+
+      LMCharts.hbar(document.getElementById('hbar-minuti'),
+        LM.minutiSettimanaPerArea().sort(function (a, b) { return b.minuti - a.minuti; })
+          .map(function (r) { return { label: r.area.nome, icona: ICO(r.area.icona, 14), value: r.minuti, colore: LM.coloreArea(r.area) }; }),
+        { unita: 'min' });
+
+      document.getElementById('seg-periodo').querySelectorAll('[data-g]').forEach(function (b) {
+        b.addEventListener('click', function () { periodoTrend = +b.getAttribute('data-g'); disegnaSezione(); });
+      });
     }
   }
 

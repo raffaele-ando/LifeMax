@@ -1037,6 +1037,62 @@ kbd {
 }
 .ob-account-in .ico { color: var(--ok-testo); }
 
+/* ---------- semplificazione layout v3 ---------- */
+
+/* eroe essenziale */
+.eroe2 {
+  display: grid; grid-template-columns: auto 1fr auto; gap: 24px; align-items: center;
+  background:
+    radial-gradient(120% 180% at 0% 0%, color-mix(in srgb, var(--brand-a) 7%, transparent), transparent 45%),
+    radial-gradient(120% 180% at 100% 0%, color-mix(in srgb, var(--brand-c) 6%, transparent), transparent 45%),
+    var(--superficie-1);
+}
+.eroe2-corpo { min-width: 0; }
+.eroe2-xp { font-size: 34px; font-weight: 840; letter-spacing: -0.03em; line-height: 1; font-variant-numeric: tabular-nums; }
+.eroe2-xp .eroe2-unita { font-size: 16px; font-weight: 700; color: var(--inchiostro-2); letter-spacing: 0; }
+.eroe2-sub { font-size: 12.5px; color: var(--inchiostro-2); margin-top: 5px; }
+.eroe2-chips { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 13px; }
+.eroe2-chips .chip .fiamma { color: #eb6834; }
+.eroe2-cta { align-self: center; white-space: nowrap; }
+@media (max-width: 860px) {
+  .eroe2 { grid-template-columns: auto 1fr; gap: 16px; }
+  .eroe2-cta { grid-column: 1 / -1; width: 100%; justify-content: center; }
+}
+
+/* schede-sezione dentro una pagina (progressive disclosure) */
+.sez-nav { margin: 20px 0 16px; }
+@media (max-width: 860px) {
+  .sez-nav { display: flex; width: 100%; overflow-x: auto; scrollbar-width: none; }
+  .sez-nav::-webkit-scrollbar { display: none; }
+  .sez-nav button { flex: 1; justify-content: center; white-space: nowrap; }
+}
+
+/* testata card con controllo a destra */
+.card-testa { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 4px; }
+.card-testa h2 { margin: 0; }
+.mini-seg { padding: 2px; }
+.mini-seg button { padding: 5px 11px; font-size: 12px; }
+
+/* metriche compatte nelle card area */
+.area-metriche { display: flex; gap: 20px; margin-top: 2px; }
+.area-metriche > div { display: flex; flex-direction: column; }
+.area-metriche b { font-size: 19px; font-weight: 800; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.area-metriche span { font-size: 11px; color: var(--inchiostro-muto); }
+
+/* Focus: gerarchia dei comandi (una azione dominante, resto recessivo) */
+.focus-primaria { margin-top: 6px; }
+.focus-primaria .btn-grande { min-width: 230px; }
+.focus-secondarie { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; justify-content: center; margin-top: 6px; }
+.timer-gruppo { display: inline-flex; align-items: center; gap: 7px; font-size: 13px; color: var(--inchiostro-2); font-weight: 600; }
+.timer-gruppo .ico { color: var(--inchiostro-muto); }
+.chip-tempo {
+  padding: 5px 11px; border-radius: 99px;
+  border: 1px solid var(--bordo-forte); background: var(--superficie-1);
+  font-weight: 650; font-size: 12.5px; font-variant-numeric: tabular-nums;
+  box-shadow: var(--e1); transition: transform var(--t-veloce), border-color var(--t-veloce);
+}
+.chip-tempo:hover { transform: translateY(-1px); border-color: color-mix(in srgb, var(--accento) 45%, var(--bordo-forte)); }
+
 /* Cattura: FAB solo su mobile (su desktop c'è il pulsante in sidebar) */
 @media (min-width: 861px) { .fab { display: none; } }
 
@@ -1049,8 +1105,8 @@ kbd {
   .card-area .testata { font-size: 12.5px; gap: 7px; }
   .card-area .testata .icona-area { width: 26px; height: 26px; border-radius: 8px; }
   .card-area .sistema-nota { display: none; }
-  .card-area .metrica-riga { font-size: 11.5px; }
-  .card-area .metrica-riga b { font-size: 15px; }
+  .card-area .area-metriche { gap: 14px; }
+  .card-area .area-metriche b { font-size: 16px; }
   /* eroe: statistiche in griglia 2x2 leggibile */
   .eroe-statistiche { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 8px; width: 100%; }
   .stat { padding: 0; border-left: none; }
