@@ -126,33 +126,27 @@
     applicaTema(); render();
   });
 
-  document.getElementById('btn-tema').addEventListener('click', function () {
+  function setModo(m) {
     var s = LM.load();
-    var ciclo = { auto: 'light', light: 'dark', dark: 'auto' };
-    s.profilo.modo = ciclo[s.profilo.modo || 'auto'];
+    s.profilo.modo = m;
     LM.save(); applicaTema(); render();
-    toast('Modalità: ' + ({ auto: 'automatica', light: 'chiara', dark: 'scura' })[s.profilo.modo], 0, s.profilo.modo === 'dark' ? 'moon' : 'sun');
-  });
-
-  document.getElementById('btn-skin').addEventListener('click', function () {
+  }
+  function setSkin(sk) {
     var s = LM.load();
-    s.profilo.skin = s.profilo.skin === 'arcade' ? 'quiete' : 'arcade';
+    s.profilo.skin = sk;
     LM.save(); applicaTema(); render();
-    toast('Skin: ' + (s.profilo.skin === 'arcade' ? 'Arcade' : 'Aurora'), 0, 'palette');
-  });
-
-  document.getElementById('btn-demo').addEventListener('click', function () {
+  }
+  function caricaDemo() {
     if (confirm('Vuoi sostituire i dati attuali con 8 settimane di dati di esempio?')) {
-      LM.seedDemo(); applicaTema(); render();
+      LM.seedDemo(); applicaTema(); chiudiSheet(); render();
       toast('Dati di esempio caricati.', 0, 'refresh');
     }
-  });
-
-  document.getElementById('btn-azzera').addEventListener('click', function () {
+  }
+  function azzeraTutto() {
     if (confirm('Vuoi cancellare tutti i dati e ripartire da zero? I dati sono salvati solo su questo browser.')) {
-      LM.reset(); location.hash = '#/oggi'; render();
+      LM.reset(); chiudiSheet(); location.hash = '#/oggi'; render();
     }
-  });
+  }
 
   /* ---------- toast ---------- */
 
@@ -181,6 +175,9 @@
 
   document.getElementById('fab-cattura').innerHTML = ICO('plus', 25);
   document.getElementById('fab-cattura').addEventListener('click', apriCattura);
+  var $sideCatt = document.getElementById('side-cattura');
+  $sideCatt.querySelector('.cattura-cta-testo').innerHTML = ICO('bolt', 16) + ' Cattura un pensiero';
+  $sideCatt.addEventListener('click', apriCattura);
   $ovl.addEventListener('click', function (e) { if (e.target === $ovl) chiudiCattura(); });
   $inp.addEventListener('keydown', function (e) {
     if (e.key === 'Enter' && $inp.value.trim()) {
@@ -200,38 +197,170 @@
     if (e.key === 'Escape' && !$ovl.hidden) chiudiCattura();
   });
 
+  /* ---------- pannello (sheet) ---------- */
+
+  var $sheet = document.getElementById('sheet-overlay');
+  document.getElementById('sheet-chiudi').innerHTML = ICO('x', 18);
+  document.getElementById('sheet-chiudi').addEventListener('click', chiudiSheet);
+  $sheet.addEventListener('click', function (e) { if (e.target === $sheet) chiudiSheet(); });
+
+  var wireSheet = null;
+  function apriSheet(titolo, html, onWire) {
+    document.getElementById('sheet-titolo').textContent = titolo;
+    document.getElementById('sheet-corpo').innerHTML = html;
+    $sheet.hidden = false;
+    wireSheet = onWire || null;
+    if (wireSheet) wireSheet(document.getElementById('sheet-corpo'));
+  }
+  function chiudiSheet() { $sheet.hidden = true; wireSheet = null; }
+
   /* ---------- navigazione ---------- */
+  /* gruppo: 'primaria' = destinazioni quotidiane (sidebar + tab bar mobile);
+     'secondaria' = approfondimenti (sidebar, e nel menu "Altro" su mobile). */
 
   var VISTE = [
-    { id: 'oggi',        nome: 'Focus',       icona: 'target' },
-    { id: 'plancia',     nome: 'Panoramica',  icona: 'dashboard' },
-    { id: 'rituali',     nome: 'Rituali',     icona: 'sun' },
-    { id: 'inbox',       nome: 'Inbox',       icona: 'inbox' },
-    { id: 'esperimenti', nome: 'Esperimenti', icona: 'flask' },
-    { id: 'scienza',     nome: 'Scienza',     icona: 'atom' }
+    { id: 'oggi',        nome: 'Oggi',        icona: 'target',    gruppo: 'primaria' },
+    { id: 'plancia',     nome: 'Panoramica',  icona: 'dashboard', gruppo: 'primaria' },
+    { id: 'rituali',     nome: 'Rituali',     icona: 'sun',       gruppo: 'primaria' },
+    { id: 'inbox',       nome: 'Inbox',       icona: 'inbox',     gruppo: 'primaria' },
+    { id: 'esperimenti', nome: 'Esperimenti', icona: 'flask',     gruppo: 'secondaria' },
+    { id: 'scienza',     nome: 'Perché funziona', icona: 'atom',  gruppo: 'secondaria' }
   ];
+  function vistaById(id) { return VISTE.find(function (v) { return v.id === id; }); }
 
   function vistaCorrente() {
     var h = (location.hash || '#/oggi').replace('#/', '').split('/')[0];
     return VISTE.some(function (v) { return v.id === h; }) ? h : 'oggi';
   }
 
+  function badgeInbox(v, s) {
+    return v.id === 'inbox' && s.inbox.length ? '<span class="nav-badge">' + s.inbox.length + '</span>' : '';
+  }
+
   function aggiornaNav() {
     var s = LM.load();
     var corrente = vistaCorrente();
+
+    /* sidebar desktop: primarie, poi separatore, poi secondarie */
     var lato = document.getElementById('nav-lato');
-    var tab = document.getElementById('nav-tab');
-    lato.innerHTML = VISTE.map(function (v) {
-      var badge = v.id === 'inbox' && s.inbox.length ? '<span class="nav-badge">' + s.inbox.length + '</span>' : '';
+    function voce(v) {
       return '<a class="nav-item' + (corrente === v.id ? ' attivo' : '') + '" href="#/' + v.id + '">' +
-        ICO(v.icona, 17) + v.nome + badge + '</a>';
-    }).join('');
-    tab.innerHTML = VISTE.slice(0, 5).map(function (v) {
+        ICO(v.icona, 17) + '<span>' + v.nome + '</span>' + badgeInbox(v, s) + '</a>';
+    }
+    lato.innerHTML =
+      VISTE.filter(function (v) { return v.gruppo === 'primaria'; }).map(voce).join('') +
+      '<div class="nav-sep"></div>' +
+      VISTE.filter(function (v) { return v.gruppo === 'secondaria'; }).map(voce).join('');
+
+    /* footer sidebar: account + impostazioni */
+    document.getElementById('sidebar-fondo').innerHTML = footerSidebar();
+    wireFooterSidebar();
+
+    /* tab bar mobile: 4 primarie + "Altro" */
+    var tab = document.getElementById('nav-tab');
+    var primarie = VISTE.filter(function (v) { return v.gruppo === 'primaria'; });
+    var inSecondaria = corrente === 'esperimenti' || corrente === 'scienza';
+    tab.innerHTML = primarie.map(function (v) {
       return '<button data-vai="' + v.id + '" class="' + (corrente === v.id ? 'attivo' : '') + '">' +
-        ICO(v.icona, 21) + v.nome + '</button>';
-    }).join('');
-    tab.querySelectorAll('button').forEach(function (b) {
+        '<span class="tab-ico">' + ICO(v.icona, 21) + badgeInbox(v, s) + '</span>' + v.nome + '</button>';
+    }).join('') +
+      '<button data-menu="1" class="' + (inSecondaria ? 'attivo' : '') + '"><span class="tab-ico">' + ICO('sparkles', 21) + '</span>Altro</button>';
+    tab.querySelectorAll('[data-vai]').forEach(function (b) {
       b.addEventListener('click', function () { location.hash = '#/' + b.getAttribute('data-vai'); });
+    });
+    tab.querySelector('[data-menu]').addEventListener('click', apriMenuAltro);
+  }
+
+  /* ---------- footer sidebar (account + impostazioni) ---------- */
+
+  function footerSidebar() {
+    var a = window.LM_AUTH || { available: false, user: null };
+    var acct;
+    if (a.user) {
+      var iniz = (a.user.name || a.user.email || '?').trim().charAt(0).toUpperCase();
+      var avatar = a.user.photo
+        ? '<img class="avatar" src="' + esc(a.user.photo) + '" alt="" referrerpolicy="no-referrer">'
+        : '<span class="avatar avatar-ph">' + esc(iniz) + '</span>';
+      acct = '<div class="fondo-account">' + avatar +
+        '<div class="fondo-account-testo"><b>' + esc(a.user.name || 'Il tuo account') + '</b>' +
+        '<small>' + ICO('cloudCheck', 12) + ' Sincronizzato</small></div></div>';
+    } else if (a.available) {
+      acct = '<button class="btn btn-mini btn-accedi" id="fondo-accedi">' + GOOGLE_G(15) + ' Accedi con Google</button>';
+    } else {
+      acct = '<div class="fondo-locale">' + ICO('cloud', 13) + ' Dati salvati su questo dispositivo</div>';
+    }
+    return acct + '<button class="btn-strumento-largo" id="fondo-impostazioni">' + ICO('sun', 16) + '<span>Impostazioni</span></button>';
+  }
+
+  function wireFooterSidebar() {
+    var acc = document.getElementById('fondo-accedi');
+    if (acc) acc.addEventListener('click', function () { if (window.LMCloud && window.LMCloud.available) window.LMCloud.signIn(); });
+    var imp = document.getElementById('fondo-impostazioni');
+    if (imp) imp.addEventListener('click', apriImpostazioni);
+  }
+
+  /* ---------- impostazioni & menu "Altro" ---------- */
+
+  function htmlAspetto() {
+    var s = LM.load();
+    var modo = s.profilo.modo || 'auto';
+    var skin = s.profilo.skin || 'quiete';
+    function segM(v, ico, et) { return '<button data-modo="' + v + '" class="' + (modo === v ? 'attivo' : '') + '">' + ICO(ico, 15) + et + '</button>'; }
+    function segS(v, et) { return '<button data-skin="' + v + '" class="' + (skin === v ? 'attivo' : '') + '">' + et + '</button>'; }
+    return '<div class="imp-sezione"><div class="imp-eti">Tema</div>' +
+      '<div class="segmenti imp-seg" id="seg-modo">' + segM('auto', 'refresh', 'Auto') + segM('light', 'sun', 'Chiaro') + segM('dark', 'moon', 'Scuro') + '</div></div>' +
+      '<div class="imp-sezione"><div class="imp-eti">Aspetto</div>' +
+      '<div class="segmenti imp-seg" id="seg-skin">' + segS('quiete', 'Aurora') + segS('arcade', 'Arcade') + '</div>' +
+      '<div class="imp-nota">Aurora è più sobrio, Arcade più acceso. Cambia solo l’aspetto, non i dati.</div></div>';
+  }
+
+  function htmlDati() {
+    return '<div class="imp-sezione"><div class="imp-eti">Dati</div>' +
+      '<button class="btn btn-mini" id="imp-demo">' + ICO('refresh', 14) + ' Carica dati di esempio</button> ' +
+      '<button class="btn btn-mini imp-pericolo" id="imp-azzera">' + ICO('trash', 14) + ' Azzera tutto</button>' +
+      '<div class="imp-nota">Azzera cancella definitivamente i dati di questo dispositivo.</div></div>';
+  }
+
+  function wireAspettoDati(root) {
+    root.querySelectorAll('#seg-modo [data-modo]').forEach(function (b) {
+      b.addEventListener('click', function () { setModo(b.getAttribute('data-modo')); });
+    });
+    root.querySelectorAll('#seg-skin [data-skin]').forEach(function (b) {
+      b.addEventListener('click', function () { setSkin(b.getAttribute('data-skin')); });
+    });
+    var d = root.querySelector('#imp-demo'); if (d) d.addEventListener('click', caricaDemo);
+    var z = root.querySelector('#imp-azzera'); if (z) z.addEventListener('click', azzeraTutto);
+  }
+
+  function apriImpostazioni() {
+    apriSheet('Impostazioni', htmlAspetto() + htmlDati(), wireAspettoDati);
+  }
+
+  function apriMenuAltro() {
+    var s = LM.load();
+    var link = VISTE.filter(function (v) { return v.gruppo === 'secondaria'; }).map(function (v) {
+      return '<button class="menu-voce" data-vai="' + v.id + '">' + ICO(v.icona, 18) + '<span>' + v.nome + '</span>' + ICO('arrowRight', 15) + '</button>';
+    }).join('');
+    var a = window.LM_AUTH || { available: false, user: null };
+    var acct;
+    if (a.user) {
+      acct = '<div class="menu-account">' + ICO('cloudCheck', 15) + ' Connesso come <b>' + esc(a.user.name || a.user.email) + '</b>' +
+        '<button class="btn btn-mini btn-ghost" id="menu-esci">' + ICO('logout', 14) + ' Esci</button></div>';
+    } else if (a.available) {
+      acct = '<button class="btn btn-accedi" id="menu-accedi" style="width:100%;justify-content:center">' + GOOGLE_G(17) + ' Accedi con Google</button>' +
+        '<div class="imp-nota">Accedi per ritrovare i tuoi dati su tutti i dispositivi.</div>';
+    } else {
+      acct = '<div class="fondo-locale">' + ICO('cloud', 13) + ' Dati salvati su questo dispositivo</div>';
+    }
+    apriSheet('Menu', '<div class="menu-lista">' + link + '</div>' +
+      '<div class="imp-sezione"><div class="imp-eti">Account</div>' + acct + '</div>' +
+      htmlAspetto() + htmlDati(), function (root) {
+      root.querySelectorAll('[data-vai]').forEach(function (b) {
+        b.addEventListener('click', function () { chiudiSheet(); location.hash = '#/' + b.getAttribute('data-vai'); });
+      });
+      var la = root.querySelector('#menu-accedi'); if (la) la.addEventListener('click', function () { if (window.LMCloud && window.LMCloud.available) window.LMCloud.signIn(); });
+      var le = root.querySelector('#menu-esci'); if (le) le.addEventListener('click', function () { if (window.LMCloud) window.LMCloud.signOut(); chiudiSheet(); toast('Hai effettuato la disconnessione.', 0, 'logout'); });
+      wireAspettoDati(root);
     });
   }
 
@@ -255,39 +384,7 @@
   function topbar(titolo, sottotitolo, destra) {
     return '<div class="topbar"><div><h1>' + titolo + '</h1>' +
       (sottotitolo ? '<div class="sottotitolo">' + sottotitolo + '</div>' : '') +
-      '</div><div class="spazio"></div>' + (destra || '') + accountControl() + '</div>';
-  }
-
-  /* ---------- account & sincronizzazione cloud ---------- */
-
-  function accountControl() {
-    var a = window.LM_AUTH || { available: false, user: null };
-    if (a.user) {
-      var iniz = (a.user.name || a.user.email || '?').trim().charAt(0).toUpperCase();
-      var avatar = a.user.photo
-        ? '<img class="avatar" src="' + esc(a.user.photo) + '" alt="" referrerpolicy="no-referrer">'
-        : '<span class="avatar avatar-ph">' + esc(iniz) + '</span>';
-      return '<div class="account" title="' + esc(a.user.email || '') + '">' +
-        '<span class="account-sync" title="Dati sincronizzati sul tuo account Google">' + ICO(a.syncing ? 'cloud' : 'cloudCheck', 15) + '</span>' +
-        avatar +
-        '<button class="btn btn-mini btn-ghost" id="btn-esci" aria-label="Esci">' + ICO('logout', 14) + '</button></div>';
-    }
-    if (a.available) {
-      return '<button class="btn btn-mini btn-accedi" id="btn-accedi">' + GOOGLE_G(16) + ' Accedi</button>';
-    }
-    return '';
-  }
-
-  function wireAccount() {
-    var accedi = document.getElementById('btn-accedi');
-    if (accedi) accedi.addEventListener('click', function () {
-      if (window.LMCloud && window.LMCloud.available) window.LMCloud.signIn();
-    });
-    var esci = document.getElementById('btn-esci');
-    if (esci) esci.addEventListener('click', function () {
-      if (window.LMCloud) window.LMCloud.signOut();
-      toast('Hai effettuato la disconnessione.', 0, 'logout');
-    });
+      '</div><div class="spazio"></div>' + (destra || '') + '</div>';
   }
 
   function refreshObAccount() {
@@ -310,9 +407,14 @@
 
   function bandaDemo() {
     var s = LM.load();
-    document.getElementById('banda-demo').innerHTML = s.demo
-      ? '<div class="banda-demo">Stai esplorando <b>8 settimane di dati di esempio</b>. Puoi modificare tutto e le modifiche restano salvate. Per partire dai tuoi dati, usa il pulsante di azzeramento tra gli strumenti in basso a sinistra.</div>'
-      : '';
+    var banda = document.getElementById('banda-demo');
+    if (!s.demo || s.demoChiusa) { banda.innerHTML = ''; return; }
+    banda.innerHTML = '<div class="banda-demo"><span>' + ICO('sparkles', 13) +
+      ' Stai esplorando <b>dati di esempio</b>: modifica pure, tutto resta salvato.</span>' +
+      '<button class="banda-x" id="banda-x" aria-label="Nascondi">' + ICO('x', 14) + '</button></div>';
+    document.getElementById('banda-x').addEventListener('click', function () {
+      LM.load().demoChiusa = true; LM.save(); banda.innerHTML = '';
+    });
   }
 
   /* ============================================================
@@ -361,8 +463,8 @@
     var oggi = LM.azioniDiOggi();
     var fatte = oggi.filter(function (a) { return a.done; }).length;
     var inCoda = oggi.filter(function (a) { return !a.done; }).length - (prossima ? 1 : 0);
-    var html = topbar('Focus', 'Ti mostriamo una sola azione per volta, così puoi concentrarti su quella.',
-      '<span class="chip">' + ICO('check', 14) + ' Oggi <b>&nbsp;' + fatte + '/' + oggi.length + '</b></span>');
+    var html = topbar('Oggi', 'Una sola azione per volta, così puoi concentrarti su quella.',
+      '<span class="chip">' + ICO('check', 14) + ' <b>&nbsp;' + fatte + '/' + oggi.length + '</b>&nbsp;oggi</span>');
 
     if (!prossima) {
       html += '<div class="focus-scena"><div class="vuoto">' + illoSole() +
@@ -603,11 +705,14 @@
     var sub = sottoRituale || (ora < 12 ? 'mattina' : (ora >= 19 ? 'sera' : 'checkin'));
     sottoRituale = sub;
 
-    var html = topbar('Rituali', 'Poche azioni fisse ogni giorno, così non devi decidere tutto ogni volta.',
-      '<div class="segmenti" id="seg-rituali">' +
+    var suggerito = (ora < 12 ? 'mattina' : (ora >= 19 ? 'sera' : 'checkin'));
+    var html = topbar('Rituali', 'Poche azioni fisse ogni giorno, così non devi decidere tutto ogni volta.') +
+      '<div class="rituali-nav segmenti" id="seg-rituali">' +
       seg('mattina', 'sun', 'Mattina') + seg('checkin', 'bolt', 'Check-in') + seg('sera', 'moon', 'Sera') + seg('settimana', 'calendar', 'Settimana') +
-      '</div>') + '<div class="passo-rituale" id="corpo-rituale"></div>';
+      '</div>' +
+      '<div class="passo-rituale" id="corpo-rituale"></div>';
     $vista.innerHTML = html;
+    void suggerito;
 
     document.getElementById('seg-rituali').querySelectorAll('button').forEach(function (b) {
       b.addEventListener('click', function () { sottoRituale = b.getAttribute('data-sub'); render(); });
@@ -620,7 +725,10 @@
     if (sub === 'settimana') ritualeSettimana(corpo);
 
     function seg(id, icona, nome) {
-      return '<button data-sub="' + id + '" class="' + (sub === id ? 'attivo' : '') + '">' + ICO(icona, 15) + nome + '</button>';
+      var ora2 = new Date().getHours();
+      var sugg = (ora2 < 12 ? 'mattina' : (ora2 >= 19 ? 'sera' : 'checkin'));
+      var puntino = (id === sugg && sub !== id) ? '<span class="seg-ora" title="Consigliato ora"></span>' : '';
+      return '<button data-sub="' + id + '" class="' + (sub === id ? 'attivo' : '') + '">' + ICO(icona, 15) + nome + puntino + '</button>';
     }
   }
 
@@ -1073,7 +1181,7 @@
       } else {
         step = '<div class="card"><h2>Da dove vuoi partire?</h2><div class="sotto">Sono tre modi di usare la stessa app, sugli stessi dati. Scegline uno per iniziare: potrai cambiare quando vuoi.</div>' +
           '<div class="selettore-modi">' +
-          modo('oggi', 'target', 'Focus', 'Una sola azione alla volta, per quando hai già tante cose in mente.') +
+          modo('oggi', 'target', 'Oggi', 'Una sola azione alla volta, per quando hai già tante cose in mente.') +
           modo('plancia', 'dashboard', 'Panoramica', 'Una schermata da tenere aperta, con numeri e grafici sempre a portata.') +
           modo('rituali', 'sun', 'Rituali', 'Brevi routine al mattino e alla sera che ti danno una struttura fissa.') +
           '</div>' +
@@ -1179,11 +1287,11 @@
     else if (v === 'esperimenti') vistaEsperimenti();
     else if (v === 'scienza') vistaScienza();
     $vista.classList.add('vista-enter');
-    wireAccount();
   }
 
   window.addEventListener('hashchange', function () {
     if (vistaCorrente() !== 'rituali') sottoRituale = null;
+    chiudiSheet();
     render();
   });
 
@@ -1210,12 +1318,13 @@
     toast('Dati aggiornati da un altro dispositivo.', 0, 'cloudCheck');
   });
 
+  /* Esc chiude il pannello se aperto */
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && !$sheet.hidden) chiudiSheet();
+  });
+
   /* chrome statico */
   document.getElementById('logo-blocco').innerHTML = LOGO(30) + ' LifeMax <span class="logo-tag">Beta</span>';
-  document.getElementById('btn-tema').innerHTML = ICO('moon', 17);
-  document.getElementById('btn-skin').innerHTML = ICO('palette', 17);
-  document.getElementById('btn-demo').innerHTML = ICO('refresh', 17);
-  document.getElementById('btn-azzera').innerHTML = ICO('trash', 17);
 
   applicaTema();
   render();
