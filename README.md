@@ -81,16 +81,28 @@ L'app può funzionare in due modi:
 L'integrazione è **progressive enhancement**: se lo script Firebase non si carica
 (offline, rete bloccata), l'app continua a funzionare in locale senza errori.
 
-### Come funziona la sincronizzazione
+### Come funziona la sincronizzazione (sicura contro la perdita di dati)
 
 - Un solo documento per utente contiene l'intero stato serializzato in JSON.
 - Le modifiche locali vengono salvate sul cloud con un piccolo ritardo (debounce).
 - Un listener in tempo reale (`onSnapshot`) applica le modifiche fatte su altri
   dispositivi; se stai scrivendo in un campo, l'aggiornamento viene rimandato per
   non interrompere la digitazione.
-- Conflitti tra dispositivi: vince l'ultima modifica (`updatedAt`). Al primo
-  accesso su un dispositivo, se il cloud ha dati più recenti li adotta; se il
-  cloud è vuoto, carica i dati locali.
+- **Uno stato vuoto non sovrascrive mai dati reali.** Al primo accesso su un
+  dispositivo si confronta la "ricchezza" (quantità di dati), non solo il
+  timestamp: se il cloud ha dati e il dispositivo è vuoto, si adottano i dati del
+  cloud (e viceversa). In tempo reale, un aggiornamento vuoto proveniente da un
+  altro dispositivo viene ignorato se qui ci sono dati.
+- **Backup automatici prima di ogni sostituzione**: in locale (contenitore
+  dedicato in `localStorage`, ripristinabili da *Impostazioni → Backup e
+  ripristino*) e sul cloud (sotto-collezione `users/{uid}/backups`). Nulla viene
+  perso in modo irreversibile.
+
+### Esporta / importa i tuoi dati
+
+In *Impostazioni → I tuoi dati* puoi **esportare** l'intero stato in un file
+`.json` (per conservarlo o spostarlo su un altro dispositivo) e **importarlo**.
+L'import crea prima un backup dello stato attuale.
 
 ### Configurazione lato Firebase (una tantum)
 

@@ -159,8 +159,75 @@ var LM = (function () {
   }
 
   function reset() {
+    backup('prima-azzeramento');
     state = statoVuoto();
     save();
+  }
+
+  /* ---------- backup, ricchezza, export/import ----------
+     Ogni sostituzione potenzialmente distruttiva dei dati salva prima una
+     copia in un contenitore dedicato (localStorage), così nulla va perso
+     davvero: si può sempre ripristinare da Impostazioni. */
+
+  var BACKUP_KEY = 'lifemax.backups.v1';
+
+  function leggiBackups() {
+    try { return JSON.parse(localStorage.getItem(BACKUP_KEY)) || []; } catch (e) { return []; }
+  }
+  function scriviBackups(arr) {
+    try { localStorage.setItem(BACKUP_KEY, JSON.stringify(arr)); } catch (e) { /* quota */ }
+  }
+  function backup(motivo) {
+    var raw;
+    try { raw = localStorage.getItem(STORAGE_KEY); } catch (e) { raw = null; }
+    if (!raw) { try { raw = JSON.stringify(load()); } catch (e) { return; } }
+    var arr = leggiBackups();
+    if (arr.length && arr[0].data === raw) return; // niente duplicati consecutivi
+    arr.unshift({ ts: Date.now(), motivo: motivo || '', data: raw });
+    if (arr.length > 25) arr = arr.slice(0, 25);
+    scriviBackups(arr);
+  }
+  function listBackups() {
+    return leggiBackups().map(function (b) {
+      return { ts: b.ts, motivo: b.motivo, ricchezza: ricchezza(safeParse(b.data)) };
+    });
+  }
+  function restoreBackup(ts) {
+    var b = leggiBackups().find(function (x) { return x.ts === ts; });
+    if (!b) return false;
+    backup('prima-del-ripristino');
+    hydrate(safeParse(b.data));
+    return true;
+  }
+  function safeParse(t) { try { return JSON.parse(t); } catch (e) { return statoVuoto(); } }
+
+  /* Quanto è "pieno" uno stato: serve a non far mai sovrascrivere dati
+     reali da uno stato vuoto (la causa del bug di perdita dati). */
+  function ricchezza(s) {
+    if (!s || typeof s !== 'object') return 0;
+    return (s.azioni ? s.azioni.length : 0) +
+      (s.checkins ? s.checkins.length : 0) +
+      (s.inbox ? s.inbox.length : 0) +
+      (s.valutazioni ? Object.keys(s.valutazioni).length : 0) +
+      (s.reviewSera ? Object.keys(s.reviewSera).length : 0) +
+      (s.reviewSettimana ? Object.keys(s.reviewSettimana).length : 0) +
+      (s.esperimenti ? s.esperimenti.length : 0);
+  }
+
+  function exportJson() {
+    return JSON.stringify({ app: 'LifeMax', versione: 2, esportato: Date.now(), stato: load() }, null, 2);
+  }
+  function importJson(text) {
+    var obj;
+    try { obj = JSON.parse(text); } catch (e) { return { ok: false, err: 'File non valido: non è JSON leggibile.' }; }
+    var st = (obj && obj.stato) ? obj.stato : obj; // accetta il file esportato o lo stato nudo
+    if (!st || typeof st !== 'object' || !Array.isArray(st.azioni)) {
+      return { ok: false, err: 'Il file non contiene dati LifeMax.' };
+    }
+    backup('prima-import');
+    st.updatedAt = Date.now();
+    hydrate(st);
+    return { ok: true, ricchezza: ricchezza(st) };
   }
 
   /* Sostituisce l'intero stato con uno proveniente dal cloud.
@@ -238,6 +305,22 @@ var LM = (function () {
     var punti = premiaXp('cattura');
     save();
     return punti;
+  }
+
+  function modificaInbox(id, testo) {
+    var s = load();
+    var el = s.inbox.find(function (x) { return x.id === id; });
+    if (!el) return;
+    el.testo = testo;
+    save();
+  }
+
+  function cambiaAreaAzione(id, areaId) {
+    var s = load();
+    var a = s.azioni.find(function (x) { return x.id === id; });
+    if (!a) return;
+    a.areaId = areaId;
+    save();
   }
 
   function triageInbox(id, esito, areaId) {
@@ -431,7 +514,7 @@ var LM = (function () {
     s.azioni.forEach(function (a) {
       if (!a.done) return;
       var k = a.doneAt ? dayKey(new Date(a.doneAt)) : a.data;
-      agg(k, { ts: a.doneAt || parseKey(a.data).getTime() + 12 * 3600000, tipo: 'azione', testo: a.testo, areaId: a.areaId, mit: a.mit });
+      agg(k, { ts: a.doneAt || parseKey(a.data).getTime() + 12 * 3600000, tipo: 'azione', id: a.id, testo: a.testo, areaId: a.areaId, mit: a.mit });
     });
     s.checkins.forEach(function (c) {
       agg(c.data, { ts: c.ts || parseKey(c.data).getTime(), tipo: 'checkin', energia: c.energia, focus: c.focus, umore: c.umore });
@@ -738,11 +821,13 @@ var LM = (function () {
     METRICHE_ESPERIMENTO: METRICHE_ESPERIMENTO,
     XP_EVENTI: XP_EVENTI,
     load: load, save: save, reset: reset, seedDemo: seedDemo, hydrate: hydrate, snapshot: snapshot,
+    backup: backup, listBackups: listBackups, restoreBackup: restoreBackup, ricchezza: ricchezza,
+    exportJson: exportJson, importJson: importJson,
     todayKey: todayKey, dayKey: dayKey, addDays: addDays, lastNDays: lastNDays,
     weekKey: weekKey, weekdayShort: weekdayShort, fmtShort: fmtShort, daysBetween: daysBetween,
     coloreArea: coloreArea, livelloDaXp: livelloDaXp,
     aggiungiAzione: aggiungiAzione, completaAzione: completaAzione, rimandaAzione: rimandaAzione,
-    cattura: cattura, triageInbox: triageInbox,
+    cattura: cattura, triageInbox: triageInbox, modificaInbox: modificaInbox, cambiaAreaAzione: cambiaAreaAzione,
     registraCheckin: registraCheckin, salvaPianoMattina: salvaPianoMattina,
     valutaArea: valutaArea, registraMinuti: registraMinuti,
     salvaReviewSera: salvaReviewSera, salvaReviewSettimana: salvaReviewSettimana,

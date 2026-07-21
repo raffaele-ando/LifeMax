@@ -324,10 +324,20 @@
   }
 
   function htmlDati() {
-    return '<div class="imp-sezione"><div class="imp-eti">Dati</div>' +
+    var nBackup = LM.listBackups().length;
+    return '<div class="imp-sezione"><div class="imp-eti">I tuoi dati</div>' +
+      '<div class="imp-azioni">' +
+      '<button class="btn btn-mini" id="imp-esporta">' + ICO('download', 14) + ' Esporta (.json)</button> ' +
+      '<button class="btn btn-mini" id="imp-importa">' + ICO('upload', 14) + ' Importa da file</button> ' +
+      '<button class="btn btn-mini" id="imp-backup">' + ICO('save', 14) + ' Backup e ripristino' + (nBackup ? ' (' + nBackup + ')' : '') + '</button>' +
+      '<input type="file" id="imp-file" accept="application/json,.json" hidden></div>' +
+      '<div class="imp-nota">Esporta un file con tutti i tuoi dati per conservarlo o spostarlo. Ogni operazione che sostituisce i dati crea prima un backup ripristinabile.</div>' +
+      '</div>' +
+      '<div class="imp-sezione"><div class="imp-eti">Ripartenza</div>' +
+      '<div class="imp-azioni">' +
       '<button class="btn btn-mini" id="imp-demo">' + ICO('refresh', 14) + ' Carica dati di esempio</button> ' +
-      '<button class="btn btn-mini imp-pericolo" id="imp-azzera">' + ICO('trash', 14) + ' Azzera tutto</button>' +
-      '<div class="imp-nota">Azzera cancella definitivamente i dati di questo dispositivo.</div></div>';
+      '<button class="btn btn-mini imp-pericolo" id="imp-azzera">' + ICO('trash', 14) + ' Azzera tutto</button></div>' +
+      '<div class="imp-nota">L’azzeramento crea comunque un backup: potrai recuperare i dati da «Backup e ripristino».</div></div>';
   }
 
   function wireAspettoDati(root) {
@@ -339,6 +349,67 @@
     });
     var d = root.querySelector('#imp-demo'); if (d) d.addEventListener('click', caricaDemo);
     var z = root.querySelector('#imp-azzera'); if (z) z.addEventListener('click', azzeraTutto);
+    var e = root.querySelector('#imp-esporta'); if (e) e.addEventListener('click', esportaDati);
+    var b2 = root.querySelector('#imp-backup'); if (b2) b2.addEventListener('click', apriBackups);
+    var imp = root.querySelector('#imp-importa'); var file = root.querySelector('#imp-file');
+    if (imp && file) {
+      imp.addEventListener('click', function () { file.click(); });
+      file.addEventListener('change', function () {
+        var f = file.files && file.files[0]; if (!f) return;
+        var reader = new FileReader();
+        reader.onload = function () {
+          var r = LM.importJson(String(reader.result));
+          if (r.ok) { chiudiSheet(); applicaTema(); render(); toast('Dati importati (' + r.ricchezza + ' elementi).', 0, 'upload'); }
+          else { toast(r.err, 0, 'trash'); }
+        };
+        reader.readAsText(f);
+      });
+    }
+  }
+
+  function esportaDati() {
+    try {
+      var blob = new Blob([LM.exportJson()], { type: 'application/json' });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url; a.download = 'lifemax-' + LM.todayKey() + '.json';
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function () { URL.revokeObjectURL(url); }, 1500);
+      toast('Dati esportati nel file .json.', 0, 'download');
+    } catch (e) { toast('Esportazione non riuscita.', 0, 'trash'); }
+  }
+
+  function apriBackups() {
+    var lista = LM.listBackups();
+    var motivi = {
+      'prima-azzeramento': 'prima di azzerare',
+      'prima-import': 'prima di un import',
+      'prima-del-ripristino': 'prima di un ripristino',
+      'prima-di-adottare-cloud': 'prima di caricare dal cloud',
+      'questo-dispositivo-prima-di-adottare-cloud': 'prima di caricare dal cloud',
+      'prima-di-aggiornamento-da-altro-dispositivo': 'prima di un aggiornamento da un altro dispositivo'
+    };
+    var corpo;
+    if (!lista.length) {
+      corpo = '<div class="imp-nota" style="margin:0">Non ci sono ancora backup. Vengono creati automaticamente ogni volta che i dati stanno per essere sostituiti.</div>';
+    } else {
+      corpo = '<div class="backup-lista">' + lista.map(function (b) {
+        var data = new Date(b.ts).toLocaleString('it-IT', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+        return '<div class="backup-riga"><div><b>' + data + '</b><small>' + b.ricchezza + ' elementi' + (motivi[b.motivo] ? ' · ' + motivi[b.motivo] : '') + '</small></div>' +
+          '<button class="btn btn-mini" data-ts="' + b.ts + '">Ripristina</button></div>';
+      }).join('') + '</div>';
+    }
+    apriSheet('Backup e ripristino', '<div class="imp-nota" style="margin-top:0">Ogni voce è una copia salvata prima di una sostituzione dei dati. Ripristinandone una, lo stato attuale viene comunque salvato come nuovo backup.</div>' + corpo, function (r) {
+      r.querySelectorAll('[data-ts]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var ts = +btn.getAttribute('data-ts');
+          if (confirm('Ripristinare questo backup? Lo stato attuale verrà salvato come backup.')) {
+            LM.restoreBackup(ts); chiudiSheet(); applicaTema(); render();
+            toast('Backup ripristinato.', 0, 'save');
+          }
+        });
+      });
+    });
   }
 
   function apriImpostazioni() {
@@ -390,6 +461,15 @@
     return '<select id="' + id + '">' + areeAttive().map(function (a) {
       return '<option value="' + a.id + '"' + (a.id === selezionata ? ' selected' : '') + '>' + esc(a.nome) + '</option>';
     }).join('') + '</select>';
+  }
+
+  /* selettore compatto per (ri)assegnare l'area di un'azione, anche a
+     distanza di tempo. Gestito da un listener delegato unico. */
+  function selectAreaAzione(id, areaId, cls) {
+    return '<select class="sel-area-azione ' + (cls || '') + '" data-azione-area="' + id + '" title="Cambia area" aria-label="Cambia area">' +
+      areeAttive().map(function (a) {
+        return '<option value="' + a.id + '"' + (a.id === areaId ? ' selected' : '') + '>' + esc(a.nome) + '</option>';
+      }).join('') + '</select>';
   }
 
   function topbar(titolo, sottotitolo, destra) {
@@ -523,8 +603,8 @@
         : '') +
       '<div class="focus-azione">' + esc(prossima.testo) + '</div>' +
       '<div class="focus-area" style="--c-area:' + colArea + '">' +
-      '<span class="pallino" style="width:8px;height:8px;border-radius:50%;background:' + colArea + ';display:inline-block"></span>' +
-      '<span style="color:' + colArea + ';display:inline-flex">' + ICO(area.icona, 15) + '</span> ' + esc(area.nome) + '</div>' +
+      '<span style="color:' + colArea + ';display:inline-flex">' + ICO(area.icona, 15) + '</span>' +
+      selectAreaAzione(prossima.id, prossima.areaId) + '</div>' +
       (prossima.ifThen ? '<div class="focus-ifthen">' + ICO('bolt', 15) + '<span>' + esc(prossima.ifThen) + '</span></div>' : '') +
       /* gerarchia chiara: un'unica azione dominante, il resto recede */
       '<div class="focus-primaria">' +
@@ -625,6 +705,10 @@
     } else { /* cattura */
       ico = '<span class="diario-ico">' + ICO('inbox', 14) + '</span>';
       testo = 'Annotato · <b>' + esc(ev.testo) + '</b>';
+    }
+    /* per le azioni si può riassegnare l'area anche a distanza di giorni */
+    if (ev.tipo === 'azione' && ev.id) {
+      testo += ' <span class="diario-cambia">' + selectAreaAzione(ev.id, ev.areaId, 'mini') + '</span>';
     }
     return '<div class="diario-evento">' + ico + '<div class="diario-testo">' + testo + '</div>' +
       '<span class="diario-ora">' + oraDi(ev.ts) + '</span></div>';
@@ -815,6 +899,7 @@
      ============================================================ */
 
   var sottoRituale = null;
+  var inboxEditId = null;
 
   function vistaRituali() {
     var ora = new Date().getHours();
@@ -1049,14 +1134,22 @@
     }
     lista.innerHTML = s.inbox.map(function (el, i) {
       var quando = new Date(el.creata).toLocaleString('it-IT', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
-      return '<div class="riga-inbox" data-id="' + el.id + '" style="--i:' + i + '">' +
-        '<div style="flex:1"><div class="testo">' + esc(el.testo) + '</div><div class="quando">' + quando + '</div>' +
-        '<div class="azioni-riga mt-s">' +
-        '<span style="width:155px;display:inline-block">' + selectAree('sel-' + el.id) + '</span>' +
-        '<button class="btn btn-mini btn-primario" data-fai="azione">' + ICO('arrowRight', 13) + ' Fai oggi</button>' +
-        '<button class="btn btn-mini btn-ghost" data-fai="scarta">' + ICO('trash', 13) + ' Scarta</button>' +
-        '</div></div></div>';
+      var inModifica = el.id === inboxEditId;
+      var contenuto = inModifica
+        ? '<form class="inbox-modifica" data-edit="' + el.id + '">' +
+          '<input type="text" class="inbox-input" value="' + esc(el.testo) + '" aria-label="Modifica il testo">' +
+          '<button class="btn btn-mini btn-primario" type="submit">' + ICO('save', 13) + ' Salva</button>' +
+          '<button class="btn btn-mini btn-ghost" type="button" data-annulla="1">Annulla</button></form>'
+        : '<div class="inbox-testo-riga"><div class="testo">' + esc(el.testo) + '</div>' +
+          '<button class="inbox-edit" data-modifica="' + el.id + '" title="Modifica" aria-label="Modifica">' + ICO('pencil', 14) + '</button></div>' +
+          '<div class="quando">' + quando + '</div>' +
+          '<div class="azioni-riga mt-s">' +
+          '<span style="min-width:0;flex:1 1 150px">' + selectAree('sel-' + el.id) + '</span>' +
+          '<button class="btn btn-mini btn-primario" data-fai="azione">' + ICO('arrowRight', 13) + ' Fai oggi</button>' +
+          '<button class="btn btn-mini btn-ghost" data-fai="scarta">' + ICO('trash', 13) + ' Scarta</button></div>';
+      return '<div class="riga-inbox" data-id="' + el.id + '" style="--i:' + i + '"><div style="flex:1;min-width:0">' + contenuto + '</div></div>';
     }).join('');
+
     lista.querySelectorAll('.riga-inbox').forEach(function (riga) {
       var id = riga.getAttribute('data-id');
       riga.querySelectorAll('[data-fai]').forEach(function (b) {
@@ -1068,6 +1161,22 @@
           aggiornaNav(); render();
         });
       });
+      var edit = riga.querySelector('[data-modifica]');
+      if (edit) edit.addEventListener('click', function () { inboxEditId = id; vistaInbox(); });
+      var form = riga.querySelector('[data-edit]');
+      if (form) {
+        var input = form.querySelector('.inbox-input');
+        setTimeout(function () { input.focus(); input.setSelectionRange(input.value.length, input.value.length); }, 20);
+        form.addEventListener('submit', function (e) {
+          e.preventDefault();
+          var v = input.value.trim();
+          if (v) LM.modificaInbox(id, v);
+          inboxEditId = null; vistaInbox();
+          toast('Nota aggiornata.', 0, 'save');
+        });
+        form.querySelector('[data-annulla]').addEventListener('click', function () { inboxEditId = null; vistaInbox(); });
+        input.addEventListener('keydown', function (e) { if (e.key === 'Escape') { inboxEditId = null; vistaInbox(); } });
+      }
     });
   }
 
@@ -1432,6 +1541,17 @@
     if (staDigitando()) return;
     render();
     toast('Dati aggiornati da un altro dispositivo.', 0, 'cloudCheck');
+  });
+
+  /* cambio area di un'azione (da Focus o dal Diario), anche a distanza
+     di tempo — listener delegato unico */
+  document.addEventListener('change', function (e) {
+    var sel = e.target;
+    if (sel && sel.matches && sel.matches('select[data-azione-area]')) {
+      LM.cambiaAreaAzione(sel.getAttribute('data-azione-area'), sel.value);
+      toast('Area aggiornata.', 0, 'check');
+      render();
+    }
   });
 
   /* stato del salvataggio cloud: aggiorna il footer senza ridisegnare la

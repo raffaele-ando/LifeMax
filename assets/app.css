@@ -1165,5 +1165,44 @@ kbd {
 .fondo-account-testo small.sync-ok .ico { color: var(--ok); }
 .fondo-account-testo small.sync-errore { color: var(--critico); }
 .fondo-account-testo small.sync-errore .ico { color: var(--critico); }
+.imp-nota.sync-errore { color: var(--critico); }
+.imp-nota.sync-ok .ico { color: var(--ok); }
+
+/* ---------- selettore area compatto (cambio categoria) ---------- */
+
+.sel-area-azione {
+  font: inherit; font-size: 12.5px; font-weight: 650; line-height: 1.2;
+  padding: 4px 24px 4px 9px; border-radius: 8px;
+  border: 1px solid var(--bordo-forte); background-color: var(--superficie-1);
+  color: var(--inchiostro-1); box-shadow: none; width: auto; min-height: 0; max-width: 100%;
+  appearance: none; -webkit-appearance: none; cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23898781' stroke-width='2.2' stroke-linecap='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 6px center; background-size: 12px;
+}
+.sel-area-azione:hover { border-color: color-mix(in srgb, var(--accento) 40%, var(--bordo-forte)); }
+.sel-area-azione.mini { font-size: 11.5px; padding: 2px 21px 2px 8px; }
+
+.focus-area .sel-area-azione {
+  border: none; background-color: transparent; box-shadow: none;
+  padding: 2px 20px 2px 2px; font-size: 13.5px; font-weight: 650; color: var(--inchiostro-2);
+}
+.diario-cambia { display: inline-block; vertical-align: middle; margin-left: 3px; }
+
+/* ---------- inbox: modifica in linea ---------- */
+
+.inbox-testo-riga { display: flex; align-items: flex-start; gap: 8px; }
+.inbox-testo-riga .testo { flex: 1; min-width: 0; }
+.inbox-edit { flex: none; padding: 4px; border-radius: 7px; color: var(--inchiostro-muto); transition: background var(--t-veloce), color var(--t-veloce); }
+.inbox-edit:hover { background: var(--superficie-2); color: var(--accento); }
+.inbox-modifica { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.inbox-input { flex: 1 1 180px; min-width: 0; padding: 9px 12px; }
+
+/* ---------- strumenti dati & backup (Impostazioni) ---------- */
+
+.imp-azioni { display: flex; gap: 8px; flex-wrap: wrap; }
+.backup-lista { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+.backup-riga { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 12px; border-radius: var(--raggio-s); background: var(--superficie-2); border: 1px solid var(--bordo); }
+.backup-riga small { display: block; color: var(--inchiostro-muto); font-size: 11.5px; margin-top: 2px; }
+.backup-riga .btn { flex: none; }
 
 ::selection { background: color-mix(in srgb, var(--accento) 80%, #000); color: #fff; }

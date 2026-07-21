@@ -132,20 +132,49 @@ async function primaSincronizzazione(uid) {
     return;
   }
   const locale = LM.snapshot();
-  const localeAt = locale.updatedAt || 0;
+  const localAt = locale.updatedAt || 0;
+  const localR = LM.ricchezza(locale);
 
   if (snap.exists() && snap.data() && snap.data().data) {
+    const remObj = parseDoc(snap.data());
+    const remoteR = LM.ricchezza(remObj);
     const remoteAt = snap.data().updatedAt || 0;
-    // il cloud vince se è più recente, oppure se in locale non c'è nulla di configurato
-    if (remoteAt >= localeAt || !locale.onboarded) {
+
+    if (remoteR === 0 && localR > 0) {
+      // Cloud VUOTO ma dispositivo PIENO: non adottare mai il vuoto (era il bug).
+      // Salva il documento remoto come backup, poi carica i dati locali.
+      await backupRemoto(uid, snap.data());
+      await push(uid);
+    } else if (localR === 0) {
+      // Dispositivo vuoto → adotta il cloud (con backup locale per sicurezza).
+      LM.backup('prima-di-adottare-cloud');
       applicaRemoto(snap.data(), false);
     } else {
-      await push(uid);
+      // Entrambi pieni: tieni il più recente, ma salva SEMPRE l'altro lato
+      // come backup, così nessuna versione va persa.
+      if (remoteAt >= localAt) {
+        LM.backup('questo-dispositivo-prima-di-adottare-cloud');
+        applicaRemoto(snap.data(), false);
+      } else {
+        await backupRemoto(uid, snap.data());
+        await push(uid);
+      }
     }
   } else {
-    // primo accesso su questo account: carica ciò che c'è in locale
+    // Nessun documento cloud: carica ciò che c'è in locale.
     await push(uid);
   }
+}
+
+/* Copia il documento cloud esistente in una sotto-collezione di backup
+   prima di sovrascriverlo: users/{uid}/backups/{timestamp}. */
+async function backupRemoto(uid, docData) {
+  try {
+    var ts = String(docData.updatedAt || Date.now());
+    await FSM.setDoc(FSM.doc(db, 'users', uid, 'backups', ts), {
+      data: docData.data, updatedAt: docData.updatedAt || 0, salvato: Date.now()
+    });
+  } catch (e) { console.warn('LifeMax: backup cloud non riuscito.', e && e.message); }
 }
 
 function parseDoc(d) {
@@ -155,6 +184,15 @@ function parseDoc(d) {
 function applicaRemoto(d, notifica) {
   const obj = parseDoc(d);
   if (!obj) return;
+  if (notifica) {
+    // Aggiornamento in tempo reale: non svuotare MAI un dispositivo pieno
+    // con un remoto vuoto (protegge dal bug di perdita dati tra dispositivi).
+    if (LM.ricchezza(obj) === 0 && LM.ricchezza(LM.snapshot()) > 0) {
+      console.warn('LifeMax: ignorato un aggiornamento remoto vuoto per proteggere i dati di questo dispositivo.');
+      return;
+    }
+    LM.backup('prima-di-aggiornamento-da-altro-dispositivo');
+  }
   applyingRemote = true;
   lastWrittenAt = (d && d.updatedAt) || obj.updatedAt || 0;
   LM.hydrate(obj);

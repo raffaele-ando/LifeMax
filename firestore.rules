@@ -7,6 +7,10 @@ service cloud.firestore {
   match /databases/{database}/documents {
     match /users/{uid} {
       allow read, write: if request.auth != null && request.auth.uid == uid;
+      // backup automatici (users/{uid}/backups/{id}): stesso proprietario
+      match /{document=**} {
+        allow read, write: if request.auth != null && request.auth.uid == uid;
+      }
     }
     // Tutto il resto è negato per default.
   }
