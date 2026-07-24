@@ -778,129 +778,182 @@
     { id: 'menu', nome: 'Come voce a parte' }
   ];
 
-  function nodiGiornata() {
+  var DURATE = [{ v: '', t: 'durata —' }, { v: 15, t: '15 min' }, { v: 30, t: '30 min' }, { v: 45, t: '45 min' }, { v: 60, t: '1 h' }, { v: 90, t: '1 h 30' }, { v: 120, t: '2 h' }, { v: 180, t: '3 h' }];
+
+  /* orizzonte della pagina "Giornata" e giorno/settimana/mese di riferimento */
+  var giornataOrizzonte = 'giorno';
+  var giornataAncora = null;
+  var giornataEditorAperto = false;
+
+  /* eventi di un giorno qualsiasi (per giorno/settimana/mese) */
+  function nodiGiorno(k) {
+    k = k || LM.todayKey();
     var s = LM.load();
     var r = s.profilo.ritmo || LM.RITMO_DEFAULT;
+    var isToday = k === LM.todayKey();
     var placed = [], tray = [];
     (r.pasti || []).forEach(function (p) {
-      if (p.ora) placed.push({ tipo: 'pasto', min: minOf(p.ora), ora: p.ora, nome: p.nome, icona: /colaz/i.test(p.id + ' ' + p.nome) ? 'coffee' : 'utensils' });
+      if (p.ora) placed.push({ tipo: 'pasto', min: minOf(p.ora), ora: p.ora, dur: 30, nome: p.nome, icona: /colaz/i.test(p.id + ' ' + p.nome) ? 'coffee' : 'utensils' });
     });
-    LM.abitudiniDiOggi().forEach(function (h) {
-      var e = { tipo: 'abitudine', min: minOf(h.ora), ora: h.ora, id: h.id, testo: h.testo, areaId: h.areaId, fatto: !!h.fatti[LM.todayKey()], streak: LM.streakAbitudine(h) };
+    s.abitudini.forEach(function (h) {
+      if (!LM.abitudinePrevista(h, k)) return;
+      var e = { tipo: 'abitudine', min: minOf(h.ora), ora: h.ora, dur: h.durata || null, id: h.id, testo: h.testo, areaId: h.areaId, fatto: !!h.fatti[k], streak: isToday ? LM.streakAbitudine(h) : 0 };
       (e.min == null ? tray : placed).push(e);
     });
-    LM.azioniDiOggi().forEach(function (a) {
-      var e = { tipo: 'azione', min: minOf(a.ora), ora: a.ora, id: a.id, testo: a.testo, areaId: a.areaId, mit: a.mit, done: a.done };
+    LM.azioniDelGiorno(k).forEach(function (a) {
+      var e = { tipo: 'azione', min: minOf(a.ora), ora: a.ora, dur: a.durata || null, id: a.id, testo: a.testo, areaId: a.areaId, mit: a.mit, done: a.done };
       (e.min == null ? tray : placed).push(e);
     });
     placed.sort(function (a, b) { return a.min - b.min; });
-    return { wake: minOf(r.sveglia), sleep: minOf(r.sonno), sveglia: r.sveglia, sonno: r.sonno, placed: placed, tray: tray };
+    return { k: k, isToday: isToday, wake: minOf(r.sveglia), sleep: minOf(r.sonno), sveglia: r.sveglia, sonno: r.sonno, placed: placed, tray: tray };
+  }
+  function nodiGiornata() { return nodiGiorno(LM.todayKey()); }
+
+  /* dispone i blocchi che si sovrappongono in colonne affiancate */
+  function disponiBlocchi(placed) {
+    var items = placed.map(function (e) { return { e: e, start: e.min, end: e.min + (e.dur || 30) }; });
+    items.sort(function (a, b) { return a.start - b.start || a.end - b.end; });
+    var gruppi = [], cur = [], curEnd = -1;
+    items.forEach(function (it) {
+      if (cur.length && it.start >= curEnd) { gruppi.push(cur); cur = []; curEnd = -1; }
+      cur.push(it); curEnd = Math.max(curEnd, it.end);
+    });
+    if (cur.length) gruppi.push(cur);
+    gruppi.forEach(function (g) {
+      var cols = [];
+      g.forEach(function (it) {
+        var piazzato = false;
+        for (var c = 0; c < cols.length; c++) { if (it.start >= cols[c]) { cols[c] = it.end; it.col = c; piazzato = true; break; } }
+        if (!piazzato) { it.col = cols.length; cols.push(it.end); }
+      });
+      g.forEach(function (it) { it.ncols = cols.length; });
+    });
+    return items;
+  }
+
+  /* griglia oraria con blocchi che occupano il tempo (durata) */
+  function htmlTimeGrid(d, opts) {
+    opts = opts || {};
+    var pxh = opts.pxh || 56;
+    var gs = Math.floor(d.wake / 60) * 60, ge = Math.ceil(d.sleep / 60) * 60;
+    if (ge <= gs) ge = gs + 60;
+    var H = (ge - gs) / 60 * pxh;
+    function y(m) { return (m - gs) / 60 * pxh; }
+    var lines = '';
+    for (var h = gs; h <= ge; h += 60) lines += '<div class="tl-hr" style="top:' + y(h) + 'px">' + (opts.rail === false ? '' : '<span class="tl-hr-eti">' + fmtMin(h) + '</span>') + '</div>';
+    var shade = '';
+    if (d.wake > gs) shade += '<div class="tl-sleep" style="top:0;height:' + y(d.wake) + 'px"></div>';
+    if (d.sleep < ge) shade += '<div class="tl-sleep" style="top:' + y(d.sleep) + 'px;height:' + (H - y(d.sleep)) + 'px"></div>';
+    var blocks = disponiBlocchi(d.placed).map(function (it) {
+      var e = it.e, dur = e.dur || 30;
+      var top = y(e.min), hgt = Math.max(opts.mini ? 15 : 24, dur / 60 * pxh - 2);
+      var w = 100 / it.ncols, left = it.col * w;
+      var pos = 'top:' + top + 'px;height:' + hgt + 'px;left:calc(' + left + '% + 1px);width:calc(' + w + '% - 3px)';
+      if (e.tipo === 'pasto') {
+        return '<div class="tl-blk tl-blk-pasto" style="' + pos + '">' + ICO(e.icona, 12) + (opts.mini ? '' : '<span class="tl-blk-t">' + esc(e.nome) + '</span>') + '</div>';
+      }
+      var ar = areaById(e.areaId), col = LM.coloreArea(ar);
+      var fatto = e.tipo === 'azione' ? e.done : e.fatto;
+      var attr = e.tipo === 'azione' ? 'data-tl-az="' + e.id + '"' : 'data-tl-ab="' + e.id + '"';
+      var check = (opts.interactive && !opts.mini) ? '<button class="tl-blk-check" ' + attr + ' aria-label="Fatto">' + ICO('check', 11) + '</button>' : '';
+      var clic = opts.mini ? ' data-tl-giorno="' + d.k + '"' : '';
+      return '<div class="tl-blk tl-blk-att' + (fatto ? ' fatta' : '') + '"' + clic + ' style="' + pos + ';--c-area:' + col + '" title="' + esc(e.testo) + '">' +
+        check + '<span class="tl-blk-t">' + (e.mit ? ICO('star', 9) + ' ' : '') + esc(e.testo) + '</span>' +
+        (hgt > 30 && !opts.mini ? '<span class="tl-blk-ora">' + e.ora + '–' + fmtMin(e.min + dur) + '</span>' : '') + '</div>';
+    }).join('');
+    var now = '';
+    if (opts.nowMin != null && opts.nowMin >= gs && opts.nowMin <= ge) now = '<div class="tl-now-line" style="top:' + y(opts.nowMin) + 'px"><span>' + fmtMin(opts.nowMin) + '</span></div>';
+    return '<div class="tl-grid' + (opts.mini ? ' tl-grid-mini' : '') + (opts.rail === false ? ' tl-grid-norail' : '') + '" style="height:' + H + 'px">' +
+      '<div class="tl-lines">' + lines + '</div>' +
+      '<div class="tl-blocks">' + shade + blocks + now + '</div></div>';
   }
 
   function montaGiornata(container, opts) {
     opts = opts || {};
-    var d = nodiGiornata();
+    var k = opts.giorno || LM.todayKey();
+    var d = nodiGiorno(k);
+    var interactive = d.isToday;
     var now = new Date();
-    var nowMin = now.getHours() * 60 + now.getMinutes();
-    var mostraNow = nowMin >= d.wake && nowMin <= d.sleep;
+    var nowMin = d.isToday ? now.getHours() * 60 + now.getMinutes() : null;
 
-    function chip(e) {
-      if (e.tipo === 'pasto') {
-        return '<div class="tl-riga tl-pasto">' +
-          '<span class="tl-ora">' + e.ora + '</span>' +
-          '<span class="tl-punto tl-punto-pasto">' + ICO(e.icona, 13) + '</span>' +
-          '<span class="tl-testo">' + esc(e.nome) + '</span></div>';
-      }
-      var ar = areaById(e.areaId);
-      var col = LM.coloreArea(ar);
-      var fatto = e.tipo === 'azione' ? e.done : e.fatto;
-      var attr = e.tipo === 'azione' ? 'data-tl-az="' + e.id + '"' : 'data-tl-ab="' + e.id + '"';
-      return '<div class="tl-riga tl-attiva' + (fatto ? ' fatta' : '') + '" style="--c-area:' + col + '">' +
-        '<span class="tl-ora">' + (e.ora || '') + '</span>' +
-        '<button class="tl-check" ' + attr + ' aria-label="Segna come fatta">' + ICO('check', 12) + '</button>' +
-        '<span class="tl-testo">' + esc(e.testo) +
-        (e.mit ? ' <span class="tag-mit">' + ICO('star', 9) + 'Priorità</span>' : '') +
-        (e.tipo === 'abitudine' && e.streak > 0 ? ' <span class="abit-streak">' + ICO('flame', 11, 'fiamma') + ' ' + e.streak + '</span>' : '') +
-        '</span>' +
-        '<span class="tl-tag" style="color:' + col + '" title="' + esc(ar.nome) + '">' + ICO(ar.icona, 13) + '</span>' +
-        '<input type="time" class="tl-time" value="' + (e.ora || '') + '" ' + attr + ' aria-label="Orario">' +
-        '</div>';
-    }
-    function spacer(a, b) {
-      var g = b - a;
-      var h = Math.max(6, Math.min(52, Math.round(g * 0.34)));
-      var lib = g >= 90 ? '<span class="tl-libero">' + Math.round(g / 60) + 'h libere</span>' : '';
-      return '<div class="tl-gap" style="height:' + h + 'px">' + lib + '</div>';
-    }
-    function nowRow() {
-      return '<div class="tl-now"><span class="tl-now-ora">' + fmtMin(nowMin) + '</span><span class="tl-now-linea"></span><span class="tl-now-eti">adesso</span></div>';
-    }
+    var vuota = !d.placed.length && !d.tray.length;
+    var editItems = interactive ? d.placed.concat(d.tray).filter(function (e) { return e.tipo !== 'pasto'; }) : [];
+    var apri = giornataEditorAperto || d.placed.length === 0;
 
-    var seq = [{ pos: true, min: d.wake, cap: 'sveglia' }].concat(d.placed).concat([{ pos: true, min: d.sleep, cap: 'sonno' }]);
-    var corpo = '';
-    var nowFatto = false;
-    for (var i = 0; i < seq.length; i++) {
-      var n = seq[i];
-      if (mostraNow && !nowFatto && n.min > nowMin) { corpo += nowRow(); nowFatto = true; }
-      if (n.cap === 'sveglia') corpo += '<div class="tl-riga tl-sonno"><span class="tl-ora">' + d.sveglia + '</span><span class="tl-punto tl-punto-sonno">' + ICO('sun', 13) + '</span><span class="tl-testo">Sveglia</span></div>';
-      else if (n.cap === 'sonno') corpo += '<div class="tl-riga tl-sonno"><span class="tl-ora">' + d.sonno + '</span><span class="tl-punto tl-punto-sonno">' + ICO('bed', 13) + '</span><span class="tl-testo">A letto</span></div>';
-      else corpo += chip(n);
-      if (i < seq.length - 1) corpo += spacer(n.min, seq[i + 1].min);
-    }
-
-    var tray = '';
-    if (d.tray.length) {
-      tray = '<div class="tl-tray"><div class="tl-tray-eti">' + ICO('clock', 12) + ' Senza un orario — assegnane uno per metterle nella giornata</div>' +
-        d.tray.map(function (e) {
-          var ar = areaById(e.areaId); var col = LM.coloreArea(ar);
+    var editor = '';
+    if (interactive && editItems.length) {
+      editor = '<div class="tl-editor">' +
+        '<button class="tl-ed-toggle' + (apri ? ' aperto' : '') + '" id="tl-ed-toggle">' + ICO('clock', 13) +
+        ' Orari e durate' + (d.tray.length ? ' <span class="tl-ed-badge">' + d.tray.length + ' senza orario</span>' : '') +
+        '<span class="bk-chevron' + (apri ? ' aperta' : '') + '">' + ICO('chevronGiu', 15) + '</span></button>' +
+        (apri ? '<div class="tl-ed-lista">' + editItems.map(function (e) {
+          var ar = areaById(e.areaId), col = LM.coloreArea(ar);
           var fatto = e.tipo === 'azione' ? e.done : e.fatto;
           var attr = e.tipo === 'azione' ? 'data-tl-az="' + e.id + '"' : 'data-tl-ab="' + e.id + '"';
-          return '<div class="tl-riga tl-attiva' + (fatto ? ' fatta' : '') + '" style="--c-area:' + col + '">' +
-            '<button class="tl-check" ' + attr + ' aria-label="Segna come fatta">' + ICO('check', 12) + '</button>' +
-            '<span class="tl-testo">' + esc(e.testo) + (e.mit ? ' <span class="tag-mit">' + ICO('star', 9) + 'Priorità</span>' : '') + '</span>' +
+          return '<div class="tl-ed-riga' + (fatto ? ' fatta' : '') + '" style="--c-area:' + col + '">' +
+            '<button class="tl-check" ' + attr + ' aria-label="Fatto">' + ICO('check', 12) + '</button>' +
             '<span class="tl-tag" style="color:' + col + '" title="' + esc(ar.nome) + '">' + ICO(ar.icona, 13) + '</span>' +
-            '<input type="time" class="tl-time" ' + attr + ' aria-label="Assegna un orario">' +
+            '<span class="tl-ed-testo">' + esc(e.testo) + (e.mit ? ' <span class="tag-mit">' + ICO('star', 9) + 'Priorità</span>' : '') + '</span>' +
+            '<input type="time" class="tl-time" value="' + (e.ora || '') + '" ' + attr + ' aria-label="Orario">' +
+            '<select class="tl-dur" ' + attr + ' aria-label="Durata">' + DURATE.map(function (o) { return '<option value="' + o.v + '"' + ((e.dur || '') === o.v || (!e.dur && o.v === '') ? ' selected' : '') + '>' + o.t + '</option>'; }).join('') + '</select>' +
             '</div>';
+        }).join('') + '</div>' : '') + '</div>';
+    }
+
+    var trayRo = '';
+    if (!interactive && d.tray.length) {
+      trayRo = '<div class="tl-tray"><div class="tl-tray-eti">Senza orario</div>' +
+        d.tray.map(function (e) {
+          var ar = areaById(e.areaId), col = LM.coloreArea(ar);
+          return '<div class="tl-ed-riga" style="--c-area:' + col + '"><span class="tl-tag" style="color:' + col + '">' + ICO(ar.icona, 13) + '</span><span class="tl-ed-testo">' + esc(e.testo) + '</span></div>';
         }).join('') + '</div>';
     }
 
-    var vuota = !d.placed.length && !d.tray.length;
-    var selettore = '<label class="tl-pos-sel">Mostrala: ' +
-      '<select id="tl-pos">' + GIORNATA_POS.map(function (o) {
-        return '<option value="' + o.id + '"' + (LM.load().profilo.giornataPos === o.id ? ' selected' : '') + '>' + o.nome + (o.racc ? ' (consigliata)' : '') + '</option>';
-      }).join('') + '</select></label>';
+    var footer = '';
+    if (opts.controls !== false) {
+      footer = '<div class="tl-piede"><label class="tl-pos-sel">Mostrala: ' +
+        '<select id="tl-pos">' + GIORNATA_POS.map(function (o) { return '<option value="' + o.id + '"' + (LM.load().profilo.giornataPos === o.id ? ' selected' : '') + '>' + o.nome + (o.racc ? ' (consigliata)' : '') + '</option>'; }).join('') + '</select></label>' +
+        '<button class="btn btn-mini" id="tl-edit-orari">' + ICO('pencil', 13) + ' Sonno e pasti</button></div>';
+    }
 
     container.innerHTML = '<div class="card giornata">' +
-      '<div class="tl-head"><div><h2>' + ICO('clock', 16) + ' La giornata</h2>' +
-      '<div class="sotto">Come sono divise le tue ore, dal risveglio al sonno. Le abitudini e le cose di oggi con un orario finiscono qui.</div></div></div>' +
+      (opts.header === false ? '' : '<div class="tl-head"><div><h2>' + ICO('clock', 16) + ' ' + (opts.giorno && !d.isToday ? etichettaGiorno(k) : 'La giornata') + '</h2>' +
+        '<div class="sotto">Come sono divise le ore, dal risveglio al sonno. I blocchi occupano il tempo che scegli.</div></div></div>') +
       (vuota
-        ? '<div class="vuoto" style="padding:18px 8px"><b>Oggi non c’è ancora niente in agenda.</b><br>Aggiungi un orario a un’abitudine o a una cosa di oggi e comparirà nella giornata.</div>'
-        : '<div class="tl-track">' + corpo + '</div>') +
-      tray +
-      '<div class="tl-piede">' + selettore +
-      '<button class="btn btn-mini" id="tl-edit-orari">' + ICO('pencil', 13) + ' Sonno e pasti</button></div>' +
-      '</div>';
+        ? '<div class="vuoto" style="padding:18px 8px"><b>Niente in agenda per questo giorno.</b>' + (interactive ? '<br>Dai un orario a un’abitudine o a una cosa di oggi e comparirà qui.' : '') + '</div>'
+        : htmlTimeGrid(d, { interactive: interactive, nowMin: nowMin })) +
+      editor + trayRo + footer + '</div>';
 
-    container.querySelectorAll('.tl-check[data-tl-az]').forEach(function (b) {
-      b.addEventListener('click', function (ev) {
-        var xp = LM.completaAzione(b.getAttribute('data-tl-az'));
-        if (xp) { var r = ev.currentTarget.getBoundingClientRect(); flyXp(r.left + r.width / 2, r.top, xp); toast('Fatto.', xp); }
-        montaGiornata(container, opts); aggiornaNav();
+    if (interactive) {
+      container.querySelectorAll('[data-tl-az].tl-check, .tl-blk-check[data-tl-az]').forEach(function (b) {
+        b.addEventListener('click', function (ev) {
+          var xp = LM.completaAzione(b.getAttribute('data-tl-az'));
+          if (xp) { var r = ev.currentTarget.getBoundingClientRect(); flyXp(r.left + r.width / 2, r.top, xp); toast('Fatto.', xp); }
+          montaGiornata(container, opts); aggiornaNav();
+        });
       });
-    });
-    container.querySelectorAll('.tl-check[data-tl-ab]').forEach(function (b) {
-      b.addEventListener('click', function (ev) {
-        var xp = LM.completaAbitudine(b.getAttribute('data-tl-ab'));
-        if (xp) { var r = ev.currentTarget.getBoundingClientRect(); flyXp(r.left + r.width / 2, r.top, xp); toast('Fatta. Continua così.', xp, 'flame'); }
-        montaGiornata(container, opts);
+      container.querySelectorAll('[data-tl-ab].tl-check, .tl-blk-check[data-tl-ab]').forEach(function (b) {
+        b.addEventListener('click', function (ev) {
+          var xp = LM.completaAbitudine(b.getAttribute('data-tl-ab'));
+          if (xp) { var r = ev.currentTarget.getBoundingClientRect(); flyXp(r.left + r.width / 2, r.top, xp); toast('Fatta. Continua così.', xp, 'flame'); }
+          montaGiornata(container, opts);
+        });
       });
-    });
-    container.querySelectorAll('.tl-time[data-tl-az]').forEach(function (inp) {
-      inp.addEventListener('change', function () { LM.setOraAzione(inp.getAttribute('data-tl-az'), inp.value || null); montaGiornata(container, opts); });
-    });
-    container.querySelectorAll('.tl-time[data-tl-ab]').forEach(function (inp) {
-      inp.addEventListener('change', function () { LM.modificaAbitudine(inp.getAttribute('data-tl-ab'), { ora: inp.value || null }); montaGiornata(container, opts); });
-    });
+      container.querySelectorAll('.tl-time[data-tl-az]').forEach(function (inp) {
+        inp.addEventListener('change', function () { giornataEditorAperto = true; LM.setOraAzione(inp.getAttribute('data-tl-az'), inp.value || null); montaGiornata(container, opts); });
+      });
+      container.querySelectorAll('.tl-time[data-tl-ab]').forEach(function (inp) {
+        inp.addEventListener('change', function () { giornataEditorAperto = true; LM.modificaAbitudine(inp.getAttribute('data-tl-ab'), { ora: inp.value || null }); montaGiornata(container, opts); });
+      });
+      container.querySelectorAll('.tl-dur[data-tl-az]').forEach(function (sel) {
+        sel.addEventListener('change', function () { giornataEditorAperto = true; LM.setDurataAzione(sel.getAttribute('data-tl-az'), sel.value ? +sel.value : null); montaGiornata(container, opts); });
+      });
+      container.querySelectorAll('.tl-dur[data-tl-ab]').forEach(function (sel) {
+        sel.addEventListener('change', function () { giornataEditorAperto = true; LM.modificaAbitudine(sel.getAttribute('data-tl-ab'), { durata: sel.value ? +sel.value : null }); montaGiornata(container, opts); });
+      });
+      var tog = container.querySelector('#tl-ed-toggle');
+      if (tog) tog.addEventListener('click', function () { giornataEditorAperto = !apri; montaGiornata(container, opts); });
+    }
     var eo = container.querySelector('#tl-edit-orari');
     if (eo) eo.addEventListener('click', apriRitmo);
     var ps = container.querySelector('#tl-pos');
@@ -909,6 +962,147 @@
       toast('Fatto: da ora vedi la giornata dove hai scelto.', 0, 'check');
       chiudiSheet(); render();
     });
+  }
+
+  /* --- Settimana: 7 colonne con blocchi (scroll orizzontale su mobile) --- */
+  function montaSettimana(container) {
+    var lunedi = LM.weekKey(giornataAncora);
+    var giorni = []; for (var i = 0; i < 7; i++) giorni.push(LM.addDays(lunedi, i));
+    var oggi = LM.todayKey();
+    var nowMin = new Date().getHours() * 60 + new Date().getMinutes();
+    var d0 = nodiGiorno(oggi);
+    var pxh = 42;
+    var gs = Math.floor(d0.wake / 60) * 60, ge = Math.ceil(d0.sleep / 60) * 60; if (ge <= gs) ge = gs + 60;
+    var railLines = '';
+    for (var hh = gs; hh <= ge; hh += 60) railLines += '<div class="wk-rail-h" style="top:' + ((hh - gs) / 60 * pxh) + 'px">' + fmtMin(hh) + '</div>';
+    var Hs = (ge - gs) / 60 * pxh;
+
+    var cols = giorni.map(function (k) {
+      var dk = nodiGiorno(k);
+      var scad = LM.snapshot().backlog.filter(function (b) { return b.scadenza === k; });
+      var untimed = dk.tray.length ? '<span class="wk-untimed" title="senza orario">+' + dk.tray.length + '</span>' : '';
+      var scadHtml = scad.length ? '<div class="wk-scad" title="scadenze">' + ICO('calendar', 11) + ' ' + scad.length + '</div>' : '';
+      var grid = htmlTimeGrid(dk, { pxh: pxh, rail: false, mini: true, nowMin: k === oggi ? nowMin : null });
+      var lab = LM.weekdayShort(k); lab = lab.charAt(0).toUpperCase() + lab.slice(1);
+      return '<div class="wk-col' + (k === oggi ? ' oggi' : '') + '" data-tl-giorno="' + k + '">' +
+        '<div class="wk-col-head"><b>' + lab + '</b><span>' + LM.fmtShort(k) + '</span>' + untimed + '</div>' +
+        scadHtml + grid + '</div>';
+    }).join('');
+
+    container.innerHTML = orizzNav('settimana', giorni[0], giorni[6]) +
+      '<div class="card"><div class="wk-wrap"><div class="wk-rail" style="height:' + Hs + 'px">' + railLines + '</div>' +
+      '<div class="wk-cols">' + cols + '</div></div>' +
+      '<div class="sotto mt-s">Tocca un giorno per aprirlo. I blocchi mostrano quanto tempo occupano le cose con un orario.</div></div>';
+    wireOrizzNav(container, 'settimana');
+    container.querySelectorAll('[data-tl-giorno]').forEach(function (el) {
+      el.addEventListener('click', function () { setOrizzonte('giorno', el.getAttribute('data-tl-giorno')); });
+    });
+  }
+
+  /* --- Mese: calendario con indicatori di attività e scadenze --- */
+  function montaMese(container) {
+    var p = giornataAncora.split('-');
+    var anno = +p[0], mese = +p[1] - 1;
+    var primo = new Date(anno, mese, 1);
+    var inizio = new Date(anno, mese, 1 - ((primo.getDay() + 6) % 7));
+    var oggi = LM.todayKey();
+    var mesi = ['gennaio', 'febbraio', 'marzo', 'aprile', 'maggio', 'giugno', 'luglio', 'agosto', 'settembre', 'ottobre', 'novembre', 'dicembre'];
+    var celle = '';
+    for (var i = 0; i < 42; i++) {
+      var d = new Date(inizio.getFullYear(), inizio.getMonth(), inizio.getDate() + i);
+      var k = LM.dayKey(d);
+      var fuori = d.getMonth() !== mese;
+      var azFatte = LM.azioniDelGiorno(k).filter(function (a) { return a.done; }).length;
+      var scad = LM.snapshot().backlog.filter(function (b) { return b.scadenza === k; }).length;
+      var attivo = LM.giornoAttivo(k);
+      var punti = azFatte ? '<span class="me-pallini">' + Array.apply(null, { length: Math.min(4, azFatte) }).map(function () { return '<i></i>'; }).join('') + '</span>' : '';
+      celle += '<button class="me-cella' + (fuori ? ' fuori' : '') + (k === oggi ? ' oggi' : '') + (attivo ? ' attivo' : '') + '" data-tl-giorno="' + k + '">' +
+        '<span class="me-num">' + d.getDate() + '</span>' + punti +
+        (scad ? '<span class="me-scad" title="scadenza">' + scad + '</span>' : '') + '</button>';
+    }
+    var dowh = ['L', 'M', 'M', 'G', 'V', 'S', 'D'].map(function (x) { return '<span>' + x + '</span>'; }).join('');
+    container.innerHTML = orizzNav('mese', giornataAncora, null, mesi[mese] + ' ' + anno) +
+      '<div class="card"><div class="me-dow">' + dowh + '</div><div class="me-grid">' + celle + '</div>' +
+      '<div class="sotto mt-s">Ogni pallino è un’azione completata. Il triangolo segna una scadenza. Tocca un giorno per aprirlo.</div></div>';
+    wireOrizzNav(container, 'mese');
+    container.querySelectorAll('[data-tl-giorno]').forEach(function (el) {
+      el.addEventListener('click', function () { setOrizzonte('giorno', el.getAttribute('data-tl-giorno')); });
+    });
+  }
+
+  /* --- Anno: mappa dell'attività + scadenze dei prossimi mesi --- */
+  function montaAnno(container) {
+    var anno = +giornataAncora.split('-')[0];
+    var s = LM.snapshot();
+    var giorni = [];
+    var k = anno + '-01-01';
+    while (+k.split('-')[0] === anno) { giorni.push({ data: k, valore: s.xpPerGiorno[k] || 0 }); k = LM.addDays(k, 1); }
+    var attivi = giorni.filter(function (g) { return LM.giornoAttivo(g.data); }).length;
+    var azFatte = s.azioni.filter(function (a) { return a.done && a.data.slice(0, 4) === '' + anno; }).length;
+    var xpAnno = giorni.reduce(function (n, g) { return n + g.valore; }, 0);
+    var scad = s.backlog.filter(function (b) { return b.scadenza && b.scadenza.slice(0, 4) === '' + anno; }).sort(function (a, b) { return a.scadenza < b.scadenza ? -1 : 1; });
+    var scadHtml = scad.length ? scad.map(function (b) {
+      var ar = areaById(b.areaId); var si = scadInfo(b.scadenza);
+      return '<div class="an-scad"><span class="scad-badge ' + si.cls + '">' + LM.fmtShort(b.scadenza) + '</span>' +
+        '<span class="scad-testo">' + esc(b.testo) + '</span>' +
+        '<span class="tl-tag" style="color:' + LM.coloreArea(ar) + '">' + ICO(ar.icona, 13) + '</span></div>';
+    }).join('') : '<div class="sotto" style="margin:0">Nessuna scadenza registrata per il ' + anno + '.</div>';
+
+    container.innerHTML = orizzNav('anno', giornataAncora, null, '' + anno) +
+      '<div class="card"><div class="eroe-statistiche" style="justify-content:flex-start;margin-bottom:14px">' +
+      '<div class="stat"><span class="stat-val">' + attivi + '</span><span class="stat-eti">giorni attivi</span></div>' +
+      '<div class="stat"><span class="stat-val">' + azFatte + '</span><span class="stat-eti">azioni fatte</span></div>' +
+      '<div class="stat"><span class="stat-val">' + xpAnno + '</span><span class="stat-eti">XP</span></div></div>' +
+      '<h2 style="font-size:14px">' + ICO('trendUp', 15) + ' La tua attività, giorno per giorno</h2>' +
+      '<div class="an-heat-wrap"><div id="an-heat"></div></div></div>' +
+      '<div class="card mt"><h2>' + ICO('calendar', 16) + ' Scadenze del ' + anno + '</h2><div class="an-scad-lista mt-s">' + scadHtml + '</div></div>';
+    LMCharts.heatmap(document.getElementById('an-heat'), giorni);
+    wireOrizzNav(container, 'anno');
+  }
+
+  /* barra di navigazione comune agli orizzonti (‹ periodo › + Oggi) */
+  function orizzNav(orizz, k1, k2, etichetta) {
+    var testo = etichetta || (k2 ? LM.fmtShort(k1) + ' – ' + LM.fmtShort(k2) : etichettaGiorno(k1));
+    return '<div class="orizz-barra"><button class="icona-btn" data-nav="prev" aria-label="Precedente">' + ICO('chevronGiu', 16) + '</button>' +
+      '<span class="orizz-eti">' + testo + '</span>' +
+      '<button class="icona-btn" data-nav="next" aria-label="Successivo">' + ICO('chevronGiu', 16) + '</button>' +
+      '<button class="btn btn-mini" data-nav="oggi">Oggi</button></div>';
+  }
+  function shiftKey(k, orizz, n) {
+    var p = k.split('-'); var d;
+    if (orizz === 'giorno') return LM.addDays(k, n);
+    if (orizz === 'settimana') return LM.addDays(k, n * 7);
+    if (orizz === 'mese') { d = new Date(+p[0], +p[1] - 1 + n, 1); }
+    else { d = new Date(+p[0] + n, +p[1] - 1, 1); }
+    return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2);
+  }
+  function wireOrizzNav(container, orizz) {
+    container.querySelectorAll('[data-nav]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var a = b.getAttribute('data-nav');
+        if (a === 'oggi') giornataAncora = LM.todayKey();
+        else giornataAncora = shiftKey(giornataAncora, orizz, a === 'next' ? 1 : -1);
+        disegnaOrizzonte();
+      });
+    });
+  }
+
+  function setOrizzonte(o, ancora) {
+    giornataOrizzonte = o;
+    if (ancora) giornataAncora = ancora;
+    var nav = document.getElementById('orizz-nav');
+    if (nav) nav.querySelectorAll('[data-orizz]').forEach(function (b) { b.classList.toggle('attivo', b.getAttribute('data-orizz') === o); });
+    disegnaOrizzonte();
+  }
+  function disegnaOrizzonte() {
+    var c = document.getElementById('orizz-corpo');
+    if (!c) return;
+    c.classList.remove('vista-enter'); void c.offsetWidth;
+    if (giornataOrizzonte === 'giorno') montaGiornata(c, { giorno: giornataAncora });
+    else if (giornataOrizzonte === 'settimana') montaSettimana(c);
+    else if (giornataOrizzonte === 'mese') montaMese(c);
+    else montaAnno(c);
+    c.classList.add('vista-enter');
   }
 
   function htmlGiornataStrip() {
@@ -990,10 +1184,18 @@
   }
 
   function vistaGiornata() {
-    var html = topbar('La giornata', 'Le tue ore di oggi, dal risveglio al sonno.');
-    html += '<div id="giornata-zona"></div>';
+    if (!giornataAncora) giornataAncora = LM.todayKey();
+    function orizz(id, ico, et) { return '<button data-orizz="' + id + '" class="' + (giornataOrizzonte === id ? 'attivo' : '') + '">' + ICO(ico, 15) + et + '</button>'; }
+    var html = topbar('La giornata', 'Guardala da vicino o allarga lo sguardo: settimana, mese, anno per ragionare sul lungo periodo.');
+    html += '<div class="segmenti sez-nav" id="orizz-nav">' +
+      orizz('giorno', 'clock', 'Giorno') + orizz('settimana', 'calendar', 'Settimana') +
+      orizz('mese', 'dashboard', 'Mese') + orizz('anno', 'trendUp', 'Anno') + '</div>' +
+      '<div id="orizz-corpo"></div>';
     $vista.innerHTML = html;
-    montaGiornata(document.getElementById('giornata-zona'), {});
+    document.getElementById('orizz-nav').querySelectorAll('[data-orizz]').forEach(function (b) {
+      b.addEventListener('click', function () { setOrizzonte(b.getAttribute('data-orizz')); });
+    });
+    disegnaOrizzonte();
   }
 
   /* ============================================================
@@ -1599,24 +1801,54 @@
   var backlogAperte = {};
   var backlogEditId = null;
   var progettiAperti = {};
+  var attTab = null;      // 'sistemare' | 'dafare' | 'arrivo' | 'progetti'
+  var attArea = 'tutte';  // filtro area nel tab "Da fare"
+  var attQuery = '';      // ricerca testo
 
   function vistaInbox() {
     var s = LM.load();
-    var html = topbar('Attività', 'Butta giù qui tutto quello che ti passa in testa. Poi con calma decidi: cosa fare oggi, cosa più avanti, cosa lasciar perdere.',
+    var nInbox = s.inbox.length;
+    var nProg = s.backlog.filter(function (b) { return b.steps && b.steps.length; }).length;
+    var nArrivo = LM.scadenzeVicine(14).length;
+    if (!attTab || (attTab === 'sistemare' && !nInbox)) attTab = nInbox ? 'sistemare' : 'dafare';
+
+    var html = topbar('Attività', 'Butta giù tutto. Poi decidi con calma: oggi, più avanti, o lascia perdere.',
       '<span class="chip">' + ICO('lista', 14) + ' <b>' + s.backlog.length + '</b>&nbsp;da fare</span>');
-    html += '<div id="att-smista"></div><div id="att-scadenze"></div><div id="att-backlog"></div>';
+    function tb(id, ico, et, n) {
+      return '<button data-att="' + id + '" class="' + (attTab === id ? 'attivo' : '') + '">' + ICO(ico, 15) + et + (n ? ' <span class="att-badge">' + n + '</span>' : '') + '</button>';
+    }
+    html += '<div class="segmenti sez-nav att-tabs" id="att-tabs">' +
+      tb('sistemare', 'inbox', 'Da sistemare', nInbox) + tb('dafare', 'lista', 'Da fare', s.backlog.length) +
+      tb('arrivo', 'calendar', 'In arrivo', nArrivo) + tb('progetti', 'rocket', 'Progetti', nProg) + '</div>' +
+      '<div id="att-corpo"></div>';
     $vista.innerHTML = html;
-    disegnaSmista();
-    disegnaScadenze();
-    disegnaBacklog();
+    document.getElementById('att-tabs').querySelectorAll('[data-att]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        attTab = b.getAttribute('data-att');
+        document.getElementById('att-tabs').querySelectorAll('[data-att]').forEach(function (x) { x.classList.toggle('attivo', x.getAttribute('data-att') === attTab); });
+        ridisegna();
+      });
+    });
+    ridisegna();
+
+    function ridisegna() {
+      var c = document.getElementById('att-corpo');
+      c.classList.remove('vista-enter'); void c.offsetWidth;
+      if (attTab === 'sistemare') disegnaSmista(c);
+      else if (attTab === 'dafare') disegnaDaFare(c);
+      else if (attTab === 'arrivo') disegnaArrivo(c);
+      else disegnaProgetti(c);
+      c.classList.add('vista-enter');
+    }
 
     /* --- In arrivo: attività con una data vicina o già passata --- */
-    function disegnaScadenze() {
-      var vic = LM.scadenzeVicine(14);
-      var box = document.getElementById('att-scadenze');
-      if (!vic.length) { box.innerHTML = ''; return; }
-      box.innerHTML = '<div class="card"><h2>' + ICO('calendar', 16) + ' In arrivo</h2>' +
-        '<div class="sotto">Cose da fare con una data che si avvicina. Tirale in «Oggi» prima che diventino una corsa.</div>' +
+    function disegnaArrivo(box) {
+      var vic = LM.scadenzeVicine(60);
+      if (!vic.length) {
+        box.innerHTML = '<div class="card"><div class="vuoto" style="padding:22px 8px">' + ICO('calendar', 28) + '<br><b>Niente con una data, per ora.</b><br>Dai una scadenza a una cosa «Da fare» e comparirà qui, con il conto alla rovescia.</div></div>';
+        return;
+      }
+      box.innerHTML = '<div class="card"><div class="sotto" style="margin-top:0">Cose da fare con una data, dalla più vicina. Tirale in «Oggi» prima che diventino una corsa.</div>' +
         '<div class="scad-lista">' + vic.map(function (b) {
           var ar = areaById(b.areaId); var si = scadInfo(b.scadenza);
           return '<div class="scad-riga"><span class="scad-badge ' + si.cls + '">' + si.testo + '</span>' +
@@ -1625,17 +1857,18 @@
             '<button class="btn btn-mini btn-primario" data-scadoggi="' + b.id + '">' + ICO('arrowRight', 12) + ' Oggi</button></div>';
         }).join('') + '</div></div>';
       box.querySelectorAll('[data-scadoggi]').forEach(function (b) {
-        b.addEventListener('click', function () { LM.backlogInOggi(b.getAttribute('data-scadoggi')); toast('Portato tra le azioni di oggi.', 0, 'arrowRight'); disegnaScadenze(); disegnaBacklog(); aggiornaNav(); });
+        b.addEventListener('click', function () { LM.backlogInOggi(b.getAttribute('data-scadoggi')); toast('Portato tra le azioni di oggi.', 0, 'arrowRight'); ridisegna(); aggiornaNav(); });
       });
     }
 
-    /* --- Da smistare: le catture grezze --- */
-    function disegnaSmista() {
+    /* --- Da sistemare: le catture grezze --- */
+    function disegnaSmista(box) {
       var st = LM.load();
-      var box = document.getElementById('att-smista');
-      if (!st.inbox.length) { box.innerHTML = ''; return; }
-      box.innerHTML = '<div class="card"><h2>' + ICO('inbox', 16) + ' Da sistemare <span class="conta">' + st.inbox.length + '</span></h2>' +
-        '<div class="sotto">Le cose che hai buttato giù. Per ognuna scegli: <b>Oggi</b> se la fai oggi, <b>Da fare</b> se la rimandi, <b>Scarta</b> se lasci perdere.</div>' +
+      if (!st.inbox.length) {
+        box.innerHTML = '<div class="card"><div class="vuoto" style="padding:22px 8px">' + illoInbox() + '<b>Non c’è niente da sistemare.</b><br>Premi <kbd>C</kbd> per buttare giù un pensiero: lo ritrovi qui e decidi con calma.</div></div>';
+        return;
+      }
+      box.innerHTML = '<div class="card"><div class="sotto" style="margin-top:0">Le cose che hai buttato giù. Per ognuna scegli: <b>Oggi</b> se la fai oggi, <b>Da fare</b> se la rimandi, <b>Scarta</b> se lasci perdere.</div>' +
         '<div class="griglia" id="lista-inbox" style="gap:9px"></div></div>';
       var lista = document.getElementById('lista-inbox');
       lista.innerHTML = st.inbox.map(function (el, i) {
@@ -1665,148 +1898,201 @@
             LM.triageInbox(id, esito, area);
             toast(esito === 'azione' ? 'Ora è tra le cose di oggi.' : esito === 'backlog' ? 'Messo tra le cose da fare.' : 'Scartato.', LM.XP_EVENTI.triage,
               esito === 'azione' ? 'arrowRight' : esito === 'backlog' ? 'lista' : 'trash');
-            aggiornaNav(); disegnaSmista(); disegnaBacklog();
+            aggiornaNav(); ridisegna();
           });
         });
         var edit = riga.querySelector('[data-modifica]');
-        if (edit) edit.addEventListener('click', function () { inboxEditId = id; disegnaSmista(); });
+        if (edit) edit.addEventListener('click', function () { inboxEditId = id; ridisegna(); });
         var form = riga.querySelector('[data-edit]');
         if (form) {
           var input = form.querySelector('.inbox-input');
           setTimeout(function () { input.focus(); input.setSelectionRange(input.value.length, input.value.length); }, 20);
-          form.addEventListener('submit', function (e) { e.preventDefault(); var v = input.value.trim(); if (v) LM.modificaInbox(id, v); inboxEditId = null; disegnaSmista(); toast('Nota aggiornata.', 0, 'save'); });
-          form.querySelector('[data-annulla]').addEventListener('click', function () { inboxEditId = null; disegnaSmista(); });
-          input.addEventListener('keydown', function (e) { if (e.key === 'Escape') { inboxEditId = null; disegnaSmista(); } });
+          form.addEventListener('submit', function (e) { e.preventDefault(); var v = input.value.trim(); if (v) LM.modificaInbox(id, v); inboxEditId = null; ridisegna(); toast('Nota aggiornata.', 0, 'save'); });
+          form.querySelector('[data-annulla]').addEventListener('click', function () { inboxEditId = null; ridisegna(); });
+          input.addEventListener('keydown', function (e) { if (e.key === 'Escape') { inboxEditId = null; ridisegna(); } });
         }
       });
     }
 
-    /* --- Backlog per area (collassabile) --- */
-    function disegnaBacklog() {
-      var perArea = LM.backlogPerArea();
-      var totale = perArea.reduce(function (n, g) { return n + g.items.length; }, 0);
-      var box = document.getElementById('att-backlog');
-      if (!totale && !LM.load().inbox.length) {
-        box.innerHTML = '<div class="card"><div class="vuoto">' + illoInbox() + '<b>Ancora nulla da fare qui.</b><br>Premi <kbd>C</kbd> per annotare un pensiero: poi lo smisti in un secondo.</div></div>';
-        return;
+    /* --- HTML di un elemento "da fare" (anche progetto con passi) --- */
+    function bkItemHtml(b) {
+      if (b.id === backlogEditId) {
+        return '<div class="bk-item"><form class="inbox-modifica" data-bkedit="' + b.id + '" style="flex:1">' +
+          '<input type="text" class="inbox-input" value="' + esc(b.testo) + '" aria-label="Modifica">' +
+          '<button class="btn btn-mini btn-primario" type="submit">' + ICO('save', 13) + '</button>' +
+          '<button class="btn btn-mini btn-ghost" type="button" data-bkannulla="1">Annulla</button></form></div>';
       }
-      var corpo = perArea.map(function (g) {
-        var aperta = (g.area.id in backlogAperte) ? backlogAperte[g.area.id] : g.items.length > 0;
-        var col = LM.coloreArea(g.area);
-        var items = g.items.map(function (b) {
-          if (b.id === backlogEditId) {
-            return '<div class="bk-item"><form class="inbox-modifica" data-bkedit="' + b.id + '" style="flex:1">' +
-              '<input type="text" class="inbox-input" value="' + esc(b.testo) + '" aria-label="Modifica">' +
-              '<button class="btn btn-mini btn-primario" type="submit">' + ICO('save', 13) + '</button>' +
-              '<button class="btn btn-mini btn-ghost" type="button" data-bkannulla="1">Annulla</button></form></div>';
-          }
-          var isProg = b.steps && b.steps.length;
-          var av = isProg ? LM.avanzamentoProgetto(b) : null;
-          var apertoP = !!progettiAperti[b.id];
-          var passi = '';
-          if (apertoP) {
-            passi = '<div class="steps-panel">' +
-              (b.steps || []).map(function (st) {
-                return '<div class="step-riga' + (st.done ? ' fatta' : '') + '">' +
-                  '<button class="spunta-mini" data-steptoggle="' + b.id + '|' + st.id + '" aria-label="Segna passo">' + ICO('check', 12) + '</button>' +
-                  '<span class="step-testo">' + esc(st.testo) + '</span>' +
-                  '<button class="icona-btn" data-stepdel="' + b.id + '|' + st.id + '" title="Rimuovi passo" aria-label="Rimuovi passo">' + ICO('trash', 13) + '</button></div>';
-              }).join('') +
-              '<form class="step-add" data-stepadd="' + b.id + '"><input type="text" placeholder="Aggiungi un passo…" aria-label="Aggiungi un passo"><button class="btn btn-mini" type="submit">' + ICO('plus', 12) + '</button></form>' +
-              '</div>';
-          }
-          return '<div class="bk-item' + (isProg ? ' progetto' : '') + '" data-bid="' + b.id + '">' +
-            '<div class="bk-item-riga">' +
-            '<div class="bk-item-testo">' + esc(b.testo) +
-            (b.scadenza ? ' <span class="scad-badge ' + scadInfo(b.scadenza).cls + '">' + scadInfo(b.scadenza).testo + '</span>' : '') +
-            (isProg ? ' <span class="prog-mini">' + av.fatti + '/' + av.tot + '</span>' : '') + '</div>' +
-            '<div class="bk-item-azioni">' +
-            (isProg
-              ? '<button class="btn btn-mini btn-primario" data-bkpasso="' + b.id + '" title="Porta in Oggi il prossimo passo">' + ICO('arrowRight', 13) + ' Passo</button>'
-              : '<button class="btn btn-mini btn-primario" data-bkoggi="' + b.id + '">' + ICO('arrowRight', 13) + ' Oggi</button>') +
-            '<button class="icona-btn' + (apertoP ? ' on' : '') + '" data-bksteps="' + b.id + '" title="Passi del progetto" aria-label="Passi">' + ICO('lista', 14) + '</button>' +
-            '<label class="scad-set' + (b.scadenza ? ' attiva' : '') + '" title="Scadenza">' + ICO('calendar', 14) + '<input type="date" data-scaddate="' + b.id + '"' + (b.scadenza ? ' value="' + b.scadenza + '"' : '') + '></label>' +
-            '<button class="icona-btn" data-bkmod="' + b.id + '" title="Modifica" aria-label="Modifica">' + ICO('pencil', 14) + '</button>' +
-            '<span class="bk-area-sel">' + selectBacklogArea(b.id, b.areaId) + '</span>' +
-            '<button class="icona-btn" data-bkdel="' + b.id + '" title="Rimuovi" aria-label="Rimuovi">' + ICO('trash', 14) + '</button>' +
-            '</div></div>' +
-            (isProg ? '<div class="prog-barra"><span style="width:' + av.pct + '%"></span></div>' : '') +
-            passi + '</div>';
-        }).join('');
-        return '<div class="bk-area" style="--c-area:' + col + '">' +
-          '<button class="bk-testa" data-toggle="' + g.area.id + '" aria-expanded="' + aperta + '">' +
-          '<span class="icona-area">' + ICO(g.area.icona, 15) + '</span>' +
-          '<span class="bk-nome">' + esc(g.area.nome) + '</span>' +
-          '<span class="bk-conta">' + g.items.length + '</span>' +
-          '<span class="bk-chevron' + (aperta ? ' aperta' : '') + '">' + ICO('chevronGiu', 16) + '</span></button>' +
-          '<div class="bk-corpo"' + (aperta ? '' : ' hidden') + '>' +
-          (g.items.length ? items : '<div class="bk-vuoto">Niente qui. Aggiungi qualcosa da fare per «' + esc(g.area.nome) + '».</div>') +
-          '<form class="bk-add" data-addarea="' + g.area.id + '"><input type="text" placeholder="Aggiungi qualcosa da fare…" aria-label="Aggiungi qualcosa da fare"><button class="btn btn-mini" type="submit">' + ICO('plus', 13) + '</button></form>' +
-          '</div></div>';
-      }).join('');
-      box.innerHTML = '<div class="card mt"><h2>' + ICO('lista', 16) + ' Da fare</h2>' +
-        '<div class="sotto">Tutto quello che farai più avanti, senza una data, diviso per area. Apri un’area e porta in <b>Oggi</b> poche cose per volta.</div>' +
-        '<div class="backlog-aree">' + corpo + '</div></div>';
+      var isProg = b.steps && b.steps.length;
+      var av = isProg ? LM.avanzamentoProgetto(b) : null;
+      var apertoP = !!progettiAperti[b.id];
+      var passi = '';
+      if (apertoP) {
+        passi = '<div class="steps-panel">' +
+          (b.steps || []).map(function (st) {
+            return '<div class="step-riga' + (st.done ? ' fatta' : '') + '">' +
+              '<button class="spunta-mini" data-steptoggle="' + b.id + '|' + st.id + '" aria-label="Segna passo">' + ICO('check', 12) + '</button>' +
+              '<span class="step-testo">' + esc(st.testo) + '</span>' +
+              '<button class="icona-btn" data-stepdel="' + b.id + '|' + st.id + '" title="Rimuovi passo" aria-label="Rimuovi passo">' + ICO('trash', 13) + '</button></div>';
+          }).join('') +
+          '<form class="step-add" data-stepadd="' + b.id + '"><input type="text" placeholder="Aggiungi un passo…" aria-label="Aggiungi un passo"><button class="btn btn-mini" type="submit">' + ICO('plus', 12) + '</button></form>' +
+          '</div>';
+      }
+      return '<div class="bk-item' + (isProg ? ' progetto' : '') + '" data-bid="' + b.id + '">' +
+        '<div class="bk-item-riga">' +
+        '<div class="bk-item-testo">' + esc(b.testo) +
+        (b.scadenza ? ' <span class="scad-badge ' + scadInfo(b.scadenza).cls + '">' + scadInfo(b.scadenza).testo + '</span>' : '') +
+        (isProg ? ' <span class="prog-mini">' + av.fatti + '/' + av.tot + '</span>' : '') + '</div>' +
+        '<div class="bk-item-azioni">' +
+        (isProg
+          ? '<button class="btn btn-mini btn-primario" data-bkpasso="' + b.id + '" title="Porta in Oggi il prossimo passo">' + ICO('arrowRight', 13) + ' Passo</button>'
+          : '<button class="btn btn-mini btn-primario" data-bkoggi="' + b.id + '">' + ICO('arrowRight', 13) + ' Oggi</button>') +
+        '<button class="icona-btn' + (apertoP ? ' on' : '') + '" data-bksteps="' + b.id + '" title="Passi / progetto" aria-label="Passi">' + ICO('lista', 14) + '</button>' +
+        '<label class="scad-set' + (b.scadenza ? ' attiva' : '') + '" title="Scadenza">' + ICO('calendar', 14) + '<input type="date" data-scaddate="' + b.id + '"' + (b.scadenza ? ' value="' + b.scadenza + '"' : '') + '></label>' +
+        '<button class="icona-btn" data-bkmod="' + b.id + '" title="Modifica" aria-label="Modifica">' + ICO('pencil', 14) + '</button>' +
+        '<span class="bk-area-sel">' + selectBacklogArea(b.id, b.areaId) + '</span>' +
+        '<button class="icona-btn" data-bkdel="' + b.id + '" title="Rimuovi" aria-label="Rimuovi">' + ICO('trash', 14) + '</button>' +
+        '</div></div>' +
+        (isProg ? '<div class="prog-barra"><span style="width:' + av.pct + '%"></span></div>' : '') +
+        passi + '</div>';
+    }
 
-      box.querySelectorAll('[data-toggle]').forEach(function (b) {
-        b.addEventListener('click', function () { var id = b.getAttribute('data-toggle'); var cur = (id in backlogAperte) ? backlogAperte[id] : (LM.backlogPerArea().find(function (g) { return g.area.id === id; }).items.length > 0); backlogAperte[id] = !cur; disegnaBacklog(); });
+    /* --- collega gli eventi degli elementi "da fare" dentro `scope` --- */
+    function wireBk(scope) {
+      scope.querySelectorAll('[data-bkoggi]').forEach(function (b) {
+        b.addEventListener('click', function () { LM.backlogInOggi(b.getAttribute('data-bkoggi')); toast('Portato tra le azioni di oggi.', 0, 'arrowRight'); aggiornaNav(); ridisegna(); });
       });
-      box.querySelectorAll('[data-bkoggi]').forEach(function (b) {
-        b.addEventListener('click', function () { LM.backlogInOggi(b.getAttribute('data-bkoggi')); toast('Portato tra le azioni di oggi.', 0, 'arrowRight'); disegnaBacklog(); });
+      scope.querySelectorAll('[data-bkdel]').forEach(function (b) {
+        b.addEventListener('click', function () { LM.rimuoviBacklog(b.getAttribute('data-bkdel')); ridisegna(); });
       });
-      box.querySelectorAll('[data-bkdel]').forEach(function (b) {
-        b.addEventListener('click', function () { LM.rimuoviBacklog(b.getAttribute('data-bkdel')); disegnaBacklog(); });
+      scope.querySelectorAll('[data-bkmod]').forEach(function (b) {
+        b.addEventListener('click', function () { backlogEditId = b.getAttribute('data-bkmod'); ridisegna(); });
       });
-      box.querySelectorAll('[data-bkmod]').forEach(function (b) {
-        b.addEventListener('click', function () { backlogEditId = b.getAttribute('data-bkmod'); disegnaBacklog(); });
-      });
-      box.querySelectorAll('[data-bkedit]').forEach(function (form) {
+      scope.querySelectorAll('[data-bkedit]').forEach(function (form) {
         var input = form.querySelector('.inbox-input');
         setTimeout(function () { if (input) { input.focus(); input.setSelectionRange(input.value.length, input.value.length); } }, 20);
-        form.addEventListener('submit', function (e) { e.preventDefault(); var v = input.value.trim(); if (v) LM.modificaBacklog(form.getAttribute('data-bkedit'), v); backlogEditId = null; disegnaBacklog(); });
-        form.querySelector('[data-bkannulla]').addEventListener('click', function () { backlogEditId = null; disegnaBacklog(); });
+        form.addEventListener('submit', function (e) { e.preventDefault(); var v = input.value.trim(); if (v) LM.modificaBacklog(form.getAttribute('data-bkedit'), v); backlogEditId = null; ridisegna(); });
+        form.querySelector('[data-bkannulla]').addEventListener('click', function () { backlogEditId = null; ridisegna(); });
       });
-      box.querySelectorAll('[data-addarea]').forEach(function (form) {
-        form.addEventListener('submit', function (e) {
-          e.preventDefault();
-          var input = form.querySelector('input'); var v = input.value.trim();
-          if (!v) return;
-          var area = form.getAttribute('data-addarea');
-          LM.aggiungiBacklog(v, area); backlogAperte[area] = true; disegnaBacklog();
-        });
+      scope.querySelectorAll('select[data-bk-area]').forEach(function (sel) {
+        sel.addEventListener('change', function () { LM.cambiaAreaBacklog(sel.getAttribute('data-bk-area'), sel.value); ridisegna(); });
       });
-      box.querySelectorAll('select[data-bk-area]').forEach(function (sel) {
-        sel.addEventListener('change', function () { LM.cambiaAreaBacklog(sel.getAttribute('data-bk-area'), sel.value); disegnaBacklog(); });
+      scope.querySelectorAll('[data-scaddate]').forEach(function (inp) {
+        inp.addEventListener('change', function () { LM.impostaScadenzaBacklog(inp.getAttribute('data-scaddate'), inp.value || null); ridisegna(); });
       });
-      box.querySelectorAll('[data-scaddate]').forEach(function (inp) {
-        inp.addEventListener('change', function () { LM.impostaScadenzaBacklog(inp.getAttribute('data-scaddate'), inp.value || null); disegnaScadenze(); disegnaBacklog(); });
+      scope.querySelectorAll('[data-bksteps]').forEach(function (b) {
+        b.addEventListener('click', function () { var id = b.getAttribute('data-bksteps'); progettiAperti[id] = !progettiAperti[id]; ridisegna(); });
       });
-      box.querySelectorAll('[data-bksteps]').forEach(function (b) {
-        b.addEventListener('click', function () { var id = b.getAttribute('data-bksteps'); progettiAperti[id] = !progettiAperti[id]; disegnaBacklog(); });
-      });
-      box.querySelectorAll('[data-bkpasso]').forEach(function (b) {
+      scope.querySelectorAll('[data-bkpasso]').forEach(function (b) {
         b.addEventListener('click', function () {
-          var id = b.getAttribute('data-bkpasso');
-          var passo = LM.prossimoPassoInOggi(id);
-          if (passo) { toast('Prossimo passo portato tra le azioni di oggi.', 0, 'arrowRight'); }
-          else { toast('Nessun passo da fare: sono tutti già aperti o completati.', 0, 'check'); }
-          disegnaBacklog(); aggiornaNav();
+          var passo = LM.prossimoPassoInOggi(b.getAttribute('data-bkpasso'));
+          toast(passo ? 'Prossimo passo portato in Oggi.' : 'Nessun passo da fare: sono tutti aperti o completati.', 0, passo ? 'arrowRight' : 'check');
+          aggiornaNav(); ridisegna();
         });
       });
-      box.querySelectorAll('[data-steptoggle]').forEach(function (b) {
-        b.addEventListener('click', function () { var p = b.getAttribute('data-steptoggle').split('|'); LM.togglePasso(p[0], p[1]); disegnaBacklog(); });
+      scope.querySelectorAll('[data-steptoggle]').forEach(function (b) {
+        b.addEventListener('click', function () { var p = b.getAttribute('data-steptoggle').split('|'); LM.togglePasso(p[0], p[1]); ridisegna(); });
       });
-      box.querySelectorAll('[data-stepdel]').forEach(function (b) {
-        b.addEventListener('click', function () { var p = b.getAttribute('data-stepdel').split('|'); LM.rimuoviPasso(p[0], p[1]); disegnaBacklog(); });
+      scope.querySelectorAll('[data-stepdel]').forEach(function (b) {
+        b.addEventListener('click', function () { var p = b.getAttribute('data-stepdel').split('|'); LM.rimuoviPasso(p[0], p[1]); ridisegna(); });
       });
-      box.querySelectorAll('[data-stepadd]').forEach(function (form) {
+      scope.querySelectorAll('[data-stepadd]').forEach(function (form) {
         form.addEventListener('submit', function (e) {
           e.preventDefault();
           var bid = form.getAttribute('data-stepadd');
           var input = form.querySelector('input'); var v = input.value.trim();
           if (!v) return;
-          LM.aggiungiPasso(bid, v); progettiAperti[bid] = true; disegnaBacklog();
+          LM.aggiungiPasso(bid, v); progettiAperti[bid] = true; ridisegna();
         });
+      });
+    }
+
+    /* collega i form "aggiungi una cosa da fare" dentro `scope` */
+    function wireAdd(scope) {
+      scope.querySelectorAll('[data-addarea]').forEach(function (form) {
+        form.addEventListener('submit', function (e) {
+          e.preventDefault();
+          var input = form.querySelector('input'); var v = input.value.trim();
+          if (!v) return;
+          var area = form.getAttribute('data-addarea');
+          LM.aggiungiBacklog(v, area); backlogAperte[area] = true; ridisegna();
+        });
+      });
+    }
+
+    /* --- Da fare: chip per area + ricerca + lista --- */
+    function disegnaDaFare(box) {
+      var perArea = LM.backlogPerArea();
+      var totale = perArea.reduce(function (n, g) { return n + g.items.length; }, 0);
+      if (!totale) {
+        box.innerHTML = '<div class="card"><div class="vuoto" style="padding:22px 8px">' + illoInbox() + '<b>Niente da fare, per ora.</b><br>Aggiungi qui sotto, oppure sistema ciò che hai buttato giù.</div>' +
+          '<form class="bk-add" data-addarea="altro" style="max-width:520px;margin:0 auto"><input type="text" placeholder="Aggiungi una cosa da fare…" aria-label="Aggiungi"><button class="btn btn-mini btn-primario" type="submit">' + ICO('plus', 13) + '</button></form></div>';
+        wireAdd(box); return;
+      }
+      var chips = '<button class="att-chip' + (attArea === 'tutte' ? ' on' : '') + '" data-chip="tutte">Tutte <span>' + totale + '</span></button>' +
+        perArea.map(function (g) {
+          return '<button class="att-chip' + (attArea === g.area.id ? ' on' : '') + '" data-chip="' + g.area.id + '" style="--c-area:' + LM.coloreArea(g.area) + '">' + ICO(g.area.icona, 13) + ' ' + esc(g.area.nome) + ' <span>' + g.items.length + '</span></button>';
+        }).join('');
+      box.innerHTML = '<div class="card"><div class="att-cerca">' + ICO('target', 14) + '<input type="text" id="att-q" placeholder="Cerca tra le cose da fare…" value="' + esc(attQuery) + '" aria-label="Cerca"></div>' +
+        '<div class="att-chips">' + chips + '</div>' +
+        '<div id="dafare-lista"></div></div>';
+      var q = box.querySelector('#att-q');
+      q.addEventListener('input', function () { attQuery = q.value; renderLista(); });
+      box.querySelectorAll('[data-chip]').forEach(function (b) {
+        b.addEventListener('click', function () { attArea = b.getAttribute('data-chip'); box.querySelectorAll('[data-chip]').forEach(function (x) { x.classList.toggle('on', x.getAttribute('data-chip') === attArea); }); renderLista(); });
+      });
+      renderLista();
+
+      function renderLista() {
+        var lista = box.querySelector('#dafare-lista');
+        var query = attQuery.trim().toLowerCase();
+        if (query) {
+          var ris = LM.load().backlog.filter(function (b) { return b.testo.toLowerCase().indexOf(query) >= 0; });
+          lista.innerHTML = '<div class="sotto">' + ris.length + (ris.length === 1 ? ' risultato' : ' risultati') + ' per «' + esc(attQuery.trim()) + '»</div>' +
+            '<div class="backlog-piatto">' + (ris.map(bkItemHtml).join('') || '<div class="bk-vuoto">Nessuna corrispondenza.</div>') + '</div>';
+          wireBk(lista); return;
+        }
+        if (attArea !== 'tutte') {
+          var g0 = perArea.find(function (g) { return g.area.id === attArea; }) || { area: areaById(attArea), items: [] };
+          lista.innerHTML = '<div class="backlog-piatto">' + (g0.items.map(bkItemHtml).join('') || '<div class="bk-vuoto">Niente in «' + esc(g0.area.nome) + '». Aggiungi qui sotto.</div>') + '</div>' +
+            '<form class="bk-add" data-addarea="' + attArea + '"><input type="text" placeholder="Aggiungi a «' + esc(g0.area.nome) + '»…" aria-label="Aggiungi"><button class="btn btn-mini btn-primario" type="submit">' + ICO('plus', 13) + '</button></form>';
+          wireBk(lista); wireAdd(lista); return;
+        }
+        lista.innerHTML = '<div class="backlog-aree">' + perArea.map(function (g) {
+          var aperta = !!backlogAperte[g.area.id];
+          return '<div class="bk-area" style="--c-area:' + LM.coloreArea(g.area) + '">' +
+            '<button class="bk-testa" data-toggle="' + g.area.id + '" aria-expanded="' + aperta + '">' +
+            '<span class="icona-area">' + ICO(g.area.icona, 15) + '</span>' +
+            '<span class="bk-nome">' + esc(g.area.nome) + '</span>' +
+            '<span class="bk-conta">' + g.items.length + '</span>' +
+            '<span class="bk-chevron' + (aperta ? ' aperta' : '') + '">' + ICO('chevronGiu', 16) + '</span></button>' +
+            '<div class="bk-corpo"' + (aperta ? '' : ' hidden') + '>' +
+            (g.items.length ? g.items.map(bkItemHtml).join('') : '<div class="bk-vuoto">Niente qui.</div>') +
+            '<form class="bk-add" data-addarea="' + g.area.id + '"><input type="text" placeholder="Aggiungi a «' + esc(g.area.nome) + '»…" aria-label="Aggiungi"><button class="btn btn-mini" type="submit">' + ICO('plus', 13) + '</button></form>' +
+            '</div></div>';
+        }).join('') + '</div>';
+        lista.querySelectorAll('[data-toggle]').forEach(function (b) {
+          b.addEventListener('click', function () { var id = b.getAttribute('data-toggle'); backlogAperte[id] = !backlogAperte[id]; renderLista(); });
+        });
+        wireBk(lista); wireAdd(lista);
+      }
+    }
+
+    /* --- Progetti: cose da fare divise in passi --- */
+    function disegnaProgetti(box) {
+      var prog = LM.load().backlog.filter(function (b) { return (b.steps && b.steps.length) || progettiAperti[b.id]; });
+      prog.forEach(function (b) { if (progettiAperti[b.id] === undefined) progettiAperti[b.id] = true; });
+      var lista = prog.length ? '<div class="backlog-piatto">' + prog.map(bkItemHtml).join('') + '</div>'
+        : '<div class="vuoto" style="padding:20px 8px">' + illoInbox() + '<b>Nessun progetto, per ora.</b><br>Un progetto è una cosa grande divisa in passi: la fai un pezzo per volta.</div>';
+      box.innerHTML = '<div class="card"><div class="sotto" style="margin-top:0">Le cose grandi, spezzate in <b>passi</b>. Il pulsante «Passo» porta in Oggi solo il prossimo, così parti senza sentirti sopraffatto.</div>' +
+        lista +
+        '<form class="bk-add mt" id="nuovo-prog"><input type="text" placeholder="Nuovo progetto…" aria-label="Nuovo progetto"><span style="width:150px">' + selectAree('prog-area') + '</span><button class="btn btn-mini btn-primario" type="submit">' + ICO('plus', 13) + ' Crea</button></form></div>';
+      wireBk(box);
+      box.querySelector('#nuovo-prog').addEventListener('submit', function (e) {
+        e.preventDefault();
+        var inp = box.querySelector('#nuovo-prog input'); var v = inp.value.trim();
+        if (!v) return;
+        var nb = LM.aggiungiBacklog(v, box.querySelector('#prog-area').value);
+        progettiAperti[nb.id] = true; ridisegna();
       });
     }
   }

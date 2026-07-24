@@ -310,6 +310,7 @@ var LM = (function () {
       doneAt: null,
       creata: Date.now(),
       ora: opts.ora || null,          // 'HH:MM' se ha un orario nella giornata
+      durata: opts.durata || null,    // minuti che occupa (per i blocchi della timeline)
       passoDi: opts.passoDi || null   // {b: idProgetto, s: idPasso} se nasce da un progetto
     };
     s.azioni.push(a);
@@ -382,6 +383,18 @@ var LM = (function () {
     if (!a) return;
     a.ora = ora || null;
     save();
+  }
+  /* durata (in minuti) che l'azione occupa nella giornata */
+  function setDurataAzione(id, minuti) {
+    var s = load();
+    var a = s.azioni.find(function (x) { return x.id === id; });
+    if (!a) return;
+    a.durata = minuti || null;
+    save();
+  }
+  /* azioni di un giorno qualsiasi (per le viste settimana/mese) */
+  function azioniDelGiorno(k) {
+    return load().azioni.filter(function (a) { return a.data === k; });
   }
 
   /* ---------- ritmo della giornata e preferenza di visualizzazione ---------- */
@@ -526,7 +539,7 @@ var LM = (function () {
 
   function aggiungiAbitudine(testo, areaId, giorni, opts) {
     var s = load();
-    var h = { id: uid(), testo: testo, areaId: areaId || 'salute', giorni: Array.isArray(giorni) ? giorni : [], ora: (opts && opts.ora) || null, creata: Date.now(), fatti: {} };
+    var h = { id: uid(), testo: testo, areaId: areaId || 'salute', giorni: Array.isArray(giorni) ? giorni : [], ora: (opts && opts.ora) || null, durata: (opts && opts.durata) || null, creata: Date.now(), fatti: {} };
     s.abitudini.push(h);
     save();
     return h;
@@ -539,6 +552,7 @@ var LM = (function () {
     if (dati.areaId) h.areaId = dati.areaId;
     if (dati.giorni) h.giorni = dati.giorni;
     if ('ora' in dati) h.ora = dati.ora || null;
+    if ('durata' in dati) h.durata = dati.durata || null;
     save();
   }
   function rimuoviAbitudine(id) {
@@ -1158,11 +1172,11 @@ var LM = (function () {
     /* orari d'esempio per la giornata di oggi, così la timeline "La giornata"
        si vede subito piena */
     var ogAz = s.azioni.filter(function (a) { return a.data === oggi; });
-    if (ogAz[0]) ogAz[0].ora = '09:30';
-    if (ogAz[1]) ogAz[1].ora = '15:00';
+    if (ogAz[0]) { ogAz[0].ora = '09:30'; ogAz[0].durata = 90; }
+    if (ogAz[1]) { ogAz[1].ora = '15:00'; ogAz[1].durata = 60; }
     s.abitudini.forEach(function (h) {
-      if (/camminata|movimento/i.test(h.testo)) h.ora = '18:00';
-      else if (/leggere/i.test(h.testo)) h.ora = '22:00';
+      if (/camminata|movimento/i.test(h.testo)) { h.ora = '18:00'; h.durata = 45; }
+      else if (/leggere/i.test(h.testo)) { h.ora = '22:00'; h.durata = 30; }
     });
 
     /* esperimento demo: sport al mattino → focus */
@@ -1207,7 +1221,8 @@ var LM = (function () {
     coloreArea: coloreArea, livelloDaXp: livelloDaXp,
     aggiungiAzione: aggiungiAzione, completaAzione: completaAzione, rimandaAzione: rimandaAzione,
     cattura: cattura, triageInbox: triageInbox, modificaInbox: modificaInbox, cambiaAreaAzione: cambiaAreaAzione,
-    setOraAzione: setOraAzione, impostaRitmo: impostaRitmo, impostaGiornataPos: impostaGiornataPos, RITMO_DEFAULT: RITMO_DEFAULT,
+    setOraAzione: setOraAzione, setDurataAzione: setDurataAzione, azioniDelGiorno: azioniDelGiorno,
+    impostaRitmo: impostaRitmo, impostaGiornataPos: impostaGiornataPos, RITMO_DEFAULT: RITMO_DEFAULT,
     aggiungiBacklog: aggiungiBacklog, modificaBacklog: modificaBacklog, cambiaAreaBacklog: cambiaAreaBacklog,
     rimuoviBacklog: rimuoviBacklog, backlogInOggi: backlogInOggi, backlogPerArea: backlogPerArea,
     aggiungiPasso: aggiungiPasso, modificaPasso: modificaPasso, rimuoviPasso: rimuoviPasso, togglePasso: togglePasso,

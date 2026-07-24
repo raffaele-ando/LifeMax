@@ -39,27 +39,32 @@ Il vocabolario è volutamente ridotto a tre parole — **butta giù → decidi �
 ripetute uguali ovunque, così non ci sono nomi diversi per la stessa cosa (scelta di
 progettazione per ridurre il carico su chi ha ADHD/bassa coscienziosità).
 
-**📋 Attività** è il livello tra cattura e "oggi": ogni nota si sistema in **Oggi**,
-**Da fare** (senza data, diviso per area, da cui tiri in giornata poche cose per
-volta) o **Scarta**. Le attività «Da fare» possono avere una **scadenza** con conto
-alla rovescia; quelle vicine compaiono in **In arrivo**. Una cosa da fare può
-diventare un **progetto**: la spezzi in **passi** ordinati, vedi una barra di
-avanzamento e il pulsante **Passo** porta in *Oggi* solo il prossimo passo non
-ancora fatto — un po' per volta invece di tutto insieme. Le **abitudini
+**📋 Attività** è organizzata in **quattro schede** (una alla volta, così la pagina
+resta corta anche con decine di voci): **Da sistemare** (le catture da smistare in
+*Oggi* / *Da fare* / *Scarta*), **Da fare** (il backlog, con **chip per area**,
+**ricerca** e aree richiuse di default: niente scroll infinito), **In arrivo** (le cose
+con una scadenza, dalla più vicina) e **Progetti**. Una cosa da fare può diventare un
+**progetto**: la spezzi in **passi** ordinati, vedi una barra di avanzamento e il
+pulsante **Passo** porta in *Oggi* solo il prossimo passo non ancora fatto — un po' per
+volta invece di tutto insieme. Le **abitudini
 ricorrenti** (Rituali → Abitudini) sono separate dalle azioni del giorno, con scelta
 dei giorni e serie di costanza. Le **aree** sono personalizzabili (rinomina, crea,
 rimuovi) da *Impostazioni → Gestisci le aree*. Il **check-in** usa una scala ancorata
 con descrittori e il riferimento «il tuo solito» (media recente), così il punteggio
 è meno ambiguo. Una **guida in-app** (*Impostazioni → Come si usa*) riassume il tutto.
 
-**🕒 La giornata** è una timeline che mostra come sono divise le ore, dal risveglio al
-sonno: sonno, pasti, abitudini e cose di oggi con un orario, con gli spazi liberi e la
-riga «adesso». Rende visibile il tempo a chi fatica a percepirlo (time blindness).
-Puoi decidere **dove vederla** — barra compatta in *Oggi* (consigliata), per intero in
-*Oggi*, dentro *Panoramica*, o come voce a parte — da un menù a tendina sulla timeline
-stessa o da *Impostazioni → La giornata*; **la scelta si salva e si sincronizza sul
-cloud**. Sonno, sveglia e pasti si impostano da *Sonno e pasti*; orario di abitudini e
-azioni si assegna direttamente sulla timeline.
+**🕒 La giornata** è una **griglia oraria a blocchi**: sonno, pasti, abitudini e cose di
+oggi occupano il tempo che scegli (durata regolabile), con gli spazi liberi visibili e
+la riga «adesso». Rende concreto il tempo per chi fatica a percepirlo (time blindness).
+Puoi decidere **dove vederla** — barra compatta in *Oggi* (consigliata; toccandola si
+apre la griglia intera), per intero in *Oggi*, dentro *Panoramica*, o come voce a parte
+— da un menù a tendina sulla timeline o da *Impostazioni → La giornata*; **la scelta si
+salva e si sincronizza sul cloud**. La pagina a sé stante ha quattro **orizzonti**:
+**Giorno** (la griglia), **Settimana** (7 colonne a blocchi), **Mese** (calendario con
+i giorni attivi e le scadenze) e **Anno** (mappa dell'attività + scadenze) per
+ragionare sul lungo periodo; da settimana e mese si apre il singolo giorno con un tocco.
+Sonno, sveglia e pasti si impostano da *Sonno e pasti*; orario e durata di abitudini e
+azioni si assegnano sulla timeline.
 
 ## Più approcci UX, stessi dati (di proposito)
 
