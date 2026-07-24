@@ -36,12 +36,14 @@ In ogni momento: **cattura istantanea** con `C`, `⌘K` o il bottone `＋` — u
 zero categorie, le decisioni si prendono dopo.
 
 **📋 Attività** è il livello tra cattura e "oggi": ogni nota si smista in **Oggi**,
-**Backlog** (le cose da fare senza data, divise per area, da cui tiri in giornata
-poche cose per volta) o **Scarta**. Le **aree** sono personalizzabili (rinomina,
-crea, rimuovi) da *Impostazioni → Gestisci le aree*. Il **check-in** usa una scala
-ancorata con descrittori e il riferimento «il tuo solito» (media recente), così il
-punteggio è meno ambiguo. Una **guida in-app** (*Impostazioni → Come si usa*)
-riassume il tutto.
+**Da fare** (senza data, diviso per area, da cui tiri in giornata poche cose per
+volta) o **Scarta**. Le attività «Da fare» possono avere una **scadenza** con conto
+alla rovescia; quelle vicine compaiono in **In scadenza**. Le **abitudini
+ricorrenti** (Rituali → Abitudini) sono separate dalle azioni del giorno, con scelta
+dei giorni e serie di costanza. Le **aree** sono personalizzabili (rinomina, crea,
+rimuovi) da *Impostazioni → Gestisci le aree*. Il **check-in** usa una scala ancorata
+con descrittori e il riferimento «il tuo solito» (media recente), così il punteggio
+è meno ambiguo. Una **guida in-app** (*Impostazioni → Come si usa*) riassume il tutto.
 
 ## Più approcci UX, stessi dati (di proposito)
 

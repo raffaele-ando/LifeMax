@@ -103,7 +103,8 @@ var LM = (function () {
     reviewSera: 8,    // chiusura serale
     reviewSettimana: 25,
     cattura: 1,       // brain dump: ricompensa piccola ma immediata
-    triage: 2         // smistare un elemento dall'inbox
+    triage: 2,        // smistare un elemento dall'inbox
+    abitudine: 8      // completare un'abitudine ricorrente del giorno
   };
 
   function livelloDaXp(xp) {
@@ -126,7 +127,8 @@ var LM = (function () {
       areeAttive: AREE_DEFAULT.map(function (a) { return a.id; }),
       azioni: [],        // {id, areaId, testo, ifThen, mit, done, data, doneAt, creata}
       inbox: [],         // {id, testo, creata} — cattura grezza, ancora da smistare
-      backlog: [],       // {id, testo, areaId, creata} — attività "da fare" senza data
+      backlog: [],       // {id, testo, areaId, creata, scadenza?} — attività "da fare" senza data (con scadenza opzionale)
+      abitudini: [],     // {id, testo, areaId, giorni:[0..6], creata, fatti:{data:true}} — ricorrenti
       checkins: [],      // {data, ts, energia, focus, umore, contesto}
       valutazioni: {},   // valutazioni[data][areaId] = 1..5 (sera)
       minuti: {},        // minuti[data][areaId] = minuti dedicati
@@ -162,6 +164,7 @@ var LM = (function () {
       if (s[k] === undefined || s[k] === null) s[k] = vuoto[k];
     });
     if (!Array.isArray(s.backlog)) s.backlog = [];
+    if (!Array.isArray(s.abitudini)) s.abitudini = [];
     if (!Array.isArray(s.aree) || !s.aree.length) s.aree = JSON.parse(JSON.stringify(AREE_DEFAULT));
     return s;
   }
@@ -387,6 +390,82 @@ var LM = (function () {
       if (altro) altro.items = altro.items.concat(orfani);
     }
     return out;
+  }
+
+  /* scadenza opzionale su un'attività da fare */
+  function impostaScadenzaBacklog(id, scadenza) {
+    var s = load();
+    var b = s.backlog.find(function (x) { return x.id === id; });
+    if (!b) return;
+    if (scadenza) b.scadenza = scadenza; else delete b.scadenza;
+    save();
+  }
+  /* attività con scadenza entro N giorni (o già scadute), dalla più vicina */
+  function scadenzeVicine(giorni) {
+    var s = load();
+    var oggi = todayKey();
+    return s.backlog.filter(function (b) { return b.scadenza; })
+      .filter(function (b) { return daysBetween(oggi, b.scadenza) <= (giorni == null ? 3650 : giorni); })
+      .sort(function (a, b) { return a.scadenza < b.scadenza ? -1 : 1; });
+  }
+
+  /* ---------- abitudini ricorrenti ---------- */
+
+  function aggiungiAbitudine(testo, areaId, giorni) {
+    var s = load();
+    var h = { id: uid(), testo: testo, areaId: areaId || 'salute', giorni: Array.isArray(giorni) ? giorni : [], creata: Date.now(), fatti: {} };
+    s.abitudini.push(h);
+    save();
+    return h;
+  }
+  function modificaAbitudine(id, dati) {
+    var s = load();
+    var h = s.abitudini.find(function (x) { return x.id === id; });
+    if (!h) return;
+    if (dati.testo != null) h.testo = dati.testo;
+    if (dati.areaId) h.areaId = dati.areaId;
+    if (dati.giorni) h.giorni = dati.giorni;
+    save();
+  }
+  function rimuoviAbitudine(id) {
+    var s = load();
+    var i = s.abitudini.findIndex(function (x) { return x.id === id; });
+    if (i >= 0) { s.abitudini.splice(i, 1); save(); }
+  }
+  /* prevista in un dato giorno? giorni vuoto = ogni giorno */
+  function abitudinePrevista(h, k) {
+    k = k || todayKey();
+    if (!h.giorni || !h.giorni.length) return true;
+    return h.giorni.indexOf(parseKey(k).getDay()) >= 0;
+  }
+  function abitudiniDiOggi() {
+    var k = todayKey();
+    return load().abitudini.filter(function (h) { return abitudinePrevista(h, k); });
+  }
+  /* completa/annulla l'abitudine per oggi (toggle) */
+  function completaAbitudine(id) {
+    var s = load();
+    var h = s.abitudini.find(function (x) { return x.id === id; });
+    if (!h) return 0;
+    var k = todayKey();
+    if (h.fatti[k]) { delete h.fatti[k]; save(); return 0; }
+    h.fatti[k] = true;
+    var punti = premiaXp('abitudine');
+    save();
+    return punti;
+  }
+  /* serie di giorni previsti consecutivi completati, con grazia per oggi
+     (oggi non ancora fatto non rompe la serie) */
+  function streakAbitudine(h) {
+    var oggi = todayKey(), k = oggi, count = 0;
+    for (var i = 0; i < 400; i++) {
+      if (abitudinePrevista(h, k)) {
+        if (h.fatti[k]) count++;
+        else if (k !== oggi) break;
+      }
+      k = addDays(k, -1);
+    }
+    return count;
   }
 
   /* ---------- gestione aree (personalizzabili) ---------- */
@@ -928,6 +1007,24 @@ var LM = (function () {
     esempiBacklog.forEach(function (b, i) {
       s.backlog.push({ id: uid() + 'bk' + i, testo: b[1], areaId: b[0], creata: Date.now() - i * 3600000 });
     });
+    /* una scadenza d'esempio: "trovare lavoro" entro ~3 settimane */
+    var conScad = s.backlog.find(function (b) { return b.areaId === 'lavoro'; });
+    if (conScad) conScad.scadenza = addDays(oggi, 20);
+
+    /* abitudini demo con storico per le serie */
+    var esempiAbit = [
+      ['salute', 'Leggere 20 minuti', []],
+      ['studio', 'Ripasso flashcard', []],
+      ['salute', 'Camminata / movimento', [1, 2, 3, 4, 5]]
+    ];
+    esempiAbit.forEach(function (h, i) {
+      var fatti = {};
+      for (var d = 1; d <= 12; d++) {
+        var k = addDays(oggi, -d);
+        if ((h[2].length === 0 || h[2].indexOf(parseKey(k).getDay()) >= 0) && rnd() < 0.8) fatti[k] = true;
+      }
+      s.abitudini.push({ id: uid() + 'ab' + i, testo: h[1], areaId: h[0], giorni: h[2], creata: Date.now(), fatti: fatti });
+    });
 
     /* esperimento demo: sport al mattino → focus */
     s.esperimenti.push({
@@ -973,6 +1070,9 @@ var LM = (function () {
     cattura: cattura, triageInbox: triageInbox, modificaInbox: modificaInbox, cambiaAreaAzione: cambiaAreaAzione,
     aggiungiBacklog: aggiungiBacklog, modificaBacklog: modificaBacklog, cambiaAreaBacklog: cambiaAreaBacklog,
     rimuoviBacklog: rimuoviBacklog, backlogInOggi: backlogInOggi, backlogPerArea: backlogPerArea,
+    impostaScadenzaBacklog: impostaScadenzaBacklog, scadenzeVicine: scadenzeVicine,
+    aggiungiAbitudine: aggiungiAbitudine, modificaAbitudine: modificaAbitudine, rimuoviAbitudine: rimuoviAbitudine,
+    abitudinePrevista: abitudinePrevista, abitudiniDiOggi: abitudiniDiOggi, completaAbitudine: completaAbitudine, streakAbitudine: streakAbitudine,
     rinominaArea: rinominaArea, modificaRegolaArea: modificaRegolaArea, toggleArea: toggleArea,
     aggiungiArea: aggiungiArea, rimuoviArea: rimuoviArea, baselineCheckin: baselineCheckin,
     registraCheckin: registraCheckin, salvaPianoMattina: salvaPianoMattina,

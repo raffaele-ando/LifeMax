@@ -473,7 +473,7 @@
       '<div class="imp-nota" style="margin-top:0">Il cuore è un giro quotidiano breve. Non serve fare tutto: bastano pochi minuti al giorno.</div>' +
       '<div class="guida">' +
       voce('bolt', 'Cattura tutto, subito', 'Un pensiero in testa? Premi <kbd>C</kbd> (o il tasto ＋) e annotalo in un secondo. Non decidere adesso: finisce in «Da smistare».') +
-      voce('lista', 'Smista con calma', 'In <b>Attività</b> per ogni nota scegli: <b>Oggi</b>, <b>Backlog</b> (da fare senza data, diviso per area) o <b>Scarta</b>. Dal backlog porti in «Oggi» ciò su cui vuoi lavorare.') +
+      voce('lista', 'Smista con calma', 'In <b>Attività</b> per ogni nota scegli: <b>Oggi</b>, <b>Da fare</b> (senza una data, diviso per area) o <b>Scarta</b>. Dalle cose da fare porti in «Oggi» ciò su cui vuoi lavorare.') +
       voce('sun', 'Il giro del giorno', 'La mattina scegli al massimo <b>3 azioni</b> (Rituali). In <b>Oggi</b> le fai una alla volta. La sera chiudi con la review. Ogni giorno riparte da zero.') +
       voce('target', 'Una cosa alla volta', 'La schermata <b>Oggi</b> mostra una sola azione: meno scelte, meno blocco. Puoi cambiarne l’area anche dopo.') +
       voce('smile', 'Check-in in 10 secondi', 'Energia, concentrazione, umore. Rispondi d’istinto rispetto al «tuo solito»: conta l’andamento nel tempo, non il numero preciso.') +
@@ -750,6 +750,16 @@
     return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2);
   }
 
+  /* conto alla rovescia leggibile di una scadenza (ADHD: rende visibile il
+     tempo che passa, senza allarmismi) */
+  function scadInfo(scad) {
+    var d = LM.daysBetween(LM.todayKey(), scad);
+    if (d < 0) return { d: d, testo: d === -1 ? 'ieri' : (-d) + 'g fa', cls: 'scad-ritardo' };
+    if (d === 0) return { d: 0, testo: 'oggi', cls: 'scad-oggi' };
+    if (d === 1) return { d: 1, testo: 'domani', cls: 'scad-vicina' };
+    return { d: d, testo: 'tra ' + d + 'g', cls: d <= 3 ? 'scad-vicina' : 'scad-lontana' };
+  }
+
   /* una riga della timeline del Diario */
   function eventoDiarioHtml(ev) {
     var ico, testo, cls = '';
@@ -980,7 +990,7 @@
     var suggerito = (ora < 12 ? 'mattina' : (ora >= 19 ? 'sera' : 'checkin'));
     var html = topbar('Rituali', 'Poche azioni fisse ogni giorno, così non devi decidere tutto ogni volta.') +
       '<div class="rituali-nav segmenti" id="seg-rituali">' +
-      seg('mattina', 'sun', 'Mattina') + seg('checkin', 'bolt', 'Check-in') + seg('sera', 'moon', 'Sera') + seg('settimana', 'calendar', 'Settimana') +
+      seg('mattina', 'sun', 'Mattina') + seg('abitudini', 'refresh', 'Abitudini') + seg('checkin', 'bolt', 'Check-in') + seg('sera', 'moon', 'Sera') + seg('settimana', 'calendar', 'Settimana') +
       '</div>' +
       '<div class="passo-rituale" id="corpo-rituale"></div>';
     $vista.innerHTML = html;
@@ -992,6 +1002,7 @@
 
     var corpo = document.getElementById('corpo-rituale');
     if (sub === 'mattina') ritualeMattina(corpo);
+    if (sub === 'abitudini') ritualeAbitudini(corpo);
     if (sub === 'checkin') ritualeCheckin(corpo);
     if (sub === 'sera') ritualeSera(corpo);
     if (sub === 'settimana') ritualeSettimana(corpo);
@@ -1060,6 +1071,109 @@
       render();
     });
     document.getElementById('btn-vai-focus').addEventListener('click', function () { location.hash = '#/oggi'; });
+  }
+
+  /* ---------- Rituali → Abitudini ---------- */
+
+  var GIORNI_ORD = [1, 2, 3, 4, 5, 6, 0];
+  var GIORNI_LAB = { 1: 'L', 2: 'M', 3: 'M', 4: 'G', 5: 'V', 6: 'S', 0: 'D' };
+
+  function chipsGiorni(giorni) {
+    return '<div class="giorni-chips">' + GIORNI_ORD.map(function (d) {
+      return '<button type="button" class="giorno-chip' + (giorni.indexOf(d) >= 0 ? ' sel' : '') + '" data-giorno="' + d + '">' + GIORNI_LAB[d] + '</button>';
+    }).join('') + '</div>';
+  }
+  function leggiGiorni(root) {
+    var g = [];
+    root.querySelectorAll('.giorno-chip.sel').forEach(function (b) { g.push(+b.getAttribute('data-giorno')); });
+    return g;
+  }
+  function riepilogoGiorni(giorni) {
+    if (!giorni || !giorni.length) return 'ogni giorno';
+    if (giorni.length === 7) return 'ogni giorno';
+    var feriali = [1, 2, 3, 4, 5];
+    if (giorni.length === 5 && feriali.every(function (d) { return giorni.indexOf(d) >= 0; })) return 'lun–ven';
+    return GIORNI_ORD.filter(function (d) { return giorni.indexOf(d) >= 0; }).map(function (d) { return GIORNI_LAB[d]; }).join(' ');
+  }
+
+  function ritualeAbitudini(corpo) {
+    var s = LM.load();
+    var oggi = LM.abitudiniDiOggi();
+    var tutte = s.abitudini;
+
+    var listaOggi = oggi.length
+      ? oggi.map(function (h) {
+        var fatto = !!h.fatti[LM.todayKey()];
+        var st = LM.streakAbitudine(h);
+        var ar = areaById(h.areaId);
+        return '<div class="abit-oggi' + (fatto ? ' fatta' : '') + '" data-ab="' + h.id + '">' +
+          '<button class="spunta" data-toggle-ab="' + h.id + '" aria-label="Segna come fatta">' + ICO('check', 13) + '</button>' +
+          '<span class="testo">' + esc(h.testo) + '</span>' +
+          (st > 0 ? '<span class="abit-streak">' + ICO('flame', 12, 'fiamma') + ' ' + st + '</span>' : '') +
+          '<span class="tag-area" style="--c-area:' + LM.coloreArea(ar) + '" title="' + esc(ar.nome) + '">' + ICO(ar.icona, 14) + '</span></div>';
+      }).join('')
+      : '<div class="vuoto" style="padding:14px 8px">Nessuna abitudine prevista per oggi.</div>';
+
+    var listaTutte = tutte.length
+      ? tutte.map(function (h) {
+        return '<div class="abit-riga" data-abrow="' + h.id + '" style="--c-area:' + LM.coloreArea(areaById(h.areaId)) + '">' +
+          '<div class="abit-riga-top">' +
+          '<span class="tag-area">' + ICO(areaById(h.areaId).icona, 14) + '</span>' +
+          '<input type="text" class="abit-nome" data-abnome="' + h.id + '" value="' + esc(h.testo) + '" aria-label="Nome abitudine">' +
+          '<button class="icona-btn" data-abdel="' + h.id + '" title="Rimuovi">' + ICO('trash', 14) + '</button></div>' +
+          '<div class="abit-riga-giorni">' + chipsGiorni(h.giorni) + '<span class="abit-giorni-rec">' + riepilogoGiorni(h.giorni) + '</span></div>' +
+          '</div>';
+      }).join('')
+      : '';
+
+    corpo.innerHTML = '<div class="card">' +
+      testaRituale('refresh', 'Abitudini',
+        'Le cose che vuoi fare con regolarità. Sono separate dalle azioni del giorno: spuntarle non toglie spazio alle tue tre azioni, e la serie premia la costanza.') +
+      '<h2 style="font-size:14px">Oggi</h2><div class="abit-lista-oggi">' + listaOggi + '</div>' +
+      '</div>' +
+      '<div class="card mt"><h2>' + ICO('lista', 16) + ' Le tue abitudini</h2>' +
+      '<div class="sotto">Tocca i giorni per scegliere quando ripeterla. Nessun giorno selezionato = ogni giorno.</div>' +
+      '<div class="abit-tutte">' + listaTutte + '</div>' +
+      '<form id="abit-nuova" class="abit-nuova"><div class="riga-flex">' +
+      '<input type="text" id="abit-testo" placeholder="Nuova abitudine…" style="flex:1;min-width:150px">' +
+      '<span style="width:150px">' + selectAree('abit-area') + '</span></div>' +
+      '<div class="riga-flex mt-s" id="abit-giorni-nuova">' + chipsGiorni([]) + '<button class="btn btn-mini btn-primario" type="submit">' + ICO('plus', 13) + ' Aggiungi</button></div>' +
+      '</form></div>';
+
+    corpo.querySelectorAll('[data-toggle-ab]').forEach(function (b) {
+      b.addEventListener('click', function (ev) {
+        var xp = LM.completaAbitudine(b.getAttribute('data-toggle-ab'));
+        if (xp) { var r = ev.currentTarget.getBoundingClientRect(); flyXp(r.left + r.width / 2, r.top, xp); toast('Fatta. Continua così', xp, 'flame'); }
+        ritualeAbitudini(corpo);
+      });
+    });
+    corpo.querySelectorAll('[data-abdel]').forEach(function (b) {
+      b.addEventListener('click', function () { LM.rimuoviAbitudine(b.getAttribute('data-abdel')); ritualeAbitudini(corpo); });
+    });
+    corpo.querySelectorAll('[data-abnome]').forEach(function (inp) {
+      inp.addEventListener('change', function () { LM.modificaAbitudine(inp.getAttribute('data-abnome'), { testo: inp.value.trim() }); });
+    });
+    corpo.querySelectorAll('[data-abrow]').forEach(function (row) {
+      row.querySelectorAll('.giorno-chip').forEach(function (chip) {
+        chip.addEventListener('click', function () {
+          chip.classList.toggle('sel');
+          LM.modificaAbitudine(row.getAttribute('data-abrow'), { giorni: leggiGiorni(row) });
+          row.querySelector('.abit-giorni-rec').textContent = riepilogoGiorni(leggiGiorni(row));
+        });
+      });
+    });
+    var nuova = document.getElementById('abit-giorni-nuova');
+    nuova.querySelectorAll('.giorno-chip').forEach(function (chip) {
+      chip.addEventListener('click', function () { chip.classList.toggle('sel'); });
+    });
+    document.getElementById('abit-nuova').addEventListener('submit', function (e) {
+      e.preventDefault();
+      var testo = document.getElementById('abit-testo').value.trim();
+      if (!testo) return;
+      LM.aggiungiAbitudine(testo, document.getElementById('abit-area').value, leggiGiorni(nuova));
+      ritualeAbitudini(corpo);
+      toast('Abitudine creata.', 0, 'refresh');
+    });
   }
 
   /* Ancore comportamentali (BARS) per ogni punto della scala: descrivere
@@ -1216,12 +1330,32 @@
 
   function vistaInbox() {
     var s = LM.load();
-    var html = topbar('Attività', 'Cattura al volo, poi smista con calma: oggi, nel backlog, o via.',
-      '<span class="chip">' + ICO('lista', 14) + ' <b>' + s.backlog.length + '</b>&nbsp;nel backlog</span>');
-    html += '<div id="att-smista"></div><div id="att-backlog"></div>';
+    var html = topbar('Attività', 'Cattura al volo; poi, con calma, decidi cosa fare di ogni cosa.',
+      '<span class="chip">' + ICO('lista', 14) + ' <b>' + s.backlog.length + '</b>&nbsp;da fare</span>');
+    html += '<div id="att-scadenze"></div><div id="att-smista"></div><div id="att-backlog"></div>';
     $vista.innerHTML = html;
+    disegnaScadenze();
     disegnaSmista();
     disegnaBacklog();
+
+    /* --- In scadenza: attività con una data vicina o già passata --- */
+    function disegnaScadenze() {
+      var vic = LM.scadenzeVicine(14);
+      var box = document.getElementById('att-scadenze');
+      if (!vic.length) { box.innerHTML = ''; return; }
+      box.innerHTML = '<div class="card"><h2>' + ICO('calendar', 16) + ' In scadenza</h2>' +
+        '<div class="sotto">Le cose con una data vicina. Portale in «Oggi» prima che diventino urgenti.</div>' +
+        '<div class="scad-lista">' + vic.map(function (b) {
+          var ar = areaById(b.areaId); var si = scadInfo(b.scadenza);
+          return '<div class="scad-riga"><span class="scad-badge ' + si.cls + '">' + si.testo + '</span>' +
+            '<span class="scad-testo">' + esc(b.testo) + '</span>' +
+            '<span class="tag-area" style="--c-area:' + LM.coloreArea(ar) + '" title="' + esc(ar.nome) + '">' + ICO(ar.icona, 13) + '</span>' +
+            '<button class="btn btn-mini btn-primario" data-scadoggi="' + b.id + '">' + ICO('arrowRight', 12) + ' Oggi</button></div>';
+        }).join('') + '</div></div>';
+      box.querySelectorAll('[data-scadoggi]').forEach(function (b) {
+        b.addEventListener('click', function () { LM.backlogInOggi(b.getAttribute('data-scadoggi')); toast('Portato tra le azioni di oggi.', 0, 'arrowRight'); disegnaScadenze(); disegnaBacklog(); aggiornaNav(); });
+      });
+    }
 
     /* --- Da smistare: le catture grezze --- */
     function disegnaSmista() {
@@ -1229,7 +1363,7 @@
       var box = document.getElementById('att-smista');
       if (!st.inbox.length) { box.innerHTML = ''; return; }
       box.innerHTML = '<div class="card"><h2>' + ICO('inbox', 16) + ' Da smistare <span class="conta">' + st.inbox.length + '</span></h2>' +
-        '<div class="sotto">Per ognuno, una decisione veloce: <b>Oggi</b> se lo fai oggi, <b>Backlog</b> se è da fare ma non adesso, oppure <b>Scarta</b>.</div>' +
+        '<div class="sotto">Per ognuno, una decisione veloce: <b>Oggi</b> se lo fai oggi, <b>Da fare</b> se è da fare ma non adesso, oppure <b>Scarta</b>.</div>' +
         '<div class="griglia" id="lista-inbox" style="gap:9px"></div></div>';
       var lista = document.getElementById('lista-inbox');
       lista.innerHTML = st.inbox.map(function (el, i) {
@@ -1245,7 +1379,7 @@
             '<div class="azioni-riga mt-s">' +
             '<span style="min-width:0;flex:1 1 150px">' + selectAree('sel-' + el.id) + '</span>' +
             '<button class="btn btn-mini btn-primario" data-fai="azione">' + ICO('arrowRight', 13) + ' Oggi</button>' +
-            '<button class="btn btn-mini" data-fai="backlog">' + ICO('lista', 13) + ' Backlog</button>' +
+            '<button class="btn btn-mini" data-fai="backlog">' + ICO('lista', 13) + ' Da fare</button>' +
             '<button class="btn btn-mini btn-ghost" data-fai="scarta">' + ICO('trash', 13) + ' Scarta</button></div>';
         return '<div class="riga-inbox" data-id="' + el.id + '" style="--i:' + i + '"><div style="flex:1;min-width:0">' + contenuto + '</div></div>';
       }).join('');
@@ -1257,7 +1391,7 @@
             var esito = b.getAttribute('data-fai');
             var area = document.getElementById('sel-' + id).value;
             LM.triageInbox(id, esito, area);
-            toast(esito === 'azione' ? 'Aggiunto alle azioni di oggi.' : esito === 'backlog' ? 'Messo nel backlog.' : 'Scartato.', LM.XP_EVENTI.triage,
+            toast(esito === 'azione' ? 'Aggiunto alle azioni di oggi.' : esito === 'backlog' ? 'Messo tra le cose da fare.' : 'Scartato.', LM.XP_EVENTI.triage,
               esito === 'azione' ? 'arrowRight' : esito === 'backlog' ? 'lista' : 'trash');
             aggiornaNav(); disegnaSmista(); disegnaBacklog();
           });
@@ -1295,9 +1429,10 @@
               '<button class="btn btn-mini btn-ghost" type="button" data-bkannulla="1">Annulla</button></form></div>';
           }
           return '<div class="bk-item" data-bid="' + b.id + '">' +
-            '<div class="bk-item-testo">' + esc(b.testo) + '</div>' +
+            '<div class="bk-item-testo">' + esc(b.testo) + (b.scadenza ? ' <span class="scad-badge ' + scadInfo(b.scadenza).cls + '">' + scadInfo(b.scadenza).testo + '</span>' : '') + '</div>' +
             '<div class="bk-item-azioni">' +
             '<button class="btn btn-mini btn-primario" data-bkoggi="' + b.id + '">' + ICO('arrowRight', 13) + ' Oggi</button>' +
+            '<label class="scad-set' + (b.scadenza ? ' attiva' : '') + '" title="Scadenza">' + ICO('calendar', 14) + '<input type="date" data-scaddate="' + b.id + '"' + (b.scadenza ? ' value="' + b.scadenza + '"' : '') + '></label>' +
             '<button class="icona-btn" data-bkmod="' + b.id + '" title="Modifica" aria-label="Modifica">' + ICO('pencil', 14) + '</button>' +
             '<span class="bk-area-sel">' + selectBacklogArea(b.id, b.areaId) + '</span>' +
             '<button class="icona-btn" data-bkdel="' + b.id + '" title="Rimuovi" aria-label="Rimuovi">' + ICO('trash', 14) + '</button>' +
@@ -1311,10 +1446,10 @@
           '<span class="bk-chevron' + (aperta ? ' aperta' : '') + '">' + ICO('chevronGiu', 16) + '</span></button>' +
           '<div class="bk-corpo"' + (aperta ? '' : ' hidden') + '>' +
           (g.items.length ? items : '<div class="bk-vuoto">Niente qui. Aggiungi qualcosa da fare per «' + esc(g.area.nome) + '».</div>') +
-          '<form class="bk-add" data-addarea="' + g.area.id + '"><input type="text" placeholder="Aggiungi al backlog…" aria-label="Aggiungi al backlog"><button class="btn btn-mini" type="submit">' + ICO('plus', 13) + '</button></form>' +
+          '<form class="bk-add" data-addarea="' + g.area.id + '"><input type="text" placeholder="Aggiungi qualcosa da fare…" aria-label="Aggiungi qualcosa da fare"><button class="btn btn-mini" type="submit">' + ICO('plus', 13) + '</button></form>' +
           '</div></div>';
       }).join('');
-      box.innerHTML = '<div class="card mt"><h2>' + ICO('lista', 16) + ' Backlog per area</h2>' +
+      box.innerHTML = '<div class="card mt"><h2>' + ICO('lista', 16) + ' Da fare, per area</h2>' +
         '<div class="sotto">Le cose da fare senza una data. Apri un’area e porta in <b>Oggi</b> ciò su cui vuoi lavorare.</div>' +
         '<div class="backlog-aree">' + corpo + '</div></div>';
 
@@ -1347,6 +1482,9 @@
       });
       box.querySelectorAll('select[data-bk-area]').forEach(function (sel) {
         sel.addEventListener('change', function () { LM.cambiaAreaBacklog(sel.getAttribute('data-bk-area'), sel.value); disegnaBacklog(); });
+      });
+      box.querySelectorAll('[data-scaddate]').forEach(function (inp) {
+        inp.addEventListener('change', function () { LM.impostaScadenzaBacklog(inp.getAttribute('data-scaddate'), inp.value || null); disegnaScadenze(); disegnaBacklog(); });
       });
     }
   }
@@ -1534,10 +1672,10 @@
       fonti: 'Lally et al. (2010), European J. of Social Psychology — curva di formazione delle abitudini (mediana 66 giorni, conta la ripetizione) · Wood & Neal (2016), Behavioral Science & Policy — friction e contesto guidano l’abitudine.'
     },
     {
-      titolo: 'Un magazzino per le cose da fare (backlog)',
+      titolo: 'Un posto per le cose da fare',
       evidenza: 'media',
-      claim: 'Le intenzioni non ancora completate restano attive nella mente e disturbano finché non hanno un posto affidabile dove stare. Un contenitore esterno, diviso per area, chiude questi «cerchi aperti» e libera attenzione, senza costringere a decidere subito.',
-      uso: 'La vista Attività separa la cattura grezza dal backlog per area: da lì porti in «Oggi» poche cose per volta, così l’inbox non diventa una lista infinita e ansiogena.',
+      claim: 'Le intenzioni non ancora completate restano attive nella mente e disturbano finché non hanno un posto affidabile dove stare. Un elenco esterno, diviso per area, chiude questi «cerchi aperti» e libera attenzione, senza costringere a decidere subito.',
+      uso: 'La vista Attività separa la cattura grezza dalle cose «Da fare» divise per area: da lì porti in «Oggi» poche cose per volta, così l’inbox non diventa una lista infinita e ansiogena.',
       fonti: 'Masicampo & Baumeister (2011), JPSP — fare un piano concreto attenua l’effetto Zeigarnik dei compiti aperti · Risko & Gilbert (2016), Trends in Cognitive Sciences — cognitive offloading.'
     },
     {
@@ -1551,7 +1689,7 @@
       titolo: 'Categorie tue (autonomia)',
       evidenza: 'media',
       claim: 'Poter definire e nominare le proprie categorie aumenta il senso di controllo e la voglia di usare lo strumento: le cose «tue» ricevono più attenzione di quelle imposte dall’alto.',
-      uso: 'Le aree si rinominano, si creano e si rimuovono (per esempio i tuoi progetti). Colori, grafici e backlog si adattano di conseguenza.',
+      uso: 'Le aree si rinominano, si creano e si rimuovono (per esempio i tuoi progetti). Colori, grafici e liste si adattano di conseguenza.',
       fonti: 'Deci & Ryan (2000), Psychological Inquiry — self-determination theory: l’autonomia sostiene la motivazione intrinseca · Patall, Cooper & Robinson (2008), Psychological Bulletin — la possibilità di scelta aumenta motivazione e impegno.'
     }
   ];
