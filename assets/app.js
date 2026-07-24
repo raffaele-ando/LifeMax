@@ -205,14 +205,16 @@
   $sheet.addEventListener('click', function (e) { if (e.target === $sheet) chiudiSheet(); });
 
   var wireSheet = null;
-  function apriSheet(titolo, html, onWire) {
+  var $sheetPanel = $sheet.querySelector('.sheet');
+  function apriSheet(titolo, html, onWire, largo) {
     document.getElementById('sheet-titolo').textContent = titolo;
     document.getElementById('sheet-corpo').innerHTML = html;
+    if ($sheetPanel) $sheetPanel.classList.toggle('sheet-largo', !!largo);
     $sheet.hidden = false;
     wireSheet = onWire || null;
     if (wireSheet) wireSheet(document.getElementById('sheet-corpo'));
   }
-  function chiudiSheet() { $sheet.hidden = true; wireSheet = null; }
+  function chiudiSheet() { $sheet.hidden = true; wireSheet = null; if ($sheetPanel) $sheetPanel.classList.remove('sheet-largo'); }
 
   /* ---------- navigazione ---------- */
   /* gruppo: 'primaria' = destinazioni quotidiane (sidebar + tab bar mobile);
@@ -220,17 +222,18 @@
 
   var VISTE = [
     { id: 'oggi',        nome: 'Oggi',        icona: 'target',    gruppo: 'primaria' },
-    { id: 'giornata',    nome: 'Giornata',    icona: 'clock',     gruppo: 'primaria', soloMenu: true },
+    { id: 'giornata',    nome: 'Giornata',    icona: 'clock',     gruppo: 'primaria' },
     { id: 'plancia',     nome: 'Panoramica',  icona: 'dashboard', gruppo: 'primaria' },
     { id: 'rituali',     nome: 'Rituali',     icona: 'sun',       gruppo: 'primaria' },
     { id: 'inbox',       nome: 'Attività',    icona: 'lista',     gruppo: 'primaria' },
     { id: 'esperimenti', nome: 'Esperimenti', icona: 'flask',     gruppo: 'secondaria' },
     { id: 'scienza',     nome: 'Perché funziona', icona: 'atom',  gruppo: 'secondaria' }
   ];
+  /* le 4 destinazioni quotidiane nella tab bar mobile; le altre primarie
+     (es. Giornata) e le secondarie stanno nel menu "Altro" */
+  var TAB_MOBILE = ['oggi', 'plancia', 'rituali', 'inbox'];
   function vistaById(id) { return VISTE.find(function (v) { return v.id === id; }); }
-  /* la voce "Giornata" nel menu appare solo se hai scelto quella posizione */
-  function vistaVisibile(v) { return !v.soloMenu || LM.load().profilo.giornataPos === 'menu'; }
-  function primarie() { return VISTE.filter(function (v) { return v.gruppo === 'primaria' && vistaVisibile(v); }); }
+  function primarie() { return VISTE.filter(function (v) { return v.gruppo === 'primaria'; }); }
 
   function vistaCorrente() {
     var h = (location.hash || '#/oggi').replace('#/', '').split('/')[0];
@@ -260,9 +263,10 @@
     document.getElementById('sidebar-fondo').innerHTML = footerSidebar();
     wireFooterSidebar();
 
-    /* tab bar mobile: prime 4 primarie + "Altro" (le eccedenti vanno in Altro) */
+    /* tab bar mobile: 4 destinazioni quotidiane + "Altro" (Giornata e le
+       secondarie stanno in "Altro"; in Oggi c'è comunque la barra compatta) */
     var tab = document.getElementById('nav-tab');
-    var primNav = primarie().slice(0, 4);
+    var primNav = TAB_MOBILE.map(vistaById);
     var inSecondaria = !primNav.some(function (v) { return v.id === corrente; });
     tab.innerHTML = primNav.map(function (v) {
       return '<button data-vai="' + v.id + '" class="' + (corrente === v.id ? 'attivo' : '') + '">' +
@@ -325,10 +329,8 @@
       '<button class="btn btn-mini" id="imp-aree">' + ICO('sparkles', 14) + ' Gestisci le aree</button> ' +
       '<button class="btn btn-mini" id="imp-guida">' + ICO('aiuto', 14) + ' Come si usa</button></div></div>' +
       '<div class="imp-sezione"><div class="imp-eti">La giornata</div>' +
-      '<label class="tl-pos-sel" style="display:flex">Dove vederla: <select id="imp-giornata-pos">' +
-      GIORNATA_POS.map(function (o) { return '<option value="' + o.id + '"' + (s.profilo.giornataPos === o.id ? ' selected' : '') + '>' + o.nome + (o.racc ? ' (consigliata)' : '') + '</option>'; }).join('') +
-      '</select></label>' +
-      '<div class="imp-azioni mt-s"><button class="btn btn-mini" id="imp-ritmo">' + ICO('clock', 14) + ' Sonno e pasti</button></div></div>' +
+      '<div class="imp-azioni"><button class="btn btn-mini" id="imp-ritmo">' + ICO('clock', 14) + ' Sonno e pasti</button></div>' +
+      '<div class="imp-nota">La barra della giornata è sempre in cima a <b>Oggi</b>; la pagina <b>Giornata</b> mostra anche settimana, mese e anno.</div></div>' +
       '<div class="imp-sezione"><div class="imp-eti">Tema</div>' +
       '<div class="segmenti imp-seg" id="seg-modo">' + segM('auto', 'refresh', 'Auto') + segM('light', 'sun', 'Chiaro') + segM('dark', 'moon', 'Scuro') + '</div></div>' +
       '<div class="imp-sezione"><div class="imp-eti">Aspetto</div>' +
@@ -367,8 +369,6 @@
     var ar = root.querySelector('#imp-aree'); if (ar) ar.addEventListener('click', apriAree);
     var gu = root.querySelector('#imp-guida'); if (gu) gu.addEventListener('click', apriGuida);
     var ri = root.querySelector('#imp-ritmo'); if (ri) ri.addEventListener('click', apriRitmo);
-    var gp = root.querySelector('#imp-giornata-pos');
-    if (gp) gp.addEventListener('change', function () { LM.impostaGiornataPos(gp.value); chiudiSheet(); render(); toast('Fatto: la giornata ora si vede dove hai scelto.', 0, 'check'); });
     var imp = root.querySelector('#imp-importa'); var file = root.querySelector('#imp-file');
     if (imp && file) {
       imp.addEventListener('click', function () { file.click(); });
@@ -501,7 +501,7 @@
 
   function apriMenuAltro() {
     var s = LM.load();
-    var extra = primarie().slice(4); /* primarie che non stanno nella tab bar (es. Giornata) */
+    var extra = primarie().filter(function (v) { return TAB_MOBILE.indexOf(v.id) < 0; }); /* es. Giornata */
     var link = extra.concat(VISTE.filter(function (v) { return v.gruppo === 'secondaria'; })).map(function (v) {
       return '<button class="menu-voce" data-vai="' + v.id + '">' + ICO(v.icona, 18) + '<span>' + v.nome + '</span>' + ICO('arrowRight', 15) + '</button>';
     }).join('');
@@ -744,14 +744,10 @@
     }
   }
 
-  /* mostra la giornata in cima a Oggi, secondo la preferenza scelta */
+  /* la barra compatta della giornata è sempre in cima a Oggi */
   function montaOggiGiornata() {
     var zona = document.getElementById('oggi-giornata');
-    if (!zona) return;
-    var pos = LM.load().profilo.giornataPos;
-    if (pos === 'oggi-strip') montaGiornataStrip(zona);
-    else if (pos === 'oggi-full') montaGiornata(zona, {});
-    else zona.innerHTML = '';
+    if (zona) montaGiornataStrip(zona);
   }
 
   /* ============================================================
@@ -771,14 +767,7 @@
     return ('0' + Math.floor(m / 60)).slice(-2) + ':' + ('0' + (m % 60)).slice(-2);
   }
 
-  var GIORNATA_POS = [
-    { id: 'oggi-strip', nome: 'In Oggi, barra compatta', racc: true },
-    { id: 'oggi-full', nome: 'In Oggi, per intero' },
-    { id: 'panoramica', nome: 'In Panoramica' },
-    { id: 'menu', nome: 'Come voce a parte' }
-  ];
-
-  var DURATE = [{ v: '', t: 'durata —' }, { v: 15, t: '15 min' }, { v: 30, t: '30 min' }, { v: 45, t: '45 min' }, { v: 60, t: '1 h' }, { v: 90, t: '1 h 30' }, { v: 120, t: '2 h' }, { v: 180, t: '3 h' }];
+  var DURATE =[{ v: '', t: 'durata —' }, { v: 15, t: '15 min' }, { v: 30, t: '30 min' }, { v: 45, t: '45 min' }, { v: 60, t: '1 h' }, { v: 90, t: '1 h 30' }, { v: 120, t: '2 h' }, { v: 180, t: '3 h' }];
 
   /* orizzonte della pagina "Giornata" e giorno/settimana/mese di riferimento */
   var giornataOrizzonte = 'giorno';
@@ -870,6 +859,7 @@
 
   function montaGiornata(container, opts) {
     opts = opts || {};
+    var compact = !!opts.compact;
     var k = opts.giorno || LM.todayKey();
     var d = nodiGiorno(k);
     var interactive = d.isToday;
@@ -878,26 +868,35 @@
 
     var vuota = !d.placed.length && !d.tray.length;
     var editItems = interactive ? d.placed.concat(d.tray).filter(function (e) { return e.tipo !== 'pasto'; }) : [];
-    var apri = giornataEditorAperto || d.placed.length === 0;
+    var apri = compact || giornataEditorAperto || d.placed.length === 0;
+
+    function edRigaHtml(e) {
+      var ar = areaById(e.areaId), col = LM.coloreArea(ar);
+      var fatto = e.tipo === 'azione' ? e.done : e.fatto;
+      var attr = e.tipo === 'azione' ? 'data-tl-az="' + e.id + '"' : 'data-tl-ab="' + e.id + '"';
+      return '<div class="tl-ed-riga' + (fatto ? ' fatta' : '') + (e.min == null ? ' senzaora' : '') + '" style="--c-area:' + col + '">' +
+        '<button class="tl-check" ' + attr + ' aria-label="Fatto">' + ICO('check', 12) + '</button>' +
+        '<span class="tl-tag" style="color:' + col + '" title="' + esc(ar.nome) + '">' + ICO(ar.icona, 13) + '</span>' +
+        '<span class="tl-ed-testo">' + esc(e.testo) + (e.mit ? ' <span class="tag-mit">' + ICO('star', 9) + 'Priorità</span>' : '') + '</span>' +
+        '<input type="time" class="tl-time" value="' + (e.ora || '') + '" ' + attr + ' aria-label="Orario">' +
+        '<select class="tl-dur" ' + attr + ' aria-label="Durata">' + DURATE.map(function (o) { return '<option value="' + o.v + '"' + ((e.dur || '') === o.v || (!e.dur && o.v === '') ? ' selected' : '') + '>' + o.t + '</option>'; }).join('') + '</select>' +
+        '</div>';
+    }
+    var edRows = editItems.map(edRigaHtml).join('');
 
     var editor = '';
     if (interactive && editItems.length) {
-      editor = '<div class="tl-editor">' +
-        '<button class="tl-ed-toggle' + (apri ? ' aperto' : '') + '" id="tl-ed-toggle">' + ICO('clock', 13) +
-        ' Orari e durate' + (d.tray.length ? ' <span class="tl-ed-badge">' + d.tray.length + ' senza orario</span>' : '') +
-        '<span class="bk-chevron' + (apri ? ' aperta' : '') + '">' + ICO('chevronGiu', 15) + '</span></button>' +
-        (apri ? '<div class="tl-ed-lista">' + editItems.map(function (e) {
-          var ar = areaById(e.areaId), col = LM.coloreArea(ar);
-          var fatto = e.tipo === 'azione' ? e.done : e.fatto;
-          var attr = e.tipo === 'azione' ? 'data-tl-az="' + e.id + '"' : 'data-tl-ab="' + e.id + '"';
-          return '<div class="tl-ed-riga' + (fatto ? ' fatta' : '') + '" style="--c-area:' + col + '">' +
-            '<button class="tl-check" ' + attr + ' aria-label="Fatto">' + ICO('check', 12) + '</button>' +
-            '<span class="tl-tag" style="color:' + col + '" title="' + esc(ar.nome) + '">' + ICO(ar.icona, 13) + '</span>' +
-            '<span class="tl-ed-testo">' + esc(e.testo) + (e.mit ? ' <span class="tag-mit">' + ICO('star', 9) + 'Priorità</span>' : '') + '</span>' +
-            '<input type="time" class="tl-time" value="' + (e.ora || '') + '" ' + attr + ' aria-label="Orario">' +
-            '<select class="tl-dur" ' + attr + ' aria-label="Durata">' + DURATE.map(function (o) { return '<option value="' + o.v + '"' + ((e.dur || '') === o.v || (!e.dur && o.v === '') ? ' selected' : '') + '>' + o.t + '</option>'; }).join('') + '</select>' +
-            '</div>';
-        }).join('') + '</div>' : '') + '</div>';
+      if (compact) {
+        editor = '<div class="tl-editor tl-editor-pop"><div class="tl-ed-tit">' + ICO('pencil', 13) + ' Modifica orari e durate' +
+          (d.tray.length ? ' <span class="tl-ed-badge">' + d.tray.length + ' senza orario</span>' : '') + '</div>' +
+          '<div class="tl-ed-lista">' + edRows + '</div></div>';
+      } else {
+        editor = '<div class="tl-editor">' +
+          '<button class="tl-ed-toggle' + (apri ? ' aperto' : '') + '" id="tl-ed-toggle">' + ICO('clock', 13) +
+          ' Orari e durate' + (d.tray.length ? ' <span class="tl-ed-badge">' + d.tray.length + ' senza orario</span>' : '') +
+          '<span class="bk-chevron' + (apri ? ' aperta' : '') + '">' + ICO('chevronGiu', 15) + '</span></button>' +
+          (apri ? '<div class="tl-ed-lista">' + edRows + '</div>' : '') + '</div>';
+      }
     }
 
     var trayRo = '';
@@ -911,18 +910,33 @@
 
     var footer = '';
     if (opts.controls !== false) {
-      footer = '<div class="tl-piede"><label class="tl-pos-sel">Mostrala: ' +
-        '<select id="tl-pos">' + GIORNATA_POS.map(function (o) { return '<option value="' + o.id + '"' + (LM.load().profilo.giornataPos === o.id ? ' selected' : '') + '>' + o.nome + (o.racc ? ' (consigliata)' : '') + '</option>'; }).join('') + '</select></label>' +
-        '<button class="btn btn-mini" id="tl-edit-orari">' + ICO('pencil', 13) + ' Sonno e pasti</button></div>';
+      footer = '<div class="tl-piede">' +
+        '<button class="btn btn-mini" id="tl-edit-orari">' + ICO('clock', 13) + ' Sonno e pasti</button>' +
+        (compact ? '<button class="btn btn-mini btn-ghost" id="tl-apri-pagina">' + ICO('calendar', 13) + ' Settimana · mese · anno</button>' : '') +
+        '</div>';
     }
 
-    container.innerHTML = '<div class="card giornata">' +
-      (opts.header === false ? '' : '<div class="tl-head"><div><h2>' + ICO('clock', 16) + ' ' + (opts.giorno && !d.isToday ? etichettaGiorno(k) : 'La giornata') + '</h2>' +
-        '<div class="sotto">Come sono divise le ore, dal risveglio al sonno. I blocchi occupano il tempo che scegli.</div></div></div>') +
-      (vuota
-        ? '<div class="vuoto" style="padding:18px 8px"><b>Niente in agenda per questo giorno.</b>' + (interactive ? '<br>Dai un orario a un’abitudine o a una cosa di oggi e comparirà qui.' : '') + '</div>'
-        : htmlTimeGrid(d, { interactive: interactive, nowMin: nowMin })) +
-      editor + trayRo + footer + '</div>';
+    /* nel pop-up la griglia è più densa; su schermo largo va di fianco all'editor */
+    var pxh = compact ? (window.innerWidth < 720 ? 34 : 44) : 56;
+    var sommario = '';
+    if (compact && nowMin != null) {
+      var pross = d.placed.filter(function (e) { return e.min + (e.dur || 30) > nowMin && !(e.tipo === 'azione' ? e.done : (e.tipo === 'abitudine' ? e.fatto : false)); })[0];
+      sommario = 'Adesso <b>' + fmtMin(nowMin) + '</b>' + (pross ? ' · poi ' + esc(pross.nome || pross.testo) + ' alle ' + pross.ora : ' · niente altro in agenda');
+    }
+    var head = opts.header === false ? '' : '<div class="tl-head"><div><h2>' + ICO('clock', 16) + ' ' + (opts.giorno && !d.isToday ? etichettaGiorno(k) : 'La giornata') + '</h2>' +
+      '<div class="sotto">' + (compact ? (sommario || 'Come è divisa la tua giornata. I blocchi occupano il tempo che scegli.') : 'Come sono divise le ore, dal risveglio al sonno. I blocchi occupano il tempo che scegli.') + '</div></div></div>';
+    var gridHtml = vuota
+      ? '<div class="vuoto" style="padding:18px 8px"><b>Niente in agenda per questo giorno.</b>' + (interactive ? '<br>Dai un orario a un’abitudine o a una cosa di oggi e comparirà qui.' : '') + '</div>'
+      : htmlTimeGrid(d, { interactive: interactive, nowMin: nowMin, pxh: pxh });
+
+    if (compact) {
+      container.innerHTML = '<div class="card giornata giornata-pop">' + head +
+        '<div class="gio-2col"><div class="gio-col-grid">' + gridHtml + '</div>' +
+        '<div class="gio-col-ed">' + (editor || '<div class="sotto" style="margin:0">Aggiungi un orario a un’abitudine o a una cosa di oggi per vederla qui.</div>') + trayRo + '</div></div>' +
+        footer + '</div>';
+    } else {
+      container.innerHTML = '<div class="card giornata">' + head + gridHtml + editor + trayRo + footer + '</div>';
+    }
 
     if (interactive) {
       container.querySelectorAll('[data-tl-az].tl-check, .tl-blk-check[data-tl-az]').forEach(function (b) {
@@ -956,12 +970,8 @@
     }
     var eo = container.querySelector('#tl-edit-orari');
     if (eo) eo.addEventListener('click', apriRitmo);
-    var ps = container.querySelector('#tl-pos');
-    if (ps) ps.addEventListener('change', function () {
-      LM.impostaGiornataPos(ps.value);
-      toast('Fatto: da ora vedi la giornata dove hai scelto.', 0, 'check');
-      chiudiSheet(); render();
-    });
+    var ap = container.querySelector('#tl-apri-pagina');
+    if (ap) ap.addEventListener('click', function () { chiudiSheet(); location.hash = '#/giornata'; });
   }
 
   /* --- Settimana: 7 colonne con blocchi (scroll orizzontale su mobile) --- */
@@ -1132,8 +1142,8 @@
     var b = container.querySelector('#giornata-strip-btn');
     if (b) b.addEventListener('click', function () {
       apriSheet('La giornata', '<div id="sheet-giornata"></div>', function (root) {
-        montaGiornata(root.querySelector('#sheet-giornata'), { inSheet: true });
-      });
+        montaGiornata(root.querySelector('#sheet-giornata'), { compact: true });
+      }, true);
     });
   }
 
@@ -1329,11 +1339,9 @@
       c.classList.add('vista-enter');
     }
 
-    /* --- Riepilogo: azioni di oggi + costanza (+ giornata se scelta qui) --- */
+    /* --- Riepilogo: azioni di oggi + costanza --- */
     function sezRiepilogo(c) {
-      var conGiornata = LM.load().profilo.giornataPos === 'panoramica';
-      c.innerHTML = (conGiornata ? '<div id="plancia-giornata" class="mb"></div>' : '') +
-        '<div class="griglia griglia-2">' +
+      c.innerHTML = '<div class="griglia griglia-2">' +
         '<div class="card" style="--i:0"><h2>' + ICO('target', 16) + ' Azioni di oggi</h2>' +
         '<div class="sotto">La prima è la più importante. Le altre vengono dopo.</div>' +
         '<div class="lista-azioni" id="lista-oggi"></div>' +
@@ -1344,7 +1352,6 @@
         '<div class="sotto">XP guadagnati ogni giorno, nelle ultime 12 settimane. Quello che conta è tornarci spesso.</div>' +
         '<div id="heatmap"></div></div></div>';
 
-      if (conGiornata) montaGiornata(document.getElementById('plancia-giornata'), {});
       LMCharts.heatmap(document.getElementById('heatmap'), LM.heatmapConsistenza(12));
 
       var lista = document.getElementById('lista-oggi');

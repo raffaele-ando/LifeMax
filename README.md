@@ -56,15 +56,16 @@ con descrittori e il riferimento «il tuo solito» (media recente), così il pun
 **🕒 La giornata** è una **griglia oraria a blocchi**: sonno, pasti, abitudini e cose di
 oggi occupano il tempo che scegli (durata regolabile), con gli spazi liberi visibili e
 la riga «adesso». Rende concreto il tempo per chi fatica a percepirlo (time blindness).
-Puoi decidere **dove vederla** — barra compatta in *Oggi* (consigliata; toccandola si
-apre la griglia intera), per intero in *Oggi*, dentro *Panoramica*, o come voce a parte
-— da un menù a tendina sulla timeline o da *Impostazioni → La giornata*; **la scelta si
-salva e si sincronizza sul cloud**. La pagina a sé stante ha quattro **orizzonti**:
-**Giorno** (la griglia), **Settimana** (7 colonne a blocchi), **Mese** (calendario con
-i giorni attivi e le scadenze) e **Anno** (mappa dell'attività + scadenze) per
-ragionare sul lungo periodo; da settimana e mese si apre il singolo giorno con un tocco.
-Sonno, sveglia e pasti si impostano da *Sonno e pasti*; orario e durata di abitudini e
-azioni si assegnano sulla timeline.
+È **sempre presente in due posti fissi**: una **barra compatta in cima a *Oggi*** (che
+toccandola apre un pop-up con la giornata) e una **pagina *Giornata*** a sé, tra le
+destinazioni principali. Il **pop-up** mette la griglia (per capire com'è fatta la
+giornata) accanto alla lista modificabile di orari e durate (per cambiarle al volo),
+così su desktop vedi e modifichi senza scorrere. La pagina a sé ha quattro
+**orizzonti**: **Giorno** (la griglia), **Settimana** (7 colonne a blocchi), **Mese**
+(calendario con i giorni attivi e le scadenze) e **Anno** (mappa dell'attività +
+scadenze) per ragionare sul lungo periodo; da settimana e mese si apre il singolo giorno
+con un tocco. Sonno, sveglia e pasti si impostano da *Sonno e pasti*; orario e durata di
+abitudini e azioni si assegnano sulla timeline.
 
 ## Più approcci UX, stessi dati (di proposito)
 
