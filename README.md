@@ -35,10 +35,14 @@ confronti baseline→intervento (N-of-1) su di te.
 In ogni momento: **cattura istantanea** con `C`, `⌘K` o il bottone `＋` — un campo,
 zero categorie, le decisioni si prendono dopo.
 
-**📋 Attività** è il livello tra cattura e "oggi": ogni nota si smista in **Oggi**,
+Il vocabolario è volutamente ridotto a tre parole — **butta giù → decidi → fai** —
+ripetute uguali ovunque, così non ci sono nomi diversi per la stessa cosa (scelta di
+progettazione per ridurre il carico su chi ha ADHD/bassa coscienziosità).
+
+**📋 Attività** è il livello tra cattura e "oggi": ogni nota si sistema in **Oggi**,
 **Da fare** (senza data, diviso per area, da cui tiri in giornata poche cose per
 volta) o **Scarta**. Le attività «Da fare» possono avere una **scadenza** con conto
-alla rovescia; quelle vicine compaiono in **In scadenza**. Una cosa da fare può
+alla rovescia; quelle vicine compaiono in **In arrivo**. Una cosa da fare può
 diventare un **progetto**: la spezzi in **passi** ordinati, vedi una barra di
 avanzamento e il pulsante **Passo** porta in *Oggi* solo il prossimo passo non
 ancora fatto — un po' per volta invece di tutto insieme. Le **abitudini
@@ -47,6 +51,15 @@ dei giorni e serie di costanza. Le **aree** sono personalizzabili (rinomina, cre
 rimuovi) da *Impostazioni → Gestisci le aree*. Il **check-in** usa una scala ancorata
 con descrittori e il riferimento «il tuo solito» (media recente), così il punteggio
 è meno ambiguo. Una **guida in-app** (*Impostazioni → Come si usa*) riassume il tutto.
+
+**🕒 La giornata** è una timeline che mostra come sono divise le ore, dal risveglio al
+sonno: sonno, pasti, abitudini e cose di oggi con un orario, con gli spazi liberi e la
+riga «adesso». Rende visibile il tempo a chi fatica a percepirlo (time blindness).
+Puoi decidere **dove vederla** — barra compatta in *Oggi* (consigliata), per intero in
+*Oggi*, dentro *Panoramica*, o come voce a parte — da un menù a tendina sulla timeline
+stessa o da *Impostazioni → La giornata*; **la scelta si salva e si sincronizza sul
+cloud**. Sonno, sveglia e pasti si impostano da *Sonno e pasti*; orario di abitudini e
+azioni si assegna direttamente sulla timeline.
 
 ## Più approcci UX, stessi dati (di proposito)
 
@@ -75,6 +88,8 @@ chiaro/scuro/auto. Desktop-first con sidebar; sotto 860px layout mobile con tab 
 | Max 3 azioni al giorno | goal-setting (Locke & Latham 2002); effetto Zeigarnik e pianificazione (Masicampo & Baumeister 2011) |
 | Esperimenti N-of-1 | Lillie et al. 2011; standard CENT (Vohra et al. 2015, BMJ) |
 | Progetti spezzati in passi, uno per volta in Oggi | sotto-obiettivi prossimali (Bandura & Schunk 1981); goal-setting (Locke & Latham 2002) |
+| Timeline «La giornata» (sonno, pasti, abitudini, azioni) | difficoltà a percepire il tempo nell'ADHD (Barkley 1997); cognitive offloading del «quando» (Risko & Gilbert 2016) |
+| Un solo vocabolario ripetuto ovunque (butta giù → decidi → fai) | struttura esterna coerente (Safren 2005; Solanto 2010); riduzione del carico da scelta (Iyengar & Lepper 2000) |
 | Azioni non fatte muoiono col giorno | fresh start effect (Dai, Milkman & Riis 2014) |
 | Frizione minima ovunque | formazione abitudini (Lally et al. 2010; Wood & Neal 2016) |
 
@@ -157,7 +172,7 @@ assets/app.css      design system: token, 2 skin, chiaro/scuro, mobile
 assets/icons.js     iconografia SVG proprietaria + logo Google
 assets/data.js      stato, XP/streak/esperimenti, hydrate/snapshot, seed demo
 assets/charts.js    micro-libreria SVG: sparkline, trend, heatmap, barre, anello, A/B
-assets/app.js       router, 6 viste, onboarding, cattura globale, UI account
+assets/app.js       router, viste, timeline "La giornata", onboarding, cattura, UI account
 assets/cloud.js     Firebase: accesso Google + sync Firestore (modulo ES)
 firestore.rules     regole di sicurezza (accesso limitato ai propri dati)
 ```

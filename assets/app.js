@@ -182,7 +182,7 @@
   $inp.addEventListener('keydown', function (e) {
     if (e.key === 'Enter' && $inp.value.trim()) {
       var xp = LM.cattura($inp.value.trim());
-      toast('Salvato nell’inbox. Puoi tornare a ciò che stavi facendo.', xp, 'inbox');
+      toast('Salvato. Torna pure a quello che stavi facendo.', xp, 'inbox');
       chiudiCattura();
       aggiornaNav(); render();
     }
@@ -220,6 +220,7 @@
 
   var VISTE = [
     { id: 'oggi',        nome: 'Oggi',        icona: 'target',    gruppo: 'primaria' },
+    { id: 'giornata',    nome: 'Giornata',    icona: 'clock',     gruppo: 'primaria', soloMenu: true },
     { id: 'plancia',     nome: 'Panoramica',  icona: 'dashboard', gruppo: 'primaria' },
     { id: 'rituali',     nome: 'Rituali',     icona: 'sun',       gruppo: 'primaria' },
     { id: 'inbox',       nome: 'Attività',    icona: 'lista',     gruppo: 'primaria' },
@@ -227,6 +228,9 @@
     { id: 'scienza',     nome: 'Perché funziona', icona: 'atom',  gruppo: 'secondaria' }
   ];
   function vistaById(id) { return VISTE.find(function (v) { return v.id === id; }); }
+  /* la voce "Giornata" nel menu appare solo se hai scelto quella posizione */
+  function vistaVisibile(v) { return !v.soloMenu || LM.load().profilo.giornataPos === 'menu'; }
+  function primarie() { return VISTE.filter(function (v) { return v.gruppo === 'primaria' && vistaVisibile(v); }); }
 
   function vistaCorrente() {
     var h = (location.hash || '#/oggi').replace('#/', '').split('/')[0];
@@ -248,7 +252,7 @@
         ICO(v.icona, 17) + '<span>' + v.nome + '</span>' + badgeInbox(v, s) + '</a>';
     }
     lato.innerHTML =
-      VISTE.filter(function (v) { return v.gruppo === 'primaria'; }).map(voce).join('') +
+      primarie().map(voce).join('') +
       '<div class="nav-sep"></div>' +
       VISTE.filter(function (v) { return v.gruppo === 'secondaria'; }).map(voce).join('');
 
@@ -256,11 +260,11 @@
     document.getElementById('sidebar-fondo').innerHTML = footerSidebar();
     wireFooterSidebar();
 
-    /* tab bar mobile: 4 primarie + "Altro" */
+    /* tab bar mobile: prime 4 primarie + "Altro" (le eccedenti vanno in Altro) */
     var tab = document.getElementById('nav-tab');
-    var primarie = VISTE.filter(function (v) { return v.gruppo === 'primaria'; });
-    var inSecondaria = corrente === 'esperimenti' || corrente === 'scienza';
-    tab.innerHTML = primarie.map(function (v) {
+    var primNav = primarie().slice(0, 4);
+    var inSecondaria = !primNav.some(function (v) { return v.id === corrente; });
+    tab.innerHTML = primNav.map(function (v) {
       return '<button data-vai="' + v.id + '" class="' + (corrente === v.id ? 'attivo' : '') + '">' +
         '<span class="tab-ico">' + ICO(v.icona, 21) + badgeInbox(v, s) + '</span>' + v.nome + '</button>';
     }).join('') +
@@ -320,6 +324,11 @@
       '<div class="imp-azioni">' +
       '<button class="btn btn-mini" id="imp-aree">' + ICO('sparkles', 14) + ' Gestisci le aree</button> ' +
       '<button class="btn btn-mini" id="imp-guida">' + ICO('aiuto', 14) + ' Come si usa</button></div></div>' +
+      '<div class="imp-sezione"><div class="imp-eti">La giornata</div>' +
+      '<label class="tl-pos-sel" style="display:flex">Dove vederla: <select id="imp-giornata-pos">' +
+      GIORNATA_POS.map(function (o) { return '<option value="' + o.id + '"' + (s.profilo.giornataPos === o.id ? ' selected' : '') + '>' + o.nome + (o.racc ? ' (consigliata)' : '') + '</option>'; }).join('') +
+      '</select></label>' +
+      '<div class="imp-azioni mt-s"><button class="btn btn-mini" id="imp-ritmo">' + ICO('clock', 14) + ' Sonno e pasti</button></div></div>' +
       '<div class="imp-sezione"><div class="imp-eti">Tema</div>' +
       '<div class="segmenti imp-seg" id="seg-modo">' + segM('auto', 'refresh', 'Auto') + segM('light', 'sun', 'Chiaro') + segM('dark', 'moon', 'Scuro') + '</div></div>' +
       '<div class="imp-sezione"><div class="imp-eti">Aspetto</div>' +
@@ -357,6 +366,9 @@
     var b2 = root.querySelector('#imp-backup'); if (b2) b2.addEventListener('click', apriBackups);
     var ar = root.querySelector('#imp-aree'); if (ar) ar.addEventListener('click', apriAree);
     var gu = root.querySelector('#imp-guida'); if (gu) gu.addEventListener('click', apriGuida);
+    var ri = root.querySelector('#imp-ritmo'); if (ri) ri.addEventListener('click', apriRitmo);
+    var gp = root.querySelector('#imp-giornata-pos');
+    if (gp) gp.addEventListener('change', function () { LM.impostaGiornataPos(gp.value); chiudiSheet(); render(); toast('Fatto: la giornata ora si vede dove hai scelto.', 0, 'check'); });
     var imp = root.querySelector('#imp-importa'); var file = root.querySelector('#imp-file');
     if (imp && file) {
       imp.addEventListener('click', function () { file.click(); });
@@ -470,16 +482,16 @@
       return '<div class="guida-voce"><span class="guida-ico">' + ICO(ico, 16) + '</span><div><b>' + tit + '</b><p>' + testo + '</p></div></div>';
     }
     apriSheet('Come si usa LifeMax',
-      '<div class="imp-nota" style="margin-top:0">Il cuore è un giro quotidiano breve. Non serve fare tutto: bastano pochi minuti al giorno.</div>' +
+      '<div class="imp-nota" style="margin-top:0">Tutto gira intorno a tre parole: <b>butta giù</b> un pensiero, <b>decidi</b> cosa farne, <b>fai</b> una cosa alla volta. Bastano pochi minuti al giorno.</div>' +
       '<div class="guida">' +
-      voce('bolt', 'Cattura tutto, subito', 'Un pensiero in testa? Premi <kbd>C</kbd> (o il tasto ＋) e annotalo in un secondo. Non decidere adesso: finisce in «Da smistare».') +
-      voce('lista', 'Smista con calma', 'In <b>Attività</b> per ogni nota scegli: <b>Oggi</b>, <b>Da fare</b> (senza una data, diviso per area) o <b>Scarta</b>. Dalle cose da fare porti in «Oggi» ciò su cui vuoi lavorare.') +
-      voce('sun', 'Il giro del giorno', 'La mattina scegli al massimo <b>3 azioni</b> (Rituali). In <b>Oggi</b> le fai una alla volta. La sera chiudi con la review. Ogni giorno riparte da zero.') +
-      voce('target', 'Una cosa alla volta', 'La schermata <b>Oggi</b> mostra una sola azione: meno scelte, meno blocco. Puoi cambiarne l’area anche dopo.') +
-      voce('smile', 'Check-in in 10 secondi', 'Energia, concentrazione, umore. Rispondi d’istinto rispetto al «tuo solito»: conta l’andamento nel tempo, non il numero preciso.') +
-      voce('flask', 'Esperimenti su di te', 'Provi un cambiamento (es. sport al mattino) e l’app confronta prima/dopo sulle tue metriche. Così sai cosa funziona <b>per te</b>.') +
+      voce('bolt', '1 · Butta giù tutto', 'Ti viene in mente qualcosa? Premi <kbd>C</kbd> (o il tasto ＋) e scrivilo al volo. Non devi decidere niente adesso: finisce in <b>Attività</b>, alla voce «Da sistemare».') +
+      voce('lista', '2 · Decidi cosa farne', 'In <b>Attività</b>, per ogni nota scegli <b>Oggi</b> (la fai oggi), <b>Da fare</b> (più avanti, senza data) o <b>Scarta</b>. Le cose «Da fare» restano lì, divise per area, finché non le porti in Oggi.') +
+      voce('target', '3 · Fai, una alla volta', 'La schermata <b>Oggi</b> ti mette davanti una cosa sola: fai quella, poi arriva la prossima. Al mattino scegli le tue tre cose in <b>Rituali</b>; la sera chiudi con la review. Ogni giorno riparte pulito.') +
+      voce('clock', 'La giornata', 'La timeline «La giornata» mostra come sono divise le tue ore: sonno, pasti, abitudini e cose di oggi con un orario. Puoi scegliere dove vederla dal menù a tendina sulla timeline.') +
+      voce('smile', 'Check-in in 10 secondi', 'Energia, concentrazione, umore. Rispondi a istinto partendo dal «tuo solito». Serve a vedere l’andamento nei giorni, più che il numero di oggi.') +
+      voce('flask', 'Esperimenti su di te', 'Provi un cambiamento (es. sport al mattino) e l’app confronta il prima e il dopo sui tuoi numeri. Così scopri cosa funziona <b>per te</b>.') +
       voce('trendUp', 'Panoramica e Diario', 'In <b>Panoramica</b> vedi progressi, costanza e andamento; nel <b>Diario</b> lo storico giorno per giorno.') +
-      voce('save', 'I tuoi dati sono al sicuro', 'Backup automatici, esporta/importa in .json, e sincronizzazione sul tuo account Google tra dispositivi.') +
+      voce('save', 'I tuoi dati sono al sicuro', 'Backup automatici, esporta e importa in .json, e sincronizzazione sul tuo account Google tra dispositivi.') +
       '</div>', null);
   }
 
@@ -489,7 +501,8 @@
 
   function apriMenuAltro() {
     var s = LM.load();
-    var link = VISTE.filter(function (v) { return v.gruppo === 'secondaria'; }).map(function (v) {
+    var extra = primarie().slice(4); /* primarie che non stanno nella tab bar (es. Giornata) */
+    var link = extra.concat(VISTE.filter(function (v) { return v.gruppo === 'secondaria'; })).map(function (v) {
       return '<button class="menu-voce" data-vai="' + v.id + '">' + ICO(v.icona, 18) + '<span>' + v.nome + '</span>' + ICO('arrowRight', 15) + '</button>';
     }).join('');
     var a = window.LM_AUTH || { available: false, user: null };
@@ -625,24 +638,26 @@
     var oggi = LM.azioniDiOggi();
     var fatte = oggi.filter(function (a) { return a.done; }).length;
     var inCoda = oggi.filter(function (a) { return !a.done; }).length - (prossima ? 1 : 0);
-    var html = topbar('Oggi', 'Una sola azione per volta, così puoi concentrarti su quella.',
+    var html = topbar('Oggi', 'Una cosa alla volta. Finisci questa, poi arriva la prossima.',
       '<span class="chip">' + ICO('check', 14) + ' <b>&nbsp;' + fatte + '/' + oggi.length + '</b>&nbsp;oggi</span>');
+    html += '<div id="oggi-giornata"></div>';
 
     if (!prossima) {
       html += '<div class="focus-scena"><div class="vuoto">' + illoSole() +
-        (oggi.length ? '<b>Hai completato tutte le azioni di oggi.</b><br>Se vuoi, puoi fare la review della sera oppure aggiungere qualcosa di nuovo.'
-                     : '<b>Non hai ancora pianificato la giornata, e va bene così.</b><br>Bastano sessanta secondi per scegliere la prima azione.') +
+        (oggi.length ? '<b>Per oggi hai finito tutto.</b><br>Puoi chiudere con la review della sera, o aggiungere qualcosa se ti va.'
+                     : '<b>Oggi non hai ancora scelto cosa fare.</b><br>Bastano pochi secondi: scegli la prima cosa e parti.') +
         '</div>' +
         '<div class="focus-azioni-riga">' +
-        '<button class="btn btn-primario btn-grande" data-vai="rituali">' + ICO('sun', 18) + ' Pianifica la giornata</button>' +
-        '<button class="btn" data-vai="inbox">' + ICO('inbox', 17) + ' Scegli dall’inbox</button>' +
+        '<button class="btn btn-primario btn-grande" data-vai="rituali">' + ICO('sun', 18) + ' Scegli le azioni di oggi</button>' +
+        '<button class="btn" data-vai="inbox">' + ICO('inbox', 17) + ' Prendi dalle attività</button>' +
         (oggi.length ? '<button class="btn" data-vai="rituali" data-sub="sera">' + ICO('moon', 17) + ' Review della sera</button>' : '') +
         '</div>' +
         '<form id="form-rapida" class="riga-flex" style="max-width:580px;width:100%">' +
-        '<input type="text" id="testo-rapida" placeholder="Oppure scrivi qui la prossima azione" style="flex:1;min-width:220px">' +
+        '<input type="text" id="testo-rapida" placeholder="Oppure scrivi qui una cosa da fare" style="flex:1;min-width:220px">' +
         '<button class="btn btn-primario" type="submit">' + ICO('arrowRight', 17) + '</button></form>' +
         '</div>';
       $vista.innerHTML = html;
+      montaOggiGiornata();
       $vista.querySelectorAll('[data-vai]').forEach(function (b) {
         b.addEventListener('click', function () {
           if (b.getAttribute('data-sub')) sottoRituale = b.getAttribute('data-sub');
@@ -698,6 +713,7 @@
       '</div>';
 
     $vista.innerHTML = html;
+    montaOggiGiornata();
 
     document.getElementById('btn-fatto').addEventListener('click', function (ev) {
       var eraTimer = timer.azioneId === prossima.id;
@@ -726,6 +742,258 @@
         b.addEventListener('click', function () { avviaTimer(prossima.id, +b.getAttribute('data-min')); });
       });
     }
+  }
+
+  /* mostra la giornata in cima a Oggi, secondo la preferenza scelta */
+  function montaOggiGiornata() {
+    var zona = document.getElementById('oggi-giornata');
+    if (!zona) return;
+    var pos = LM.load().profilo.giornataPos;
+    if (pos === 'oggi-strip') montaGiornataStrip(zona);
+    else if (pos === 'oggi-full') montaGiornata(zona, {});
+    else zona.innerHTML = '';
+  }
+
+  /* ============================================================
+     LA GIORNATA — timeline (sonno, pasti, abitudini, azioni)
+     Rende visibile come è divisa la giornata: utile a chi fatica a
+     percepire il tempo (Barkley 1997) e scarica dalla mente il "quando"
+     (Risko & Gilbert 2016). Un solo componente, mostrato dove preferisci.
+     ============================================================ */
+
+  function minOf(hhmm) {
+    if (!hhmm) return null;
+    var p = String(hhmm).split(':');
+    return (+p[0]) * 60 + (+p[1]);
+  }
+  function fmtMin(m) {
+    m = ((m % 1440) + 1440) % 1440;
+    return ('0' + Math.floor(m / 60)).slice(-2) + ':' + ('0' + (m % 60)).slice(-2);
+  }
+
+  var GIORNATA_POS = [
+    { id: 'oggi-strip', nome: 'In Oggi, barra compatta', racc: true },
+    { id: 'oggi-full', nome: 'In Oggi, per intero' },
+    { id: 'panoramica', nome: 'In Panoramica' },
+    { id: 'menu', nome: 'Come voce a parte' }
+  ];
+
+  function nodiGiornata() {
+    var s = LM.load();
+    var r = s.profilo.ritmo || LM.RITMO_DEFAULT;
+    var placed = [], tray = [];
+    (r.pasti || []).forEach(function (p) {
+      if (p.ora) placed.push({ tipo: 'pasto', min: minOf(p.ora), ora: p.ora, nome: p.nome, icona: /colaz/i.test(p.id + ' ' + p.nome) ? 'coffee' : 'utensils' });
+    });
+    LM.abitudiniDiOggi().forEach(function (h) {
+      var e = { tipo: 'abitudine', min: minOf(h.ora), ora: h.ora, id: h.id, testo: h.testo, areaId: h.areaId, fatto: !!h.fatti[LM.todayKey()], streak: LM.streakAbitudine(h) };
+      (e.min == null ? tray : placed).push(e);
+    });
+    LM.azioniDiOggi().forEach(function (a) {
+      var e = { tipo: 'azione', min: minOf(a.ora), ora: a.ora, id: a.id, testo: a.testo, areaId: a.areaId, mit: a.mit, done: a.done };
+      (e.min == null ? tray : placed).push(e);
+    });
+    placed.sort(function (a, b) { return a.min - b.min; });
+    return { wake: minOf(r.sveglia), sleep: minOf(r.sonno), sveglia: r.sveglia, sonno: r.sonno, placed: placed, tray: tray };
+  }
+
+  function montaGiornata(container, opts) {
+    opts = opts || {};
+    var d = nodiGiornata();
+    var now = new Date();
+    var nowMin = now.getHours() * 60 + now.getMinutes();
+    var mostraNow = nowMin >= d.wake && nowMin <= d.sleep;
+
+    function chip(e) {
+      if (e.tipo === 'pasto') {
+        return '<div class="tl-riga tl-pasto">' +
+          '<span class="tl-ora">' + e.ora + '</span>' +
+          '<span class="tl-punto tl-punto-pasto">' + ICO(e.icona, 13) + '</span>' +
+          '<span class="tl-testo">' + esc(e.nome) + '</span></div>';
+      }
+      var ar = areaById(e.areaId);
+      var col = LM.coloreArea(ar);
+      var fatto = e.tipo === 'azione' ? e.done : e.fatto;
+      var attr = e.tipo === 'azione' ? 'data-tl-az="' + e.id + '"' : 'data-tl-ab="' + e.id + '"';
+      return '<div class="tl-riga tl-attiva' + (fatto ? ' fatta' : '') + '" style="--c-area:' + col + '">' +
+        '<span class="tl-ora">' + (e.ora || '') + '</span>' +
+        '<button class="tl-check" ' + attr + ' aria-label="Segna come fatta">' + ICO('check', 12) + '</button>' +
+        '<span class="tl-testo">' + esc(e.testo) +
+        (e.mit ? ' <span class="tag-mit">' + ICO('star', 9) + 'Priorità</span>' : '') +
+        (e.tipo === 'abitudine' && e.streak > 0 ? ' <span class="abit-streak">' + ICO('flame', 11, 'fiamma') + ' ' + e.streak + '</span>' : '') +
+        '</span>' +
+        '<span class="tl-tag" style="color:' + col + '" title="' + esc(ar.nome) + '">' + ICO(ar.icona, 13) + '</span>' +
+        '<input type="time" class="tl-time" value="' + (e.ora || '') + '" ' + attr + ' aria-label="Orario">' +
+        '</div>';
+    }
+    function spacer(a, b) {
+      var g = b - a;
+      var h = Math.max(6, Math.min(52, Math.round(g * 0.34)));
+      var lib = g >= 90 ? '<span class="tl-libero">' + Math.round(g / 60) + 'h libere</span>' : '';
+      return '<div class="tl-gap" style="height:' + h + 'px">' + lib + '</div>';
+    }
+    function nowRow() {
+      return '<div class="tl-now"><span class="tl-now-ora">' + fmtMin(nowMin) + '</span><span class="tl-now-linea"></span><span class="tl-now-eti">adesso</span></div>';
+    }
+
+    var seq = [{ pos: true, min: d.wake, cap: 'sveglia' }].concat(d.placed).concat([{ pos: true, min: d.sleep, cap: 'sonno' }]);
+    var corpo = '';
+    var nowFatto = false;
+    for (var i = 0; i < seq.length; i++) {
+      var n = seq[i];
+      if (mostraNow && !nowFatto && n.min > nowMin) { corpo += nowRow(); nowFatto = true; }
+      if (n.cap === 'sveglia') corpo += '<div class="tl-riga tl-sonno"><span class="tl-ora">' + d.sveglia + '</span><span class="tl-punto tl-punto-sonno">' + ICO('sun', 13) + '</span><span class="tl-testo">Sveglia</span></div>';
+      else if (n.cap === 'sonno') corpo += '<div class="tl-riga tl-sonno"><span class="tl-ora">' + d.sonno + '</span><span class="tl-punto tl-punto-sonno">' + ICO('bed', 13) + '</span><span class="tl-testo">A letto</span></div>';
+      else corpo += chip(n);
+      if (i < seq.length - 1) corpo += spacer(n.min, seq[i + 1].min);
+    }
+
+    var tray = '';
+    if (d.tray.length) {
+      tray = '<div class="tl-tray"><div class="tl-tray-eti">' + ICO('clock', 12) + ' Senza un orario — assegnane uno per metterle nella giornata</div>' +
+        d.tray.map(function (e) {
+          var ar = areaById(e.areaId); var col = LM.coloreArea(ar);
+          var fatto = e.tipo === 'azione' ? e.done : e.fatto;
+          var attr = e.tipo === 'azione' ? 'data-tl-az="' + e.id + '"' : 'data-tl-ab="' + e.id + '"';
+          return '<div class="tl-riga tl-attiva' + (fatto ? ' fatta' : '') + '" style="--c-area:' + col + '">' +
+            '<button class="tl-check" ' + attr + ' aria-label="Segna come fatta">' + ICO('check', 12) + '</button>' +
+            '<span class="tl-testo">' + esc(e.testo) + (e.mit ? ' <span class="tag-mit">' + ICO('star', 9) + 'Priorità</span>' : '') + '</span>' +
+            '<span class="tl-tag" style="color:' + col + '" title="' + esc(ar.nome) + '">' + ICO(ar.icona, 13) + '</span>' +
+            '<input type="time" class="tl-time" ' + attr + ' aria-label="Assegna un orario">' +
+            '</div>';
+        }).join('') + '</div>';
+    }
+
+    var vuota = !d.placed.length && !d.tray.length;
+    var selettore = '<label class="tl-pos-sel">Mostrala: ' +
+      '<select id="tl-pos">' + GIORNATA_POS.map(function (o) {
+        return '<option value="' + o.id + '"' + (LM.load().profilo.giornataPos === o.id ? ' selected' : '') + '>' + o.nome + (o.racc ? ' (consigliata)' : '') + '</option>';
+      }).join('') + '</select></label>';
+
+    container.innerHTML = '<div class="card giornata">' +
+      '<div class="tl-head"><div><h2>' + ICO('clock', 16) + ' La giornata</h2>' +
+      '<div class="sotto">Come sono divise le tue ore, dal risveglio al sonno. Le abitudini e le cose di oggi con un orario finiscono qui.</div></div></div>' +
+      (vuota
+        ? '<div class="vuoto" style="padding:18px 8px"><b>Oggi non c’è ancora niente in agenda.</b><br>Aggiungi un orario a un’abitudine o a una cosa di oggi e comparirà nella giornata.</div>'
+        : '<div class="tl-track">' + corpo + '</div>') +
+      tray +
+      '<div class="tl-piede">' + selettore +
+      '<button class="btn btn-mini" id="tl-edit-orari">' + ICO('pencil', 13) + ' Sonno e pasti</button></div>' +
+      '</div>';
+
+    container.querySelectorAll('.tl-check[data-tl-az]').forEach(function (b) {
+      b.addEventListener('click', function (ev) {
+        var xp = LM.completaAzione(b.getAttribute('data-tl-az'));
+        if (xp) { var r = ev.currentTarget.getBoundingClientRect(); flyXp(r.left + r.width / 2, r.top, xp); toast('Fatto.', xp); }
+        montaGiornata(container, opts); aggiornaNav();
+      });
+    });
+    container.querySelectorAll('.tl-check[data-tl-ab]').forEach(function (b) {
+      b.addEventListener('click', function (ev) {
+        var xp = LM.completaAbitudine(b.getAttribute('data-tl-ab'));
+        if (xp) { var r = ev.currentTarget.getBoundingClientRect(); flyXp(r.left + r.width / 2, r.top, xp); toast('Fatta. Continua così.', xp, 'flame'); }
+        montaGiornata(container, opts);
+      });
+    });
+    container.querySelectorAll('.tl-time[data-tl-az]').forEach(function (inp) {
+      inp.addEventListener('change', function () { LM.setOraAzione(inp.getAttribute('data-tl-az'), inp.value || null); montaGiornata(container, opts); });
+    });
+    container.querySelectorAll('.tl-time[data-tl-ab]').forEach(function (inp) {
+      inp.addEventListener('change', function () { LM.modificaAbitudine(inp.getAttribute('data-tl-ab'), { ora: inp.value || null }); montaGiornata(container, opts); });
+    });
+    var eo = container.querySelector('#tl-edit-orari');
+    if (eo) eo.addEventListener('click', apriRitmo);
+    var ps = container.querySelector('#tl-pos');
+    if (ps) ps.addEventListener('change', function () {
+      LM.impostaGiornataPos(ps.value);
+      toast('Fatto: da ora vedi la giornata dove hai scelto.', 0, 'check');
+      chiudiSheet(); render();
+    });
+  }
+
+  function htmlGiornataStrip() {
+    var d = nodiGiornata();
+    var span = Math.max(60, d.sleep - d.wake);
+    function pct(m) { return Math.max(0, Math.min(100, (m - d.wake) / span * 100)); }
+    var marks = d.placed.map(function (e) {
+      var c = e.tipo === 'pasto' ? 'var(--inchiostro-muto)' : LM.coloreArea(areaById(e.areaId));
+      var fatto = e.tipo === 'azione' ? e.done : (e.tipo === 'abitudine' ? e.fatto : false);
+      return '<span class="strip-mark' + (fatto ? ' fatta' : '') + '" style="left:' + pct(e.min).toFixed(1) + '%;--c:' + c + '"></span>';
+    }).join('');
+    var now = new Date();
+    var nm = now.getHours() * 60 + now.getMinutes();
+    var nowEl = (nm >= d.wake && nm <= d.sleep) ? '<span class="strip-now" style="left:' + pct(nm).toFixed(1) + '%"></span>' : '';
+    var pross = d.placed.filter(function (e) { return e.min >= nm && !(e.tipo === 'azione' ? e.done : e.fatto); })[0];
+    var sotto = pross ? 'poi ' + esc(pross.nome || pross.testo) + ' · ' + pross.ora
+      : (d.placed.length ? 'niente altro in agenda oggi' : 'nessun orario per oggi — tocca per aggiungerne');
+    return '<button class="giornata-strip" id="giornata-strip-btn" aria-label="Apri la giornata">' +
+      '<div class="strip-testa"><span class="strip-tit">' + ICO('clock', 14) + ' La giornata</span>' +
+      '<span class="strip-sotto">' + sotto + ' ' + ICO('arrowRight', 13) + '</span></div>' +
+      '<div class="strip-barra">' + marks + nowEl + '</div>' +
+      '<div class="strip-estremi"><span>' + d.sveglia + '</span><span>' + d.sonno + '</span></div>' +
+      '</button>';
+  }
+  function montaGiornataStrip(container) {
+    container.innerHTML = htmlGiornataStrip();
+    var b = container.querySelector('#giornata-strip-btn');
+    if (b) b.addEventListener('click', function () {
+      apriSheet('La giornata', '<div id="sheet-giornata"></div>', function (root) {
+        montaGiornata(root.querySelector('#sheet-giornata'), { inSheet: true });
+      });
+    });
+  }
+
+  /* editor del ritmo: sonno, sveglia, pasti */
+  function apriRitmo() {
+    var r = LM.load().profilo.ritmo || LM.RITMO_DEFAULT;
+    function pastoRiga(p, i) {
+      return '<div class="ritmo-pasto" data-pi="' + i + '">' +
+        '<input type="text" class="ritmo-nome" value="' + esc(p.nome) + '" aria-label="Nome del pasto">' +
+        '<input type="time" class="ritmo-ora" value="' + (p.ora || '') + '" aria-label="Orario">' +
+        '<button class="icona-btn" data-pdel="' + i + '" title="Rimuovi" aria-label="Rimuovi">' + ICO('trash', 13) + '</button></div>';
+    }
+    apriSheet('Sonno e pasti',
+      '<div class="imp-nota" style="margin-top:0">Questi orari disegnano lo sfondo della giornata. Puoi cambiarli quando vuoi: sono un punto di riferimento, non una regola.</div>' +
+      '<div class="ritmo-riga2"><label class="campo">Sveglia</label><input type="time" id="ritmo-sveglia" value="' + esc(r.sveglia) + '">' +
+      '<label class="campo">A letto</label><input type="time" id="ritmo-sonno" value="' + esc(r.sonno) + '"></div>' +
+      '<div class="imp-sezione"><div class="imp-eti">Pasti</div><div id="ritmo-pasti">' + (r.pasti || []).map(pastoRiga).join('') + '</div>' +
+      '<button class="btn btn-mini mt-s" id="ritmo-add">' + ICO('plus', 13) + ' Aggiungi un pasto</button></div>' +
+      '<div class="riga-flex mt"><button class="btn btn-primario btn-grande" id="ritmo-salva">' + ICO('save', 15) + ' Salva</button></div>',
+      function (root) {
+        root.querySelector('#ritmo-add').addEventListener('click', function () {
+          var box = root.querySelector('#ritmo-pasti');
+          var i = box.querySelectorAll('.ritmo-pasto').length;
+          box.insertAdjacentHTML('beforeend', pastoRiga({ nome: 'Pasto', ora: '' }, i));
+          wirePdel();
+        });
+        function wirePdel() {
+          root.querySelectorAll('[data-pdel]').forEach(function (b) {
+            b.onclick = function () { b.closest('.ritmo-pasto').remove(); };
+          });
+        }
+        wirePdel();
+        root.querySelector('#ritmo-salva').addEventListener('click', function () {
+          var pasti = [];
+          root.querySelectorAll('.ritmo-pasto').forEach(function (row, i) {
+            var nome = row.querySelector('.ritmo-nome').value.trim() || 'Pasto';
+            var ora = row.querySelector('.ritmo-ora').value;
+            if (ora) pasti.push({ id: 'p' + i, nome: nome, ora: ora });
+          });
+          LM.impostaRitmo({
+            sveglia: root.querySelector('#ritmo-sveglia').value || '07:30',
+            sonno: root.querySelector('#ritmo-sonno').value || '23:30',
+            pasti: pasti
+          });
+          chiudiSheet(); render(); toast('Giornata aggiornata.', 0, 'check');
+        });
+      });
+  }
+
+  function vistaGiornata() {
+    var html = topbar('La giornata', 'Le tue ore di oggi, dal risveglio al sonno.');
+    html += '<div id="giornata-zona"></div>';
+    $vista.innerHTML = html;
+    montaGiornata(document.getElementById('giornata-zona'), {});
   }
 
   /* ============================================================
@@ -804,7 +1072,7 @@
     var t = LM.todayKey();
     var checkinOggi = s.checkins.filter(function (c) { return c.data === t; }).length;
 
-    var html = topbar('Panoramica', 'Il quadro dei tuoi dati, una sezione alla volta.');
+    var html = topbar('Panoramica', 'I tuoi dati e i tuoi progressi, una sezione per volta.');
 
     /* eroe essenziale: anello + XP + tre indicatori come chip (niente
        muro di didascalie: le spiegazioni stanno nei tooltip) */
@@ -859,24 +1127,27 @@
       c.classList.add('vista-enter');
     }
 
-    /* --- Riepilogo: azioni di oggi + costanza --- */
+    /* --- Riepilogo: azioni di oggi + costanza (+ giornata se scelta qui) --- */
     function sezRiepilogo(c) {
-      c.innerHTML = '<div class="griglia griglia-2">' +
+      var conGiornata = LM.load().profilo.giornataPos === 'panoramica';
+      c.innerHTML = (conGiornata ? '<div id="plancia-giornata" class="mb"></div>' : '') +
+        '<div class="griglia griglia-2">' +
         '<div class="card" style="--i:0"><h2>' + ICO('target', 16) + ' Azioni di oggi</h2>' +
-        '<div class="sotto">Inizia dall’azione più importante. Le altre vengono dopo.</div>' +
+        '<div class="sotto">La prima è la più importante. Le altre vengono dopo.</div>' +
         '<div class="lista-azioni" id="lista-oggi"></div>' +
-        '<form id="form-add" class="riga-flex mt-s"><input type="text" id="testo-add" placeholder="Aggiungi un’azione per oggi…" style="flex:1;min-width:150px">' +
+        '<form id="form-add" class="riga-flex mt-s"><input type="text" id="testo-add" placeholder="Aggiungi una cosa per oggi…" style="flex:1;min-width:150px">' +
         '<span style="width:132px">' + selectAree('area-add') + '</span>' +
         '<button class="btn btn-mini btn-primario" type="submit">' + ICO('plus', 14) + '</button></form></div>' +
         '<div class="card" style="--i:1"><h2>' + ICO('trendUp', 16) + ' Costanza</h2>' +
-        '<div class="sotto">XP per giorno, ultime 12 settimane. Conta il ritmo nel tempo, più del singolo giorno.</div>' +
+        '<div class="sotto">XP guadagnati ogni giorno, nelle ultime 12 settimane. Quello che conta è tornarci spesso.</div>' +
         '<div id="heatmap"></div></div></div>';
 
+      if (conGiornata) montaGiornata(document.getElementById('plancia-giornata'), {});
       LMCharts.heatmap(document.getElementById('heatmap'), LM.heatmapConsistenza(12));
 
       var lista = document.getElementById('lista-oggi');
       if (!oggi.length) {
-        lista.innerHTML = '<div class="vuoto" style="padding:16px 8px">Non hai ancora scelto le azioni di oggi.<br><a href="#/rituali">Pianifica la giornata</a> in un minuto.</div>';
+        lista.innerHTML = '<div class="vuoto" style="padding:16px 8px">Non hai ancora scelto le azioni di oggi.<br><a href="#/rituali">Scegli cosa fare</a> in un minuto.</div>';
       } else {
         lista.innerHTML = oggi.map(function (a) {
           var ar = areaById(a.areaId);
@@ -988,7 +1259,7 @@
     sottoRituale = sub;
 
     var suggerito = (ora < 12 ? 'mattina' : (ora >= 19 ? 'sera' : 'checkin'));
-    var html = topbar('Rituali', 'Poche azioni fisse ogni giorno, così non devi decidere tutto ogni volta.') +
+    var html = topbar('Rituali', 'Piccole routine fisse: te le trovi già pronte, così non devi ripensarci ogni volta.') +
       '<div class="rituali-nav segmenti" id="seg-rituali">' +
       seg('mattina', 'sun', 'Mattina') + seg('abitudini', 'refresh', 'Abitudini') + seg('checkin', 'bolt', 'Check-in') + seg('sera', 'moon', 'Sera') + seg('settimana', 'calendar', 'Settimana') +
       '</div>' +
@@ -1027,18 +1298,18 @@
     var oggi = LM.azioniDiOggi();
 
     corpo.innerHTML = '<div class="card">' +
-      testaRituale('sun', 'Piano del mattino',
-        'Un minuto per iniziare la giornata. Ogni giorno riparte da capo, indipendentemente da com’è andato ieri. Scegli al massimo <b>tre azioni</b>: la prima è la più importante, e se completi solo quella è comunque una buona giornata.') +
+      testaRituale('sun', 'Le azioni di oggi',
+        'Scegli al massimo <b>tre cose</b> da fare oggi. La prima è la più importante: se fai solo quella, la giornata è già a posto. Domani si riparte da capo.') +
       '<div class="lista-azioni" id="piano-lista"></div>' +
       (oggi.length < 3
         ? '<form id="form-piano" class="mt-s"><div class="riga-flex">' +
-          '<input type="text" id="piano-testo" placeholder="' + (oggi.length === 0 ? 'La cosa più importante di oggi…' : 'Un’altra azione (facoltativa)…') + '" style="flex:1;min-width:180px">' +
+          '<input type="text" id="piano-testo" placeholder="' + (oggi.length === 0 ? 'La cosa più importante di oggi…' : 'Un’altra cosa (se vuoi)…') + '" style="flex:1;min-width:180px">' +
           '<span style="width:155px">' + selectAree('piano-area') + '</span>' +
           '<button class="btn btn-primario" type="submit">' + ICO('plus', 16) + '</button></div></form>'
-        : '<div class="sotto mt-s">Hai già tre azioni: sono sufficienti. Aggiungerne altre rende meno probabile completarle.</div>') +
-      '<label class="campo">Decidi adesso quando e dove inizierai l’azione più importante</label>' +
+        : '<div class="sotto mt-s">Tre bastano. Aggiungerne altre le rende solo più difficili da finire.</div>') +
+      '<label class="campo">Quando e dove inizi la prima?</label>' +
       '<input type="text" id="piano-ifthen" placeholder="Es. alle 9:00, appena mi siedo alla scrivania, apro solo il file su cui devo lavorare" value="' + (piano ? esc(piano.intenzione) : '') + '">' +
-      '<div class="riga-flex mt"><button class="btn btn-primario btn-grande" id="btn-salva-piano">' + (piano ? 'Aggiorna il piano' : 'Salva il piano') + ' <small>+' + LM.XP_EVENTI.pianoMattina + ' XP</small></button>' +
+      '<div class="riga-flex mt"><button class="btn btn-primario btn-grande" id="btn-salva-piano">' + (piano ? 'Aggiorna' : 'Salva e parti') + ' <small>+' + LM.XP_EVENTI.pianoMattina + ' XP</small></button>' +
       '<button class="btn btn-ghost" id="btn-vai-focus">Inizia ora ' + ICO('arrowRight', 15) + '</button></div>' +
       '</div>';
 
@@ -1050,7 +1321,7 @@
             (a.mit ? '<span class="tag-mit">' + ICO('star', 10) + 'Priorità</span>' : '') +
             '<span class="tag-area" style="--c-area:' + LM.coloreArea(ar) + '" title="' + esc(ar.nome) + '">' + ICO(ar.icona, 15) + '</span></div>';
         }).join('')
-      : '<div class="vuoto" style="padding:14px">Nessuna azione per ora. La prima che scrivi sarà quella più importante.</div>';
+      : '<div class="vuoto" style="padding:14px">Ancora niente. La prima cosa che scrivi diventa quella più importante.</div>';
 
     var form = document.getElementById('form-piano');
     if (form) form.addEventListener('submit', function (e) {
@@ -1067,7 +1338,7 @@
         mit.ifThen = document.getElementById('piano-ifthen').value.trim();
         LM.save();
       }
-      toast(xp ? 'Piano salvato. Ora puoi concentrarti sull’esecuzione.' : 'Piano aggiornato.', xp, 'sun');
+      toast(xp ? 'Fatto. Ora pensa solo alla prima cosa.' : 'Aggiornato.', xp, 'sun');
       render();
     });
     document.getElementById('btn-vai-focus').addEventListener('click', function () { location.hash = '#/oggi'; });
@@ -1128,7 +1399,7 @@
 
     corpo.innerHTML = '<div class="card">' +
       testaRituale('refresh', 'Abitudini',
-        'Le cose che vuoi fare con regolarità. Sono separate dalle azioni del giorno: spuntarle non toglie spazio alle tue tre azioni, e la serie premia la costanza.') +
+        'Le cose che vuoi ripetere spesso. Stanno per conto loro, quindi non rubano posto alle tre azioni di oggi. Ogni volta che le fai, la serie cresce.') +
       '<h2 style="font-size:14px">Oggi</h2><div class="abit-lista-oggi">' + listaOggi + '</div>' +
       '</div>' +
       '<div class="card mt"><h2>' + ICO('lista', 16) + ' Le tue abitudini</h2>' +
@@ -1190,7 +1461,7 @@
     var voti = { energia: 0, focus: 0, umore: 0 };
     corpo.innerHTML = '<div class="card">' +
       testaRituale('bolt', 'Come stai adesso',
-        'Tre risposte d’istinto, senza scrivere nulla. Non cercare il numero «giusto»: conta come cambia nel tempo, non il valore preciso.') +
+        'Tre tocchi, a istinto. Rispondi com’è la giornata per te adesso, senza pensarci troppo. Ti serve a vedere come cambi nei giorni, un numero da solo non dice molto.') +
       scala('energia', 'bolt', 'Quanta energia hai?') +
       scala('focus', 'target', 'Quanto riesci a concentrarti?') +
       scala('umore', 'smile', 'Come ti senti?') +
@@ -1206,7 +1477,7 @@
           return '<button data-v="' + v + '" aria-label="' + v + ', ' + anc[v - 1] + '">' + v + '</button>';
         }).join('') + '</div>' +
         '<div class="scala-legenda"><span>1 · ' + anc[0] + '</span><span>3 · ' + anc[2] + '</span><span>5 · ' + anc[4] + '</span></div>' +
-        (base ? '<div class="scala-solito">' + ICO('trendUp', 12) + ' Il tuo solito è <b>' + base.toFixed(1) + '</b> — rispondi rispetto a questo, non in assoluto.</div>' : '') +
+        (base ? '<div class="scala-solito">' + ICO('trendUp', 12) + ' Di solito qui stai intorno a <b>' + base.toFixed(1) + '</b>. Parti da lì: oggi sei sopra o sotto?</div>' : '') +
         '</div>';
     }
     corpo.querySelectorAll('.scala').forEach(function (sc) {
@@ -1246,7 +1517,7 @@
 
     corpo.innerHTML = '<div class="card">' +
       testaRituale('moon', 'Review della sera',
-        'Due minuti per chiudere la giornata. Dai un voto alle aree su cui hai lavorato, annota una cosa andata bene e un ostacolo. Poi la giornata è <b>conclusa</b> e puoi lasciarla andare.') +
+        'Due minuti per chiudere la giornata. Vota le aree su cui hai lavorato, scrivi una cosa andata bene e un ostacolo. Poi è <b>finita</b>: puoi staccare.') +
       '<div id="voti-aree">' + ordinate.map(function (a) {
         return '<div class="voto-area" data-area="' + a.id + '" style="--c-area:' + LM.coloreArea(a) + '">' +
           '<span class="nome">' + ICO(a.icona, 16) + ' ' + esc(a.nome) + '</span>' +
@@ -1292,7 +1563,7 @@
 
     corpo.innerHTML = '<div class="card">' +
       testaRituale('calendar', 'Review della settimana',
-        'Questa review serve a capire, non a giudicarti. Sia ciò che ha funzionato sia ciò che non ha funzionato sono informazioni utili per la settimana che arriva.') +
+        'Dieci minuti per guardare la settimana da fuori e portarti dietro una cosa utile per quella che arriva. Niente pagelle: serve solo a te.') +
       '<div class="eroe-statistiche" style="justify-content:center;margin-bottom:16px">' +
       '<div class="stat"><span class="stat-val">' + xpSett + '</span><span class="stat-eti">XP guadagnati</span></div>' +
       '<div class="stat"><span class="stat-val">' + azioniSett + '</span><span class="stat-eti">azioni completate</span></div>' +
@@ -1331,21 +1602,21 @@
 
   function vistaInbox() {
     var s = LM.load();
-    var html = topbar('Attività', 'Cattura al volo; poi, con calma, decidi cosa fare di ogni cosa.',
+    var html = topbar('Attività', 'Butta giù qui tutto quello che ti passa in testa. Poi con calma decidi: cosa fare oggi, cosa più avanti, cosa lasciar perdere.',
       '<span class="chip">' + ICO('lista', 14) + ' <b>' + s.backlog.length + '</b>&nbsp;da fare</span>');
-    html += '<div id="att-scadenze"></div><div id="att-smista"></div><div id="att-backlog"></div>';
+    html += '<div id="att-smista"></div><div id="att-scadenze"></div><div id="att-backlog"></div>';
     $vista.innerHTML = html;
-    disegnaScadenze();
     disegnaSmista();
+    disegnaScadenze();
     disegnaBacklog();
 
-    /* --- In scadenza: attività con una data vicina o già passata --- */
+    /* --- In arrivo: attività con una data vicina o già passata --- */
     function disegnaScadenze() {
       var vic = LM.scadenzeVicine(14);
       var box = document.getElementById('att-scadenze');
       if (!vic.length) { box.innerHTML = ''; return; }
-      box.innerHTML = '<div class="card"><h2>' + ICO('calendar', 16) + ' In scadenza</h2>' +
-        '<div class="sotto">Le cose con una data vicina. Portale in «Oggi» prima che diventino urgenti.</div>' +
+      box.innerHTML = '<div class="card"><h2>' + ICO('calendar', 16) + ' In arrivo</h2>' +
+        '<div class="sotto">Cose da fare con una data che si avvicina. Tirale in «Oggi» prima che diventino una corsa.</div>' +
         '<div class="scad-lista">' + vic.map(function (b) {
           var ar = areaById(b.areaId); var si = scadInfo(b.scadenza);
           return '<div class="scad-riga"><span class="scad-badge ' + si.cls + '">' + si.testo + '</span>' +
@@ -1363,8 +1634,8 @@
       var st = LM.load();
       var box = document.getElementById('att-smista');
       if (!st.inbox.length) { box.innerHTML = ''; return; }
-      box.innerHTML = '<div class="card"><h2>' + ICO('inbox', 16) + ' Da smistare <span class="conta">' + st.inbox.length + '</span></h2>' +
-        '<div class="sotto">Per ognuno, una decisione veloce: <b>Oggi</b> se lo fai oggi, <b>Da fare</b> se è da fare ma non adesso, oppure <b>Scarta</b>.</div>' +
+      box.innerHTML = '<div class="card"><h2>' + ICO('inbox', 16) + ' Da sistemare <span class="conta">' + st.inbox.length + '</span></h2>' +
+        '<div class="sotto">Le cose che hai buttato giù. Per ognuna scegli: <b>Oggi</b> se la fai oggi, <b>Da fare</b> se la rimandi, <b>Scarta</b> se lasci perdere.</div>' +
         '<div class="griglia" id="lista-inbox" style="gap:9px"></div></div>';
       var lista = document.getElementById('lista-inbox');
       lista.innerHTML = st.inbox.map(function (el, i) {
@@ -1392,7 +1663,7 @@
             var esito = b.getAttribute('data-fai');
             var area = document.getElementById('sel-' + id).value;
             LM.triageInbox(id, esito, area);
-            toast(esito === 'azione' ? 'Aggiunto alle azioni di oggi.' : esito === 'backlog' ? 'Messo tra le cose da fare.' : 'Scartato.', LM.XP_EVENTI.triage,
+            toast(esito === 'azione' ? 'Ora è tra le cose di oggi.' : esito === 'backlog' ? 'Messo tra le cose da fare.' : 'Scartato.', LM.XP_EVENTI.triage,
               esito === 'azione' ? 'arrowRight' : esito === 'backlog' ? 'lista' : 'trash');
             aggiornaNav(); disegnaSmista(); disegnaBacklog();
           });
@@ -1473,8 +1744,8 @@
           '<form class="bk-add" data-addarea="' + g.area.id + '"><input type="text" placeholder="Aggiungi qualcosa da fare…" aria-label="Aggiungi qualcosa da fare"><button class="btn btn-mini" type="submit">' + ICO('plus', 13) + '</button></form>' +
           '</div></div>';
       }).join('');
-      box.innerHTML = '<div class="card mt"><h2>' + ICO('lista', 16) + ' Da fare, per area</h2>' +
-        '<div class="sotto">Le cose da fare senza una data. Apri un’area e porta in <b>Oggi</b> ciò su cui vuoi lavorare.</div>' +
+      box.innerHTML = '<div class="card mt"><h2>' + ICO('lista', 16) + ' Da fare</h2>' +
+        '<div class="sotto">Tutto quello che farai più avanti, senza una data, diviso per area. Apri un’area e porta in <b>Oggi</b> poche cose per volta.</div>' +
         '<div class="backlog-aree">' + corpo + '</div></div>';
 
       box.querySelectorAll('[data-toggle]').forEach(function (b) {
@@ -1892,6 +2163,7 @@
     void $vista.offsetWidth;
     var v = vistaCorrente();
     if (v === 'oggi') vistaFocus();
+    else if (v === 'giornata') vistaGiornata();
     else if (v === 'plancia') vistaPlancia();
     else if (v === 'rituali') vistaRituali();
     else if (v === 'inbox') vistaInbox();

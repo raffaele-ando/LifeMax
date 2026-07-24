@@ -61,7 +61,11 @@
     lista: '<path d="M9 6.5h11M9 12h11M9 17.5h11"/><path d="M4.6 6.5l.9.9 1.6-1.9M4.6 12l.9.9 1.6-1.9M4.6 17.5l.9.9 1.6-1.9"/>',
     aiuto: '<circle cx="12" cy="12" r="9"/><path d="M9.4 9.3a2.7 2.7 0 0 1 5.2 1c0 1.7-2.6 2.1-2.6 3.9"/><path d="M12 17.4h.01"/>',
     chevronGiu: '<path d="M6 9.5l6 6 6-6"/>',
-    piu2: '<path d="M12 5v14M5 12h14"/>'
+    piu2: '<path d="M12 5v14M5 12h14"/>',
+    /* giornata: pasti e sonno */
+    utensils: '<path d="M6 3v7a2 2 0 0 0 4 0V3M8 10v11M17.5 3c-1.6 0-2.5 1.8-2.5 4.5S15.9 12 17.5 12V3zM17.5 12v9"/>',
+    coffee: '<path d="M4 8h13v6a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4z"/><path d="M17 9.5h1.6a2.4 2.4 0 0 1 0 4.8H17"/><path d="M7.5 3.2c-.4.7-.4 1.3 0 2M11 3.2c-.4.7-.4 1.3 0 2"/>',
+    bed: '<path d="M3 6v13M3 12h18a0 0 0 0 1 0 0v7M21 19v-4a3 3 0 0 0-3-3H3M6.5 12v-2a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/>'
   };
 
   window.ICO = function (nome, size, cls) {
