@@ -33,7 +33,15 @@ energia/focus/umore in 3 tap → **🌙 Sera (2′)** voto alle aree + vittoria 
 confronti baseline→intervento (N-of-1) su di te.
 
 In ogni momento: **cattura istantanea** con `C`, `⌘K` o il bottone `＋` — un campo,
-zero categorie, le decisioni si prendono dopo, al triage dell'Inbox.
+zero categorie, le decisioni si prendono dopo.
+
+**📋 Attività** è il livello tra cattura e "oggi": ogni nota si smista in **Oggi**,
+**Backlog** (le cose da fare senza data, divise per area, da cui tiri in giornata
+poche cose per volta) o **Scarta**. Le **aree** sono personalizzabili (rinomina,
+crea, rimuovi) da *Impostazioni → Gestisci le aree*. Il **check-in** usa una scala
+ancorata con descrittori e il riferimento «il tuo solito» (media recente), così il
+punteggio è meno ambiguo. Una **guida in-app** (*Impostazioni → Come si usa*)
+riassume il tutto.
 
 ## Più approcci UX, stessi dati (di proposito)
 

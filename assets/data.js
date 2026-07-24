@@ -125,7 +125,8 @@ var LM = (function () {
       aree: JSON.parse(JSON.stringify(AREE_DEFAULT)),
       areeAttive: AREE_DEFAULT.map(function (a) { return a.id; }),
       azioni: [],        // {id, areaId, testo, ifThen, mit, done, data, doneAt, creata}
-      inbox: [],         // {id, testo, creata, area?}
+      inbox: [],         // {id, testo, creata} — cattura grezza, ancora da smistare
+      backlog: [],       // {id, testo, areaId, creata} — attività "da fare" senza data
       checkins: [],      // {data, ts, energia, focus, umore, contesto}
       valutazioni: {},   // valutazioni[data][areaId] = 1..5 (sera)
       minuti: {},        // minuti[data][areaId] = minuti dedicati
@@ -149,7 +150,20 @@ var LM = (function () {
     } catch (e) {
       state = statoVuoto();
     }
+    normalizza(state);
     return state;
+  }
+
+  /* Riempie i campi mancanti negli stati salvati prima di un aggiornamento
+     (o arrivati dal cloud): nessun dato viene perso, si aggiunge solo. */
+  function normalizza(s) {
+    var vuoto = statoVuoto();
+    Object.keys(vuoto).forEach(function (k) {
+      if (s[k] === undefined || s[k] === null) s[k] = vuoto[k];
+    });
+    if (!Array.isArray(s.backlog)) s.backlog = [];
+    if (!Array.isArray(s.aree) || !s.aree.length) s.aree = JSON.parse(JSON.stringify(AREE_DEFAULT));
+    return s;
   }
 
   function save() {
@@ -235,7 +249,7 @@ var LM = (function () {
      così la logica "l'ultima modifica vince" resta coerente tra dispositivi. */
   function hydrate(obj) {
     if (!obj || typeof obj !== 'object') return;
-    state = obj;
+    state = normalizza(obj);
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) { /* ignora */ }
     document.dispatchEvent(new CustomEvent('lm:change'));
   }
@@ -323,8 +337,117 @@ var LM = (function () {
     save();
   }
 
+  /* ---------- backlog (attività "da fare", senza data) ---------- */
+
+  function aggiungiBacklog(testo, areaId) {
+    var s = load();
+    var b = { id: uid(), testo: testo, areaId: areaId || 'altro', creata: Date.now() };
+    s.backlog.push(b);
+    save();
+    return b;
+  }
+  function modificaBacklog(id, testo) {
+    var s = load();
+    var b = s.backlog.find(function (x) { return x.id === id; });
+    if (!b) return; b.testo = testo; save();
+  }
+  function cambiaAreaBacklog(id, areaId) {
+    var s = load();
+    var b = s.backlog.find(function (x) { return x.id === id; });
+    if (!b) return; b.areaId = areaId; save();
+  }
+  function rimuoviBacklog(id) {
+    var s = load();
+    var i = s.backlog.findIndex(function (x) { return x.id === id; });
+    if (i >= 0) { s.backlog.splice(i, 1); save(); }
+  }
+  /* porta un elemento del backlog tra le azioni di oggi (senza XP: è solo
+     spostamento). mit true se oggi non c'è ancora nessuna azione. */
+  function backlogInOggi(id) {
+    var s = load();
+    var i = s.backlog.findIndex(function (x) { return x.id === id; });
+    if (i < 0) return null;
+    var b = s.backlog.splice(i, 1)[0];
+    var mit = azioniDiOggi().filter(function (a) { return !a.done; }).length === 0;
+    var a = aggiungiAzione(b.testo, b.areaId, { mit: mit });
+    return a;
+  }
+  function backlogPerArea() {
+    var s = load();
+    var perArea = {};
+    s.backlog.forEach(function (b) { (perArea[b.areaId] = perArea[b.areaId] || []).push(b); });
+    var out = s.aree.filter(function (a) { return s.areeAttive.indexOf(a.id) >= 0; }).map(function (a) {
+      return { area: a, items: perArea[a.id] || [] };
+    });
+    /* elementi in aree non più attive: raccolti sotto "Altro" per non perderli */
+    var idsAttive = out.map(function (o) { return o.area.id; });
+    var orfani = s.backlog.filter(function (b) { return idsAttive.indexOf(b.areaId) < 0; });
+    if (orfani.length) {
+      var altro = out.find(function (o) { return o.area.id === 'altro'; });
+      if (altro) altro.items = altro.items.concat(orfani);
+    }
+    return out;
+  }
+
+  /* ---------- gestione aree (personalizzabili) ---------- */
+
+  function rinominaArea(id, nome) {
+    var s = load();
+    var a = s.aree.find(function (x) { return x.id === id; });
+    if (a && nome.trim()) { a.nome = nome.trim(); save(); }
+  }
+  function modificaRegolaArea(id, regola) {
+    var s = load();
+    var a = s.aree.find(function (x) { return x.id === id; });
+    if (a) { a.sistema = regola; save(); }
+  }
+  function toggleArea(id, attiva) {
+    var s = load();
+    var i = s.areeAttive.indexOf(id);
+    if (attiva && i < 0) s.areeAttive.push(id);
+    if (!attiva && i >= 0) s.areeAttive.splice(i, 1);
+    if (!s.areeAttive.length) s.areeAttive.push(id); // almeno una attiva
+    save();
+  }
+  function aggiungiArea(nome, icona, slot) {
+    var s = load();
+    var id = 'a' + uid();
+    var usati = s.aree.map(function (a) { return a.slot; });
+    var scelto = slot || 1;
+    if (!slot) { for (var n = 1; n <= 8; n++) { if (usati.indexOf(n) < 0) { scelto = n; break; } scelto = ((s.aree.length) % 8) + 1; } }
+    s.aree.push({ id: id, nome: nome.trim() || 'Nuova area', icona: icona || 'sparkles', slot: scelto, sistema: '' });
+    s.areeAttive.push(id);
+    save();
+    return id;
+  }
+  function rimuoviArea(id) {
+    var s = load();
+    if (s.aree.length <= 1) return;
+    s.aree = s.aree.filter(function (a) { return a.id !== id; });
+    var i = s.areeAttive.indexOf(id); if (i >= 0) s.areeAttive.splice(i, 1);
+    /* le azioni/backlog di quell'area passano a "altro" se esiste, così
+       nessun elemento resta orfano e invisibile */
+    var fallback = s.aree.find(function (a) { return a.id === 'altro'; });
+    var fid = fallback ? fallback.id : s.aree[0].id;
+    s.azioni.forEach(function (a) { if (a.areaId === id) a.areaId = fid; });
+    s.backlog.forEach(function (b) { if (b.areaId === id) b.areaId = fid; });
+    save();
+  }
+
+  /* baseline personale di un check-in: la media recente, usata come
+     punto di riferimento ("il tuo solito") per rendere la scala meno
+     ambigua — chi si sente "sempre nella media" ha così un riferimento. */
+  function baselineCheckin(campo, giorni) {
+    var s = load();
+    var vals = [];
+    var limite = giorni ? Date.now() - giorni * 86400000 : 0;
+    s.checkins.forEach(function (c) { if (c[campo] != null && (!giorni || c.ts >= limite)) vals.push(c[campo]); });
+    if (!vals.length) return null;
+    return Math.round(vals.reduce(function (a, b) { return a + b; }, 0) / vals.length * 10) / 10;
+  }
+
   function triageInbox(id, esito, areaId) {
-    /* esito: 'azione' | 'scarta' | 'tieni' */
+    /* esito: 'azione' (fai oggi) | 'backlog' (da fare, senza data) | 'scarta' */
     var s = load();
     var i = s.inbox.findIndex(function (x) { return x.id === id; });
     if (i < 0) return;
@@ -332,6 +455,10 @@ var LM = (function () {
     if (esito === 'azione') {
       s.inbox.splice(i, 1);
       aggiungiAzione(el.testo, areaId);
+      premiaXp('triage');
+    } else if (esito === 'backlog') {
+      s.inbox.splice(i, 1);
+      aggiungiBacklog(el.testo, areaId);
       premiaXp('triage');
     } else if (esito === 'scarta') {
       s.inbox.splice(i, 1);
@@ -786,6 +913,22 @@ var LM = (function () {
       s.inbox.push({ id: uid() + 'ib' + i, testo: t, creata: Date.now() - i * 7200000 });
     });
 
+    /* backlog demo: attività "da fare" senza data, divise per area */
+    var esempiBacklog = [
+      ['studio', 'Recuperare i corsi di ingegneria gestionale'],
+      ['studio', 'Studiare le risposte per l’OFA di inglese'],
+      ['studio', 'Leggere il libro di esercizi di Analisi 1'],
+      ['founder', 'Scrivere i primi 30 script per Agorà'],
+      ['founder', 'Scrivere i primi 30 script per Atlas'],
+      ['salute', 'Leggere 1 ora al giorno un libro personale'],
+      ['lavoro', 'Trovare lavoro per agosto'],
+      ['altro', 'Mettere su Vinted i pantaloni'],
+      ['altro', 'Confrontare iPhone 15 Pro e GH5']
+    ];
+    esempiBacklog.forEach(function (b, i) {
+      s.backlog.push({ id: uid() + 'bk' + i, testo: b[1], areaId: b[0], creata: Date.now() - i * 3600000 });
+    });
+
     /* esperimento demo: sport al mattino → focus */
     s.esperimenti.push({
       id: uid() + 'exp1',
@@ -828,6 +971,10 @@ var LM = (function () {
     coloreArea: coloreArea, livelloDaXp: livelloDaXp,
     aggiungiAzione: aggiungiAzione, completaAzione: completaAzione, rimandaAzione: rimandaAzione,
     cattura: cattura, triageInbox: triageInbox, modificaInbox: modificaInbox, cambiaAreaAzione: cambiaAreaAzione,
+    aggiungiBacklog: aggiungiBacklog, modificaBacklog: modificaBacklog, cambiaAreaBacklog: cambiaAreaBacklog,
+    rimuoviBacklog: rimuoviBacklog, backlogInOggi: backlogInOggi, backlogPerArea: backlogPerArea,
+    rinominaArea: rinominaArea, modificaRegolaArea: modificaRegolaArea, toggleArea: toggleArea,
+    aggiungiArea: aggiungiArea, rimuoviArea: rimuoviArea, baselineCheckin: baselineCheckin,
     registraCheckin: registraCheckin, salvaPianoMattina: salvaPianoMattina,
     valutaArea: valutaArea, registraMinuti: registraMinuti,
     salvaReviewSera: salvaReviewSera, salvaReviewSettimana: salvaReviewSettimana,
