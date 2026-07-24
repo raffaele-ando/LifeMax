@@ -286,7 +286,8 @@ var LM = (function () {
       done: false,
       data: opts.data || todayKey(),
       doneAt: null,
-      creata: Date.now()
+      creata: Date.now(),
+      passoDi: opts.passoDi || null   // {b: idProgetto, s: idPasso} se nasce da un progetto
     };
     s.azioni.push(a);
     save();
@@ -300,6 +301,18 @@ var LM = (function () {
     a.done = true;
     a.doneAt = Date.now();
     var punti = premiaXp(a.mit ? 'mit' : 'azione');
+    /* se l'azione era il passo di un progetto, spuntalo; se il progetto
+       è completo, lo rimuove dalle cose da fare */
+    if (a.passoDi) {
+      var prog = s.backlog.find(function (x) { return x.id === a.passoDi.b; });
+      if (prog && prog.steps) {
+        var st = prog.steps.find(function (x) { return x.id === a.passoDi.s; });
+        if (st) st.done = true;
+        if (prog.steps.length && prog.steps.every(function (x) { return x.done; })) {
+          s.backlog = s.backlog.filter(function (x) { return x.id !== prog.id; });
+        }
+      }
+    }
     save();
     return punti;
   }
@@ -375,6 +388,59 @@ var LM = (function () {
     var a = aggiungiAzione(b.testo, b.areaId, { mit: mit });
     return a;
   }
+  /* ---------- progetti: un'attività "da fare" con passi ordinati ---------- */
+
+  function aggiungiPasso(bid, testo) {
+    var s = load();
+    var b = s.backlog.find(function (x) { return x.id === bid; });
+    if (!b) return;
+    if (!Array.isArray(b.steps)) b.steps = [];
+    b.steps.push({ id: uid(), testo: testo, done: false });
+    save();
+  }
+  function modificaPasso(bid, sid, testo) {
+    var s = load();
+    var b = s.backlog.find(function (x) { return x.id === bid; });
+    var st = b && b.steps && b.steps.find(function (x) { return x.id === sid; });
+    if (st) { st.testo = testo; save(); }
+  }
+  function rimuoviPasso(bid, sid) {
+    var s = load();
+    var b = s.backlog.find(function (x) { return x.id === bid; });
+    if (!b || !b.steps) return;
+    b.steps = b.steps.filter(function (x) { return x.id !== sid; });
+    save();
+  }
+  function togglePasso(bid, sid) {
+    var s = load();
+    var b = s.backlog.find(function (x) { return x.id === bid; });
+    var st = b && b.steps && b.steps.find(function (x) { return x.id === sid; });
+    if (!st) return;
+    st.done = !st.done;
+    /* progetto completato a mano: lo rimuove dalle cose da fare */
+    if (b.steps.length && b.steps.every(function (x) { return x.done; })) {
+      s.backlog = s.backlog.filter(function (x) { return x.id !== b.id; });
+    }
+    save();
+  }
+  function avanzamentoProgetto(b) {
+    var tot = (b.steps || []).length;
+    var fatti = (b.steps || []).filter(function (x) { return x.done; }).length;
+    return { fatti: fatti, tot: tot, pct: tot ? Math.round(fatti / tot * 100) : 0 };
+  }
+  /* porta in Oggi il prossimo passo non fatto e non già in lista oggi */
+  function prossimoPassoInOggi(bid) {
+    var s = load();
+    var b = s.backlog.find(function (x) { return x.id === bid; });
+    if (!b || !b.steps) return null;
+    var giaOggi = {};
+    azioniDiOggi().forEach(function (a) { if (!a.done && a.passoDi && a.passoDi.b === bid) giaOggi[a.passoDi.s] = true; });
+    var st = b.steps.find(function (x) { return !x.done && !giaOggi[x.id]; });
+    if (!st) return null;
+    var mit = azioniDiOggi().filter(function (a) { return !a.done; }).length === 0;
+    return aggiungiAzione(st.testo, b.areaId, { mit: mit, passoDi: { b: bid, s: st.id } });
+  }
+
   function backlogPerArea() {
     var s = load();
     var perArea = {};
@@ -1011,6 +1077,21 @@ var LM = (function () {
     var conScad = s.backlog.find(function (b) { return b.areaId === 'lavoro'; });
     if (conScad) conScad.scadenza = addDays(oggi, 20);
 
+    /* due progetti d'esempio scomposti in passi */
+    var pAgora = s.backlog.find(function (b) { return /Agorà/.test(b.testo); });
+    if (pAgora) pAgora.steps = [
+      { id: uid() + 's1', testo: 'Definire 5 temi ricorrenti', done: true },
+      { id: uid() + 's2', testo: 'Scrivere gli hook dei primi 10', done: false },
+      { id: uid() + 's3', testo: 'Bozza completa 1–10', done: false },
+      { id: uid() + 's4', testo: 'Bozza completa 11–30', done: false }
+    ];
+    var pCorsi = s.backlog.find(function (b) { return /corsi di ing/i.test(b.testo); });
+    if (pCorsi) pCorsi.steps = [
+      { id: uid() + 'c1', testo: 'Elenco lezioni arretrate', done: true },
+      { id: uid() + 'c2', testo: 'Recuperare modulo 1', done: false },
+      { id: uid() + 'c3', testo: 'Recuperare modulo 2', done: false }
+    ];
+
     /* abitudini demo con storico per le serie */
     var esempiAbit = [
       ['salute', 'Leggere 20 minuti', []],
@@ -1070,6 +1151,8 @@ var LM = (function () {
     cattura: cattura, triageInbox: triageInbox, modificaInbox: modificaInbox, cambiaAreaAzione: cambiaAreaAzione,
     aggiungiBacklog: aggiungiBacklog, modificaBacklog: modificaBacklog, cambiaAreaBacklog: cambiaAreaBacklog,
     rimuoviBacklog: rimuoviBacklog, backlogInOggi: backlogInOggi, backlogPerArea: backlogPerArea,
+    aggiungiPasso: aggiungiPasso, modificaPasso: modificaPasso, rimuoviPasso: rimuoviPasso, togglePasso: togglePasso,
+    avanzamentoProgetto: avanzamentoProgetto, prossimoPassoInOggi: prossimoPassoInOggi,
     impostaScadenzaBacklog: impostaScadenzaBacklog, scadenzeVicine: scadenzeVicine,
     aggiungiAbitudine: aggiungiAbitudine, modificaAbitudine: modificaAbitudine, rimuoviAbitudine: rimuoviAbitudine,
     abitudinePrevista: abitudinePrevista, abitudiniDiOggi: abitudiniDiOggi, completaAbitudine: completaAbitudine, streakAbitudine: streakAbitudine,

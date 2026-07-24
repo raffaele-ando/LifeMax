@@ -38,7 +38,10 @@ zero categorie, le decisioni si prendono dopo.
 **📋 Attività** è il livello tra cattura e "oggi": ogni nota si smista in **Oggi**,
 **Da fare** (senza data, diviso per area, da cui tiri in giornata poche cose per
 volta) o **Scarta**. Le attività «Da fare» possono avere una **scadenza** con conto
-alla rovescia; quelle vicine compaiono in **In scadenza**. Le **abitudini
+alla rovescia; quelle vicine compaiono in **In scadenza**. Una cosa da fare può
+diventare un **progetto**: la spezzi in **passi** ordinati, vedi una barra di
+avanzamento e il pulsante **Passo** porta in *Oggi* solo il prossimo passo non
+ancora fatto — un po' per volta invece di tutto insieme. Le **abitudini
 ricorrenti** (Rituali → Abitudini) sono separate dalle azioni del giorno, con scelta
 dei giorni e serie di costanza. Le **aree** sono personalizzabili (rinomina, crea,
 rimuovi) da *Impostazioni → Gestisci le aree*. Il **check-in** usa una scala ancorata
@@ -71,6 +74,7 @@ chiaro/scuro/auto. Desktop-first con sidebar; sotto 860px layout mobile con tab 
 | Rituali brevi a orario fisso | RCT CBT/meta-cognitiva per ADHD adulto (Safren et al. 2005, 2010; Solanto et al. 2010) |
 | Max 3 azioni al giorno | goal-setting (Locke & Latham 2002); effetto Zeigarnik e pianificazione (Masicampo & Baumeister 2011) |
 | Esperimenti N-of-1 | Lillie et al. 2011; standard CENT (Vohra et al. 2015, BMJ) |
+| Progetti spezzati in passi, uno per volta in Oggi | sotto-obiettivi prossimali (Bandura & Schunk 1981); goal-setting (Locke & Latham 2002) |
 | Azioni non fatte muoiono col giorno | fresh start effect (Dai, Milkman & Riis 2014) |
 | Frizione minima ovunque | formazione abitudini (Lally et al. 2010; Wood & Neal 2016) |
 

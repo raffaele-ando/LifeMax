@@ -1211,11 +1211,27 @@ kbd {
 .bk-chevron { flex: none; color: var(--inchiostro-muto); display: inline-flex; transition: transform var(--t-media); }
 .bk-chevron.aperta { transform: rotate(180deg); }
 .bk-corpo { padding: 4px 13px 13px; display: flex; flex-direction: column; gap: 7px; }
-.bk-item { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 8px 0; border-top: 1px solid var(--griglia); }
+.bk-item { padding: 8px 0; border-top: 1px solid var(--griglia); }
 .bk-item:first-child { border-top: none; }
+.bk-item-riga { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .bk-item-testo { flex: 1 1 auto; min-width: 0; font-size: 13.5px; overflow-wrap: anywhere; }
 .bk-item-azioni { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .bk-area-sel { display: inline-flex; }
+
+/* ---------- progetti con passi ---------- */
+.bk-item.progetto { padding-bottom: 11px; }
+.prog-mini { flex: none; margin-left: 4px; font-size: 11px; font-weight: 750; padding: 1px 7px; border-radius: 99px; background: color-mix(in srgb, var(--accento) 14%, transparent); color: var(--accento); font-variant-numeric: tabular-nums; }
+.prog-barra { height: 5px; border-radius: 99px; background: var(--superficie-2); overflow: hidden; margin: 9px 0 0; }
+.prog-barra span { display: block; height: 100%; border-radius: 99px; background: var(--grad-brand); transition: width var(--t-media); }
+.steps-panel { display: flex; flex-direction: column; gap: 5px; margin: 10px 0 2px; padding: 9px 11px; border-radius: var(--raggio-s); background: var(--superficie-2); border: 1px solid var(--griglia); }
+.step-riga { display: flex; align-items: center; gap: 9px; }
+.step-testo { flex: 1; min-width: 0; font-size: 13px; overflow-wrap: anywhere; }
+.step-riga.fatta .step-testo { text-decoration: line-through; color: var(--inchiostro-muto); }
+.spunta-mini { flex: none; width: 22px; height: 22px; border-radius: 6px; border: 2px solid var(--baseline); background: var(--superficie-1); display: inline-flex; align-items: center; justify-content: center; color: transparent; transition: all var(--t-veloce); }
+.spunta-mini:hover { border-color: var(--ok); color: var(--ok); }
+.step-riga.fatta .spunta-mini { background: linear-gradient(135deg, #0eb35c, #0ca30c); border-color: transparent; color: #fff; }
+.step-add { display: flex; gap: 7px; margin-top: 3px; }
+.step-add input { flex: 1; min-width: 0; padding: 7px 10px; font-size: 12.5px; }
 .bk-vuoto { font-size: 12.5px; color: var(--inchiostro-muto); padding: 4px 0; }
 .bk-add { display: flex; gap: 8px; margin-top: 6px; }
 .bk-add input { flex: 1; min-width: 0; padding: 8px 11px; font-size: 13px; }

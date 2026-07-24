@@ -1327,6 +1327,7 @@
 
   var backlogAperte = {};
   var backlogEditId = null;
+  var progettiAperti = {};
 
   function vistaInbox() {
     var s = LM.load();
@@ -1428,15 +1429,38 @@
               '<button class="btn btn-mini btn-primario" type="submit">' + ICO('save', 13) + '</button>' +
               '<button class="btn btn-mini btn-ghost" type="button" data-bkannulla="1">Annulla</button></form></div>';
           }
-          return '<div class="bk-item" data-bid="' + b.id + '">' +
-            '<div class="bk-item-testo">' + esc(b.testo) + (b.scadenza ? ' <span class="scad-badge ' + scadInfo(b.scadenza).cls + '">' + scadInfo(b.scadenza).testo + '</span>' : '') + '</div>' +
+          var isProg = b.steps && b.steps.length;
+          var av = isProg ? LM.avanzamentoProgetto(b) : null;
+          var apertoP = !!progettiAperti[b.id];
+          var passi = '';
+          if (apertoP) {
+            passi = '<div class="steps-panel">' +
+              (b.steps || []).map(function (st) {
+                return '<div class="step-riga' + (st.done ? ' fatta' : '') + '">' +
+                  '<button class="spunta-mini" data-steptoggle="' + b.id + '|' + st.id + '" aria-label="Segna passo">' + ICO('check', 12) + '</button>' +
+                  '<span class="step-testo">' + esc(st.testo) + '</span>' +
+                  '<button class="icona-btn" data-stepdel="' + b.id + '|' + st.id + '" title="Rimuovi passo" aria-label="Rimuovi passo">' + ICO('trash', 13) + '</button></div>';
+              }).join('') +
+              '<form class="step-add" data-stepadd="' + b.id + '"><input type="text" placeholder="Aggiungi un passo…" aria-label="Aggiungi un passo"><button class="btn btn-mini" type="submit">' + ICO('plus', 12) + '</button></form>' +
+              '</div>';
+          }
+          return '<div class="bk-item' + (isProg ? ' progetto' : '') + '" data-bid="' + b.id + '">' +
+            '<div class="bk-item-riga">' +
+            '<div class="bk-item-testo">' + esc(b.testo) +
+            (b.scadenza ? ' <span class="scad-badge ' + scadInfo(b.scadenza).cls + '">' + scadInfo(b.scadenza).testo + '</span>' : '') +
+            (isProg ? ' <span class="prog-mini">' + av.fatti + '/' + av.tot + '</span>' : '') + '</div>' +
             '<div class="bk-item-azioni">' +
-            '<button class="btn btn-mini btn-primario" data-bkoggi="' + b.id + '">' + ICO('arrowRight', 13) + ' Oggi</button>' +
+            (isProg
+              ? '<button class="btn btn-mini btn-primario" data-bkpasso="' + b.id + '" title="Porta in Oggi il prossimo passo">' + ICO('arrowRight', 13) + ' Passo</button>'
+              : '<button class="btn btn-mini btn-primario" data-bkoggi="' + b.id + '">' + ICO('arrowRight', 13) + ' Oggi</button>') +
+            '<button class="icona-btn' + (apertoP ? ' on' : '') + '" data-bksteps="' + b.id + '" title="Passi del progetto" aria-label="Passi">' + ICO('lista', 14) + '</button>' +
             '<label class="scad-set' + (b.scadenza ? ' attiva' : '') + '" title="Scadenza">' + ICO('calendar', 14) + '<input type="date" data-scaddate="' + b.id + '"' + (b.scadenza ? ' value="' + b.scadenza + '"' : '') + '></label>' +
             '<button class="icona-btn" data-bkmod="' + b.id + '" title="Modifica" aria-label="Modifica">' + ICO('pencil', 14) + '</button>' +
             '<span class="bk-area-sel">' + selectBacklogArea(b.id, b.areaId) + '</span>' +
             '<button class="icona-btn" data-bkdel="' + b.id + '" title="Rimuovi" aria-label="Rimuovi">' + ICO('trash', 14) + '</button>' +
-            '</div></div>';
+            '</div></div>' +
+            (isProg ? '<div class="prog-barra"><span style="width:' + av.pct + '%"></span></div>' : '') +
+            passi + '</div>';
         }).join('');
         return '<div class="bk-area" style="--c-area:' + col + '">' +
           '<button class="bk-testa" data-toggle="' + g.area.id + '" aria-expanded="' + aperta + '">' +
@@ -1485,6 +1509,33 @@
       });
       box.querySelectorAll('[data-scaddate]').forEach(function (inp) {
         inp.addEventListener('change', function () { LM.impostaScadenzaBacklog(inp.getAttribute('data-scaddate'), inp.value || null); disegnaScadenze(); disegnaBacklog(); });
+      });
+      box.querySelectorAll('[data-bksteps]').forEach(function (b) {
+        b.addEventListener('click', function () { var id = b.getAttribute('data-bksteps'); progettiAperti[id] = !progettiAperti[id]; disegnaBacklog(); });
+      });
+      box.querySelectorAll('[data-bkpasso]').forEach(function (b) {
+        b.addEventListener('click', function () {
+          var id = b.getAttribute('data-bkpasso');
+          var passo = LM.prossimoPassoInOggi(id);
+          if (passo) { toast('Prossimo passo portato tra le azioni di oggi.', 0, 'arrowRight'); }
+          else { toast('Nessun passo da fare: sono tutti già aperti o completati.', 0, 'check'); }
+          disegnaBacklog(); aggiornaNav();
+        });
+      });
+      box.querySelectorAll('[data-steptoggle]').forEach(function (b) {
+        b.addEventListener('click', function () { var p = b.getAttribute('data-steptoggle').split('|'); LM.togglePasso(p[0], p[1]); disegnaBacklog(); });
+      });
+      box.querySelectorAll('[data-stepdel]').forEach(function (b) {
+        b.addEventListener('click', function () { var p = b.getAttribute('data-stepdel').split('|'); LM.rimuoviPasso(p[0], p[1]); disegnaBacklog(); });
+      });
+      box.querySelectorAll('[data-stepadd]').forEach(function (form) {
+        form.addEventListener('submit', function (e) {
+          e.preventDefault();
+          var bid = form.getAttribute('data-stepadd');
+          var input = form.querySelector('input'); var v = input.value.trim();
+          if (!v) return;
+          LM.aggiungiPasso(bid, v); progettiAperti[bid] = true; disegnaBacklog();
+        });
       });
     }
   }
