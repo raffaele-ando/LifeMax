@@ -56,16 +56,20 @@ con descrittori e il riferimento «il tuo solito» (media recente), così il pun
 **🕒 La giornata** è una **griglia oraria a blocchi**: sonno, pasti, abitudini e cose di
 oggi occupano il tempo che scegli (durata regolabile), con gli spazi liberi visibili e
 la riga «adesso». Rende concreto il tempo per chi fatica a percepirlo (time blindness).
-È **sempre presente in due posti fissi**: una **barra compatta in cima a *Oggi*** (che
-toccandola apre un pop-up con la giornata) e una **pagina *Giornata*** a sé, tra le
-destinazioni principali. Il **pop-up** mette la griglia (per capire com'è fatta la
-giornata) accanto alla lista modificabile di orari e durate (per cambiarle al volo),
-così su desktop vedi e modifichi senza scorrere. La pagina a sé ha quattro
-**orizzonti**: **Giorno** (la griglia), **Settimana** (7 colonne a blocchi), **Mese**
-(calendario con i giorni attivi e le scadenze) e **Anno** (mappa dell'attività +
-scadenze) per ragionare sul lungo periodo; da settimana e mese si apre il singolo giorno
-con un tocco. Sonno, sveglia e pasti si impostano da *Sonno e pasti*; orario e durata di
-abitudini e azioni si assegnano sulla timeline.
+È **sempre presente in due posti fissi**, con ruoli diversi: una **barra compatta in
+cima a *Oggi*** per uno sguardo veloce, e la **pagina *Giornata*** a sé per la gestione
+completa. La **barra** distingue i tipi a colpo d'occhio — le cose con una **durata**
+precisa come segmenti che occupano il tempo, quelle a un **solo orario** come punti, i
+**pasti** come tacche, le abitudini col contorno — con una piccola legenda dei conteggi;
+toccandola si apre un **pop-up leggero** (solo la griglia della giornata, che si adatta
+all'altezza dello schermo così non si scorre, con le spunte e un tasto «Gestisci la
+giornata»). La **pagina *Giornata*** ha invece la **gestione completa**: la griglia,
+l'editor sempre aperto di **orari e durate** e l'**aggiunta rapida** di cose a oggi, più
+quattro **orizzonti** — **Giorno**, **Settimana** (7 colonne a blocchi), **Mese** e
+**Anno**. Il **Mese** è un calendario «a calore»: lo sfondo di ogni giorno si accende con
+quanto è stato pieno e dei mattoncini colorati mostrano le cose fatte per area (i giorni
+futuri sono tratteggiati). Da settimana e mese si apre il singolo giorno con un tocco.
+Sonno, sveglia e pasti si impostano da *Sonno e pasti*.
 
 ## Più approcci UX, stessi dati (di proposito)
 

@@ -773,6 +773,7 @@
   var giornataOrizzonte = 'giorno';
   var giornataAncora = null;
   var giornataEditorAperto = false;
+  var giornataPopVista = 'vista'; // pop-up su schermo stretto: 'vista' | 'modifica'
 
   /* eventi di un giorno qualsiasi (per giorno/settimana/mese) */
   function nodiGiorno(k) {
@@ -884,19 +885,21 @@
     }
     var edRows = editItems.map(edRigaHtml).join('');
 
+    /* Editor completo (orari + durate) e aggiunta rapida: SOLO nella pagina
+       "Giornata" (non-compact). Nel pop-up di "Oggi" si guarda e si spunta. */
     var editor = '';
-    if (interactive && editItems.length) {
-      if (compact) {
-        editor = '<div class="tl-editor tl-editor-pop"><div class="tl-ed-tit">' + ICO('pencil', 13) + ' Modifica orari e durate' +
-          (d.tray.length ? ' <span class="tl-ed-badge">' + d.tray.length + ' senza orario</span>' : '') + '</div>' +
-          '<div class="tl-ed-lista">' + edRows + '</div></div>';
-      } else {
-        editor = '<div class="tl-editor">' +
-          '<button class="tl-ed-toggle' + (apri ? ' aperto' : '') + '" id="tl-ed-toggle">' + ICO('clock', 13) +
-          ' Orari e durate' + (d.tray.length ? ' <span class="tl-ed-badge">' + d.tray.length + ' senza orario</span>' : '') +
-          '<span class="bk-chevron' + (apri ? ' aperta' : '') + '">' + ICO('chevronGiu', 15) + '</span></button>' +
-          (apri ? '<div class="tl-ed-lista">' + edRows + '</div>' : '') + '</div>';
-      }
+    if (!compact && interactive && editItems.length) {
+      editor = '<div class="tl-editor"><div class="tl-ed-tit">' + ICO('pencil', 13) + ' Orari e durate' +
+        (d.tray.length ? ' <span class="tl-ed-badge">' + d.tray.length + ' senza orario</span>' : '') + '</div>' +
+        '<div class="tl-ed-lista">' + edRows + '</div></div>';
+    }
+    var quickAdd = '';
+    if (!compact && interactive) {
+      quickAdd = '<form class="tl-add" id="tl-add"><input type="text" id="tl-add-testo" placeholder="Aggiungi qualcosa a oggi…" aria-label="Aggiungi">' +
+        '<input type="time" id="tl-add-ora" class="tl-time" aria-label="Orario">' +
+        '<select id="tl-add-dur" class="tl-dur" aria-label="Durata">' + DURATE.map(function (o) { return '<option value="' + o.v + '">' + o.t + '</option>'; }).join('') + '</select>' +
+        '<span class="tl-add-area">' + selectAree('tl-add-area') + '</span>' +
+        '<button class="btn btn-mini btn-primario" type="submit">' + ICO('plus', 14) + '</button></form>';
     }
 
     var trayRo = '';
@@ -911,32 +914,51 @@
     var footer = '';
     if (opts.controls !== false) {
       footer = '<div class="tl-piede">' +
-        '<button class="btn btn-mini" id="tl-edit-orari">' + ICO('clock', 13) + ' Sonno e pasti</button>' +
-        (compact ? '<button class="btn btn-mini btn-ghost" id="tl-apri-pagina">' + ICO('calendar', 13) + ' Settimana · mese · anno</button>' : '') +
+        (compact
+          ? '<button class="btn btn-primario btn-mini" id="tl-apri-pagina">' + ICO('calendar', 14) + ' Gestisci la giornata ' + ICO('arrowRight', 13) + '</button>'
+          : '<button class="btn btn-mini" id="tl-edit-orari">' + ICO('clock', 13) + ' Sonno e pasti</button>') +
         '</div>';
     }
 
-    /* nel pop-up la griglia è più densa; su schermo largo va di fianco all'editor */
-    var pxh = compact ? (window.innerWidth < 720 ? 34 : 44) : 56;
+    /* pop-up: la griglia si adatta all'altezza disponibile, così NON si scrolla */
+    var narrow = compact && window.innerWidth < 720;
+    var pxh = 56;
+    if (compact) {
+      var ore = Math.max(1, Math.ceil(d.sleep / 60) - Math.floor(d.wake / 60));
+      /* altezza-obiettivo della griglia = altezza del pannello meno il "chrome"
+         (testa sheet, intestazione, nota, footer, padding), così NON si scrolla */
+      var avail = window.innerHeight * (narrow ? 0.9 : 0.86) - 300;
+      pxh = Math.max(18, Math.min(narrow ? 42 : 48, avail / ore));
+    }
     var sommario = '';
     if (compact && nowMin != null) {
       var pross = d.placed.filter(function (e) { return e.min + (e.dur || 30) > nowMin && !(e.tipo === 'azione' ? e.done : (e.tipo === 'abitudine' ? e.fatto : false)); })[0];
       sommario = 'Adesso <b>' + fmtMin(nowMin) + '</b>' + (pross ? ' · poi ' + esc(pross.nome || pross.testo) + ' alle ' + pross.ora : ' · niente altro in agenda');
     }
     var head = opts.header === false ? '' : '<div class="tl-head"><div><h2>' + ICO('clock', 16) + ' ' + (opts.giorno && !d.isToday ? etichettaGiorno(k) : 'La giornata') + '</h2>' +
-      '<div class="sotto">' + (compact ? (sommario || 'Come è divisa la tua giornata. I blocchi occupano il tempo che scegli.') : 'Come sono divise le ore, dal risveglio al sonno. I blocchi occupano il tempo che scegli.') + '</div></div></div>';
+      '<div class="sotto">' + (compact ? (sommario || 'Come è divisa la tua giornata. Spunta ciò che fai; per modificarla apri Giornata.') : 'Come sono divise le ore, dal risveglio al sonno. I blocchi occupano il tempo che scegli.') + '</div></div></div>';
     var gridHtml = vuota
       ? '<div class="vuoto" style="padding:18px 8px"><b>Niente in agenda per questo giorno.</b>' + (interactive ? '<br>Dai un orario a un’abitudine o a una cosa di oggi e comparirà qui.' : '') + '</div>'
       : htmlTimeGrid(d, { interactive: interactive, nowMin: nowMin, pxh: pxh });
 
     if (compact) {
-      container.innerHTML = '<div class="card giornata giornata-pop">' + head +
-        '<div class="gio-2col"><div class="gio-col-grid">' + gridHtml + '</div>' +
-        '<div class="gio-col-ed">' + (editor || '<div class="sotto" style="margin:0">Aggiungi un orario a un’abitudine o a una cosa di oggi per vederla qui.</div>') + trayRo + '</div></div>' +
-        footer + '</div>';
+      var popNota = d.tray.length ? '<div class="tl-pop-note">' + ICO('clock', 12) + ' ' + d.tray.length + (d.tray.length === 1 ? ' cosa senza orario' : ' cose senza orario') + ' — assegnale un orario in <b>Giornata</b>.</div>' : '';
+      container.innerHTML = '<div class="card giornata giornata-pop">' + head + gridHtml + popNota + footer + '</div>';
     } else {
-      container.innerHTML = '<div class="card giornata">' + head + gridHtml + editor + trayRo + footer + '</div>';
+      container.innerHTML = '<div class="card giornata">' + head + gridHtml + editor + quickAdd + trayRo + footer + '</div>';
     }
+
+    var af = container.querySelector('#tl-add');
+    if (af) af.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var t = container.querySelector('#tl-add-testo').value.trim();
+      if (!t) return;
+      var oraV = container.querySelector('#tl-add-ora').value || null;
+      var durV = container.querySelector('#tl-add-dur').value;
+      var mit = LM.azioniDiOggi().filter(function (a) { return !a.done; }).length === 0;
+      LM.aggiungiAzione(t, container.querySelector('#tl-add-area').value, { ora: oraV, durata: durV ? +durV : null, mit: mit });
+      montaGiornata(container, opts); aggiornaNav();
+    });
 
     if (interactive) {
       container.querySelectorAll('[data-tl-az].tl-check, .tl-blk-check[data-tl-az]').forEach(function (b) {
@@ -963,10 +985,8 @@
         sel.addEventListener('change', function () { giornataEditorAperto = true; LM.setDurataAzione(sel.getAttribute('data-tl-az'), sel.value ? +sel.value : null); montaGiornata(container, opts); });
       });
       container.querySelectorAll('.tl-dur[data-tl-ab]').forEach(function (sel) {
-        sel.addEventListener('change', function () { giornataEditorAperto = true; LM.modificaAbitudine(sel.getAttribute('data-tl-ab'), { durata: sel.value ? +sel.value : null }); montaGiornata(container, opts); });
+        sel.addEventListener('change', function () { LM.modificaAbitudine(sel.getAttribute('data-tl-ab'), { durata: sel.value ? +sel.value : null }); montaGiornata(container, opts); });
       });
-      var tog = container.querySelector('#tl-ed-toggle');
-      if (tog) tog.addEventListener('click', function () { giornataEditorAperto = !apri; montaGiornata(container, opts); });
     }
     var eo = container.querySelector('#tl-edit-orari');
     if (eo) eo.addEventListener('click', apriRitmo);
@@ -1017,23 +1037,36 @@
     var inizio = new Date(anno, mese, 1 - ((primo.getDay() + 6) % 7));
     var oggi = LM.todayKey();
     var mesi = ['gennaio', 'febbraio', 'marzo', 'aprile', 'maggio', 'giugno', 'luglio', 'agosto', 'settembre', 'ottobre', 'novembre', 'dicembre'];
+    var s = LM.snapshot();
+    var meseXp = [];
+    for (var j = 0; j < 42; j++) { var dj = new Date(inizio.getFullYear(), inizio.getMonth(), inizio.getDate() + j); meseXp.push(s.xpPerGiorno[LM.dayKey(dj)] || 0); }
+    var maxXp = Math.max.apply(null, meseXp.concat([1]));
     var celle = '';
     for (var i = 0; i < 42; i++) {
       var d = new Date(inizio.getFullYear(), inizio.getMonth(), inizio.getDate() + i);
       var k = LM.dayKey(d);
       var fuori = d.getMonth() !== mese;
-      var azFatte = LM.azioniDelGiorno(k).filter(function (a) { return a.done; }).length;
-      var scad = LM.snapshot().backlog.filter(function (b) { return b.scadenza === k; }).length;
-      var attivo = LM.giornoAttivo(k);
-      var punti = azFatte ? '<span class="me-pallini">' + Array.apply(null, { length: Math.min(4, azFatte) }).map(function () { return '<i></i>'; }).join('') + '</span>' : '';
-      celle += '<button class="me-cella' + (fuori ? ' fuori' : '') + (k === oggi ? ' oggi' : '') + (attivo ? ' attivo' : '') + '" data-tl-giorno="' + k + '">' +
-        '<span class="me-num">' + d.getDate() + '</span>' + punti +
-        (scad ? '<span class="me-scad" title="scadenza">' + scad + '</span>' : '') + '</button>';
+      var futuro = k > oggi;
+      /* mattoncini colorati per area = composizione della giornata (azioni
+         completate + abitudini fatte); lo sfondo "scalda" con l'intensità (XP) */
+      var fatti = LM.azioniDelGiorno(k).filter(function (a) { return a.done; }).map(function (a) { return a.areaId; })
+        .concat(s.abitudini.filter(function (h) { return h.fatti[k]; }).map(function (h) { return h.areaId; }));
+      var scadG = s.backlog.filter(function (b) { return b.scadenza === k; });
+      var xp = s.xpPerGiorno[k] || 0;
+      var heat = xp <= 0 ? 0 : Math.min(3, Math.ceil(xp / maxXp * 3));
+      var mattoni = fatti.slice(0, 10).map(function (aid) { return '<i style="background:' + LM.coloreArea(areaById(aid)) + '"></i>'; }).join('') +
+        (fatti.length > 10 ? '<span class="me-piu">+' + (fatti.length - 10) + '</span>' : '');
+      var scadBadge = scadG.length ? '<span class="me-scad" title="' + esc(scadG.map(function (b) { return b.testo; }).join(', ')) + '">' + ICO('calendar', 9) + (scadG.length > 1 ? ' ' + scadG.length : '') + '</span>' : '';
+      celle += '<button class="me-cella heat-' + heat + (fuori ? ' fuori' : '') + (k === oggi ? ' oggi' : '') + (futuro ? ' futuro' : '') + '" data-tl-giorno="' + k + '" aria-label="' + LM.weekdayShort(k) + ' ' + LM.fmtShort(k) + '">' +
+        '<span class="me-testa"><span class="me-num">' + d.getDate() + '</span>' + scadBadge + '</span>' +
+        (fatti.length ? '<span class="me-mattoni">' + mattoni + '</span>' : '') + '</button>';
     }
     var dowh = ['L', 'M', 'M', 'G', 'V', 'S', 'D'].map(function (x) { return '<span>' + x + '</span>'; }).join('');
     container.innerHTML = orizzNav('mese', giornataAncora, null, mesi[mese] + ' ' + anno) +
       '<div class="card"><div class="me-dow">' + dowh + '</div><div class="me-grid">' + celle + '</div>' +
-      '<div class="sotto mt-s">Ogni pallino è un’azione completata. Il triangolo segna una scadenza. Tocca un giorno per aprirlo.</div></div>';
+      '<div class="me-legenda"><span class="lg"><i class="me-heatkey"></i> più lo sfondo è acceso, più la giornata è stata piena</span>' +
+      '<span class="lg"><i class="me-sqkey"></i> ogni quadretto è una cosa fatta, col colore dell’area</span>' +
+      '<span class="lg">' + ICO('calendar', 11) + ' scadenza · tocca un giorno per aprirlo</span></div></div>';
     wireOrizzNav(container, 'mese');
     container.querySelectorAll('[data-tl-giorno]').forEach(function (el) {
       el.addEventListener('click', function () { setOrizzonte('giorno', el.getAttribute('data-tl-giorno')); });
@@ -1119,10 +1152,27 @@
     var d = nodiGiornata();
     var span = Math.max(60, d.sleep - d.wake);
     function pct(m) { return Math.max(0, Math.min(100, (m - d.wake) / span * 100)); }
+    /* la barra distingue i tipi: blocchi con DURATA precisa come segmenti che
+       occupano il tempo, le cose a un solo orario come punti, i pasti come
+       tacche; le abitudini hanno il contorno, le azioni sono piene. */
+    var conDur = 0, soloOra = 0, pasti = 0;
     var marks = d.placed.map(function (e) {
-      var c = e.tipo === 'pasto' ? 'var(--inchiostro-muto)' : LM.coloreArea(areaById(e.areaId));
-      var fatto = e.tipo === 'azione' ? e.done : (e.tipo === 'abitudine' ? e.fatto : false);
-      return '<span class="strip-mark' + (fatto ? ' fatta' : '') + '" style="left:' + pct(e.min).toFixed(1) + '%;--c:' + c + '"></span>';
+      var left = pct(e.min);
+      if (e.tipo === 'pasto') {
+        pasti++;
+        return '<span class="strip-pasto" style="left:' + left.toFixed(1) + '%" title="' + esc(e.ora + ' · ' + e.nome) + '"></span>';
+      }
+      var col = LM.coloreArea(areaById(e.areaId));
+      var fatto = e.tipo === 'azione' ? e.done : e.fatto;
+      var cls = (e.tipo === 'abitudine' ? ' abit' : '') + (fatto ? ' fatta' : '');
+      var tit = esc(e.ora + ' · ' + e.testo + (e.dur ? ' (' + e.dur + ' min)' : ''));
+      if (e.dur) {
+        conDur++;
+        var w = Math.max(2, Math.min(100 - left, e.dur / span * 100));
+        return '<span class="strip-seg' + cls + '" style="left:' + left.toFixed(1) + '%;width:' + w.toFixed(1) + '%;--c:' + col + '" title="' + tit + '"></span>';
+      }
+      soloOra++;
+      return '<span class="strip-mark' + cls + '" style="left:' + left.toFixed(1) + '%;--c:' + col + '" title="' + tit + '"></span>';
     }).join('');
     var now = new Date();
     var nm = now.getHours() * 60 + now.getMinutes();
@@ -1130,11 +1180,18 @@
     var pross = d.placed.filter(function (e) { return e.min >= nm && !(e.tipo === 'azione' ? e.done : e.fatto); })[0];
     var sotto = pross ? 'poi ' + esc(pross.nome || pross.testo) + ' · ' + pross.ora
       : (d.placed.length ? 'niente altro in agenda oggi' : 'nessun orario per oggi — tocca per aggiungerne');
+    var lg = [];
+    if (conDur) lg.push('<span class="lg"><i class="lg-seg"></i>' + conDur + ' con durata</span>');
+    if (soloOra) lg.push('<span class="lg"><i class="lg-dot"></i>' + soloOra + ' a un orario</span>');
+    if (pasti) lg.push('<span class="lg"><i class="lg-pasto"></i>' + pasti + ' pasti</span>');
+    if (d.tray.length) lg.push('<span class="lg"><i class="lg-none"></i>' + d.tray.length + ' senza orario</span>');
+    var legenda = lg.length ? '<div class="strip-legenda">' + lg.join('') + '</div>' : '';
     return '<button class="giornata-strip" id="giornata-strip-btn" aria-label="Apri la giornata">' +
       '<div class="strip-testa"><span class="strip-tit">' + ICO('clock', 14) + ' La giornata</span>' +
       '<span class="strip-sotto">' + sotto + ' ' + ICO('arrowRight', 13) + '</span></div>' +
       '<div class="strip-barra">' + marks + nowEl + '</div>' +
       '<div class="strip-estremi"><span>' + d.sveglia + '</span><span>' + d.sonno + '</span></div>' +
+      legenda +
       '</button>';
   }
   function montaGiornataStrip(container) {
