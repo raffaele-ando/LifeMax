@@ -1157,6 +1157,10 @@ kbd {
 .diario-area { display: inline-flex; vertical-align: -2px; margin: 0 1px; }
 .diario-evento .tag-mit { vertical-align: 1px; }
 .diario-ora { flex: none; font-size: 11.5px; color: var(--inchiostro-muto); font-variant-numeric: tabular-nums; margin-top: 6px; }
+.diario-ico.minore { background: transparent; border: 1px dashed var(--bordo-forte); color: var(--inchiostro-muto); }
+.diario-evento.minore { font-size: 12.5px; }
+.diario-evento.minore .diario-testo { color: var(--inchiostro-muto); }
+.diario-log { overflow-wrap: anywhere; }
 @media (max-width: 860px) {
   .diario-giorno { grid-template-columns: 1fr; gap: 8px; }
   .diario-data { position: static; }

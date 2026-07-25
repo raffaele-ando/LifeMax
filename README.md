@@ -127,6 +127,10 @@ L'integrazione è **progressive enhancement**: se lo script Firebase non si cari
 ### Come funziona la sincronizzazione (sicura contro la perdita di dati)
 
 - Un solo documento per utente contiene l'intero stato serializzato in JSON.
+- **Tutto viene salvato**: ogni azione, scritta, impostazione, selezione o
+  eliminazione passa da un'unica funzione `save()` che persiste in `localStorage`
+  ed emette l'evento `lm:change`; lo stesso evento fa partire il push sul cloud.
+  Non esiste una modifica che aggiorni lo stato senza salvarlo.
 - Le modifiche locali vengono salvate sul cloud con un piccolo ritardo (debounce).
 - Un listener in tempo reale (`onSnapshot`) applica le modifiche fatte su altri
   dispositivi; se stai scrivendo in un campo, l'aggiornamento viene rimandato per
@@ -175,8 +179,15 @@ dei passaggi di configurazione qui sopra:
 - L'accesso funziona ma non salva → verifica che il dominio sia tra quelli
   autorizzati (punto 4).
 
-Lo storico di tutto ciò che fai e scrivi è nella scheda **Diario** dentro
-Panoramica (azioni completate, check-in, review, note catturate), giorno per giorno.
+Lo storico di **tutto ciò che fai** è nella scheda **Diario** dentro Panoramica,
+giorno per giorno: azioni completate, check-in, review e note catturate, ma anche
+un **registro** di ogni scelta e modifica (cose portate in Oggi, smistate, eliminate,
+rinominate, cambi di area, orari e durate, sonno e pasti, impostazioni…). Di default
+mostra le **cose importanti**; con il flag **«Tutto»** vedi anche le modifiche minori.
+Il registro fa parte dello stato, quindi si salva e si sincronizza come il resto.
+
+Nota sugli XP: completare una cosa dà XP; se **togli la spunta** (l'avevi messa per
+errore) gli XP vengono **restituiti**, così il conteggio resta corretto.
 
 ## Struttura
 

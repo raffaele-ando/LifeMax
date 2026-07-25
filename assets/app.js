@@ -129,11 +129,13 @@
   function setModo(m) {
     var s = LM.load();
     s.profilo.modo = m;
+    LM.registra('impostazioni', 'Tema impostato su ' + (m === 'auto' ? 'automatico' : m === 'dark' ? 'scuro' : 'chiaro'), false);
     LM.save(); applicaTema(); render();
   }
   function setSkin(sk) {
     var s = LM.load();
     s.profilo.skin = sk;
+    LM.registra('impostazioni', 'Aspetto impostato su ' + (sk === 'arcade' ? 'Arcade' : 'Aurora'), false);
     LM.save(); applicaTema(); render();
   }
   function caricaDemo() {
@@ -158,6 +160,18 @@
       (xp ? ' <span class="xp">+' + xp + ' XP</span>' : '');
     zona.appendChild(t);
     setTimeout(function () { t.remove(); }, 3000);
+  }
+
+  /* feedback per una spunta: XP che volano + toast quando si completa;
+     avviso «spunta tolta» (con gli XP restituiti) quando si annulla per errore */
+  function feedbackSpunta(ev, xp, doneMsg, icona) {
+    if (xp > 0) {
+      var r = ev.currentTarget.getBoundingClientRect();
+      flyXp(r.left + r.width / 2, r.top, xp);
+      toast(doneMsg, xp, icona);
+    } else if (xp < 0) {
+      toast('Spunta tolta (' + xp + ' XP)', 0, 'refresh');
+    }
   }
 
   /* ---------- cattura istantanea ---------- */
@@ -393,6 +407,7 @@
       a.href = url; a.download = 'lifemax-' + LM.todayKey() + '.json';
       document.body.appendChild(a); a.click(); a.remove();
       setTimeout(function () { URL.revokeObjectURL(url); }, 1500);
+      LM.registra('dati', 'Dati esportati in un file .json', true); LM.save();
       toast('Dati esportati nel file .json.', 0, 'download');
     } catch (e) { toast('Esportazione non riuscita.', 0, 'trash'); }
   }
@@ -998,15 +1013,13 @@
       function wireSpunte(scope) {
         scope.querySelectorAll('.tl-blk-check[data-tl-az], .tl-ed-riga .tl-check[data-tl-az]').forEach(function (b) {
           b.addEventListener('click', function (ev) {
-            var xp = LM.completaAzione(b.getAttribute('data-tl-az'));
-            if (xp) { var r = ev.currentTarget.getBoundingClientRect(); flyXp(r.left + r.width / 2, r.top, xp); toast('Fatto.', xp); }
+            feedbackSpunta(ev, LM.completaAzione(b.getAttribute('data-tl-az')), 'Fatto.', 'check');
             montaGiornata(container, opts); aggiornaNav();
           });
         });
         scope.querySelectorAll('.tl-blk-check[data-tl-ab], .tl-ed-riga .tl-check[data-tl-ab]').forEach(function (b) {
           b.addEventListener('click', function (ev) {
-            var xp = LM.completaAbitudine(b.getAttribute('data-tl-ab'));
-            if (xp) { var r = ev.currentTarget.getBoundingClientRect(); flyXp(r.left + r.width / 2, r.top, xp); toast('Fatta. Continua così.', xp, 'flame'); }
+            feedbackSpunta(ev, LM.completaAbitudine(b.getAttribute('data-tl-ab')), 'Fatta. Continua così.', 'flame');
             montaGiornata(container, opts);
           });
         });
@@ -1356,6 +1369,7 @@
   var sezPlancia = 'riepilogo';
   var periodoTrend = 14;
   var diarioGiorni = 21;
+  var diarioTutto = false;
 
   /* etichetta relativa del giorno: Oggi / Ieri / "lun 14 lug" */
   function etichettaGiorno(k) {
@@ -1404,6 +1418,11 @@
     } else if (ev.tipo === 'settimana') {
       ico = '<span class="diario-ico">' + ICO('calendar', 14) + '</span>';
       testo = 'Review della settimana' + (ev.imparato ? ' · <span class="diario-sec">' + esc(ev.imparato) + '</span>' : '');
+    } else if (ev.tipo === 'registro') {
+      var icoCat = { azione: 'target', abitudine: 'refresh', backlog: 'lista', inbox: 'inbox', area: 'sparkles', giornata: 'clock', impostazioni: 'sun', dati: 'save' };
+      ico = '<span class="diario-ico' + (ev.imp ? '' : ' minore') + '">' + ICO(icoCat[ev.cat] || 'bolt', 13) + '</span>';
+      testo = '<span class="diario-log">' + esc(ev.testo) + '</span>';
+      cls = ev.imp ? '' : ' minore';
     } else { /* cattura */
       ico = '<span class="diario-ico">' + ICO('inbox', 14) + '</span>';
       testo = 'Annotato · <b>' + esc(ev.testo) + '</b>';
@@ -1412,7 +1431,7 @@
     if (ev.tipo === 'azione' && ev.id) {
       testo += ' <span class="diario-cambia">' + selectAreaAzione(ev.id, ev.areaId, 'mini') + '</span>';
     }
-    return '<div class="diario-evento">' + ico + '<div class="diario-testo">' + testo + '</div>' +
+    return '<div class="diario-evento' + cls + '">' + ico + '<div class="diario-testo">' + testo + '</div>' +
       '<span class="diario-ora">' + oraDi(ev.ts) + '</span></div>';
   }
 
@@ -1509,8 +1528,7 @@
         }).join('');
         lista.querySelectorAll('.spunta').forEach(function (b) {
           b.addEventListener('click', function (ev) {
-            var xp = LM.completaAzione(b.getAttribute('data-id'));
-            if (xp) { var r = ev.currentTarget.getBoundingClientRect(); flyXp(r.left + r.width / 2, r.top, xp); toast('Azione completata.', xp); }
+            feedbackSpunta(ev, LM.completaAzione(b.getAttribute('data-id')), 'Azione completata.', 'check');
             render();
           });
         });
@@ -1573,26 +1591,33 @@
 
     /* --- Diario: cronologia di ciò che hai fatto e scritto --- */
     function sezDiario(c) {
-      var giorni = LM.diario(diarioGiorni);
+      var giorni = LM.diario(diarioGiorni, diarioTutto);
+      var filtro = '<div class="segmenti mini-seg" id="diario-filtro">' +
+        '<button data-tutto="0" class="' + (!diarioTutto ? 'attivo' : '') + '">Cose importanti</button>' +
+        '<button data-tutto="1" class="' + (diarioTutto ? 'attivo' : '') + '">Tutto</button></div>';
+      var html;
       if (!giorni.length) {
-        c.innerHTML = '<div class="card"><div class="vuoto">' + ICO('book', 30) +
-          '<br><b>Il diario è ancora vuoto.</b><br>Completa un’azione o fai un check-in: comparirà qui, giorno per giorno.</div></div>';
-        return;
-      }
-      var totGiorni = LM.giorniConAttivita();
-      var html = '<div class="card diario"><div class="sotto" style="margin-bottom:16px">Tutto ciò che hai fatto e annotato, dal più recente.</div>';
-      giorni.forEach(function (g) {
-        html += '<div class="diario-giorno">' +
-          '<div class="diario-data">' + etichettaGiorno(g.data) + '</div>' +
-          '<div class="diario-eventi">' + g.eventi.map(eventoDiarioHtml).join('') + '</div></div>';
-      });
-      html += '</div>';
-      if (totGiorni > giorni.length) {
-        html += '<div style="text-align:center" class="mt"><button class="btn" id="diario-altro">' + ICO('refresh', 15) + ' Mostra altri giorni</button></div>';
+        html = '<div class="card diario"><div class="card-testa"><div class="sotto" style="margin:0">La storia di tutto ciò che fai, dal più recente.</div>' + filtro + '</div>' +
+          '<div class="vuoto" style="padding:20px 8px">' + ICO('book', 28) + '<br><b>Ancora niente da mostrare.</b><br>Appena fai qualcosa comparirà qui, giorno per giorno.</div></div>';
+      } else {
+        html = '<div class="card diario"><div class="card-testa"><div class="sotto" style="margin:0">La storia di tutto ciò che fai — azioni, note, scelte, impostazioni. ' + (diarioTutto ? 'Stai vedendo <b>tutto</b>.' : 'Mostro le <b>cose importanti</b>; con «Tutto» vedi anche le modifiche minori.') + '</div>' + filtro + '</div>';
+        giorni.forEach(function (g) {
+          html += '<div class="diario-giorno">' +
+            '<div class="diario-data">' + etichettaGiorno(g.data) + '</div>' +
+            '<div class="diario-eventi">' + g.eventi.map(eventoDiarioHtml).join('') + '</div></div>';
+        });
+        html += '</div>';
+        var totGiorni = LM.giorniConAttivita();
+        if (totGiorni > giorni.length) {
+          html += '<div style="text-align:center" class="mt"><button class="btn" id="diario-altro">' + ICO('refresh', 15) + ' Mostra altri giorni</button></div>';
+        }
       }
       c.innerHTML = html;
       var b = document.getElementById('diario-altro');
       if (b) b.addEventListener('click', function () { diarioGiorni += 30; disegnaSezione(); });
+      document.getElementById('diario-filtro').querySelectorAll('[data-tutto]').forEach(function (bt) {
+        bt.addEventListener('click', function () { diarioTutto = bt.getAttribute('data-tutto') === '1'; disegnaSezione(); });
+      });
     }
   }
 
@@ -1763,8 +1788,7 @@
 
     corpo.querySelectorAll('[data-toggle-ab]').forEach(function (b) {
       b.addEventListener('click', function (ev) {
-        var xp = LM.completaAbitudine(b.getAttribute('data-toggle-ab'));
-        if (xp) { var r = ev.currentTarget.getBoundingClientRect(); flyXp(r.left + r.width / 2, r.top, xp); toast('Fatta. Continua così', xp, 'flame'); }
+        feedbackSpunta(ev, LM.completaAbitudine(b.getAttribute('data-toggle-ab')), 'Fatta. Continua così', 'flame');
         ritualeAbitudini(corpo);
       });
     });

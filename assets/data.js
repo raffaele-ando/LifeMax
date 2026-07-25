@@ -154,7 +154,8 @@ var LM = (function () {
       esperimenti: [],   // vedi motore N-of-1 sotto
       xp: 0,
       xpPerGiorno: {},   // xpPerGiorno[data] = n
-      log: []            // eventi recenti per feedback immediato
+      log: [],           // (deprecato) eventi recenti per feedback immediato
+      registro: []       // {ts, cat, testo, imp} — storico di tutto ciò che fai (Diario)
     };
   }
 
@@ -191,6 +192,7 @@ var LM = (function () {
     if (!Array.isArray(s.profilo.ritmo.pasti)) s.profilo.ritmo.pasti = JSON.parse(JSON.stringify(RITMO_DEFAULT.pasti));
     s.profilo.ritmo.pasti.forEach(function (p) { if (p.durata == null) p.durata = 30; });
     if (!s.ritmoGiorno || typeof s.ritmoGiorno !== 'object') s.ritmoGiorno = {};
+    if (!Array.isArray(s.registro)) s.registro = [];
     return s;
   }
 
@@ -203,6 +205,7 @@ var LM = (function () {
   function reset() {
     backup('prima-azzeramento');
     state = statoVuoto();
+    registra('dati', 'Dati azzerati (ripartenza da zero)', true);
     save();
   }
 
@@ -239,6 +242,8 @@ var LM = (function () {
     if (!b) return false;
     backup('prima-del-ripristino');
     hydrate(safeParse(b.data));
+    registra('dati', 'Ripristinato un backup', true);
+    save();
     return true;
   }
   function safeParse(t) { try { return JSON.parse(t); } catch (e) { return statoVuoto(); } }
@@ -269,6 +274,8 @@ var LM = (function () {
     backup('prima-import');
     st.updatedAt = Date.now();
     hydrate(st);
+    registra('dati', 'Dati importati da file (' + ricchezza(st) + ' elementi)', true);
+    save();
     return { ok: true, ricchezza: ricchezza(st) };
   }
 
@@ -298,6 +305,24 @@ var LM = (function () {
     s.xpPerGiorno[k] = (s.xpPerGiorno[k] || 0) + punti;
     return punti;
   }
+  /* toglie XP già assegnati (es. quando si toglie la spunta a una task) */
+  function togliXp(punti, quando) {
+    var s = load();
+    var k = quando || todayKey();
+    s.xp = Math.max(0, s.xp - punti);
+    s.xpPerGiorno[k] = Math.max(0, (s.xpPerGiorno[k] || 0) - punti);
+  }
+
+  /* Registro: storia di TUTTO ciò che si fa (impostazioni, scritte, selezioni,
+     eliminazioni…). `imp` = importante (mostrato di default nel Diario; il
+     resto si vede col flag "mostra tutto"). Non salva da solo: lo fa il
+     chiamante col suo save(). Cap per non gonfiare lo stato/il cloud. */
+  function registra(cat, testo, imp) {
+    var s = load();
+    if (!Array.isArray(s.registro)) s.registro = [];
+    s.registro.push({ ts: Date.now(), cat: cat, testo: testo, imp: !!imp });
+    if (s.registro.length > 800) s.registro = s.registro.slice(-800);
+  }
 
   function aggiungiAzione(testo, areaId, opts) {
     var s = load();
@@ -317,6 +342,7 @@ var LM = (function () {
       passoDi: opts.passoDi || null   // {b: idProgetto, s: idPasso} se nasce da un progetto
     };
     s.azioni.push(a);
+    if (!opts.interna) registra('azione', 'Aggiunta a oggi «' + testo + '»', false);
     save();
     return a;
   }
@@ -324,7 +350,21 @@ var LM = (function () {
   function completaAzione(id) {
     var s = load();
     var a = s.azioni.find(function (x) { return x.id === id; });
-    if (!a || a.done) return 0;
+    if (!a) return 0;
+    /* togliere la spunta (messa per errore): rimuove gli XP dati */
+    if (a.done) {
+      var tolti = a.mit ? XP_EVENTI.mit : XP_EVENTI.azione;
+      togliXp(tolti, a.doneAt ? dayKey(new Date(a.doneAt)) : a.data);
+      a.done = false;
+      a.doneAt = null;
+      if (a.passoDi) {
+        var prog0 = s.backlog.find(function (x) { return x.id === a.passoDi.b; });
+        if (prog0 && prog0.steps) { var st0 = prog0.steps.find(function (x) { return x.id === a.passoDi.s; }); if (st0) st0.done = false; }
+      }
+      registra('azione', 'Tolta la spunta a «' + a.testo + '» (−' + tolti + ' XP)', false);
+      save();
+      return -tolti;
+    }
     a.done = true;
     a.doneAt = Date.now();
     var punti = premiaXp(a.mit ? 'mit' : 'azione');
@@ -369,6 +409,7 @@ var LM = (function () {
     var el = s.inbox.find(function (x) { return x.id === id; });
     if (!el) return;
     el.testo = testo;
+    registra('inbox', 'Modificata una nota da sistemare', false);
     save();
   }
 
@@ -377,6 +418,8 @@ var LM = (function () {
     var a = s.azioni.find(function (x) { return x.id === id; });
     if (!a) return;
     a.areaId = areaId;
+    var ar = s.aree.find(function (x) { return x.id === areaId; });
+    registra('azione', 'Cambiata area di «' + a.testo + '» → ' + (ar ? ar.nome : areaId), false);
     save();
   }
   /* assegna o toglie l'orario di un'azione nella giornata */
@@ -385,6 +428,7 @@ var LM = (function () {
     var a = s.azioni.find(function (x) { return x.id === id; });
     if (!a) return;
     a.ora = ora || null;
+    registra('giornata', ora ? 'Orario di «' + a.testo + '» → ' + ora : 'Tolto l’orario a «' + a.testo + '»', false);
     save();
   }
   /* durata (in minuti) che l'azione occupa nella giornata */
@@ -393,6 +437,7 @@ var LM = (function () {
     var a = s.azioni.find(function (x) { return x.id === id; });
     if (!a) return;
     a.durata = minuti || null;
+    registra('giornata', 'Durata di «' + a.testo + '» → ' + (minuti ? minuti + ' min' : 'nessuna'), false);
     save();
   }
   /* azioni di un giorno qualsiasi (per le viste settimana/mese) */
@@ -409,6 +454,7 @@ var LM = (function () {
     if (patch.sveglia != null) s.profilo.ritmo.sveglia = patch.sveglia;
     if (patch.sonno != null) s.profilo.ritmo.sonno = patch.sonno;
     if (Array.isArray(patch.pasti)) s.profilo.ritmo.pasti = patch.pasti;
+    registra('impostazioni', 'Aggiornato il ritmo di base (sonno e pasti)', false);
     save();
   }
   /* sonno e pasti EFFETTIVI di un giorno: il registro del giorno se c'è,
@@ -435,12 +481,13 @@ var LM = (function () {
     if (patch.sonno != null) cur.sonno = patch.sonno;
     if (Array.isArray(patch.pasti)) cur.pasti = patch.pasti;
     s.ritmoGiorno[k] = cur;
+    registra('giornata', 'Registrato sonno/pasti del ' + fmtShort(k), false);
     save();
   }
   /* rimuove il registro di un giorno: torna al ritmo di base */
   function azzeraRitmoGiorno(k) {
     var s = load();
-    if (s.ritmoGiorno && s.ritmoGiorno[k]) { delete s.ritmoGiorno[k]; save(); }
+    if (s.ritmoGiorno && s.ritmoGiorno[k]) { delete s.ritmoGiorno[k]; registra('giornata', 'Sonno/pasti del ' + fmtShort(k) + ' tornati al ritmo di base', false); save(); }
   }
   /* minuti di sonno di un giorno (a letto → sveglia, attraversa la mezzanotte) */
   function minutiSonno(k) {
@@ -453,32 +500,36 @@ var LM = (function () {
   function impostaGiornataPos(pos) {
     var s = load();
     s.profilo.giornataPos = pos;
+    registra('impostazioni', 'Cambiata la posizione della «Giornata»', false);
     save();
   }
 
   /* ---------- backlog (attività "da fare", senza data) ---------- */
 
-  function aggiungiBacklog(testo, areaId) {
+  function aggiungiBacklog(testo, areaId, interna) {
     var s = load();
     var b = { id: uid(), testo: testo, areaId: areaId || 'altro', creata: Date.now() };
     s.backlog.push(b);
+    if (!interna) registra('backlog', 'Aggiunta tra le cose da fare: «' + testo + '»', false);
     save();
     return b;
   }
   function modificaBacklog(id, testo) {
     var s = load();
     var b = s.backlog.find(function (x) { return x.id === id; });
-    if (!b) return; b.testo = testo; save();
+    if (!b) return; b.testo = testo; registra('backlog', 'Modificata una cosa da fare → «' + testo + '»', false); save();
   }
   function cambiaAreaBacklog(id, areaId) {
     var s = load();
     var b = s.backlog.find(function (x) { return x.id === id; });
-    if (!b) return; b.areaId = areaId; save();
+    if (!b) return; b.areaId = areaId;
+    var ar = s.aree.find(function (x) { return x.id === areaId; });
+    registra('backlog', 'Cambiata area di «' + b.testo + '» → ' + (ar ? ar.nome : areaId), false); save();
   }
   function rimuoviBacklog(id) {
     var s = load();
     var i = s.backlog.findIndex(function (x) { return x.id === id; });
-    if (i >= 0) { s.backlog.splice(i, 1); save(); }
+    if (i >= 0) { registra('backlog', 'Eliminata la cosa da fare «' + s.backlog[i].testo + '»', true); s.backlog.splice(i, 1); save(); }
   }
   /* porta un elemento del backlog tra le azioni di oggi (senza XP: è solo
      spostamento). mit true se oggi non c'è ancora nessuna azione. */
@@ -488,7 +539,9 @@ var LM = (function () {
     if (i < 0) return null;
     var b = s.backlog.splice(i, 1)[0];
     var mit = azioniDiOggi().filter(function (a) { return !a.done; }).length === 0;
-    var a = aggiungiAzione(b.testo, b.areaId, { mit: mit });
+    var a = aggiungiAzione(b.testo, b.areaId, { mit: mit, interna: true });
+    registra('azione', 'Portata in Oggi: «' + b.testo + '»', true);
+    save();
     return a;
   }
   /* ---------- progetti: un'attività "da fare" con passi ordinati ---------- */
@@ -499,19 +552,22 @@ var LM = (function () {
     if (!b) return;
     if (!Array.isArray(b.steps)) b.steps = [];
     b.steps.push({ id: uid(), testo: testo, done: false });
+    registra('backlog', 'Aggiunto un passo a «' + b.testo + '»: ' + testo, false);
     save();
   }
   function modificaPasso(bid, sid, testo) {
     var s = load();
     var b = s.backlog.find(function (x) { return x.id === bid; });
     var st = b && b.steps && b.steps.find(function (x) { return x.id === sid; });
-    if (st) { st.testo = testo; save(); }
+    if (st) { st.testo = testo; registra('backlog', 'Modificato un passo di «' + b.testo + '»', false); save(); }
   }
   function rimuoviPasso(bid, sid) {
     var s = load();
     var b = s.backlog.find(function (x) { return x.id === bid; });
     if (!b || !b.steps) return;
+    var st = b.steps.find(function (x) { return x.id === sid; });
     b.steps = b.steps.filter(function (x) { return x.id !== sid; });
+    registra('backlog', 'Eliminato un passo di «' + b.testo + '»' + (st ? ': ' + st.testo : ''), false);
     save();
   }
   function togglePasso(bid, sid) {
@@ -520,8 +576,10 @@ var LM = (function () {
     var st = b && b.steps && b.steps.find(function (x) { return x.id === sid; });
     if (!st) return;
     st.done = !st.done;
+    registra('backlog', (st.done ? 'Fatto un passo' : 'Tolta la spunta a un passo') + ' di «' + b.testo + '»: ' + st.testo, false);
     /* progetto completato a mano: lo rimuove dalle cose da fare */
     if (b.steps.length && b.steps.every(function (x) { return x.done; })) {
+      registra('backlog', 'Progetto completato: «' + b.testo + '»', true);
       s.backlog = s.backlog.filter(function (x) { return x.id !== b.id; });
     }
     save();
@@ -541,7 +599,10 @@ var LM = (function () {
     var st = b.steps.find(function (x) { return !x.done && !giaOggi[x.id]; });
     if (!st) return null;
     var mit = azioniDiOggi().filter(function (a) { return !a.done; }).length === 0;
-    return aggiungiAzione(st.testo, b.areaId, { mit: mit, passoDi: { b: bid, s: st.id } });
+    var az = aggiungiAzione(st.testo, b.areaId, { mit: mit, passoDi: { b: bid, s: st.id }, interna: true });
+    registra('azione', 'Portato in Oggi il passo di «' + b.testo + '»: ' + st.testo, true);
+    save();
+    return az;
   }
 
   function backlogPerArea() {
@@ -567,6 +628,7 @@ var LM = (function () {
     var b = s.backlog.find(function (x) { return x.id === id; });
     if (!b) return;
     if (scadenza) b.scadenza = scadenza; else delete b.scadenza;
+    registra('backlog', scadenza ? 'Scadenza a «' + b.testo + '» → ' + fmtShort(scadenza) : 'Tolta la scadenza a «' + b.testo + '»', false);
     save();
   }
   /* attività con scadenza entro N giorni (o già scadute), dalla più vicina */
@@ -584,6 +646,7 @@ var LM = (function () {
     var s = load();
     var h = { id: uid(), testo: testo, areaId: areaId || 'salute', giorni: Array.isArray(giorni) ? giorni : [], ora: (opts && opts.ora) || null, durata: (opts && opts.durata) || null, creata: Date.now(), fatti: {} };
     s.abitudini.push(h);
+    registra('abitudine', 'Nuova abitudine: «' + testo + '»', false);
     save();
     return h;
   }
@@ -596,12 +659,13 @@ var LM = (function () {
     if (dati.giorni) h.giorni = dati.giorni;
     if ('ora' in dati) h.ora = dati.ora || null;
     if ('durata' in dati) h.durata = dati.durata || null;
+    registra('abitudine', 'Modificata l’abitudine «' + h.testo + '»', false);
     save();
   }
   function rimuoviAbitudine(id) {
     var s = load();
     var i = s.abitudini.findIndex(function (x) { return x.id === id; });
-    if (i >= 0) { s.abitudini.splice(i, 1); save(); }
+    if (i >= 0) { registra('abitudine', 'Eliminata l’abitudine «' + s.abitudini[i].testo + '»', true); s.abitudini.splice(i, 1); save(); }
   }
   /* prevista in un dato giorno? giorni vuoto = ogni giorno */
   function abitudinePrevista(h, k) {
@@ -619,9 +683,16 @@ var LM = (function () {
     var h = s.abitudini.find(function (x) { return x.id === id; });
     if (!h) return 0;
     var k = todayKey();
-    if (h.fatti[k]) { delete h.fatti[k]; save(); return 0; }
+    if (h.fatti[k]) {
+      delete h.fatti[k];
+      togliXp(XP_EVENTI.abitudine, k);
+      registra('abitudine', 'Tolta la spunta a «' + h.testo + '» (−' + XP_EVENTI.abitudine + ' XP)', false);
+      save();
+      return -XP_EVENTI.abitudine;
+    }
     h.fatti[k] = true;
     var punti = premiaXp('abitudine');
+    registra('abitudine', 'Fatta l’abitudine «' + h.testo + '»', true);
     save();
     return punti;
   }
@@ -644,12 +715,12 @@ var LM = (function () {
   function rinominaArea(id, nome) {
     var s = load();
     var a = s.aree.find(function (x) { return x.id === id; });
-    if (a && nome.trim()) { a.nome = nome.trim(); save(); }
+    if (a && nome.trim()) { registra('area', 'Area rinominata «' + a.nome + '» → «' + nome.trim() + '»', false); a.nome = nome.trim(); save(); }
   }
   function modificaRegolaArea(id, regola) {
     var s = load();
     var a = s.aree.find(function (x) { return x.id === id; });
-    if (a) { a.sistema = regola; save(); }
+    if (a) { a.sistema = regola; registra('area', 'Modificata la regola dell’area «' + a.nome + '»', false); save(); }
   }
   function toggleArea(id, attiva) {
     var s = load();
@@ -657,6 +728,8 @@ var LM = (function () {
     if (attiva && i < 0) s.areeAttive.push(id);
     if (!attiva && i >= 0) s.areeAttive.splice(i, 1);
     if (!s.areeAttive.length) s.areeAttive.push(id); // almeno una attiva
+    var a = s.aree.find(function (x) { return x.id === id; });
+    registra('area', (attiva ? 'Attivata' : 'Disattivata') + ' l’area «' + (a ? a.nome : id) + '»', false);
     save();
   }
   function aggiungiArea(nome, icona, slot) {
@@ -667,12 +740,15 @@ var LM = (function () {
     if (!slot) { for (var n = 1; n <= 8; n++) { if (usati.indexOf(n) < 0) { scelto = n; break; } scelto = ((s.aree.length) % 8) + 1; } }
     s.aree.push({ id: id, nome: nome.trim() || 'Nuova area', icona: icona || 'sparkles', slot: scelto, sistema: '' });
     s.areeAttive.push(id);
+    registra('area', 'Nuova area: «' + (nome.trim() || 'Nuova area') + '»', true);
     save();
     return id;
   }
   function rimuoviArea(id) {
     var s = load();
     if (s.aree.length <= 1) return;
+    var rimossa = s.aree.find(function (a) { return a.id === id; });
+    registra('area', 'Eliminata l’area «' + (rimossa ? rimossa.nome : id) + '» (le sue cose passano ad Altro)', true);
     s.aree = s.aree.filter(function (a) { return a.id !== id; });
     var i = s.areeAttive.indexOf(id); if (i >= 0) s.areeAttive.splice(i, 1);
     /* le azioni/backlog di quell'area passano a "altro" se esiste, così
@@ -704,14 +780,17 @@ var LM = (function () {
     var el = s.inbox[i];
     if (esito === 'azione') {
       s.inbox.splice(i, 1);
-      aggiungiAzione(el.testo, areaId);
+      aggiungiAzione(el.testo, areaId, { interna: true });
+      registra('inbox', 'Smistata in Oggi: «' + el.testo + '»', true);
       premiaXp('triage');
     } else if (esito === 'backlog') {
       s.inbox.splice(i, 1);
-      aggiungiBacklog(el.testo, areaId);
+      aggiungiBacklog(el.testo, areaId, true);
+      registra('inbox', 'Smistata tra le cose da fare: «' + el.testo + '»', true);
       premiaXp('triage');
     } else if (esito === 'scarta') {
       s.inbox.splice(i, 1);
+      registra('inbox', 'Scartata la nota: «' + el.testo + '»', true);
       premiaXp('triage');
     }
     save();
@@ -883,10 +962,17 @@ var LM = (function () {
      per giorno e ordinati dal più recente. Nessun log separato da tenere
      allineato: la storia è sempre coerente con lo stato reale. */
 
-  function diario(giorniMax) {
+  function diario(giorniMax, tutto) {
     var s = load();
     var perGiorno = {};
     function agg(k, ev) { (perGiorno[k] = perGiorno[k] || []).push(ev); }
+
+    /* registro di tutto ciò che è stato fatto: di default solo le cose
+       importanti; con `tutto` anche le minori (impostazioni, modifiche…). */
+    (s.registro || []).forEach(function (rg) {
+      if (!tutto && !rg.imp) return;
+      agg(dayKey(new Date(rg.ts)), { ts: rg.ts, tipo: 'registro', cat: rg.cat, testo: rg.testo, imp: rg.imp });
+    });
 
     s.azioni.forEach(function (a) {
       if (!a.done) return;
@@ -1246,6 +1332,7 @@ var LM = (function () {
       stato: 'attivo'
     });
 
+    s.registro = []; // la demo parte con un diario-registro pulito
     save();
   }
 
@@ -1284,7 +1371,7 @@ var LM = (function () {
     serieValutazioni: serieValutazioni, serieMinuti: serieMinuti, serieCheckin: serieCheckin,
     serieXp: serieXp, heatmapConsistenza: heatmapConsistenza,
     minutiSettimanaPerArea: minutiSettimanaPerArea, mediaValutazioneArea: mediaValutazioneArea,
-    diario: diario, giorniConAttivita: giorniConAttivita,
+    diario: diario, giorniConAttivita: giorniConAttivita, registra: registra,
     creaEsperimento: creaEsperimento, risultatiEsperimento: risultatiEsperimento,
     uid: uid
   };
