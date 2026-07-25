@@ -64,8 +64,12 @@ precisa come segmenti che occupano il tempo, quelle a un **solo orario** come pu
 toccandola si apre un **pop-up leggero** (solo la griglia della giornata, che si adatta
 all'altezza dello schermo così non si scorre, con le spunte e un tasto «Gestisci la
 giornata»). La **pagina *Giornata*** ha invece la **gestione completa**: la griglia,
-l'editor sempre aperto di **orari e durate** e l'**aggiunta rapida** di cose a oggi, più
-quattro **orizzonti** — **Giorno**, **Settimana** (7 colonne a blocchi), **Mese** e
+l'editor sempre aperto di **orari e durate**, l'**aggiunta rapida** di cose a oggi e un
+**registro di sonno e pasti del singolo giorno** — a letto/sveglia con le **ore di sonno**
+calcolate, e ogni **pasto** modificabile uno per uno (nome, ora, durata). Vale per quel
+giorno e resta come storico; il ritmo di base per gli altri giorni si cambia da
+*Impostazioni → Sonno e pasti*. La pagina ha poi quattro **orizzonti** — **Giorno**,
+**Settimana** (7 colonne a blocchi), **Mese** e
 **Anno**. Il **Mese** è un calendario «a calore»: lo sfondo di ogni giorno si accende con
 quanto è stato pieno e dei mattoncini colorati mostrano le cose fatte per area (i giorni
 futuri sono tratteggiati). Da settimana e mese si apre il singolo giorno con un tocco.

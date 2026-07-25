@@ -766,6 +766,11 @@
     m = ((m % 1440) + 1440) % 1440;
     return ('0' + Math.floor(m / 60)).slice(-2) + ':' + ('0' + (m % 60)).slice(-2);
   }
+  /* durata leggibile: 90 → "1h 30m", 45 → "45m", 120 → "2h" */
+  function fmtOre(min) {
+    var h = Math.floor(min / 60), m = min % 60;
+    return (h ? h + 'h' : '') + (h && m ? ' ' : '') + (m ? m + 'm' : (h ? '' : '0m'));
+  }
 
   var DURATE =[{ v: '', t: 'durata —' }, { v: 15, t: '15 min' }, { v: 30, t: '30 min' }, { v: 45, t: '45 min' }, { v: 60, t: '1 h' }, { v: 90, t: '1 h 30' }, { v: 120, t: '2 h' }, { v: 180, t: '3 h' }];
 
@@ -779,11 +784,11 @@
   function nodiGiorno(k) {
     k = k || LM.todayKey();
     var s = LM.load();
-    var r = s.profilo.ritmo || LM.RITMO_DEFAULT;
+    var r = LM.ritmoDi(k);
     var isToday = k === LM.todayKey();
     var placed = [], tray = [];
     (r.pasti || []).forEach(function (p) {
-      if (p.ora) placed.push({ tipo: 'pasto', min: minOf(p.ora), ora: p.ora, dur: 30, nome: p.nome, icona: /colaz/i.test(p.id + ' ' + p.nome) ? 'coffee' : 'utensils' });
+      if (p.ora) placed.push({ tipo: 'pasto', min: minOf(p.ora), ora: p.ora, dur: p.durata || 30, nome: p.nome, pastoId: p.id, icona: /colaz|coffee|breakfast/i.test((p.id || '') + ' ' + p.nome) ? 'coffee' : 'utensils' });
     });
     s.abitudini.forEach(function (h) {
       if (!LM.abitudinePrevista(h, k)) return;
@@ -795,7 +800,7 @@
       (e.min == null ? tray : placed).push(e);
     });
     placed.sort(function (a, b) { return a.min - b.min; });
-    return { k: k, isToday: isToday, wake: minOf(r.sveglia), sleep: minOf(r.sonno), sveglia: r.sveglia, sonno: r.sonno, placed: placed, tray: tray };
+    return { k: k, isToday: isToday, wake: minOf(r.sveglia), sleep: minOf(r.sonno), sveglia: r.sveglia, sonno: r.sonno, pasti: r.pasti, dalRegistro: r.dalRegistro, placed: placed, tray: tray };
   }
   function nodiGiornata() { return nodiGiorno(LM.todayKey()); }
 
@@ -832,8 +837,9 @@
     var lines = '';
     for (var h = gs; h <= ge; h += 60) lines += '<div class="tl-hr" style="top:' + y(h) + 'px">' + (opts.rail === false ? '' : '<span class="tl-hr-eti">' + fmtMin(h) + '</span>') + '</div>';
     var shade = '';
-    if (d.wake > gs) shade += '<div class="tl-sleep" style="top:0;height:' + y(d.wake) + 'px"></div>';
-    if (d.sleep < ge) shade += '<div class="tl-sleep" style="top:' + y(d.sleep) + 'px;height:' + (H - y(d.sleep)) + 'px"></div>';
+    var sonnoLbl = opts.mini ? '' : '<span class="tl-sleep-lbl">' + ICO('bed', 11) + ' ' + fmtOre(LM.minutiSonno(d.k)) + '</span>';
+    if (d.wake > gs) shade += '<div class="tl-sleep" style="top:0;height:' + y(d.wake) + 'px">' + sonnoLbl + '</div>';
+    if (d.sleep < ge) shade += '<div class="tl-sleep" style="top:' + y(d.sleep) + 'px;height:' + (H - y(d.sleep)) + 'px">' + (d.wake > gs ? '' : sonnoLbl) + '</div>';
     var blocks = disponiBlocchi(d.placed).map(function (it) {
       var e = it.e, dur = e.dur || 30;
       var top = y(e.min), hgt = Math.max(opts.mini ? 15 : 24, dur / 60 * pxh - 2);
@@ -902,6 +908,32 @@
         '<button class="btn btn-mini btn-primario" type="submit">' + ICO('plus', 14) + '</button></form>';
     }
 
+    /* sonno e pasti del singolo giorno (registro), modificabili uno per uno */
+    var sonnoPasti = '';
+    if (!compact && interactive) {
+      var durOpt = function (v) { return DURATE.map(function (o) { return '<option value="' + o.v + '"' + ((v || '') === o.v ? ' selected' : '') + '>' + o.t + '</option>'; }).join(''); };
+      var pastiRows = (d.pasti || []).map(function (p, i) {
+        return '<div class="sp-riga" data-pi="' + i + '">' +
+          '<span class="sp-ico">' + ICO(/colaz|coffee/i.test((p.id || '') + p.nome) ? 'coffee' : 'utensils', 14) + '</span>' +
+          '<input type="text" class="sp-nome" data-sp-nome="' + i + '" value="' + esc(p.nome) + '" aria-label="Nome del pasto">' +
+          '<input type="time" class="tl-time" data-sp-ora="' + i + '" value="' + (p.ora || '') + '" aria-label="Orario">' +
+          '<select class="tl-dur" data-sp-dur="' + i + '" aria-label="Durata">' + durOpt(p.durata) + '</select>' +
+          '<button class="icona-btn" data-sp-del="' + i + '" title="Rimuovi" aria-label="Rimuovi">' + ICO('trash', 13) + '</button></div>';
+      }).join('');
+      sonnoPasti = '<div class="tl-sonno-sez">' +
+        '<div class="tl-ed-tit">' + ICO('bed', 13) + ' Sonno e pasti · ' + esc(etichettaGiorno(k).toLowerCase()) + (d.dalRegistro ? ' <span class="tl-ed-badge">registrato</span>' : '') + '</div>' +
+        '<div class="sp-sonno">' +
+        '<label class="sp-lab">' + ICO('bed', 13) + ' A letto</label><input type="time" class="tl-time" id="sp-aletto" value="' + d.sonno + '">' +
+        '<label class="sp-lab">' + ICO('sun', 13) + ' Sveglia</label><input type="time" class="tl-time" id="sp-sveglia" value="' + d.sveglia + '">' +
+        '<span class="sp-dorm">' + ICO('clock', 12) + ' dormi <b id="sp-dorm">' + fmtOre(LM.minutiSonno(k)) + '</b></span>' +
+        '</div>' +
+        '<div class="sp-pasti" id="sp-pasti">' + pastiRows + '</div>' +
+        '<div class="riga-flex mt-s"><button class="btn btn-mini" id="sp-add">' + ICO('plus', 13) + ' Aggiungi un pasto</button>' +
+        (d.dalRegistro ? '<button class="btn btn-mini btn-ghost" id="sp-reset">Torna al ritmo di base</button>' : '') + '</div>' +
+        '<div class="imp-nota" style="margin-top:8px">Vale per <b>questo giorno</b> e resta come registro. Il ritmo di base per gli altri giorni si cambia da <i>Impostazioni → Sonno e pasti</i>.</div>' +
+        '</div>';
+    }
+
     var trayRo = '';
     if (!interactive && d.tray.length) {
       trayRo = '<div class="tl-tray"><div class="tl-tray-eti">Senza orario</div>' +
@@ -943,9 +975,9 @@
 
     if (compact) {
       var popNota = d.tray.length ? '<div class="tl-pop-note">' + ICO('clock', 12) + ' ' + d.tray.length + (d.tray.length === 1 ? ' cosa senza orario' : ' cose senza orario') + ' — assegnale un orario in <b>Giornata</b>.</div>' : '';
-      container.innerHTML = '<div class="card giornata giornata-pop">' + head + gridHtml + popNota + footer + '</div>';
+      container.innerHTML = '<div class="card giornata giornata-pop">' + head + '<div id="tl-grid-host">' + gridHtml + '</div>' + popNota + footer + '</div>';
     } else {
-      container.innerHTML = '<div class="card giornata">' + head + gridHtml + editor + quickAdd + trayRo + footer + '</div>';
+      container.innerHTML = '<div class="card giornata">' + head + '<div id="tl-grid-host">' + gridHtml + '</div>' + editor + quickAdd + sonnoPasti + trayRo + footer + '</div>';
     }
 
     var af = container.querySelector('#tl-add');
@@ -961,32 +993,70 @@
     });
 
     if (interactive) {
-      container.querySelectorAll('[data-tl-az].tl-check, .tl-blk-check[data-tl-az]').forEach(function (b) {
-        b.addEventListener('click', function (ev) {
-          var xp = LM.completaAzione(b.getAttribute('data-tl-az'));
-          if (xp) { var r = ev.currentTarget.getBoundingClientRect(); flyXp(r.left + r.width / 2, r.top, xp); toast('Fatto.', xp); }
-          montaGiornata(container, opts); aggiornaNav();
+      /* completare un elemento (spunta) ricostruisce tutto: non c'è un campo
+         attivo da preservare. */
+      function wireSpunte(scope) {
+        scope.querySelectorAll('.tl-blk-check[data-tl-az], .tl-ed-riga .tl-check[data-tl-az]').forEach(function (b) {
+          b.addEventListener('click', function (ev) {
+            var xp = LM.completaAzione(b.getAttribute('data-tl-az'));
+            if (xp) { var r = ev.currentTarget.getBoundingClientRect(); flyXp(r.left + r.width / 2, r.top, xp); toast('Fatto.', xp); }
+            montaGiornata(container, opts); aggiornaNav();
+          });
         });
-      });
-      container.querySelectorAll('[data-tl-ab].tl-check, .tl-blk-check[data-tl-ab]').forEach(function (b) {
-        b.addEventListener('click', function (ev) {
-          var xp = LM.completaAbitudine(b.getAttribute('data-tl-ab'));
-          if (xp) { var r = ev.currentTarget.getBoundingClientRect(); flyXp(r.left + r.width / 2, r.top, xp); toast('Fatta. Continua così.', xp, 'flame'); }
-          montaGiornata(container, opts);
+        scope.querySelectorAll('.tl-blk-check[data-tl-ab], .tl-ed-riga .tl-check[data-tl-ab]').forEach(function (b) {
+          b.addEventListener('click', function (ev) {
+            var xp = LM.completaAbitudine(b.getAttribute('data-tl-ab'));
+            if (xp) { var r = ev.currentTarget.getBoundingClientRect(); flyXp(r.left + r.width / 2, r.top, xp); toast('Fatta. Continua così.', xp, 'flame'); }
+            montaGiornata(container, opts);
+          });
         });
-      });
+      }
+      /* cambiare orario/durata aggiorna SOLO la griglia visiva, non l'editor:
+         così il selettore dell'ora o la tastiera che stai usando NON vengono
+         chiusi/ricostruiti (era il bug del "refresh" a ogni modifica). */
+      function refreshGriglia() {
+        var host = container.querySelector('#tl-grid-host');
+        if (!host) { montaGiornata(container, opts); return; }
+        host.innerHTML = htmlTimeGrid(nodiGiorno(k), { interactive: true, nowMin: nowMin, pxh: pxh });
+        wireSpunte(host);
+      }
+      wireSpunte(container);
       container.querySelectorAll('.tl-time[data-tl-az]').forEach(function (inp) {
-        inp.addEventListener('change', function () { giornataEditorAperto = true; LM.setOraAzione(inp.getAttribute('data-tl-az'), inp.value || null); montaGiornata(container, opts); });
+        inp.addEventListener('change', function () { LM.setOraAzione(inp.getAttribute('data-tl-az'), inp.value || null); refreshGriglia(); });
       });
       container.querySelectorAll('.tl-time[data-tl-ab]').forEach(function (inp) {
-        inp.addEventListener('change', function () { giornataEditorAperto = true; LM.modificaAbitudine(inp.getAttribute('data-tl-ab'), { ora: inp.value || null }); montaGiornata(container, opts); });
+        inp.addEventListener('change', function () { LM.modificaAbitudine(inp.getAttribute('data-tl-ab'), { ora: inp.value || null }); refreshGriglia(); });
       });
       container.querySelectorAll('.tl-dur[data-tl-az]').forEach(function (sel) {
-        sel.addEventListener('change', function () { giornataEditorAperto = true; LM.setDurataAzione(sel.getAttribute('data-tl-az'), sel.value ? +sel.value : null); montaGiornata(container, opts); });
+        sel.addEventListener('change', function () { LM.setDurataAzione(sel.getAttribute('data-tl-az'), sel.value ? +sel.value : null); refreshGriglia(); });
       });
       container.querySelectorAll('.tl-dur[data-tl-ab]').forEach(function (sel) {
-        sel.addEventListener('change', function () { LM.modificaAbitudine(sel.getAttribute('data-tl-ab'), { durata: sel.value ? +sel.value : null }); montaGiornata(container, opts); });
+        sel.addEventListener('change', function () { LM.modificaAbitudine(sel.getAttribute('data-tl-ab'), { durata: sel.value ? +sel.value : null }); refreshGriglia(); });
       });
+
+      /* --- sonno e pasti del giorno (registro), modifica uno per uno --- */
+      function aggiornaDorm() { var el = container.querySelector('#sp-dorm'); if (el) el.textContent = fmtOre(LM.minutiSonno(k)); }
+      function leggiPasti() { return JSON.parse(JSON.stringify(nodiGiorno(k).pasti || [])); }
+      var spA = container.querySelector('#sp-aletto');
+      if (spA) spA.addEventListener('change', function () { LM.setRitmoGiorno(k, { sonno: spA.value || d.sonno }); aggiornaDorm(); refreshGriglia(); });
+      var spS = container.querySelector('#sp-sveglia');
+      if (spS) spS.addEventListener('change', function () { LM.setRitmoGiorno(k, { sveglia: spS.value || d.sveglia }); aggiornaDorm(); refreshGriglia(); });
+      container.querySelectorAll('[data-sp-nome]').forEach(function (inp) {
+        inp.addEventListener('change', function () { var i = +inp.getAttribute('data-sp-nome'); var arr = leggiPasti(); if (arr[i]) { arr[i].nome = inp.value.trim() || 'Pasto'; LM.setRitmoGiorno(k, { pasti: arr }); } });
+      });
+      container.querySelectorAll('[data-sp-ora]').forEach(function (inp) {
+        inp.addEventListener('change', function () { var i = +inp.getAttribute('data-sp-ora'); var arr = leggiPasti(); if (arr[i]) { arr[i].ora = inp.value || null; LM.setRitmoGiorno(k, { pasti: arr }); refreshGriglia(); } });
+      });
+      container.querySelectorAll('[data-sp-dur]').forEach(function (sel) {
+        sel.addEventListener('change', function () { var i = +sel.getAttribute('data-sp-dur'); var arr = leggiPasti(); if (arr[i]) { arr[i].durata = sel.value ? +sel.value : 30; LM.setRitmoGiorno(k, { pasti: arr }); refreshGriglia(); } });
+      });
+      container.querySelectorAll('[data-sp-del]').forEach(function (b) {
+        b.addEventListener('click', function () { var i = +b.getAttribute('data-sp-del'); var arr = leggiPasti(); arr.splice(i, 1); LM.setRitmoGiorno(k, { pasti: arr }); montaGiornata(container, opts); });
+      });
+      var spAdd = container.querySelector('#sp-add');
+      if (spAdd) spAdd.addEventListener('click', function () { var arr = leggiPasti(); arr.push({ id: 'p' + Date.now().toString(36), nome: 'Pasto', ora: '', durata: 30 }); LM.setRitmoGiorno(k, { pasti: arr }); montaGiornata(container, opts); });
+      var spReset = container.querySelector('#sp-reset');
+      if (spReset) spReset.addEventListener('click', function () { LM.azzeraRitmoGiorno(k); toast('Torna al ritmo di base.', 0, 'refresh'); montaGiornata(container, opts); });
     }
     var eo = container.querySelector('#tl-edit-orari');
     if (eo) eo.addEventListener('click', apriRitmo);
@@ -1204,27 +1274,40 @@
     });
   }
 
-  /* editor del ritmo: sonno, sveglia, pasti */
+  /* editor del RITMO DI BASE: sonno, sveglia, pasti (con durata). Vale per i
+     giorni che non hanno un registro proprio. */
   function apriRitmo() {
     var r = LM.load().profilo.ritmo || LM.RITMO_DEFAULT;
+    function durOpt(v) { return DURATE.map(function (o) { return '<option value="' + o.v + '"' + ((v || '') === o.v ? ' selected' : '') + '>' + o.t + '</option>'; }).join(''); }
     function pastoRiga(p, i) {
       return '<div class="ritmo-pasto" data-pi="' + i + '">' +
         '<input type="text" class="ritmo-nome" value="' + esc(p.nome) + '" aria-label="Nome del pasto">' +
         '<input type="time" class="ritmo-ora" value="' + (p.ora || '') + '" aria-label="Orario">' +
+        '<select class="ritmo-dur tl-dur" aria-label="Durata">' + durOpt(p.durata) + '</select>' +
         '<button class="icona-btn" data-pdel="' + i + '" title="Rimuovi" aria-label="Rimuovi">' + ICO('trash', 13) + '</button></div>';
     }
+    function durSonno(aletto, sveglia) {
+      function m(x) { var q = String(x).split(':'); return (+q[0]) * 60 + (+q[1]); }
+      var dd = m(sveglia) - m(aletto); if (dd <= 0) dd += 1440; return dd;
+    }
     apriSheet('Sonno e pasti',
-      '<div class="imp-nota" style="margin-top:0">Questi orari disegnano lo sfondo della giornata. Puoi cambiarli quando vuoi: sono un punto di riferimento, non una regola.</div>' +
-      '<div class="ritmo-riga2"><label class="campo">Sveglia</label><input type="time" id="ritmo-sveglia" value="' + esc(r.sveglia) + '">' +
-      '<label class="campo">A letto</label><input type="time" id="ritmo-sonno" value="' + esc(r.sonno) + '"></div>' +
-      '<div class="imp-sezione"><div class="imp-eti">Pasti</div><div id="ritmo-pasti">' + (r.pasti || []).map(pastoRiga).join('') + '</div>' +
+      '<div class="imp-nota" style="margin-top:0">È il tuo ritmo di base: disegna lo sfondo della giornata. Un singolo giorno lo puoi registrare a parte dalla pagina <i>Giornata</i>.</div>' +
+      '<div class="ritmo-riga2"><label class="campo">A letto</label><input type="time" id="ritmo-sonno" value="' + esc(r.sonno) + '">' +
+      '<label class="campo">Sveglia</label><input type="time" id="ritmo-sveglia" value="' + esc(r.sveglia) + '"></div>' +
+      '<div class="sp-dorm" style="margin:2px 0 4px">' + ICO('clock', 12) + ' dormi <b id="ritmo-dorm">' + fmtOre(durSonno(r.sonno, r.sveglia)) + '</b></div>' +
+      '<div class="imp-sezione"><div class="imp-eti">Pasti (nome · ora · durata)</div><div id="ritmo-pasti">' + (r.pasti || []).map(pastoRiga).join('') + '</div>' +
       '<button class="btn btn-mini mt-s" id="ritmo-add">' + ICO('plus', 13) + ' Aggiungi un pasto</button></div>' +
       '<div class="riga-flex mt"><button class="btn btn-primario btn-grande" id="ritmo-salva">' + ICO('save', 15) + ' Salva</button></div>',
       function (root) {
+        function aggiornaDorm() {
+          root.querySelector('#ritmo-dorm').textContent = fmtOre(durSonno(root.querySelector('#ritmo-sonno').value || '23:30', root.querySelector('#ritmo-sveglia').value || '07:30'));
+        }
+        root.querySelector('#ritmo-sonno').addEventListener('change', aggiornaDorm);
+        root.querySelector('#ritmo-sveglia').addEventListener('change', aggiornaDorm);
         root.querySelector('#ritmo-add').addEventListener('click', function () {
           var box = root.querySelector('#ritmo-pasti');
           var i = box.querySelectorAll('.ritmo-pasto').length;
-          box.insertAdjacentHTML('beforeend', pastoRiga({ nome: 'Pasto', ora: '' }, i));
+          box.insertAdjacentHTML('beforeend', pastoRiga({ nome: 'Pasto', ora: '', durata: 30 }, i));
           wirePdel();
         });
         function wirePdel() {
@@ -1238,14 +1321,15 @@
           root.querySelectorAll('.ritmo-pasto').forEach(function (row, i) {
             var nome = row.querySelector('.ritmo-nome').value.trim() || 'Pasto';
             var ora = row.querySelector('.ritmo-ora').value;
-            if (ora) pasti.push({ id: 'p' + i, nome: nome, ora: ora });
+            var dur = row.querySelector('.ritmo-dur').value;
+            if (ora) pasti.push({ id: 'p' + i, nome: nome, ora: ora, durata: dur ? +dur : 30 });
           });
           LM.impostaRitmo({
             sveglia: root.querySelector('#ritmo-sveglia').value || '07:30',
             sonno: root.querySelector('#ritmo-sonno').value || '23:30',
             pasti: pasti
           });
-          chiudiSheet(); render(); toast('Giornata aggiornata.', 0, 'check');
+          chiudiSheet(); render(); toast('Ritmo di base aggiornato.', 0, 'check');
         });
       });
   }

@@ -123,9 +123,9 @@ var LM = (function () {
     sveglia: '07:30',
     sonno: '23:30',
     pasti: [
-      { id: 'colazione', nome: 'Colazione', ora: '08:00' },
-      { id: 'pranzo', nome: 'Pranzo', ora: '13:00' },
-      { id: 'cena', nome: 'Cena', ora: '20:00' }
+      { id: 'colazione', nome: 'Colazione', ora: '08:00', durata: 15 },
+      { id: 'pranzo', nome: 'Pranzo', ora: '13:00', durata: 45 },
+      { id: 'cena', nome: 'Cena', ora: '20:00', durata: 45 }
     ]
   };
 
@@ -138,6 +138,7 @@ var LM = (function () {
       /* giornataPos: dove mostrare la timeline della giornata
          ('oggi-strip' | 'panoramica' | 'oggi-full' | 'menu') */
       profilo: { nome: '', visione: '', skin: 'quiete', modo: 'auto', giornataPos: 'oggi-strip', ritmo: JSON.parse(JSON.stringify(RITMO_DEFAULT)) },
+      ritmoGiorno: {},   // ritmoGiorno[data] = {sveglia?, sonno?, pasti?} — registro di sonno e pasti del singolo giorno
       aree: JSON.parse(JSON.stringify(AREE_DEFAULT)),
       areeAttive: AREE_DEFAULT.map(function (a) { return a.id; }),
       azioni: [],        // {id, areaId, testo, ifThen, mit, done, data, doneAt, creata}
@@ -188,6 +189,8 @@ var LM = (function () {
     if (!s.profilo.ritmo.sveglia) s.profilo.ritmo.sveglia = RITMO_DEFAULT.sveglia;
     if (!s.profilo.ritmo.sonno) s.profilo.ritmo.sonno = RITMO_DEFAULT.sonno;
     if (!Array.isArray(s.profilo.ritmo.pasti)) s.profilo.ritmo.pasti = JSON.parse(JSON.stringify(RITMO_DEFAULT.pasti));
+    s.profilo.ritmo.pasti.forEach(function (p) { if (p.durata == null) p.durata = 30; });
+    if (!s.ritmoGiorno || typeof s.ritmoGiorno !== 'object') s.ritmoGiorno = {};
     return s;
   }
 
@@ -399,6 +402,7 @@ var LM = (function () {
 
   /* ---------- ritmo della giornata e preferenza di visualizzazione ---------- */
 
+  /* ritmo di BASE (vale per i giorni senza un registro loro) */
   function impostaRitmo(patch) {
     var s = load();
     if (!s.profilo.ritmo) s.profilo.ritmo = JSON.parse(JSON.stringify(RITMO_DEFAULT));
@@ -406,6 +410,45 @@ var LM = (function () {
     if (patch.sonno != null) s.profilo.ritmo.sonno = patch.sonno;
     if (Array.isArray(patch.pasti)) s.profilo.ritmo.pasti = patch.pasti;
     save();
+  }
+  /* sonno e pasti EFFETTIVI di un giorno: il registro del giorno se c'è,
+     altrimenti il ritmo di base. */
+  function ritmoDi(k) {
+    var s = load();
+    var base = s.profilo.ritmo || RITMO_DEFAULT;
+    var g = (s.ritmoGiorno && s.ritmoGiorno[k]) || {};
+    return {
+      sveglia: g.sveglia || base.sveglia,
+      sonno: g.sonno || base.sonno,
+      pasti: Array.isArray(g.pasti) ? g.pasti : base.pasti,
+      dalRegistro: !!(s.ritmoGiorno && s.ritmoGiorno[k])
+    };
+  }
+  /* registra sonno/pasti per un singolo giorno (registro). patch può avere
+     sveglia, sonno, pasti. */
+  function setRitmoGiorno(k, patch) {
+    var s = load();
+    if (!s.ritmoGiorno) s.ritmoGiorno = {};
+    var cur = s.ritmoGiorno[k];
+    if (!cur) { var b = ritmoDi(k); cur = { sveglia: b.sveglia, sonno: b.sonno, pasti: JSON.parse(JSON.stringify(b.pasti)) }; }
+    if (patch.sveglia != null) cur.sveglia = patch.sveglia;
+    if (patch.sonno != null) cur.sonno = patch.sonno;
+    if (Array.isArray(patch.pasti)) cur.pasti = patch.pasti;
+    s.ritmoGiorno[k] = cur;
+    save();
+  }
+  /* rimuove il registro di un giorno: torna al ritmo di base */
+  function azzeraRitmoGiorno(k) {
+    var s = load();
+    if (s.ritmoGiorno && s.ritmoGiorno[k]) { delete s.ritmoGiorno[k]; save(); }
+  }
+  /* minuti di sonno di un giorno (a letto → sveglia, attraversa la mezzanotte) */
+  function minutiSonno(k) {
+    var r = ritmoDi(k);
+    function m(hhmm) { var p = String(hhmm).split(':'); return (+p[0]) * 60 + (+p[1]); }
+    var a = m(r.sonno), b = m(r.sveglia);
+    var dur = b - a; if (dur <= 0) dur += 1440;
+    return dur;
   }
   function impostaGiornataPos(pos) {
     var s = load();
@@ -1223,6 +1266,7 @@ var LM = (function () {
     cattura: cattura, triageInbox: triageInbox, modificaInbox: modificaInbox, cambiaAreaAzione: cambiaAreaAzione,
     setOraAzione: setOraAzione, setDurataAzione: setDurataAzione, azioniDelGiorno: azioniDelGiorno,
     impostaRitmo: impostaRitmo, impostaGiornataPos: impostaGiornataPos, RITMO_DEFAULT: RITMO_DEFAULT,
+    ritmoDi: ritmoDi, setRitmoGiorno: setRitmoGiorno, azzeraRitmoGiorno: azzeraRitmoGiorno, minutiSonno: minutiSonno,
     aggiungiBacklog: aggiungiBacklog, modificaBacklog: modificaBacklog, cambiaAreaBacklog: cambiaAreaBacklog,
     rimuoviBacklog: rimuoviBacklog, backlogInOggi: backlogInOggi, backlogPerArea: backlogPerArea,
     aggiungiPasso: aggiungiPasso, modificaPasso: modificaPasso, rimuoviPasso: rimuoviPasso, togglePasso: togglePasso,
