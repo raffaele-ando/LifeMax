@@ -492,6 +492,10 @@ label.campo { display: block; font-size: 12px; font-weight: 700; letter-spacing:
 .vista-oggi { display: flex; flex-direction: column; min-height: calc(100dvh - 130px - var(--banda-h, 0px)); }
 .vista-oggi .focus-scena { flex: 1 1 auto; min-height: 0; padding: 10px 0; }
 @media (max-width: 860px) {
+  /* spazio a destra per non finire sotto al pulsante + flottante */
+  .vista-oggi .focus-coda { padding-right: 76px; }
+}
+@media (max-width: 860px) {
   .vista-oggi { min-height: calc(100dvh - 140px - var(--banda-h, 0px)); }
 }
 .focus-eyebrow {
@@ -701,17 +705,22 @@ kbd {
   pointer-events: none; opacity: .8;
 }
 @keyframes entra { from { opacity: 0; transform: translateY(14px) scale(.97); } }
-.pannello-cattura .corpo-cattura { display: flex; align-items: center; gap: 4px; padding: 8px 10px 4px 16px; }
+.pannello-cattura .corpo-cattura { display: flex; align-items: center; gap: 8px; padding: 8px 10px 8px 16px; }
 .pannello-cattura .corpo-cattura > .ico { color: var(--accento); }
 .pannello-cattura input[type="text"] {
+  flex: 1; min-width: 0;
   font-size: 17.5px; padding: 12px 10px; border: none; background: transparent; box-shadow: none; font-weight: 550;
 }
 .pannello-cattura input[type="text"]:focus { box-shadow: none; border: none; }
 .pannello-cattura .piede {
-  display: flex; align-items: center; gap: 10px;
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
   border-top: 1px solid var(--griglia);
   padding: 10px 16px 10px; margin-top: 2px;
   font-size: 12px; color: var(--inchiostro-muto);
+}
+@media (max-width: 520px) {
+  /* sul telefono la nota sulle categorie è superflua: lo spazio serve al campo */
+  .pannello-cattura .piede span[style] { display: none; }
 }
 
 /* FAB */
@@ -997,6 +1006,19 @@ kbd {
 
 /* ---------- pannello (sheet) ---------- */
 
+@media (max-width: 560px) { .banda-demo .banda-piu { display: none; } }
+
+/* suggerimenti giusti per il dispositivo: le scorciatoie da tastiera non
+   esistono su un telefono, e il pulsante Salva serve solo dove non c'è Invio */
+.solo-tocco { display: none; }
+.cattura-salva { display: none; }
+@media (pointer: coarse) {
+  .solo-tastiera { display: none; }
+  .solo-tocco { display: inline; }
+  .focus-coda .solo-tocco { display: inline-block; }
+  .cattura-salva { display: inline-flex; flex: none; }
+}
+
 /* pagina congelata mentre un pannello è aperto: niente scorrimento dietro,
    niente taglio netto sullo sfocato, niente clic su ciò che sta sotto */
 body.sfondo-fermo { position: fixed; left: 0; right: 0; width: 100%; overflow: hidden; }
@@ -1273,6 +1295,12 @@ body.sfondo-fermo { position: fixed; left: 0; right: 0; width: 100%; overflow: h
 .bk-item-riga { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px; }
 .bk-item-corpo { min-width: 0; display: flex; flex-direction: column; gap: 4px; }
 .bk-item-testo { min-width: 0; font-size: 13.5px; font-weight: 550; line-height: 1.3; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (max-width: 700px) {
+  /* su schermo stretto una riga sola tagliava troppo ("Recuperare i cor…"):
+     due righe complete, e i pulsanti restano comunque in linea */
+  .bk-item-testo { white-space: normal; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; }
+  .step-riga .step-testo { white-space: normal; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; }
+}
 .bk-item-meta { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .bk-item-azioni { display: flex; align-items: center; gap: 6px; flex-wrap: nowrap; flex: none; }
 .bk-item-azioni .btn { white-space: nowrap; }
@@ -1282,7 +1310,16 @@ body.sfondo-fermo { position: fixed; left: 0; right: 0; width: 100%; overflow: h
 
 /* menu "⋯" di una cosa da fare: tre blocchi con un compito ciascuno */
 .bk-menu { display: flex; flex-direction: column; gap: 14px; }
-.bk-sez { padding: 12px 13px; border-radius: var(--raggio-s); background: var(--superficie-2); border: 1px solid var(--bordo); }
+.bk-sez { border-radius: var(--raggio-s); background: var(--superficie-2); border: 1px solid var(--bordo); overflow: hidden; }
+.bk-sez.aperta { border-color: var(--bordo-forte); }
+.bk-sez-testa { display: flex; align-items: center; gap: 8px; width: 100%; padding: 13px 13px; background: none; border: none; cursor: pointer;
+  font-size: 12px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; color: var(--inchiostro-2); text-align: left; }
+.bk-sez-testa span:first-of-type { flex: 1; min-width: 0; }
+.bk-sez-testa .bk-chevron { flex: none; color: var(--inchiostro-muto); }
+.bk-sez-testa:hover { color: var(--inchiostro-1); }
+.bk-sez-corpo { padding: 0 13px 13px; }
+.bk-sez-corpo[hidden] { display: none; }
+@media (pointer: coarse) { .bk-sez-testa { min-height: 50px; } }
 .bk-sez-tit { display: flex; align-items: center; gap: 7px; font-size: 11.5px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; color: var(--inchiostro-2); margin-bottom: 9px; }
 .bk-sez-nota { font-size: 11.5px; color: var(--inchiostro-muto); margin-top: 7px; line-height: 1.4; }
 .q-chips { display: flex; flex-wrap: wrap; gap: 7px; }
@@ -1338,6 +1375,18 @@ body.sfondo-fermo { position: fixed; left: 0; right: 0; width: 100%; overflow: h
 .att-chip:hover { border-color: color-mix(in srgb, var(--c-area, var(--accento)) 45%, var(--bordo-forte)); }
 .att-chip span { font-size: 10.5px; font-weight: 800; padding: 0 5px; border-radius: 99px; background: var(--superficie-3); color: var(--inchiostro-muto); font-variant-numeric: tabular-nums; }
 .att-chip.on { background: color-mix(in srgb, var(--c-area, var(--accento)) 14%, transparent); border-color: color-mix(in srgb, var(--c-area, var(--accento)) 50%, transparent); color: var(--c-area, var(--accento-testo)); }
+.att-chip.vuota { opacity: .72; font-weight: 600; }
+.att-chip.vuota:hover { opacity: 1; }
+@media (max-width: 700px) {
+  /* i chip scorrono in una riga sola invece di impilarsi su quattro */
+  .att-chips { flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden; padding-bottom: 4px; scrollbar-width: none; }
+  .att-chips::-webkit-scrollbar { display: none; }
+  .att-chip { flex: none; }
+  /* anche le schede in cima: una riga che scorre invece di due mezze righe */
+  .segmenti.sez-nav { flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden; justify-content: flex-start; scrollbar-width: none; }
+  .segmenti.sez-nav::-webkit-scrollbar { display: none; }
+  .segmenti.sez-nav > button { flex: none; }
+}
 .att-chip.on span { background: color-mix(in srgb, var(--c-area, var(--accento)) 22%, transparent); color: inherit; }
 .backlog-piatto { display: flex; flex-direction: column; }
 
@@ -1435,6 +1484,10 @@ body.sfondo-fermo { position: fixed; left: 0; right: 0; width: 100%; overflow: h
 /* il testo E l'orario si spostano per non finire sotto al manico */
 .tl-blk:has(.manico) .tl-blk-t, .tl-blk:has(.manico) .tl-blk-ora { padding-left: 18px; }
 .gio-so-riga .manico { opacity: .55; }
+/* nel pop-up leggero di "Oggi" non si trascina: il manico sarebbe un invito
+   a un gesto che lì non fa nulla */
+.giornata-pop .manico { display: none; }
+.giornata-pop .tl-blk-t, .giornata-pop .tl-blk-ora { padding-left: 0 !important; }
 .gio-so-riga:hover .manico { opacity: 1; }
 /* blocco della settimana: è lui stesso il manico, quindi il browser non deve
    prendersi il gesto per selezionare il testo o scorrere */

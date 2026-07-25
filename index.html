@@ -49,10 +49,13 @@
 <div class="overlay" id="overlay-cattura" hidden>
   <div class="pannello-cattura" role="dialog" aria-modal="true" aria-label="Cattura rapida">
     <div class="corpo-cattura" id="corpo-cattura">
-      <input type="text" id="input-cattura" placeholder="Scrivi un pensiero e premi Invio per salvarlo…" autocomplete="off">
+      <input type="text" id="input-cattura" placeholder="Scrivi un pensiero…" autocomplete="off" enterkeyhint="done">
+      <!-- col dito non c'è nessun tasto Invio a portata: serve un pulsante -->
+      <button class="btn btn-primario cattura-salva" id="cattura-salva" type="button">Salva</button>
     </div>
     <div class="piede">
-      <span><kbd>Invio</kbd> salva nell'inbox &nbsp;·&nbsp; <kbd>Esc</kbd> chiude</span>
+      <span class="solo-tastiera"><kbd>Invio</kbd> salva nell'inbox &nbsp;·&nbsp; <kbd>Esc</kbd> chiude</span>
+      <span class="solo-tocco">Finisce tra le cose da sistemare.</span>
       <span style="margin-left:auto">Niente categorie adesso: le sceglierai più tardi.</span>
     </div>
   </div>

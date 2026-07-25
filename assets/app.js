@@ -194,15 +194,19 @@
   $sideCatt.querySelector('.cattura-cta-testo').innerHTML = ICO('bolt', 16) + ' Cattura un pensiero';
   $sideCatt.addEventListener('click', apriCattura);
   $ovl.addEventListener('click', function (e) { if (e.target === $ovl) chiudiCattura(); });
+  function salvaCattura() {
+    var t = $inp.value.trim();
+    if (!t) return;
+    var xp = LM.cattura(t);
+    toast('Salvato. Torna pure a quello che stavi facendo.', xp, 'inbox');
+    chiudiCattura();
+    aggiornaNav(); render();
+  }
   $inp.addEventListener('keydown', function (e) {
-    if (e.key === 'Enter' && $inp.value.trim()) {
-      var xp = LM.cattura($inp.value.trim());
-      toast('Salvato. Torna pure a quello che stavi facendo.', xp, 'inbox');
-      chiudiCattura();
-      aggiornaNav(); render();
-    }
+    if (e.key === 'Enter') salvaCattura();
     if (e.key === 'Escape') chiudiCattura();
   });
+  document.getElementById('cattura-salva').addEventListener('click', salvaCattura);
 
   document.addEventListener('keydown', function (e) {
     var digitando = /input|textarea|select/i.test(document.activeElement.tagName);
@@ -643,8 +647,9 @@
       document.documentElement.style.setProperty('--banda-h', (banda.offsetHeight || 0) + 'px');
     }
     if (!s.demo || s.demoChiusa) { banda.innerHTML = ''; misura(); return; }
+    /* sul telefono il testo lungo occupava due righe e mangiava mezzo schermo */
     banda.innerHTML = '<div class="banda-demo"><span>' + ICO('sparkles', 13) +
-      ' Stai esplorando <b>dati di esempio</b>: modifica pure, tutto resta salvato.</span>' +
+      ' <b>Dati di esempio</b><span class="banda-piu">: modifica pure, tutto resta salvato.</span></span>' +
       '<button class="banda-x" id="banda-x" aria-label="Nascondi">' + ICO('x', 14) + '</button></div>';
     misura();
     document.getElementById('banda-x').addEventListener('click', function () {
@@ -812,10 +817,15 @@
       '<button class="btn btn-mini btn-ghost" id="btn-nonora">Più tardi ' + ICO('arrowRight', 14) + '</button>' +
       '</div>' +
       '<div class="focus-coda">' +
-      (inCoda > 0
+      '<span>' + (inCoda > 0
         ? '<span class="pila-coda">' + '<i></i>'.repeat(Math.min(3, inCoda)) + '</span> Dopo questa hai ancora <b>' + inCoda + '</b> ' + (inCoda === 1 ? 'azione' : 'azioni') + ', una alla volta.'
-        : 'È l’ultima azione della giornata.') +
-      '<span>·</span><span>Ti è venuto in mente qualcosa? Premi <kbd>C</kbd> per annotarlo senza perdere il filo.</span></div>' +
+        : 'È l’ultima azione della giornata.') + '</span>' +
+      /* il suggerimento cambia col dispositivo: su un telefono non c'è nessun
+         tasto C da premere, c'è il pulsante + in basso */
+      '<span class="solo-tastiera">·</span>' +
+      '<span class="solo-tastiera">Ti è venuto in mente qualcosa? Premi <kbd>C</kbd> per annotarlo senza perdere il filo.</span>' +
+      '<span class="solo-tocco">Ti è venuto in mente altro? Tocca <b>+</b> e lo metti da parte senza perdere il filo.</span>' +
+      '</div>' +
       altreHtml +
       '</div>';
 
@@ -1012,7 +1022,7 @@
          per selezionare il testo. */
       if (e.tipo === 'azione') clic += ' data-drag-az="' + e.id + '"' + (opts.mini ? ' data-manico' : '');
       return '<div class="tl-blk tl-blk-att' + (fatto ? ' fatta' : '') + (opts.interactive && !opts.mini ? ' tl-blk-clic' : '') + '"' + clic + ' style="' + pos + ';--c-area:' + col + '" title="' + esc(e.testo) + '">' +
-        check + (e.tipo === 'azione' && !opts.mini ? '<span class="manico" data-manico aria-hidden="true">' + ICO('dots', 12) + '</span>' : '') +
+        check + (e.tipo === 'azione' && !opts.mini && opts.interactive ? '<span class="manico" data-manico aria-hidden="true">' + ICO('dots', 12) + '</span>' : '') +
         '<span class="tl-blk-t">' + (e.mit ? ICO('star', 9) + ' ' : '') + esc(e.testo) + '</span>' +
         (hgt > 30 && !opts.mini ? '<span class="tl-blk-ora">' + e.ora + '–' + fmtMin(e.min + dur) + '</span>' : '') + '</div>';
     }).join('');
@@ -1456,14 +1466,17 @@
       : (isFuturo ? 'Prepara questa giornata: aggiungi le cose e dàgli un orario. Le spunterai quando arriva il giorno.'
          : d.isToday ? 'Tocca un blocco per dargli orario o durata; trascinalo per spostarlo; spunta ciò che fai.'
          : 'Puoi ancora sistemarla: spunta quello che avevi fatto e non avevi segnato.');
-    var head = opts.header === false ? '' : '<div class="tl-head"><div><h2>' + ICO('clock', 16) + ' ' + (opts.giorno && !d.isToday ? etichettaGiorno(k) : 'La giornata') + '</h2>' +
+    /* nel pop-up il titolo è già nell'intestazione del pannello: ripeterlo
+       "La giornata / La giornata" era solo rumore */
+    var head = opts.header === false ? '' : '<div class="tl-head"><div>' +
+      (compact ? '' : '<h2>' + ICO('clock', 16) + ' ' + (opts.giorno && !d.isToday ? etichettaGiorno(k) : 'La giornata') + '</h2>') +
       '<div class="sotto">' + sottoHead + '</div></div></div>';
     var gridHtml = vuota
       ? '<div class="vuoto" style="padding:18px 8px"><b>Niente in agenda per questo giorno.</b>' + (isFuturo ? '<br>Puoi già prepararlo: aggiungi qui sotto le cose che vuoi fare.' : interactive ? '<br>Aggiungi una cosa qui sotto, o dai un orario a un’abitudine.' : '') + '</div>'
       : htmlTimeGrid(d, { interactive: interactive, spuntabile: spuntabile, nowMin: nowMin, pxh: pxh });
 
     if (compact) {
-      var popNota = d.tray.length ? '<div class="tl-pop-note">' + ICO('clock', 12) + ' ' + d.tray.length + (d.tray.length === 1 ? ' cosa senza orario' : ' cose senza orario') + ' — assegnale un orario in <b>Giornata</b>.</div>' : '';
+      var popNota = d.tray.length ? '<div class="tl-pop-note">' + ICO('clock', 12) + ' ' + d.tray.length + (d.tray.length === 1 ? ' cosa senza orario' : ' cose senza orario') + ' — dàgli un posto qui sotto.</div>' : '';
       container.innerHTML = '<div class="card giornata giornata-pop">' + head + '<div id="tl-grid-host">' + gridHtml + '</div>' + popNota + footer + '</div>';
     } else {
       var navGiorno = orizzNav('giorno', k);
@@ -2567,8 +2580,7 @@
     var nArrivo = LM.scadenzeVicine(14).length;
     if (!attTab || (attTab === 'sistemare' && !nInbox)) attTab = nInbox ? 'sistemare' : 'dafare';
 
-    var html = topbar('Attività', 'Butta giù tutto. Poi decidi con calma: oggi, più avanti, o lascia perdere.',
-      '<span class="chip">' + ICO('lista', 14) + ' <b>' + s.backlog.length + '</b>&nbsp;da fare</span>');
+    var html = topbar('Attività', 'Butta giù tutto. Poi decidi con calma: oggi, più avanti, o lascia perdere.');
     function tb(id, ico, et, n) {
       return '<button data-att="' + id + '" class="' + (attTab === id ? 'attivo' : '') + '">' + ICO(ico, 15) + et + (n ? ' <span class="att-badge">' + n + '</span>' : '') + '</button>';
     }
@@ -2681,51 +2693,57 @@
     function apriBkMenu(b) {
       var isProg = b.steps && b.steps.length;
       var oggi = LM.todayKey();
-      /* Tre blocchi con un compito chiaro ciascuno: QUANDO farla, ENTRO quando,
-         come sistemarla. I giorni più usati sono tasti diretti: un tocco invece
-         di aprire un calendario. */
+      /* Il menu era diventato lungo cinque schermate sul telefono. Ora: la cosa
+         che si fa quasi sempre (dare un giorno) è aperta, il resto sta in
+         sezioni che si aprono con un tocco. */
       function gChip(k, et) { return '<button class="q-chip" data-quando="' + k + '">' + et + '</button>'; }
+      function sez(id, icona, titolo, corpo, aperta) {
+        return '<div class="bk-sez' + (aperta ? ' aperta' : '') + '">' +
+          '<button class="bk-sez-testa" data-sez="' + id + '" aria-expanded="' + (aperta ? 'true' : 'false') + '">' +
+          ICO(icona, 14) + '<span>' + titolo + '</span>' +
+          '<span class="bk-chevron' + (aperta ? ' aperta' : '') + '">' + ICO('chevronGiu', 15) + '</span></button>' +
+          '<div class="bk-sez-corpo"' + (aperta ? '' : ' hidden') + '>' + corpo + '</div></div>';
+      }
       var html = '<div class="bk-menu">' +
-        '<div class="bk-sez">' +
-        '<div class="bk-sez-tit">' + ICO('clock', 13) + ' ' + (isProg ? 'Quando fare il prossimo passo' : 'Quando farla') + '</div>' +
-        '<div class="q-chips">' + gChip(oggi, 'Oggi') + gChip(LM.addDays(oggi, 1), 'Domani') +
-        gChip(LM.addDays(oggi, 2), etichettaGiorno(LM.addDays(oggi, 2)).split(' ')[0]) +
-        gChip(LM.addDays(oggi, 7), 'Tra una settimana') + '</div>' +
-        '<div class="bk-menu-scad mt-s"><input type="date" id="bkm-quando" min="' + oggi + '" aria-label="Un altro giorno">' +
-        '<button class="btn btn-mini" id="bkm-pianifica">Pianifica</button></div>' +
-        '<div class="bk-sez-nota">Finisce tra le cose di quel giorno, in <b>La giornata</b>.</div>' +
-        '</div>' +
-        '<div class="bk-sez">' +
-        '<div class="bk-sez-tit">' + ICO('calendar', 13) + ' Entro quando (scadenza)</div>' +
-        '<div class="bk-menu-scad"><input type="date" id="bkm-scad" aria-label="Scadenza"' + (b.scadenza ? ' value="' + b.scadenza + '"' : '') + '>' +
-        (b.scadenza ? '<button class="btn btn-mini btn-ghost" id="bkm-scad-x">Togli</button>' : '') + '</div>' +
-        '<div class="bk-sez-nota">Solo il conto alla rovescia: non la mette in agenda.</div>' +
-        '</div>' +
-        (isProg ? '<div class="bk-sez">' +
-          '<div class="bk-sez-tit">' + ICO('lista', 13) + ' Tutti i passi, spalmati</div>' +
+        sez('quando', 'clock', isProg ? 'Quando fare il prossimo passo' : 'Quando farla',
+          '<div class="q-chips">' + gChip(oggi, 'Oggi') + gChip(LM.addDays(oggi, 1), 'Domani') +
+          gChip(LM.addDays(oggi, 2), etichettaGiorno(LM.addDays(oggi, 2)).split(' ')[0]) +
+          gChip(LM.addDays(oggi, 7), 'Tra una settimana') + '</div>' +
+          '<div class="bk-menu-scad mt-s"><input type="date" id="bkm-quando" min="' + oggi + '" aria-label="Un altro giorno">' +
+          '<button class="btn btn-mini" id="bkm-pianifica">Pianifica</button></div>' +
+          '<div class="bk-sez-nota">Finisce tra le cose di quel giorno, in <b>La giornata</b>.</div>', true) +
+        (isProg ? sez('spalma', 'lista', 'Tutti i passi, spalmati',
           '<div class="bk-sez-nota" style="margin:0 0 9px">Un progetto non sta in un giorno solo: mette in agenda ogni passo aperto, uno per volta.</div>' +
           '<div class="q-chips">' +
           '<button class="q-chip" data-distrib="1">Uno al giorno</button>' +
           '<button class="q-chip" data-distrib="2">Uno ogni 2 giorni</button>' +
-          '<button class="q-chip" data-distrib="7">Uno a settimana</button>' +
-          '</div>' +
+          '<button class="q-chip" data-distrib="7">Uno a settimana</button></div>' +
           '<div class="bk-menu-scad mt-s"><input type="date" id="bkm-dadata" min="' + oggi + '" value="' + oggi + '" aria-label="Da quale giorno">' +
-          '<span class="bk-menu-eti">da qui</span></div>' +
-          '</div>' : '') +
-        '<div class="bk-sez">' +
-        '<div class="bk-sez-tit">' + ICO('refresh', 13) + ' Se è una cosa da ripetere</div>' +
-        '<div class="bk-sez-nota" style="margin:0 0 9px">Gli obiettivi che si costruiscono ripetendo (studiare, allenarsi) funzionano meglio come abitudine.</div>' +
-        '<button class="btn btn-mini" id="bkm-abitudine">' + ICO('refresh', 13) + ' Trasformala in abitudine</button>' +
-        '</div>' +
-        '<div class="bk-sez">' +
-        '<div class="bk-sez-tit">' + ICO('sparkles', 13) + ' Sistemala</div>' +
-        '<div class="bk-menu-riga"><span class="bk-menu-eti">Area</span>' + selectAree('bkm-area', b.areaId) + '</div>' +
-        '<div class="bk-menu-azioni">' +
-        '<button class="btn btn-mini" id="bkm-steps">' + ICO('lista', 13) + ' ' + (isProg ? 'Apri i passi' : 'Dividi in passi') + '</button>' +
-        '<button class="btn btn-mini" id="bkm-mod">' + ICO('pencil', 13) + ' Rinomina</button>' +
-        '<button class="btn btn-mini btn-ghost imp-pericolo" id="bkm-del">' + ICO('trash', 13) + ' Rimuovi</button>' +
-        '</div></div></div>';
+          '<span class="bk-menu-eti">da qui</span></div>', false) : '') +
+        sez('scadenza', 'calendar', 'Entro quando (scadenza)' + (b.scadenza ? ' · ' + scadInfo(b.scadenza).testo : ''),
+          '<div class="bk-menu-scad"><input type="date" id="bkm-scad" aria-label="Scadenza"' + (b.scadenza ? ' value="' + b.scadenza + '"' : '') + '>' +
+          (b.scadenza ? '<button class="btn btn-mini btn-ghost" id="bkm-scad-x">Togli</button>' : '') + '</div>' +
+          '<div class="bk-sez-nota">Solo il conto alla rovescia: non la mette in agenda.</div>', false) +
+        sez('sistema', 'sparkles', 'Sistemala',
+          '<div class="bk-menu-riga"><span class="bk-menu-eti">Area</span>' + selectAree('bkm-area', b.areaId) + '</div>' +
+          '<div class="bk-menu-azioni">' +
+          '<button class="btn btn-mini" id="bkm-steps">' + ICO('lista', 13) + ' ' + (isProg ? 'Apri i passi' : 'Dividi in passi') + '</button>' +
+          '<button class="btn btn-mini" id="bkm-abitudine">' + ICO('refresh', 13) + ' Trasformala in abitudine</button>' +
+          '<button class="btn btn-mini" id="bkm-mod">' + ICO('pencil', 13) + ' Rinomina</button>' +
+          '<button class="btn btn-mini btn-ghost imp-pericolo" id="bkm-del">' + ICO('trash', 13) + ' Rimuovi</button>' +
+          '</div>', false) +
+        '</div>';
       apriSheet(b.testo, html, function (root) {
+        root.querySelectorAll('[data-sez]').forEach(function (t) {
+          t.addEventListener('click', function () {
+            var box = t.parentNode, corpo = box.querySelector('.bk-sez-corpo');
+            var apri = corpo.hidden;
+            corpo.hidden = !apri;
+            box.classList.toggle('aperta', apri);
+            t.setAttribute('aria-expanded', apri ? 'true' : 'false');
+            var ch = t.querySelector('.bk-chevron'); if (ch) ch.classList.toggle('aperta', apri);
+          });
+        });
         function pianifica(k) {
           if (!k) return;
           var fatto = isProg ? LM.prossimoPassoInOggi(b.id, k) : LM.backlogInOggi(b.id, k);
@@ -2986,9 +3004,16 @@
           '<form class="bk-add" data-addarea="altro" style="max-width:520px;margin:0 auto"><input type="text" placeholder="Aggiungi una cosa da fare…" aria-label="Aggiungi"><button class="btn btn-mini btn-primario" type="submit" aria-label="Aggiungi">' + ICO('plus', 13) + '</button></form></div>';
         wireAdd(box); return;
       }
+      /* le aree vuote diventano un solo tasto "+ area vuota" invece di
+         occupare tre righe di chip a zero (era metà schermo sul telefono) */
+      var conRoba0 = perArea.filter(function (g) { return g.items.length; });
+      var vuote0 = perArea.filter(function (g) { return !g.items.length; });
       var chips = '<button class="att-chip' + (attArea === 'tutte' ? ' on' : '') + '" data-chip="tutte">Tutte <span>' + totale + '</span></button>' +
-        perArea.map(function (g) {
+        conRoba0.map(function (g) {
           return '<button class="att-chip' + (attArea === g.area.id ? ' on' : '') + '" data-chip="' + g.area.id + '" style="--c-area:' + LM.coloreArea(g.area) + '">' + ICO(g.area.icona, 13) + ' ' + esc(g.area.nome) + ' <span>' + g.items.length + '</span></button>';
+        }).join('') +
+        vuote0.map(function (g) {
+          return '<button class="att-chip vuota' + (attArea === g.area.id ? ' on' : '') + '" data-chip="' + g.area.id + '" style="--c-area:' + LM.coloreArea(g.area) + '">' + ICO(g.area.icona, 13) + ' ' + esc(g.area.nome) + '</button>';
         }).join('');
       box.innerHTML = '<div class="card"><div class="att-cerca">' + ICO('target', 14) + '<input type="text" id="att-q" placeholder="Cerca tra le cose da fare…" value="' + esc(attQuery) + '" aria-label="Cerca"></div>' +
         '<div class="att-chips">' + chips + '</div>' +
