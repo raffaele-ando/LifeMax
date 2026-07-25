@@ -1006,7 +1006,11 @@
         : (opts.interactive ? ' data-blk-' + (e.tipo === 'azione' ? 'az' : 'ab') + '="' + e.id + '"' : '');
       /* le azioni si trascinano: su un'altra ora (stesso giorno) o su un altro
          giorno nella vista settimana */
-      if (e.tipo === 'azione') clic += ' data-drag-az="' + e.id + '"';
+      /* Nella settimana i blocchi sono minuscoli: non c'è posto per un manico
+         separato, quindi il blocco stesso fa da manico (data-manico su di sé).
+         Così col dito si prende subito, senza che il browser rubi il gesto
+         per selezionare il testo. */
+      if (e.tipo === 'azione') clic += ' data-drag-az="' + e.id + '"' + (opts.mini ? ' data-manico' : '');
       return '<div class="tl-blk tl-blk-att' + (fatto ? ' fatta' : '') + (opts.interactive && !opts.mini ? ' tl-blk-clic' : '') + '"' + clic + ' style="' + pos + ';--c-area:' + col + '" title="' + esc(e.testo) + '">' +
         check + (e.tipo === 'azione' && !opts.mini ? '<span class="manico" data-manico aria-hidden="true">' + ICO('dots', 12) + '</span>' : '') +
         '<span class="tl-blk-t">' + (e.mit ? ICO('star', 9) + ' ' : '') + esc(e.testo) + '</span>' +
@@ -1119,8 +1123,8 @@
         var id = el.getAttribute('data-drag-az');
         var x0 = ev.clientX, y0 = ev.clientY;
         var tocco = ev.pointerType === 'touch';
-        var manico = el.querySelector('[data-manico]');
-        var dalManico = !!(manico && ev.target.closest('[data-manico]'));
+        var manico = el.matches('[data-manico]') ? el : el.querySelector('[data-manico]');
+        var dalManico = !!(manico && (ev.target === manico || manico.contains(ev.target) || ev.target.closest('[data-manico]')));
         /* Col dito, se l'elemento ha un manico si prende SOLO da lì: toccando
            il corpo il browser vorrebbe selezionare il testo (era il bug) e la
            pagina deve restare scorribile. Preso dal manico l'intenzione è
@@ -1660,8 +1664,9 @@
          portare su un altro giorno (ripianificare guardando tutto il mese) */
       var daFare = LM.azioniDelGiorno(k).filter(function (a) { return !a.done; });
       var pastiglie = daFare.slice(0, 3).map(function (a) {
-        return '<span class="me-pill" data-drag-az="' + a.id + '" style="--c-area:' + LM.coloreArea(areaById(a.areaId)) + '" title="' + esc(a.testo) + '">' +
-          '<span class="manico manico-mini" data-manico aria-hidden="true">' + ICO('dots', 9) + '</span>' + esc(a.testo) + '</span>';
+        /* la pastiglia è minuscola: è lei stessa il manico (niente manichino
+           dentro che ruberebbe spazio e sarebbe difficile da centrare) */
+        return '<span class="me-pill" data-drag-az="' + a.id + '" data-manico style="--c-area:' + LM.coloreArea(areaById(a.areaId)) + '" title="' + esc(a.testo) + '">' + esc(a.testo) + '</span>';
       }).join('') + (daFare.length > 3 ? '<span class="me-pill-piu">+' + (daFare.length - 3) + '</span>' : '');
       /* i giorni fuori dal mese restano neutri: colorarli renderebbe il numero
          illeggibile e confonderebbe il colpo d'occhio sul mese vero */

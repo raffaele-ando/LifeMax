@@ -1436,13 +1436,18 @@ body.sfondo-fermo { position: fixed; left: 0; right: 0; width: 100%; overflow: h
 .tl-blk:has(.manico) .tl-blk-t, .tl-blk:has(.manico) .tl-blk-ora { padding-left: 18px; }
 .gio-so-riga .manico { opacity: .55; }
 .gio-so-riga:hover .manico { opacity: 1; }
-.manico-mini { width: 14px; height: 14px; margin: 0 2px 0 0; vertical-align: middle; }
+/* blocco della settimana: è lui stesso il manico, quindi il browser non deve
+   prendersi il gesto per selezionare il testo o scorrere */
+.tl-grid-mini .tl-blk-att[data-manico] { touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; cursor: grab; }
+.tl-grid-mini .tl-blk-att[data-manico]:active { cursor: grabbing; }
+/* e le pastiglie del mese: anche loro piccole, si prendono per intero */
+.me-pill[data-drag-az] { touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; cursor: grab; }
+.me-pill[data-drag-az]:active { cursor: grabbing; }
 @media (pointer: coarse) {
   /* col dito il manico deve essere davvero afferrabile */
   .manico { width: 30px; height: 34px; opacity: 1 !important; color: var(--inchiostro-2); }
   .tl-blk .manico { background: color-mix(in srgb, var(--c-area, var(--accento)) 18%, transparent); }
   .tl-blk:has(.manico) .tl-blk-t, .tl-blk:has(.manico) .tl-blk-ora { padding-left: 30px; }
-  .manico-mini { width: 16px; height: 16px; }
 }
 /* niente trascinamento nativo del browser: divorerebbe gli eventi puntatore */
 [data-drag-az] { cursor: grab; touch-action: manipulation; -webkit-user-drag: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
