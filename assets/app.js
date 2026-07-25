@@ -182,10 +182,11 @@
 
   function apriCattura() {
     $ovl.hidden = false;
+    bloccaSfondo(true);
     $inp.value = '';
     setTimeout(function () { $inp.focus(); }, 30);
   }
-  function chiudiCattura() { $ovl.hidden = true; }
+  function chiudiCattura() { $ovl.hidden = true; bloccaSfondo(false); }
 
   document.getElementById('fab-cattura').innerHTML = ICO('plus', 25);
   document.getElementById('fab-cattura').addEventListener('click', apriCattura);
@@ -237,10 +238,36 @@
     document.getElementById('sheet-corpo').innerHTML = html;
     if ($sheetPanel) $sheetPanel.classList.toggle('sheet-largo', !!largo);
     $sheet.hidden = false;
+    bloccaSfondo(true);
     wireSheet = onWire || null;
     if (wireSheet) wireSheet(document.getElementById('sheet-corpo'));
   }
-  function chiudiSheet() { $sheet.hidden = true; wireSheet = null; if ($sheetPanel) $sheetPanel.classList.remove('sheet-largo'); }
+  function chiudiSheet() {
+    $sheet.hidden = true; wireSheet = null;
+    if ($sheetPanel) $sheetPanel.classList.remove('sheet-largo');
+    bloccaSfondo(false);
+  }
+
+  /* Con un pannello aperto la pagina sotto deve stare FERMA: prima si poteva
+     scorrere (e cliccare) il contenuto dietro, con lo sfocato che restava sul
+     posto e mostrava un taglio netto. Congeliamo lo scorrimento mantenendo la
+     posizione, e lo restituiamo alla chiusura. */
+  var scrollCongelato = 0;
+  function bloccaSfondo(attiva) {
+    var altro = document.querySelector('.overlay:not([hidden])');
+    if (attiva) {
+      if (document.body.classList.contains('sfondo-fermo')) return;
+      scrollCongelato = window.scrollY || document.documentElement.scrollTop || 0;
+      document.body.style.top = (-scrollCongelato) + 'px';
+      document.body.classList.add('sfondo-fermo');
+    } else {
+      if (!document.body.classList.contains('sfondo-fermo')) return;
+      if (altro) return; // c'è ancora un altro pannello aperto
+      document.body.classList.remove('sfondo-fermo');
+      document.body.style.top = '';
+      window.scrollTo(0, scrollCongelato);
+    }
+  }
 
   /* ---------- navigazione ---------- */
   /* gruppo: 'primaria' = destinazioni quotidiane (sidebar + tab bar mobile);
@@ -971,6 +998,9 @@
          durata, area) in un pannellino: niente più lista doppia sotto. */
       var clic = opts.mini ? ' data-tl-giorno="' + d.k + '"'
         : (opts.interactive ? ' data-blk-' + (e.tipo === 'azione' ? 'az' : 'ab') + '="' + e.id + '"' : '');
+      /* le azioni si trascinano: su un'altra ora (stesso giorno) o su un altro
+         giorno nella vista settimana */
+      if (e.tipo === 'azione') clic += ' draggable="true" data-drag-az="' + e.id + '"';
       return '<div class="tl-blk tl-blk-att' + (fatto ? ' fatta' : '') + (opts.interactive && !opts.mini ? ' tl-blk-clic' : '') + '"' + clic + ' style="' + pos + ';--c-area:' + col + '" title="' + esc(e.testo) + '">' +
         check + '<span class="tl-blk-t">' + (e.mit ? ICO('star', 9) + ' ' : '') + esc(e.testo) + '</span>' +
         (hgt > 30 && !opts.mini ? '<span class="tl-blk-ora">' + e.ora + '–' + fmtMin(e.min + dur) + '</span>' : '') + '</div>';
@@ -1004,6 +1034,46 @@
       }
       line.style.top = top + 'px';
       line.querySelector('span').textContent = fmtMin(now);
+    });
+  }
+
+  /* ---------- TRASCINAMENTO ----------
+     Un'azione si può prendere e spostare: su un'altra ora della stessa giornata
+     o su un altro giorno nella vista settimana. È il modo più diretto di
+     ripianificare: nessun campo da riempire, si muove la cosa dove va. */
+  var trascinata = null;      // id dell'azione che si sta spostando
+  function iniziaTrascina(ev, id) {
+    trascinata = id;
+    try { ev.dataTransfer.setData('text/plain', id); ev.dataTransfer.effectAllowed = 'move'; } catch (e) { }
+    document.body.classList.add('sto-trascinando');
+  }
+  function fineTrascina() {
+    trascinata = null;
+    document.body.classList.remove('sto-trascinando');
+    document.querySelectorAll('.drop-attivo').forEach(function (el) { el.classList.remove('drop-attivo'); });
+  }
+  function idTrascinato(ev) {
+    var id = trascinata;
+    if (!id) { try { id = ev.dataTransfer.getData('text/plain'); } catch (e) { } }
+    return id;
+  }
+  /* rende un elemento "bersaglio" di rilascio; onDrop(id, ev) fa il lavoro */
+  function zonaRilascio(el, onDrop) {
+    el.addEventListener('dragover', function (ev) { ev.preventDefault(); ev.dataTransfer.dropEffect = 'move'; el.classList.add('drop-attivo'); });
+    el.addEventListener('dragleave', function () { el.classList.remove('drop-attivo'); });
+    el.addEventListener('drop', function (ev) {
+      ev.preventDefault(); ev.stopPropagation();
+      el.classList.remove('drop-attivo');
+      var id = idTrascinato(ev);
+      if (id) onDrop(id, ev);
+      fineTrascina();
+    });
+  }
+  /* collega il "prendi" a tutte le azioni trascinabili dentro `scope` */
+  function wireTrascina(scope) {
+    scope.querySelectorAll('[data-drag-az]').forEach(function (el) {
+      el.addEventListener('dragstart', function (ev) { iniziaTrascina(ev, el.getAttribute('data-drag-az')); });
+      el.addEventListener('dragend', fineTrascina);
     });
   }
 
@@ -1055,7 +1125,7 @@
       var bFatto = root.querySelector('.ig-fatto');
       if (bFatto) bFatto.addEventListener('click', function (ev) {
         if (isAz) feedbackSpunta(ev, LM.completaAzione(id), 'Fatto.', 'check');
-        else feedbackSpunta(ev, LM.completaAbitudine(id), 'Fatta. Continua così.', 'flame');
+        else feedbackSpunta(ev, LM.completaAbitudine(id, k), 'Fatta. Continua così.', 'flame');
         chiudiSheet(); ricarica();
       });
       var ora = root.querySelector('#ig-ora');
@@ -1098,8 +1168,8 @@
        Nel futuro si può aggiungere/modificare/spostare, ma non spuntare:
        una cosa di domani non si può aver già fatta (falserebbe XP e serie). */
     var isFuturo = k > LM.todayKey();
-    var interactive = d.isToday || isFuturo;   // si può modificare
-    var spuntabile = d.isToday;                // si può segnare "fatto"
+    var interactive = true;                    // si può sempre sistemare
+    var spuntabile = !isFuturo;                // anche a posteriori, mai nel futuro
     var now = new Date();
     var nowMin = d.isToday ? now.getHours() * 60 + now.getMinutes() : null;
 
@@ -1116,7 +1186,8 @@
           var fatto = e.tipo === 'azione' ? e.done : e.fatto;
           var attr = e.tipo === 'azione' ? 'data-tl-az="' + e.id + '"' : 'data-tl-ab="' + e.id + '"';
           var bAttr = 'data-blk-' + (e.tipo === 'azione' ? 'az' : 'ab') + '="' + e.id + '"';
-          return '<div class="gio-so-riga' + (fatto ? ' fatta' : '') + '" style="--c-area:' + col + '">' +
+          return '<div class="gio-so-riga' + (fatto ? ' fatta' : '') + '" style="--c-area:' + col + '"' +
+            (e.tipo === 'azione' ? ' draggable="true" data-drag-az="' + e.id + '"' : '') + '>' +
             (spuntabile ? '<button class="tl-check" ' + attr + ' aria-label="Fatto">' + ICO('check', 12) + '</button>' : '') +
             '<button class="gio-so-corpo" ' + bAttr + '>' +
             '<span class="tl-tag" style="color:' + col + '" title="' + esc(ar.nome) + '">' + ICO(ar.icona, 13) + '</span>' +
@@ -1179,6 +1250,16 @@
     }
 
     var footer = '';
+    /* Ripianificare in blocco: la sera (o un giorno passato rimasto a metà) si
+       porta al giorno dopo quello che non è stato fatto, senza riscrivere. */
+    if (!compact) {
+      var nonFatte = d.placed.concat(d.tray).filter(function (e) { return e.tipo === 'azione' && !e.done; });
+      if (nonFatte.length && !isFuturo) {
+        var doveVa = etichettaGiorno(LM.addDays(k, 1)).toLowerCase();
+        footer = '<div class="tl-piede"><button class="btn btn-mini" id="tl-rimanda">' + ICO('arrowRight', 14) + ' Sposta a ' + doveVa + ' le ' + nonFatte.length + ' cose non fatte</button>' +
+          '<span class="sotto" style="margin:0">Niente penalità: ripianificare è parte del gioco.</span></div>';
+      }
+    }
     if (compact && opts.controls !== false) {
       footer = '<div class="tl-piede"><button class="btn btn-primario btn-mini" id="tl-apri-pagina">' + ICO('calendar', 14) + ' Gestisci la giornata ' + ICO('arrowRight', 13) + '</button></div>';
     }
@@ -1202,8 +1283,8 @@
     var sottoHead = compact
       ? (sommario || 'Come è divisa la tua giornata. Spunta ciò che fai; per cambiarla apri Giornata.')
       : (isFuturo ? 'Prepara questa giornata: aggiungi le cose e dàgli un orario. Le spunterai quando arriva il giorno.'
-         : interactive ? 'Tocca un blocco per dargli orario o durata; spunta ciò che fai.'
-         : 'Com’era divisa questa giornata, dal risveglio al sonno.');
+         : d.isToday ? 'Tocca un blocco per dargli orario o durata; trascinalo per spostarlo; spunta ciò che fai.'
+         : 'Puoi ancora sistemarla: spunta quello che avevi fatto e non avevi segnato.');
     var head = opts.header === false ? '' : '<div class="tl-head"><div><h2>' + ICO('clock', 16) + ' ' + (opts.giorno && !d.isToday ? etichettaGiorno(k) : 'La giornata') + '</h2>' +
       '<div class="sotto">' + sottoHead + '</div></div></div>';
     var gridHtml = vuota
@@ -1241,7 +1322,7 @@
         });
         scope.querySelectorAll('.tl-check[data-tl-ab], .tl-blk-check[data-tl-ab]').forEach(function (b) {
           b.addEventListener('click', function (ev) {
-            feedbackSpunta(ev, LM.completaAbitudine(b.getAttribute('data-tl-ab')), 'Fatta. Continua così.', 'flame');
+            feedbackSpunta(ev, LM.completaAbitudine(b.getAttribute('data-tl-ab'), k), 'Fatta. Continua così.', 'flame');
             montaGiornata(container, opts);
           });
         });
@@ -1263,6 +1344,27 @@
         wireGriglia(host);
       }
       wireGriglia(container);
+      wireTrascina(container);
+      /* rilasciare sulla griglia dà l'ora corrispondente al punto (a passi di
+         15 minuti); rilasciare sulla zona "senza orario" toglie l'orario */
+      var grigliaEl = container.querySelector('.tl-grid');
+      if (grigliaEl) zonaRilascio(grigliaEl, function (id, ev) {
+        var gs = +grigliaEl.getAttribute('data-gs'), pxh = +grigliaEl.getAttribute('data-pxh');
+        if (isNaN(gs) || !pxh) return;
+        var r = grigliaEl.getBoundingClientRect();
+        var min = gs + (ev.clientY - r.top) / pxh * 60;
+        min = Math.max(0, Math.round(min / 15) * 15) % 1440;
+        LM.setOraAzione(id, fmtMin(min));
+        LM.spostaAzione(id, k);
+        toast('Spostata alle ' + fmtMin(min) + '.', 0, 'clock');
+        montaGiornata(container, opts); aggiornaNav();
+      });
+      var zonaSo = container.querySelector('.gio-so');
+      if (zonaSo) zonaRilascio(zonaSo, function (id) {
+        LM.setOraAzione(id, null);
+        toast('Tolto l’orario: resta tra le cose senza orario.', 0, 'clock');
+        montaGiornata(container, opts); aggiornaNav();
+      });
 
       /* --- sonno e pasti del giorno (registro), modifica uno per uno --- */
       function aggiornaDorm() { var el = container.querySelector('#sp-dorm'); if (el) el.textContent = fmtOre(LM.minutiSonno(k)); }
@@ -1299,6 +1401,12 @@
         if (ch) ch.classList.toggle('aperta', giornataSonnoAperto);
       });
     }
+    var rim = container.querySelector('#tl-rimanda');
+    if (rim) rim.addEventListener('click', function () {
+      var n = LM.rimandaNonFatte(k, LM.addDays(k, 1));
+      toast(n === 1 ? 'Spostata al giorno dopo.' : n + ' cose spostate al giorno dopo.', 0, 'arrowRight');
+      montaGiornata(container, opts); aggiornaNav();
+    });
     var ap = container.querySelector('#tl-apri-pagina');
     if (ap) ap.addEventListener('click', function () { chiudiSheet(); location.hash = '#/giornata'; });
   }
@@ -1336,7 +1444,16 @@
     wireOrizzNav(container, 'settimana');
     container.querySelectorAll('[data-tl-giorno]').forEach(function (el) {
       el.addEventListener('click', function () { setOrizzonte('giorno', el.getAttribute('data-tl-giorno')); });
+      /* trascinare una cosa da un giorno all'altro: ripianificare la settimana
+         muovendo i blocchi, senza aprire niente */
+      zonaRilascio(el, function (id) {
+        var giorno = el.getAttribute('data-tl-giorno');
+        if (!LM.spostaAzione(id, giorno)) return;
+        toast('Spostata a ' + etichettaGiorno(giorno).toLowerCase() + '.', 0, 'calendar');
+        disegnaOrizzonte(); aggiornaNav();
+      });
     });
+    wireTrascina(container);
   }
 
   /* --- Mese: calendario con indicatori di attività e scadenze --- */
@@ -2338,33 +2455,47 @@
        passi, rinomina, rimuovi) tolte dalla riga per non affollarla. */
     function apriBkMenu(b) {
       var isProg = b.steps && b.steps.length;
-      var domani = LM.addDays(LM.todayKey(), 1);
+      var oggi = LM.todayKey();
+      /* Tre blocchi con un compito chiaro ciascuno: QUANDO farla, ENTRO quando,
+         come sistemarla. I giorni più usati sono tasti diretti: un tocco invece
+         di aprire un calendario. */
+      function gChip(k, et) { return '<button class="q-chip" data-quando="' + k + '">' + et + '</button>'; }
       var html = '<div class="bk-menu">' +
-        /* Pianificare in un giorno preciso: il modo per spalmare il lavoro sulla
-           settimana invece di ammucchiare tutto su oggi. */
-        '<label class="campo">' + ICO('clock', 13) + ' ' + (isProg ? 'Fai un passo il…' : 'Fallo il…') + '</label>' +
-        '<div class="bk-menu-scad"><input type="date" id="bkm-quando" min="' + LM.todayKey() + '" value="' + domani + '">' +
-        '<button class="btn btn-mini btn-primario" id="bkm-pianifica">Pianifica</button></div>' +
-        '<div class="imp-nota" style="margin:6px 0 0">Comparirà tra le cose di quel giorno (la vedi in <b>La giornata</b>).</div>' +
-        '<label class="campo">' + ICO('calendar', 13) + ' Scadenza</label>' +
-        '<div class="bk-menu-scad"><input type="date" id="bkm-scad"' + (b.scadenza ? ' value="' + b.scadenza + '"' : '') + '>' +
+        '<div class="bk-sez">' +
+        '<div class="bk-sez-tit">' + ICO('clock', 13) + ' ' + (isProg ? 'Quando fare il prossimo passo' : 'Quando farla') + '</div>' +
+        '<div class="q-chips">' + gChip(oggi, 'Oggi') + gChip(LM.addDays(oggi, 1), 'Domani') +
+        gChip(LM.addDays(oggi, 2), etichettaGiorno(LM.addDays(oggi, 2)).split(' ')[0]) +
+        gChip(LM.addDays(oggi, 7), 'Tra una settimana') + '</div>' +
+        '<div class="bk-menu-scad mt-s"><input type="date" id="bkm-quando" min="' + oggi + '" aria-label="Un altro giorno">' +
+        '<button class="btn btn-mini" id="bkm-pianifica">Pianifica</button></div>' +
+        '<div class="bk-sez-nota">Finisce tra le cose di quel giorno, in <b>La giornata</b>.</div>' +
+        '</div>' +
+        '<div class="bk-sez">' +
+        '<div class="bk-sez-tit">' + ICO('calendar', 13) + ' Entro quando (scadenza)</div>' +
+        '<div class="bk-menu-scad"><input type="date" id="bkm-scad" aria-label="Scadenza"' + (b.scadenza ? ' value="' + b.scadenza + '"' : '') + '>' +
         (b.scadenza ? '<button class="btn btn-mini btn-ghost" id="bkm-scad-x">Togli</button>' : '') + '</div>' +
-        '<div class="imp-nota" style="margin:6px 0 0">La scadenza è <b>entro quando</b> va fatta: serve al conto alla rovescia, non la mette in agenda.</div>' +
-        '<label class="campo">Area</label>' + selectAree('bkm-area', b.areaId) +
+        '<div class="bk-sez-nota">Solo il conto alla rovescia: non la mette in agenda.</div>' +
+        '</div>' +
+        '<div class="bk-sez">' +
+        '<div class="bk-sez-tit">' + ICO('sparkles', 13) + ' Sistemala</div>' +
+        '<div class="bk-menu-riga"><span class="bk-menu-eti">Area</span>' + selectAree('bkm-area', b.areaId) + '</div>' +
         '<div class="bk-menu-azioni">' +
         '<button class="btn btn-mini" id="bkm-steps">' + ICO('lista', 13) + ' ' + (isProg ? 'Apri i passi' : 'Dividi in passi') + '</button>' +
         '<button class="btn btn-mini" id="bkm-mod">' + ICO('pencil', 13) + ' Rinomina</button>' +
         '<button class="btn btn-mini btn-ghost imp-pericolo" id="bkm-del">' + ICO('trash', 13) + ' Rimuovi</button>' +
-        '</div></div>';
+        '</div></div></div>';
       apriSheet(b.testo, html, function (root) {
-        root.querySelector('#bkm-pianifica').addEventListener('click', function () {
-          var k = root.querySelector('#bkm-quando').value;
+        function pianifica(k) {
           if (!k) return;
           var fatto = isProg ? LM.prossimoPassoInOggi(b.id, k) : LM.backlogInOggi(b.id, k);
           if (!fatto) { toast('Nessun passo da pianificare: sono tutti aperti o completati.', 0, 'check'); return; }
           toast(k === LM.todayKey() ? 'Messa tra le cose di oggi.' : 'Pianificata per ' + etichettaGiorno(k).toLowerCase() + '.', 0, 'calendar');
           chiudiSheet(); aggiornaNav(); ridisegna();
+        }
+        root.querySelectorAll('[data-quando]').forEach(function (c) {
+          c.addEventListener('click', function () { pianifica(c.getAttribute('data-quando')); });
         });
+        root.querySelector('#bkm-pianifica').addEventListener('click', function () { pianifica(root.querySelector('#bkm-quando').value); });
         root.querySelector('#bkm-scad').addEventListener('change', function () { LM.impostaScadenzaBacklog(b.id, this.value || null); chiudiSheet(); ridisegna(); });
         var sx = root.querySelector('#bkm-scad-x');
         if (sx) sx.addEventListener('click', function () { LM.impostaScadenzaBacklog(b.id, null); chiudiSheet(); ridisegna(); });
@@ -2398,22 +2529,47 @@
           '<form class="step-add" data-stepadd="' + b.id + '"><input type="text" placeholder="Aggiungi un passo…" aria-label="Aggiungi un passo"><button class="btn btn-mini" type="submit" aria-label="Aggiungi un passo">' + ICO('plus', 12) + '</button></form>' +
           '</div>';
       }
+      /* Cosa è GIA' IN AGENDA di questa attività: senza questo, dopo aver
+         pianificato qualcosa la riga sembrava identica a una mai toccata. */
+      var inAgenda = LM.snapshot().azioni.filter(function (a) {
+        return !a.done && a.data >= LM.todayKey() && (isProg ? (a.passoDi && a.passoDi.b === b.id) : a.passoDi === null && a.testo === b.testo);
+      }).sort(function (x, y) { return x.data < y.data ? -1 : 1; });
+      var badgeAgenda = inAgenda.length
+        ? '<span class="bk-inagenda" title="' + esc(inAgenda.map(function (a) { return a.testo + ' — ' + etichettaGiorno(a.data); }).join('\n')) + '">' + ICO('calendar', 11) + ' ' +
+          (isProg && inAgenda.length > 1 ? inAgenda.length + ' passi in agenda' : 'in agenda ' + etichettaGiorno(inAgenda[0].data).toLowerCase()) + '</span>'
+        : '';
+      /* Avanzamento a segmenti: con pochi passi si contano a occhio, molto più
+         leggibile di una barra continua. Con tanti passi torna a barra. */
+      var avanz = '';
+      if (isProg) {
+        if (av.tot <= 12) {
+          var seg = '';
+          for (var si = 0; si < av.tot; si++) seg += '<i' + (si < av.fatti ? ' class="on"' : '') + '></i>';
+          avanz = '<div class="prog-riga"><span class="prog-segmenti">' + seg + '</span>' +
+            '<span class="prog-eti"><b>' + av.fatti + '</b> di <b>' + av.tot + '</b> passi' + (av.fatti === av.tot ? ' · finito' : '') + '</span></div>';
+        } else {
+          avanz = '<div class="prog-riga"><span class="prog-barra"><span style="width:' + av.pct + '%"></span></span>' +
+            '<span class="prog-eti"><b>' + av.fatti + '</b> di <b>' + av.tot + '</b> passi</span></div>';
+        }
+      }
       return '<div class="bk-item' + (isProg ? ' progetto' : '') + '" data-bid="' + b.id + '">' +
         '<div class="bk-item-riga">' +
-        '<div class="bk-item-testo">' + esc(b.testo) +
-        (b.scadenza ? ' <span class="scad-badge ' + scadInfo(b.scadenza).cls + '">' + scadInfo(b.scadenza).testo + '</span>' : '') +
-        (isProg ? ' <span class="prog-mini">' + av.fatti + '/' + av.tot + '</span>' : '') + '</div>' +
-        /* una sola azione in evidenza (Oggi / Passo). Tutto il resto —
-           scadenza, area, rinomina, passi, rimuovi — sta dietro «⋯», così la
-           riga resta leggibile anche con decine di cose. */
+        '<div class="bk-item-corpo">' +
+        '<div class="bk-item-testo">' + esc(b.testo) + '</div>' +
+        ((b.scadenza || badgeAgenda || isProg) ? '<div class="bk-item-meta">' +
+          (b.scadenza ? '<span class="scad-badge ' + scadInfo(b.scadenza).cls + '">' + ICO('calendar', 10) + ' entro ' + scadInfo(b.scadenza).testo + '</span>' : '') +
+          badgeAgenda + '</div>' : '') +
+        avanz +
+        '</div>' +
+        /* una sola azione in evidenza (Oggi / Passo). Tutto il resto sta dietro
+           «⋯». I pulsanti non vanno mai a capo: il testo si accorcia, loro no. */
         '<div class="bk-item-azioni">' +
         (isProg
           ? '<button class="btn btn-mini btn-primario" data-bkpasso="' + b.id + '" title="Porta in Oggi il prossimo passo">' + ICO('arrowRight', 13) + ' Passo</button>' +
-            '<button class="icona-btn' + (apertoP ? ' on' : '') + '" data-bksteps="' + b.id + '" title="Passi del progetto" aria-label="Passi">' + ICO('lista', 14) + '</button>'
+            '<button class="icona-btn' + (apertoP ? ' on' : '') + '" data-bksteps="' + b.id + '" title="Passi del progetto" aria-label="Passi del progetto">' + ICO('lista', 14) + '</button>'
           : '<button class="btn btn-mini btn-primario" data-bkoggi="' + b.id + '">' + ICO('arrowRight', 13) + ' Oggi</button>') +
         '<button class="icona-btn" data-bkmenu="' + b.id + '" title="Altro" aria-label="Altro">' + ICO('dots', 16) + '</button>' +
         '</div></div>' +
-        (isProg ? '<div class="prog-barra"><span style="width:' + av.pct + '%"></span></div>' : '') +
         passi + '</div>';
     }
 

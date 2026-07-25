@@ -411,8 +411,10 @@ var LM = (function () {
       return -tolti;
     }
     a.done = true;
-    a.doneAt = Date.now();
-    var punti = premiaXp(a.mit ? 'mit' : 'azione');
+    /* spuntare a posteriori: gli XP e la data del "fatto" vanno sul giorno
+       dell'azione, non su oggi, altrimenti falserebbero le statistiche. */
+    a.doneAt = (a.data === todayKey()) ? Date.now() : (parseKey(a.data).getTime() + 12 * 3600000);
+    var punti = premiaXp(a.mit ? 'mit' : 'azione', a.data);
     /* se l'azione era il passo di un progetto, spuntalo; se il progetto
        è completo, lo rimuove dalle cose da fare */
     if (a.passoDi) {
@@ -427,6 +429,42 @@ var LM = (function () {
     }
     save();
     return punti;
+  }
+
+  /* Sposta un'azione in un altro giorno (ripianificare senza riscrivere).
+     Serve al trascinamento tra i giorni e al pulsante "rimanda a domani". */
+  function spostaAzione(id, giorno) {
+    var s = load();
+    var a = s.azioni.find(function (x) { return x.id === id; });
+    if (!a || !giorno || a.data === giorno) return null;
+    var vecchio = a.data;
+    a.data = giorno;
+    /* la priorità vale per giorno: se se ne va, non resta appesa al vecchio */
+    if (a.mit) {
+      a.mit = false;
+      var erede = s.azioni.find(function (x) { return x.data === vecchio && !x.done; });
+      if (erede) erede.mit = true;
+      if (!s.azioni.some(function (x) { return x.data === giorno && x.mit; })) a.mit = true;
+    }
+    registra('giornata', 'Spostata «' + a.testo + '» al ' + fmtShort(giorno), true);
+    save();
+    return a;
+  }
+
+  /* Porta al giorno dopo tutto quello che non è stato fatto: la sera si
+     ripulisce la giornata senza riscrivere niente (e senza penalità). */
+  function rimandaNonFatte(daGiorno, aGiorno) {
+    var s = load();
+    var da = daGiorno || todayKey();
+    var a2 = aGiorno || addDays(da, 1);
+    var mosse = s.azioni.filter(function (x) { return x.data === da && !x.done; });
+    if (!mosse.length) return 0;
+    mosse.forEach(function (x) { x.data = a2; x.mit = false; });
+    /* nel giorno di arrivo serve una sola priorità */
+    if (!s.azioni.some(function (x) { return x.data === a2 && x.mit; }) && mosse[0]) mosse[0].mit = true;
+    registra('giornata', mosse.length + (mosse.length === 1 ? ' cosa non fatta spostata al ' : ' cose non fatte spostate al ') + fmtShort(a2), true);
+    save();
+    return mosse.length;
   }
 
   function rimandaAzione(id) {
@@ -758,21 +796,23 @@ var LM = (function () {
     return load().abitudini.filter(function (h) { return abitudinePrevista(h, k); });
   }
   /* completa/annulla l'abitudine per oggi (toggle) */
-  function completaAbitudine(id) {
+  function completaAbitudine(id, giorno) {
     var s = load();
     var h = s.abitudini.find(function (x) { return x.id === id; });
     if (!h) return 0;
-    var k = todayKey();
+    /* si può spuntare anche un giorno passato (te ne sei ricordato dopo):
+       XP e registro finiscono su QUEL giorno. */
+    var k = giorno || todayKey();
     if (h.fatti[k]) {
       delete h.fatti[k];
       togliXp(XP_EVENTI.abitudine, k);
-      registra('abitudine', 'Tolta la spunta a «' + h.testo + '» (−' + XP_EVENTI.abitudine + ' XP)', false);
+      registra('abitudine', 'Tolta la spunta a «' + h.testo + '»' + (k === todayKey() ? '' : ' del ' + fmtShort(k)) + ' (−' + XP_EVENTI.abitudine + ' XP)', false);
       save();
       return -XP_EVENTI.abitudine;
     }
     h.fatti[k] = true;
-    var punti = premiaXp('abitudine');
-    registra('abitudine', 'Fatta l’abitudine «' + h.testo + '»', true);
+    var punti = premiaXp('abitudine', k);
+    registra('abitudine', 'Fatta l’abitudine «' + h.testo + '»' + (k === todayKey() ? '' : ' (del ' + fmtShort(k) + ')'), true);
     save();
     return punti;
   }
@@ -1464,6 +1504,7 @@ var LM = (function () {
     aggiungiAzione: aggiungiAzione, completaAzione: completaAzione, rimandaAzione: rimandaAzione,
     cattura: cattura, triageInbox: triageInbox, modificaInbox: modificaInbox, cambiaAreaAzione: cambiaAreaAzione,
     modificaAzione: modificaAzione, rimuoviAzione: rimuoviAzione, serveMit: serveMit,
+    spostaAzione: spostaAzione, rimandaNonFatte: rimandaNonFatte,
     setOraAzione: setOraAzione, setDurataAzione: setDurataAzione, azioniDelGiorno: azioniDelGiorno,
     impostaRitmo: impostaRitmo, impostaGiornataPos: impostaGiornataPos, RITMO_DEFAULT: RITMO_DEFAULT,
     ritmoDi: ritmoDi, setRitmoGiorno: setRitmoGiorno, azzeraRitmoGiorno: azzeraRitmoGiorno, minutiSonno: minutiSonno,
