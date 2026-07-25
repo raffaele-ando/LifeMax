@@ -422,6 +422,24 @@ var LM = (function () {
     registra('azione', 'Cambiata area di «' + a.testo + '» → ' + (ar ? ar.nome : areaId), false);
     save();
   }
+  /* rinomina un'azione di oggi */
+  function modificaAzione(id, testo) {
+    var s = load();
+    var a = s.azioni.find(function (x) { return x.id === id; });
+    if (!a || !testo) return;
+    a.testo = testo;
+    registra('azione', 'Modificata «' + testo + '»', false);
+    save();
+  }
+  /* elimina un'azione di oggi (senza penalità: era una scelta, non un fallimento) */
+  function rimuoviAzione(id) {
+    var s = load();
+    var i = s.azioni.findIndex(function (x) { return x.id === id; });
+    if (i < 0) return;
+    var a = s.azioni.splice(i, 1)[0];
+    registra('azione', 'Rimossa da oggi «' + a.testo + '»', true);
+    save();
+  }
   /* assegna o toglie l'orario di un'azione nella giornata */
   function setOraAzione(id, ora) {
     var s = load();
@@ -1359,6 +1377,7 @@ var LM = (function () {
     coloreArea: coloreArea, livelloDaXp: livelloDaXp,
     aggiungiAzione: aggiungiAzione, completaAzione: completaAzione, rimandaAzione: rimandaAzione,
     cattura: cattura, triageInbox: triageInbox, modificaInbox: modificaInbox, cambiaAreaAzione: cambiaAreaAzione,
+    modificaAzione: modificaAzione, rimuoviAzione: rimuoviAzione,
     setOraAzione: setOraAzione, setDurataAzione: setDurataAzione, azioniDelGiorno: azioniDelGiorno,
     impostaRitmo: impostaRitmo, impostaGiornataPos: impostaGiornataPos, RITMO_DEFAULT: RITMO_DEFAULT,
     ritmoDi: ritmoDi, setRitmoGiorno: setRitmoGiorno, azzeraRitmoGiorno: azzeraRitmoGiorno, minutiSonno: minutiSonno,

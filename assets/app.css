@@ -1349,12 +1349,14 @@ kbd {
 
 /* pannellino "modifica una cosa" (sheet) */
 .ig-ed { display: flex; flex-direction: column; gap: 4px; }
+.ig-nome { width: 100%; font-size: 15px; font-weight: 650; padding: 9px 12px; margin-bottom: 10px; }
 .ig-fatto { width: 100%; justify-content: center; gap: 8px; margin-bottom: 6px; }
 .ig-fatto-ico { display: inline-flex; }
 .ig-griglia { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 9px 12px; }
 .ig-griglia .campo { margin: 0; }
 .ig-griglia #ig-ora, .ig-griglia #ig-dur, .ig-griglia #ig-area { width: 100%; }
-.ig-ed .ig-noora { margin-top: 10px; justify-content: center; }
+.ig-fondo { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; padding-top: 13px; border-top: 1px solid var(--griglia); }
+.ig-fondo .btn { justify-content: center; }
 
 /* pop-up "La giornata" (leggero, una colonna, si adatta all'altezza) */
 .sheet.sheet-largo { max-width: 540px; }

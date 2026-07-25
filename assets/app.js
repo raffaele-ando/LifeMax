@@ -919,16 +919,31 @@
     var fatto = isAz ? e.done : e.fatto;
     var durOpt = DURATE.map(function (o) { return '<option value="' + o.v + '"' + ((e.dur || '') === o.v ? ' selected' : '') + '>' + o.t + '</option>'; }).join('');
     var html = '<div class="ig-ed">' +
+      '<input type="text" class="ig-nome" id="ig-nome" value="' + esc(e.testo) + '" aria-label="Testo" placeholder="Cosa devi fare">' +
       '<button class="btn ' + (fatto ? 'btn-ghost' : 'btn-primario') + ' ig-fatto"><span class="ig-fatto-ico">' + ICO(fatto ? 'refresh' : 'check', 16) + '</span>' + (fatto ? 'Fatta — togli la spunta' : 'Segna come fatta') + '</button>' +
       '<div class="ig-griglia">' +
       '<label class="campo">' + ICO('clock', 12) + ' Orario</label><input type="time" class="tl-time" id="ig-ora" value="' + (e.ora || '') + '">' +
       '<label class="campo">Durata</label><select class="tl-dur" id="ig-dur">' + durOpt + '</select>' +
       '<label class="campo">Area</label>' + selectAree('ig-area', e.areaId) +
       '</div>' +
-      (e.ora ? '<button class="btn btn-mini btn-ghost ig-noora">' + ICO('clock', 13) + ' Togli l’orario (torna tra le cose senza orario)</button>' : '') +
+      '<div class="ig-fondo">' +
+      (e.ora ? '<button class="btn btn-mini btn-ghost ig-noora">' + ICO('clock', 13) + ' Togli l’orario</button>' : '') +
+      (isAz
+        ? '<button class="btn btn-mini btn-ghost imp-pericolo ig-rimuovi">' + ICO('trash', 13) + ' Rimuovi da oggi</button>'
+        : '<button class="btn btn-mini btn-ghost ig-vairituali">' + ICO('refresh', 13) + ' Gestisci l’abitudine in Rituali</button>') +
+      '</div>' +
       '</div>';
     apriSheet(esc(e.testo), html, function (root) {
       function ricarica() { onCambio(); }
+      var nome = root.querySelector('#ig-nome');
+      nome.addEventListener('change', function () {
+        var v = nome.value.trim();
+        if (!v) { nome.value = e.testo; return; }
+        if (isAz) LM.modificaAzione(id, v); else LM.modificaAbitudine(id, { testo: v });
+        e.testo = v;
+        var tit = document.getElementById('sheet-titolo'); if (tit) tit.textContent = v;
+        ricarica();
+      });
       root.querySelector('.ig-fatto').addEventListener('click', function (ev) {
         if (isAz) feedbackSpunta(ev, LM.completaAzione(id), 'Fatto.', 'check');
         else feedbackSpunta(ev, LM.completaAbitudine(id), 'Fatta. Continua così.', 'flame');
@@ -955,6 +970,13 @@
         if (isAz) LM.setOraAzione(id, null); else LM.modificaAbitudine(id, { ora: null });
         chiudiSheet(); ricarica();
       });
+      var rim = root.querySelector('.ig-rimuovi');
+      if (rim) rim.addEventListener('click', function () {
+        LM.rimuoviAzione(id); toast('Rimossa da oggi.', 0, 'trash');
+        chiudiSheet(); ricarica();
+      });
+      var vai = root.querySelector('.ig-vairituali');
+      if (vai) vai.addEventListener('click', function () { chiudiSheet(); location.hash = '#/rituali'; });
     });
   }
 
