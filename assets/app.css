@@ -1288,6 +1288,7 @@ body.sfondo-fermo { position: fixed; left: 0; right: 0; width: 100%; overflow: h
 .q-chips { display: flex; flex-wrap: wrap; gap: 7px; }
 .q-chip { padding: 7px 13px; border-radius: 99px; border: 1px solid var(--bordo-forte); background: var(--superficie-1); font-size: 12.5px; font-weight: 700; color: var(--inchiostro-2); cursor: pointer; transition: all var(--t-veloce); }
 .q-chip:hover { border-color: var(--accento); color: var(--accento-testo); background: color-mix(in srgb, var(--accento) 8%, var(--superficie-1)); }
+.q-chip.on { border-color: var(--accento); color: #fff; background: var(--accento-testo); }
 .bk-menu #bkm-area, .bk-menu #bkm-scad, .bk-menu #bkm-quando { width: 100%; }
 .bk-menu-scad { display: flex; align-items: center; gap: 8px; }
 .bk-menu-scad input[type="date"] { flex: 1; min-width: 0; }
@@ -1309,9 +1310,12 @@ body.sfondo-fermo { position: fixed; left: 0; right: 0; width: 100%; overflow: h
 .prog-barra span { display: block; height: 100%; border-radius: 99px; background: var(--grad-brand); transition: width var(--t-media); }
 .steps-panel { display: flex; flex-direction: column; gap: 5px; margin: 10px 0 2px; padding: 9px 11px; border-radius: var(--raggio-s); background: var(--superficie-2); border: 1px solid var(--griglia); }
 .step-riga { display: flex; align-items: center; gap: 9px; }
-.step-riga .step-testo { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* il testo del passo non si riduce a due lettere quando c'è il segno del
+   giorno: ha una larghezza minima e il segno si accorcia prima di lui */
+.step-riga .step-testo { flex: 1 1 auto; min-width: 84px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .step-quando { flex: none; display: inline-flex; align-items: center; gap: 3px; font-size: 10px; font-weight: 750; color: var(--accento-testo); background: color-mix(in srgb, var(--accento) 12%, transparent); border: 1px solid transparent; border-radius: 99px; padding: 1px 7px; cursor: pointer; }
 .step-quando:hover { border-color: var(--critico); color: var(--critico); background: color-mix(in srgb, var(--critico) 10%, transparent); }
+.step-quando { max-width: 45%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .step-testo { flex: 1; min-width: 0; font-size: 13px; overflow-wrap: anywhere; }
 .step-riga.fatta .step-testo { text-decoration: line-through; color: var(--inchiostro-muto); }
 .spunta-mini { flex: none; width: 22px; height: 22px; border-radius: 6px; border: 2px solid var(--baseline); background: var(--superficie-1); display: inline-flex; align-items: center; justify-content: center; color: transparent; transition: all var(--t-veloce); }
@@ -1353,7 +1357,6 @@ body.sfondo-fermo { position: fixed; left: 0; right: 0; width: 100%; overflow: h
   .btn-mini { min-height: 42px; padding: 8px 14px; }
   .bk-item-azioni { gap: 10px; }
   .bk-item { padding: 9px 11px; }
-  .scad-set { height: 44px; padding: 0 12px; }
   .spunta-mini { width: 30px; height: 30px; }
   .step-riga { gap: 11px; }
   .abit-periodo .ap-campo input[type="date"] { min-height: 40px; }
@@ -1661,10 +1664,12 @@ body.sto-trascinando { cursor: grabbing; user-select: none; -webkit-user-select:
 .scad-badge.scad-ritardo { background: color-mix(in srgb, var(--critico) 16%, transparent); color: var(--critico); }
 .scad-badge.scad-oggi, .scad-badge.scad-vicina { background: color-mix(in srgb, var(--avviso) 20%, transparent); color: #7a5200; }
 :root[data-mode="dark"] .scad-badge.scad-oggi, :root[data-mode="dark"] .scad-badge.scad-vicina { color: var(--avviso); }
-.scad-set { position: relative; display: inline-flex; align-items: center; gap: 4px; height: 30px; padding: 0 9px; border-radius: 8px; border: 1px solid var(--bordo); color: var(--inchiostro-muto); cursor: pointer; font-size: 11.5px; font-weight: 650; }
-.scad-set:hover { border-color: color-mix(in srgb, var(--accento) 40%, var(--bordo-forte)); color: var(--accento); }
-.scad-set.attiva { color: var(--accento); border-color: color-mix(in srgb, var(--accento) 45%, transparent); }
-.scad-set input[type="date"] { position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; box-shadow: none; border: none; padding: 0; margin: 0; cursor: pointer; }
+/* separatore prima di un'azione distruttiva: il cestino non deve essere
+   attaccato ai pulsanti "normali", si sbaglia mira */
+.step-sep { flex: none; width: 1px; height: 20px; background: var(--griglia); margin: 0 2px; }
+.icona-pericolo:hover { color: var(--critico); border-color: color-mix(in srgb, var(--critico) 45%, var(--bordo-forte)); background: color-mix(in srgb, var(--critico) 8%, transparent); }
+@media (pointer: coarse) { .step-sep { margin: 0 5px; } }
+
 
 /* ---------- check-in: scala ancorata ---------- */
 

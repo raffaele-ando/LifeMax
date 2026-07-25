@@ -2751,6 +2751,40 @@
       });
     }
 
+    /* Quando fare UN passo: stessi tasti-giorno del menu, così non serve mai il
+       calendario del sistema (che partiva per sbaglio accanto al cestino). */
+    function apriQuandoPasso(prog, passo) {
+      var oggi = LM.todayKey();
+      var gia = LM.snapshot().azioni.find(function (a) { return !a.done && a.passoDi && a.passoDi.b === prog.id && a.passoDi.s === passo.id; });
+      function chip(k, et) { return '<button class="q-chip' + (gia && gia.data === k ? ' on' : '') + '" data-qp="' + k + '">' + et + '</button>'; }
+      var html = '<div class="bk-menu"><div class="bk-sez">' +
+        '<div class="bk-sez-tit">' + ICO('clock', 13) + ' Quando fare questo passo</div>' +
+        '<div class="q-chips">' + chip(oggi, 'Oggi') + chip(LM.addDays(oggi, 1), 'Domani') +
+        chip(LM.addDays(oggi, 2), etichettaGiorno(LM.addDays(oggi, 2)).split(' ')[0]) +
+        chip(LM.addDays(oggi, 7), 'Tra una settimana') + '</div>' +
+        '<div class="bk-menu-scad mt-s"><input type="date" id="qp-data" min="' + oggi + '" value="' + (gia ? gia.data : LM.addDays(oggi, 1)) + '" aria-label="Un altro giorno">' +
+        '<button class="btn btn-mini" id="qp-vai">Metti</button></div>' +
+        (gia ? '<button class="btn btn-mini btn-ghost mt-s" id="qp-togli">' + ICO('x', 13) + ' Togli dal giorno (' + esc(etichettaGiorno(gia.data).toLowerCase()) + ')</button>' : '') +
+        '<div class="bk-sez-nota">Comparirà tra le cose di quel giorno, in <b>La giornata</b>.</div>' +
+        '</div></div>';
+      apriSheet(passo.testo, html, function (root) {
+        function metti(k) {
+          if (!k) return;
+          LM.pianificaPasso(prog.id, passo.id, k);
+          toast('Passo messo ' + etichettaGiorno(k).toLowerCase() + '.', 0, 'calendar');
+          chiudiSheet(); aggiornaNav(); ridisegna();
+        }
+        root.querySelectorAll('[data-qp]').forEach(function (c) { c.addEventListener('click', function () { metti(c.getAttribute('data-qp')); }); });
+        root.querySelector('#qp-vai').addEventListener('click', function () { metti(root.querySelector('#qp-data').value); });
+        var tg = root.querySelector('#qp-togli');
+        if (tg) tg.addEventListener('click', function () {
+          LM.azioneInBacklog(gia.id);
+          toast('Passo tolto dal giorno.', 0, 'lista');
+          chiudiSheet(); aggiornaNav(); ridisegna();
+        });
+      });
+    }
+
     /* Da cosa-da-fare a abitudine: si scelgono i giorni e (se serve) l'ora. */
     function apriDaAbitudine(b) {
       var html = '<div class="bk-menu">' +
@@ -2801,9 +2835,11 @@
               '<button class="spunta-mini" data-steptoggle="' + b.id + '|' + st.id + '" aria-label="Segna passo">' + ICO('check', 12) + '</button>' +
               '<span class="step-testo">' + esc(st.testo) + '</span>' +
               (inAg ? '<button class="step-quando" data-steppulisci="' + inAg.id + '" title="Togli dal giorno">' + ICO('calendar', 10) + ' ' + esc(etichettaGiorno(inAg.data).toLowerCase()) + ' ' + ICO('x', 9) + '</button>' : '') +
-              (st.done ? '' : '<label class="scad-set" title="Mettilo in un giorno">' + ICO('calendar', 13) +
-                '<input type="date" data-stepdata="' + b.id + '|' + st.id + '" min="' + LM.todayKey() + '"' + (inAg ? ' value="' + inAg.data + '"' : '') + '></label>') +
-              '<button class="icona-btn" data-stepdel="' + b.id + '|' + st.id + '" title="Rimuovi passo" aria-label="Rimuovi passo">' + ICO('trash', 13) + '</button></div>';
+              (st.done ? '' : '<button class="icona-btn" data-stepquando="' + b.id + '|' + st.id + '" title="Mettilo in un giorno" aria-label="Mettilo in un giorno">' + ICO('calendar', 13) + '</button>') +
+              /* il cestino sta staccato dagli altri: prima era attaccato a un
+                 campo data invisibile e si finiva per aprire il calendario */
+              '<span class="step-sep"></span>' +
+              '<button class="icona-btn icona-pericolo" data-stepdel="' + b.id + '|' + st.id + '" title="Rimuovi passo" aria-label="Rimuovi passo">' + ICO('trash', 13) + '</button></div>';
           }).join('') +
           '<form class="step-add" data-stepadd="' + b.id + '"><input type="text" placeholder="Aggiungi un passo…" aria-label="Aggiungi un passo"><button class="btn btn-mini" type="submit" aria-label="Aggiungi un passo">' + ICO('plus', 12) + '</button></form>' +
           '</div>';
@@ -2901,13 +2937,12 @@
           aggiornaNav(); ridisegna();
         });
       });
-      scope.querySelectorAll('[data-stepdata]').forEach(function (inp) {
-        inp.addEventListener('change', function () {
-          var pz = inp.getAttribute('data-stepdata').split('|');
-          if (!inp.value) return;
-          var az = LM.pianificaPasso(pz[0], pz[1], inp.value);
-          toast(az ? 'Passo messo ' + etichettaGiorno(inp.value).toLowerCase() + '.' : 'Non riesco a metterlo in agenda.', 0, 'calendar');
-          aggiornaNav(); ridisegna();
+      scope.querySelectorAll('[data-stepquando]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var pz = btn.getAttribute('data-stepquando').split('|');
+          var prog = LM.load().backlog.find(function (x) { return x.id === pz[0]; });
+          var passo = prog && (prog.steps || []).find(function (x) { return x.id === pz[1]; });
+          if (passo) apriQuandoPasso(prog, passo);
         });
       });
       scope.querySelectorAll('[data-stepdel]').forEach(function (b) {
