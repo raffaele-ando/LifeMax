@@ -648,9 +648,24 @@
     render();
   }
 
+  /* "fuocoScelto": quando l'utente decide di fare un'altra cosa invece di
+     quella suggerita dal piano, la fissa lui e resta finché non la finisce o
+     torna al piano. "mostraAltre": la lista delle altre cose di oggi, a vista. */
+  var fuocoScelto = null;
+  var mostraAltre = false;
+  var ultimoFuocoKey = '';
+
   function vistaFocus() {
-    var adesso = LM.azioneAdesso();
+    var adesso;
+    if (fuocoScelto) {
+      var pin = LM.azioniDiOggi().find(function (a) { return a.id === fuocoScelto && !a.done; });
+      if (pin) adesso = { azione: pin, stato: 'scelta', min: pin.ora ? minOf(pin.ora) : null, fine: null };
+      else { fuocoScelto = null; adesso = LM.azioneAdesso(); }
+    } else {
+      adesso = LM.azioneAdesso();
+    }
     var prossima = adesso.azione;
+    ultimoFuocoKey = fuocoScelto ? 'pin:' + fuocoScelto : (prossima ? prossima.id : '') + '|' + adesso.stato;
     var oggi = LM.azioniDiOggi();
     var fatte = oggi.filter(function (a) { return a.done; }).length;
     var inCoda = oggi.filter(function (a) { return !a.done; }).length - (prossima ? 1 : 0);
@@ -698,11 +713,34 @@
     /* l'occhiello dice PERCHÉ è questa la cosa adesso, legando Oggi al piano
        de La Giornata: in corso / in ritardo / in programma / (libera → MIT). */
     var eyebrow, eyebrowCls = '';
-    if (adesso.stato === 'corso') { eyebrow = ICO('clock', 15) + ' Adesso nel piano · ' + fmtMin(adesso.min) + '–' + fmtMin(adesso.fine); eyebrowCls = ' ora'; }
+    if (adesso.stato === 'scelta') { eyebrow = ICO('target', 15) + ' Scelta da te' + (adesso.min != null ? ' · in programma alle ' + fmtMin(adesso.min) : '') + ' <button class="focus-torna" id="btn-torna-piano">torna al piano</button>'; eyebrowCls = ' ora'; }
+    else if (adesso.stato === 'corso') { eyebrow = ICO('clock', 15) + ' Adesso nel piano · ' + fmtMin(adesso.min) + '–' + fmtMin(adesso.fine); eyebrowCls = ' ora'; }
     else if (adesso.stato === 'ritardo') { eyebrow = ICO('clock', 15) + ' Era in programma alle ' + fmtMin(adesso.min) + ' — riprendila'; eyebrowCls = ' ritardo'; }
     else if (adesso.stato === 'programmata') { eyebrow = ICO('clock', 15) + ' In programma alle ' + fmtMin(adesso.min); eyebrowCls = ' ora'; }
     else if (prossima.mit) { eyebrow = ICO('star', 15) + ' L’azione più importante di oggi'; eyebrowCls = ' mit'; }
     else { eyebrow = ICO('target', 15) + ' La tua prossima azione'; }
+
+    /* Le ALTRE cose di oggi, a portata di mano: se devi fare qualcos'altro la
+       vedi e la scegli, senza sentirti obbligato da quella suggerita. */
+    var altre = oggi.filter(function (a) { return !a.done && (!prossima || a.id !== prossima.id); });
+    var altreHtml = '';
+    if (altre.length) {
+      altreHtml = '<div class="focus-altre">' +
+        '<button class="focus-altre-toggle" id="btn-altre" aria-expanded="' + mostraAltre + '">' +
+        (mostraAltre ? 'Nascondi le altre' : 'Devi fare altro? Scegli tra le altre') + ' <b>' + altre.length + '</b>' +
+        '<span class="bk-chevron' + (mostraAltre ? ' aperta' : '') + '">' + ICO('chevronGiu', 15) + '</span></button>' +
+        (mostraAltre ? '<div class="focus-altre-lista">' + altre.map(function (a) {
+          var ar = areaById(a.areaId), col = LM.coloreArea(ar);
+          return '<div class="fa-riga" style="--c-area:' + col + '">' +
+            '<button class="tl-check" data-fa-fatto="' + a.id + '" aria-label="Fatto">' + ICO('check', 12) + '</button>' +
+            '<button class="fa-corpo" data-fa-fuoco="' + a.id + '">' +
+            '<span class="tl-tag" style="color:' + col + '">' + ICO(ar.icona, 13) + '</span>' +
+            '<span class="fa-testo">' + esc(a.testo) + (a.mit ? ' ' + ICO('star', 9) : '') + '</span>' +
+            (a.ora ? '<span class="fa-ora">' + ICO('clock', 10) + ' ' + a.ora + '</span>' : '') +
+            '<span class="fa-fai">Fai questa ' + ICO('arrowRight', 12) + '</span></button></div>';
+        }).join('') + '</div>' : '') + '</div>';
+    }
+
     html += '<div class="focus-scena' + (timerAttivo ? ' timer-attivo' : '') + '">' +
       '<div class="focus-eyebrow' + eyebrowCls + '">' + eyebrow + '</div>' +
       (timerAttivo
@@ -733,10 +771,25 @@
         ? '<span class="pila-coda">' + '<i></i>'.repeat(Math.min(3, inCoda)) + '</span> Dopo questa hai ancora <b>' + inCoda + '</b> ' + (inCoda === 1 ? 'azione' : 'azioni') + ', una alla volta.'
         : 'È l’ultima azione della giornata.') +
       '<span>·</span><span>Ti è venuto in mente qualcosa? Premi <kbd>C</kbd> per annotarlo senza perdere il filo.</span></div>' +
+      altreHtml +
       '</div>';
 
     $vista.innerHTML = html;
     montaOggiGiornata();
+
+    var btnAltre = document.getElementById('btn-altre');
+    if (btnAltre) btnAltre.addEventListener('click', function () { mostraAltre = !mostraAltre; vistaFocus(); });
+    var btnTorna = document.getElementById('btn-torna-piano');
+    if (btnTorna) btnTorna.addEventListener('click', function () { fuocoScelto = null; render(); });
+    $vista.querySelectorAll('[data-fa-fuoco]').forEach(function (b) {
+      b.addEventListener('click', function () { fuocoScelto = b.getAttribute('data-fa-fuoco'); mostraAltre = false; render(); });
+    });
+    $vista.querySelectorAll('[data-fa-fatto]').forEach(function (b) {
+      b.addEventListener('click', function (ev) {
+        feedbackSpunta(ev, LM.completaAzione(b.getAttribute('data-fa-fatto')), 'Fatto.', 'check');
+        render();
+      });
+    });
 
     document.getElementById('btn-fatto').addEventListener('click', function (ev) {
       var eraTimer = timer.azioneId === prossima.id;
@@ -750,6 +803,7 @@
     });
     document.getElementById('btn-nonora').addEventListener('click', function () {
       fermaTimer(false);
+      if (fuocoScelto === prossima.id) fuocoScelto = null;
       LM.rimandaAzione(prossima.id);
       toast('Va bene, la rivedrai più tardi.', 0, 'arrowRight');
       render();
@@ -906,9 +960,31 @@
     }).join('');
     var now = '';
     if (opts.nowMin != null) { var nm = em(opts.nowMin); if (nm >= gs && nm <= ge) now = '<div class="tl-now-line" style="top:' + y(nm) + 'px"><span>' + fmtMin(opts.nowMin) + '</span></div>'; }
-    return '<div class="tl-grid' + (opts.mini ? ' tl-grid-mini' : '') + (opts.rail === false ? ' tl-grid-norail' : '') + '" style="height:' + H + 'px">' +
+    /* geometria salvata sull'elemento: permette di muovere la linea "adesso"
+       in tempo reale senza ridisegnare tutta la griglia. */
+    return '<div class="tl-grid' + (opts.mini ? ' tl-grid-mini' : '') + (opts.rail === false ? ' tl-grid-norail' : '') + '" style="height:' + H + 'px"' +
+      ' data-gs="' + gs + '" data-ge="' + ge + '" data-pxh="' + pxh + '" data-wake="' + wake + '" data-bed="' + bed + '">' +
       '<div class="tl-lines">' + lines + '</div>' +
       '<div class="tl-blocks">' + shade + blocks + now + '</div></div>';
+  }
+  /* muove la linea "adesso" nella griglia del giorno visibile (La Giornata) */
+  function aggiornaLineaGriglia() {
+    var grid = document.querySelector('#orizz-corpo .tl-grid');
+    if (!grid) return;
+    var gs = +grid.getAttribute('data-gs'), ge = +grid.getAttribute('data-ge'), pxh = +grid.getAttribute('data-pxh');
+    var wake = +grid.getAttribute('data-wake'), bed = +grid.getAttribute('data-bed');
+    if (isNaN(gs) || isNaN(pxh)) return;
+    var nn = new Date(); var now = nn.getHours() * 60 + nn.getMinutes();
+    var nm = (bed > 1440 && now < wake) ? now + 1440 : now;
+    var line = grid.querySelector('.tl-now-line');
+    if (nm < gs || nm > ge) { if (line) line.remove(); return; }
+    var top = (nm - gs) / 60 * pxh;
+    if (!line) {
+      line = document.createElement('div'); line.className = 'tl-now-line';
+      line.innerHTML = '<span></span>'; grid.querySelector('.tl-blocks').appendChild(line);
+    }
+    line.style.top = top + 'px';
+    line.querySelector('span').textContent = fmtMin(now);
   }
 
   /* Pannellino per modificare UNA cosa della giornata (azione o abitudine):
@@ -2837,6 +2913,26 @@
 
   /* chrome statico */
   document.getElementById('logo-blocco').innerHTML = LOGO(30) + ' LifeMax <span class="logo-tag">Beta</span>';
+
+  /* OROLOGIO VIVO: ogni 15s aggiorna la barra della giornata e la linea
+     "adesso", così vedi che ora è e in che punto del piano sei senza dover
+     ricaricare. Se cambia la cosa da fare in questo momento (e non l'hai
+     scelta tu), la schermata Oggi si aggiorna da sola. */
+  setInterval(function () {
+    var ob = document.getElementById('onboarding-root');
+    if (ob && ob.innerHTML) return;
+    var v = vistaCorrente();
+    if (v === 'oggi') {
+      montaOggiGiornata(); // la barra si muove sempre
+      var occupato = staDigitando() || !$sheet.hidden || timer.fine || fuocoScelto;
+      if (occupato) return;
+      var a = LM.azioneAdesso();
+      var key = (a.azione ? a.azione.id : '') + '|' + a.stato;
+      if (key !== ultimoFuocoKey) render(); // la cosa da fare adesso è cambiata
+    } else if (v === 'giornata') {
+      if ($sheet.hidden && !staDigitando()) aggiornaLineaGriglia();
+    }
+  }, 15000);
 
   applicaTema();
   render();

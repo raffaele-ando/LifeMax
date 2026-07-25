@@ -541,6 +541,23 @@ label.campo { display: block; font-size: 12px; font-weight: 700; letter-spacing:
   font-size: 12.5px; color: var(--inchiostro-muto); flex-wrap: wrap; justify-content: center;
 }
 .focus-coda b { color: var(--inchiostro-2); }
+
+/* "torna al piano" nell'occhiello quando hai scelto tu la cosa da fare */
+.focus-torna { font: inherit; font-size: 11px; font-weight: 700; text-transform: none; letter-spacing: 0; color: var(--inchiostro-muto); background: none; border: none; border-bottom: 1px dotted currentColor; cursor: pointer; padding: 0 0 1px; margin-left: 6px; }
+.focus-torna:hover { color: var(--accento-testo); }
+
+/* "le altre cose di oggi": nascoste di default, a portata quando servono */
+.focus-altre { width: 100%; max-width: 560px; margin: 6px auto 0; }
+.focus-altre-toggle { display: inline-flex; align-items: center; gap: 7px; margin: 0 auto; padding: 7px 14px; font-size: 12.5px; font-weight: 650; color: var(--inchiostro-2); background: var(--superficie-2); border: 1px solid var(--bordo); border-radius: 99px; cursor: pointer; }
+.focus-altre-toggle:hover { border-color: var(--bordo-forte); }
+.focus-altre-toggle b { color: var(--accento-testo); }
+.focus-altre-lista { display: flex; flex-direction: column; gap: 7px; margin-top: 12px; text-align: left; }
+.fa-riga { display: flex; align-items: center; gap: 9px; }
+.fa-corpo { flex: 1; min-width: 0; display: flex; align-items: center; gap: 9px; padding: 9px 12px; border-radius: var(--raggio-s); border: 1px solid var(--bordo); border-left: 3px solid var(--c-area); background: color-mix(in srgb, var(--c-area) 6%, var(--superficie-1)); cursor: pointer; text-align: left; transition: all var(--t-veloce); }
+.fa-corpo:hover { border-color: color-mix(in srgb, var(--c-area) 45%, var(--bordo-forte)); background: color-mix(in srgb, var(--c-area) 12%, var(--superficie-1)); }
+.fa-testo { flex: 1; min-width: 0; font-size: 13.5px; font-weight: 550; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fa-ora { flex: none; display: inline-flex; align-items: center; gap: 3px; font-size: 11px; font-weight: 700; color: var(--inchiostro-muto); font-variant-numeric: tabular-nums; }
+.fa-fai { flex: none; display: inline-flex; align-items: center; gap: 3px; font-size: 11px; font-weight: 700; color: var(--accento-testo); }
 .pila-coda { display: inline-flex; margin-right: 2px; }
 .pila-coda i {
   width: 16px; height: 20px; border-radius: 4px;
