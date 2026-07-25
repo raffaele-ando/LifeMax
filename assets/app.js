@@ -637,12 +637,18 @@
   function bandaDemo() {
     var s = LM.load();
     var banda = document.getElementById('banda-demo');
-    if (!s.demo || s.demoChiusa) { banda.innerHTML = ''; return; }
+    /* l'altezza della banda finisce in una variabile CSS: serve a far stare la
+       pagina "Oggi" esattamente in una schermata, senza scorrimento inutile */
+    function misura() {
+      document.documentElement.style.setProperty('--banda-h', (banda.offsetHeight || 0) + 'px');
+    }
+    if (!s.demo || s.demoChiusa) { banda.innerHTML = ''; misura(); return; }
     banda.innerHTML = '<div class="banda-demo"><span>' + ICO('sparkles', 13) +
       ' Stai esplorando <b>dati di esempio</b>: modifica pure, tutto resta salvato.</span>' +
       '<button class="banda-x" id="banda-x" aria-label="Nascondi">' + ICO('x', 14) + '</button></div>';
+    misura();
     document.getElementById('banda-x').addEventListener('click', function () {
-      LM.load().demoChiusa = true; LM.save(); banda.innerHTML = '';
+      LM.load().demoChiusa = true; LM.save(); banda.innerHTML = ''; misura();
     });
   }
 
@@ -3255,6 +3261,7 @@
     else if (v === 'inbox') vistaInbox();
     else if (v === 'esperimenti') vistaEsperimenti();
     else if (v === 'scienza') vistaScienza();
+    $vista.classList.toggle('vista-oggi', v === 'oggi');
     vistaMostrata = v;
     if (cambioPagina) { animaIngresso($vista); window.scrollTo(0, 0); }
     else if (scrollPrima) window.scrollTo(0, scrollPrima);

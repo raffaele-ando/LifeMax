@@ -189,10 +189,14 @@ small { color: var(--inchiostro-2); }
 
 /* ---------- layout ---------- */
 
-.app { display: grid; grid-template-columns: 248px 1fr; min-height: 100vh; position: relative; z-index: 1; }
+/* la banda in cima spinge giù il guscio: se non la si scala, ogni pagina
+   sborda esattamente dell'altezza della banda (scorrimento inutile) */
+.app { display: grid; grid-template-columns: 248px 1fr; min-height: calc(100dvh - var(--banda-h, 0px)); position: relative; z-index: 1; }
 
 .sidebar {
-  position: sticky; top: 0; height: 100vh; height: 100dvh;
+  /* alta quanto lo spazio davvero disponibile: con la banda in cima, 100dvh
+     la farebbe sbordare (e con lei tutta la pagina) */
+  position: sticky; top: 0; height: calc(100dvh - var(--banda-h, 0px));
   padding: 22px 14px 16px;
   display: flex; flex-direction: column; gap: 3px;
   background: var(--vetro);
@@ -480,6 +484,15 @@ label.campo { display: block; font-size: 12px; font-weight: 700; letter-spacing:
   min-height: min(calc(100dvh - 220px), 600px);
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   text-align: center; gap: 20px; padding: 22px 0;
+}
+/* "Oggi" è una schermata sola: una cosa alla volta, niente da scorrere.
+   La scena occupa lo spazio che resta (togliendo topbar, barra della giornata,
+   margini della pagina e l'eventuale banda in cima) invece di imporre 600px
+   fissi, che facevano sbordare la pagina di 75-190px senza motivo. */
+.vista-oggi { display: flex; flex-direction: column; min-height: calc(100dvh - 130px - var(--banda-h, 0px)); }
+.vista-oggi .focus-scena { flex: 1 1 auto; min-height: 0; padding: 10px 0; }
+@media (max-width: 860px) {
+  .vista-oggi { min-height: calc(100dvh - 140px - var(--banda-h, 0px)); }
 }
 .focus-eyebrow {
   display: inline-flex; align-items: center; gap: 8px;
