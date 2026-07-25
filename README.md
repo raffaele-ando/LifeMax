@@ -37,7 +37,10 @@ zero categorie, le decisioni si prendono dopo.
 
 Il vocabolario è volutamente ridotto a tre parole — **butta giù → decidi → fai** —
 ripetute uguali ovunque, così non ci sono nomi diversi per la stessa cosa (scelta di
-progettazione per ridurre il carico su chi ha ADHD/bassa coscienziosità).
+progettazione per ridurre il carico su chi ha ADHD/bassa coscienziosità). «Le azioni di
+oggi» hanno lo stesso nome in tutti e tre i punti in cui compaiono, con ruoli chiari: le
+**scegli** in *Rituali → Mattina*, le **fai** una alla volta in *Oggi*, le **rivedi** in
+*Panoramica*.
 
 **📋 Attività** è organizzata in **quattro schede** (una alla volta, così la pagina
 resta corta anche con decine di voci): **Da sistemare** (le catture da smistare in
@@ -63,13 +66,14 @@ precisa come segmenti che occupano il tempo, quelle a un **solo orario** come pu
 **pasti** come tacche, le abitudini col contorno — con una piccola legenda dei conteggi;
 toccandola si apre un **pop-up leggero** (solo la griglia della giornata, che si adatta
 all'altezza dello schermo così non si scorre, con le spunte e un tasto «Gestisci la
-giornata»). La **pagina *Giornata*** ha invece la **gestione completa**: la griglia,
-l'editor sempre aperto di **orari e durate**, l'**aggiunta rapida** di cose a oggi e un
-**registro di sonno e pasti del singolo giorno** — a letto/sveglia con le **ore di sonno**
-calcolate, e ogni **pasto** modificabile uno per uno (nome, ora, durata). Vale per quel
-giorno e resta come storico; il ritmo di base per gli altri giorni si cambia da
-*Impostazioni → Sonno e pasti*. La pagina ha poi quattro **orizzonti** — **Giorno**,
-**Settimana** (7 colonne a blocchi), **Mese** e
+giornata»). La **pagina *Giornata*** ha invece la **gestione completa**: in cima, un
+unico pannello **Sonno e pasti** (riassunto sempre visibile, si apre per modificare) —
+a letto/sveglia con le **ore di sonno** calcolate e ogni **pasto** uno per uno (nome,
+ora, durata); vale per quel giorno e resta come registro, mentre il ritmo di base per
+gli altri giorni si cambia da lì con «Cambia il ritmo di base» (o da *Impostazioni*).
+Sotto: la griglia, l'editor sempre aperto di **orari e durate** e l'**aggiunta rapida**
+di cose a oggi. La pagina ha poi quattro **orizzonti** — **Giorno**,
+**Settimana** (7 colonne a blocchi, testo a più righe invece che troncato), **Mese** e
 **Anno**. Il **Mese** è un calendario «a calore»: lo sfondo di ogni giorno si accende con
 quanto è stato pieno e dei mattoncini colorati mostrano le cose fatte per area (i giorni
 futuri sono tratteggiati). Da settimana e mese si apre il singolo giorno con un tocco.

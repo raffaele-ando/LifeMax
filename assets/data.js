@@ -827,6 +827,8 @@ var LM = (function () {
     var k = quando || todayKey();
     if (!s.minuti[k]) s.minuti[k] = {};
     s.minuti[k][areaId] = (s.minuti[k][areaId] || 0) + minuti;
+    var ar = s.aree.find(function (x) { return x.id === areaId; });
+    registra('focus', 'Timer: ' + minuti + ' min su ' + (ar ? ar.nome : areaId), true);
     save();
   }
 

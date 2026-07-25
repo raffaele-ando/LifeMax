@@ -1340,7 +1340,11 @@ kbd {
 .wk-untimed { display: inline-block; margin-top: 1px; font-size: 9.5px; font-weight: 700; color: var(--accento); }
 .wk-scad { text-align: center; font-size: 10px; font-weight: 700; color: var(--avviso); display: flex; align-items: center; justify-content: center; gap: 3px; padding-bottom: 2px; }
 .wk-col .tl-grid { margin-top: 0; }
-.wk-col .tl-blk { box-shadow: none; padding: 1px 5px; }
+.wk-col .tl-blk { box-shadow: none; padding: 2px 5px; }
+/* nella settimana il testo va a capo (fino a 2 righe) invece di essere
+   tagliato di brutto; il blocco più alto ospita più righe */
+.tl-grid-mini .tl-blk-t { white-space: normal; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; line-clamp: 3; overflow: hidden; font-size: 10px; line-height: 1.12; font-weight: 600; }
+.tl-grid-mini .tl-blk { align-items: stretch; }
 
 /* mese: calendario a "calore" + mattoncini per area */
 .me-dow { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; margin-bottom: 6px; }
@@ -1407,6 +1411,14 @@ kbd {
 .ritmo-pasto .ritmo-nome { flex: 1 1 120px; min-width: 0; }
 .ritmo-pasto .ritmo-ora { flex: none; width: 104px; }
 .ritmo-pasto .ritmo-dur { flex: none; width: 96px; }
+
+/* sonno e pasti in cima alla pagina Giornata (un solo posto) */
+.gio-sonno { margin: 6px 0 12px; border: 1px solid var(--bordo); border-radius: var(--raggio-s); background: var(--superficie-2); overflow: hidden; }
+.gio-sonno-testa { display: flex; align-items: center; gap: 10px; width: 100%; padding: 10px 12px; background: none; border: none; cursor: pointer; text-align: left; }
+.gs-riass { flex: 1; min-width: 0; font-size: 12.5px; color: var(--inchiostro-2); display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+.gs-riass b { color: var(--inchiostro-1); font-variant-numeric: tabular-nums; }
+.gs-riass .ico { vertical-align: -2px; color: var(--inchiostro-muto); }
+.gio-sonno-corpo { padding: 4px 12px 13px; }
 
 /* sonno e pasti del giorno (registro) sulla pagina Giornata */
 .tl-sonno-sez { margin-top: 14px; padding-top: 13px; border-top: 1px solid var(--griglia); }

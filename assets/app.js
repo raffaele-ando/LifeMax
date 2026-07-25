@@ -793,6 +793,7 @@
   var giornataOrizzonte = 'giorno';
   var giornataAncora = null;
   var giornataEditorAperto = false;
+  var giornataSonnoAperto = false; // pannello sonno/pasti in cima alla pagina Giornata
   var giornataPopVista = 'vista'; // pop-up su schermo stretto: 'vista' | 'modifica'
 
   /* eventi di un giorno qualsiasi (per giorno/settimana/mese) */
@@ -923,9 +924,13 @@
         '<button class="btn btn-mini btn-primario" type="submit">' + ICO('plus', 14) + '</button></form>';
     }
 
-    /* sonno e pasti del singolo giorno (registro), modificabili uno per uno */
-    var sonnoPasti = '';
+    /* sonno e pasti del giorno: UN solo posto, in cima alla pagina, con un
+       riassunto sempre visibile e un pannello che si apre per modificarli. */
+    var sonnoTop = '';
     if (!compact && interactive) {
+      var aperto = giornataSonnoAperto;
+      var pastiIco = (d.pasti || []).slice(0, 5).map(function (p) { return ICO(/colaz|coffee/i.test((p.id || '') + p.nome) ? 'coffee' : 'utensils', 12); }).join(' ');
+      var riass = ICO('bed', 13) + ' <b>' + d.sonno + '</b>→<b>' + d.sveglia + '</b> · dormi ' + fmtOre(LM.minutiSonno(k)) + ' · ' + (pastiIco || '—') + ' ' + (d.pasti || []).length + ' pasti';
       var durOpt = function (v) { return DURATE.map(function (o) { return '<option value="' + o.v + '"' + ((v || '') === o.v ? ' selected' : '') + '>' + o.t + '</option>'; }).join(''); };
       var pastiRows = (d.pasti || []).map(function (p, i) {
         return '<div class="sp-riga" data-pi="' + i + '">' +
@@ -935,18 +940,21 @@
           '<select class="tl-dur" data-sp-dur="' + i + '" aria-label="Durata">' + durOpt(p.durata) + '</select>' +
           '<button class="icona-btn" data-sp-del="' + i + '" title="Rimuovi" aria-label="Rimuovi">' + ICO('trash', 13) + '</button></div>';
       }).join('');
-      sonnoPasti = '<div class="tl-sonno-sez">' +
-        '<div class="tl-ed-tit">' + ICO('bed', 13) + ' Sonno e pasti · ' + esc(etichettaGiorno(k).toLowerCase()) + (d.dalRegistro ? ' <span class="tl-ed-badge">registrato</span>' : '') + '</div>' +
-        '<div class="sp-sonno">' +
-        '<label class="sp-lab">' + ICO('bed', 13) + ' A letto</label><input type="time" class="tl-time" id="sp-aletto" value="' + d.sonno + '">' +
-        '<label class="sp-lab">' + ICO('sun', 13) + ' Sveglia</label><input type="time" class="tl-time" id="sp-sveglia" value="' + d.sveglia + '">' +
-        '<span class="sp-dorm">' + ICO('clock', 12) + ' dormi <b id="sp-dorm">' + fmtOre(LM.minutiSonno(k)) + '</b></span>' +
-        '</div>' +
-        '<div class="sp-pasti" id="sp-pasti">' + pastiRows + '</div>' +
-        '<div class="riga-flex mt-s"><button class="btn btn-mini" id="sp-add">' + ICO('plus', 13) + ' Aggiungi un pasto</button>' +
-        (d.dalRegistro ? '<button class="btn btn-mini btn-ghost" id="sp-reset">Torna al ritmo di base</button>' : '') + '</div>' +
-        '<div class="imp-nota" style="margin-top:8px">Vale per <b>questo giorno</b> e resta come registro. Il ritmo di base per gli altri giorni si cambia da <i>Impostazioni → Sonno e pasti</i>.</div>' +
-        '</div>';
+      sonnoTop = '<div class="gio-sonno">' +
+        '<button class="gio-sonno-testa" id="gio-sonno-toggle" aria-expanded="' + aperto + '"><span class="gs-riass">' + riass + (d.dalRegistro ? ' <span class="tl-ed-badge">registrato</span>' : '') + '</span>' +
+        '<span class="bk-chevron' + (aperto ? ' aperta' : '') + '">' + ICO('chevronGiu', 16) + '</span></button>' +
+        (aperto ? '<div class="gio-sonno-corpo">' +
+          '<div class="sp-sonno">' +
+          '<label class="sp-lab">' + ICO('bed', 13) + ' A letto</label><input type="time" class="tl-time" id="sp-aletto" value="' + d.sonno + '">' +
+          '<label class="sp-lab">' + ICO('sun', 13) + ' Sveglia</label><input type="time" class="tl-time" id="sp-sveglia" value="' + d.sveglia + '">' +
+          '<span class="sp-dorm">' + ICO('clock', 12) + ' dormi <b id="sp-dorm">' + fmtOre(LM.minutiSonno(k)) + '</b></span>' +
+          '</div>' +
+          '<div class="sp-pasti" id="sp-pasti">' + pastiRows + '</div>' +
+          '<div class="riga-flex mt-s"><button class="btn btn-mini" id="sp-add">' + ICO('plus', 13) + ' Aggiungi un pasto</button>' +
+          (d.dalRegistro ? '<button class="btn btn-mini btn-ghost" id="sp-reset">Torna al ritmo di base</button>' : '') +
+          '<button class="btn btn-mini btn-ghost" id="sp-base">' + ICO('sun', 13) + ' Cambia il ritmo di base</button></div>' +
+          '<div class="imp-nota" style="margin-top:8px">Vale per <b>questo giorno</b> e resta nel registro. Il ritmo di base (per gli altri giorni) si cambia da «Cambia il ritmo di base».</div>' +
+          '</div>' : '') + '</div>';
     }
 
     var trayRo = '';
@@ -959,12 +967,8 @@
     }
 
     var footer = '';
-    if (opts.controls !== false) {
-      footer = '<div class="tl-piede">' +
-        (compact
-          ? '<button class="btn btn-primario btn-mini" id="tl-apri-pagina">' + ICO('calendar', 14) + ' Gestisci la giornata ' + ICO('arrowRight', 13) + '</button>'
-          : '<button class="btn btn-mini" id="tl-edit-orari">' + ICO('clock', 13) + ' Sonno e pasti</button>') +
-        '</div>';
+    if (compact && opts.controls !== false) {
+      footer = '<div class="tl-piede"><button class="btn btn-primario btn-mini" id="tl-apri-pagina">' + ICO('calendar', 14) + ' Gestisci la giornata ' + ICO('arrowRight', 13) + '</button></div>';
     }
 
     /* pop-up: la griglia si adatta all'altezza disponibile, così NON si scrolla */
@@ -992,7 +996,7 @@
       var popNota = d.tray.length ? '<div class="tl-pop-note">' + ICO('clock', 12) + ' ' + d.tray.length + (d.tray.length === 1 ? ' cosa senza orario' : ' cose senza orario') + ' — assegnale un orario in <b>Giornata</b>.</div>' : '';
       container.innerHTML = '<div class="card giornata giornata-pop">' + head + '<div id="tl-grid-host">' + gridHtml + '</div>' + popNota + footer + '</div>';
     } else {
-      container.innerHTML = '<div class="card giornata">' + head + '<div id="tl-grid-host">' + gridHtml + '</div>' + editor + quickAdd + sonnoPasti + trayRo + footer + '</div>';
+      container.innerHTML = '<div class="card giornata">' + head + sonnoTop + '<div id="tl-grid-host">' + gridHtml + '</div>' + editor + quickAdd + trayRo + footer + '</div>';
     }
 
     var af = container.querySelector('#tl-add');
@@ -1070,6 +1074,10 @@
       if (spAdd) spAdd.addEventListener('click', function () { var arr = leggiPasti(); arr.push({ id: 'p' + Date.now().toString(36), nome: 'Pasto', ora: '', durata: 30 }); LM.setRitmoGiorno(k, { pasti: arr }); montaGiornata(container, opts); });
       var spReset = container.querySelector('#sp-reset');
       if (spReset) spReset.addEventListener('click', function () { LM.azzeraRitmoGiorno(k); toast('Torna al ritmo di base.', 0, 'refresh'); montaGiornata(container, opts); });
+      var spBase = container.querySelector('#sp-base');
+      if (spBase) spBase.addEventListener('click', apriRitmo);
+      var gsT = container.querySelector('#gio-sonno-toggle');
+      if (gsT) gsT.addEventListener('click', function () { giornataSonnoAperto = !giornataSonnoAperto; montaGiornata(container, opts); });
     }
     var eo = container.querySelector('#tl-edit-orari');
     if (eo) eo.addEventListener('click', apriRitmo);
@@ -1419,7 +1427,7 @@
       ico = '<span class="diario-ico">' + ICO('calendar', 14) + '</span>';
       testo = 'Review della settimana' + (ev.imparato ? ' · <span class="diario-sec">' + esc(ev.imparato) + '</span>' : '');
     } else if (ev.tipo === 'registro') {
-      var icoCat = { azione: 'target', abitudine: 'refresh', backlog: 'lista', inbox: 'inbox', area: 'sparkles', giornata: 'clock', impostazioni: 'sun', dati: 'save' };
+      var icoCat = { azione: 'target', abitudine: 'refresh', backlog: 'lista', inbox: 'inbox', area: 'sparkles', giornata: 'clock', focus: 'clock', impostazioni: 'sun', dati: 'save' };
       ico = '<span class="diario-ico' + (ev.imp ? '' : ' minore') + '">' + ICO(icoCat[ev.cat] || 'bolt', 13) + '</span>';
       testo = '<span class="diario-log">' + esc(ev.testo) + '</span>';
       cls = ev.imp ? '' : ' minore';
@@ -1461,7 +1469,7 @@
       chip('check', '<b>' + fatte + '/' + oggi.length + '</b> azioni oggi') +
       chip('bolt', '<b>' + checkinOggi + '</b> check-in oggi') +
       '</div></div>' +
-      '<button class="btn btn-primario eroe2-cta" data-vai="oggi">' + ICO('target', 16) + ' Prossima azione</button>' +
+      '<button class="btn btn-primario eroe2-cta" data-vai="oggi">' + ICO('target', 16) + ' Vai a Oggi</button>' +
       '</div>';
 
     /* schede interne: si vede una sezione per volta */
@@ -1502,10 +1510,10 @@
     /* --- Riepilogo: azioni di oggi + costanza --- */
     function sezRiepilogo(c) {
       c.innerHTML = '<div class="griglia griglia-2">' +
-        '<div class="card" style="--i:0"><h2>' + ICO('target', 16) + ' Azioni di oggi</h2>' +
-        '<div class="sotto">La prima è la più importante. Le altre vengono dopo.</div>' +
+        '<div class="card" style="--i:0"><h2>' + ICO('target', 16) + ' Le azioni di oggi</h2>' +
+        '<div class="sotto">Le scegli la mattina in <a href="#/rituali">Rituali</a>, le fai una alla volta in <a href="#/oggi">Oggi</a>. Qui le vedi tutte insieme.</div>' +
         '<div class="lista-azioni" id="lista-oggi"></div>' +
-        '<form id="form-add" class="riga-flex mt-s"><input type="text" id="testo-add" placeholder="Aggiungi una cosa per oggi…" style="flex:1;min-width:150px">' +
+        '<form id="form-add" class="riga-flex mt-s"><input type="text" id="testo-add" placeholder="Aggiungi un’altra cosa a oggi…" style="flex:1;min-width:150px">' +
         '<span style="width:132px">' + selectAree('area-add') + '</span>' +
         '<button class="btn btn-mini btn-primario" type="submit">' + ICO('plus', 14) + '</button></form></div>' +
         '<div class="card" style="--i:1"><h2>' + ICO('trendUp', 16) + ' Costanza</h2>' +
@@ -1674,7 +1682,7 @@
 
     corpo.innerHTML = '<div class="card">' +
       testaRituale('sun', 'Le azioni di oggi',
-        'Scegli al massimo <b>tre cose</b> da fare oggi. La prima è la più importante: se fai solo quella, la giornata è già a posto. Domani si riparte da capo.') +
+        'Qui le <b>scegli</b> (poi le fai in <i>Oggi</i>): al massimo <b>tre cose</b>. La prima è la più importante: se fai solo quella, la giornata è già a posto. Domani si riparte da capo.') +
       '<div class="lista-azioni" id="piano-lista"></div>' +
       (oggi.length < 3
         ? '<form id="form-piano" class="mt-s"><div class="riga-flex">' +
