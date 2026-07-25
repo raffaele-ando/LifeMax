@@ -193,12 +193,45 @@ var LM = (function () {
     s.profilo.ritmo.pasti.forEach(function (p) { if (p.durata == null) p.durata = 30; });
     if (!s.ritmoGiorno || typeof s.ritmoGiorno !== 'object') s.ritmoGiorno = {};
     if (!Array.isArray(s.registro)) s.registro = [];
+    /* ripara stati vecchi con più di una priorità nello stesso giorno:
+       ne tiene una sola (la prima), com'è l'invariante ora. */
+    if (Array.isArray(s.azioni)) {
+      var mitVisti = {};
+      s.azioni.forEach(function (a) {
+        if (!a.mit) return;
+        if (mitVisti[a.data]) a.mit = false; else mitVisti[a.data] = true;
+      });
+    }
     return s;
   }
 
+  /* Se il salvataggio locale fallisce (spazio esaurito, navigazione privata)
+     NON restiamo zitti: perdere dati senza accorgersene è il guaio peggiore
+     per un'app che serve a misurare. Avvisiamo una volta e proviamo a fare
+     spazio buttando le voci più vecchie del registro. */
+  var salvataggioRotto = false;
   function save() {
     if (state) state.updatedAt = Date.now();
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) { /* quota: il prototipo resta in RAM */ }
+    var ok = true;
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    } catch (e) {
+      ok = false;
+      /* secondo tentativo: registro ridotto (è la parte più voluminosa e meno
+         essenziale — le azioni, le abitudini e le misure restano intatte) */
+      try {
+        if (Array.isArray(state.registro) && state.registro.length > 100) {
+          state.registro = state.registro.slice(-100);
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+          ok = true;
+        }
+      } catch (e2) { /* niente da fare: i dati restano in memoria */ }
+    }
+    if (!ok && !salvataggioRotto) {
+      salvataggioRotto = true;
+      document.dispatchEvent(new CustomEvent('lm:errore-salvataggio'));
+    }
+    if (ok) salvataggioRotto = false;
     document.dispatchEvent(new CustomEvent('lm:change'));
   }
 
@@ -324,9 +357,19 @@ var LM = (function () {
     if (s.registro.length > 800) s.registro = s.registro.slice(-800);
   }
 
+  /* La priorità del giorno (MIT) è UNA sola: "se fai solo quella, la giornata
+     è a posto". Serve una nuova MIT solo se il giorno non ne ha ancora
+     nessuna — anche già completata, altrimenti finire la priorità e
+     aggiungere un'altra cosa creerebbe una seconda priorità (e XP gonfiati). */
+  function serveMit(k) {
+    k = k || todayKey();
+    return !load().azioni.some(function (a) { return a.data === k && a.mit; });
+  }
+
   function aggiungiAzione(testo, areaId, opts) {
     var s = load();
     opts = opts || {};
+    var data = opts.data || todayKey();
     var a = {
       id: uid(),
       areaId: areaId || 'altro',
@@ -334,13 +377,15 @@ var LM = (function () {
       ifThen: opts.ifThen || '',
       mit: !!opts.mit,
       done: false,
-      data: opts.data || todayKey(),
+      data: data,
       doneAt: null,
       creata: Date.now(),
       ora: opts.ora || null,          // 'HH:MM' se ha un orario nella giornata
       durata: opts.durata || null,    // minuti che occupa (per i blocchi della timeline)
       passoDi: opts.passoDi || null   // {b: idProgetto, s: idPasso} se nasce da un progetto
     };
+    /* invariante: una sola MIT per giorno */
+    if (a.mit) s.azioni.forEach(function (x) { if (x.data === data) x.mit = false; });
     s.azioni.push(a);
     if (!opts.interna) registra('azione', 'Aggiunta a oggi «' + testo + '»', false);
     save();
@@ -437,6 +482,12 @@ var LM = (function () {
     var i = s.azioni.findIndex(function (x) { return x.id === id; });
     if (i < 0) return;
     var a = s.azioni.splice(i, 1)[0];
+    /* se era la priorità, il giorno non deve restare senza: promuovi la
+       prima cosa ancora da fare, così resta chiaro da dove ripartire. */
+    if (a.mit) {
+      var next = s.azioni.find(function (x) { return x.data === a.data && !x.done; });
+      if (next) next.mit = true;
+    }
     registra('azione', 'Rimossa da oggi «' + a.testo + '»', true);
     save();
   }
@@ -562,7 +613,7 @@ var LM = (function () {
     var i = s.backlog.findIndex(function (x) { return x.id === id; });
     if (i < 0) return null;
     var b = s.backlog.splice(i, 1)[0];
-    var mit = azioniDiOggi().filter(function (a) { return !a.done; }).length === 0;
+    var mit = serveMit();
     var a = aggiungiAzione(b.testo, b.areaId, { mit: mit, interna: true });
     registra('azione', 'Portata in Oggi: «' + b.testo + '»', true);
     save();
@@ -622,7 +673,7 @@ var LM = (function () {
     azioniDiOggi().forEach(function (a) { if (!a.done && a.passoDi && a.passoDi.b === bid) giaOggi[a.passoDi.s] = true; });
     var st = b.steps.find(function (x) { return !x.done && !giaOggi[x.id]; });
     if (!st) return null;
-    var mit = azioniDiOggi().filter(function (a) { return !a.done; }).length === 0;
+    var mit = serveMit();
     var az = aggiungiAzione(st.testo, b.areaId, { mit: mit, passoDi: { b: bid, s: st.id }, interna: true });
     registra('azione', 'Portato in Oggi il passo di «' + b.testo + '»: ' + st.testo, true);
     save();
@@ -1407,7 +1458,7 @@ var LM = (function () {
     coloreArea: coloreArea, livelloDaXp: livelloDaXp,
     aggiungiAzione: aggiungiAzione, completaAzione: completaAzione, rimandaAzione: rimandaAzione,
     cattura: cattura, triageInbox: triageInbox, modificaInbox: modificaInbox, cambiaAreaAzione: cambiaAreaAzione,
-    modificaAzione: modificaAzione, rimuoviAzione: rimuoviAzione,
+    modificaAzione: modificaAzione, rimuoviAzione: rimuoviAzione, serveMit: serveMit,
     setOraAzione: setOraAzione, setDurataAzione: setDurataAzione, azioniDelGiorno: azioniDelGiorno,
     impostaRitmo: impostaRitmo, impostaGiornataPos: impostaGiornataPos, RITMO_DEFAULT: RITMO_DEFAULT,
     ritmoDi: ritmoDi, setRitmoGiorno: setRitmoGiorno, azzeraRitmoGiorno: azzeraRitmoGiorno, minutiSonno: minutiSonno,

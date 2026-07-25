@@ -556,8 +556,8 @@
     return s.aree.filter(function (a) { return s.areeAttive.indexOf(a.id) >= 0; });
   }
 
-  function selectAree(id, selezionata) {
-    return '<select id="' + id + '">' + areeAttive().map(function (a) {
+  function selectAree(id, selezionata, etichetta) {
+    return '<select id="' + id + '" aria-label="' + esc(etichetta || 'Area') + '">' + areeAttive().map(function (a) {
       return '<option value="' + a.id + '"' + (a.id === selezionata ? ' selected' : '') + '>' + esc(a.nome) + '</option>';
     }).join('') + '</select>';
   }
@@ -685,7 +685,7 @@
         '</div>' +
         '<form id="form-rapida" class="riga-flex" style="max-width:580px;width:100%">' +
         '<input type="text" id="testo-rapida" placeholder="Oppure scrivi qui una cosa da fare" style="flex:1;min-width:220px">' +
-        '<button class="btn btn-primario" type="submit">' + ICO('arrowRight', 17) + '</button></form>' +
+        '<button class="btn btn-primario" type="submit" aria-label="Aggiungi e parti">' + ICO('arrowRight', 17) + '</button></form>' +
         '</div>';
       $vista.innerHTML = html;
       montaOggiGiornata();
@@ -699,7 +699,7 @@
         e.preventDefault();
         var t = document.getElementById('testo-rapida').value.trim();
         if (!t) return;
-        LM.aggiungiAzione(t, 'altro', { mit: oggi.length === 0 });
+        LM.aggiungiAzione(t, 'altro', { mit: LM.serveMit() });
         render();
       });
       return;
@@ -854,7 +854,6 @@
   /* orizzonte della pagina "Giornata" e giorno/settimana/mese di riferimento */
   var giornataOrizzonte = 'giorno';
   var giornataAncora = null;
-  var giornataEditorAperto = false;
   var giornataSonnoAperto = false; // pannello sonno/pasti in cima alla pagina Giornata
   var giornataPopVista = 'vista'; // pop-up su schermo stretto: 'vista' | 'modifica'
 
@@ -961,30 +960,33 @@
     var now = '';
     if (opts.nowMin != null) { var nm = em(opts.nowMin); if (nm >= gs && nm <= ge) now = '<div class="tl-now-line" style="top:' + y(nm) + 'px"><span>' + fmtMin(opts.nowMin) + '</span></div>'; }
     /* geometria salvata sull'elemento: permette di muovere la linea "adesso"
-       in tempo reale senza ridisegnare tutta la griglia. */
+       in tempo reale senza ridisegnare tutta la griglia. data-adesso marca
+       SOLO le griglie che rappresentano oggi (le altre non devono averla). */
     return '<div class="tl-grid' + (opts.mini ? ' tl-grid-mini' : '') + (opts.rail === false ? ' tl-grid-norail' : '') + '" style="height:' + H + 'px"' +
+      (opts.nowMin != null ? ' data-adesso="1"' : '') +
       ' data-gs="' + gs + '" data-ge="' + ge + '" data-pxh="' + pxh + '" data-wake="' + wake + '" data-bed="' + bed + '">' +
       '<div class="tl-lines">' + lines + '</div>' +
       '<div class="tl-blocks">' + shade + blocks + now + '</div></div>';
   }
-  /* muove la linea "adesso" nella griglia del giorno visibile (La Giornata) */
+  /* muove la linea "adesso" in tutte le griglie di oggi (giorno e colonna di
+     oggi nella settimana), senza ridisegnarle. */
   function aggiornaLineaGriglia() {
-    var grid = document.querySelector('#orizz-corpo .tl-grid');
-    if (!grid) return;
-    var gs = +grid.getAttribute('data-gs'), ge = +grid.getAttribute('data-ge'), pxh = +grid.getAttribute('data-pxh');
-    var wake = +grid.getAttribute('data-wake'), bed = +grid.getAttribute('data-bed');
-    if (isNaN(gs) || isNaN(pxh)) return;
-    var nn = new Date(); var now = nn.getHours() * 60 + nn.getMinutes();
-    var nm = (bed > 1440 && now < wake) ? now + 1440 : now;
-    var line = grid.querySelector('.tl-now-line');
-    if (nm < gs || nm > ge) { if (line) line.remove(); return; }
-    var top = (nm - gs) / 60 * pxh;
-    if (!line) {
-      line = document.createElement('div'); line.className = 'tl-now-line';
-      line.innerHTML = '<span></span>'; grid.querySelector('.tl-blocks').appendChild(line);
-    }
-    line.style.top = top + 'px';
-    line.querySelector('span').textContent = fmtMin(now);
+    document.querySelectorAll('.tl-grid[data-adesso]').forEach(function (grid) {
+      var gs = +grid.getAttribute('data-gs'), ge = +grid.getAttribute('data-ge'), pxh = +grid.getAttribute('data-pxh');
+      var wake = +grid.getAttribute('data-wake'), bed = +grid.getAttribute('data-bed');
+      if (isNaN(gs) || isNaN(pxh)) return;
+      var nn = new Date(); var now = nn.getHours() * 60 + nn.getMinutes();
+      var nm = (bed > 1440 && now < wake) ? now + 1440 : now;
+      var line = grid.querySelector('.tl-now-line');
+      if (nm < gs || nm > ge) { if (line) line.remove(); return; }
+      var top = (nm - gs) / 60 * pxh;
+      if (!line) {
+        line = document.createElement('div'); line.className = 'tl-now-line';
+        line.innerHTML = '<span></span>'; grid.querySelector('.tl-blocks').appendChild(line);
+      }
+      line.style.top = top + 'px';
+      line.querySelector('span').textContent = fmtMin(now);
+    });
   }
 
   /* Pannellino per modificare UNA cosa della giornata (azione o abitudine):
@@ -1189,7 +1191,7 @@
       e.preventDefault();
       var t = container.querySelector('#tl-add-testo').value.trim();
       if (!t) return;
-      var mit = LM.azioniDiOggi().filter(function (a) { return !a.done; }).length === 0;
+      var mit = LM.serveMit();
       LM.aggiungiAzione(t, container.querySelector('#tl-add-area').value, { mit: mit });
       montaGiornata(container, opts); aggiornaNav();
     });
@@ -1258,8 +1260,6 @@
       var gsT = container.querySelector('#gio-sonno-toggle');
       if (gsT) gsT.addEventListener('click', function () { giornataSonnoAperto = !giornataSonnoAperto; montaGiornata(container, opts); });
     }
-    var eo = container.querySelector('#tl-edit-orari');
-    if (eo) eo.addEventListener('click', apriRitmo);
     var ap = container.querySelector('#tl-apri-pagina');
     if (ap) ap.addEventListener('click', function () { chiudiSheet(); location.hash = '#/giornata'; });
   }
@@ -1698,7 +1698,7 @@
         '<div class="lista-azioni" id="lista-oggi"></div>' +
         '<form id="form-add" class="riga-flex mt-s"><input type="text" id="testo-add" placeholder="Aggiungi un’altra cosa a oggi…" style="flex:1;min-width:150px">' +
         '<span style="width:132px">' + selectAree('area-add') + '</span>' +
-        '<button class="btn btn-mini btn-primario" type="submit">' + ICO('plus', 14) + '</button></form></div>' +
+        '<button class="btn btn-mini btn-primario" type="submit" aria-label="Aggiungi">' + ICO('plus', 14) + '</button></form></div>' +
         '<div class="card" style="--i:1"><h2>' + ICO('trendUp', 16) + ' Costanza</h2>' +
         '<div class="sotto">XP guadagnati ogni giorno, nelle ultime 12 settimane. Quello che conta è tornarci spesso.</div>' +
         '<div id="heatmap"></div></div></div>';
@@ -1728,7 +1728,7 @@
         e.preventDefault();
         var t2 = document.getElementById('testo-add').value.trim();
         if (!t2) return;
-        LM.aggiungiAzione(t2, document.getElementById('area-add').value, { mit: oggi.length === 0 });
+        LM.aggiungiAzione(t2, document.getElementById('area-add').value, { mit: LM.serveMit() });
         render();
       });
     }
@@ -1871,7 +1871,7 @@
         ? '<form id="form-piano" class="mt-s"><div class="riga-flex">' +
           '<input type="text" id="piano-testo" placeholder="' + (oggi.length === 0 ? 'La cosa più importante di oggi…' : 'Un’altra cosa (se vuoi)…') + '" style="flex:1;min-width:180px">' +
           '<span style="width:155px">' + selectAree('piano-area') + '</span>' +
-          '<button class="btn btn-primario" type="submit">' + ICO('plus', 16) + '</button></div></form>'
+          '<button class="btn btn-primario" type="submit" aria-label="Aggiungi">' + ICO('plus', 16) + '</button></div></form>'
         : '<div class="sotto mt-s">Tre bastano. Aggiungerne altre le rende solo più difficili da finire.</div>') +
       '<label class="campo">Quando e dove inizi la prima?</label>' +
       '<input type="text" id="piano-ifthen" placeholder="Es. alle 9:00, appena mi siedo alla scrivania, apro solo il file su cui devo lavorare" value="' + (piano ? esc(piano.intenzione) : '') + '">' +
@@ -1894,7 +1894,7 @@
       e.preventDefault();
       var testo = document.getElementById('piano-testo').value.trim();
       if (!testo) return;
-      LM.aggiungiAzione(testo, document.getElementById('piano-area').value, { mit: oggi.length === 0 });
+      LM.aggiungiAzione(testo, document.getElementById('piano-area').value, { mit: LM.serveMit() });
       render();
     });
     document.getElementById('btn-salva-piano').addEventListener('click', function () {
@@ -2307,7 +2307,7 @@
       if (b.id === backlogEditId) {
         return '<div class="bk-item"><form class="inbox-modifica" data-bkedit="' + b.id + '" style="flex:1">' +
           '<input type="text" class="inbox-input" value="' + esc(b.testo) + '" aria-label="Modifica">' +
-          '<button class="btn btn-mini btn-primario" type="submit">' + ICO('save', 13) + '</button>' +
+          '<button class="btn btn-mini btn-primario" type="submit" aria-label="Salva">' + ICO('save', 13) + '</button>' +
           '<button class="btn btn-mini btn-ghost" type="button" data-bkannulla="1">Annulla</button></form></div>';
       }
       var isProg = b.steps && b.steps.length;
@@ -2322,7 +2322,7 @@
               '<span class="step-testo">' + esc(st.testo) + '</span>' +
               '<button class="icona-btn" data-stepdel="' + b.id + '|' + st.id + '" title="Rimuovi passo" aria-label="Rimuovi passo">' + ICO('trash', 13) + '</button></div>';
           }).join('') +
-          '<form class="step-add" data-stepadd="' + b.id + '"><input type="text" placeholder="Aggiungi un passo…" aria-label="Aggiungi un passo"><button class="btn btn-mini" type="submit">' + ICO('plus', 12) + '</button></form>' +
+          '<form class="step-add" data-stepadd="' + b.id + '"><input type="text" placeholder="Aggiungi un passo…" aria-label="Aggiungi un passo"><button class="btn btn-mini" type="submit" aria-label="Aggiungi un passo">' + ICO('plus', 12) + '</button></form>' +
           '</div>';
       }
       return '<div class="bk-item' + (isProg ? ' progetto' : '') + '" data-bid="' + b.id + '">' +
@@ -2419,7 +2419,7 @@
       var totale = perArea.reduce(function (n, g) { return n + g.items.length; }, 0);
       if (!totale) {
         box.innerHTML = '<div class="card"><div class="vuoto" style="padding:22px 8px">' + illoInbox() + '<b>Niente da fare, per ora.</b><br>Aggiungi qui sotto, oppure sistema ciò che hai buttato giù.</div>' +
-          '<form class="bk-add" data-addarea="altro" style="max-width:520px;margin:0 auto"><input type="text" placeholder="Aggiungi una cosa da fare…" aria-label="Aggiungi"><button class="btn btn-mini btn-primario" type="submit">' + ICO('plus', 13) + '</button></form></div>';
+          '<form class="bk-add" data-addarea="altro" style="max-width:520px;margin:0 auto"><input type="text" placeholder="Aggiungi una cosa da fare…" aria-label="Aggiungi"><button class="btn btn-mini btn-primario" type="submit" aria-label="Aggiungi">' + ICO('plus', 13) + '</button></form></div>';
         wireAdd(box); return;
       }
       var chips = '<button class="att-chip' + (attArea === 'tutte' ? ' on' : '') + '" data-chip="tutte">Tutte <span>' + totale + '</span></button>' +
@@ -2448,7 +2448,7 @@
         if (attArea !== 'tutte') {
           var g0 = perArea.find(function (g) { return g.area.id === attArea; }) || { area: areaById(attArea), items: [] };
           lista.innerHTML = '<div class="backlog-piatto">' + (g0.items.map(bkItemHtml).join('') || '<div class="bk-vuoto">Niente in «' + esc(g0.area.nome) + '». Aggiungi qui sotto.</div>') + '</div>' +
-            '<form class="bk-add" data-addarea="' + attArea + '"><input type="text" placeholder="Aggiungi a «' + esc(g0.area.nome) + '»…" aria-label="Aggiungi"><button class="btn btn-mini btn-primario" type="submit">' + ICO('plus', 13) + '</button></form>';
+            '<form class="bk-add" data-addarea="' + attArea + '"><input type="text" placeholder="Aggiungi a «' + esc(g0.area.nome) + '»…" aria-label="Aggiungi"><button class="btn btn-mini btn-primario" type="submit" aria-label="Aggiungi">' + ICO('plus', 13) + '</button></form>';
           wireBk(lista); wireAdd(lista); return;
         }
         lista.innerHTML = '<div class="backlog-aree">' + perArea.map(function (g) {
@@ -2461,7 +2461,7 @@
             '<span class="bk-chevron' + (aperta ? ' aperta' : '') + '">' + ICO('chevronGiu', 16) + '</span></button>' +
             '<div class="bk-corpo"' + (aperta ? '' : ' hidden') + '>' +
             (g.items.length ? g.items.map(bkItemHtml).join('') : '<div class="bk-vuoto">Niente qui.</div>') +
-            '<form class="bk-add" data-addarea="' + g.area.id + '"><input type="text" placeholder="Aggiungi a «' + esc(g.area.nome) + '»…" aria-label="Aggiungi"><button class="btn btn-mini" type="submit">' + ICO('plus', 13) + '</button></form>' +
+            '<form class="bk-add" data-addarea="' + g.area.id + '"><input type="text" placeholder="Aggiungi a «' + esc(g.area.nome) + '»…" aria-label="Aggiungi"><button class="btn btn-mini" type="submit" aria-label="Aggiungi">' + ICO('plus', 13) + '</button></form>' +
             '</div></div>';
         }).join('') + '</div>';
         lista.querySelectorAll('[data-toggle]').forEach(function (b) {
@@ -2532,7 +2532,7 @@
       } else {
         verdetto = '<div class="exp-verdetto">' + ICO('clock', 16) + '<span>Non ci sono ancora abbastanza dati: servono almeno due giorni con una misura in ciascuna fase. Continua a fare i check-in.</span></div>';
       }
-      card.innerHTML = '<div class="exp-testa"><h3>' + esc(e.nome) + '</h3>' +
+      card.innerHTML = '<div class="exp-testa"><h2>' + esc(e.nome) + '</h2>' +
         '<span class="chip">' + (e.stato === 'attivo' ? '<span class="punto-vivo"></span> attivo' : ICO('check', 13) + ' concluso') + '</span>' +
         '<span class="chip">' + esc(m ? m.nome : e.metrica) + (e.areaId ? ' · ' + esc(areaById(e.areaId).nome) : '') + '</span></div>' +
         (e.intervento ? '<div class="sotto" style="margin:0">Intervento: ' + esc(e.intervento) + '</div>' : '') +
@@ -2911,6 +2911,12 @@
     if (e.key === 'Escape' && !$sheet.hidden) chiudiSheet();
   });
 
+  /* il salvataggio locale non funziona: meglio dirlo subito e chiaramente,
+     così puoi esportare i dati prima di perderli */
+  document.addEventListener('lm:errore-salvataggio', function () {
+    toast('Non riesco a salvare su questo dispositivo (spazio esaurito o navigazione privata). Esporta i dati da Impostazioni per non perderli.', 0, 'cloud');
+  });
+
   /* chrome statico */
   document.getElementById('logo-blocco').innerHTML = LOGO(30) + ' LifeMax <span class="logo-tag">Beta</span>';
 
@@ -2918,7 +2924,7 @@
      "adesso", così vedi che ora è e in che punto del piano sei senza dover
      ricaricare. Se cambia la cosa da fare in questo momento (e non l'hai
      scelta tu), la schermata Oggi si aggiorna da sola. */
-  setInterval(function () {
+  function battito() {
     var ob = document.getElementById('onboarding-root');
     if (ob && ob.innerHTML) return;
     var v = vistaCorrente();
@@ -2932,7 +2938,20 @@
     } else if (v === 'giornata') {
       if ($sheet.hidden && !staDigitando()) aggiornaLineaGriglia();
     }
-  }, 15000);
+  }
+  /* a schermo spento o in un'altra scheda non serve battere (batteria); al
+     ritorno si riallinea subito, senza aspettare il prossimo giro. */
+  var battitoTimer = null;
+  function avviaBattito() {
+    if (battitoTimer) return;
+    battitoTimer = setInterval(battito, 15000);
+  }
+  function fermaBattito() { if (battitoTimer) { clearInterval(battitoTimer); battitoTimer = null; } }
+  document.addEventListener('visibilitychange', function () {
+    if (document.hidden) fermaBattito();
+    else { battito(); avviaBattito(); }
+  });
+  avviaBattito();
 
   applicaTema();
   render();

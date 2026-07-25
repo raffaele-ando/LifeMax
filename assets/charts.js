@@ -76,7 +76,8 @@ var LMCharts = (function () {
     var colore = opts.colore || 'var(--serie-1)';
 
     var svg = el('svg', { width: '100%', height: H, viewBox: '0 0 ' + W + ' ' + H, 'aria-hidden': 'false', role: 'img' }, container);
-    if (opts.label) el('title', {}, svg).textContent = opts.label;
+    /* un titolo c'è sempre: un grafico senza nome è muto per chi usa lo screen reader */
+    el('title', {}, svg).textContent = opts.label || 'Andamento nel tempo';
 
     function X(i) { return pad + (W - 2 * pad) * (punti.length < 2 ? 0.5 : i / (punti.length - 1)); }
     function Y(v) { return H - pad - (H - 2 * pad) * ((v - min) / (max - min || 1)); }
@@ -165,7 +166,7 @@ var LMCharts = (function () {
     }
 
     var svg = el('svg', { width: '100%', viewBox: '0 0 ' + W + ' ' + H, role: 'img' }, wrap);
-    if (opts.label) el('title', {}, svg).textContent = opts.label;
+    el('title', {}, svg).textContent = opts.label || 'Confronto tra serie nel tempo';
 
     var giorni = serie[0] ? serie[0].punti.map(function (p) { return p.data; }) : [];
     function X(i) { return m.l + (W - m.l - m.r) * (giorni.length < 2 ? 0.5 : i / (giorni.length - 1)); }
