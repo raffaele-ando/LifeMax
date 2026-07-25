@@ -17,6 +17,7 @@
   --grad-brand: linear-gradient(118deg, var(--brand-a), var(--brand-b) 55%, var(--brand-c));
   --accento: #5a5fe0;
   --accento-ink: #ffffff;
+  --accento-testo: #4a4fd0; /* variante scura del brand: testo accento su superfici chiare, AA */
 
   /* superfici e inchiostro — chiaro */
   --pagina: #f6f6f8;
@@ -25,7 +26,7 @@
   --superficie-3: #ececf1;
   --inchiostro-1: #101116;
   --inchiostro-2: #565863;
-  --inchiostro-muto: #8f919c;
+  --inchiostro-muto: #666873;
   --bordo: rgba(16, 17, 22, 0.08);
   --bordo-forte: rgba(16, 17, 22, 0.14);
   --griglia: #e8e8ee;
@@ -64,6 +65,8 @@
 :root[data-mode="dark"] {
   --accento: #8a8ef8;
   --accento-ink: #0e0e1a;
+  --accento-testo: #8a8ef8; /* su scuro l'accento chiaro passa già AA */
+  --critico: #e85c56;
   --pagina: #0a0a0d;
   --superficie-1: #151519;
   --superficie-2: #1d1d23;
@@ -93,11 +96,13 @@
   --brand-b: #8b5cf6;
   --brand-c: #22d3ee;
   --accento: #8b5cf6;
+  --accento-testo: #6d34e0; /* viola arcade abbastanza scuro per AA su chiaro */
   --raggio: 14px;
   --raggio-s: 9px;
 }
 :root[data-skin="arcade"][data-mode="dark"] {
   --accento: #a78bfa;
+  --accento-testo: #a78bfa;
   --pagina: #0b0912;
   --superficie-1: #16121f;
   --superficie-2: #1e1929;
@@ -222,7 +227,7 @@ small { color: var(--inchiostro-2); }
 .nav-item:hover .ico { opacity: 1; transform: translateY(-1px); }
 .nav-item.attivo {
   background: color-mix(in srgb, var(--accento) 10%, transparent);
-  color: var(--accento); font-weight: 700;
+  color: var(--accento-testo); font-weight: 700;
 }
 .nav-item.attivo .ico { opacity: 1; }
 .nav-item.attivo::before {
@@ -321,7 +326,7 @@ small { color: var(--inchiostro-2); }
     padding: 5px 2px; border-radius: 12px;
     transition: color var(--t-veloce), transform var(--t-veloce);
   }
-  .tabbar button.attivo { color: var(--accento); }
+  .tabbar button.attivo { color: var(--accento-testo); }
   .tabbar button.attivo .tab-ico { transform: translateY(-2px) scale(1.12); }
   .tabbar button .tab-ico { position: relative; display: inline-flex; transition: transform var(--t-media); }
   .tabbar button .tab-ico .nav-badge {
@@ -842,7 +847,7 @@ kbd {
 .scienza-card .fonte .ico { flex: none; margin-top: 2px; }
 .evidenza { font-size: 10px; font-weight: 850; letter-spacing: .08em; padding: 3px 9px; border-radius: 99px; text-transform: uppercase; flex: none; }
 .evidenza-alta { background: linear-gradient(118deg, #0eb35c, #0ca30c); color: #fff; box-shadow: 0 4px 12px -4px rgba(12, 163, 12, .5); }
-.evidenza-media { background: var(--avviso); color: #4a3000; }
+.evidenza-media { background: var(--avviso); color: #3a2600; }
 .evidenza-euristica { background: var(--superficie-2); color: var(--inchiostro-2); border: 1px solid var(--bordo-forte); }
 
 /* ---------- stati vuoti & illustrazioni ---------- */
