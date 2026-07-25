@@ -960,7 +960,7 @@
       var ar = areaById(e.areaId), col = LM.coloreArea(ar);
       var fatto = e.tipo === 'azione' ? e.done : e.fatto;
       var attr = e.tipo === 'azione' ? 'data-tl-az="' + e.id + '"' : 'data-tl-ab="' + e.id + '"';
-      var check = (opts.interactive && !opts.mini) ? '<button class="tl-blk-check" ' + attr + ' aria-label="Fatto">' + ICO('check', 11) + '</button>' : '';
+      var check = (opts.spuntabile && !opts.mini) ? '<button class="tl-blk-check" ' + attr + ' aria-label="Fatto">' + ICO('check', 11) + '</button>' : '';
       /* nella pagina Giornata il blocco si tocca per modificarlo (orario,
          durata, area) in un pannellino: niente più lista doppia sotto. */
       var clic = opts.mini ? ' data-tl-giorno="' + d.k + '"'
@@ -1005,8 +1005,9 @@
      spuntala, dàlle un orario, una durata, un'area. Sostituisce la vecchia
      lista "Orari e durate" che raddoppiava tutto quello che era già nel grafico.
      onCambio() ridisegna la giornata dietro al pannello. */
-  function apriItemGiornata(k, id, tipo, onCambio) {
+  function apriItemGiornata(k, id, tipo, onCambio, spuntabile) {
     var isAz = tipo === 'azione';
+    if (spuntabile === undefined) spuntabile = true;
     function trova() {
       var dd = nodiGiorno(k);
       return dd.placed.concat(dd.tray).find(function (x) { return x.id === id; });
@@ -1018,7 +1019,10 @@
     var durOpt = DURATE.map(function (o) { return '<option value="' + o.v + '"' + ((e.dur || '') === o.v ? ' selected' : '') + '>' + o.t + '</option>'; }).join('');
     var html = '<div class="ig-ed">' +
       '<input type="text" class="ig-nome" id="ig-nome" value="' + esc(e.testo) + '" aria-label="Testo" placeholder="Cosa devi fare">' +
-      '<button class="btn ' + (fatto ? 'btn-ghost' : 'btn-primario') + ' ig-fatto"><span class="ig-fatto-ico">' + ICO(fatto ? 'refresh' : 'check', 16) + '</span>' + (fatto ? 'Fatta — togli la spunta' : 'Segna come fatta') + '</button>' +
+      /* su un giorno futuro non si spunta: si sta pianificando, non facendo */
+      (spuntabile
+        ? '<button class="btn ' + (fatto ? 'btn-ghost' : 'btn-primario') + ' ig-fatto"><span class="ig-fatto-ico">' + ICO(fatto ? 'refresh' : 'check', 16) + '</span>' + (fatto ? 'Fatta — togli la spunta' : 'Segna come fatta') + '</button>'
+        : '<div class="ig-nota-futuro">' + ICO('calendar', 13) + ' La spunterai quando arriva il giorno.</div>') +
       '<div class="ig-griglia">' +
       '<label class="campo">' + ICO('clock', 12) + ' Orario</label><input type="time" class="tl-time" id="ig-ora" value="' + (e.ora || '') + '">' +
       '<label class="campo">Durata</label><select class="tl-dur" id="ig-dur">' + durOpt + '</select>' +
@@ -1042,7 +1046,8 @@
         var tit = document.getElementById('sheet-titolo'); if (tit) tit.textContent = v;
         ricarica();
       });
-      root.querySelector('.ig-fatto').addEventListener('click', function (ev) {
+      var bFatto = root.querySelector('.ig-fatto');
+      if (bFatto) bFatto.addEventListener('click', function (ev) {
         if (isAz) feedbackSpunta(ev, LM.completaAzione(id), 'Fatto.', 'check');
         else feedbackSpunta(ev, LM.completaAbitudine(id), 'Fatta. Continua così.', 'flame');
         chiudiSheet(); ricarica();
@@ -1083,7 +1088,12 @@
     var compact = !!opts.compact;
     var k = opts.giorno || LM.todayKey();
     var d = nodiGiorno(k);
-    var interactive = d.isToday;
+    /* Tre modi: il passato si guarda, oggi si fa, il futuro si PIANIFICA.
+       Nel futuro si può aggiungere/modificare/spostare, ma non spuntare:
+       una cosa di domani non si può aver già fatta (falserebbe XP e serie). */
+    var isFuturo = k > LM.todayKey();
+    var interactive = d.isToday || isFuturo;   // si può modificare
+    var spuntabile = d.isToday;                // si può segnare "fatto"
     var now = new Date();
     var nowMin = d.isToday ? now.getHours() * 60 + now.getMinutes() : null;
 
@@ -1101,7 +1111,7 @@
           var attr = e.tipo === 'azione' ? 'data-tl-az="' + e.id + '"' : 'data-tl-ab="' + e.id + '"';
           var bAttr = 'data-blk-' + (e.tipo === 'azione' ? 'az' : 'ab') + '="' + e.id + '"';
           return '<div class="gio-so-riga' + (fatto ? ' fatta' : '') + '" style="--c-area:' + col + '">' +
-            '<button class="tl-check" ' + attr + ' aria-label="Fatto">' + ICO('check', 12) + '</button>' +
+            (spuntabile ? '<button class="tl-check" ' + attr + ' aria-label="Fatto">' + ICO('check', 12) + '</button>' : '') +
             '<button class="gio-so-corpo" ' + bAttr + '>' +
             '<span class="tl-tag" style="color:' + col + '" title="' + esc(ar.nome) + '">' + ICO(ar.icona, 13) + '</span>' +
             '<span class="gio-so-testo">' + esc(e.testo) + (e.mit ? ' ' + ICO('star', 9) : '') + '</span>' +
@@ -1112,7 +1122,8 @@
        la cosa (meno campi da riempire = meno attrito per buttarla giù). */
     var quickAdd = '';
     if (!compact && interactive) {
-      quickAdd = '<form class="tl-add" id="tl-add"><input type="text" id="tl-add-testo" placeholder="Aggiungi qualcosa a oggi…" aria-label="Aggiungi">' +
+      var doveAdd = d.isToday ? 'a oggi' : ('a ' + etichettaGiorno(k).toLowerCase());
+      quickAdd = '<form class="tl-add" id="tl-add"><input type="text" id="tl-add-testo" placeholder="Aggiungi qualcosa ' + esc(doveAdd) + '…" aria-label="Aggiungi">' +
         '<span class="tl-add-area">' + selectAree('tl-add-area') + '</span>' +
         '<button class="btn btn-mini btn-primario" type="submit">' + ICO('plus', 14) + ' Aggiungi</button></form>';
     }
@@ -1184,12 +1195,14 @@
     }
     var sottoHead = compact
       ? (sommario || 'Come è divisa la tua giornata. Spunta ciò che fai; per cambiarla apri Giornata.')
-      : (interactive ? 'Tocca un blocco per dargli orario o durata; spunta ciò che fai.' : 'Com’era divisa questa giornata, dal risveglio al sonno.');
+      : (isFuturo ? 'Prepara questa giornata: aggiungi le cose e dàgli un orario. Le spunterai quando arriva il giorno.'
+         : interactive ? 'Tocca un blocco per dargli orario o durata; spunta ciò che fai.'
+         : 'Com’era divisa questa giornata, dal risveglio al sonno.');
     var head = opts.header === false ? '' : '<div class="tl-head"><div><h2>' + ICO('clock', 16) + ' ' + (opts.giorno && !d.isToday ? etichettaGiorno(k) : 'La giornata') + '</h2>' +
       '<div class="sotto">' + sottoHead + '</div></div></div>';
     var gridHtml = vuota
-      ? '<div class="vuoto" style="padding:18px 8px"><b>Niente in agenda per questo giorno.</b>' + (interactive ? '<br>Aggiungi una cosa qui sotto, o dai un orario a un’abitudine.' : '') + '</div>'
-      : htmlTimeGrid(d, { interactive: interactive, nowMin: nowMin, pxh: pxh });
+      ? '<div class="vuoto" style="padding:18px 8px"><b>Niente in agenda per questo giorno.</b>' + (isFuturo ? '<br>Puoi già prepararlo: aggiungi qui sotto le cose che vuoi fare.' : interactive ? '<br>Aggiungi una cosa qui sotto, o dai un orario a un’abitudine.' : '') + '</div>'
+      : htmlTimeGrid(d, { interactive: interactive, spuntabile: spuntabile, nowMin: nowMin, pxh: pxh });
 
     if (compact) {
       var popNota = d.tray.length ? '<div class="tl-pop-note">' + ICO('clock', 12) + ' ' + d.tray.length + (d.tray.length === 1 ? ' cosa senza orario' : ' cose senza orario') + ' — assegnale un orario in <b>Giornata</b>.</div>' : '';
@@ -1205,8 +1218,7 @@
       e.preventDefault();
       var t = container.querySelector('#tl-add-testo').value.trim();
       if (!t) return;
-      var mit = LM.serveMit();
-      LM.aggiungiAzione(t, container.querySelector('#tl-add-area').value, { mit: mit });
+      LM.aggiungiAzione(t, container.querySelector('#tl-add-area').value, { data: k, mit: LM.serveMit(k) });
       montaGiornata(container, opts); aggiornaNav();
     });
 
@@ -1230,10 +1242,10 @@
         /* toccare un blocco (o una riga «senza orario») apre il pannellino di
            modifica di QUELLA cosa: orario, durata, area, spunta. */
         scope.querySelectorAll('[data-blk-az]').forEach(function (b) {
-          b.addEventListener('click', function () { apriItemGiornata(k, b.getAttribute('data-blk-az'), 'azione', onCambio); });
+          b.addEventListener('click', function () { apriItemGiornata(k, b.getAttribute('data-blk-az'), 'azione', onCambio, spuntabile); });
         });
         scope.querySelectorAll('[data-blk-ab]').forEach(function (b) {
-          b.addEventListener('click', function () { apriItemGiornata(k, b.getAttribute('data-blk-ab'), 'abitudine', onCambio); });
+          b.addEventListener('click', function () { apriItemGiornata(k, b.getAttribute('data-blk-ab'), 'abitudine', onCambio, spuntabile); });
         });
       }
       /* refresh SOLO della griglia visiva (usato dai cambi di sonno/pasti):
@@ -1241,7 +1253,7 @@
       function refreshGriglia() {
         var host = container.querySelector('#tl-grid-host');
         if (!host) { montaGiornata(container, opts); return; }
-        host.innerHTML = htmlTimeGrid(nodiGiorno(k), { interactive: true, nowMin: nowMin, pxh: pxh });
+        host.innerHTML = htmlTimeGrid(nodiGiorno(k), { interactive: true, spuntabile: spuntabile, nowMin: nowMin, pxh: pxh });
         wireGriglia(host);
       }
       wireGriglia(container);
@@ -1349,7 +1361,9 @@
       var mattoni = fatti.slice(0, 10).map(function (aid) { return '<i style="background:' + LM.coloreArea(areaById(aid)) + '"></i>'; }).join('') +
         (fatti.length > 10 ? '<span class="me-piu">+' + (fatti.length - 10) + '</span>' : '');
       var scadBadge = scadG.length ? '<span class="me-scad" title="' + esc(scadG.map(function (b) { return b.testo; }).join(', ')) + '">' + ICO('calendar', 9) + (scadG.length > 1 ? ' ' + scadG.length : '') + '</span>' : '';
-      celle += '<button class="me-cella heat-' + heat + (fuori ? ' fuori' : '') + (k === oggi ? ' oggi' : '') + (futuro ? ' futuro' : '') + '" data-tl-giorno="' + k + '" aria-label="' + LM.weekdayShort(k) + ' ' + LM.fmtShort(k) + '">' +
+      /* i giorni fuori dal mese restano neutri: colorarli renderebbe il numero
+         illeggibile e confonderebbe il colpo d'occhio sul mese vero */
+      celle += '<button class="me-cella ' + (fuori ? 'fuori' : 'heat-' + heat) + (k === oggi ? ' oggi' : '') + (futuro ? ' futuro' : '') + '" data-tl-giorno="' + k + '" aria-label="' + LM.weekdayShort(k) + ' ' + LM.fmtShort(k) + '">' +
         '<span class="me-testa"><span class="me-num">' + d.getDate() + '</span>' + scadBadge + '</span>' +
         (fatti.length ? '<span class="me-mattoni">' + mattoni + '</span>' : '') + '</button>';
     }
@@ -1566,7 +1580,7 @@
   function vistaGiornata() {
     if (!giornataAncora) giornataAncora = LM.todayKey();
     function orizz(id, ico, et) { return '<button data-orizz="' + id + '" class="' + (giornataOrizzonte === id ? 'attivo' : '') + '">' + ICO(ico, 15) + et + '</button>'; }
-    var html = topbar('La giornata', 'Guardala da vicino o allarga lo sguardo: settimana, mese, anno per ragionare sul lungo periodo.');
+    var html = topbar('La giornata', 'Con le frecce ‹ › vai avanti e indietro: i giorni futuri puoi già prepararli. Oppure allarga lo sguardo con settimana, mese e anno.');
     html += '<div class="segmenti sez-nav" id="orizz-nav">' +
       orizz('giorno', 'clock', 'Giorno') + orizz('settimana', 'calendar', 'Settimana') +
       orizz('mese', 'dashboard', 'Mese') + orizz('anno', 'trendUp', 'Anno') + '</div>' +

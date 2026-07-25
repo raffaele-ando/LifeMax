@@ -73,7 +73,7 @@
   --superficie-3: #26262e;
   --inchiostro-1: #f5f5f7;
   --inchiostro-2: #b4b5c1;
-  --inchiostro-muto: #7f818e;
+  --inchiostro-muto: #8d8f9b;
   --bordo: rgba(255, 255, 255, 0.09);
   --bordo-forte: rgba(255, 255, 255, 0.16);
   --griglia: #25252c;
@@ -141,7 +141,7 @@ h1, h2, h3, p, span, div, a, small, b, label, button, input, textarea, li {
 
 button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
 input, textarea, select { font: inherit; color: var(--inchiostro-1); }
-a { color: var(--accento); text-decoration: none; }
+a { color: var(--accento-testo); text-decoration: none; }
 a:hover { text-decoration: underline; }
 small { color: var(--inchiostro-2); }
 :focus-visible { outline: 2px solid var(--accento); outline-offset: 2px; border-radius: 6px; }
@@ -1264,7 +1264,7 @@ kbd {
 
 /* ---------- progetti con passi ---------- */
 .bk-item.progetto { padding-bottom: 11px; }
-.prog-mini { flex: none; margin-left: 4px; font-size: 11px; font-weight: 750; padding: 1px 7px; border-radius: 99px; background: color-mix(in srgb, var(--accento) 14%, transparent); color: var(--accento); font-variant-numeric: tabular-nums; }
+.prog-mini { flex: none; margin-left: 4px; font-size: 11px; font-weight: 750; padding: 1px 7px; border-radius: 99px; background: color-mix(in srgb, var(--accento) 14%, transparent); color: var(--accento-testo); font-variant-numeric: tabular-nums; }
 .prog-barra { height: 5px; border-radius: 99px; background: var(--superficie-2); overflow: hidden; margin: 9px 0 0; }
 .prog-barra span { display: block; height: 100%; border-radius: 99px; background: var(--grad-brand); transition: width var(--t-media); }
 .steps-panel { display: flex; flex-direction: column; gap: 5px; margin: 10px 0 2px; padding: 9px 11px; border-radius: var(--raggio-s); background: var(--superficie-2); border: 1px solid var(--griglia); }
@@ -1290,7 +1290,7 @@ kbd {
 .att-chip { display: inline-flex; align-items: center; gap: 6px; padding: 6px 11px; font-size: 12.5px; font-weight: 600; border-radius: 99px; border: 1px solid var(--bordo-forte); background: var(--superficie-1); color: var(--inchiostro-2); cursor: pointer; transition: all var(--t-veloce); }
 .att-chip:hover { border-color: color-mix(in srgb, var(--c-area, var(--accento)) 45%, var(--bordo-forte)); }
 .att-chip span { font-size: 10.5px; font-weight: 800; padding: 0 5px; border-radius: 99px; background: var(--superficie-3); color: var(--inchiostro-muto); font-variant-numeric: tabular-nums; }
-.att-chip.on { background: color-mix(in srgb, var(--c-area, var(--accento)) 14%, transparent); border-color: color-mix(in srgb, var(--c-area, var(--accento)) 50%, transparent); color: var(--c-area, var(--accento)); }
+.att-chip.on { background: color-mix(in srgb, var(--c-area, var(--accento)) 14%, transparent); border-color: color-mix(in srgb, var(--c-area, var(--accento)) 50%, transparent); color: var(--c-area, var(--accento-testo)); }
 .att-chip.on span { background: color-mix(in srgb, var(--c-area, var(--accento)) 22%, transparent); color: inherit; }
 .backlog-piatto { display: flex; flex-direction: column; }
 .backlog-piatto .bk-item:first-child { border-top: none; }
@@ -1308,19 +1308,22 @@ kbd {
 .tl-hr-eti { position: absolute; left: 0; top: -8px; width: 40px; font-size: 10.5px; font-weight: 600; color: var(--inchiostro-muto); background: var(--superficie-1); padding-right: 4px; font-variant-numeric: tabular-nums; }
 .tl-grid:not(.tl-grid-norail) .tl-blocks { margin-left: 46px; }
 .tl-blocks { position: relative; height: 100%; }
-.tl-sleep { position: absolute; left: 0; right: 0; background: repeating-linear-gradient(45deg, var(--superficie-2), var(--superficie-2) 6px, transparent 6px, transparent 12px); opacity: 0.7; border-radius: 6px; }
+/* niente opacità sul contenitore: schiarirebbe anche il testo dentro.
+   La trama tratteggiata è già abbastanza discreta da sola. */
+.tl-sleep { position: absolute; left: 0; right: 0; background: repeating-linear-gradient(45deg, var(--superficie-2), var(--superficie-2) 6px, transparent 6px, transparent 12px); border-radius: 6px; }
 .tl-blk { position: absolute; border-radius: 8px; padding: 3px 8px; overflow: hidden; display: flex; flex-direction: column; justify-content: center; gap: 1px; box-shadow: var(--e1); }
 .tl-blk-pasto { background: var(--superficie-2); color: var(--inchiostro-2); border: 1px solid var(--griglia); flex-direction: row; align-items: center; gap: 6px; }
 .tl-blk-att { background: color-mix(in srgb, var(--c-area) 14%, var(--superficie-1)); border: 1px solid color-mix(in srgb, var(--c-area) 40%, transparent); border-left: 3px solid var(--c-area); }
-.tl-blk-att.fatta { opacity: 0.62; }
+.tl-blk-att.fatta { background: var(--superficie-2); border-color: var(--bordo); border-left-color: color-mix(in srgb, var(--c-area) 55%, transparent); }
+.tl-blk-att.fatta .tl-blk-t, .tl-blk-att.fatta .tl-blk-ora { color: var(--inchiostro-2); }
 .tl-blk-att.fatta .tl-blk-t { text-decoration: line-through; }
 .tl-blk-t { font-size: 12px; font-weight: 650; line-height: 1.15; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.tl-blk-ora { font-size: 10px; color: var(--inchiostro-muto); font-variant-numeric: tabular-nums; }
+.tl-blk-ora { font-size: 10px; color: var(--inchiostro-2); font-variant-numeric: tabular-nums; }
 .tl-blk-check { position: absolute; top: 4px; right: 4px; width: 19px; height: 19px; border-radius: 6px; border: 1.6px solid var(--baseline); background: var(--superficie-1); display: inline-flex; align-items: center; justify-content: center; color: transparent; }
 .tl-blk-check:hover { border-color: var(--ok); color: var(--ok); }
 .tl-blk-att.fatta .tl-blk-check { background: linear-gradient(135deg, #0eb35c, #0ca30c); border-color: transparent; color: #fff; }
 .tl-now-line { position: absolute; left: 0; right: 0; height: 2px; background: var(--brand-b); z-index: 3; }
-.tl-now-line span { position: absolute; right: 0; top: -8px; font-size: 9.5px; font-weight: 800; color: #fff; background: var(--brand-b); padding: 1px 5px; border-radius: 99px; font-variant-numeric: tabular-nums; }
+.tl-now-line span { position: absolute; right: 0; top: -8px; font-size: 9.5px; font-weight: 800; color: #fff; background: #3a63d6; padding: 1px 5px; border-radius: 99px; font-variant-numeric: tabular-nums; }
 
 .tl-check { flex: none; width: 24px; height: 24px; border-radius: 7px; border: 2px solid var(--baseline); background: var(--superficie-1); display: inline-flex; align-items: center; justify-content: center; color: transparent; transition: all var(--t-veloce); }
 .tl-check:hover { border-color: var(--ok); color: var(--ok); }
@@ -1371,6 +1374,7 @@ kbd {
 .ig-griglia { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 9px 12px; }
 .ig-griglia .campo { margin: 0; }
 .ig-griglia #ig-ora, .ig-griglia #ig-dur, .ig-griglia #ig-area { width: 100%; }
+.ig-nota-futuro { display: flex; align-items: center; justify-content: center; gap: 7px; font-size: 12.5px; font-weight: 600; color: var(--inchiostro-muto); background: var(--superficie-2); border: 1px solid var(--bordo); border-radius: var(--raggio-s); padding: 9px 12px; margin-bottom: 6px; }
 .ig-fondo { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; padding-top: 13px; border-top: 1px solid var(--griglia); }
 .ig-fondo .btn { justify-content: center; }
 
@@ -1411,7 +1415,8 @@ kbd {
 .me-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
 .me-cella { position: relative; min-height: 74px; border: 1px solid var(--griglia); border-radius: 10px; background: var(--superficie-1); padding: 5px 6px; display: flex; flex-direction: column; gap: 4px; cursor: pointer; transition: border-color var(--t-veloce), transform var(--t-veloce); overflow: hidden; }
 .me-cella:hover { border-color: color-mix(in srgb, var(--accento) 45%, var(--bordo-forte)); transform: translateY(-1px); }
-.me-cella.fuori { opacity: 0.4; }
+.me-cella.fuori { background: var(--superficie-2); }
+.me-cella.fuori .me-num { color: var(--inchiostro-muto); font-weight: 600; }
 .me-cella.futuro { background: repeating-linear-gradient(45deg, var(--superficie-1), var(--superficie-1) 5px, var(--superficie-2) 5px, var(--superficie-2) 6px); }
 .me-cella.heat-1 { background: color-mix(in srgb, var(--accento) 10%, var(--superficie-1)); }
 .me-cella.heat-2 { background: color-mix(in srgb, var(--accento) 20%, var(--superficie-1)); }
