@@ -883,11 +883,41 @@ var LM = (function () {
     return load().azioni.filter(function (a) { return a.data === t; });
   }
 
-  function prossimaAzione() {
+  /* "Cosa dovrei fare ADESSO", riconciliando le Azioni di oggi con il piano
+     orario de La Giornata. Restituisce { azione, stato, min, fine }:
+       - 'corso'      : una cosa con orario il cui blocco contiene adesso
+       - 'ritardo'    : una cosa con orario il cui blocco è già passato, non fatta
+       - 'libera'     : nessun blocco su adesso → la priorità (MIT) o la prima
+                        cosa senza orario (lavoro flessibile nei vuoti del piano)
+       - 'programmata': niente di flessibile, la prossima cosa in agenda
+     Così "Oggi" mostra quello che La Giornata dice di fare in questo momento. */
+  function azioneAdesso(nowMin) {
+    if (nowMin == null) { var dd = new Date(); nowMin = dd.getHours() * 60 + dd.getMinutes(); }
+    function mm(hhmm) { var p = String(hhmm).split(':'); return (+p[0]) * 60 + (+p[1]); }
     var oggi = azioniDiOggi().filter(function (a) { return !a.done; });
-    var mit = oggi.find(function (a) { return a.mit; });
-    return mit || oggi[0] || null;
+    var confini = azioniDiOggi().filter(function (a) { return a.ora; }).map(function (a) { return mm(a.ora); }).sort(function (x, y) { return x - y; });
+    var timed = oggi.filter(function (a) { return a.ora; }).map(function (a) { return { a: a, min: mm(a.ora) }; }).sort(function (x, y) { return x.min - y.min; });
+    function fineSlot(min, durata) {
+      if (durata) return min + durata;
+      var next = confini.find(function (m) { return m > min; });
+      return next != null ? next : min + 90;
+    }
+    /* 1. blocco che contiene adesso → è quello che il piano dice ora */
+    var corso = timed.filter(function (t) { return t.min <= nowMin && nowMin < fineSlot(t.min, t.a.durata); });
+    if (corso.length) { var c = corso[0]; return { azione: c.a, stato: 'corso', min: c.min, fine: fineSlot(c.min, c.a.durata) }; }
+    /* 2. blocco già passato e non fatto → riprendilo (in ordine) */
+    var ritardo = timed.filter(function (t) { return nowMin >= fineSlot(t.min, t.a.durata); });
+    if (ritardo.length) { var r = ritardo[0]; return { azione: r.a, stato: 'ritardo', min: r.min, fine: fineSlot(r.min, r.a.durata) }; }
+    /* 3. vuoto nel piano → lavoro flessibile: la priorità, poi le altre senza orario */
+    var mit = oggi.find(function (a) { return a.mit && !a.ora; });
+    if (mit) return { azione: mit, stato: 'libera', min: null, fine: null };
+    var libera = oggi.find(function (a) { return !a.ora; });
+    if (libera) return { azione: libera, stato: 'libera', min: null, fine: null };
+    /* 4. tutto in agenda più tardi → la prossima in programma */
+    if (timed.length) { var u = timed[0]; return { azione: u.a, stato: 'programmata', min: u.min, fine: fineSlot(u.min, u.a.durata) }; }
+    return { azione: null, stato: null, min: null, fine: null };
   }
+  function prossimaAzione() { return azioneAdesso().azione; }
 
   function giornoAttivo(k) {
     var s = load();
@@ -1393,7 +1423,7 @@ var LM = (function () {
     registraCheckin: registraCheckin, salvaPianoMattina: salvaPianoMattina,
     valutaArea: valutaArea, registraMinuti: registraMinuti,
     salvaReviewSera: salvaReviewSera, salvaReviewSettimana: salvaReviewSettimana,
-    azioniDiOggi: azioniDiOggi, prossimaAzione: prossimaAzione,
+    azioniDiOggi: azioniDiOggi, prossimaAzione: prossimaAzione, azioneAdesso: azioneAdesso,
     giornoAttivo: giornoAttivo, streak: streak,
     serieValutazioni: serieValutazioni, serieMinuti: serieMinuti, serieCheckin: serieCheckin,
     serieXp: serieXp, heatmapConsistenza: heatmapConsistenza,

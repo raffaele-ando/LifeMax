@@ -489,6 +489,10 @@ label.campo { display: block; font-size: 12px; font-weight: 700; letter-spacing:
   -webkit-background-clip: text; background-clip: text; color: transparent;
 }
 .focus-eyebrow.mit .ico { color: var(--brand-b); animation: brilla 2.4s ease-in-out infinite; }
+.focus-eyebrow.ora { color: var(--accento-testo); }
+.focus-eyebrow.ritardo { color: var(--critico); }
+/* rosso un filo più scuro per il testo piccolo dell'occhiello su sfondo chiaro (AA) */
+:root[data-mode="light"] .focus-eyebrow.ritardo { color: #c62f2f; }
 @keyframes brilla { 0%, 100% { transform: scale(1) rotate(0deg); opacity: 1; } 50% { transform: scale(1.25) rotate(12deg); opacity: .75; } }
 
 .focus-azione {

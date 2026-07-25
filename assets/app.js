@@ -649,7 +649,8 @@
   }
 
   function vistaFocus() {
-    var prossima = LM.prossimaAzione();
+    var adesso = LM.azioneAdesso();
+    var prossima = adesso.azione;
     var oggi = LM.azioniDiOggi();
     var fatte = oggi.filter(function (a) { return a.done; }).length;
     var inCoda = oggi.filter(function (a) { return !a.done; }).length - (prossima ? 1 : 0);
@@ -694,9 +695,16 @@
     var timerAttivo = timer.azioneId === prossima.id && timer.fine;
     var xpPrevisti = prossima.mit ? LM.XP_EVENTI.mit : LM.XP_EVENTI.azione;
 
+    /* l'occhiello dice PERCHÉ è questa la cosa adesso, legando Oggi al piano
+       de La Giornata: in corso / in ritardo / in programma / (libera → MIT). */
+    var eyebrow, eyebrowCls = '';
+    if (adesso.stato === 'corso') { eyebrow = ICO('clock', 15) + ' Adesso nel piano · ' + fmtMin(adesso.min) + '–' + fmtMin(adesso.fine); eyebrowCls = ' ora'; }
+    else if (adesso.stato === 'ritardo') { eyebrow = ICO('clock', 15) + ' Era in programma alle ' + fmtMin(adesso.min) + ' — riprendila'; eyebrowCls = ' ritardo'; }
+    else if (adesso.stato === 'programmata') { eyebrow = ICO('clock', 15) + ' In programma alle ' + fmtMin(adesso.min); eyebrowCls = ' ora'; }
+    else if (prossima.mit) { eyebrow = ICO('star', 15) + ' L’azione più importante di oggi'; eyebrowCls = ' mit'; }
+    else { eyebrow = ICO('target', 15) + ' La tua prossima azione'; }
     html += '<div class="focus-scena' + (timerAttivo ? ' timer-attivo' : '') + '">' +
-      '<div class="focus-eyebrow' + (prossima.mit ? ' mit' : '') + '">' +
-      (prossima.mit ? ICO('star', 15) + ' L’azione più importante di oggi' : ICO('target', 15) + ' La tua prossima azione') + '</div>' +
+      '<div class="focus-eyebrow' + eyebrowCls + '">' + eyebrow + '</div>' +
       (timerAttivo
         ? '<div class="timer-anello" id="timer-anello" style="--p:0"><div class="timer-interno">' +
           '<div class="timer-display" id="timer-display">–:––</div>' +
