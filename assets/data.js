@@ -193,6 +193,15 @@ var LM = (function () {
     s.profilo.ritmo.pasti.forEach(function (p) { if (p.durata == null) p.durata = 30; });
     if (!s.ritmoGiorno || typeof s.ritmoGiorno !== 'object') s.ritmoGiorno = {};
     if (!Array.isArray(s.registro)) s.registro = [];
+    /* abitudini di stati vecchi: senza un inizio comparirebbero anche su tutti
+       i giorni passati. Il primo giorno valido è quello in cui sono nate. */
+    if (Array.isArray(s.abitudini)) {
+      s.abitudini.forEach(function (h) {
+        if (!h.salti || typeof h.salti !== 'object') h.salti = {};
+        if (h.a === undefined) h.a = null;
+        if (!h.da) h.da = h.creata ? dayKey(new Date(h.creata)) : null;
+      });
+    }
     /* ripara stati vecchi con più di una priorità nello stesso giorno:
        ne tiene una sola (la prima), com'è l'invariante ora. */
     if (Array.isArray(s.azioni)) {
@@ -845,7 +854,10 @@ var LM = (function () {
 
   function aggiungiAbitudine(testo, areaId, giorni, opts) {
     var s = load();
-    var h = { id: uid(), testo: testo, areaId: areaId || 'salute', giorni: Array.isArray(giorni) ? giorni : [], ora: (opts && opts.ora) || null, durata: (opts && opts.durata) || null, creata: Date.now(), fatti: {} };
+    var h = { id: uid(), testo: testo, areaId: areaId || 'salute', giorni: Array.isArray(giorni) ? giorni : [],
+      ora: (opts && opts.ora) || null, durata: (opts && opts.durata) || null, creata: Date.now(), fatti: {},
+      da: (opts && opts.da) || todayKey(),   // da oggi in avanti, mai a ritroso
+      a: (opts && opts.a) || null, salti: {} };
     s.abitudini.push(h);
     registra('abitudine', 'Nuova abitudine: «' + testo + '»', false);
     save();
@@ -860,6 +872,8 @@ var LM = (function () {
     if (dati.giorni) h.giorni = dati.giorni;
     if ('ora' in dati) h.ora = dati.ora || null;
     if ('durata' in dati) h.durata = dati.durata || null;
+    if ('da' in dati) h.da = dati.da || null;
+    if ('a' in dati) h.a = dati.a || null;
     registra('abitudine', 'Modificata l’abitudine «' + h.testo + '»', false);
     save();
   }
@@ -869,10 +883,44 @@ var LM = (function () {
     if (i >= 0) { registra('abitudine', 'Eliminata l’abitudine «' + s.abitudini[i].testo + '»', true); s.abitudini.splice(i, 1); save(); }
   }
   /* prevista in un dato giorno? giorni vuoto = ogni giorno */
+  /* Un'abitudine vale da quando la crei in avanti, non a ritroso: prima
+     comparivamo anche su tutti i giorni passati, come se l'avessi sempre
+     avuta (e questo falsava le serie e il diario).
+       h.da    = primo giorno valido (di default il giorno in cui la crei)
+       h.a     = ultimo giorno valido (vuoto = senza scadenza)
+       h.salti = giorni saltati uno a uno ({'2026-07-25': true}) */
   function abitudinePrevista(h, k) {
     k = k || todayKey();
+    if (h.da && k < h.da) return false;             // non retroattiva
+    if (h.a && k > h.a) return false;               // periodo finito
+    if (h.salti && h.salti[k]) return false;        // saltata solo quel giorno
     if (!h.giorni || !h.giorni.length) return true;
     return h.giorni.indexOf(parseKey(k).getDay()) >= 0;
+  }
+  /* periodo di validità: da/a (null = da sempre / per sempre) */
+  function impostaPeriodoAbitudine(id, da, a) {
+    var s = load();
+    var h = s.abitudini.find(function (x) { return x.id === id; });
+    if (!h) return;
+    h.da = da || null;
+    h.a = a || null;
+    registra('abitudine', 'Periodo di «' + h.testo + '»: ' + (da ? 'dal ' + fmtShort(da) : 'da sempre') + (a ? ' al ' + fmtShort(a) : ' senza fine'), false);
+    save();
+  }
+  /* toglie (o rimette) l'abitudine in UN solo giorno, senza toccare le altre
+     né l'abitudine stessa */
+  function saltaGiornoAbitudine(id, k) {
+    var s = load();
+    var h = s.abitudini.find(function (x) { return x.id === id; });
+    if (!h) return false;
+    if (!h.salti) h.salti = {};
+    k = k || todayKey();
+    var saltata;
+    if (h.salti[k]) { delete h.salti[k]; saltata = false; }
+    else { h.salti[k] = true; saltata = true; if (h.fatti && h.fatti[k]) delete h.fatti[k]; }
+    registra('abitudine', (saltata ? 'Saltata «' : 'Rimessa «') + h.testo + '» il ' + fmtShort(k), false);
+    save();
+    return saltata;
   }
   function abitudiniDiOggi() {
     var k = todayKey();
@@ -904,6 +952,7 @@ var LM = (function () {
   function streakAbitudine(h) {
     var oggi = todayKey(), k = oggi, count = 0;
     for (var i = 0; i < 400; i++) {
+      if (h.da && k < h.da) break;   // prima dell'inizio non c'era: la serie finisce lì
       if (abitudinePrevista(h, k)) {
         if (h.fatti[k]) count++;
         else if (k !== oggi) break;
@@ -1530,7 +1579,9 @@ var LM = (function () {
         var k = addDays(oggi, -d);
         if ((h[2].length === 0 || h[2].indexOf(parseKey(k).getDay()) >= 0) && rnd() < 0.8) fatti[k] = true;
       }
-      s.abitudini.push({ id: uid() + 'ab' + i, testo: h[1], areaId: h[0], giorni: h[2], creata: Date.now(), fatti: fatti });
+      /* i dati di esempio hanno una storia: l'abitudine "esiste" da 20 giorni */
+      s.abitudini.push({ id: uid() + 'ab' + i, testo: h[1], areaId: h[0], giorni: h[2], creata: Date.now(),
+        fatti: fatti, da: addDays(oggi, -20), a: null, salti: {} });
     });
 
     /* orari d'esempio per la giornata di oggi, così la timeline "La giornata"
@@ -1599,6 +1650,7 @@ var LM = (function () {
     impostaScadenzaBacklog: impostaScadenzaBacklog, scadenzeVicine: scadenzeVicine,
     aggiungiAbitudine: aggiungiAbitudine, modificaAbitudine: modificaAbitudine, rimuoviAbitudine: rimuoviAbitudine,
     abitudinePrevista: abitudinePrevista, abitudiniDiOggi: abitudiniDiOggi, completaAbitudine: completaAbitudine, streakAbitudine: streakAbitudine,
+    impostaPeriodoAbitudine: impostaPeriodoAbitudine, saltaGiornoAbitudine: saltaGiornoAbitudine,
     rinominaArea: rinominaArea, modificaRegolaArea: modificaRegolaArea, toggleArea: toggleArea,
     aggiungiArea: aggiungiArea, rimuoviArea: rimuoviArea, baselineCheckin: baselineCheckin,
     registraCheckin: registraCheckin, salvaPianoMattina: salvaPianoMattina,

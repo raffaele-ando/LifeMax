@@ -1241,7 +1241,11 @@
       (isAz
         ? '<button class="btn btn-mini ig-indietro">' + ICO('lista', 13) + ' Togli dal giorno' + (e.passoDi ? '' : ' (torna tra le cose da fare)') + '</button>' +
           '<button class="btn btn-mini btn-ghost imp-pericolo ig-rimuovi">' + ICO('trash', 13) + ' Elimina</button>'
-        : '<button class="btn btn-mini btn-ghost ig-vairituali">' + ICO('refresh', 13) + ' Gestisci l’abitudine in Rituali</button>') +
+        : /* un'abitudine si toglie da QUESTO giorno senza cancellarla né
+             toccare le altre; il resto si gestisce in Rituali */
+          '<button class="btn btn-mini ig-salta">' + ICO('x', 13) + ' Togli solo da ' + esc(etichettaGiorno(k).toLowerCase()) + '</button>' +
+          '<button class="btn btn-mini ig-finequi">' + ICO('calendar', 13) + ' Finisce qui (non più da domani)</button>' +
+          '<button class="btn btn-mini btn-ghost ig-vairituali">' + ICO('refresh', 13) + ' Gestiscila in Rituali</button>') +
       '</div>' +
       '</div>';
     apriSheet(esc(e.testo), html, function (root) {
@@ -1293,8 +1297,21 @@
         LM.rimuoviAzione(id); toast('Rimossa da oggi.', 0, 'trash');
         chiudiSheet(); ricarica();
       });
+      var salta = root.querySelector('.ig-salta');
+      if (salta) salta.addEventListener('click', function () {
+        LM.saltaGiornoAbitudine(id, k);
+        toast('Tolta solo da questo giorno: le altre e i prossimi giorni non cambiano.', 0, 'x');
+        chiudiSheet(); ricarica();
+      });
+      var fq = root.querySelector('.ig-finequi');
+      if (fq) fq.addEventListener('click', function () {
+        var hh = LM.load().abitudini.find(function (x) { return x.id === id; });
+        LM.impostaPeriodoAbitudine(id, hh ? hh.da : null, k);
+        toast('Da domani non comparirà più. Lo storico resta.', 0, 'calendar');
+        chiudiSheet(); ricarica();
+      });
       var vai = root.querySelector('.ig-vairituali');
-      if (vai) vai.addEventListener('click', function () { chiudiSheet(); location.hash = '#/rituali'; });
+      if (vai) vai.addEventListener('click', function () { chiudiSheet(); sottoRituale = 'abitudini'; location.hash = '#/rituali'; });
     });
   }
 
@@ -2285,6 +2302,16 @@
           '<input type="text" class="abit-nome" data-abnome="' + h.id + '" value="' + esc(h.testo) + '" aria-label="Nome abitudine">' +
           '<button class="icona-btn" data-abdel="' + h.id + '" title="Rimuovi">' + ICO('trash', 14) + '</button></div>' +
           '<div class="abit-riga-giorni">' + chipsGiorni(h.giorni) + '<span class="abit-giorni-rec">' + riepilogoGiorni(h.giorni) + '</span></div>' +
+          /* Per quanto tempo vale: di default da quando l'hai creata e senza
+             fine, ma si può dare un periodo preciso (es. "per un mese"). */
+          '<div class="abit-periodo">' +
+          '<span class="ap-eti">' + ICO('calendar', 12) + ' vale</span>' +
+          '<label class="ap-campo">dal <input type="date" data-abda="' + h.id + '" value="' + (h.da || '') + '" aria-label="Dal giorno"></label>' +
+          '<label class="ap-campo">al <input type="date" data-aba="' + h.id + '" value="' + (h.a || '') + '" min="' + (h.da || '') + '" aria-label="Al giorno (vuoto = senza fine)"></label>' +
+          (h.a ? '<button class="btn btn-mini btn-ghost" data-abnofine="' + h.id + '">Senza fine</button>' : '<span class="ap-nota">vuoto = senza fine</span>') +
+          (Object.keys(h.salti || {}).length ? (function () { var n = Object.keys(h.salti).length;
+            return '<span class="ap-salti" title="' + esc(Object.keys(h.salti).sort().map(LM.fmtShort).join(', ')) + '">' + n + (n === 1 ? ' giorno saltato' : ' giorni saltati') + '</span>'; })() : '') +
+          '</div>' +
           '</div>';
       }).join('')
       : '';
@@ -2311,6 +2338,27 @@
     });
     corpo.querySelectorAll('[data-abdel]').forEach(function (b) {
       b.addEventListener('click', function () { LM.rimuoviAbitudine(b.getAttribute('data-abdel')); ritualeAbitudini(corpo); });
+    });
+    corpo.querySelectorAll('[data-abda]').forEach(function (inp) {
+      inp.addEventListener('change', function () {
+        var h = LM.load().abitudini.find(function (x) { return x.id === inp.getAttribute('data-abda'); });
+        LM.impostaPeriodoAbitudine(inp.getAttribute('data-abda'), inp.value || null, h ? h.a : null);
+        ritualeAbitudini(corpo);
+      });
+    });
+    corpo.querySelectorAll('[data-aba]').forEach(function (inp) {
+      inp.addEventListener('change', function () {
+        var h = LM.load().abitudini.find(function (x) { return x.id === inp.getAttribute('data-aba'); });
+        LM.impostaPeriodoAbitudine(inp.getAttribute('data-aba'), h ? h.da : null, inp.value || null);
+        ritualeAbitudini(corpo);
+      });
+    });
+    corpo.querySelectorAll('[data-abnofine]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var h = LM.load().abitudini.find(function (x) { return x.id === b.getAttribute('data-abnofine'); });
+        LM.impostaPeriodoAbitudine(b.getAttribute('data-abnofine'), h ? h.da : null, null);
+        ritualeAbitudini(corpo);
+      });
     });
     corpo.querySelectorAll('[data-abnome]').forEach(function (inp) {
       inp.addEventListener('change', function () { LM.modificaAbitudine(inp.getAttribute('data-abnome'), { testo: inp.value.trim() }); });

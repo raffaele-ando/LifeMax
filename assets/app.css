@@ -1593,6 +1593,12 @@ body.sto-trascinando { cursor: grabbing; user-select: none; -webkit-user-select:
 .abit-riga-top .tag-area { color: var(--c-area); }
 .abit-nome { flex: 1; min-width: 0; padding: 7px 10px; font-size: 13.5px; }
 .abit-riga-giorni { display: flex; align-items: center; gap: 10px; margin-top: 8px; flex-wrap: wrap; }
+.abit-periodo { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--griglia); }
+.ap-eti { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; color: var(--inchiostro-muto); }
+.ap-campo { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 650; color: var(--inchiostro-2); }
+.ap-campo input[type="date"] { padding: 4px 7px; font-size: 11.5px; border-radius: 7px; }
+.ap-nota { font-size: 11px; color: var(--inchiostro-muto); }
+.ap-salti { font-size: 10.5px; font-weight: 750; color: var(--inchiostro-2); background: var(--superficie-2); border: 1px solid var(--bordo); border-radius: 99px; padding: 1px 8px; }
 .abit-giorni-rec { font-size: 11.5px; color: var(--inchiostro-muto); }
 .giorni-chips { display: inline-flex; gap: 4px; }
 .giorno-chip { width: 31px; height: 31px; border-radius: 8px; border: 1px solid var(--bordo-forte); background: var(--superficie-1); font-size: 12px; font-weight: 700; color: var(--inchiostro-muto); transition: all var(--t-veloce); }
