@@ -59,6 +59,7 @@
     upload: '<path d="M12 15.5v-11M7.7 8.8 12 4.5l4.3 4.3"/><path d="M4.8 20h14.4"/>',
     save: '<path d="M6 20h12a2 2 0 0 0 2-2V8.5L15.5 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2z"/><path d="M8 4v5h6.5M8 20v-6h8v6"/>',
     lista: '<path d="M9 6.5h11M9 12h11M9 17.5h11"/><path d="M4.6 6.5l.9.9 1.6-1.9M4.6 12l.9.9 1.6-1.9M4.6 17.5l.9.9 1.6-1.9"/>',
+    dots: '<circle cx="5.2" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="18.8" cy="12" r="1.5" fill="currentColor" stroke="none"/>',
     aiuto: '<circle cx="12" cy="12" r="9"/><path d="M9.4 9.3a2.7 2.7 0 0 1 5.2 1c0 1.7-2.6 2.1-2.6 3.9"/><path d="M12 17.4h.01"/>',
     chevronGiu: '<path d="M6 9.5l6 6 6-6"/>',
     piu2: '<path d="M12 5v14M5 12h14"/>',

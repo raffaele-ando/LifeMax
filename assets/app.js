@@ -888,8 +888,11 @@
       var fatto = e.tipo === 'azione' ? e.done : e.fatto;
       var attr = e.tipo === 'azione' ? 'data-tl-az="' + e.id + '"' : 'data-tl-ab="' + e.id + '"';
       var check = (opts.interactive && !opts.mini) ? '<button class="tl-blk-check" ' + attr + ' aria-label="Fatto">' + ICO('check', 11) + '</button>' : '';
-      var clic = opts.mini ? ' data-tl-giorno="' + d.k + '"' : '';
-      return '<div class="tl-blk tl-blk-att' + (fatto ? ' fatta' : '') + '"' + clic + ' style="' + pos + ';--c-area:' + col + '" title="' + esc(e.testo) + '">' +
+      /* nella pagina Giornata il blocco si tocca per modificarlo (orario,
+         durata, area) in un pannellino: niente più lista doppia sotto. */
+      var clic = opts.mini ? ' data-tl-giorno="' + d.k + '"'
+        : (opts.interactive ? ' data-blk-' + (e.tipo === 'azione' ? 'az' : 'ab') + '="' + e.id + '"' : '');
+      return '<div class="tl-blk tl-blk-att' + (fatto ? ' fatta' : '') + (opts.interactive && !opts.mini ? ' tl-blk-clic' : '') + '"' + clic + ' style="' + pos + ';--c-area:' + col + '" title="' + esc(e.testo) + '">' +
         check + '<span class="tl-blk-t">' + (e.mit ? ICO('star', 9) + ' ' : '') + esc(e.testo) + '</span>' +
         (hgt > 30 && !opts.mini ? '<span class="tl-blk-ora">' + e.ora + '–' + fmtMin(e.min + dur) + '</span>' : '') + '</div>';
     }).join('');
@@ -898,6 +901,61 @@
     return '<div class="tl-grid' + (opts.mini ? ' tl-grid-mini' : '') + (opts.rail === false ? ' tl-grid-norail' : '') + '" style="height:' + H + 'px">' +
       '<div class="tl-lines">' + lines + '</div>' +
       '<div class="tl-blocks">' + shade + blocks + now + '</div></div>';
+  }
+
+  /* Pannellino per modificare UNA cosa della giornata (azione o abitudine):
+     spuntala, dàlle un orario, una durata, un'area. Sostituisce la vecchia
+     lista "Orari e durate" che raddoppiava tutto quello che era già nel grafico.
+     onCambio() ridisegna la giornata dietro al pannello. */
+  function apriItemGiornata(k, id, tipo, onCambio) {
+    var isAz = tipo === 'azione';
+    function trova() {
+      var dd = nodiGiorno(k);
+      return dd.placed.concat(dd.tray).find(function (x) { return x.id === id; });
+    }
+    var e = trova();
+    if (!e) return;
+    var ar = areaById(e.areaId), col = LM.coloreArea(ar);
+    var fatto = isAz ? e.done : e.fatto;
+    var durOpt = DURATE.map(function (o) { return '<option value="' + o.v + '"' + ((e.dur || '') === o.v ? ' selected' : '') + '>' + o.t + '</option>'; }).join('');
+    var html = '<div class="ig-ed">' +
+      '<button class="btn ' + (fatto ? 'btn-ghost' : 'btn-primario') + ' ig-fatto"><span class="ig-fatto-ico">' + ICO(fatto ? 'refresh' : 'check', 16) + '</span>' + (fatto ? 'Fatta — togli la spunta' : 'Segna come fatta') + '</button>' +
+      '<div class="ig-griglia">' +
+      '<label class="campo">' + ICO('clock', 12) + ' Orario</label><input type="time" class="tl-time" id="ig-ora" value="' + (e.ora || '') + '">' +
+      '<label class="campo">Durata</label><select class="tl-dur" id="ig-dur">' + durOpt + '</select>' +
+      '<label class="campo">Area</label>' + selectAree('ig-area', e.areaId) +
+      '</div>' +
+      (e.ora ? '<button class="btn btn-mini btn-ghost ig-noora">' + ICO('clock', 13) + ' Togli l’orario (torna tra le cose senza orario)</button>' : '') +
+      '</div>';
+    apriSheet(esc(e.testo), html, function (root) {
+      function ricarica() { onCambio(); }
+      root.querySelector('.ig-fatto').addEventListener('click', function (ev) {
+        if (isAz) feedbackSpunta(ev, LM.completaAzione(id), 'Fatto.', 'check');
+        else feedbackSpunta(ev, LM.completaAbitudine(id), 'Fatta. Continua così.', 'flame');
+        chiudiSheet(); ricarica();
+      });
+      var ora = root.querySelector('#ig-ora');
+      ora.addEventListener('change', function () {
+        if (isAz) LM.setOraAzione(id, ora.value || null); else LM.modificaAbitudine(id, { ora: ora.value || null });
+        ricarica();
+      });
+      var dur = root.querySelector('#ig-dur');
+      dur.addEventListener('change', function () {
+        var v = dur.value ? +dur.value : null;
+        if (isAz) LM.setDurataAzione(id, v); else LM.modificaAbitudine(id, { durata: v });
+        ricarica();
+      });
+      var area = root.querySelector('#ig-area');
+      area.addEventListener('change', function () {
+        if (isAz) LM.cambiaAreaAzione(id, area.value); else LM.modificaAbitudine(id, { areaId: area.value });
+        ricarica();
+      });
+      var noora = root.querySelector('.ig-noora');
+      if (noora) noora.addEventListener('click', function () {
+        if (isAz) LM.setOraAzione(id, null); else LM.modificaAbitudine(id, { ora: null });
+        chiudiSheet(); ricarica();
+      });
+    });
   }
 
   function montaGiornata(container, opts) {
@@ -910,38 +968,33 @@
     var nowMin = d.isToday ? now.getHours() * 60 + now.getMinutes() : null;
 
     var vuota = !d.placed.length && !d.tray.length;
-    var editItems = interactive ? d.placed.concat(d.tray).filter(function (e) { return e.tipo !== 'pasto'; }) : [];
-    var apri = compact || giornataEditorAperto || d.placed.length === 0;
 
-    function edRigaHtml(e) {
-      var ar = areaById(e.areaId), col = LM.coloreArea(ar);
-      var fatto = e.tipo === 'azione' ? e.done : e.fatto;
-      var attr = e.tipo === 'azione' ? 'data-tl-az="' + e.id + '"' : 'data-tl-ab="' + e.id + '"';
-      return '<div class="tl-ed-riga' + (fatto ? ' fatta' : '') + (e.min == null ? ' senzaora' : '') + '" style="--c-area:' + col + '">' +
-        '<button class="tl-check" ' + attr + ' aria-label="Fatto">' + ICO('check', 12) + '</button>' +
-        '<span class="tl-tag" style="color:' + col + '" title="' + esc(ar.nome) + '">' + ICO(ar.icona, 13) + '</span>' +
-        '<span class="tl-ed-testo">' + esc(e.testo) + (e.mit ? ' <span class="tag-mit">' + ICO('star', 9) + 'Priorità</span>' : '') + '</span>' +
-        '<input type="time" class="tl-time" value="' + (e.ora || '') + '" ' + attr + ' aria-label="Orario">' +
-        '<select class="tl-dur" ' + attr + ' aria-label="Durata">' + DURATE.map(function (o) { return '<option value="' + o.v + '"' + ((e.dur || '') === o.v || (!e.dur && o.v === '') ? ' selected' : '') + '>' + o.t + '</option>'; }).join('') + '</select>' +
-        '</div>';
+    /* Le cose SENZA orario non stanno sul grafico: le mostriamo sotto, come
+       righe che si toccano per dargli un orario (o si spuntano al volo).
+       Le cose CON orario si modificano toccando il loro blocco nel grafico. */
+    var senzaOra = '';
+    if (!compact && interactive && d.tray.length) {
+      senzaOra = '<div class="gio-so"><div class="gio-so-eti">' + ICO('clock', 12) + ' Senza orario <span class="gio-so-n">' + d.tray.length + '</span> — toccale per dargli un posto nella giornata</div>' +
+        d.tray.map(function (e) {
+          var ar = areaById(e.areaId), col = LM.coloreArea(ar);
+          var fatto = e.tipo === 'azione' ? e.done : e.fatto;
+          var attr = e.tipo === 'azione' ? 'data-tl-az="' + e.id + '"' : 'data-tl-ab="' + e.id + '"';
+          var bAttr = 'data-blk-' + (e.tipo === 'azione' ? 'az' : 'ab') + '="' + e.id + '"';
+          return '<div class="gio-so-riga' + (fatto ? ' fatta' : '') + '" style="--c-area:' + col + '">' +
+            '<button class="tl-check" ' + attr + ' aria-label="Fatto">' + ICO('check', 12) + '</button>' +
+            '<button class="gio-so-corpo" ' + bAttr + '>' +
+            '<span class="tl-tag" style="color:' + col + '" title="' + esc(ar.nome) + '">' + ICO(ar.icona, 13) + '</span>' +
+            '<span class="gio-so-testo">' + esc(e.testo) + (e.mit ? ' ' + ICO('star', 9) : '') + '</span>' +
+            '<span class="gio-so-cta">' + ICO('clock', 12) + ' dai un orario</span></button></div>';
+        }).join('') + '</div>';
     }
-    var edRows = editItems.map(edRigaHtml).join('');
-
-    /* Editor completo (orari + durate) e aggiunta rapida: SOLO nella pagina
-       "Giornata" (non-compact). Nel pop-up di "Oggi" si guarda e si spunta. */
-    var editor = '';
-    if (!compact && interactive && editItems.length) {
-      editor = '<div class="tl-editor"><div class="tl-ed-tit">' + ICO('pencil', 13) + ' Orari e durate' +
-        (d.tray.length ? ' <span class="tl-ed-badge">' + d.tray.length + ' senza orario</span>' : '') + '</div>' +
-        '<div class="tl-ed-lista">' + edRows + '</div></div>';
-    }
+    /* Aggiunta rapida: solo il testo e l'area. L'orario si dà dopo, toccando
+       la cosa (meno campi da riempire = meno attrito per buttarla giù). */
     var quickAdd = '';
     if (!compact && interactive) {
       quickAdd = '<form class="tl-add" id="tl-add"><input type="text" id="tl-add-testo" placeholder="Aggiungi qualcosa a oggi…" aria-label="Aggiungi">' +
-        '<input type="time" id="tl-add-ora" class="tl-time" aria-label="Orario">' +
-        '<select id="tl-add-dur" class="tl-dur" aria-label="Durata">' + DURATE.map(function (o) { return '<option value="' + o.v + '">' + o.t + '</option>'; }).join('') + '</select>' +
         '<span class="tl-add-area">' + selectAree('tl-add-area') + '</span>' +
-        '<button class="btn btn-mini btn-primario" type="submit">' + ICO('plus', 14) + '</button></form>';
+        '<button class="btn btn-mini btn-primario" type="submit">' + ICO('plus', 14) + ' Aggiungi</button></form>';
     }
 
     /* sonno e pasti del giorno: UN solo posto, in cima alla pagina, con un
@@ -1007,17 +1060,22 @@
       var pross = d.placed.filter(function (e) { return e.min + (e.dur || 30) > nowMin && !(e.tipo === 'azione' ? e.done : (e.tipo === 'abitudine' ? e.fatto : false)); })[0];
       sommario = 'Adesso <b>' + fmtMin(nowMin) + '</b>' + (pross ? ' · poi ' + esc(pross.nome || pross.testo) + ' alle ' + pross.ora : ' · niente altro in agenda');
     }
+    var sottoHead = compact
+      ? (sommario || 'Come è divisa la tua giornata. Spunta ciò che fai; per cambiarla apri Giornata.')
+      : (interactive ? 'Tocca un blocco per dargli orario o durata; spunta ciò che fai.' : 'Com’era divisa questa giornata, dal risveglio al sonno.');
     var head = opts.header === false ? '' : '<div class="tl-head"><div><h2>' + ICO('clock', 16) + ' ' + (opts.giorno && !d.isToday ? etichettaGiorno(k) : 'La giornata') + '</h2>' +
-      '<div class="sotto">' + (compact ? (sommario || 'Come è divisa la tua giornata. Spunta ciò che fai; per modificarla apri Giornata.') : 'Come sono divise le ore, dal risveglio al sonno. I blocchi occupano il tempo che scegli.') + '</div></div></div>';
+      '<div class="sotto">' + sottoHead + '</div></div></div>';
     var gridHtml = vuota
-      ? '<div class="vuoto" style="padding:18px 8px"><b>Niente in agenda per questo giorno.</b>' + (interactive ? '<br>Dai un orario a un’abitudine o a una cosa di oggi e comparirà qui.' : '') + '</div>'
+      ? '<div class="vuoto" style="padding:18px 8px"><b>Niente in agenda per questo giorno.</b>' + (interactive ? '<br>Aggiungi una cosa qui sotto, o dai un orario a un’abitudine.' : '') + '</div>'
       : htmlTimeGrid(d, { interactive: interactive, nowMin: nowMin, pxh: pxh });
 
     if (compact) {
       var popNota = d.tray.length ? '<div class="tl-pop-note">' + ICO('clock', 12) + ' ' + d.tray.length + (d.tray.length === 1 ? ' cosa senza orario' : ' cose senza orario') + ' — assegnale un orario in <b>Giornata</b>.</div>' : '';
       container.innerHTML = '<div class="card giornata giornata-pop">' + head + '<div id="tl-grid-host">' + gridHtml + '</div>' + popNota + footer + '</div>';
     } else {
-      container.innerHTML = '<div class="card giornata">' + head + sonnoTop + '<div id="tl-grid-host">' + gridHtml + '</div>' + editor + quickAdd + trayRo + footer + '</div>';
+      var navGiorno = orizzNav('giorno', k);
+      container.innerHTML = navGiorno + '<div class="card giornata">' + head + sonnoTop + '<div id="tl-grid-host">' + gridHtml + '</div>' + senzaOra + quickAdd + trayRo + footer + '</div>';
+      wireOrizzNav(container, 'giorno');
     }
 
     var af = container.querySelector('#tl-add');
@@ -1025,52 +1083,46 @@
       e.preventDefault();
       var t = container.querySelector('#tl-add-testo').value.trim();
       if (!t) return;
-      var oraV = container.querySelector('#tl-add-ora').value || null;
-      var durV = container.querySelector('#tl-add-dur').value;
       var mit = LM.azioniDiOggi().filter(function (a) { return !a.done; }).length === 0;
-      LM.aggiungiAzione(t, container.querySelector('#tl-add-area').value, { ora: oraV, durata: durV ? +durV : null, mit: mit });
+      LM.aggiungiAzione(t, container.querySelector('#tl-add-area').value, { mit: mit });
       montaGiornata(container, opts); aggiornaNav();
     });
 
     if (interactive) {
       /* completare un elemento (spunta) ricostruisce tutto: non c'è un campo
          attivo da preservare. */
-      function wireSpunte(scope) {
-        scope.querySelectorAll('.tl-blk-check[data-tl-az], .tl-ed-riga .tl-check[data-tl-az]').forEach(function (b) {
+      function onCambio() { montaGiornata(container, opts); aggiornaNav(); }
+      function wireGriglia(scope) {
+        scope.querySelectorAll('.tl-check[data-tl-az], .tl-blk-check[data-tl-az]').forEach(function (b) {
           b.addEventListener('click', function (ev) {
             feedbackSpunta(ev, LM.completaAzione(b.getAttribute('data-tl-az')), 'Fatto.', 'check');
-            montaGiornata(container, opts); aggiornaNav();
+            onCambio();
           });
         });
-        scope.querySelectorAll('.tl-blk-check[data-tl-ab], .tl-ed-riga .tl-check[data-tl-ab]').forEach(function (b) {
+        scope.querySelectorAll('.tl-check[data-tl-ab], .tl-blk-check[data-tl-ab]').forEach(function (b) {
           b.addEventListener('click', function (ev) {
             feedbackSpunta(ev, LM.completaAbitudine(b.getAttribute('data-tl-ab')), 'Fatta. Continua così.', 'flame');
             montaGiornata(container, opts);
           });
         });
+        /* toccare un blocco (o una riga «senza orario») apre il pannellino di
+           modifica di QUELLA cosa: orario, durata, area, spunta. */
+        scope.querySelectorAll('[data-blk-az]').forEach(function (b) {
+          b.addEventListener('click', function () { apriItemGiornata(k, b.getAttribute('data-blk-az'), 'azione', onCambio); });
+        });
+        scope.querySelectorAll('[data-blk-ab]').forEach(function (b) {
+          b.addEventListener('click', function () { apriItemGiornata(k, b.getAttribute('data-blk-ab'), 'abitudine', onCambio); });
+        });
       }
-      /* cambiare orario/durata aggiorna SOLO la griglia visiva, non l'editor:
-         così il selettore dell'ora o la tastiera che stai usando NON vengono
-         chiusi/ricostruiti (era il bug del "refresh" a ogni modifica). */
+      /* refresh SOLO della griglia visiva (usato dai cambi di sonno/pasti):
+         non tocca eventuali campi con il fuoco altrove nella pagina. */
       function refreshGriglia() {
         var host = container.querySelector('#tl-grid-host');
         if (!host) { montaGiornata(container, opts); return; }
         host.innerHTML = htmlTimeGrid(nodiGiorno(k), { interactive: true, nowMin: nowMin, pxh: pxh });
-        wireSpunte(host);
+        wireGriglia(host);
       }
-      wireSpunte(container);
-      container.querySelectorAll('.tl-time[data-tl-az]').forEach(function (inp) {
-        inp.addEventListener('change', function () { LM.setOraAzione(inp.getAttribute('data-tl-az'), inp.value || null); refreshGriglia(); });
-      });
-      container.querySelectorAll('.tl-time[data-tl-ab]').forEach(function (inp) {
-        inp.addEventListener('change', function () { LM.modificaAbitudine(inp.getAttribute('data-tl-ab'), { ora: inp.value || null }); refreshGriglia(); });
-      });
-      container.querySelectorAll('.tl-dur[data-tl-az]').forEach(function (sel) {
-        sel.addEventListener('change', function () { LM.setDurataAzione(sel.getAttribute('data-tl-az'), sel.value ? +sel.value : null); refreshGriglia(); });
-      });
-      container.querySelectorAll('.tl-dur[data-tl-ab]').forEach(function (sel) {
-        sel.addEventListener('change', function () { LM.modificaAbitudine(sel.getAttribute('data-tl-ab'), { durata: sel.value ? +sel.value : null }); refreshGriglia(); });
-      });
+      wireGriglia(container);
 
       /* --- sonno e pasti del giorno (registro), modifica uno per uno --- */
       function aggiornaDorm() { var el = container.querySelector('#sp-dorm'); if (el) el.textContent = fmtOre(LM.minutiSonno(k)); }
@@ -2119,6 +2171,31 @@
       });
     }
 
+    /* Menu "⋯" di una cosa da fare: le azioni poco frequenti (scadenza, area,
+       passi, rinomina, rimuovi) tolte dalla riga per non affollarla. */
+    function apriBkMenu(b) {
+      var isProg = b.steps && b.steps.length;
+      var html = '<div class="bk-menu">' +
+        '<label class="campo">' + ICO('calendar', 13) + ' Scadenza</label>' +
+        '<div class="bk-menu-scad"><input type="date" id="bkm-scad"' + (b.scadenza ? ' value="' + b.scadenza + '"' : '') + '>' +
+        (b.scadenza ? '<button class="btn btn-mini btn-ghost" id="bkm-scad-x">Togli</button>' : '') + '</div>' +
+        '<label class="campo">Area</label>' + selectAree('bkm-area', b.areaId) +
+        '<div class="bk-menu-azioni">' +
+        '<button class="btn btn-mini" id="bkm-steps">' + ICO('lista', 13) + ' ' + (isProg ? 'Apri i passi' : 'Dividi in passi') + '</button>' +
+        '<button class="btn btn-mini" id="bkm-mod">' + ICO('pencil', 13) + ' Rinomina</button>' +
+        '<button class="btn btn-mini btn-ghost imp-pericolo" id="bkm-del">' + ICO('trash', 13) + ' Rimuovi</button>' +
+        '</div></div>';
+      apriSheet(b.testo, html, function (root) {
+        root.querySelector('#bkm-scad').addEventListener('change', function () { LM.impostaScadenzaBacklog(b.id, this.value || null); chiudiSheet(); ridisegna(); });
+        var sx = root.querySelector('#bkm-scad-x');
+        if (sx) sx.addEventListener('click', function () { LM.impostaScadenzaBacklog(b.id, null); chiudiSheet(); ridisegna(); });
+        root.querySelector('#bkm-area').addEventListener('change', function () { LM.cambiaAreaBacklog(b.id, this.value); chiudiSheet(); ridisegna(); });
+        root.querySelector('#bkm-steps').addEventListener('click', function () { progettiAperti[b.id] = true; chiudiSheet(); ridisegna(); });
+        root.querySelector('#bkm-mod').addEventListener('click', function () { backlogEditId = b.id; chiudiSheet(); ridisegna(); });
+        root.querySelector('#bkm-del').addEventListener('click', function () { LM.rimuoviBacklog(b.id); chiudiSheet(); ridisegna(); });
+      });
+    }
+
     /* --- HTML di un elemento "da fare" (anche progetto con passi) --- */
     function bkItemHtml(b) {
       if (b.id === backlogEditId) {
@@ -2147,15 +2224,15 @@
         '<div class="bk-item-testo">' + esc(b.testo) +
         (b.scadenza ? ' <span class="scad-badge ' + scadInfo(b.scadenza).cls + '">' + scadInfo(b.scadenza).testo + '</span>' : '') +
         (isProg ? ' <span class="prog-mini">' + av.fatti + '/' + av.tot + '</span>' : '') + '</div>' +
+        /* una sola azione in evidenza (Oggi / Passo). Tutto il resto —
+           scadenza, area, rinomina, passi, rimuovi — sta dietro «⋯», così la
+           riga resta leggibile anche con decine di cose. */
         '<div class="bk-item-azioni">' +
         (isProg
-          ? '<button class="btn btn-mini btn-primario" data-bkpasso="' + b.id + '" title="Porta in Oggi il prossimo passo">' + ICO('arrowRight', 13) + ' Passo</button>'
+          ? '<button class="btn btn-mini btn-primario" data-bkpasso="' + b.id + '" title="Porta in Oggi il prossimo passo">' + ICO('arrowRight', 13) + ' Passo</button>' +
+            '<button class="icona-btn' + (apertoP ? ' on' : '') + '" data-bksteps="' + b.id + '" title="Passi del progetto" aria-label="Passi">' + ICO('lista', 14) + '</button>'
           : '<button class="btn btn-mini btn-primario" data-bkoggi="' + b.id + '">' + ICO('arrowRight', 13) + ' Oggi</button>') +
-        '<button class="icona-btn' + (apertoP ? ' on' : '') + '" data-bksteps="' + b.id + '" title="Passi / progetto" aria-label="Passi">' + ICO('lista', 14) + '</button>' +
-        '<label class="scad-set' + (b.scadenza ? ' attiva' : '') + '" title="Scadenza">' + ICO('calendar', 14) + '<input type="date" data-scaddate="' + b.id + '"' + (b.scadenza ? ' value="' + b.scadenza + '"' : '') + '></label>' +
-        '<button class="icona-btn" data-bkmod="' + b.id + '" title="Modifica" aria-label="Modifica">' + ICO('pencil', 14) + '</button>' +
-        '<span class="bk-area-sel">' + selectBacklogArea(b.id, b.areaId) + '</span>' +
-        '<button class="icona-btn" data-bkdel="' + b.id + '" title="Rimuovi" aria-label="Rimuovi">' + ICO('trash', 14) + '</button>' +
+        '<button class="icona-btn" data-bkmenu="' + b.id + '" title="Altro" aria-label="Altro">' + ICO('dots', 16) + '</button>' +
         '</div></div>' +
         (isProg ? '<div class="prog-barra"><span style="width:' + av.pct + '%"></span></div>' : '') +
         passi + '</div>';
@@ -2183,6 +2260,12 @@
       });
       scope.querySelectorAll('[data-scaddate]').forEach(function (inp) {
         inp.addEventListener('change', function () { LM.impostaScadenzaBacklog(inp.getAttribute('data-scaddate'), inp.value || null); ridisegna(); });
+      });
+      scope.querySelectorAll('[data-bkmenu]').forEach(function (b) {
+        b.addEventListener('click', function () {
+          var it = LM.load().backlog.find(function (x) { return x.id === b.getAttribute('data-bkmenu'); });
+          if (it) apriBkMenu(it);
+        });
       });
       scope.querySelectorAll('[data-bksteps]').forEach(function (b) {
         b.addEventListener('click', function () { var id = b.getAttribute('data-bksteps'); progettiAperti[id] = !progettiAperti[id]; ridisegna(); });

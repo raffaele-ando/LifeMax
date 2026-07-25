@@ -1229,6 +1229,16 @@ kbd {
 .bk-item-azioni { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .bk-area-sel { display: inline-flex; }
 
+/* menu "⋯" di una cosa da fare (sheet) */
+.bk-menu { display: flex; flex-direction: column; gap: 4px; }
+.bk-menu .campo { margin: 10px 0 2px; }
+.bk-menu .campo:first-child { margin-top: 0; }
+.bk-menu #bkm-area, .bk-menu #bkm-scad { width: 100%; }
+.bk-menu-scad { display: flex; align-items: center; gap: 8px; }
+.bk-menu-scad #bkm-scad { flex: 1; }
+.bk-menu-azioni { display: flex; flex-direction: column; gap: 8px; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--griglia); }
+.bk-menu-azioni .btn { justify-content: flex-start; gap: 9px; }
+
 /* ---------- progetti con passi ---------- */
 .bk-item.progetto { padding-bottom: 11px; }
 .prog-mini { flex: none; margin-left: 4px; font-size: 11px; font-weight: 750; padding: 1px 7px; border-radius: 99px; background: color-mix(in srgb, var(--accento) 14%, transparent); color: var(--accento); font-variant-numeric: tabular-nums; }
@@ -1319,6 +1329,32 @@ kbd {
 .tl-add { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--griglia); }
 .tl-add #tl-add-testo { flex: 1 1 180px; min-width: 0; padding: 8px 11px; font-size: 13px; }
 .tl-add .tl-add-area select { padding: 7px 9px; font-size: 12.5px; }
+
+/* blocco toccabile nel grafico (pagina Giornata) */
+.tl-blk-clic { cursor: pointer; }
+.tl-blk-clic:hover { box-shadow: var(--e2); filter: brightness(1.02); }
+
+/* cose "senza orario": righe che si toccano per dargli un posto nella giornata */
+.gio-so { margin-top: 14px; border-top: 1px solid var(--griglia); padding-top: 11px; }
+.gio-so-eti { font-size: 11.5px; color: var(--inchiostro-muto); margin-bottom: 8px; display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+.gio-so-n { font-weight: 800; color: var(--inchiostro-2); background: var(--superficie-3); border-radius: 99px; padding: 0 7px; }
+.gio-so-riga { display: flex; align-items: center; gap: 9px; padding: 4px 0; }
+.gio-so-corpo { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; padding: 7px 10px; border-radius: var(--raggio-s); border: 1px solid var(--bordo); border-left: 3px solid var(--c-area); background: color-mix(in srgb, var(--c-area) 6%, var(--superficie-1)); cursor: pointer; text-align: left; transition: all var(--t-veloce); }
+.gio-so-corpo:hover { border-color: color-mix(in srgb, var(--c-area) 45%, var(--bordo-forte)); background: color-mix(in srgb, var(--c-area) 11%, var(--superficie-1)); }
+.gio-so-testo { flex: 1; min-width: 0; font-size: 13px; font-weight: 550; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gio-so-cta { flex: none; font-size: 11px; font-weight: 700; color: var(--accento-testo); display: inline-flex; align-items: center; gap: 3px; }
+.gio-so-riga.fatta .gio-so-testo { text-decoration: line-through; color: var(--inchiostro-muto); }
+.gio-so-riga.fatta .gio-so-cta { display: none; }
+.gio-so-riga.fatta .tl-check { background: linear-gradient(135deg, #0eb35c, #0ca30c); border-color: transparent; color: #fff; }
+
+/* pannellino "modifica una cosa" (sheet) */
+.ig-ed { display: flex; flex-direction: column; gap: 4px; }
+.ig-fatto { width: 100%; justify-content: center; gap: 8px; margin-bottom: 6px; }
+.ig-fatto-ico { display: inline-flex; }
+.ig-griglia { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 9px 12px; }
+.ig-griglia .campo { margin: 0; }
+.ig-griglia #ig-ora, .ig-griglia #ig-dur, .ig-griglia #ig-area { width: 100%; }
+.ig-ed .ig-noora { margin-top: 10px; justify-content: center; }
 
 /* pop-up "La giornata" (leggero, una colonna, si adatta all'altezza) */
 .sheet.sheet-largo { max-width: 540px; }
