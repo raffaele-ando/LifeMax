@@ -861,7 +861,13 @@
     return (h ? h + 'h' : '') + (h && m ? ' ' : '') + (m ? m + 'm' : (h ? '' : '0m'));
   }
 
-  var DURATE =[{ v: '', t: 'durata —' }, { v: 15, t: '15 min' }, { v: 30, t: '30 min' }, { v: 45, t: '45 min' }, { v: 60, t: '1 h' }, { v: 90, t: '1 h 30' }, { v: 120, t: '2 h' }, { v: 180, t: '3 h' }];
+  /* scaletta di durate ampia: dai 5 minuti (una micro-azione per partire) alle
+     8 ore (una giornata di lavoro), così nessuno deve arrotondare per forza */
+  var DURATE = [{ v: '', t: 'durata —' },
+    { v: 5, t: '5 min' }, { v: 10, t: '10 min' }, { v: 15, t: '15 min' }, { v: 20, t: '20 min' },
+    { v: 25, t: '25 min' }, { v: 30, t: '30 min' }, { v: 45, t: '45 min' }, { v: 60, t: '1 h' },
+    { v: 90, t: '1 h 30' }, { v: 120, t: '2 h' }, { v: 150, t: '2 h 30' }, { v: 180, t: '3 h' },
+    { v: 240, t: '4 h' }, { v: 300, t: '5 h' }, { v: 360, t: '6 h' }, { v: 480, t: '8 h' }];
 
   /* orizzonte della pagina "Giornata" e giorno/settimana/mese di riferimento */
   var giornataOrizzonte = 'giorno';
@@ -1906,14 +1912,16 @@
 
     corpo.innerHTML = '<div class="card">' +
       testaRituale('sun', 'Le azioni di oggi',
-        'Qui le <b>scegli</b> (poi le fai in <i>Oggi</i>): al massimo <b>tre cose</b>. La prima è la più importante: se fai solo quella, la giornata è già a posto. Domani si riparte da capo.') +
+        'Qui le <b>scegli</b> (poi le fai in <i>Oggi</i>). La prima è la più importante: se fai solo quella, la giornata è già a posto. Domani si riparte da capo.') +
       '<div class="lista-azioni" id="piano-lista"></div>' +
-      (oggi.length < 3
-        ? '<form id="form-piano" class="mt-s"><div class="riga-flex">' +
-          '<input type="text" id="piano-testo" placeholder="' + (oggi.length === 0 ? 'La cosa più importante di oggi…' : 'Un’altra cosa (se vuoi)…') + '" style="flex:1;min-width:180px">' +
-          '<span style="width:155px">' + selectAree('piano-area') + '</span>' +
-          '<button class="btn btn-primario" type="submit" aria-label="Aggiungi">' + ICO('plus', 16) + '</button></div></form>'
-        : '<div class="sotto mt-s">Tre bastano. Aggiungerne altre le rende solo più difficili da finire.</div>') +
+      /* Tre è il consiglio, non un muro: chi ha una giornata piena deve poter
+         scrivere quello che gli serve. Oltre le tre lo diciamo e basta. */
+      '<form id="form-piano" class="mt-s"><div class="riga-flex">' +
+      '<input type="text" id="piano-testo" placeholder="' + (oggi.length === 0 ? 'La cosa più importante di oggi…' : 'Un’altra cosa (se vuoi)…') + '" style="flex:1;min-width:180px">' +
+      '<span style="width:155px">' + selectAree('piano-area') + '</span>' +
+      '<button class="btn btn-primario" type="submit" aria-label="Aggiungi">' + ICO('plus', 16) + '</button></div>' +
+      (oggi.length >= 3 ? '<div class="sotto" style="margin:8px 0 0">Hai già <b>' + oggi.length + '</b> cose per oggi. Tre bastano quasi sempre: se ne aggiungi altre, valuta se qualcuna può aspettare domani (la sposti da <i>La giornata</i>).</div>' : '') +
+      '</form>' +
       '<label class="campo">Quando e dove inizi la prima?</label>' +
       '<input type="text" id="piano-ifthen" placeholder="Es. alle 9:00, appena mi siedo alla scrivania, apro solo il file su cui devo lavorare" value="' + (piano ? esc(piano.intenzione) : '') + '">' +
       '<div class="riga-flex mt"><button class="btn btn-primario btn-grande" id="btn-salva-piano">' + (piano ? 'Aggiorna' : 'Salva e parti') + ' <small>+' + LM.XP_EVENTI.pianoMattina + ' XP</small></button>' +
@@ -2259,14 +2267,18 @@
       box.innerHTML = '<div class="card"><div class="sotto" style="margin-top:0">Cose da fare con una data, dalla più vicina. Tirale in «Oggi» prima che diventino una corsa.</div>' +
         '<div class="scad-lista">' + vic.map(function (b) {
           var ar = areaById(b.areaId); var si = scadInfo(b.scadenza);
+          /* stessa grammatica delle altre schede: azione principale + «⋯»,
+             così da qui si può anche pianificare, rinominare o rimuovere */
           return '<div class="scad-riga"><span class="scad-badge ' + si.cls + '">' + si.testo + '</span>' +
             '<span class="scad-testo">' + esc(b.testo) + '</span>' +
             '<span class="tag-area" style="--c-area:' + LM.coloreArea(ar) + '" title="' + esc(ar.nome) + '">' + ICO(ar.icona, 13) + '</span>' +
-            '<button class="btn btn-mini btn-primario" data-scadoggi="' + b.id + '">' + ICO('arrowRight', 12) + ' Oggi</button></div>';
+            '<button class="btn btn-mini btn-primario" data-scadoggi="' + b.id + '">' + ICO('arrowRight', 12) + ' Oggi</button>' +
+            '<button class="icona-btn" data-bkmenu="' + b.id + '" title="Altro" aria-label="Altro">' + ICO('dots', 16) + '</button></div>';
         }).join('') + '</div></div>';
       box.querySelectorAll('[data-scadoggi]').forEach(function (b) {
         b.addEventListener('click', function () { LM.backlogInOggi(b.getAttribute('data-scadoggi')); toast('Portato tra le azioni di oggi.', 0, 'arrowRight'); ridisegna(); aggiornaNav(); });
       });
+      wireBk(box);
     }
 
     /* --- Da sistemare: le catture grezze --- */
@@ -2326,10 +2338,18 @@
        passi, rinomina, rimuovi) tolte dalla riga per non affollarla. */
     function apriBkMenu(b) {
       var isProg = b.steps && b.steps.length;
+      var domani = LM.addDays(LM.todayKey(), 1);
       var html = '<div class="bk-menu">' +
+        /* Pianificare in un giorno preciso: il modo per spalmare il lavoro sulla
+           settimana invece di ammucchiare tutto su oggi. */
+        '<label class="campo">' + ICO('clock', 13) + ' ' + (isProg ? 'Fai un passo il…' : 'Fallo il…') + '</label>' +
+        '<div class="bk-menu-scad"><input type="date" id="bkm-quando" min="' + LM.todayKey() + '" value="' + domani + '">' +
+        '<button class="btn btn-mini btn-primario" id="bkm-pianifica">Pianifica</button></div>' +
+        '<div class="imp-nota" style="margin:6px 0 0">Comparirà tra le cose di quel giorno (la vedi in <b>La giornata</b>).</div>' +
         '<label class="campo">' + ICO('calendar', 13) + ' Scadenza</label>' +
         '<div class="bk-menu-scad"><input type="date" id="bkm-scad"' + (b.scadenza ? ' value="' + b.scadenza + '"' : '') + '>' +
         (b.scadenza ? '<button class="btn btn-mini btn-ghost" id="bkm-scad-x">Togli</button>' : '') + '</div>' +
+        '<div class="imp-nota" style="margin:6px 0 0">La scadenza è <b>entro quando</b> va fatta: serve al conto alla rovescia, non la mette in agenda.</div>' +
         '<label class="campo">Area</label>' + selectAree('bkm-area', b.areaId) +
         '<div class="bk-menu-azioni">' +
         '<button class="btn btn-mini" id="bkm-steps">' + ICO('lista', 13) + ' ' + (isProg ? 'Apri i passi' : 'Dividi in passi') + '</button>' +
@@ -2337,6 +2357,14 @@
         '<button class="btn btn-mini btn-ghost imp-pericolo" id="bkm-del">' + ICO('trash', 13) + ' Rimuovi</button>' +
         '</div></div>';
       apriSheet(b.testo, html, function (root) {
+        root.querySelector('#bkm-pianifica').addEventListener('click', function () {
+          var k = root.querySelector('#bkm-quando').value;
+          if (!k) return;
+          var fatto = isProg ? LM.prossimoPassoInOggi(b.id, k) : LM.backlogInOggi(b.id, k);
+          if (!fatto) { toast('Nessun passo da pianificare: sono tutti aperti o completati.', 0, 'check'); return; }
+          toast(k === LM.todayKey() ? 'Messa tra le cose di oggi.' : 'Pianificata per ' + etichettaGiorno(k).toLowerCase() + '.', 0, 'calendar');
+          chiudiSheet(); aggiornaNav(); ridisegna();
+        });
         root.querySelector('#bkm-scad').addEventListener('change', function () { LM.impostaScadenzaBacklog(b.id, this.value || null); chiudiSheet(); ridisegna(); });
         var sx = root.querySelector('#bkm-scad-x');
         if (sx) sx.addEventListener('click', function () { LM.impostaScadenzaBacklog(b.id, null); chiudiSheet(); ridisegna(); });
@@ -2496,8 +2524,13 @@
             '<form class="bk-add" data-addarea="' + attArea + '"><input type="text" placeholder="Aggiungi a «' + esc(g0.area.nome) + '»…" aria-label="Aggiungi"><button class="btn btn-mini btn-primario" type="submit" aria-label="Aggiungi">' + ICO('plus', 13) + '</button></form>';
           wireBk(lista); wireAdd(lista); return;
         }
-        lista.innerHTML = '<div class="backlog-aree">' + perArea.map(function (g) {
-          var aperta = !!backlogAperte[g.area.id];
+        /* Le aree con qualcosa dentro sono APERTE da sola: prima si arrivava su
+           una pagina di cassetti chiusi, senza vedere nemmeno un'attività.
+           Quelle vuote non si elencano (si raggiungono dai chip sopra). */
+        var conRoba = perArea.filter(function (g) { return g.items.length; });
+        var vuote = perArea.length - conRoba.length;
+        lista.innerHTML = '<div class="backlog-aree">' + conRoba.map(function (g) {
+          var aperta = backlogAperte[g.area.id] === undefined ? true : !!backlogAperte[g.area.id];
           return '<div class="bk-area" style="--c-area:' + LM.coloreArea(g.area) + '">' +
             '<button class="bk-testa" data-toggle="' + g.area.id + '" aria-expanded="' + aperta + '">' +
             '<span class="icona-area">' + ICO(g.area.icona, 15) + '</span>' +
@@ -2508,7 +2541,8 @@
             (g.items.length ? g.items.map(bkItemHtml).join('') : '<div class="bk-vuoto">Niente qui.</div>') +
             '<form class="bk-add" data-addarea="' + g.area.id + '"><input type="text" placeholder="Aggiungi a «' + esc(g.area.nome) + '»…" aria-label="Aggiungi"><button class="btn btn-mini" type="submit" aria-label="Aggiungi">' + ICO('plus', 13) + '</button></form>' +
             '</div></div>';
-        }).join('') + '</div>';
+        }).join('') + '</div>' +
+          (vuote ? '<div class="sotto" style="margin:12px 0 0">' + (vuote === 1 ? 'Un’altra area è vuota' : vuote + ' altre aree sono vuote') + ': usa i tasti qui sopra per aprirle e aggiungerci qualcosa.</div>' : '');
         /* aprire/chiudere un'area mostra o nasconde SOLO quel pezzo: niente
            ricostruzione della lista, così il resto non si muove di un pixel */
         lista.querySelectorAll('[data-toggle]').forEach(function (b) {

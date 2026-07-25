@@ -608,14 +608,19 @@ var LM = (function () {
   }
   /* porta un elemento del backlog tra le azioni di oggi (senza XP: è solo
      spostamento). mit true se oggi non c'è ancora nessuna azione. */
-  function backlogInOggi(id) {
+  /* Porta una cosa da fare in un giorno: oggi (default) o un giorno futuro,
+     così si può distribuire il lavoro sulla settimana invece di ammucchiarlo
+     tutto su oggi. */
+  function backlogInOggi(id, giorno) {
     var s = load();
     var i = s.backlog.findIndex(function (x) { return x.id === id; });
     if (i < 0) return null;
+    var k = giorno || todayKey();
     var b = s.backlog.splice(i, 1)[0];
-    var mit = serveMit();
-    var a = aggiungiAzione(b.testo, b.areaId, { mit: mit, interna: true });
-    registra('azione', 'Portata in Oggi: «' + b.testo + '»', true);
+    var a = aggiungiAzione(b.testo, b.areaId, { data: k, mit: serveMit(k), interna: true });
+    registra('azione', k === todayKey()
+      ? 'Portata in Oggi: «' + b.testo + '»'
+      : 'Pianificata per il ' + fmtShort(k) + ': «' + b.testo + '»', true);
     save();
     return a;
   }
@@ -665,17 +670,17 @@ var LM = (function () {
     return { fatti: fatti, tot: tot, pct: tot ? Math.round(fatti / tot * 100) : 0 };
   }
   /* porta in Oggi il prossimo passo non fatto e non già in lista oggi */
-  function prossimoPassoInOggi(bid) {
+  function prossimoPassoInOggi(bid, giorno) {
     var s = load();
     var b = s.backlog.find(function (x) { return x.id === bid; });
     if (!b || !b.steps) return null;
-    var giaOggi = {};
-    azioniDiOggi().forEach(function (a) { if (!a.done && a.passoDi && a.passoDi.b === bid) giaOggi[a.passoDi.s] = true; });
-    var st = b.steps.find(function (x) { return !x.done && !giaOggi[x.id]; });
+    var k = giorno || todayKey();
+    var gia = {};
+    azioniDelGiorno(k).forEach(function (a) { if (!a.done && a.passoDi && a.passoDi.b === bid) gia[a.passoDi.s] = true; });
+    var st = b.steps.find(function (x) { return !x.done && !gia[x.id]; });
     if (!st) return null;
-    var mit = serveMit();
-    var az = aggiungiAzione(st.testo, b.areaId, { mit: mit, passoDi: { b: bid, s: st.id }, interna: true });
-    registra('azione', 'Portato in Oggi il passo di «' + b.testo + '»: ' + st.testo, true);
+    var az = aggiungiAzione(st.testo, b.areaId, { data: k, mit: serveMit(k), passoDi: { b: bid, s: st.id }, interna: true });
+    registra('azione', (k === todayKey() ? 'Portato in Oggi' : 'Pianificato per il ' + fmtShort(k)) + ' il passo di «' + b.testo + '»: ' + st.testo, true);
     save();
     return az;
   }
