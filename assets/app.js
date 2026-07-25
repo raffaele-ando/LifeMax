@@ -1008,7 +1008,8 @@
          giorno nella vista settimana */
       if (e.tipo === 'azione') clic += ' data-drag-az="' + e.id + '"';
       return '<div class="tl-blk tl-blk-att' + (fatto ? ' fatta' : '') + (opts.interactive && !opts.mini ? ' tl-blk-clic' : '') + '"' + clic + ' style="' + pos + ';--c-area:' + col + '" title="' + esc(e.testo) + '">' +
-        check + '<span class="tl-blk-t">' + (e.mit ? ICO('star', 9) + ' ' : '') + esc(e.testo) + '</span>' +
+        check + (e.tipo === 'azione' && !opts.mini ? '<span class="manico" data-manico aria-hidden="true">' + ICO('dots', 12) + '</span>' : '') +
+        '<span class="tl-blk-t">' + (e.mit ? ICO('star', 9) + ' ' : '') + esc(e.testo) + '</span>' +
         (hgt > 30 && !opts.mini ? '<span class="tl-blk-ora">' + e.ora + '–' + fmtMin(e.min + dur) + '</span>' : '') + '</div>';
     }).join('');
     var now = '';
@@ -1118,6 +1119,13 @@
         var id = el.getAttribute('data-drag-az');
         var x0 = ev.clientX, y0 = ev.clientY;
         var tocco = ev.pointerType === 'touch';
+        var manico = el.querySelector('[data-manico]');
+        var dalManico = !!(manico && ev.target.closest('[data-manico]'));
+        /* Col dito, se l'elemento ha un manico si prende SOLO da lì: toccando
+           il corpo il browser vorrebbe selezionare il testo (era il bug) e la
+           pagina deve restare scorribile. Preso dal manico l'intenzione è
+           chiara, quindi parte subito senza tenere premuto. */
+        if (tocco && manico && !dalManico) return;
         var attesa = null, spostato = false, morto = false;
 
         /* col dito il browser vuole scorrere la pagina: dopo il "tieni premuto"
@@ -1158,6 +1166,7 @@
                diventare un trascinamento (era la causa dei "pulsanti che non
                funzionano": il clic finiva in uno spostamento). */
             if (tocco) { if (Math.abs(dx) + Math.abs(dy) > 16) { morto = true; clearTimeout(attesa); } return; }
+            if (dalManico && Math.abs(dx) + Math.abs(dy) > 4) { avvia(); if (!trasc) return; }
             if (Math.abs(dx) + Math.abs(dy) < 14) return;
             avvia();
             if (!trasc) return;
@@ -1204,7 +1213,8 @@
         window.addEventListener('pointermove', onMove);
         window.addEventListener('pointerup', onUp);
         window.addEventListener('pointercancel', suCancel);
-        if (tocco) attesa = setTimeout(function () { avvia(); spostato = true; }, 260);
+        if (tocco && dalManico) { ev.preventDefault(); avvia(); }
+        else if (tocco) attesa = setTimeout(function () { avvia(); spostato = true; }, 260);
       });
     });
   }
@@ -1345,6 +1355,7 @@
           return '<div class="gio-so-riga' + (fatto ? ' fatta' : '') + '" style="--c-area:' + col + '"' +
             (e.tipo === 'azione' ? ' data-drag-az="' + e.id + '"' : '') + '>' +
             (spuntabile ? '<button class="tl-check" ' + attr + ' aria-label="Fatto">' + ICO('check', 12) + '</button>' : '') +
+            (e.tipo === 'azione' ? '<span class="manico" data-manico aria-hidden="true">' + ICO('dots', 12) + '</span>' : '') +
             '<button class="gio-so-corpo" ' + bAttr + '>' +
             '<span class="tl-tag" style="color:' + col + '" title="' + esc(ar.nome) + '">' + ICO(ar.icona, 13) + '</span>' +
             '<span class="gio-so-testo">' + esc(e.testo) + (e.mit ? ' ' + ICO('star', 9) : '') + '</span>' +
@@ -1649,7 +1660,8 @@
          portare su un altro giorno (ripianificare guardando tutto il mese) */
       var daFare = LM.azioniDelGiorno(k).filter(function (a) { return !a.done; });
       var pastiglie = daFare.slice(0, 3).map(function (a) {
-        return '<span class="me-pill" data-drag-az="' + a.id + '" style="--c-area:' + LM.coloreArea(areaById(a.areaId)) + '" title="' + esc(a.testo) + '">' + esc(a.testo) + '</span>';
+        return '<span class="me-pill" data-drag-az="' + a.id + '" style="--c-area:' + LM.coloreArea(areaById(a.areaId)) + '" title="' + esc(a.testo) + '">' +
+          '<span class="manico manico-mini" data-manico aria-hidden="true">' + ICO('dots', 9) + '</span>' + esc(a.testo) + '</span>';
       }).join('') + (daFare.length > 3 ? '<span class="me-pill-piu">+' + (daFare.length - 3) + '</span>' : '');
       /* i giorni fuori dal mese restano neutri: colorarli renderebbe il numero
          illeggibile e confonderebbe il colpo d'occhio sul mese vero */

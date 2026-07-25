@@ -1341,6 +1341,27 @@ body.sfondo-fermo { position: fixed; left: 0; right: 0; width: 100%; overflow: h
 .icona-btn:hover { color: var(--accento); border-color: color-mix(in srgb, var(--accento) 40%, var(--bordo-forte)); }
 .icona-btn.on { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 45%, transparent); background: color-mix(in srgb, var(--ok) 10%, transparent); }
 
+/* AREE DI TOCCO: 30x30 con 6px di distanza è meno della punta di un dito
+   (~45px): si finiva per premere il pulsante accanto. Col dito (pointer
+   coarse) i bersagli arrivano a 44px e si distanziano, senza gonfiare
+   l'interfaccia sul desktop dove c'è il mouse. */
+/* anche col mouse 30px è piccolino: un filo più grandi e più distanziati */
+.icona-btn { width: 34px; height: 34px; }
+.bk-item-azioni { gap: 8px; }
+@media (pointer: coarse) {
+  .icona-btn { width: 44px; height: 44px; }
+  .btn-mini { min-height: 42px; padding: 8px 14px; }
+  .bk-item-azioni { gap: 10px; }
+  .bk-item { padding: 9px 11px; }
+  .scad-set { height: 44px; padding: 0 12px; }
+  .spunta-mini { width: 30px; height: 30px; }
+  .step-riga { gap: 11px; }
+  .abit-periodo .ap-campo input[type="date"] { min-height: 40px; }
+  .q-chip { padding: 11px 16px; }
+  .giorno-chip { min-width: 40px; min-height: 40px; }
+  .strip-legenda .lg { min-height: 32px; }
+}
+
 /* ---------- la giornata: griglia oraria a blocchi ---------- */
 
 .giornata .tl-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
@@ -1395,6 +1416,31 @@ body.sfondo-fermo { position: fixed; left: 0; right: 0; width: 100%; overflow: h
 /* blocco toccabile nel grafico (pagina Giornata) */
 .tl-blk-clic { cursor: pointer; }
 /* trascinamento (mouse e dito): cosa si può prendere, dove si può lasciare */
+/* MANICO per trascinare: col dito si prende da qui, così il browser non ruba
+   il gesto per selezionare il testo e la pagina resta scorribile toccando il
+   resto. Col mouse si può prendere da qualsiasi punto, quindi il manico è
+   discreto e si accende all'avvicinarsi. */
+.manico {
+  flex: none; display: inline-flex; align-items: center; justify-content: center;
+  width: 22px; height: 26px; margin-left: -3px; border-radius: 6px;
+  color: var(--inchiostro-muto); cursor: grab;
+  touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
+}
+.manico:active { cursor: grabbing; }
+.tl-blk .manico { position: absolute; left: 1px; top: 2px; bottom: 2px; height: auto; opacity: .5; }
+.tl-blk:hover .manico { opacity: 1; color: var(--inchiostro-2); }
+/* il testo E l'orario si spostano per non finire sotto al manico */
+.tl-blk:has(.manico) .tl-blk-t, .tl-blk:has(.manico) .tl-blk-ora { padding-left: 18px; }
+.gio-so-riga .manico { opacity: .55; }
+.gio-so-riga:hover .manico { opacity: 1; }
+.manico-mini { width: 14px; height: 14px; margin: 0 2px 0 0; vertical-align: middle; }
+@media (pointer: coarse) {
+  /* col dito il manico deve essere davvero afferrabile */
+  .manico { width: 30px; height: 34px; opacity: 1 !important; color: var(--inchiostro-2); }
+  .tl-blk .manico { background: color-mix(in srgb, var(--c-area, var(--accento)) 18%, transparent); }
+  .tl-blk:has(.manico) .tl-blk-t, .tl-blk:has(.manico) .tl-blk-ora { padding-left: 30px; }
+  .manico-mini { width: 16px; height: 16px; }
+}
 /* niente trascinamento nativo del browser: divorerebbe gli eventi puntatore */
 [data-drag-az] { cursor: grab; touch-action: manipulation; -webkit-user-drag: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
 [data-drag-az]:active { cursor: grabbing; }
