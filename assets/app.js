@@ -1054,7 +1054,7 @@
        data-drop-giorno="AAAA-MM-GG"  → sposta in quel giorno
        data-drop-ora="1"              → dà l'ora corrispondente al punto
        data-drop-senzaora="1"         → toglie l'orario                        */
-  var trasc = null;   // { id, fantasma, bersaglio, partito }
+  var trasc = null;
 
   function bersaglioSotto(x, y) {
     var el = document.elementFromPoint(x, y);
@@ -1063,6 +1063,34 @@
       el = el.parentElement;
     }
     return null;
+  }
+  /* Dove finirà la cosa: lo diciamo a parole nell'etichetta che segue il dito,
+     e sulla griglia mostriamo anche una riga all'ora esatta. Senza questo si
+     trascinava "alla cieca". */
+  function anteprima(bers, y) {
+    if (!bers) return { testo: 'Lascia su un giorno o su un’ora' };
+    if (bers.hasAttribute('data-drop-senzaora')) return { testo: 'Senza orario' };
+    if (bers.hasAttribute('data-drop-giorno')) return { testo: etichettaGiorno(bers.getAttribute('data-drop-giorno')) };
+    if (bers.hasAttribute('data-drop-ora')) {
+      var gs = +bers.getAttribute('data-gs'), pxh = +bers.getAttribute('data-pxh');
+      if (isNaN(gs) || !pxh) return { testo: '' };
+      var r = bers.getBoundingClientRect();
+      var min = Math.max(0, Math.round((gs + (y - r.top) / pxh * 60) / 15) * 15);
+      return { testo: 'alle ' + fmtMin(min % 1440), min: min, top: (min - gs) / 60 * pxh, host: bers };
+    }
+    return { testo: '' };
+  }
+  function guida(ap) {
+    var g = document.getElementById('trasc-guida');
+    if (!ap || ap.top == null || !ap.host) { if (g) g.remove(); return; }
+    if (!g || g.parentNode !== ap.host) {
+      if (g) g.remove();
+      g = document.createElement('div'); g.id = 'trasc-guida'; g.className = 'trasc-guida';
+      g.innerHTML = '<span></span>';
+      (ap.host.querySelector('.tl-blocks') || ap.host).appendChild(g);
+    }
+    g.style.top = ap.top + 'px';
+    g.querySelector('span').textContent = fmtMin(ap.min % 1440);
   }
   function evidenzia(el) {
     if (trasc && trasc.bersaglio === el) return;
@@ -1075,76 +1103,108 @@
     if (trasc.bersaglio) trasc.bersaglio.classList.remove('drop-attivo');
     if (trasc.fantasma && trasc.fantasma.parentNode) trasc.fantasma.parentNode.removeChild(trasc.fantasma);
     if (trasc.sorgente) trasc.sorgente.classList.remove('sto-prendendo');
+    guida(null);
     document.body.classList.remove('sto-trascinando');
     trasc = null;
   }
-  /* onRilascio(id, bersaglio, x, y) — passato da chi monta la vista */
+
+  /* onRilascio(id, bersaglio, x, y) */
   function abilitaTrascina(scope, onRilascio) {
     scope.querySelectorAll('[data-drag-az]').forEach(function (el) {
       el.addEventListener('pointerdown', function (ev) {
-        if (ev.button > 0) return;                       // solo tasto principale
+        if (ev.button > 0) return;
         var btnDentro = ev.target.closest('button');
-        if (btnDentro && btnDentro !== el && el.contains(btnDentro)) return; // i pulsanti interni restano cliccabili
+        if (btnDentro && btnDentro !== el && el.contains(btnDentro)) return;  // i pulsanti interni restano cliccabili
         var id = el.getAttribute('data-drag-az');
         var x0 = ev.clientX, y0 = ev.clientY;
         var tocco = ev.pointerType === 'touch';
-        var attesa = null, annullato = false;
+        var attesa = null, spostato = false, morto = false;
+
+        /* col dito il browser vuole scorrere la pagina: dopo il "tieni premuto"
+           blocchiamo lo scorrimento, altrimenti il gesto ci viene strappato. */
+        function bloccaTouch(e) { if (trasc) e.preventDefault(); }
 
         function avvia() {
-          if (annullato || trasc) return;
+          if (morto || trasc) return;
           var r = el.getBoundingClientRect();
           var f = document.createElement('div');
           f.className = 'trasc-fantasma';
-          f.textContent = (el.textContent || '').trim().slice(0, 60);
-          f.style.width = Math.min(260, Math.max(120, r.width)) + 'px';
+          f.innerHTML = '<b></b><i></i>';
+          f.querySelector('b').textContent = (el.getAttribute('title') || el.textContent || '').trim().slice(0, 44);
+          f.style.width = Math.min(280, Math.max(150, r.width)) + 'px';
           document.body.appendChild(f);
           trasc = { id: id, fantasma: f, bersaglio: null, sorgente: el };
           el.classList.add('sto-prendendo');
           document.body.classList.add('sto-trascinando');
+          try { el.setPointerCapture(ev.pointerId); } catch (e2) { }
+          document.addEventListener('touchmove', bloccaTouch, { passive: false });
           muovi(x0, y0);
         }
         function muovi(x, y) {
           if (!trasc) return;
           trasc.fantasma.style.left = x + 'px';
           trasc.fantasma.style.top = y + 'px';
-          evidenzia(bersaglioSotto(x, y));
+          var b = bersaglioSotto(x, y);
+          evidenzia(b);
+          var ap = anteprima(b, y);
+          trasc.fantasma.querySelector('i').textContent = ap.testo;
+          trasc.fantasma.classList.toggle('pronto', !!b);
+          guida(ap);
         }
         function onMove(e) {
           var dx = e.clientX - x0, dy = e.clientY - y0;
           if (!trasc) {
-            if (tocco) { if (Math.abs(dx) + Math.abs(dy) > 12) { annullato = true; pulisci(); } return; }
-            if (Math.abs(dx) + Math.abs(dy) > 6) avvia();
+            /* soglia generosa: un clic con la mano un po' mossa NON deve
+               diventare un trascinamento (era la causa dei "pulsanti che non
+               funzionano": il clic finiva in uno spostamento). */
+            if (tocco) { if (Math.abs(dx) + Math.abs(dy) > 16) { morto = true; clearTimeout(attesa); } return; }
+            if (Math.abs(dx) + Math.abs(dy) < 14) return;
+            avvia();
             if (!trasc) return;
           }
+          spostato = true;
           e.preventDefault();
           muovi(e.clientX, e.clientY);
         }
         function onUp(e) {
           clearTimeout(attesa);
-          if (trasc) {
+          var fatto = false;
+          if (trasc && spostato) {
             var b = bersaglioSotto(e.clientX, e.clientY);
             var idFin = trasc.id;
             fineTrascina();
-            /* il clic che arriva subito dopo va ignorato, altrimenti la cella
-               sotto aprirebbe il giorno appena hai finito di spostare */
+            if (b) { fatto = true; onRilascio(idFin, b, e.clientX, e.clientY); }
+          }
+          /* il clic va ingoiato SOLO se abbiamo davvero spostato qualcosa,
+             altrimenti si bloccherebbero i clic normali */
+          if (fatto) {
             var ingoia = function (ce) { ce.stopPropagation(); ce.preventDefault(); };
             window.addEventListener('click', ingoia, true);
-            setTimeout(function () { window.removeEventListener('click', ingoia, true); }, 320);
-            if (b) { onRilascio(idFin, b, e.clientX, e.clientY); pulisci(); return; }
+            setTimeout(function () { window.removeEventListener('click', ingoia, true); }, 350);
           }
           pulisci();
         }
         function pulisci() {
           clearTimeout(attesa);
           fineTrascina();
-          window.removeEventListener('pointermove', onMove, { passive: false });
+          document.removeEventListener('touchmove', bloccaTouch, { passive: false });
+          el.removeEventListener('pointermove', onMove);
+          el.removeEventListener('pointerup', onUp);
+          window.removeEventListener('pointermove', onMove);
           window.removeEventListener('pointerup', onUp);
-          window.removeEventListener('pointercancel', pulisci);
+          window.removeEventListener('pointercancel', suCancel);
         }
-        window.addEventListener('pointermove', onMove, { passive: false });
+        /* se il gesto viene annullato PRIMA di iniziare (il browser ha deciso
+           che era uno scorrimento) lasciamo perdere; se il trascinamento è già
+           partito lo teniamo: abbiamo la cattura del puntatore. */
+        function suCancel() { if (!trasc) { morto = true; pulisci(); } }
+
+        el.addEventListener('pointermove', onMove);
+        el.addEventListener('pointerup', onUp);
+        window.addEventListener('pointermove', onMove);
         window.addEventListener('pointerup', onUp);
-        window.addEventListener('pointercancel', pulisci);
-        if (tocco) attesa = setTimeout(avvia, 220);       // tieni premuto per prendere
+        window.addEventListener('pointercancel', suCancel);
+        if (tocco) attesa = setTimeout(function () { avvia(); spostato = true; }, 260);
       });
     });
   }
@@ -1179,7 +1239,8 @@
       '<div class="ig-fondo">' +
       (e.ora ? '<button class="btn btn-mini btn-ghost ig-noora">' + ICO('clock', 13) + ' Togli l’orario</button>' : '') +
       (isAz
-        ? '<button class="btn btn-mini btn-ghost imp-pericolo ig-rimuovi">' + ICO('trash', 13) + ' Rimuovi da oggi</button>'
+        ? '<button class="btn btn-mini ig-indietro">' + ICO('lista', 13) + ' Togli dal giorno' + (e.passoDi ? '' : ' (torna tra le cose da fare)') + '</button>' +
+          '<button class="btn btn-mini btn-ghost imp-pericolo ig-rimuovi">' + ICO('trash', 13) + ' Elimina</button>'
         : '<button class="btn btn-mini btn-ghost ig-vairituali">' + ICO('refresh', 13) + ' Gestisci l’abitudine in Rituali</button>') +
       '</div>' +
       '</div>';
@@ -1219,6 +1280,12 @@
       var noora = root.querySelector('.ig-noora');
       if (noora) noora.addEventListener('click', function () {
         if (isAz) LM.setOraAzione(id, null); else LM.modificaAbitudine(id, { ora: null });
+        chiudiSheet(); ricarica();
+      });
+      var ind = root.querySelector('.ig-indietro');
+      if (ind) ind.addEventListener('click', function () {
+        LM.azioneInBacklog(id);
+        toast(e.passoDi ? 'Tolta dal giorno: il passo resta nel progetto.' : 'Rimessa tra le cose da fare.', 0, 'lista');
         chiudiSheet(); ricarica();
       });
       var rim = root.querySelector('.ig-rimuovi');
@@ -2673,7 +2740,7 @@
             return '<div class="step-riga' + (st.done ? ' fatta' : '') + '">' +
               '<button class="spunta-mini" data-steptoggle="' + b.id + '|' + st.id + '" aria-label="Segna passo">' + ICO('check', 12) + '</button>' +
               '<span class="step-testo">' + esc(st.testo) + '</span>' +
-              (inAg ? '<span class="step-quando">' + ICO('calendar', 10) + ' ' + esc(etichettaGiorno(inAg.data).toLowerCase()) + '</span>' : '') +
+              (inAg ? '<button class="step-quando" data-steppulisci="' + inAg.id + '" title="Togli dal giorno">' + ICO('calendar', 10) + ' ' + esc(etichettaGiorno(inAg.data).toLowerCase()) + ' ' + ICO('x', 9) + '</button>' : '') +
               (st.done ? '' : '<label class="scad-set" title="Mettilo in un giorno">' + ICO('calendar', 13) +
                 '<input type="date" data-stepdata="' + b.id + '|' + st.id + '" min="' + LM.todayKey() + '"' + (inAg ? ' value="' + inAg.data + '"' : '') + '></label>') +
               '<button class="icona-btn" data-stepdel="' + b.id + '|' + st.id + '" title="Rimuovi passo" aria-label="Rimuovi passo">' + ICO('trash', 13) + '</button></div>';
@@ -2766,6 +2833,13 @@
       });
       scope.querySelectorAll('[data-steptoggle]').forEach(function (b) {
         b.addEventListener('click', function () { var p = b.getAttribute('data-steptoggle').split('|'); LM.togglePasso(p[0], p[1]); ridisegna(); });
+      });
+      scope.querySelectorAll('[data-steppulisci]').forEach(function (b) {
+        b.addEventListener('click', function () {
+          LM.azioneInBacklog(b.getAttribute('data-steppulisci'));
+          toast('Passo tolto dal giorno.', 0, 'lista');
+          aggiornaNav(); ridisegna();
+        });
       });
       scope.querySelectorAll('[data-stepdata]').forEach(function (inp) {
         inp.addEventListener('change', function () {

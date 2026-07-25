@@ -1310,7 +1310,8 @@ body.sfondo-fermo { position: fixed; left: 0; right: 0; width: 100%; overflow: h
 .steps-panel { display: flex; flex-direction: column; gap: 5px; margin: 10px 0 2px; padding: 9px 11px; border-radius: var(--raggio-s); background: var(--superficie-2); border: 1px solid var(--griglia); }
 .step-riga { display: flex; align-items: center; gap: 9px; }
 .step-riga .step-testo { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.step-quando { flex: none; display: inline-flex; align-items: center; gap: 3px; font-size: 10px; font-weight: 750; color: var(--accento-testo); background: color-mix(in srgb, var(--accento) 12%, transparent); border-radius: 99px; padding: 1px 7px; }
+.step-quando { flex: none; display: inline-flex; align-items: center; gap: 3px; font-size: 10px; font-weight: 750; color: var(--accento-testo); background: color-mix(in srgb, var(--accento) 12%, transparent); border: 1px solid transparent; border-radius: 99px; padding: 1px 7px; cursor: pointer; }
+.step-quando:hover { border-color: var(--critico); color: var(--critico); background: color-mix(in srgb, var(--critico) 10%, transparent); }
 .step-testo { flex: 1; min-width: 0; font-size: 13px; overflow-wrap: anywhere; }
 .step-riga.fatta .step-testo { text-decoration: line-through; color: var(--inchiostro-muto); }
 .spunta-mini { flex: none; width: 22px; height: 22px; border-radius: 6px; border: 2px solid var(--baseline); background: var(--superficie-1); display: inline-flex; align-items: center; justify-content: center; color: transparent; transition: all var(--t-veloce); }
@@ -1395,20 +1396,31 @@ body.sfondo-fermo { position: fixed; left: 0; right: 0; width: 100%; overflow: h
 .tl-blk-clic { cursor: pointer; }
 /* trascinamento (mouse e dito): cosa si può prendere, dove si può lasciare */
 /* niente trascinamento nativo del browser: divorerebbe gli eventi puntatore */
-[data-drag-az] { cursor: grab; touch-action: manipulation; -webkit-user-drag: none; user-select: none; -webkit-user-select: none; }
+[data-drag-az] { cursor: grab; touch-action: manipulation; -webkit-user-drag: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
 [data-drag-az]:active { cursor: grabbing; }
 .sto-prendendo { opacity: .45; }
 body.sto-trascinando { cursor: grabbing; user-select: none; -webkit-user-select: none; }
 .drop-attivo { background: color-mix(in srgb, var(--accento) 14%, transparent) !important; box-shadow: inset 0 0 0 2px var(--accento); border-radius: 10px; }
 .wk-col.drop-attivo, .me-cella.drop-attivo { border-radius: 12px; }
-/* l'oggetto che segue il dito */
+/* l'oggetto che segue il dito: dice COSA stai spostando e DOVE finirà */
 .trasc-fantasma {
   position: fixed; z-index: 300; pointer-events: none;
-  transform: translate(10px, -50%);
+  transform: translate(14px, -50%);
   padding: 7px 12px; border-radius: 10px;
-  background: var(--superficie-1); border: 1px solid var(--accento);
-  box-shadow: var(--e3); font-size: 12.5px; font-weight: 650; color: var(--inchiostro-1);
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  background: var(--superficie-1); border: 1.5px solid var(--bordo-forte);
+  box-shadow: var(--e3); color: var(--inchiostro-1);
+  display: flex; flex-direction: column; gap: 1px; max-width: 82vw;
+}
+.trasc-fantasma b { font-size: 12.5px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.trasc-fantasma i { font-size: 11px; font-style: normal; font-weight: 700; color: var(--inchiostro-muto); white-space: nowrap; }
+.trasc-fantasma.pronto { border-color: var(--accento); }
+.trasc-fantasma.pronto i { color: var(--accento-testo); }
+/* la riga che mostra l'ora esatta in cui atterrerà */
+.trasc-guida { position: absolute; left: 0; right: 0; height: 0; border-top: 2px dashed var(--accento); z-index: 6; pointer-events: none; }
+.trasc-guida span {
+  position: absolute; left: 0; top: -9px; font-size: 10px; font-weight: 800;
+  color: #fff; background: var(--accento-testo); padding: 1px 6px; border-radius: 99px;
+  font-variant-numeric: tabular-nums;
 }
 /* pastiglie delle cose da fare nel calendario del mese */
 .me-pills { display: flex; flex-direction: column; gap: 2px; width: 100%; margin-top: 2px; }

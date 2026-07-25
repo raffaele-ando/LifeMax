@@ -431,6 +431,33 @@ var LM = (function () {
     return punti;
   }
 
+  /* ANNULLA una pianificazione: l'azione esce dal giorno e torna tra le cose
+     da fare. Serve per disdire un giorno messo per sbaglio: prima l'unica via
+     era cancellare e riscrivere. Se era il passo di un progetto, il passo
+     torna semplicemente "non pianificato" (il progetto non si tocca). */
+  function azioneInBacklog(id) {
+    var s = load();
+    var i = s.azioni.findIndex(function (x) { return x.id === id; });
+    if (i < 0) return null;
+    var a = s.azioni[i];
+    var eraPasso = !!a.passoDi;
+    s.azioni.splice(i, 1);
+    if (a.mit) {
+      var erede = s.azioni.find(function (x) { return x.data === a.data && !x.done; });
+      if (erede) erede.mit = true;
+    }
+    var b = null;
+    if (!eraPasso) {
+      b = { id: uid(), testo: a.testo, areaId: a.areaId, creata: Date.now(), scadenza: null, steps: [] };
+      s.backlog.unshift(b);
+    }
+    registra('azione', eraPasso
+      ? 'Tolta dal giorno: «' + a.testo + '» (il passo resta nel progetto)'
+      : 'Rimessa tra le cose da fare: «' + a.testo + '»', true);
+    save();
+    return b || a;
+  }
+
   /* Sposta un'azione in un altro giorno (ripianificare senza riscrivere).
      Serve al trascinamento tra i giorni e al pulsante "rimanda a domani". */
   function spostaAzione(id, giorno) {
@@ -1560,7 +1587,7 @@ var LM = (function () {
     aggiungiAzione: aggiungiAzione, completaAzione: completaAzione, rimandaAzione: rimandaAzione,
     cattura: cattura, triageInbox: triageInbox, modificaInbox: modificaInbox, cambiaAreaAzione: cambiaAreaAzione,
     modificaAzione: modificaAzione, rimuoviAzione: rimuoviAzione, serveMit: serveMit,
-    spostaAzione: spostaAzione, rimandaNonFatte: rimandaNonFatte,
+    spostaAzione: spostaAzione, rimandaNonFatte: rimandaNonFatte, azioneInBacklog: azioneInBacklog,
     setOraAzione: setOraAzione, setDurataAzione: setDurataAzione, azioniDelGiorno: azioniDelGiorno,
     impostaRitmo: impostaRitmo, impostaGiornataPos: impostaGiornataPos, RITMO_DEFAULT: RITMO_DEFAULT,
     ritmoDi: ritmoDi, setRitmoGiorno: setRitmoGiorno, azzeraRitmoGiorno: azzeraRitmoGiorno, minutiSonno: minutiSonno,
