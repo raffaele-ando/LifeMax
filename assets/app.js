@@ -816,7 +816,11 @@
       (e.min == null ? tray : placed).push(e);
     });
     placed.sort(function (a, b) { return a.min - b.min; });
-    return { k: k, isToday: isToday, wake: minOf(r.sveglia), sleep: minOf(r.sonno), sveglia: r.sveglia, sonno: r.sonno, pasti: r.pasti, dalRegistro: r.dalRegistro, placed: placed, tray: tray };
+    /* wake = risveglio di stamattina (inizio della veglia); sleep = fine della
+       giornata sul grafico = ora di andare a letto della ROUTINE (stanotte è un
+       piano, non un fatto). sonno/sveglia restano i valori registrati (il
+       resoconto della notte passata) per il pannello e per "quanto ho dormito". */
+    return { k: k, isToday: isToday, wake: minOf(r.sveglia), sleep: minOf(r.sonnoRoutine), sveglia: r.sveglia, sonno: r.sonno, sonnoRoutine: r.sonnoRoutine, pasti: r.pasti, dalRegistro: r.dalRegistro, placed: placed, tray: tray };
   }
   function nodiGiornata() { return nodiGiorno(LM.todayKey()); }
 
@@ -846,7 +850,23 @@
   function htmlTimeGrid(d, opts) {
     opts = opts || {};
     var pxh = opts.pxh || 56;
-    var gs = Math.floor(d.wake / 60) * 60, ge = Math.ceil(d.sleep / 60) * 60;
+    /* Finestra di veglia. sonno = ora di andare a letto, sveglia = risveglio.
+       Se si va a letto dopo mezzanotte (bed <= wake) la notte scavalla le 24h,
+       così l'asse resta monotòno invece di collassare/andare in negativo. */
+    var wake = d.wake, bed = d.sleep;
+    if (bed <= wake) bed += 1440;
+    /* minuto "effettivo" sull'asse: i blocchi alle prime ore, quando si è
+       svegli oltre mezzanotte, vanno nella coda notturna (+24h). */
+    function em(min) { return (min != null && bed > 1440 && min < wake) ? min + 1440 : min; }
+    /* La finestra deve contenere il sonno E ogni blocco piazzato: così nessun
+       elemento finisce fuori dalla griglia a coprire il resto della pagina. */
+    var lo = wake, hi = bed;
+    d.placed.forEach(function (b) {
+      var st = em(b.min); if (st == null) return;
+      var en = st + (b.dur || 30);
+      if (st < lo) lo = st; if (en > hi) hi = en;
+    });
+    var gs = Math.floor(lo / 60) * 60, ge = Math.ceil(hi / 60) * 60;
     if (ge <= gs) ge = gs + 60;
     var H = (ge - gs) / 60 * pxh;
     function y(m) { return (m - gs) / 60 * pxh; }
@@ -854,11 +874,11 @@
     for (var h = gs; h <= ge; h += 60) lines += '<div class="tl-hr" style="top:' + y(h) + 'px">' + (opts.rail === false ? '' : '<span class="tl-hr-eti">' + fmtMin(h) + '</span>') + '</div>';
     var shade = '';
     var sonnoLbl = opts.mini ? '' : '<span class="tl-sleep-lbl">' + ICO('bed', 11) + ' ' + fmtOre(LM.minutiSonno(d.k)) + '</span>';
-    if (d.wake > gs) shade += '<div class="tl-sleep" style="top:0;height:' + y(d.wake) + 'px">' + sonnoLbl + '</div>';
-    if (d.sleep < ge) shade += '<div class="tl-sleep" style="top:' + y(d.sleep) + 'px;height:' + (H - y(d.sleep)) + 'px">' + (d.wake > gs ? '' : sonnoLbl) + '</div>';
+    if (wake > gs) shade += '<div class="tl-sleep" style="top:0;height:' + y(wake) + 'px">' + sonnoLbl + '</div>';
+    if (bed < ge) shade += '<div class="tl-sleep" style="top:' + y(bed) + 'px;height:' + (H - y(bed)) + 'px">' + (wake > gs ? '' : sonnoLbl) + '</div>';
     var blocks = disponiBlocchi(d.placed).map(function (it) {
       var e = it.e, dur = e.dur || 30;
-      var top = y(e.min), hgt = Math.max(opts.mini ? 15 : 24, dur / 60 * pxh - 2);
+      var top = y(em(e.min)), hgt = Math.max(opts.mini ? 15 : 24, dur / 60 * pxh - 2);
       var w = 100 / it.ncols, left = it.col * w;
       var pos = 'top:' + top + 'px;height:' + hgt + 'px;left:calc(' + left + '% + 1px);width:calc(' + w + '% - 3px)';
       if (e.tipo === 'pasto') {
@@ -874,7 +894,7 @@
         (hgt > 30 && !opts.mini ? '<span class="tl-blk-ora">' + e.ora + '–' + fmtMin(e.min + dur) + '</span>' : '') + '</div>';
     }).join('');
     var now = '';
-    if (opts.nowMin != null && opts.nowMin >= gs && opts.nowMin <= ge) now = '<div class="tl-now-line" style="top:' + y(opts.nowMin) + 'px"><span>' + fmtMin(opts.nowMin) + '</span></div>';
+    if (opts.nowMin != null) { var nm = em(opts.nowMin); if (nm >= gs && nm <= ge) now = '<div class="tl-now-line" style="top:' + y(nm) + 'px"><span>' + fmtMin(opts.nowMin) + '</span></div>'; }
     return '<div class="tl-grid' + (opts.mini ? ' tl-grid-mini' : '') + (opts.rail === false ? ' tl-grid-norail' : '') + '" style="height:' + H + 'px">' +
       '<div class="tl-lines">' + lines + '</div>' +
       '<div class="tl-blocks">' + shade + blocks + now + '</div></div>';
@@ -975,7 +995,8 @@
     var narrow = compact && window.innerWidth < 720;
     var pxh = 56;
     if (compact) {
-      var ore = Math.max(1, Math.ceil(d.sleep / 60) - Math.floor(d.wake / 60));
+      var bedH = d.sleep <= d.wake ? d.sleep + 1440 : d.sleep; // a letto dopo mezzanotte
+      var ore = Math.max(1, Math.ceil(bedH / 60) - Math.floor(d.wake / 60));
       /* altezza-obiettivo della griglia = altezza del pannello meno il "chrome"
          (testa sheet, intestazione, nota, footer, padding), così NON si scrolla */
       var avail = window.innerHeight * (narrow ? 0.9 : 0.86) - 300;
@@ -1093,7 +1114,8 @@
     var nowMin = new Date().getHours() * 60 + new Date().getMinutes();
     var d0 = nodiGiorno(oggi);
     var pxh = 42;
-    var gs = Math.floor(d0.wake / 60) * 60, ge = Math.ceil(d0.sleep / 60) * 60; if (ge <= gs) ge = gs + 60;
+    var bed0 = d0.sleep <= d0.wake ? d0.sleep + 1440 : d0.sleep; // a letto dopo mezzanotte
+    var gs = Math.floor(d0.wake / 60) * 60, ge = Math.ceil(bed0 / 60) * 60; if (ge <= gs) ge = gs + 60;
     var railLines = '';
     for (var hh = gs; hh <= ge; hh += 60) railLines += '<div class="wk-rail-h" style="top:' + ((hh - gs) / 60 * pxh) + 'px">' + fmtMin(hh) + '</div>';
     var Hs = (ge - gs) / 60 * pxh;
@@ -1241,8 +1263,11 @@
 
   function htmlGiornataStrip() {
     var d = nodiGiornata();
-    var span = Math.max(60, d.sleep - d.wake);
-    function pct(m) { return Math.max(0, Math.min(100, (m - d.wake) / span * 100)); }
+    var wake = d.wake, bed = d.sleep;
+    if (bed <= wake) bed += 1440; // a letto dopo mezzanotte
+    function em(m) { return (m != null && bed > 1440 && m < wake) ? m + 1440 : m; }
+    var span = Math.max(60, bed - wake);
+    function pct(m) { return Math.max(0, Math.min(100, (em(m) - wake) / span * 100)); }
     /* la barra distingue i tipi: blocchi con DURATA precisa come segmenti che
        occupano il tempo, le cose a un solo orario come punti, i pasti come
        tacche; le abitudini hanno il contorno, le azioni sono piene. */
@@ -1267,7 +1292,7 @@
     }).join('');
     var now = new Date();
     var nm = now.getHours() * 60 + now.getMinutes();
-    var nowEl = (nm >= d.wake && nm <= d.sleep) ? '<span class="strip-now" style="left:' + pct(nm).toFixed(1) + '%"></span>' : '';
+    var nowEl = (em(nm) >= wake && em(nm) <= bed) ? '<span class="strip-now" style="left:' + pct(nm).toFixed(1) + '%"></span>' : '';
     var pross = d.placed.filter(function (e) { return e.min >= nm && !(e.tipo === 'azione' ? e.done : e.fatto); })[0];
     var sotto = pross ? 'poi ' + esc(pross.nome || pross.testo) + ' · ' + pross.ora
       : (d.placed.length ? 'niente altro in agenda oggi' : 'nessun orario per oggi — tocca per aggiungerne');
@@ -1281,7 +1306,7 @@
       '<div class="strip-testa"><span class="strip-tit">' + ICO('clock', 14) + ' La giornata</span>' +
       '<span class="strip-sotto">' + sotto + ' ' + ICO('arrowRight', 13) + '</span></div>' +
       '<div class="strip-barra">' + marks + nowEl + '</div>' +
-      '<div class="strip-estremi"><span>' + d.sveglia + '</span><span>' + d.sonno + '</span></div>' +
+      '<div class="strip-estremi"><span>' + d.sveglia + '</span><span>' + d.sonnoRoutine + '</span></div>' +
       legenda +
       '</button>';
   }

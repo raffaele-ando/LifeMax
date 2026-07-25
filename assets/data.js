@@ -466,6 +466,12 @@ var LM = (function () {
     return {
       sveglia: g.sveglia || base.sveglia,
       sonno: g.sonno || base.sonno,
+      /* Il sonno/sveglia registrato per un giorno è il RESOCONTO della notte
+         appena passata (a che ora sono andato a letto e mi sono svegliato).
+         La fine della giornata sul grafico, invece, è la routine pianificata:
+         "stanotte" non è ancora successo, quindi segue il ritmo di base. */
+      sonnoRoutine: base.sonno,
+      svegliaRoutine: base.sveglia,
       pasti: Array.isArray(g.pasti) ? g.pasti : base.pasti,
       dalRegistro: !!(s.ritmoGiorno && s.ritmoGiorno[k])
     };
