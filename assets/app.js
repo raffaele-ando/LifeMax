@@ -220,6 +220,18 @@
 
   var wireSheet = null;
   var $sheetPanel = $sheet.querySelector('.sheet');
+  /* Anima l'ingresso UNA volta e poi toglie la classe: se restasse attaccata,
+     ogni elemento ricreato dopo (una spunta, un filtro) ripartirebbe con la
+     stessa animazione e sembrerebbe un refresh continuo. */
+  function animaIngresso(el) {
+    if (!el) return;
+    el.classList.remove('vista-enter');
+    void el.offsetWidth;
+    el.classList.add('vista-enter');
+    if (el.__timerAnim) clearTimeout(el.__timerAnim);
+    el.__timerAnim = setTimeout(function () { el.classList.remove('vista-enter'); }, 900);
+  }
+
   function apriSheet(titolo, html, onWire, largo) {
     document.getElementById('sheet-titolo').textContent = titolo;
     document.getElementById('sheet-corpo').innerHTML = html;
@@ -1124,7 +1136,9 @@
       sonnoTop = '<div class="gio-sonno">' +
         '<button class="gio-sonno-testa" id="gio-sonno-toggle" aria-expanded="' + aperto + '"><span class="gs-riass">' + riass + (d.dalRegistro ? ' <span class="tl-ed-badge">registrato</span>' : '') + '</span>' +
         '<span class="bk-chevron' + (aperto ? ' aperta' : '') + '">' + ICO('chevronGiu', 16) + '</span></button>' +
-        (aperto ? '<div class="gio-sonno-corpo">' +
+        /* il corpo c'è sempre (nascosto se chiuso): aprirlo non ricostruisce
+           la pagina, così il grafico sopra non si muove */
+        ('<div class="gio-sonno-corpo"' + (aperto ? '' : ' hidden') + '>' +
           '<div class="sp-sonno">' +
           '<label class="sp-lab">' + ICO('bed', 13) + ' A letto</label><input type="time" class="tl-time" id="sp-aletto" value="' + d.sonno + '">' +
           '<label class="sp-lab">' + ICO('sun', 13) + ' Sveglia</label><input type="time" class="tl-time" id="sp-sveglia" value="' + d.sveglia + '">' +
@@ -1135,7 +1149,7 @@
           (d.dalRegistro ? '<button class="btn btn-mini btn-ghost" id="sp-reset">Torna al ritmo di base</button>' : '') +
           '<button class="btn btn-mini btn-ghost" id="sp-base">' + ICO('sun', 13) + ' Cambia il ritmo di base</button></div>' +
           '<div class="imp-nota" style="margin-top:8px">Vale per <b>questo giorno</b> e resta nel registro. Il ritmo di base (per gli altri giorni) si cambia da «Cambia il ritmo di base».</div>' +
-          '</div>' : '') + '</div>';
+          '</div>') + '</div>';
     }
 
     var trayRo = '';
@@ -1258,7 +1272,14 @@
       var spBase = container.querySelector('#sp-base');
       if (spBase) spBase.addEventListener('click', apriRitmo);
       var gsT = container.querySelector('#gio-sonno-toggle');
-      if (gsT) gsT.addEventListener('click', function () { giornataSonnoAperto = !giornataSonnoAperto; montaGiornata(container, opts); });
+      if (gsT) gsT.addEventListener('click', function () {
+        giornataSonnoAperto = !giornataSonnoAperto;
+        var corpo = container.querySelector('.gio-sonno-corpo');
+        if (corpo) corpo.hidden = !giornataSonnoAperto;
+        gsT.setAttribute('aria-expanded', giornataSonnoAperto);
+        var ch = gsT.querySelector('.bk-chevron');
+        if (ch) ch.classList.toggle('aperta', giornataSonnoAperto);
+      });
     }
     var ap = container.querySelector('#tl-apri-pagina');
     if (ap) ap.addEventListener('click', function () { chiudiSheet(); location.hash = '#/giornata'; });
@@ -1408,15 +1429,19 @@
     if (nav) nav.querySelectorAll('[data-orizz]').forEach(function (b) { b.classList.toggle('attivo', b.getAttribute('data-orizz') === o); });
     disegnaOrizzonte();
   }
+  /* anima solo quando cambi orizzonte o giorno, non a ogni spunta */
+  var orizzMostrato = '';
   function disegnaOrizzonte() {
     var c = document.getElementById('orizz-corpo');
     if (!c) return;
-    c.classList.remove('vista-enter'); void c.offsetWidth;
+    var chiave = giornataOrizzonte + '|' + giornataAncora;
+    var cambio = chiave !== orizzMostrato;
     if (giornataOrizzonte === 'giorno') montaGiornata(c, { giorno: giornataAncora });
     else if (giornataOrizzonte === 'settimana') montaSettimana(c);
     else if (giornataOrizzonte === 'mese') montaMese(c);
     else montaAnno(c);
-    c.classList.add('vista-enter');
+    orizzMostrato = chiave;
+    if (cambio) animaIngresso(c);
   }
 
   function htmlGiornataStrip() {
@@ -1558,6 +1583,7 @@
      ============================================================ */
 
   var sezPlancia = 'riepilogo';
+  var sezMostrata = '';   // per animare solo al cambio di sezione
   var periodoTrend = 14;
   var diarioGiorni = 21;
   var diarioTutto = false;
@@ -1682,12 +1708,13 @@
 
     function disegnaSezione() {
       var c = document.getElementById('sez-corpo');
-      c.classList.remove('vista-enter'); void c.offsetWidth;
+      var cambio = sezPlancia !== sezMostrata;
       if (sezPlancia === 'riepilogo') sezRiepilogo(c);
       else if (sezPlancia === 'diario') sezDiario(c);
       else if (sezPlancia === 'aree') sezAree(c);
       else sezAndamento(c);
-      c.classList.add('vista-enter');
+      sezMostrata = sezPlancia;
+      if (cambio) animaIngresso(c);
     }
 
     /* --- Riepilogo: azioni di oggi + costanza --- */
@@ -2165,6 +2192,7 @@
   var backlogEditId = null;
   var progettiAperti = {};
   var attTab = null;      // 'sistemare' | 'dafare' | 'arrivo' | 'progetti'
+  var attTabMostrata = ''; // per animare solo al cambio di scheda
   var attArea = 'tutte';  // filtro area nel tab "Da fare"
   var attQuery = '';      // ricerca testo
 
@@ -2196,12 +2224,15 @@
 
     function ridisegna() {
       var c = document.getElementById('att-corpo');
-      c.classList.remove('vista-enter'); void c.offsetWidth;
+      var cambio = attTab !== attTabMostrata;
+      var scrollPrima = cambio ? 0 : (window.scrollY || document.documentElement.scrollTop || 0);
       if (attTab === 'sistemare') disegnaSmista(c);
       else if (attTab === 'dafare') disegnaDaFare(c);
       else if (attTab === 'arrivo') disegnaArrivo(c);
       else disegnaProgetti(c);
-      c.classList.add('vista-enter');
+      attTabMostrata = attTab;
+      if (cambio) animaIngresso(c);
+      else if (scrollPrima) window.scrollTo(0, scrollPrima);
     }
 
     /* --- In arrivo: attività con una data vicina o già passata --- */
@@ -2464,8 +2495,19 @@
             '<form class="bk-add" data-addarea="' + g.area.id + '"><input type="text" placeholder="Aggiungi a «' + esc(g.area.nome) + '»…" aria-label="Aggiungi"><button class="btn btn-mini" type="submit" aria-label="Aggiungi">' + ICO('plus', 13) + '</button></form>' +
             '</div></div>';
         }).join('') + '</div>';
+        /* aprire/chiudere un'area mostra o nasconde SOLO quel pezzo: niente
+           ricostruzione della lista, così il resto non si muove di un pixel */
         lista.querySelectorAll('[data-toggle]').forEach(function (b) {
-          b.addEventListener('click', function () { var id = b.getAttribute('data-toggle'); backlogAperte[id] = !backlogAperte[id]; renderLista(); });
+          b.addEventListener('click', function () {
+            var id = b.getAttribute('data-toggle');
+            var aperta = !backlogAperte[id];
+            backlogAperte[id] = aperta;
+            var corpo = b.parentNode.querySelector('.bk-corpo');
+            if (corpo) corpo.hidden = !aperta;
+            b.setAttribute('aria-expanded', aperta);
+            var chev = b.querySelector('.bk-chevron');
+            if (chev) chev.classList.toggle('aperta', aperta);
+          });
         });
         wireBk(lista); wireAdd(lista);
       }
@@ -2828,6 +2870,12 @@
 
   /* ---------- render ---------- */
 
+  /* L'animazione d'ingresso serve quando CAMBI pagina, non ogni volta che
+     spunti qualcosa: se la si riavvia a ogni ridisegno tutto sembra
+     "sfarfallare" e sparire/riapparire. Qui la si concede solo alla vera
+     navigazione, e si conserva la posizione di scorrimento quando la pagina
+     è la stessa — così gli elementi restano fermi sotto il dito. */
+  var vistaMostrata = '';
   function render() {
     var s = LM.load();
     if (!s.onboarded) {
@@ -2838,10 +2886,9 @@
     LMCharts.hideTip();
     aggiornaNav();
     bandaDemo();
-    /* riattiva le animazioni d'ingresso della vista */
-    $vista.classList.remove('vista-enter');
-    void $vista.offsetWidth;
     var v = vistaCorrente();
+    var cambioPagina = v !== vistaMostrata;
+    var scrollPrima = cambioPagina ? 0 : (window.scrollY || document.documentElement.scrollTop || 0);
     if (v === 'oggi') vistaFocus();
     else if (v === 'giornata') vistaGiornata();
     else if (v === 'plancia') vistaPlancia();
@@ -2849,7 +2896,9 @@
     else if (v === 'inbox') vistaInbox();
     else if (v === 'esperimenti') vistaEsperimenti();
     else if (v === 'scienza') vistaScienza();
-    $vista.classList.add('vista-enter');
+    vistaMostrata = v;
+    if (cambioPagina) { animaIngresso($vista); window.scrollTo(0, 0); }
+    else if (scrollPrima) window.scrollTo(0, scrollPrima);
   }
 
   window.addEventListener('hashchange', function () {

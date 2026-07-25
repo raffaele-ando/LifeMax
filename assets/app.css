@@ -349,7 +349,9 @@ small { color: var(--inchiostro-2); }
 @keyframes alzati {
   from { opacity: 0; transform: translateY(16px) scale(.992); }
 }
-.griglia > * { animation: alzati .55s var(--ease-out) both; animation-delay: calc(var(--i, 0) * 55ms); }
+/* le schede della griglia si animano solo all'ingresso della pagina: se lo
+   facessero a ogni ridisegno, ogni spunta farebbe "sfarfallare" tutto */
+.vista-enter .griglia > * { animation: alzati .55s var(--ease-out) both; animation-delay: calc(var(--i, 0) * 55ms); }
 
 /* ---------- componenti base ---------- */
 
@@ -521,8 +523,8 @@ label.campo { display: block; font-size: 12px; font-weight: 700; letter-spacing:
   background: conic-gradient(var(--brand-b) calc(var(--p, 0) * 1turn), color-mix(in srgb, var(--bordo-forte) 70%, transparent) 0);
   box-shadow: var(--e2);
   transition: background .25s linear;
-  animation: alzati .5s var(--ease-spring) both;
 }
+.vista-enter .timer-anello { animation: alzati .5s var(--ease-spring) both; }
 .timer-anello .timer-interno {
   width: 100%; height: 100%; border-radius: 50%;
   background: var(--superficie-1);
@@ -818,8 +820,8 @@ kbd {
   display: flex; align-items: center; justify-content: center; color: #fff;
   background: var(--grad-brand);
   box-shadow: var(--ombra-accento), inset 0 1px 0 rgba(255, 255, 255, .3);
-  animation: alzati .5s var(--ease-spring) both;
 }
+.vista-enter .rituale-icona { animation: alzati .5s var(--ease-spring) both; }
 .rituale-testa h2 { font-size: 21px; letter-spacing: -0.025em; font-weight: 800; }
 .rituale-testa p { color: var(--inchiostro-2); font-size: 13.5px; margin-top: 4px; }
 
@@ -1476,6 +1478,7 @@ kbd {
 .gs-riass b { color: var(--inchiostro-1); font-variant-numeric: tabular-nums; }
 .gs-riass .ico { vertical-align: -2px; color: var(--inchiostro-muto); }
 .gio-sonno-corpo { padding: 4px 12px 13px; }
+.gio-sonno-corpo[hidden] { display: none; }
 
 /* sonno e pasti del giorno (registro) sulla pagina Giornata */
 .tl-sonno-sez { margin-top: 14px; padding-top: 13px; border-top: 1px solid var(--griglia); }
