@@ -1000,7 +1000,7 @@
         : (opts.interactive ? ' data-blk-' + (e.tipo === 'azione' ? 'az' : 'ab') + '="' + e.id + '"' : '');
       /* le azioni si trascinano: su un'altra ora (stesso giorno) o su un altro
          giorno nella vista settimana */
-      if (e.tipo === 'azione') clic += ' draggable="true" data-drag-az="' + e.id + '"';
+      if (e.tipo === 'azione') clic += ' data-drag-az="' + e.id + '"';
       return '<div class="tl-blk tl-blk-att' + (fatto ? ' fatta' : '') + (opts.interactive && !opts.mini ? ' tl-blk-clic' : '') + '"' + clic + ' style="' + pos + ';--c-area:' + col + '" title="' + esc(e.testo) + '">' +
         check + '<span class="tl-blk-t">' + (e.mit ? ICO('star', 9) + ' ' : '') + esc(e.testo) + '</span>' +
         (hgt > 30 && !opts.mini ? '<span class="tl-blk-ora">' + e.ora + '–' + fmtMin(e.min + dur) + '</span>' : '') + '</div>';
@@ -1037,43 +1037,109 @@
     });
   }
 
-  /* ---------- TRASCINAMENTO ----------
-     Un'azione si può prendere e spostare: su un'altra ora della stessa giornata
-     o su un altro giorno nella vista settimana. È il modo più diretto di
-     ripianificare: nessun campo da riempire, si muove la cosa dove va. */
-  var trascinata = null;      // id dell'azione che si sta spostando
-  function iniziaTrascina(ev, id) {
-    trascinata = id;
-    try { ev.dataTransfer.setData('text/plain', id); ev.dataTransfer.effectAllowed = 'move'; } catch (e) { }
-    document.body.classList.add('sto-trascinando');
+  /* ---------- TRASCINAMENTO (mouse, dito e penna) ----------
+     Non usiamo il drag&drop nativo di HTML: sui touch non esiste, quindi da
+     telefono e iPad non funzionava. Qui lo facciamo con gli eventi puntatore,
+     che valgono per tutti i dispositivi.
+     Come si distingue un trascinamento da un tocco: col mouse basta muoversi
+     di 6px; col dito serve tenere premuto ~220ms (altrimenti la pagina non si
+     potrebbe più scorrere).
+     I bersagli si dichiarano con attributi, così ogni vista può offrire i suoi:
+       data-drop-giorno="AAAA-MM-GG"  → sposta in quel giorno
+       data-drop-ora="1"              → dà l'ora corrispondente al punto
+       data-drop-senzaora="1"         → toglie l'orario                        */
+  var trasc = null;   // { id, fantasma, bersaglio, partito }
+
+  function bersaglioSotto(x, y) {
+    var el = document.elementFromPoint(x, y);
+    while (el && el !== document.body) {
+      if (el.hasAttribute && (el.hasAttribute('data-drop-giorno') || el.hasAttribute('data-drop-ora') || el.hasAttribute('data-drop-senzaora'))) return el;
+      el = el.parentElement;
+    }
+    return null;
+  }
+  function evidenzia(el) {
+    if (trasc && trasc.bersaglio === el) return;
+    if (trasc && trasc.bersaglio) trasc.bersaglio.classList.remove('drop-attivo');
+    if (trasc) trasc.bersaglio = el;
+    if (el) el.classList.add('drop-attivo');
   }
   function fineTrascina() {
-    trascinata = null;
+    if (!trasc) return;
+    if (trasc.bersaglio) trasc.bersaglio.classList.remove('drop-attivo');
+    if (trasc.fantasma && trasc.fantasma.parentNode) trasc.fantasma.parentNode.removeChild(trasc.fantasma);
+    if (trasc.sorgente) trasc.sorgente.classList.remove('sto-prendendo');
     document.body.classList.remove('sto-trascinando');
-    document.querySelectorAll('.drop-attivo').forEach(function (el) { el.classList.remove('drop-attivo'); });
+    trasc = null;
   }
-  function idTrascinato(ev) {
-    var id = trascinata;
-    if (!id) { try { id = ev.dataTransfer.getData('text/plain'); } catch (e) { } }
-    return id;
-  }
-  /* rende un elemento "bersaglio" di rilascio; onDrop(id, ev) fa il lavoro */
-  function zonaRilascio(el, onDrop) {
-    el.addEventListener('dragover', function (ev) { ev.preventDefault(); ev.dataTransfer.dropEffect = 'move'; el.classList.add('drop-attivo'); });
-    el.addEventListener('dragleave', function () { el.classList.remove('drop-attivo'); });
-    el.addEventListener('drop', function (ev) {
-      ev.preventDefault(); ev.stopPropagation();
-      el.classList.remove('drop-attivo');
-      var id = idTrascinato(ev);
-      if (id) onDrop(id, ev);
-      fineTrascina();
-    });
-  }
-  /* collega il "prendi" a tutte le azioni trascinabili dentro `scope` */
-  function wireTrascina(scope) {
+  /* onRilascio(id, bersaglio, x, y) — passato da chi monta la vista */
+  function abilitaTrascina(scope, onRilascio) {
     scope.querySelectorAll('[data-drag-az]').forEach(function (el) {
-      el.addEventListener('dragstart', function (ev) { iniziaTrascina(ev, el.getAttribute('data-drag-az')); });
-      el.addEventListener('dragend', fineTrascina);
+      el.addEventListener('pointerdown', function (ev) {
+        if (ev.button > 0) return;                       // solo tasto principale
+        var btnDentro = ev.target.closest('button');
+        if (btnDentro && btnDentro !== el && el.contains(btnDentro)) return; // i pulsanti interni restano cliccabili
+        var id = el.getAttribute('data-drag-az');
+        var x0 = ev.clientX, y0 = ev.clientY;
+        var tocco = ev.pointerType === 'touch';
+        var attesa = null, annullato = false;
+
+        function avvia() {
+          if (annullato || trasc) return;
+          var r = el.getBoundingClientRect();
+          var f = document.createElement('div');
+          f.className = 'trasc-fantasma';
+          f.textContent = (el.textContent || '').trim().slice(0, 60);
+          f.style.width = Math.min(260, Math.max(120, r.width)) + 'px';
+          document.body.appendChild(f);
+          trasc = { id: id, fantasma: f, bersaglio: null, sorgente: el };
+          el.classList.add('sto-prendendo');
+          document.body.classList.add('sto-trascinando');
+          muovi(x0, y0);
+        }
+        function muovi(x, y) {
+          if (!trasc) return;
+          trasc.fantasma.style.left = x + 'px';
+          trasc.fantasma.style.top = y + 'px';
+          evidenzia(bersaglioSotto(x, y));
+        }
+        function onMove(e) {
+          var dx = e.clientX - x0, dy = e.clientY - y0;
+          if (!trasc) {
+            if (tocco) { if (Math.abs(dx) + Math.abs(dy) > 12) { annullato = true; pulisci(); } return; }
+            if (Math.abs(dx) + Math.abs(dy) > 6) avvia();
+            if (!trasc) return;
+          }
+          e.preventDefault();
+          muovi(e.clientX, e.clientY);
+        }
+        function onUp(e) {
+          clearTimeout(attesa);
+          if (trasc) {
+            var b = bersaglioSotto(e.clientX, e.clientY);
+            var idFin = trasc.id;
+            fineTrascina();
+            /* il clic che arriva subito dopo va ignorato, altrimenti la cella
+               sotto aprirebbe il giorno appena hai finito di spostare */
+            var ingoia = function (ce) { ce.stopPropagation(); ce.preventDefault(); };
+            window.addEventListener('click', ingoia, true);
+            setTimeout(function () { window.removeEventListener('click', ingoia, true); }, 320);
+            if (b) { onRilascio(idFin, b, e.clientX, e.clientY); pulisci(); return; }
+          }
+          pulisci();
+        }
+        function pulisci() {
+          clearTimeout(attesa);
+          fineTrascina();
+          window.removeEventListener('pointermove', onMove, { passive: false });
+          window.removeEventListener('pointerup', onUp);
+          window.removeEventListener('pointercancel', pulisci);
+        }
+        window.addEventListener('pointermove', onMove, { passive: false });
+        window.addEventListener('pointerup', onUp);
+        window.addEventListener('pointercancel', pulisci);
+        if (tocco) attesa = setTimeout(avvia, 220);       // tieni premuto per prendere
+      });
     });
   }
 
@@ -1187,7 +1253,7 @@
           var attr = e.tipo === 'azione' ? 'data-tl-az="' + e.id + '"' : 'data-tl-ab="' + e.id + '"';
           var bAttr = 'data-blk-' + (e.tipo === 'azione' ? 'az' : 'ab') + '="' + e.id + '"';
           return '<div class="gio-so-riga' + (fatto ? ' fatta' : '') + '" style="--c-area:' + col + '"' +
-            (e.tipo === 'azione' ? ' draggable="true" data-drag-az="' + e.id + '"' : '') + '>' +
+            (e.tipo === 'azione' ? ' data-drag-az="' + e.id + '"' : '') + '>' +
             (spuntabile ? '<button class="tl-check" ' + attr + ' aria-label="Fatto">' + ICO('check', 12) + '</button>' : '') +
             '<button class="gio-so-corpo" ' + bAttr + '>' +
             '<span class="tl-tag" style="color:' + col + '" title="' + esc(ar.nome) + '">' + ICO(ar.icona, 13) + '</span>' +
@@ -1344,25 +1410,30 @@
         wireGriglia(host);
       }
       wireGriglia(container);
-      wireTrascina(container);
-      /* rilasciare sulla griglia dà l'ora corrispondente al punto (a passi di
-         15 minuti); rilasciare sulla zona "senza orario" toglie l'orario */
+      /* trascinare: sulla griglia dà l'ora del punto in cui lasci (a 15
+         minuti), sulla zona "senza orario" toglie l'orario */
       var grigliaEl = container.querySelector('.tl-grid');
-      if (grigliaEl) zonaRilascio(grigliaEl, function (id, ev) {
-        var gs = +grigliaEl.getAttribute('data-gs'), pxh = +grigliaEl.getAttribute('data-pxh');
-        if (isNaN(gs) || !pxh) return;
-        var r = grigliaEl.getBoundingClientRect();
-        var min = gs + (ev.clientY - r.top) / pxh * 60;
-        min = Math.max(0, Math.round(min / 15) * 15) % 1440;
-        LM.setOraAzione(id, fmtMin(min));
-        LM.spostaAzione(id, k);
-        toast('Spostata alle ' + fmtMin(min) + '.', 0, 'clock');
-        montaGiornata(container, opts); aggiornaNav();
-      });
+      if (grigliaEl) grigliaEl.setAttribute('data-drop-ora', '1');
       var zonaSo = container.querySelector('.gio-so');
-      if (zonaSo) zonaRilascio(zonaSo, function (id) {
-        LM.setOraAzione(id, null);
-        toast('Tolto l’orario: resta tra le cose senza orario.', 0, 'clock');
+      if (zonaSo) zonaSo.setAttribute('data-drop-senzaora', '1');
+      abilitaTrascina(container, function (id, bersaglio, x, y) {
+        if (bersaglio.hasAttribute('data-drop-senzaora')) {
+          LM.setOraAzione(id, null);
+          toast('Tolto l’orario: resta tra le cose senza orario.', 0, 'clock');
+        } else if (bersaglio.hasAttribute('data-drop-ora')) {
+          var gs = +bersaglio.getAttribute('data-gs'), pxh = +bersaglio.getAttribute('data-pxh');
+          if (isNaN(gs) || !pxh) return;
+          var r = bersaglio.getBoundingClientRect();
+          var min = gs + (y - r.top) / pxh * 60;
+          min = Math.max(0, Math.round(min / 15) * 15) % 1440;
+          LM.setOraAzione(id, fmtMin(min));
+          LM.spostaAzione(id, k);
+          toast('Spostata alle ' + fmtMin(min) + '.', 0, 'clock');
+        } else if (bersaglio.hasAttribute('data-drop-giorno')) {
+          var g = bersaglio.getAttribute('data-drop-giorno');
+          if (!LM.spostaAzione(id, g)) return;
+          toast('Spostata a ' + etichettaGiorno(g).toLowerCase() + '.', 0, 'calendar');
+        }
         montaGiornata(container, opts); aggiornaNav();
       });
 
@@ -1444,16 +1515,16 @@
     wireOrizzNav(container, 'settimana');
     container.querySelectorAll('[data-tl-giorno]').forEach(function (el) {
       el.addEventListener('click', function () { setOrizzonte('giorno', el.getAttribute('data-tl-giorno')); });
-      /* trascinare una cosa da un giorno all'altro: ripianificare la settimana
-         muovendo i blocchi, senza aprire niente */
-      zonaRilascio(el, function (id) {
-        var giorno = el.getAttribute('data-tl-giorno');
-        if (!LM.spostaAzione(id, giorno)) return;
-        toast('Spostata a ' + etichettaGiorno(giorno).toLowerCase() + '.', 0, 'calendar');
-        disegnaOrizzonte(); aggiornaNav();
-      });
+      el.setAttribute('data-drop-giorno', el.getAttribute('data-tl-giorno'));
     });
-    wireTrascina(container);
+    /* trascinare una cosa da un giorno all'altro: ripianificare la settimana
+       muovendo i blocchi, senza aprire niente */
+    abilitaTrascina(container, function (id, bersaglio) {
+      var giorno = bersaglio.getAttribute('data-drop-giorno');
+      if (!giorno || !LM.spostaAzione(id, giorno)) return;
+      toast('Spostata a ' + etichettaGiorno(giorno).toLowerCase() + '.', 0, 'calendar');
+      disegnaOrizzonte(); aggiornaNav();
+    });
   }
 
   /* --- Mese: calendario con indicatori di attività e scadenze --- */
@@ -1484,10 +1555,17 @@
       var mattoni = fatti.slice(0, 10).map(function (aid) { return '<i style="background:' + LM.coloreArea(areaById(aid)) + '"></i>'; }).join('') +
         (fatti.length > 10 ? '<span class="me-piu">+' + (fatti.length - 10) + '</span>' : '');
       var scadBadge = scadG.length ? '<span class="me-scad" title="' + esc(scadG.map(function (b) { return b.testo; }).join(', ')) + '">' + ICO('calendar', 9) + (scadG.length > 1 ? ' ' + scadG.length : '') + '</span>' : '';
+      /* le cose ancora da fare diventano pastiglie che si possono prendere e
+         portare su un altro giorno (ripianificare guardando tutto il mese) */
+      var daFare = LM.azioniDelGiorno(k).filter(function (a) { return !a.done; });
+      var pastiglie = daFare.slice(0, 3).map(function (a) {
+        return '<span class="me-pill" data-drag-az="' + a.id + '" style="--c-area:' + LM.coloreArea(areaById(a.areaId)) + '" title="' + esc(a.testo) + '">' + esc(a.testo) + '</span>';
+      }).join('') + (daFare.length > 3 ? '<span class="me-pill-piu">+' + (daFare.length - 3) + '</span>' : '');
       /* i giorni fuori dal mese restano neutri: colorarli renderebbe il numero
          illeggibile e confonderebbe il colpo d'occhio sul mese vero */
       celle += '<button class="me-cella ' + (fuori ? 'fuori' : 'heat-' + heat) + (k === oggi ? ' oggi' : '') + (futuro ? ' futuro' : '') + '" data-tl-giorno="' + k + '" aria-label="' + LM.weekdayShort(k) + ' ' + LM.fmtShort(k) + '">' +
         '<span class="me-testa"><span class="me-num">' + d.getDate() + '</span>' + scadBadge + '</span>' +
+        (daFare.length ? '<span class="me-pills">' + pastiglie + '</span>' : '') +
         (fatti.length ? '<span class="me-mattoni">' + mattoni + '</span>' : '') + '</button>';
     }
     var dowh = ['L', 'M', 'M', 'G', 'V', 'S', 'D'].map(function (x) { return '<span>' + x + '</span>'; }).join('');
@@ -1499,6 +1577,15 @@
     wireOrizzNav(container, 'mese');
     container.querySelectorAll('[data-tl-giorno]').forEach(function (el) {
       el.addEventListener('click', function () { setOrizzonte('giorno', el.getAttribute('data-tl-giorno')); });
+      el.setAttribute('data-drop-giorno', el.getAttribute('data-tl-giorno'));
+    });
+    /* nel mese si trascinano le cose ancora da fare (le pastiglie in fondo alla
+       cella) e si lasciano su un altro giorno: ripianificare a colpo d'occhio */
+    abilitaTrascina(container, function (id, bersaglio) {
+      var giorno = bersaglio.getAttribute('data-drop-giorno');
+      if (!giorno || !LM.spostaAzione(id, giorno)) return;
+      toast('Spostata a ' + etichettaGiorno(giorno).toLowerCase() + '.', 0, 'calendar');
+      disegnaOrizzonte(); aggiornaNav();
     });
   }
 
@@ -2476,6 +2563,22 @@
         (b.scadenza ? '<button class="btn btn-mini btn-ghost" id="bkm-scad-x">Togli</button>' : '') + '</div>' +
         '<div class="bk-sez-nota">Solo il conto alla rovescia: non la mette in agenda.</div>' +
         '</div>' +
+        (isProg ? '<div class="bk-sez">' +
+          '<div class="bk-sez-tit">' + ICO('lista', 13) + ' Tutti i passi, spalmati</div>' +
+          '<div class="bk-sez-nota" style="margin:0 0 9px">Un progetto non sta in un giorno solo: mette in agenda ogni passo aperto, uno per volta.</div>' +
+          '<div class="q-chips">' +
+          '<button class="q-chip" data-distrib="1">Uno al giorno</button>' +
+          '<button class="q-chip" data-distrib="2">Uno ogni 2 giorni</button>' +
+          '<button class="q-chip" data-distrib="7">Uno a settimana</button>' +
+          '</div>' +
+          '<div class="bk-menu-scad mt-s"><input type="date" id="bkm-dadata" min="' + oggi + '" value="' + oggi + '" aria-label="Da quale giorno">' +
+          '<span class="bk-menu-eti">da qui</span></div>' +
+          '</div>' : '') +
+        '<div class="bk-sez">' +
+        '<div class="bk-sez-tit">' + ICO('refresh', 13) + ' Se è una cosa da ripetere</div>' +
+        '<div class="bk-sez-nota" style="margin:0 0 9px">Gli obiettivi che si costruiscono ripetendo (studiare, allenarsi) funzionano meglio come abitudine.</div>' +
+        '<button class="btn btn-mini" id="bkm-abitudine">' + ICO('refresh', 13) + ' Trasformala in abitudine</button>' +
+        '</div>' +
         '<div class="bk-sez">' +
         '<div class="bk-sez-tit">' + ICO('sparkles', 13) + ' Sistemala</div>' +
         '<div class="bk-menu-riga"><span class="bk-menu-eti">Area</span>' + selectAree('bkm-area', b.areaId) + '</div>' +
@@ -2500,9 +2603,47 @@
         var sx = root.querySelector('#bkm-scad-x');
         if (sx) sx.addEventListener('click', function () { LM.impostaScadenzaBacklog(b.id, null); chiudiSheet(); ridisegna(); });
         root.querySelector('#bkm-area').addEventListener('change', function () { LM.cambiaAreaBacklog(b.id, this.value); chiudiSheet(); ridisegna(); });
+        root.querySelectorAll('[data-distrib]').forEach(function (c) {
+          c.addEventListener('click', function () {
+            var da = (root.querySelector('#bkm-dadata') || {}).value || LM.todayKey();
+            var n = LM.distribuisciPassi(b.id, da, +c.getAttribute('data-distrib'));
+            toast(n ? n + (n === 1 ? ' passo messo in agenda.' : ' passi messi in agenda, uno per volta.') : 'Nessun passo da distribuire: sono già in agenda o completati.', 0, n ? 'calendar' : 'check');
+            chiudiSheet(); aggiornaNav(); ridisegna();
+          });
+        });
+        root.querySelector('#bkm-abitudine').addEventListener('click', function () { apriDaAbitudine(b); });
         root.querySelector('#bkm-steps').addEventListener('click', function () { progettiAperti[b.id] = true; chiudiSheet(); ridisegna(); });
         root.querySelector('#bkm-mod').addEventListener('click', function () { backlogEditId = b.id; chiudiSheet(); ridisegna(); });
         root.querySelector('#bkm-del').addEventListener('click', function () { LM.rimuoviBacklog(b.id); chiudiSheet(); ridisegna(); });
+      });
+    }
+
+    /* Da cosa-da-fare a abitudine: si scelgono i giorni e (se serve) l'ora. */
+    function apriDaAbitudine(b) {
+      var html = '<div class="bk-menu">' +
+        '<div class="bk-sez">' +
+        '<div class="bk-sez-tit">' + ICO('refresh', 13) + ' In che giorni</div>' +
+        '<div class="riga-flex" id="ab-giorni">' + chipsGiorni([1, 2, 3, 4, 5, 6, 0]) + '</div>' +
+        '<div class="bk-menu-riga mt-s"><span class="bk-menu-eti">Orario</span>' +
+        '<input type="time" class="tl-time" id="ab-ora" aria-label="Orario"> ' +
+        '<select class="tl-dur" id="ab-dur" aria-label="Durata">' + DURATE.map(function (o) { return '<option value="' + o.v + '">' + o.t + '</option>'; }).join('') + '</select></div>' +
+        '<div class="bk-sez-nota">Vuoti vanno bene: l’abitudine resta senza orario fisso.</div>' +
+        '</div>' +
+        '<button class="btn btn-primario" id="ab-crea">' + ICO('check', 15) + ' Crea l’abitudine</button>' +
+        '<div class="bk-sez-nota" style="text-align:center">Esce dalle cose da fare e la ritrovi in <b>Rituali → Abitudini</b>.</div>' +
+        '</div>';
+      apriSheet(b.testo, html, function (root) {
+        root.querySelectorAll('#ab-giorni .giorno-chip').forEach(function (c) {
+          c.addEventListener('click', function () { c.classList.toggle('sel'); });
+        });
+        root.querySelector('#ab-crea').addEventListener('click', function () {
+          var giorni = leggiGiorni(root.querySelector('#ab-giorni'));
+          var ora = root.querySelector('#ab-ora').value || null;
+          var dur = root.querySelector('#ab-dur').value;
+          LM.backlogInAbitudine(b.id, giorni, { ora: ora, durata: dur ? +dur : null });
+          toast('Ora è un’abitudine: la trovi in Rituali.', 0, 'refresh');
+          chiudiSheet(); aggiornaNav(); ridisegna();
+        });
       });
     }
 
@@ -2521,9 +2662,14 @@
       if (apertoP) {
         passi = '<div class="steps-panel">' +
           (b.steps || []).map(function (st) {
+            /* ogni passo si può mettere in un giorno preciso, uno per uno */
+            var inAg = LM.snapshot().azioni.find(function (a) { return !a.done && a.passoDi && a.passoDi.b === b.id && a.passoDi.s === st.id; });
             return '<div class="step-riga' + (st.done ? ' fatta' : '') + '">' +
               '<button class="spunta-mini" data-steptoggle="' + b.id + '|' + st.id + '" aria-label="Segna passo">' + ICO('check', 12) + '</button>' +
               '<span class="step-testo">' + esc(st.testo) + '</span>' +
+              (inAg ? '<span class="step-quando">' + ICO('calendar', 10) + ' ' + esc(etichettaGiorno(inAg.data).toLowerCase()) + '</span>' : '') +
+              (st.done ? '' : '<label class="scad-set" title="Mettilo in un giorno">' + ICO('calendar', 13) +
+                '<input type="date" data-stepdata="' + b.id + '|' + st.id + '" min="' + LM.todayKey() + '"' + (inAg ? ' value="' + inAg.data + '"' : '') + '></label>') +
               '<button class="icona-btn" data-stepdel="' + b.id + '|' + st.id + '" title="Rimuovi passo" aria-label="Rimuovi passo">' + ICO('trash', 13) + '</button></div>';
           }).join('') +
           '<form class="step-add" data-stepadd="' + b.id + '"><input type="text" placeholder="Aggiungi un passo…" aria-label="Aggiungi un passo"><button class="btn btn-mini" type="submit" aria-label="Aggiungi un passo">' + ICO('plus', 12) + '</button></form>' +
@@ -2614,6 +2760,15 @@
       });
       scope.querySelectorAll('[data-steptoggle]').forEach(function (b) {
         b.addEventListener('click', function () { var p = b.getAttribute('data-steptoggle').split('|'); LM.togglePasso(p[0], p[1]); ridisegna(); });
+      });
+      scope.querySelectorAll('[data-stepdata]').forEach(function (inp) {
+        inp.addEventListener('change', function () {
+          var pz = inp.getAttribute('data-stepdata').split('|');
+          if (!inp.value) return;
+          var az = LM.pianificaPasso(pz[0], pz[1], inp.value);
+          toast(az ? 'Passo messo ' + etichettaGiorno(inp.value).toLowerCase() + '.' : 'Non riesco a metterlo in agenda.', 0, 'calendar');
+          aggiornaNav(); ridisegna();
+        });
       });
       scope.querySelectorAll('[data-stepdel]').forEach(function (b) {
         b.addEventListener('click', function () { var p = b.getAttribute('data-stepdel').split('|'); LM.rimuoviPasso(p[0], p[1]); ridisegna(); });

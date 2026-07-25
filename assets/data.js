@@ -723,6 +723,62 @@ var LM = (function () {
     return az;
   }
 
+  /* Distribuisci i passi ancora aperti UNO PER GIORNO a partire da un giorno.
+     Un progetto non sta in una sola giornata: così si spalma da solo.
+     `ogniQuanti` = 1 tutti i giorni, 7 una volta a settimana, ecc. */
+  function distribuisciPassi(bid, daGiorno, ogniQuanti) {
+    var s = load();
+    var b = s.backlog.find(function (x) { return x.id === bid; });
+    if (!b || !b.steps || !b.steps.length) return 0;
+    var passo = Math.max(1, ogniQuanti || 1);
+    var k = daGiorno || todayKey();
+    /* i passi già in agenda non si duplicano */
+    var giaFuori = {};
+    s.azioni.forEach(function (a) { if (!a.done && a.passoDi && a.passoDi.b === bid) giaFuori[a.passoDi.s] = true; });
+    var daFare = b.steps.filter(function (st) { return !st.done && !giaFuori[st.id]; });
+    if (!daFare.length) return 0;
+    daFare.forEach(function (st, i) {
+      var giorno = addDays(k, i * passo);
+      aggiungiAzione(st.testo, b.areaId, { data: giorno, mit: serveMit(giorno), passoDi: { b: bid, s: st.id }, interna: true });
+    });
+    registra('backlog', daFare.length + ' passi di «' + b.testo + '» distribuiti da ' + fmtShort(k) +
+      (passo === 1 ? ', uno al giorno' : ', uno ogni ' + passo + ' giorni'), true);
+    save();
+    return daFare.length;
+  }
+
+  /* Trasforma una cosa da fare (o un progetto) in ABITUDINE ricorrente: per gli
+     obiettivi che non si chiudono in un giorno ma si costruiscono ripetendo. */
+  function backlogInAbitudine(bid, giorni, opts) {
+    var s = load();
+    var b = s.backlog.find(function (x) { return x.id === bid; });
+    if (!b) return null;
+    var h = aggiungiAbitudine(b.testo, b.areaId, giorni && giorni.length ? giorni : [1, 2, 3, 4, 5, 6, 0], opts || {});
+    if (!opts || opts.mantieni !== true) {
+      s = load();
+      s.backlog = s.backlog.filter(function (x) { return x.id !== bid; });
+    }
+    registra('abitudine', '«' + b.testo + '» è diventata un’abitudine', true);
+    save();
+    return h;
+  }
+
+  /* Mette UN passo specifico in un giorno (o lo sposta se già in agenda) */
+  function pianificaPasso(bid, sid, giorno) {
+    var s = load();
+    var b = s.backlog.find(function (x) { return x.id === bid; });
+    if (!b || !b.steps) return null;
+    var st = b.steps.find(function (x) { return x.id === sid; });
+    if (!st) return null;
+    var k = giorno || todayKey();
+    var gia = s.azioni.find(function (a) { return !a.done && a.passoDi && a.passoDi.b === bid && a.passoDi.s === sid; });
+    if (gia) return spostaAzione(gia.id, k) || gia;
+    var az = aggiungiAzione(st.testo, b.areaId, { data: k, mit: serveMit(k), passoDi: { b: bid, s: sid }, interna: true });
+    registra('backlog', 'Passo «' + st.testo + '» di «' + b.testo + '» messo il ' + fmtShort(k), true);
+    save();
+    return az;
+  }
+
   function backlogPerArea() {
     var s = load();
     var perArea = {};
@@ -1511,6 +1567,7 @@ var LM = (function () {
     aggiungiBacklog: aggiungiBacklog, modificaBacklog: modificaBacklog, cambiaAreaBacklog: cambiaAreaBacklog,
     rimuoviBacklog: rimuoviBacklog, backlogInOggi: backlogInOggi, backlogPerArea: backlogPerArea,
     aggiungiPasso: aggiungiPasso, modificaPasso: modificaPasso, rimuoviPasso: rimuoviPasso, togglePasso: togglePasso,
+    distribuisciPassi: distribuisciPassi, backlogInAbitudine: backlogInAbitudine, pianificaPasso: pianificaPasso,
     avanzamentoProgetto: avanzamentoProgetto, prossimoPassoInOggi: prossimoPassoInOggi,
     impostaScadenzaBacklog: impostaScadenzaBacklog, scadenzeVicine: scadenzeVicine,
     aggiungiAbitudine: aggiungiAbitudine, modificaAbitudine: modificaAbitudine, rimuoviAbitudine: rimuoviAbitudine,
