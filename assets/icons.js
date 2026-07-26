@@ -63,6 +63,9 @@
     aiuto: '<circle cx="12" cy="12" r="9"/><path d="M9.4 9.3a2.7 2.7 0 0 1 5.2 1c0 1.7-2.6 2.1-2.6 3.9"/><path d="M12 17.4h.01"/>',
     chevronGiu: '<path d="M6 9.5l6 6 6-6"/>',
     piu2: '<path d="M12 5v14M5 12h14"/>',
+    copy: '<rect x="9" y="9" width="11.5" height="11.5" rx="2.4"/><path d="M15.6 5.8V5.4A2.4 2.4 0 0 0 13.2 3H6a2.4 2.4 0 0 0-2.4 2.4v7.2A2.4 2.4 0 0 0 6 15h.4"/>',
+    share: '<circle cx="18" cy="5.6" r="2.6"/><circle cx="6" cy="12" r="2.6"/><circle cx="18" cy="18.4" r="2.6"/><path d="M8.3 10.8 15.7 6.8M8.3 13.2l7.4 4"/>',
+    terminale: '<rect x="3" y="4" width="18" height="16" rx="2.6"/><path d="M7.2 9.6 9.8 12l-2.6 2.4M12.4 15h4.2"/>',
     /* giornata: pasti e sonno */
     utensils: '<path d="M6 3v7a2 2 0 0 0 4 0V3M8 10v11M17.5 3c-1.6 0-2.5 1.8-2.5 4.5S15.9 12 17.5 12V3zM17.5 12v9"/>',
     coffee: '<path d="M4 8h13v6a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4z"/><path d="M17 9.5h1.6a2.4 2.4 0 0 1 0 4.8H17"/><path d="M7.5 3.2c-.4.7-.4 1.3 0 2M11 3.2c-.4.7-.4 1.3 0 2"/>',

@@ -341,15 +341,17 @@
   function statoSync() {
     var y = window.LM_SYNC || { state: 'idle' };
     var quando = y.at ? ' · ' + oraDi(y.at) : '';
-    if (y.state === 'saving') return { ico: 'cloud', cls: '', testo: 'Salvataggio…' };
+    /* `breve` è la versione per la barra laterale, dove lo spazio è una
+       colonna stretta: se andasse a capo sembrerebbe un errore di layout. */
+    if (y.state === 'saving') return { ico: 'cloud', cls: '', testo: 'Salvataggio…', breve: 'Salvataggio…' };
     /* la scrittura è in coda: i dati sono già sul dispositivo, il cloud
        arriverà. Dirlo chiaramente invece di lasciare un "…" infinito. */
-    if (y.state === 'attesa') return { ico: 'cloud', cls: 'sync-attesa', testo: 'Salvato qui, in attesa di rete',
+    if (y.state === 'attesa') return { ico: 'cloud', cls: 'sync-attesa', testo: 'Salvato qui, in attesa di rete', breve: 'In attesa di rete',
       title: 'I dati sono salvati su questo dispositivo. Appena c’è rete finiscono anche nel cloud.' + (y.at ? ' Ultimo salvataggio nel cloud: ' + oraDi(y.at) + '.' : '') };
-    if (y.state === 'muto') return { ico: 'cloud', cls: 'sync-errore', testo: 'Cloud non raggiungibile', title: y.error };
-    if (y.state === 'error') return { ico: 'cloud', cls: 'sync-errore', testo: 'Sync non riuscita', title: y.error };
-    if (y.state === 'saved') return { ico: 'cloudCheck', cls: 'sync-ok', testo: 'Salvato nel cloud' + quando, title: 'Ultimo salvataggio confermato dal server alle ' + oraDi(y.at) + '.' };
-    return { ico: 'cloudCheck', cls: 'sync-ok', testo: 'Tutto salvato' };
+    if (y.state === 'muto') return { ico: 'cloud', cls: 'sync-errore', testo: 'Cloud non raggiungibile', breve: 'Cloud non risponde', title: y.error };
+    if (y.state === 'error') return { ico: 'cloud', cls: 'sync-errore', testo: 'Sync non riuscita', breve: 'Sync non riuscita', title: y.error };
+    if (y.state === 'saved') return { ico: 'cloudCheck', cls: 'sync-ok', testo: 'Salvato nel cloud' + quando, breve: 'Salvato' + quando, title: 'Ultimo salvataggio confermato dal server alle ' + oraDi(y.at) + '.' };
+    return { ico: 'cloudCheck', cls: 'sync-ok', testo: 'Tutto salvato', breve: 'Tutto salvato' };
   }
 
   function footerSidebar() {
@@ -363,7 +365,10 @@
       var y = statoSync();
       acct = '<div class="fondo-account">' + avatar +
         '<div class="fondo-account-testo"><b>' + esc(a.user.name || 'Il tuo account') + '</b>' +
-        '<small class="' + y.cls + '"' + (y.title ? ' title="' + esc(y.title) + '"' : '') + '>' + ICO(y.ico, 12) + ' ' + y.testo + '</small></div></div>';
+        /* lo stato è cliccabile: chi legge "Salvataggio…" vuole sapere subito
+           perché, e la spiegazione deve stare dietro quella parola, non
+           sepolta nelle impostazioni */
+        '<button type="button" class="sync-chip ' + y.cls + '" data-diag="1" title="' + esc(y.title || 'Mostra cosa sta succedendo') + '">' + ICO(y.ico, 12) + ' ' + (y.breve || y.testo) + '</button></div></div>';
     } else if (a.available) {
       acct = '<button class="btn btn-mini btn-accedi" id="fondo-accedi">' + GOOGLE_G(15) + ' Accedi con Google</button>';
     } else {
@@ -377,6 +382,8 @@
     if (acc) acc.addEventListener('click', function () { if (window.LMCloud && window.LMCloud.available) window.LMCloud.signIn(); });
     var imp = document.getElementById('fondo-impostazioni');
     if (imp) imp.addEventListener('click', apriImpostazioni);
+    var fondo = document.getElementById('sidebar-fondo');
+    if (fondo) fondo.querySelectorAll('[data-diag]').forEach(function (b) { b.addEventListener('click', apriDiagnostica); });
   }
 
   /* ---------- impostazioni & menu "Altro" ---------- */
@@ -415,7 +422,10 @@
       '<div class="imp-azioni">' +
       '<button class="btn btn-mini" id="imp-demo">' + ICO('refresh', 14) + ' Carica dati di esempio</button> ' +
       '<button class="btn btn-mini imp-pericolo" id="imp-azzera">' + ICO('trash', 14) + ' Azzera tutto</button></div>' +
-      '<div class="imp-nota">L’azzeramento crea comunque un backup: potrai recuperare i dati da «Backup e ripristino».</div></div>';
+      '<div class="imp-nota">L’azzeramento crea comunque un backup: potrai recuperare i dati da «Backup e ripristino».</div></div>' +
+      '<div class="imp-sezione"><div class="imp-eti">Se qualcosa non torna</div>' +
+      '<div class="imp-azioni"><button class="btn btn-mini" id="imp-diag">' + ICO('terminale', 14) + ' Cosa sta succedendo</button></div>' +
+      '<div class="imp-nota">Mostra se i dati sono davvero salvati e il registro di tutto quello che l’app sta facendo, da copiare e inviare.</div></div>';
   }
 
   function wireAspettoDati(root) {
@@ -432,6 +442,8 @@
     var ar = root.querySelector('#imp-aree'); if (ar) ar.addEventListener('click', apriAree);
     var gu = root.querySelector('#imp-guida'); if (gu) gu.addEventListener('click', apriGuida);
     var ri = root.querySelector('#imp-ritmo'); if (ri) ri.addEventListener('click', apriRitmo);
+    var dg = root.querySelector('#imp-diag'); if (dg) dg.addEventListener('click', apriDiagnostica);
+    root.querySelectorAll('[data-diag]').forEach(function (b) { b.addEventListener('click', apriDiagnostica); });
     var imp = root.querySelector('#imp-importa'); var file = root.querySelector('#imp-file');
     if (imp && file) {
       imp.addEventListener('click', function () { file.click(); });
@@ -494,9 +506,136 @@
     });
   }
 
+  /* ---------- registro diagnostico ----------
+     Quando qualcosa non torna ("dice ancora Salvataggio…") la domanda vera è
+     una sola: i miei dati sono al sicuro? Qui la risposta si legge in chiaro,
+     con la cronologia di cosa è successo e un pulsante che copia tutto —
+     perché il problema si vede sul telefono, dove non c'è nessuna console. */
+
+  var LOG_SOLO_PROBLEMI = false;
+
+  function statoSalvataggioSpiegato() {
+    var y = window.LM_SYNC || { state: 'idle' };
+    var a = window.LM_AUTH || {};
+    var locale = 'Sul telefono o computer che stai usando i dati sono salvati subito, sempre.';
+    if (!a.available) return { cls: 'diag-ok', tit: 'Solo su questo dispositivo', txt: locale + ' Il cloud non è raggiungibile da qui, quindi non c’è copia online.' };
+    if (!a.user) return { cls: 'diag-ok', tit: 'Solo su questo dispositivo', txt: locale + ' Accedi con Google per avere anche una copia nel cloud.' };
+    if (y.state === 'saved') return { cls: 'diag-ok', tit: 'Al sicuro anche nel cloud', txt: 'Ultima conferma dal server alle ' + oraDi(y.at) + '. ' + locale };
+    if (y.state === 'saving') return { cls: 'diag-corso', tit: 'Salvataggio nel cloud in corso', txt: locale + ' Sta arrivando la conferma del server.' };
+    if (y.state === 'attesa') return { cls: 'diag-attesa', tit: 'Salvato qui, in coda per il cloud', txt: locale + ' La copia online partirà appena c’è rete: non serve fare niente.' + (y.at ? ' Ultima copia nel cloud: ' + oraDi(y.at) + '.' : '') };
+    if (y.state === 'muto' || y.state === 'error') return { cls: 'diag-guasto', tit: 'Il cloud non sta salvando', txt: (y.error || '') + ' ' + locale };
+    return { cls: 'diag-ok', tit: 'Niente in sospeso', txt: locale };
+  }
+
+  function righeLogHtml() {
+    if (!window.LMLog) return '<div class="imp-nota" style="margin:0">Registro non disponibile.</div>';
+    var r = LMLog.righe();
+    if (LOG_SOLO_PROBLEMI) r = r.filter(function (x) { return x.liv !== 'info'; });
+    if (!r.length) return '<div class="diag-vuoto">' + (LOG_SOLO_PROBLEMI ? 'Nessun problema registrato. Buon segno.' : 'Ancora niente da mostrare.') + '</div>';
+    /* dal più recente: su un telefono l'ultima cosa avvenuta deve stare
+       davanti agli occhi, non in fondo a 300 righe */
+    return r.slice().reverse().map(function (x) {
+      return '<div class="diag-riga liv-' + x.liv + '"><span class="diag-ora">' + LMLog.ora(x.t) + '</span>' +
+        '<span class="diag-can">' + esc(x.can) + '</span>' +
+        '<span class="diag-msg">' + esc(x.msg) + (x.dati ? '<i>' + esc(x.dati) + '</i>' : '') + '</span></div>';
+    }).join('');
+  }
+
+  function apriDiagnostica() {
+    var st = statoSalvataggioSpiegato();
+    var nProblemi = window.LMLog ? LMLog.righe().filter(function (x) { return x.liv !== 'info'; }).length : 0;
+    apriSheet('Cosa sta succedendo',
+      '<div class="diag-stato ' + st.cls + '"><b>' + esc(st.tit) + '</b><span>' + esc(st.txt.trim()) + '</span></div>' +
+      '<div class="diag-barra">' +
+      '<button class="btn btn-mini btn-primario" id="diag-copia">' + ICO('copy', 14) + ' Copia tutto</button>' +
+      (navigator.share ? '<button class="btn btn-mini" id="diag-condividi">' + ICO('share', 14) + ' Condividi</button>' : '') +
+      '<button class="btn btn-mini" id="diag-riprova">' + ICO('refresh', 14) + ' Riprova ora</button>' +
+      '<button class="btn btn-mini btn-ghost" id="diag-svuota">' + ICO('trash', 14) + ' Svuota</button>' +
+      '</div>' +
+      /* la nota sta SOPRA il registro: sotto c'è un'area che scorre da sola e
+         quello che finisce là in fondo non lo legge nessuno */
+      '<div class="imp-nota diag-nota">Il registro descrive cosa fa l’app: salvataggi, cloud, rete, errori. Non contiene il testo di quello che scrivi, e l’indirizzo email è abbreviato.</div>' +
+      '<div class="segmenti diag-filtro" id="diag-filtro">' +
+      '<button data-filtro="tutto" class="' + (LOG_SOLO_PROBLEMI ? '' : 'attivo') + '">Tutto</button>' +
+      '<button data-filtro="problemi" class="' + (LOG_SOLO_PROBLEMI ? 'attivo' : '') + '">Solo problemi' + (nProblemi ? ' (' + nProblemi + ')' : '') + '</button></div>' +
+      '<div class="diag-console" id="diag-console" tabindex="0" role="log" aria-label="Registro diagnostico">' + righeLogHtml() + '</div>' +
+      '<textarea id="diag-testo" class="diag-testo" readonly aria-label="Testo del registro, da copiare a mano"></textarea>',
+      wireDiagnostica, true);
+  }
+
+  function wireDiagnostica(root) {
+    var cons = root.querySelector('#diag-console');
+    var area = root.querySelector('#diag-testo');
+
+    function testoCompleto() { return window.LMLog ? LMLog.testo() : ''; }
+
+    root.querySelector('#diag-copia').addEventListener('click', function () {
+      var t = testoCompleto();
+      function aMano() {
+        /* niente clipboard (Safari in certi contesti): mostriamo il testo già
+           selezionato, così "copia" è comunque a un gesto di distanza */
+        area.classList.add('mostra');
+        area.value = t; area.focus(); area.select();
+        toast('Testo selezionato: tienilo premuto e scegli «Copia».', 0, 'copy');
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(t).then(function () {
+          toast('Registro copiato: puoi incollarlo dove vuoi.', 0, 'copy');
+        }, aMano);
+      } else aMano();
+    });
+
+    var cond = root.querySelector('#diag-condividi');
+    if (cond) cond.addEventListener('click', function () {
+      navigator.share({ title: 'LifeMax — registro diagnostico', text: testoCompleto() }).catch(function () { /* annullato */ });
+    });
+
+    root.querySelector('#diag-riprova').addEventListener('click', function () {
+      LM.save();   // forza un giro di salvataggio: rilancia anche il push sul cloud
+      if (window.LMLog) LMLog.info('registro', 'Salvataggio richiesto a mano dall’utente');
+      toast('Salvataggio richiesto. Guarda le righe qui sotto.', 0, 'refresh');
+    });
+
+    root.querySelector('#diag-svuota').addEventListener('click', function () {
+      if (window.LMLog) LMLog.svuota();
+      cons.innerHTML = righeLogHtml();
+    });
+
+    root.querySelectorAll('#diag-filtro [data-filtro]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        LOG_SOLO_PROBLEMI = b.getAttribute('data-filtro') === 'problemi';
+        root.querySelectorAll('#diag-filtro [data-filtro]').forEach(function (x) { x.classList.toggle('attivo', x === b); });
+        cons.innerHTML = righeLogHtml();
+        cons.scrollTop = 0;
+      });
+    });
+
+    /* aggiornamento dal vivo: si aggiunge una riga in cima, il resto non si
+       muove. Guardare il registro mentre agisci è metà della diagnosi. */
+    function nuovaRiga(e) {
+      if (!document.body.contains(cons)) { window.removeEventListener('lm:log', nuovaRiga); return; }
+      var x = e.detail; if (!x) return;
+      if (LOG_SOLO_PROBLEMI && x.liv === 'info') return;
+      var vuoto = cons.querySelector('.diag-vuoto');
+      if (vuoto) vuoto.remove();
+      var d = document.createElement('div');
+      d.className = 'diag-riga liv-' + x.liv + ' diag-nuova';
+      d.innerHTML = '<span class="diag-ora">' + LMLog.ora(x.t) + '</span><span class="diag-can">' + esc(x.can) +
+        '</span><span class="diag-msg">' + esc(x.msg) + (x.dati ? '<i>' + esc(x.dati) + '</i>' : '') + '</span>';
+      cons.insertBefore(d, cons.firstChild);
+      var testa = root.querySelector('.diag-stato');
+      if (testa && x.can === 'sync') {
+        var st = statoSalvataggioSpiegato();
+        testa.className = 'diag-stato ' + st.cls;
+        testa.innerHTML = '<b>' + esc(st.tit) + '</b><span>' + esc(st.txt.trim()) + '</span>';
+      }
+    }
+    window.addEventListener('lm:log', nuovaRiga);
+  }
+
   /* ---------- gestione aree (personalizzabili) ---------- */
 
-  var ICONE_AREA = ['book', 'heart', 'users', 'wallet', 'landmark', 'rocket', 'briefcase', 'sparkles', 'target', 'bolt', 'flask', 'star', 'flame', 'lightbulb', 'calendar', 'clock'];
+  var ICONE_AREA =['book', 'heart', 'users', 'wallet', 'landmark', 'rocket', 'briefcase', 'sparkles', 'target', 'bolt', 'flask', 'star', 'flame', 'lightbulb', 'calendar', 'clock'];
 
   function apriAree() {
     var s = LM.load();
@@ -575,7 +714,7 @@
       var y = statoSync();
       acct = '<div class="menu-account">' + ICO('cloudCheck', 15) + ' Connesso come <b>' + esc(a.user.name || a.user.email) + '</b>' +
         '<button class="btn btn-mini btn-ghost" id="menu-esci">' + ICO('logout', 14) + ' Esci</button></div>' +
-        '<div class="imp-nota ' + y.cls + '"' + (y.title ? ' title="' + esc(y.title) + '"' : '') + '>' + ICO(y.ico, 13) + ' ' + y.testo + '</div>';
+        '<button type="button" class="sync-chip sync-chip-largo ' + y.cls + '" data-diag="1" title="' + esc(y.title || 'Mostra cosa sta succedendo') + '">' + ICO(y.ico, 13) + ' ' + y.testo + ICO('arrowRight', 13) + '</button>';
     } else if (a.available) {
       acct = '<button class="btn btn-accedi" id="menu-accedi" style="width:100%;justify-content:center">' + GOOGLE_G(17) + ' Accedi con Google</button>' +
         '<div class="imp-nota">Accedi per ritrovare i tuoi dati su tutti i dispositivi.</div>';

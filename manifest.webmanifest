@@ -1,0 +1,24 @@
+{
+  "name": "LifeMax",
+  "short_name": "LifeMax",
+  "description": "Cattura un pensiero in un gesto, una sola prossima azione, misura senza frizione.",
+  "lang": "it",
+  "dir": "ltr",
+  "start_url": "./index.html#/oggi",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "theme_color": "#f6f6f8",
+  "background_color": "#f6f6f8",
+  "icons": [
+    { "src": "assets/icone/icona-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "assets/icone/icona-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "assets/icone/icona-maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "assets/icone/icona-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "assets/icone/icona.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ],
+  "shortcuts": [
+    { "name": "Cattura un pensiero", "url": "./index.html#/inbox" },
+    { "name": "La giornata", "url": "./index.html#/giornata" }
+  ]
+}
