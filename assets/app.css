@@ -1235,6 +1235,7 @@ body.sfondo-fermo { position: fixed; left: 0; right: 0; width: 100%; overflow: h
 
 /* stati sincronizzazione cloud */
 .fondo-account-testo small.sync-ok .ico { color: var(--ok); }
+.fondo-account-testo small.sync-attesa { color: var(--inchiostro-2); }
 .fondo-account-testo small.sync-errore { color: var(--critico); }
 .fondo-account-testo small.sync-errore .ico { color: var(--critico); }
 .imp-nota.sync-errore { color: var(--critico); }
@@ -1570,7 +1571,12 @@ body.sto-trascinando { cursor: grabbing; user-select: none; -webkit-user-select:
 
 /* navigazione tra gli orizzonti (giorno/settimana/mese/anno) */
 .orizz-barra { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
-.orizz-eti { flex: 1; min-width: 0; font-size: 15px; font-weight: 750; letter-spacing: -0.01em; text-transform: capitalize; }
+.orizz-eti { flex: 1; min-width: 0; font-size: 16px; font-weight: 800; letter-spacing: -0.015em; text-transform: capitalize; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+/* quanto sei lontano da oggi: rende evidente che la freccia ha fatto effetto */
+.orizz-dist { flex: none; font-size: 11px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; padding: 2px 9px; border-radius: 99px; }
+.orizz-dist.futuro { color: var(--accento-testo); background: color-mix(in srgb, var(--accento) 14%, transparent); }
+.orizz-dist.passato { color: var(--inchiostro-2); background: var(--superficie-3); }
+.orizz-barra.via-da-oggi { padding: 6px 8px; margin: 0 -8px 12px; border-radius: var(--raggio-s); background: color-mix(in srgb, var(--accento) 6%, transparent); }
 .orizz-barra [data-nav="prev"] .ico { transform: rotate(90deg); }
 .orizz-barra [data-nav="next"] .ico { transform: rotate(-90deg); }
 

@@ -42,10 +42,20 @@ function emitUnavailable() {
   window.dispatchEvent(new CustomEvent('lm:auth'));
 }
 
-/* stato del salvataggio cloud: 'idle' | 'saving' | 'saved' | 'error' */
+/* Stato del salvataggio cloud:
+     'idle'    nulla da salvare
+     'saving'  scrittura in corso (breve)
+     'saved'   confermato dal server
+     'attesa'  scritto sul dispositivo, il server non ha ancora confermato
+               (rete assente o lenta): Firestore mette la scrittura in coda e
+               la promessa NON si risolve finché non torna la rete — senza
+               questo stato la scritta restava "Sincronizzazione…" per sempre
+     'muto'    online ma il server non conferma: quasi sempre Firestore non
+               è attivo o le regole non sono pubblicate
+     'error'   rifiutato (permessi, database non attivo…)                    */
 function emitSync(state, error) {
   var at = (state === 'saved') ? Date.now() : (window.LM_SYNC && window.LM_SYNC.at) || 0;
-  window.LM_SYNC = { state: state, error: error || '', at: at };
+  window.LM_SYNC = { state: state, error: error || '', at: at, inCoda: state === 'attesa' };
   window.dispatchEvent(new CustomEvent('lm:sync', { detail: window.LM_SYNC }));
 }
 
@@ -207,11 +217,30 @@ function programmaPush() {
   }, 700);
 }
 
+const ATTESA_MS = 6000;    // oltre questo, diciamo che è in coda
+const MUTO_MS = 25000;    // se siamo ONLINE e ancora niente, non è la rete
+
 async function push(uid) {
   const s = LM.snapshot();
   const at = s.updatedAt || Date.now();
   lastWrittenAt = at;
   emitSync('saving');
+  /* Se il server non risponde entro qualche secondo NON restiamo appesi a
+     "Sincronizzazione…": diciamo che è salvato qui e in coda per il cloud.
+     La scrittura resta viva: quando il server conferma, passiamo a 'saved'. */
+  let deciso = false;
+  const attesa = setTimeout(function () {
+    if (!deciso) emitSync('attesa');
+  }, ATTESA_MS);
+  /* Distinguiamo due situazioni molto diverse per la sicurezza dei dati:
+     senza rete è tutto normale (la coda si svuoterà), ma se siamo online e il
+     server non risponde comunque, il problema è la configurazione del cloud e
+     va detto — altrimenti l'utente crede di avere un backup che non ha. */
+  const muto = setTimeout(function () {
+    if (!deciso && navigator.onLine) {
+      emitSync('muto', 'Il cloud non risponde pur essendoci rete: controlla che Firestore sia attivo e che le regole siano pubblicate. Per ora i dati restano su questo dispositivo.');
+    }
+  }, MUTO_MS);
   try {
     await FSM.setDoc(FSM.doc(db, 'users', uid), {
       data: JSON.stringify(s),
@@ -219,12 +248,22 @@ async function push(uid) {
       email: currentUser ? currentUser.email : '',
       name: currentUser ? currentUser.name : ''
     });
+    deciso = true; clearTimeout(attesa); clearTimeout(muto);
     emitSync('saved');
   } catch (e) {
+    deciso = true; clearTimeout(attesa); clearTimeout(muto);
     emitSync('error', erroreLeggibile(e));
     console.warn('LifeMax: salvataggio sul cloud non riuscito.', e && e.message);
   }
 }
+
+/* rete che va e viene: appena torna, riprova subito e aggiorna lo stato */
+window.addEventListener('offline', function () {
+  if (currentUser) emitSync('attesa');
+});
+window.addEventListener('online', function () {
+  if (currentUser) programmaPush();
+});
 
 /* traduce i codici d'errore Firestore più comuni in messaggi utili */
 function erroreLeggibile(e) {

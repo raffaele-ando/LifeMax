@@ -340,10 +340,16 @@
 
   function statoSync() {
     var y = window.LM_SYNC || { state: 'idle' };
-    if (y.state === 'saving') return { ico: 'cloud', cls: '', testo: 'Sincronizzazione…' };
+    var quando = y.at ? ' · ' + oraDi(y.at) : '';
+    if (y.state === 'saving') return { ico: 'cloud', cls: '', testo: 'Salvataggio…' };
+    /* la scrittura è in coda: i dati sono già sul dispositivo, il cloud
+       arriverà. Dirlo chiaramente invece di lasciare un "…" infinito. */
+    if (y.state === 'attesa') return { ico: 'cloud', cls: 'sync-attesa', testo: 'Salvato qui, in attesa di rete',
+      title: 'I dati sono salvati su questo dispositivo. Appena c’è rete finiscono anche nel cloud.' + (y.at ? ' Ultimo salvataggio nel cloud: ' + oraDi(y.at) + '.' : '') };
+    if (y.state === 'muto') return { ico: 'cloud', cls: 'sync-errore', testo: 'Cloud non raggiungibile', title: y.error };
     if (y.state === 'error') return { ico: 'cloud', cls: 'sync-errore', testo: 'Sync non riuscita', title: y.error };
-    if (y.state === 'saved') return { ico: 'cloudCheck', cls: 'sync-ok', testo: 'Salvato nel cloud' };
-    return { ico: 'cloudCheck', cls: 'sync-ok', testo: 'Sincronizzato' };
+    if (y.state === 'saved') return { ico: 'cloudCheck', cls: 'sync-ok', testo: 'Salvato nel cloud' + quando, title: 'Ultimo salvataggio confermato dal server alle ' + oraDi(y.at) + '.' };
+    return { ico: 'cloudCheck', cls: 'sync-ok', testo: 'Tutto salvato' };
   }
 
   function footerSidebar() {
@@ -1742,10 +1748,25 @@
   /* barra di navigazione comune agli orizzonti (‹ periodo › + Oggi) */
   function orizzNav(orizz, k1, k2, etichetta) {
     var testo = etichetta || (k2 ? LM.fmtShort(k1) + ' – ' + LM.fmtShort(k2) : etichettaGiorno(k1));
-    return '<div class="orizz-barra"><button class="icona-btn" data-nav="prev" aria-label="Precedente">' + ICO('chevronGiu', 16) + '</button>' +
-      '<span class="orizz-eti">' + testo + '</span>' +
-      '<button class="icona-btn" data-nav="next" aria-label="Successivo">' + ICO('chevronGiu', 16) + '</button>' +
-      '<button class="btn btn-mini" data-nav="oggi">Oggi</button></div>';
+    /* Quanto siamo lontani da oggi: senza questo, spostandosi di un giorno
+       cambiava solo una scritta piccola e sembrava che le frecce non
+       facessero niente (i pasti e le abitudini sono uguali ogni giorno). */
+    var oggi = LM.todayKey();
+    var dist = orizz === 'giorno' ? LM.daysBetween(oggi, k1) : (k2 ? (k1 <= oggi && oggi <= k2 ? 0 : null) : null);
+    var lontano = orizz === 'giorno' ? dist !== 0 : (giornataAncora !== oggi && dist !== 0);
+    var quanto = '';
+    if (orizz === 'giorno' && dist !== 0) {
+      quanto = '<span class="orizz-dist' + (dist > 0 ? ' futuro' : ' passato') + '">' +
+        (dist === 1 ? 'domani' : dist === -1 ? 'ieri' : dist > 0 ? 'tra ' + dist + ' giorni' : dist + ' giorni fa').replace('-', '') + '</span>';
+    }
+    return '<div class="orizz-barra' + (lontano ? ' via-da-oggi' : '') + '">' +
+      '<button class="icona-btn" data-nav="prev" aria-label="' + (orizz === 'giorno' ? 'Giorno precedente' : 'Periodo precedente') + '">' + ICO('chevronGiu', 16) + '</button>' +
+      '<span class="orizz-eti">' + testo + quanto + '</span>' +
+      '<button class="icona-btn" data-nav="next" aria-label="' + (orizz === 'giorno' ? 'Giorno successivo' : 'Periodo successivo') + '">' + ICO('chevronGiu', 16) + '</button>' +
+      /* "Oggi" compare solo se serve: se ci sei già non fa nulla e confondeva
+         stando attaccato alla freccia "successivo" */
+      (lontano ? '<button class="btn btn-mini btn-primario" data-nav="oggi">' + ICO('target', 13) + ' Oggi</button>' : '') +
+      '</div>';
   }
   function shiftKey(k, orizz, n) {
     var p = k.split('-'); var d;
@@ -3513,9 +3534,13 @@
     var fondo = document.getElementById('sidebar-fondo');
     if (fondo && (window.LM_AUTH || {}).user) { fondo.innerHTML = footerSidebar(); wireFooterSidebar(); }
     var y = (e && e.detail) || window.LM_SYNC || {};
-    if (y.state === 'error' && y.error && y.error !== ultimoErroreSync) {
+    if ((y.state === 'error' || y.state === 'muto') && y.error && y.error !== ultimoErroreSync) {
       ultimoErroreSync = y.error;
       toast(y.error, 0, 'cloud');
+    }
+    if (y.state === 'attesa' && ultimoErroreSync !== 'attesa') {
+      ultimoErroreSync = 'attesa';
+      toast('Nessuna rete: i dati restano salvati qui e vanno nel cloud appena torna.', 0, 'cloud');
     }
     if (y.state === 'saved') ultimoErroreSync = '';
   });
