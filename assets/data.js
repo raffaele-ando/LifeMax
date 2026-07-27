@@ -832,6 +832,122 @@ var LM = (function () {
     return out;
   }
 
+  /* ---------- importanza delle cose da fare ----------
+     Una lista dove tutto pesa uguale non è una lista: è un muro. E con
+     poca coscienziosità + ADHD il muro non si scala, si evita — la
+     letteratura sul delay discounting (Sonuga-Barke 2003; Barkley 1997)
+     dice che il valore soggettivo di un compito crolla con la distanza
+     temporale, quindi ciò che è vicino DEVE sembrare vicino.
+
+     L'importanza non la inventiamo: la ricaviamo dai segnali che
+     l'utente ha già dato — una scadenza, un giorno scelto in agenda, un
+     progetto già iniziato (effetto Zeigarnik: le cose aperte premono),
+     o una spilla messa a mano. Chi non ha dato nessun segnale finisce
+     in mezzo, e chi è fermo da settimane scende, senza sparire. */
+
+  var FERMA_GIORNI = 21;   // oltre questo, senza segnali, è roba parcheggiata
+
+  function appuntaBacklog(id, valore) {
+    var s = load();
+    var b = s.backlog.find(function (x) { return x.id === id; });
+    if (!b) return;
+    var v = valore === undefined ? !b.pin : !!valore;
+    if (v) b.pin = true; else delete b.pin;
+    registra('backlog', (v ? 'Appuntata come importante' : 'Non più appuntata') + ': «' + b.testo + '»', false);
+    save();
+  }
+
+  /* Ritorna { peso, fascia, motivo, da }:
+       fascia 'ora'      → chiede attenzione adesso (in cima, poche)
+       fascia 'poi'      → il corpo della lista
+       fascia 'parcheggio' → ferma da un po', nessun segnale
+     `motivo` è la ragione in chiaro, da mostrare: un ordine che non si
+     spiega sembra arbitrario e si smette di fidarsi. `da` dice da quale
+     segnale viene, così l'interfaccia non ripete un'informazione che sta
+     già mostrando da un'altra parte. */
+  function importanzaBacklog(b, oggi) {
+    var k = oggi || todayKey();
+    var peso = 0, motivo = '', fascia = 'poi', da = '';
+
+    if (b.scadenza) {
+      var g = daysBetween(k, b.scadenza);
+      da = 'scadenza';
+      if (g < 0) { peso += 1000 - g; motivo = 'era per ' + fmtShort(b.scadenza); fascia = 'ora'; }
+      else if (g === 0) { peso += 900; motivo = 'scade oggi'; fascia = 'ora'; }
+      else if (g <= 3) { peso += 800 - g * 10; motivo = 'scade tra ' + g + (g === 1 ? ' giorno' : ' giorni'); fascia = 'ora'; }
+      else if (g <= 14) { peso += 400 - g; motivo = 'entro ' + fmtShort(b.scadenza); }
+      else { peso += 120; da = ''; }
+    }
+
+    /* già messa in un giorno: la decisione è presa, va rispettata */
+    var inAg = azioniDiBacklog(b, k);
+    if (inAg.length) {
+      var gg = daysBetween(k, inAg[0].data);
+      if (gg <= 0) { peso += 700; if (!motivo) { motivo = 'in agenda oggi'; da = 'agenda'; } fascia = 'ora'; }
+      else if (gg === 1) { peso += 500; if (!motivo) { motivo = 'in agenda domani'; da = 'agenda'; } if (fascia !== 'ora') fascia = 'ora'; }
+      else { peso += 300 - gg; if (!motivo) { motivo = 'in agenda tra ' + gg + ' giorni'; da = 'agenda'; } }
+    }
+
+    if (b.pin) { peso += 650; if (!motivo) { motivo = 'l’hai appuntata'; da = 'pin'; } fascia = 'ora'; }
+
+    /* progetto già cominciato: lasciarlo a metà costa più che finirlo */
+    if (b.steps && b.steps.length) {
+      var av = avanzamentoProgetto(b);
+      if (av.fatti && av.fatti < av.tot) {
+        peso += 260 + Math.round(av.pct / 2);
+        if (!motivo) { motivo = 'già cominciato, ' + av.fatti + ' di ' + av.tot; da = 'progetto'; }
+      } else if (!av.fatti) peso += 60;
+    }
+
+    var eta = Math.floor((Date.now() - (b.creata || Date.now())) / 86400000);
+    if (fascia === 'poi' && !b.scadenza && !inAg.length && !b.pin && eta >= FERMA_GIORNI) {
+      fascia = 'parcheggio';
+      motivo = 'ferma da ' + (eta >= 60 ? 'mesi' : eta + ' giorni');
+      da = 'ferma';
+    }
+    /* a pari merito viene prima la più recente: quella vecchia è già
+       stata guardata e scartata mille volte */
+    peso += Math.max(0, 40 - eta) / 10;
+    return { peso: peso, fascia: fascia, motivo: motivo, da: da, eta: eta, inAgenda: inAg };
+  }
+
+  /* azioni future non fatte che vengono da questa cosa da fare */
+  function azioniDiBacklog(b, oggi) {
+    var s = load();
+    var k = oggi || todayKey();
+    var isProg = !!(b.steps && b.steps.length);
+    return s.azioni.filter(function (a) {
+      if (a.done || a.data < k) return false;
+      return isProg ? !!(a.passoDi && a.passoDi.b === b.id) : (!a.passoDi && a.testo === b.testo);
+    }).sort(function (x, y) { return x.data < y.data ? -1 : 1; });
+  }
+
+  /* La lista ordinata per importanza, divisa nelle tre fasce. `tetto`
+     limita quante ne stanno in cima: tenerne più di 3-4 a mente non si
+     può (Cowan 2001), e una fascia "urgente" lunga non è più urgente. */
+  function backlogPerImportanza(opts) {
+    var s = load();
+    var k = todayKey();
+    var tetto = (opts && opts.tetto) || 3;
+    var filtro = opts && opts.areaId && opts.areaId !== 'tutte' ? opts.areaId : null;
+    var lista = s.backlog
+      .filter(function (b) { return !filtro || b.areaId === filtro; })
+      .map(function (b) { return { b: b, i: importanzaBacklog(b, k) }; })
+      .sort(function (x, y) { return y.i.peso - x.i.peso; });
+
+    var ora = lista.filter(function (x) { return x.i.fascia === 'ora'; });
+    var parcheggio = lista.filter(function (x) { return x.i.fascia === 'parcheggio'; });
+    var poi = lista.filter(function (x) { return x.i.fascia === 'poi'; });
+    /* se in cima ce n'è troppa, la coda scende tra le prossime: resta
+       visibile e in ordine, ma smette di gridare */
+    if (ora.length > tetto) { poi = ora.slice(tetto).concat(poi); ora = ora.slice(0, tetto); }
+    /* E se i segnali non bastano a riempirla, si promuovono le più in alto
+       fino a tre. Una fascia con UNA voce sola non è una gerarchia, è un
+       ordine: togliere la scelta non aiuta, ridurla a due o tre sì. */
+    while (ora.length < tetto && poi.length) ora.push(poi.shift());
+    return { ora: ora, poi: poi, parcheggio: parcheggio, totale: lista.length };
+  }
+
   /* scadenza opzionale su un'attività da fare */
   function impostaScadenzaBacklog(id, scadenza) {
     var s = load();
@@ -1648,6 +1764,8 @@ var LM = (function () {
     distribuisciPassi: distribuisciPassi, backlogInAbitudine: backlogInAbitudine, pianificaPasso: pianificaPasso,
     avanzamentoProgetto: avanzamentoProgetto, prossimoPassoInOggi: prossimoPassoInOggi,
     impostaScadenzaBacklog: impostaScadenzaBacklog, scadenzeVicine: scadenzeVicine,
+    appuntaBacklog: appuntaBacklog, importanzaBacklog: importanzaBacklog,
+    backlogPerImportanza: backlogPerImportanza, azioniDiBacklog: azioniDiBacklog,
     aggiungiAbitudine: aggiungiAbitudine, modificaAbitudine: modificaAbitudine, rimuoviAbitudine: rimuoviAbitudine,
     abitudinePrevista: abitudinePrevista, abitudiniDiOggi: abitudiniDiOggi, completaAbitudine: completaAbitudine, streakAbitudine: streakAbitudine,
     impostaPeriodoAbitudine: impostaPeriodoAbitudine, saltaGiornoAbitudine: saltaGiornoAbitudine,

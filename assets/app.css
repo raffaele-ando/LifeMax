@@ -250,6 +250,33 @@ small { color: var(--inchiostro-2); }
 }
 .nav-sep { height: 1px; background: var(--bordo); margin: 10px 8px; }
 
+/* ---------- tre livelli nella barra laterale ----------
+   Sette voci con lo stesso peso vanno rilette una per una ogni volta. Il
+   peso visivo fa il lavoro che nessuna etichetta può fare: si vede dove
+   andare prima di aver letto. */
+/* «Oggi» è l'ancora: quasi ogni apertura finisce qui. Più grande, sempre con
+   un fondo appena percettibile — anche quando non è la pagina attiva — così
+   la si trova senza cercarla. */
+.nav-ancora {
+  font-size: 15px; font-weight: 700; padding: 12px;
+  color: var(--inchiostro-1);
+  background: color-mix(in srgb, var(--inchiostro-1) 4%, transparent);
+  margin-bottom: 8px;
+}
+.nav-ancora .ico { opacity: .9; }
+.nav-ancora.attivo { font-weight: 800; }
+/* gli extra si leggono una volta e poi quasi mai: restano raggiungibili,
+   smettono di competere */
+.nav-extra { font-size: 13px; font-weight: 500; padding: 7px 12px; gap: 13px; color: var(--inchiostro-muto); }
+.nav-extra .ico { opacity: .6; }
+.nav-extra:hover { color: var(--inchiostro-2); }
+.nav-extra:hover .ico { opacity: .9; }
+.nav-extra.attivo { font-weight: 700; color: var(--accento-testo); }
+.nav-extra.attivo .ico { opacity: 1; }
+/* su un tablet la barra laterale c'è e si tocca: gli extra restano più leggeri
+   ma non scendono sotto il bersaglio minimo per un dito */
+@media (pointer: coarse) { .nav-extra { min-height: 44px; } }
+
 /* pulsante Cattura in sidebar (funzione centrale, resa scopribile) */
 .cattura-cta {
   display: flex; align-items: center; gap: 8px;
@@ -281,6 +308,11 @@ small { color: var(--inchiostro-2); }
 }
 .btn-strumento-largo:hover { background: color-mix(in srgb, var(--inchiostro-1) 6%, transparent); color: var(--inchiostro-1); }
 .btn-strumento-largo .ico { opacity: .8; }
+.btn-strumento-largo span { flex: 1; text-align: left; }
+.btn-strumento-largo .ico:last-child { color: var(--inchiostro-muto); }
+/* dentro un pannello è una voce a sé: si tocca come le altre */
+.sheet-corpo .btn-strumento-largo { width: 100%; margin-top: 4px; border: 1px solid var(--bordo); background: var(--superficie-2); }
+@media (pointer: coarse) { .sheet-corpo .btn-strumento-largo { min-height: 46px; } }
 
 .main { padding: 30px clamp(16px, 3vw, 40px) 100px; max-width: 1180px; width: 100%; margin: 0 auto; position: relative; min-width: 0; }
 
@@ -1066,6 +1098,12 @@ body.sfondo-fermo { position: fixed; left: 0; right: 0; width: 100%; overflow: h
 .menu-voce:hover { transform: translateY(-1px); box-shadow: var(--e2); }
 .menu-voce span { flex: 1; }
 .menu-voce .ico:last-child { color: var(--inchiostro-muto); }
+/* le pagine da leggere una volta non hanno bisogno della stessa scheda piena
+   delle pagine di tutti i giorni: restano a portata, smettono di pesare */
+.menu-extra { background: none; border-color: transparent; font-size: 13.5px; font-weight: 550; padding: 10px 14px; color: var(--inchiostro-2); }
+.menu-extra .ico:first-child { opacity: .7; }
+.menu-extra:hover { background: var(--superficie-2); border-color: var(--bordo); }
+.menu-lista .nav-sep { margin: 4px 10px; }
 .menu-account { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 13.5px; color: var(--inchiostro-2); }
 .menu-account b { color: var(--inchiostro-1); }
 .menu-account .ico { color: var(--ok); }
@@ -1096,11 +1134,15 @@ body.sfondo-fermo { position: fixed; left: 0; right: 0; width: 100%; overflow: h
 /* ---------- banda demo (richiudibile) ---------- */
 
 .banda-demo { display: flex; align-items: center; gap: 10px; }
-.banda-demo span { flex: 1; display: inline-flex; align-items: center; gap: 6px; justify-content: center; }
+/* SOLO il figlio diretto: il selettore discendente prendeva anche lo span
+   annidato «: modifica pure…», che diventava un elemento flex centrato per
+   conto suo e spezzava la frase in due tronconi («Dati di esempio» a
+   sinistra, «: modifica pure…» al centro) */
+.banda-demo > span { flex: 1; display: inline-flex; align-items: center; gap: 6px; justify-content: center; flex-wrap: wrap; }
 .banda-demo .ico { color: var(--accento); flex: none; }
 .banda-x { display: inline-flex; padding: 4px; border-radius: 7px; color: var(--inchiostro-muto); flex: none; transition: background var(--t-veloce); }
 .banda-x:hover { background: color-mix(in srgb, var(--inchiostro-1) 8%, transparent); }
-@media (max-width: 860px) { .banda-demo span { justify-content: flex-start; text-align: left; } }
+@media (max-width: 860px) { .banda-demo > span { justify-content: flex-start; text-align: left; } }
 
 /* ---------- account & cloud ---------- */
 
@@ -1362,23 +1404,52 @@ body.sfondo-fermo { position: fixed; left: 0; right: 0; width: 100%; overflow: h
 
 .conta { font-size: 12px; font-weight: 800; color: #fff; background: var(--grad-brand); border-radius: 99px; padding: 1px 9px; vertical-align: 2px; font-variant-numeric: tabular-nums; }
 
-.backlog-aree { display: flex; flex-direction: column; gap: 18px; margin-top: 8px; }
-/* GERARCHIA: l'area è un'etichetta di sezione (piccola, in maiuscoletto, con
-   la sua barretta di colore); le attività sotto sono le schede. Prima area e
-   attività si somigliavano e non si capiva chi conteneva chi. */
-.bk-area { border: none; border-radius: 0; background: none; padding-left: 12px; border-left: 2px solid color-mix(in srgb, var(--c-area) 45%, transparent); }
-.bk-testa { display: flex; align-items: center; gap: 8px; width: 100%; padding: 4px 0 6px; text-align: left; background: none; }
-.bk-testa:hover .bk-nome { color: var(--inchiostro-1); }
-.bk-testa .icona-area { width: 20px; height: 20px; border-radius: 6px; flex: none; color: var(--c-area); }
-.bk-nome { flex: none; font-weight: 800; font-size: 11px; letter-spacing: .09em; text-transform: uppercase; color: var(--inchiostro-2); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.bk-conta { flex: none; font-size: 11px; font-weight: 800; color: var(--inchiostro-muto); font-variant-numeric: tabular-nums; }
-.bk-testa .bk-chevron { margin-left: auto; color: var(--inchiostro-muto); }
 .bk-chevron { flex: none; color: var(--inchiostro-muto); display: inline-flex; transition: transform var(--t-media); }
 .bk-chevron.aperta { transform: rotate(180deg); }
-.bk-corpo { padding: 0; display: flex; flex-direction: column; gap: 0; }
-.bk-corpo[hidden] { display: none; }
+
+/* ---------- fasce di importanza ----------
+   Una lista di nove voci identiche costringe a rifare ogni volta la stessa
+   scelta, ed è la scelta la parte costosa. Tre livelli di peso visivo dicono
+   dove guardare prima senza aggiungere una sola parola: le poche in cima
+   grandi e a pieno colore, il resto compatto, il parcheggio smorzato e
+   chiuso — chiuso ma contato, così non si dimentica che esiste. */
+
+.bk-fascia { margin-top: 4px; }
+.bk-fascia + .bk-fascia { margin-top: 20px; }
+.bk-fascia-testa { display: flex; align-items: center; gap: 8px; width: 100%; padding: 0 2px 8px; text-align: left; background: none; }
+.bk-fascia-tit { flex: none; font-size: 11px; font-weight: 800; letter-spacing: .09em; text-transform: uppercase; color: var(--inchiostro-2); }
+.bk-fascia-n { flex: none; font-size: 10.5px; font-weight: 800; padding: 0 6px; border-radius: 99px; background: var(--superficie-3); color: var(--inchiostro-muto); font-variant-numeric: tabular-nums; }
+.bk-fascia-nota { font-size: 11.5px; color: var(--inchiostro-muto); }
+.bk-fascia-btn { cursor: pointer; border: 0; padding: 4px 2px; }
+.bk-fascia-btn .bk-chevron { margin-left: auto; }
+.bk-fascia-btn:hover .bk-fascia-tit { color: var(--inchiostro-1); }
+.bk-fascia-corpo[hidden] { display: none; }
+/* niente filo verticale sulla fascia: ogni voce ha già la sua barretta col
+   colore dell'area, e due linee affiancate erano solo due linee */
+.bk-fascia.ora .bk-fascia-tit { color: var(--accento-testo); }
+.bk-fascia.parcheggio { opacity: .78; }
+.bk-fascia.parcheggio:hover, .bk-fascia.parcheggio:focus-within { opacity: 1; }
+
 .bk-item { padding: 7px 11px; margin-bottom: 6px; border: 1px solid var(--bordo); border-radius: var(--raggio-s); background: var(--superficie-1); }
 .bk-item:hover { border-color: var(--bordo-forte); }
+/* tre densità: la stessa riga, tre volumi di voce */
+.bk-item.liv-ora { padding: 11px 13px; margin-bottom: 8px; border-color: var(--bordo-forte); box-shadow: var(--e1); }
+.bk-item.liv-ora .bk-item-testo { font-size: 15px; font-weight: 700; }
+.bk-item.liv-poi { padding: 6px 11px; }
+.bk-item.liv-poi .bk-item-testo { font-size: 13.5px; font-weight: 550; color: var(--inchiostro-2); }
+.bk-item.liv-poi:hover .bk-item-testo { color: var(--inchiostro-1); }
+.bk-item.liv-parcheggio { padding: 5px 11px; background: none; }
+.bk-item.liv-parcheggio .bk-item-testo { font-size: 13px; font-weight: 500; color: var(--inchiostro-2); }
+/* il colore dell'area viaggia con la riga in evidenza: sostituisce del tutto
+   l'intestazione di gruppo che prima costava una riga per area */
+.bk-item.liv-ora { border-left: 3px solid color-mix(in srgb, var(--c-area) 55%, transparent); }
+.bk-item-testo .tag-area { display: inline-flex; align-items: center; vertical-align: -2px; margin-right: 6px; color: var(--c-area); }
+/* il motivo per cui sta qui, dove serve saperlo */
+.bk-perche { font-size: 11px; font-weight: 700; color: var(--inchiostro-2); }
+.bk-item.liv-ora .bk-perche { color: var(--accento-testo); }
+.bk-pin { display: inline-flex; color: var(--avviso); }
+.bk-altre { display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; margin-top: 2px; padding: 9px; font-size: 12.5px; font-weight: 650; color: var(--inchiostro-2); background: none; border: 1px dashed var(--bordo-forte); border-radius: var(--raggio-s); cursor: pointer; }
+.bk-altre:hover { color: var(--inchiostro-1); border-color: var(--inchiostro-muto); }
 /* griglia a due colonne: il testo si stringe, i pulsanti restano sempre in
    linea (prima un titolo lungo li spediva a capo) */
 .bk-item-riga { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px; }
@@ -1389,6 +1460,24 @@ body.sfondo-fermo { position: fixed; left: 0; right: 0; width: 100%; overflow: h
      due righe complete, e i pulsanti restano comunque in linea */
   .bk-item-testo { white-space: normal; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; }
   .step-riga .step-testo { white-space: normal; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; }
+}
+@media (max-width: 560px) {
+  /* Su un telefono un titolo, un pulsante con la scritta e due tasti-icona
+     sulla stessa riga non ci stanno: al titolo restavano 68px e leggeva
+     «Recuperar…». Nelle tre in evidenza i pulsanti scendono su una riga
+     loro — sempre in linea tra di loro, mai a capo dentro sé stessi — così
+     il titolo prende tutta la larghezza e il tasto per partire è largo
+     quanto lo schermo: cominciare è il passaggio che costa, e un bersaglio
+     grande abbassa quel costo. */
+  .bk-item.liv-ora .bk-item-riga { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+  .bk-item.liv-ora .bk-item-azioni { justify-content: flex-end; }
+  .bk-item.liv-ora .bk-item-azioni .btn { flex: 1; justify-content: center; }
+  /* Nelle fasce sotto no: là il pulsante alto 44px messo su una riga a parte
+     raddoppierebbe l'altezza di ogni voce, e una fascia "il resto" alta come
+     quella in evidenza cancella la gerarchia appena costruita. Resta in
+     linea, e sui progetti sparisce il tasto dei passi (sta nel menu «⋯»)
+     per restituire al titolo i quaranta pixel che occupava. */
+  .bk-item.liv-poi [data-bksteps], .bk-item.liv-parcheggio [data-bksteps] { display: none; }
 }
 .bk-item-meta { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .bk-item-azioni { display: flex; align-items: center; gap: 6px; flex-wrap: nowrap; flex: none; }
@@ -1452,10 +1541,16 @@ body.sfondo-fermo { position: fixed; left: 0; right: 0; width: 100%; overflow: h
 .bk-vuoto { font-size: 12.5px; color: var(--inchiostro-muto); padding: 4px 0; }
 .bk-add { display: flex; gap: 8px; margin-top: 6px; align-items: center; flex-wrap: wrap; }
 .bk-add input { flex: 1; min-width: 0; padding: 8px 11px; font-size: 13px; }
+/* uno solo, staccato dalla lista: prima ce n'era uno per area — cinque campi
+   di testo sempre aperti per una cosa che si fa una volta ogni tanto */
+.bk-add-solo { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--bordo); }
 
 /* attività: tab, ricerca, chip per area, lista piatta */
 .att-tabs { margin-bottom: 14px; }
-.att-badge { display: inline-block; margin-left: 3px; min-width: 17px; padding: 0 5px; font-size: 10.5px; font-weight: 800; line-height: 17px; text-align: center; border-radius: 99px; background: color-mix(in srgb, var(--accento) 18%, transparent); color: var(--accento); }
+/* Il numero dentro la pastiglia si legge, sempre: accento su accento sta a
+   3,4:1 e a 10,5px in grassetto è proprio il caso in cui serve il massimo.
+   La tinta porta già il colore del marchio, al testo tocca la leggibilità. */
+.att-badge { display: inline-block; margin-left: 3px; min-width: 17px; padding: 0 5px; font-size: 10.5px; font-weight: 800; line-height: 17px; text-align: center; border-radius: 99px; background: color-mix(in srgb, var(--accento) 18%, transparent); color: var(--inchiostro-1); }
 .att-cerca { display: flex; align-items: center; gap: 8px; padding: 0 11px; border: 1px solid var(--bordo-forte); border-radius: 10px; color: var(--inchiostro-muto); margin-bottom: 12px; }
 .att-cerca input { flex: 1; min-width: 0; border: none; background: none; box-shadow: none; padding: 9px 0; font-size: 13.5px; }
 .att-cerca input:focus { box-shadow: none; }
@@ -1476,7 +1571,7 @@ body.sfondo-fermo { position: fixed; left: 0; right: 0; width: 100%; overflow: h
   .segmenti.sez-nav::-webkit-scrollbar { display: none; }
   .segmenti.sez-nav > button { flex: none; }
 }
-.att-chip.on span { background: color-mix(in srgb, var(--c-area, var(--accento)) 22%, transparent); color: inherit; }
+.att-chip.on span { background: color-mix(in srgb, var(--c-area, var(--accento)) 22%, transparent); color: var(--inchiostro-1); }
 .backlog-piatto { display: flex; flex-direction: column; }
 
 .icona-btn { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 8px; color: var(--inchiostro-muto); border: 1px solid var(--bordo); background: var(--superficie-1); transition: all var(--t-veloce); }
@@ -1813,7 +1908,7 @@ body.sto-trascinando { cursor: grabbing; user-select: none; -webkit-user-select:
 .scad-riga { display: flex; align-items: center; gap: 10px; }
 .scad-testo { flex: 1; min-width: 0; font-size: 13.5px; overflow-wrap: anywhere; }
 .scad-badge { flex: none; font-size: 11px; font-weight: 750; padding: 2px 8px; border-radius: 99px; background: var(--superficie-2); color: var(--inchiostro-2); white-space: nowrap; font-variant-numeric: tabular-nums; }
-.scad-badge.scad-ritardo { background: color-mix(in srgb, var(--critico) 16%, transparent); color: var(--critico); }
+.scad-badge.scad-ritardo { background: color-mix(in srgb, var(--critico) 16%, transparent); color: var(--critico-testo); }
 .scad-badge.scad-oggi, .scad-badge.scad-vicina { background: color-mix(in srgb, var(--avviso) 20%, transparent); color: #7a5200; }
 :root[data-mode="dark"] .scad-badge.scad-oggi, :root[data-mode="dark"] .scad-badge.scad-vicina { color: var(--avviso); }
 /* separatore prima di un'azione distruttiva: il cestino non deve essere

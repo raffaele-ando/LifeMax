@@ -275,16 +275,25 @@
 
   /* ---------- navigazione ---------- */
   /* gruppo: 'primaria' = destinazioni quotidiane (sidebar + tab bar mobile);
-     'secondaria' = approfondimenti (sidebar, e nel menu "Altro" su mobile). */
+     'secondaria' = approfondimenti (sidebar, e nel menu "Altro" su mobile).
+
+     livello = quanto peso visivo prende la voce. Sette voci tutte uguali
+     costringono a rileggerle una per una ogni volta (legge di Hick: il tempo
+     di scelta cresce col numero di alternative equivalenti), e l'ordine in
+     cui stanno non dice niente su quale serve adesso. Tre livelli:
+       'ancora'     la destinazione di quasi ogni apertura — grande, sempre lì
+       'quotidiana' le pagine di tutti i giorni — peso normale
+       'extra'      si leggono una volta e poi quasi mai — più piccole e mute
+     L'ordine dentro ogni livello è per frequenza d'uso, non alfabetico. */
 
   var VISTE = [
-    { id: 'oggi',        nome: 'Oggi',        icona: 'target',    gruppo: 'primaria' },
-    { id: 'giornata',    nome: 'Giornata',    icona: 'clock',     gruppo: 'primaria' },
-    { id: 'plancia',     nome: 'Panoramica',  icona: 'dashboard', gruppo: 'primaria' },
-    { id: 'rituali',     nome: 'Rituali',     icona: 'sun',       gruppo: 'primaria' },
-    { id: 'inbox',       nome: 'Attività',    icona: 'lista',     gruppo: 'primaria' },
-    { id: 'esperimenti', nome: 'Esperimenti', icona: 'flask',     gruppo: 'secondaria' },
-    { id: 'scienza',     nome: 'Perché funziona', icona: 'atom',  gruppo: 'secondaria' }
+    { id: 'oggi',        nome: 'Oggi',        icona: 'target',    gruppo: 'primaria',   livello: 'ancora' },
+    { id: 'giornata',    nome: 'Giornata',    icona: 'clock',     gruppo: 'primaria',   livello: 'quotidiana' },
+    { id: 'inbox',       nome: 'Attività',    icona: 'lista',     gruppo: 'primaria',   livello: 'quotidiana' },
+    { id: 'rituali',     nome: 'Rituali',     icona: 'sun',       gruppo: 'primaria',   livello: 'quotidiana' },
+    { id: 'plancia',     nome: 'Panoramica',  icona: 'dashboard', gruppo: 'primaria',   livello: 'quotidiana' },
+    { id: 'esperimenti', nome: 'Esperimenti', icona: 'flask',     gruppo: 'secondaria', livello: 'extra' },
+    { id: 'scienza',     nome: 'Perché funziona', icona: 'atom',  gruppo: 'secondaria', livello: 'extra' }
   ];
   /* le 4 destinazioni quotidiane nella tab bar mobile; le altre primarie
      (es. Giornata) e le secondarie stanno nel menu "Altro" */
@@ -305,16 +314,20 @@
     var s = LM.load();
     var corrente = vistaCorrente();
 
-    /* sidebar desktop: primarie, poi separatore, poi secondarie */
+    /* sidebar desktop: l'ancora, poi le quotidiane, poi gli extra */
     var lato = document.getElementById('nav-lato');
     function voce(v) {
-      return '<a class="nav-item' + (corrente === v.id ? ' attivo' : '') + '" href="#/' + v.id + '">' +
-        ICO(v.icona, 17) + '<span>' + v.nome + '</span>' + badgeInbox(v, s) + '</a>';
+      var dim = v.livello === 'ancora' ? 20 : (v.livello === 'extra' ? 15 : 17);
+      return '<a class="nav-item nav-' + (v.livello || 'quotidiana') + (corrente === v.id ? ' attivo' : '') + '" href="#/' + v.id + '">' +
+        ICO(v.icona, dim) + '<span>' + v.nome + '</span>' + badgeInbox(v, s) + '</a>';
     }
+    function livello(l) { return VISTE.filter(function (v) { return (v.livello || 'quotidiana') === l; }).map(voce).join(''); }
+    /* niente etichette di gruppo: raggruppano già la distanza e il peso
+       (principio di prossimità), e una scritta in più è una cosa in più da
+       leggere in una barra che serve a non leggere niente */
     lato.innerHTML =
-      primarie().map(voce).join('') +
-      '<div class="nav-sep"></div>' +
-      VISTE.filter(function (v) { return v.gruppo === 'secondaria'; }).map(voce).join('');
+      livello('ancora') + livello('quotidiana') +
+      '<div class="nav-sep"></div>' + livello('extra');
 
     /* footer sidebar: account + impostazioni */
     document.getElementById('sidebar-fondo').innerHTML = footerSidebar();
@@ -704,10 +717,17 @@
 
   function apriMenuAltro() {
     var s = LM.load();
+    /* stessa gerarchia della barra laterale: qui dentro finiscono le pagine
+       che non stanno nella tab bar, e senza livelli sarebbero un elenco piatto
+       in cui Giornata pesa come una pagina da leggere una volta sola */
     var extra = primarie().filter(function (v) { return TAB_MOBILE.indexOf(v.id) < 0; }); /* es. Giornata */
-    var link = extra.concat(VISTE.filter(function (v) { return v.gruppo === 'secondaria'; })).map(function (v) {
-      return '<button class="menu-voce" data-vai="' + v.id + '">' + ICO(v.icona, 18) + '<span>' + v.nome + '</span>' + ICO('arrowRight', 15) + '</button>';
-    }).join('');
+    function voceMenu(v) {
+      return '<button class="menu-voce menu-' + (v.livello || 'quotidiana') + '" data-vai="' + v.id + '">' +
+        ICO(v.icona, v.livello === 'extra' ? 16 : 18) + '<span>' + v.nome + '</span>' + ICO('arrowRight', 15) + '</button>';
+    }
+    var link = extra.map(voceMenu).join('') +
+      (extra.length ? '<div class="nav-sep"></div>' : '') +
+      VISTE.filter(function (v) { return v.gruppo === 'secondaria'; }).map(voceMenu).join('');
     var a = window.LM_AUTH || { available: false, user: null };
     var acct;
     if (a.user) {
@@ -721,16 +741,24 @@
     } else {
       acct = '<div class="fondo-locale">' + ICO('cloud', 13) + ' Dati salvati su questo dispositivo</div>';
     }
+    /* Le impostazioni NON stanno più qui dentro. Prima questo pannello era
+       navigazione + account + tema + aspetto + dati + ripartenza + diagnostica
+       in un unico scorrimento da nove schermate: per raggiungere «Giornata»
+       si passava davanti a trenta comandi che non si stavano cercando. Ora è
+       un menu di pagine, e le impostazioni sono una porta sola — come su
+       desktop, dove hanno sempre funzionato così. */
     apriSheet('Menu', '<div class="menu-lista">' + link + '</div>' +
       '<div class="imp-sezione"><div class="imp-eti">Account</div>' + acct + '</div>' +
-      htmlAspetto() + htmlDati(), function (root) {
-      root.querySelectorAll('[data-vai]').forEach(function (b) {
-        b.addEventListener('click', function () { chiudiSheet(); location.hash = '#/' + b.getAttribute('data-vai'); });
+      '<button class="btn-strumento-largo" id="menu-impostazioni">' + ICO('sun', 16) + '<span>Impostazioni</span>' + ICO('arrowRight', 14) + '</button>',
+      function (root) {
+        root.querySelectorAll('[data-vai]').forEach(function (b) {
+          b.addEventListener('click', function () { chiudiSheet(); location.hash = '#/' + b.getAttribute('data-vai'); });
+        });
+        var la = root.querySelector('#menu-accedi'); if (la) la.addEventListener('click', function () { if (window.LMCloud && window.LMCloud.available) window.LMCloud.signIn(); });
+        var le = root.querySelector('#menu-esci'); if (le) le.addEventListener('click', function () { if (window.LMCloud) window.LMCloud.signOut(); chiudiSheet(); toast('Hai effettuato la disconnessione.', 0, 'logout'); });
+        root.querySelectorAll('[data-diag]').forEach(function (b) { b.addEventListener('click', apriDiagnostica); });
+        root.querySelector('#menu-impostazioni').addEventListener('click', apriImpostazioni);
       });
-      var la = root.querySelector('#menu-accedi'); if (la) la.addEventListener('click', function () { if (window.LMCloud && window.LMCloud.available) window.LMCloud.signIn(); });
-      var le = root.querySelector('#menu-esci'); if (le) le.addEventListener('click', function () { if (window.LMCloud) window.LMCloud.signOut(); chiudiSheet(); toast('Hai effettuato la disconnessione.', 0, 'logout'); });
-      wireAspettoDati(root);
-    });
   }
 
   /* ---------- helper UI ---------- */
@@ -794,7 +822,7 @@
     if (!s.demo || s.demoChiusa) { banda.innerHTML = ''; misura(); return; }
     /* sul telefono il testo lungo occupava due righe e mangiava mezzo schermo */
     banda.innerHTML = '<div class="banda-demo"><span>' + ICO('sparkles', 13) +
-      ' <b>Dati di esempio</b><span class="banda-piu">: modifica pure, tutto resta salvato.</span></span>' +
+      ' <b>Dati di esempio</b><span class="banda-piu">· modifica pure, tutto resta salvato</span></span>' +
       '<button class="banda-x" id="banda-x" aria-label="Nascondi">' + ICO('x', 14) + '</button></div>';
     misura();
     document.getElementById('banda-x').addEventListener('click', function () {
@@ -2783,10 +2811,13 @@
           var ar = areaById(b.areaId); var si = scadInfo(b.scadenza);
           /* stessa grammatica delle altre schede: azione principale + «⋯»,
              così da qui si può anche pianificare, rinominare o rimuovere */
-          return '<div class="scad-riga"><span class="scad-badge ' + si.cls + '">' + si.testo + '</span>' +
+          /* pieno solo per la più vicina: se ogni riga ha il pulsante a pieno
+             colore, il colore non indica più dove guardare */
+          var urgente = LM.daysBetween(LM.todayKey(), b.scadenza) <= 3;
+          return '<div class="scad-riga' + (urgente ? ' urgente' : '') + '"><span class="scad-badge ' + si.cls + '">' + si.testo + '</span>' +
             '<span class="scad-testo">' + esc(b.testo) + '</span>' +
             '<span class="tag-area" style="--c-area:' + LM.coloreArea(ar) + '" title="' + esc(ar.nome) + '">' + ICO(ar.icona, 13) + '</span>' +
-            '<button class="btn btn-mini btn-primario" data-scadoggi="' + b.id + '">' + ICO('arrowRight', 12) + ' Oggi</button>' +
+            '<button class="btn btn-mini' + (urgente ? ' btn-primario' : '') + '" data-scadoggi="' + b.id + '">' + ICO('arrowRight', 12) + ' Oggi</button>' +
             '<button class="icona-btn" data-bkmenu="' + b.id + '" title="Altro" aria-label="Altro">' + ICO('dots', 16) + '</button></div>';
         }).join('') + '</div></div>';
       box.querySelectorAll('[data-scadoggi]').forEach(function (b) {
@@ -2887,6 +2918,9 @@
         sez('sistema', 'sparkles', 'Sistemala',
           '<div class="bk-menu-riga"><span class="bk-menu-eti">Area</span>' + selectAree('bkm-area', b.areaId) + '</div>' +
           '<div class="bk-menu-azioni">' +
+          /* la spilla sta qui e non sulla riga: una stellina su ogni riga
+             sarebbero nove cose in più da guardare per una che si usa di rado */
+          '<button class="btn btn-mini' + (b.pin ? ' on' : '') + '" id="bkm-pin">' + ICO('star', 13) + ' ' + (b.pin ? 'Non è più importante' : 'Tienila in cima') + '</button>' +
           '<button class="btn btn-mini" id="bkm-steps">' + ICO('lista', 13) + ' ' + (isProg ? 'Apri i passi' : 'Dividi in passi') + '</button>' +
           '<button class="btn btn-mini" id="bkm-abitudine">' + ICO('refresh', 13) + ' Trasformala in abitudine</button>' +
           '<button class="btn btn-mini" id="bkm-mod">' + ICO('pencil', 13) + ' Rinomina</button>' +
@@ -2926,6 +2960,12 @@
             toast(n ? n + (n === 1 ? ' passo messo in agenda.' : ' passi messi in agenda, uno per volta.') : 'Nessun passo da distribuire: sono già in agenda o completati.', 0, n ? 'calendar' : 'check');
             chiudiSheet(); aggiornaNav(); ridisegna();
           });
+        });
+        root.querySelector('#bkm-pin').addEventListener('click', function () {
+          LM.appuntaBacklog(b.id);
+          toast(LM.load().backlog.some(function (x) { return x.id === b.id && x.pin; })
+            ? 'Appuntata: resta in cima finché non la togli.' : 'Non più appuntata.', 0, 'star');
+          chiudiSheet(); ridisegna();
         });
         root.querySelector('#bkm-abitudine').addEventListener('click', function () { apriDaAbitudine(b); });
         root.querySelector('#bkm-steps').addEventListener('click', function () { progettiAperti[b.id] = true; chiudiSheet(); ridisegna(); });
@@ -2997,8 +3037,14 @@
       });
     }
 
-    /* --- HTML di un elemento "da fare" (anche progetto con passi) --- */
-    function bkItemHtml(b) {
+    /* --- HTML di un elemento "da fare" (anche progetto con passi) ---
+       `opts.livello` decide quanto peso visivo prende: 'ora' è in evidenza
+       con l'azione a pieno colore, 'poi' è compatta con l'azione a contorno,
+       'parcheggio' è smorzata. Un colore d'accento ripetuto su nove righe
+       non è un accento: è uno sfondo. */
+    function bkItemHtml(b, opts) {
+      var livello = (opts && opts.livello) || 'poi';
+      var motivo = (opts && opts.motivo) || '';
       if (b.id === backlogEditId) {
         return '<div class="bk-item"><form class="inbox-modifica" data-bkedit="' + b.id + '" style="flex:1">' +
           '<input type="text" class="inbox-input" value="' + esc(b.testo) + '" aria-label="Modifica">' +
@@ -3050,22 +3096,40 @@
             '<span class="prog-eti"><b>' + av.fatti + '</b> di <b>' + av.tot + '</b> passi</span></div>';
         }
       }
-      return '<div class="bk-item' + (isProg ? ' progetto' : '') + '" data-bid="' + b.id + '">' +
+      /* Il perché di questa posizione, dove serve: un ordine che non si
+         spiega sembra arbitrario e si smette di fidarsi. Solo in evidenza e
+         in parcheggio — in mezzo non aggiunge niente. */
+      var ar = areaById(b.areaId);
+      /* il motivo non ripete quello che la pastiglia della scadenza già dice:
+         due volte la stessa informazione è solo una cosa in più da leggere */
+      var motivoDaScadenza = (opts && opts.da) === 'scadenza';
+      var perche = (motivo && livello !== 'poi' && !(motivoDaScadenza && b.scadenza))
+        ? '<span class="bk-perche">' + esc(motivo) + '</span>' : '';
+      /* l'area come pastiglia di colore muta: l'informazione resta, senza
+         costare una riga di intestazione per gruppo */
+      var tagArea = '<span class="tag-area" style="--c-area:' + LM.coloreArea(ar) + '" title="' + esc(ar.nome) + '">' + ICO(ar.icona, 12) + '</span>';
+      var meta = perche + (b.pin ? '<span class="bk-pin" title="Appuntata come importante">' + ICO('star', 11) + '</span>' : '') +
+        (b.scadenza ? (function (si) {
+          /* «entro 2g fa» non è italiano: se è passata, è scaduta */
+          return '<span class="scad-badge ' + si.cls + '">' + ICO('calendar', 10) + ' ' +
+            (si.d < 0 ? 'scaduta ' + si.testo : 'entro ' + si.testo) + '</span>';
+        })(scadInfo(b.scadenza)) : '') +
+        badgeAgenda;
+      var pieno = livello === 'ora';
+      return '<div class="bk-item liv-' + livello + (isProg ? ' progetto' : '') + '" data-bid="' + b.id + '" style="--c-area:' + LM.coloreArea(ar) + '">' +
         '<div class="bk-item-riga">' +
         '<div class="bk-item-corpo">' +
-        '<div class="bk-item-testo">' + esc(b.testo) + '</div>' +
-        ((b.scadenza || badgeAgenda || isProg) ? '<div class="bk-item-meta">' +
-          (b.scadenza ? '<span class="scad-badge ' + scadInfo(b.scadenza).cls + '">' + ICO('calendar', 10) + ' entro ' + scadInfo(b.scadenza).testo + '</span>' : '') +
-          badgeAgenda + '</div>' : '') +
+        '<div class="bk-item-testo">' + tagArea + esc(b.testo) + '</div>' +
+        (meta ? '<div class="bk-item-meta">' + meta + '</div>' : '') +
         avanz +
         '</div>' +
         /* una sola azione in evidenza (Oggi / Passo). Tutto il resto sta dietro
            «⋯». I pulsanti non vanno mai a capo: il testo si accorcia, loro no. */
         '<div class="bk-item-azioni">' +
         (isProg
-          ? '<button class="btn btn-mini btn-primario" data-bkpasso="' + b.id + '" title="Porta in Oggi il prossimo passo">' + ICO('arrowRight', 13) + ' Passo</button>' +
+          ? '<button class="btn btn-mini' + (pieno ? ' btn-primario' : '') + '" data-bkpasso="' + b.id + '" title="Porta in Oggi il prossimo passo">' + ICO('arrowRight', 13) + ' Passo</button>' +
             '<button class="icona-btn' + (apertoP ? ' on' : '') + '" data-bksteps="' + b.id + '" title="Passi del progetto" aria-label="Passi del progetto">' + ICO('lista', 14) + '</button>'
-          : '<button class="btn btn-mini btn-primario" data-bkoggi="' + b.id + '">' + ICO('arrowRight', 13) + ' Oggi</button>') +
+          : '<button class="btn btn-mini' + (pieno ? ' btn-primario' : '') + '" data-bkoggi="' + b.id + '">' + ICO('arrowRight', 13) + ' Oggi</button>') +
         '<button class="icona-btn" data-bkmenu="' + b.id + '" title="Altro" aria-label="Altro">' + ICO('dots', 16) + '</button>' +
         '</div></div>' +
         passi + '</div>';
@@ -3155,7 +3219,14 @@
       });
     }
 
-    /* --- Da fare: chip per area + ricerca + lista --- */
+    /* --- Da fare: prima le poche che contano, poi il resto --- */
+    var areeVuoteAperte = false;
+    /* Oltre questa soglia «Le altre» smette di essere una lista e diventa un
+       muro: si mostra il primo pezzo e il resto con un tocco. Sotto la soglia
+       si mostra tutto — nascondere per abitudine è peggio che mostrare, perché
+       quello che non si vede si dimentica. */
+    var MURO = 8;
+
     function disegnaDaFare(box) {
       var perArea = LM.backlogPerArea();
       var totale = perArea.reduce(function (n, g) { return n + g.items.length; }, 0);
@@ -3164,26 +3235,61 @@
           '<form class="bk-add" data-addarea="altro" style="max-width:520px;margin:0 auto"><input type="text" placeholder="Aggiungi una cosa da fare…" aria-label="Aggiungi"><button class="btn btn-mini btn-primario" type="submit" aria-label="Aggiungi">' + ICO('plus', 13) + '</button></form></div>';
         wireAdd(box); return;
       }
-      /* le aree vuote diventano un solo tasto "+ area vuota" invece di
-         occupare tre righe di chip a zero (era metà schermo sul telefono) */
+      /* Le aree vuote stanno dietro un solo tasto: una fila di pastiglie a
+         zero è inchiostro che non porta informazione, e sul telefono si
+         mangiava mezzo schermo prima di far vedere un'attività. */
       var conRoba0 = perArea.filter(function (g) { return g.items.length; });
       var vuote0 = perArea.filter(function (g) { return !g.items.length; });
+      function chipArea(g, vuota) {
+        return '<button class="att-chip' + (vuota ? ' vuota' : '') + (attArea === g.area.id ? ' on' : '') + '" data-chip="' + g.area.id +
+          '" style="--c-area:' + LM.coloreArea(g.area) + '">' + ICO(g.area.icona, 13) + ' ' + esc(g.area.nome) +
+          (vuota ? '' : ' <span>' + g.items.length + '</span>') + '</button>';
+      }
+      var mostraVuote = areeVuoteAperte || vuote0.some(function (g) { return g.area.id === attArea; });
       var chips = '<button class="att-chip' + (attArea === 'tutte' ? ' on' : '') + '" data-chip="tutte">Tutte <span>' + totale + '</span></button>' +
-        conRoba0.map(function (g) {
-          return '<button class="att-chip' + (attArea === g.area.id ? ' on' : '') + '" data-chip="' + g.area.id + '" style="--c-area:' + LM.coloreArea(g.area) + '">' + ICO(g.area.icona, 13) + ' ' + esc(g.area.nome) + ' <span>' + g.items.length + '</span></button>';
-        }).join('') +
-        vuote0.map(function (g) {
-          return '<button class="att-chip vuota' + (attArea === g.area.id ? ' on' : '') + '" data-chip="' + g.area.id + '" style="--c-area:' + LM.coloreArea(g.area) + '">' + ICO(g.area.icona, 13) + ' ' + esc(g.area.nome) + '</button>';
-        }).join('');
-      box.innerHTML = '<div class="card"><div class="att-cerca">' + ICO('target', 14) + '<input type="text" id="att-q" placeholder="Cerca tra le cose da fare…" value="' + esc(attQuery) + '" aria-label="Cerca"></div>' +
+        conRoba0.map(function (g) { return chipArea(g, false); }).join('') +
+        (vuote0.length
+          ? (mostraVuote
+            ? vuote0.map(function (g) { return chipArea(g, true); }).join('')
+            : '<button class="att-chip vuota" id="att-vuote">' + ICO('plus', 12) + ' ' + vuote0.length + (vuote0.length === 1 ? ' area vuota' : ' aree vuote') + '</button>')
+          : '');
+      /* La ricerca compare quando serve davvero cercare: con nove voci si
+         trova a occhio, e un campo in più è solo una cosa in più da guardare. */
+      var cerca = (totale >= 10 || attQuery)
+        ? '<div class="att-cerca">' + ICO('target', 14) + '<input type="text" id="att-q" placeholder="Cerca tra le cose da fare…" value="' + esc(attQuery) + '" aria-label="Cerca"></div>'
+        : '';
+      box.innerHTML = '<div class="card">' + cerca +
         '<div class="att-chips">' + chips + '</div>' +
         '<div id="dafare-lista"></div></div>';
       var q = box.querySelector('#att-q');
-      q.addEventListener('input', function () { attQuery = q.value; renderLista(); });
+      if (q) q.addEventListener('input', function () { attQuery = q.value; renderLista(); });
+      var bv = box.querySelector('#att-vuote');
+      if (bv) bv.addEventListener('click', function () { areeVuoteAperte = true; disegnaDaFare(box); });
       box.querySelectorAll('[data-chip]').forEach(function (b) {
         b.addEventListener('click', function () { attArea = b.getAttribute('data-chip'); box.querySelectorAll('[data-chip]').forEach(function (x) { x.classList.toggle('on', x.getAttribute('data-chip') === attArea); }); renderLista(); });
       });
       renderLista();
+
+      /* un solo campo per aggiungere, non uno per area: l'area la decide la
+         pastiglia già selezionata sopra */
+      function formAdd() {
+        var ar = attArea === 'tutte' ? null : areaById(attArea);
+        return '<form class="bk-add bk-add-solo" data-addarea="' + (ar ? ar.id : 'altro') + '">' +
+          '<input type="text" placeholder="' + (ar ? 'Aggiungi a «' + esc(ar.nome) + '»…' : 'Aggiungi una cosa da fare…') + '" aria-label="Aggiungi una cosa da fare">' +
+          '<button class="btn btn-mini" type="submit" aria-label="Aggiungi">' + ICO('plus', 13) + '</button></form>';
+      }
+
+      function fascia(titolo, voci, cls) {
+        if (!voci.length) return '';
+        var taglia = cls === 'poi' && voci.length > MURO && !backlogAperte.__tutte;
+        var mostrate = taglia ? voci.slice(0, MURO) : voci;
+        return '<div class="bk-fascia ' + cls + '">' +
+          '<div class="bk-fascia-testa"><span class="bk-fascia-tit">' + titolo + '</span>' +
+          (voci.length > 1 ? '<span class="bk-fascia-n">' + voci.length + '</span>' : '') + '</div>' +
+          mostrate.map(function (x) { return bkItemHtml(x.b, { livello: cls, motivo: x.i.motivo, da: x.i.da }); }).join('') +
+          (taglia ? '<button class="bk-altre" data-tutte="1">' + ICO('chevronGiu', 14) + ' Mostra le altre ' + (voci.length - MURO) + '</button>' : '') +
+          '</div>';
+      }
 
       function renderLista() {
         var lista = box.querySelector('#dafare-lista');
@@ -3191,47 +3297,48 @@
         if (query) {
           var ris = LM.load().backlog.filter(function (b) { return b.testo.toLowerCase().indexOf(query) >= 0; });
           lista.innerHTML = '<div class="sotto">' + ris.length + (ris.length === 1 ? ' risultato' : ' risultati') + ' per «' + esc(attQuery.trim()) + '»</div>' +
-            '<div class="backlog-piatto">' + (ris.map(bkItemHtml).join('') || '<div class="bk-vuoto">Nessuna corrispondenza.</div>') + '</div>';
+            '<div class="backlog-piatto">' + (ris.map(function (b) { return bkItemHtml(b, { livello: 'poi' }); }).join('') || '<div class="bk-vuoto">Nessuna corrispondenza.</div>') + '</div>';
           wireBk(lista); return;
         }
-        if (attArea !== 'tutte') {
-          var g0 = perArea.find(function (g) { return g.area.id === attArea; }) || { area: areaById(attArea), items: [] };
-          lista.innerHTML = '<div class="backlog-piatto">' + (g0.items.map(bkItemHtml).join('') || '<div class="bk-vuoto">Niente in «' + esc(g0.area.nome) + '». Aggiungi qui sotto.</div>') + '</div>' +
-            '<form class="bk-add" data-addarea="' + attArea + '"><input type="text" placeholder="Aggiungi a «' + esc(g0.area.nome) + '»…" aria-label="Aggiungi"><button class="btn btn-mini btn-primario" type="submit" aria-label="Aggiungi">' + ICO('plus', 13) + '</button></form>';
-          wireBk(lista); wireAdd(lista); return;
+
+        /* L'ordine è per IMPORTANZA, non per categoria. Una lista divisa per
+           area mette sullo stesso piano una scadenza di domani e un'idea di
+           tre mesi fa: l'utente deve rifare da zero la scelta ogni volta che
+           apre la pagina, e con la memoria di lavoro sotto sforzo quella
+           scelta è la parte più costosa di tutte. Le aree restano un filtro,
+           a un tocco, nelle pastiglie qui sopra. */
+        var g = LM.backlogPerImportanza({ areaId: attArea, tetto: 3 });
+        if (!g.totale) {
+          lista.innerHTML = '<div class="bk-vuoto">Niente in «' + esc(areaById(attArea).nome) + '». Aggiungi qui sotto.</div>' + formAdd();
+          wireAdd(lista); return;
         }
-        /* Le aree con qualcosa dentro sono APERTE da sola: prima si arrivava su
-           una pagina di cassetti chiusi, senza vedere nemmeno un'attività.
-           Quelle vuote non si elencano (si raggiungono dai chip sopra). */
-        var conRoba = perArea.filter(function (g) { return g.items.length; });
-        var vuote = perArea.length - conRoba.length;
-        lista.innerHTML = '<div class="backlog-aree">' + conRoba.map(function (g) {
-          var aperta = backlogAperte[g.area.id] === undefined ? true : !!backlogAperte[g.area.id];
-          return '<div class="bk-area" style="--c-area:' + LM.coloreArea(g.area) + '">' +
-            '<button class="bk-testa" data-toggle="' + g.area.id + '" aria-expanded="' + aperta + '">' +
-            '<span class="icona-area">' + ICO(g.area.icona, 15) + '</span>' +
-            '<span class="bk-nome">' + esc(g.area.nome) + '</span>' +
-            '<span class="bk-conta">' + g.items.length + '</span>' +
-            '<span class="bk-chevron' + (aperta ? ' aperta' : '') + '">' + ICO('chevronGiu', 16) + '</span></button>' +
-            '<div class="bk-corpo"' + (aperta ? '' : ' hidden') + '>' +
-            (g.items.length ? g.items.map(bkItemHtml).join('') : '<div class="bk-vuoto">Niente qui.</div>') +
-            '<form class="bk-add" data-addarea="' + g.area.id + '"><input type="text" placeholder="Aggiungi a «' + esc(g.area.nome) + '»…" aria-label="Aggiungi"><button class="btn btn-mini" type="submit" aria-label="Aggiungi">' + ICO('plus', 13) + '</button></form>' +
-            '</div></div>';
-        }).join('') + '</div>' +
-          (vuote ? '<div class="sotto" style="margin:12px 0 0">' + (vuote === 1 ? 'Un’altra area è vuota' : vuote + ' altre aree sono vuote') + ': usa i tasti qui sopra per aprirle e aggiungerci qualcosa.</div>' : '');
-        /* aprire/chiudere un'area mostra o nasconde SOLO quel pezzo: niente
-           ricostruzione della lista, così il resto non si muove di un pixel */
-        lista.querySelectorAll('[data-toggle]').forEach(function (b) {
-          b.addEventListener('click', function () {
-            var id = b.getAttribute('data-toggle');
-            var aperta = !backlogAperte[id];
-            backlogAperte[id] = aperta;
-            var corpo = b.parentNode.querySelector('.bk-corpo');
-            if (corpo) corpo.hidden = !aperta;
-            b.setAttribute('aria-expanded', aperta);
-            var chev = b.querySelector('.bk-chevron');
-            if (chev) chev.classList.toggle('aperta', aperta);
-          });
+        var apertoParcheggio = !!backlogAperte.__parcheggio;
+        lista.innerHTML =
+          fascia('Prima queste', g.ora, 'ora') +
+          fascia('Le altre', g.poi, 'poi') +
+          (g.parcheggio.length
+            ? '<div class="bk-fascia parcheggio">' +
+              '<button class="bk-fascia-testa bk-fascia-btn" data-parcheggio="1" aria-expanded="' + apertoParcheggio + '">' +
+              '<span class="bk-fascia-tit">Ferme da un po’</span><span class="bk-fascia-n">' + g.parcheggio.length + '</span>' +
+              '<span class="bk-chevron' + (apertoParcheggio ? ' aperta' : '') + '">' + ICO('chevronGiu', 15) + '</span></button>' +
+              '<div class="bk-fascia-corpo"' + (apertoParcheggio ? '' : ' hidden') + '>' +
+              g.parcheggio.map(function (x) { return bkItemHtml(x.b, { livello: 'parcheggio', motivo: x.i.motivo, da: x.i.da }); }).join('') +
+              '</div></div>'
+            : '') +
+          formAdd();
+
+        var bt = lista.querySelector('[data-tutte]');
+        if (bt) bt.addEventListener('click', function () { backlogAperte.__tutte = true; renderLista(); });
+        /* aprire il parcheggio mostra solo quel pezzo: il resto non si muove */
+        var bp = lista.querySelector('[data-parcheggio]');
+        if (bp) bp.addEventListener('click', function () {
+          var ap = !backlogAperte.__parcheggio;
+          backlogAperte.__parcheggio = ap;
+          var corpo = bp.parentNode.querySelector('.bk-fascia-corpo');
+          if (corpo) corpo.hidden = !ap;
+          bp.setAttribute('aria-expanded', ap);
+          var ch = bp.querySelector('.bk-chevron');
+          if (ch) ch.classList.toggle('aperta', ap);
         });
         wireBk(lista); wireAdd(lista);
       }
@@ -3241,7 +3348,14 @@
     function disegnaProgetti(box) {
       var prog = LM.load().backlog.filter(function (b) { return (b.steps && b.steps.length) || progettiAperti[b.id]; });
       prog.forEach(function (b) { if (progettiAperti[b.id] === undefined) progettiAperti[b.id] = true; });
-      var lista = prog.length ? '<div class="backlog-piatto">' + prog.map(bkItemHtml).join('') + '</div>'
+      /* anche qui prima quello che chiede attenzione: il primo è il candidato,
+         gli altri restano leggibili senza urlare */
+      var ordinati = prog.map(function (b) { return { b: b, i: LM.importanzaBacklog(b) }; })
+        .sort(function (x, y) { return y.i.peso - x.i.peso; });
+      var lista = prog.length
+        ? '<div class="backlog-piatto">' + ordinati.map(function (x, i) {
+            return bkItemHtml(x.b, { livello: i === 0 ? 'ora' : 'poi', motivo: x.i.motivo, da: x.i.da });
+          }).join('') + '</div>'
         : '<div class="vuoto" style="padding:20px 8px">' + illoInbox() + '<b>Nessun progetto, per ora.</b><br>Un progetto è una cosa grande divisa in passi: la fai un pezzo per volta.</div>';
       box.innerHTML = '<div class="card"><div class="sotto" style="margin-top:0">Le cose grandi, spezzate in <b>passi</b>. Il pulsante «Passo» porta in Oggi solo il prossimo, così parti senza sentirti sopraffatto.</div>' +
         lista +
