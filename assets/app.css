@@ -870,16 +870,33 @@ kbd {
 
 .passo-rituale { max-width: 660px; margin: 0 auto; }
 .passo-rituale .card { padding: 28px; }
-.rituale-testa { text-align: center; margin-bottom: 20px; }
+/* su un telefono 28px di bordo per lato sono 56px che non mostrano niente */
+@media (max-width: 560px) { .passo-rituale .card { padding: 18px 16px; } }
+/* Testata su una riga invece che a colonna centrata: prima erano 158px di
+   icona grande, titolo e paragrafo prima di far vedere una sola cosa da
+   fare — su un telefono un quinto dello schermo speso in decorazione, su
+   ogni sotto-sezione dei Rituali. Ora l'icona sta accanto al titolo e il
+   testo sotto: stessa informazione, un terzo dello spazio. */
+.rituale-testa {
+  display: grid; grid-template-columns: auto minmax(0, 1fr);
+  gap: 4px 12px; align-items: center; margin-bottom: 16px;
+}
 .rituale-icona {
-  width: 52px; height: 52px; margin: 0 auto 10px; border-radius: 17px;
+  width: 38px; height: 38px; border-radius: 12px; grid-row: span 2;
   display: flex; align-items: center; justify-content: center; color: #fff;
   background: var(--grad-brand);
   box-shadow: var(--ombra-accento), inset 0 1px 0 rgba(255, 255, 255, .3);
 }
+.rituale-icona .ico { width: 20px; height: 20px; }
 .vista-enter .rituale-icona { animation: alzati .5s var(--ease-spring) both; }
-.rituale-testa h2 { font-size: 21px; letter-spacing: -0.025em; font-weight: 800; }
-.rituale-testa p { color: var(--inchiostro-2); font-size: 13.5px; margin-top: 4px; }
+.rituale-testa h2 { font-size: 18px; letter-spacing: -0.025em; font-weight: 800; align-self: end; }
+.rituale-testa p { color: var(--inchiostro-2); font-size: 12.5px; line-height: 1.45; align-self: start; }
+@media (max-width: 560px) {
+  /* sullo stretto il paragrafo passa sotto a tutta larghezza */
+  .rituale-testa { grid-template-columns: auto minmax(0, 1fr); }
+  .rituale-icona { grid-row: 1; }
+  .rituale-testa p { grid-column: 1 / -1; }
+}
 
 .voto-area { display: flex; align-items: center; gap: 10px; padding: 11px 0; border-bottom: 1px solid var(--griglia); }
 .voto-area:last-child { border-bottom: none; }
@@ -1433,7 +1450,7 @@ body.sfondo-fermo { position: fixed; left: 0; right: 0; width: 100%; overflow: h
 .bk-item { padding: 7px 11px; margin-bottom: 6px; border: 1px solid var(--bordo); border-radius: var(--raggio-s); background: var(--superficie-1); }
 .bk-item:hover { border-color: var(--bordo-forte); }
 /* tre densità: la stessa riga, tre volumi di voce */
-.bk-item.liv-ora { padding: 11px 13px; margin-bottom: 8px; border-color: var(--bordo-forte); box-shadow: var(--e1); }
+.bk-item.liv-ora { padding: 9px 12px; margin-bottom: 7px; border-color: var(--bordo-forte); box-shadow: var(--e1); }
 .bk-item.liv-ora .bk-item-testo { font-size: 15px; font-weight: 700; }
 .bk-item.liv-poi { padding: 6px 11px; }
 .bk-item.liv-poi .bk-item-testo { font-size: 13.5px; font-weight: 550; color: var(--inchiostro-2); }
@@ -1507,7 +1524,11 @@ body.sfondo-fermo { position: fixed; left: 0; right: 0; width: 100%; overflow: h
 .q-chips { display: flex; flex-wrap: wrap; gap: 7px; }
 .q-chip { padding: 7px 13px; border-radius: 99px; border: 1px solid var(--bordo-forte); background: var(--superficie-1); font-size: 12.5px; font-weight: 700; color: var(--inchiostro-2); cursor: pointer; transition: all var(--t-veloce); }
 .q-chip:hover { border-color: var(--accento); color: var(--accento-testo); background: color-mix(in srgb, var(--accento) 8%, var(--superficie-1)); }
-.q-chip.on { border-color: var(--accento); color: #fff; background: var(--accento-testo); }
+/* Il bianco su un accento CHIARO (sui temi scuri l'accento è un viola
+   luminoso) stava a 2,7:1. L'inchiostro dell'accento è già definito per
+   tema — bianco su chiaro, quasi-nero su scuro — e porta tutti e quattro
+   sopra il 6:1. */
+.q-chip.on { border-color: var(--accento); color: var(--accento-ink); background: var(--accento-testo); }
 .bk-menu #bkm-area, .bk-menu #bkm-scad, .bk-menu #bkm-quando { width: 100%; }
 .bk-menu-scad { display: flex; align-items: center; gap: 8px; }
 .bk-menu-scad input[type="date"] { flex: 1; min-width: 0; }
@@ -1548,6 +1569,51 @@ body.sfondo-fermo { position: fixed; left: 0; right: 0; width: 100%; overflow: h
 /* uno solo, staccato dalla lista: prima ce n'era uno per area — cinque campi
    di testo sempre aperti per una cosa che si fa una volta ogni tanto */
 .bk-add-solo { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--bordo); }
+
+/* ---------- riga di aggiunta rapida ----------
+   Una riga sola a riposo, in cima. Le opzioni per pianificare si aprono
+   solo mentre scrivi: a schermo fermo non costano un pixel, e mentre
+   scrivi non stai leggendo la lista, quindi non toglie niente a nessuno. */
+
+.agg { margin-bottom: 10px; }
+.agg-riga {
+  display: flex; align-items: center; gap: 8px;
+  padding: 4px 6px 4px 4px; border-radius: var(--raggio-s);
+  border: 1px solid var(--bordo-forte); background-color: var(--superficie-1);
+  transition: border-color var(--t-veloce), box-shadow var(--t-veloce);
+}
+.agg-riga:focus-within { border-color: var(--accento); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accento) 16%, transparent); }
+.agg-testo {
+  flex: 1; min-width: 0; border: none; background: none; box-shadow: none;
+  padding: 8px 10px; font-size: 14px; font-weight: 550;
+}
+.agg-testo:focus { box-shadow: none; }
+/* Il tasto resta visibile anche a campo vuoto: al dito serve un bersaglio,
+   e su un telefono non c'è nessun tasto Invio a portata di mano. */
+.agg-ok { flex: none; white-space: nowrap; }
+.agg-opz {
+  display: flex; align-items: center; gap: 8px 10px; flex-wrap: wrap;
+  padding: 11px 12px 3px;
+}
+.agg-opz[hidden] { display: none; }
+.agg-eti { font-size: 11.5px; font-weight: 750; color: var(--inchiostro-2); text-transform: uppercase; letter-spacing: .05em; }
+.agg-nota { font-size: 11.5px; color: var(--inchiostro-muto); }
+.agg-quando, .agg-giorni { display: flex; gap: 6px; flex-wrap: wrap; }
+.agg-area { display: inline-flex; align-items: center; gap: 7px; }
+.agg-area select { width: auto; max-width: 170px; }
+@media (pointer: coarse) {
+  .agg-testo { padding: 10px; }
+  .agg-ok { min-height: 38px; }
+}
+@media (max-width: 359px) {
+  /* Solo sugli schermi davvero minuscoli il tasto perde la scritta. Più su la
+     tiene: senza etichetta resterebbe un «+» blu, e in basso a destra c'è già
+     un «+» blu (la cattura di un pensiero) che vuol dire un'altra cosa — due
+     segni identici per due azioni diverse si confondono. Il nome per chi non
+     vede resta comunque nell'aria-label. */
+  .agg-ok .agg-ok-eti { display: none; }
+  .agg-ok { padding: 0; width: 38px; min-width: 38px; justify-content: center; }
+}
 
 /* attività: tab, ricerca, chip per area, lista piatta */
 .att-tabs { margin-bottom: 14px; }

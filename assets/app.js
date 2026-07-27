@@ -761,6 +761,70 @@
       });
   }
 
+  /* ---------- riga di aggiunta rapida ----------
+     Aggiungere è la cosa che si fa più spesso e più di fretta: se il campo
+     sta in fondo alla pagina, il pensiero si perde prima di arrivarci — con
+     l'attenzione che salta, la finestra utile tra «mi è venuto in mente» e
+     «l'ho scritto» si misura in secondi. Quindi sta in cima.
+
+     Ma in cima non può occupare mezzo schermo, o coprirebbe proprio ciò che
+     si è venuti a vedere. Quindi è UNA riga: il campo e il più. Le opzioni
+     per pianificare (quando, area, giorni) si aprono solo mentre scrivi —
+     cioè esattamente quando non stai leggendo la lista — e si richiudono da
+     sole appena hai finito. A riposo non costa niente.
+
+     Su un telefono c'è un motivo in più: la tastiera copre il fondo dello
+     schermo, e un campo in basso finisce sotto la tastiera che serve a
+     riempirlo. In alto resta sempre visibile. */
+
+  function rigaAggiunta(id, segnaposto, opzioniHtml) {
+    return '<form class="agg" id="' + id + '" autocomplete="off">' +
+      '<div class="agg-riga">' +
+      '<input type="text" class="agg-testo" placeholder="' + esc(segnaposto) + '" aria-label="' + esc(segnaposto) + '" enterkeyhint="done">' +
+      /* il segno più dice da sé cosa fa: quando lo schermo è strettissimo la
+         scritta sparisce e il tasto resta comunque comprensibile */
+      '<button class="btn btn-mini btn-primario agg-ok" type="submit" aria-label="Aggiungi">' + ICO('piu2', 14) + '<span class="agg-ok-eti">Aggiungi</span></button></div>' +
+      (opzioniHtml ? '<div class="agg-opz" hidden>' + opzioniHtml + '</div>' : '') +
+      '</form>';
+  }
+
+  /* Collega la riga: le opzioni si aprono al primo carattere, si chiudono
+     quando il campo torna vuoto e si perde il fuoco. `onInvio(testo, opz)`
+     riceve il testo e il contenitore delle opzioni. */
+  function wireRigaAggiunta(scope, id, onInvio) {
+    var form = scope.querySelector('#' + id);
+    if (!form) return;
+    var inp = form.querySelector('.agg-testo');
+    var opz = form.querySelector('.agg-opz');
+    function apri(v) {
+      if (!opz) return;
+      opz.hidden = !v;
+      form.classList.toggle('agg-aperta', !!v);
+    }
+    inp.addEventListener('input', function () { if (inp.value.trim()) apri(true); });
+    inp.addEventListener('focus', function () { if (inp.value.trim()) apri(true); });
+    /* Esc svuota e richiude: una via d'uscita senza dover cancellare a mano */
+    inp.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') { e.stopPropagation(); inp.value = ''; apri(false); inp.blur(); }
+    });
+    form.addEventListener('focusout', function () {
+      setTimeout(function () {
+        if (!form.contains(document.activeElement) && !inp.value.trim()) apri(false);
+      }, 0);
+    });
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var v = inp.value.trim();
+      if (!v) { inp.focus(); return; }
+      onInvio(v, opz);
+      inp.value = '';
+      apri(false);
+      /* il fuoco resta nel campo: chi butta giù una cosa spesso ne butta giù
+         tre di seguito, e non deve ricliccare ogni volta */
+      inp.focus();
+    });
+  }
+
   /* ---------- helper UI ---------- */
 
   function areaById(id) {
@@ -2534,19 +2598,31 @@
       }).join('')
       : '';
 
+    /* La nuova abitudine sta in CIMA, non in fondo. In fondo significava dopo
+       tutte quelle che hai già: con tre abitudini il campo era a
+       millequattrocento pixel dall'inizio, con dieci diventa irraggiungibile,
+       e un pensiero che ti viene ora non sopravvive a quello scorrimento.
+       Sopra la lista di oggi costa una riga — quarantasei pixel, ripagati
+       dalla testata più compatta — e non toglie niente a ciò che devi fare:
+       la lista di oggi resta interamente sopra la piega. */
     corpo.innerHTML = '<div class="card">' +
       testaRituale('refresh', 'Abitudini',
-        'Le cose che vuoi ripetere spesso. Stanno per conto loro, quindi non rubano posto alle tre azioni di oggi. Ogni volta che le fai, la serie cresce.') +
+        /* tre righe di spiegazione diventavano tre righe di schermo su ogni
+           apertura, per un testo che si legge una volta sola */
+        'Le cose che vuoi ripetere spesso. Ogni volta che le fai, la serie cresce.') +
+      rigaAggiunta('agg-ab', 'Nuova abitudine…',
+        '<span class="agg-eti">In che giorni?</span>' +
+        '<div id="agg-ab-giorni" class="agg-giorni">' + chipsGiorni([]) + '</div>' +
+        '<span class="agg-nota">nessuno selezionato = ogni giorno</span>' +
+        /* stessa area che userebbe il livello dati se non si scegliesse niente */
+        '<label class="agg-area"><span class="agg-eti">in</span>' + selectAree('agg-ab-area', 'salute') + '</label>') +
       '<h2 style="font-size:14px">Oggi</h2><div class="abit-lista-oggi">' + listaOggi + '</div>' +
       '</div>' +
-      '<div class="card mt"><h2>' + ICO('lista', 16) + ' Le tue abitudini</h2>' +
-      '<div class="sotto">Tocca i giorni per scegliere quando ripeterla. Nessun giorno selezionato = ogni giorno.</div>' +
-      '<div class="abit-tutte">' + listaTutte + '</div>' +
-      '<form id="abit-nuova" class="abit-nuova"><div class="riga-flex">' +
-      '<input type="text" id="abit-testo" placeholder="Nuova abitudine…" style="flex:1;min-width:150px">' +
-      '<span style="width:150px">' + selectAree('abit-area') + '</span></div>' +
-      '<div class="riga-flex mt-s" id="abit-giorni-nuova">' + chipsGiorni([]) + '<button class="btn btn-mini btn-primario" type="submit">' + ICO('plus', 13) + ' Aggiungi</button></div>' +
-      '</form></div>';
+      (tutte.length
+        ? '<div class="card mt"><h2>' + ICO('lista', 16) + ' Le tue abitudini</h2>' +
+          '<div class="sotto">Tocca i giorni per cambiare quando ripeterla.</div>' +
+          '<div class="abit-tutte">' + listaTutte + '</div></div>'
+        : '');
 
     corpo.querySelectorAll('[data-toggle-ab]').forEach(function (b) {
       b.addEventListener('click', function (ev) {
@@ -2590,17 +2666,19 @@
         });
       });
     });
-    var nuova = document.getElementById('abit-giorni-nuova');
-    nuova.querySelectorAll('.giorno-chip').forEach(function (chip) {
+    var nuovaG = corpo.querySelector('#agg-ab-giorni');
+    nuovaG.querySelectorAll('.giorno-chip').forEach(function (chip) {
       chip.addEventListener('click', function () { chip.classList.toggle('sel'); });
     });
-    document.getElementById('abit-nuova').addEventListener('submit', function (e) {
-      e.preventDefault();
-      var testo = document.getElementById('abit-testo').value.trim();
-      if (!testo) return;
-      LM.aggiungiAbitudine(testo, document.getElementById('abit-area').value, leggiGiorni(nuova));
+    wireRigaAggiunta(corpo, 'agg-ab', function (testo, opz) {
+      var giorni = leggiGiorni(opz.querySelector('#agg-ab-giorni'));
+      LM.aggiungiAbitudine(testo, opz.querySelector('#agg-ab-area').value, giorni);
+      toast('«' + testo + '» ' + riepilogoGiorni(giorni) + ', da oggi.', 0, 'refresh');
       ritualeAbitudini(corpo);
-      toast('Abitudine creata.', 0, 'refresh');
+      /* i giorni tornano vuoti e il fuoco resta nel campo: la scelta valeva
+         per quell'abitudine, non per la prossima */
+      var i = corpo.querySelector('#agg-ab .agg-testo');
+      if (i) i.focus({ preventScroll: true });
     });
   }
 
@@ -2768,7 +2846,7 @@
     var nArrivo = LM.scadenzeVicine(14).length;
     if (!attTab || (attTab === 'sistemare' && !nInbox)) attTab = nInbox ? 'sistemare' : 'dafare';
 
-    var html = topbar('Attività', 'Butta giù tutto. Poi decidi con calma: oggi, più avanti, o lascia perdere.');
+    var html = topbar('Attività', 'Butta giù tutto, decidi dopo.');
     function tb(id, ico, et, n) {
       return '<button data-att="' + id + '" class="' + (attTab === id ? 'attivo' : '') + '">' + ICO(ico, 15) + et + (n ? ' <span class="att-badge">' + n + '</span>' : '') + '</button>';
     }
@@ -3102,8 +3180,12 @@
       var ar = areaById(b.areaId);
       /* il motivo non ripete quello che la pastiglia della scadenza già dice:
          due volte la stessa informazione è solo una cosa in più da leggere */
-      var motivoDaScadenza = (opts && opts.da) === 'scadenza';
-      var perche = (motivo && livello !== 'poi' && !(motivoDaScadenza && b.scadenza))
+      var fonte = (opts && opts.da) || '';
+      /* «già cominciato, 1 di 3» diceva la stessa cosa della riga di
+         avanzamento sotto («1 di 3 passi»): una riga intera di schermo per
+         un'informazione già presente due centimetri più in basso */
+      var ridondante = (fonte === 'scadenza' && b.scadenza) || (fonte === 'progetto' && avanz);
+      var perche = (motivo && livello !== 'poi' && !ridondante)
         ? '<span class="bk-perche">' + esc(motivo) + '</span>' : '';
       /* l'area come pastiglia di colore muta: l'informazione resta, senza
          costare una riga di intestazione per gruppo */
@@ -3206,21 +3288,6 @@
       });
     }
 
-    /* collega i form "aggiungi una cosa da fare" dentro `scope` */
-    function wireAdd(scope) {
-      scope.querySelectorAll('[data-addarea]').forEach(function (form) {
-        form.addEventListener('submit', function (e) {
-          e.preventDefault();
-          var input = form.querySelector('input'); var v = input.value.trim();
-          if (!v) return;
-          var area = form.getAttribute('data-addarea');
-          /* niente stato per area: da quando la lista è ordinata per
-             importanza le aree non sono più cassetti da aprire */
-          LM.aggiungiBacklog(v, area); ridisegna();
-        });
-      });
-    }
-
     /* --- Da fare: prima le poche che contano, poi il resto --- */
     var areeVuoteAperte = false;
     /* Oltre questa soglia «Le altre» smette di essere una lista e diventa un
@@ -3229,13 +3296,63 @@
        quello che non si vede si dimentica. */
     var MURO = 8;
 
+    /* Quando farla, deciso nel momento in cui la scrivi: è lì che sai perché
+       ti è venuta in mente, e deciderlo dopo vuol dire tornarci sopra una
+       seconda volta. Non è obbligatorio: «Poi» è il predefinito e la lascia
+       tra le cose da fare senza data. */
+    function opzDaFare() {
+      var oggiK = LM.todayKey();
+      return '<span class="agg-eti">Quando?</span>' +
+        '<div class="agg-quando">' +
+        '<button type="button" class="q-chip" data-nuovoq="' + oggiK + '">Oggi</button>' +
+        '<button type="button" class="q-chip" data-nuovoq="' + LM.addDays(oggiK, 1) + '">Domani</button>' +
+        '<button type="button" class="q-chip on" data-nuovoq="">Poi, senza data</button>' +
+        '</div>' +
+        /* senza filtro attivo l'area predefinita è il contenitore generico, non
+           la prima dell'elenco: sceglierne una a caso mette le cose nel posto
+           sbagliato senza dirlo, e poi si ritrovano dove non ci si aspetta */
+        '<label class="agg-area"><span class="agg-eti">in</span>' + selectAree('agg-bk-area', attArea === 'tutte' ? 'altro' : attArea) + '</label>';
+    }
+
+    function wireAggiunta(box) {
+      wireRigaAggiunta(box, 'agg-bk', function (v, opz) {
+        var sel = opz.querySelector('[data-nuovoq].on');
+        var giorno = sel ? sel.getAttribute('data-nuovoq') : '';
+        var selArea = opz.querySelector('#agg-bk-area');
+        var nb = LM.aggiungiBacklog(v, selArea ? selArea.value : 'altro');
+        if (giorno) {
+          LM.backlogInOggi(nb.id, giorno);
+          toast('«' + v + '» messa ' + etichettaGiorno(giorno).toLowerCase() + '.', 0, 'calendar');
+        } else {
+          toast('«' + v + '» è tra le cose da fare.', 0, 'lista');
+        }
+        /* il «quando» torna al predefinito: la scelta valeva per quella cosa,
+           non per tutte quelle che scriverai dopo */
+        opz.querySelectorAll('[data-nuovoq]').forEach(function (c) { c.classList.toggle('on', !c.getAttribute('data-nuovoq')); });
+        aggiornaNav(); ridisegna();
+        var i = box.querySelector('#agg-bk .agg-testo');
+        if (i) i.focus({ preventScroll: true });
+      });
+      box.querySelectorAll('#agg-bk [data-nuovoq]').forEach(function (c) {
+        c.addEventListener('click', function () {
+          box.querySelectorAll('#agg-bk [data-nuovoq]').forEach(function (x) { x.classList.toggle('on', x === c); });
+        });
+      });
+    }
+
     function disegnaDaFare(box) {
       var perArea = LM.backlogPerArea();
       var totale = perArea.reduce(function (n, g) { return n + g.items.length; }, 0);
       if (!totale) {
-        box.innerHTML = '<div class="card"><div class="vuoto" style="padding:22px 8px">' + illoInbox() + '<b>Niente da fare, per ora.</b><br>Aggiungi qui sotto, oppure sistema ciò che hai buttato giù.</div>' +
-          '<form class="bk-add" data-addarea="altro" style="max-width:520px;margin:0 auto"><input type="text" placeholder="Aggiungi una cosa da fare…" aria-label="Aggiungi"><button class="btn btn-mini btn-primario" type="submit" aria-label="Aggiungi">' + ICO('plus', 13) + '</button></form></div>';
-        wireAdd(box); return;
+        /* Anche a lista vuota il campo sta in cima e ha le stesse opzioni: la
+           posizione e i comandi non cambiano da uno stato all'altro, così il
+           dito li impara una volta. Ed è proprio quando la lista è vuota che
+           si sta mettendo in piedi il piano. */
+        box.innerHTML = '<div class="card">' +
+          rigaAggiunta('agg-bk', 'Aggiungi una cosa da fare…', opzDaFare()) +
+          '<div class="vuoto" style="padding:18px 8px 6px">' + illoInbox() + '<b>Niente da fare, per ora.</b><br>Scrivi qui sopra, oppure sistema ciò che hai buttato giù.</div></div>';
+        wireAggiunta(box);
+        return;
       }
       /* Le aree vuote stanno dietro un solo tasto: una fila di pastiglie a
          zero è inchiostro che non porta informazione, e sul telefono si
@@ -3263,9 +3380,11 @@
       var cerca = (totale >= 10 || attQuery)
         ? '<div class="att-cerca">' + ICO('target', 14) + '<input type="text" id="att-q" placeholder="Cerca tra le cose da fare…" value="' + esc(attQuery) + '" aria-label="Cerca"></div>'
         : '';
-      box.innerHTML = '<div class="card">' + cerca +
+      box.innerHTML = '<div class="card">' +
+        rigaAggiunta('agg-bk', 'Aggiungi una cosa da fare…', opzDaFare()) + cerca +
         '<div class="att-chips">' + chips + '</div>' +
         '<div id="dafare-lista"></div></div>';
+      wireAggiunta(box);
       var q = box.querySelector('#att-q');
       if (q) q.addEventListener('input', function () { attQuery = q.value; renderLista(); });
       var bv = box.querySelector('#att-vuote');
@@ -3283,18 +3402,19 @@
         disegnaDaFare(box);
       });
       box.querySelectorAll('[data-chip]').forEach(function (b) {
-        b.addEventListener('click', function () { attArea = b.getAttribute('data-chip'); box.querySelectorAll('[data-chip]').forEach(function (x) { x.classList.toggle('on', x.getAttribute('data-chip') === attArea); }); renderLista(); });
+        b.addEventListener('click', function () {
+          attArea = b.getAttribute('data-chip');
+          box.querySelectorAll('[data-chip]').forEach(function (x) { x.classList.toggle('on', x.getAttribute('data-chip') === attArea); });
+          /* L'area scelta col filtro diventa anche quella del campo in cima:
+             se filtro «Studio» e poi scrivo qualcosa, va in Studio. Il campo
+             non viene ridisegnato quando cambia il filtro (per non far muovere
+             la pagina), quindi il valore glielo si passa a mano. */
+          var selArea = box.querySelector('#agg-bk-area');
+          if (selArea) selArea.value = attArea === 'tutte' ? 'altro' : attArea;
+          renderLista();
+        });
       });
       renderLista();
-
-      /* un solo campo per aggiungere, non uno per area: l'area la decide la
-         pastiglia già selezionata sopra */
-      function formAdd() {
-        var ar = attArea === 'tutte' ? null : areaById(attArea);
-        return '<form class="bk-add bk-add-solo" data-addarea="' + (ar ? ar.id : 'altro') + '">' +
-          '<input type="text" placeholder="' + (ar ? 'Aggiungi a «' + esc(ar.nome) + '»…' : 'Aggiungi una cosa da fare…') + '" aria-label="Aggiungi una cosa da fare">' +
-          '<button class="btn btn-mini" type="submit" aria-label="Aggiungi">' + ICO('plus', 13) + '</button></form>';
-      }
 
       function fascia(titolo, voci, cls) {
         if (!voci.length) return '';
@@ -3332,8 +3452,8 @@
            a un tocco, nelle pastiglie qui sopra. */
         var g = LM.backlogPerImportanza({ areaId: attArea, tetto: 3 });
         if (!g.totale) {
-          lista.innerHTML = '<div class="bk-vuoto">Niente in «' + esc(areaById(attArea).nome) + '». Aggiungi qui sotto.</div>' + formAdd();
-          wireAdd(lista); return;
+          lista.innerHTML = '<div class="bk-vuoto">Niente in «' + esc(areaById(attArea).nome) + '». Usa il campo qui sopra per aggiungerci qualcosa.</div>';
+          return;
         }
         var apertoParcheggio = !!backlogAperte.__parcheggio;
         lista.innerHTML =
@@ -3347,8 +3467,7 @@
               '<div class="bk-fascia-corpo"' + (apertoParcheggio ? '' : ' hidden') + '>' +
               g.parcheggio.map(function (x) { return bkItemHtml(x.b, { livello: 'parcheggio', motivo: x.i.motivo, da: x.i.da }); }).join('') +
               '</div></div>'
-            : '') +
-          formAdd();
+            : '');
 
         var bt = lista.querySelector('[data-tutte]');
         if (bt) bt.addEventListener('click', function () {
@@ -3376,7 +3495,7 @@
           var ch = bp.querySelector('.bk-chevron');
           if (ch) ch.classList.toggle('aperta', ap);
         });
-        wireBk(lista); wireAdd(lista);
+        wireBk(lista);
       }
     }
 
