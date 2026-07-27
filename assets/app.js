@@ -3214,7 +3214,9 @@
           var input = form.querySelector('input'); var v = input.value.trim();
           if (!v) return;
           var area = form.getAttribute('data-addarea');
-          LM.aggiungiBacklog(v, area); backlogAperte[area] = true; ridisegna();
+          /* niente stato per area: da quando la lista è ordinata per
+             importanza le aree non sono più cassetti da aprire */
+          LM.aggiungiBacklog(v, area); ridisegna();
         });
       });
     }
@@ -3245,12 +3247,15 @@
           '" style="--c-area:' + LM.coloreArea(g.area) + '">' + ICO(g.area.icona, 13) + ' ' + esc(g.area.nome) +
           (vuota ? '' : ' <span>' + g.items.length + '</span>') + '</button>';
       }
-      var mostraVuote = areeVuoteAperte || vuote0.some(function (g) { return g.area.id === attArea; });
+      /* anche questo va in due direzioni: aperto, mostra come richiuderlo */
+      var vuotaSelezionata = vuote0.some(function (g) { return g.area.id === attArea; });
+      var mostraVuote = areeVuoteAperte || vuotaSelezionata;
       var chips = '<button class="att-chip' + (attArea === 'tutte' ? ' on' : '') + '" data-chip="tutte">Tutte <span>' + totale + '</span></button>' +
         conRoba0.map(function (g) { return chipArea(g, false); }).join('') +
         (vuote0.length
           ? (mostraVuote
-            ? vuote0.map(function (g) { return chipArea(g, true); }).join('')
+            ? vuote0.map(function (g) { return chipArea(g, true); }).join('') +
+              '<button class="att-chip vuota att-chip-chiudi" id="att-vuote-chiudi" title="Nascondi le aree senza niente dentro">' + ICO('x', 11) + ' Nascondi le vuote</button>'
             : '<button class="att-chip vuota" id="att-vuote">' + ICO('plus', 12) + ' ' + vuote0.length + (vuote0.length === 1 ? ' area vuota' : ' aree vuote') + '</button>')
           : '');
       /* La ricerca compare quando serve davvero cercare: con nove voci si
@@ -3265,6 +3270,18 @@
       if (q) q.addEventListener('input', function () { attQuery = q.value; renderLista(); });
       var bv = box.querySelector('#att-vuote');
       if (bv) bv.addEventListener('click', function () { areeVuoteAperte = true; disegnaDaFare(box); });
+      var bvc = box.querySelector('#att-vuote-chiudi');
+      if (bvc) bvc.addEventListener('click', function () {
+        areeVuoteAperte = false;
+        /* Il filtro si legge ADESSO, non da com'era quando la pastiglia è
+           stata disegnata: scegliere un'area rifà solo la lista, non le
+           pastiglie, quindi un valore catturato prima sarebbe vecchio.
+           Se il filtro attivo è un'area vuota, nasconderla lascerebbe la
+           lista appesa a una pastiglia che non si vede più: si torna a
+           «Tutte». */
+        if (vuote0.some(function (g) { return g.area.id === attArea; })) attArea = 'tutte';
+        disegnaDaFare(box);
+      });
       box.querySelectorAll('[data-chip]').forEach(function (b) {
         b.addEventListener('click', function () { attArea = b.getAttribute('data-chip'); box.querySelectorAll('[data-chip]').forEach(function (x) { x.classList.toggle('on', x.getAttribute('data-chip') === attArea); }); renderLista(); });
       });
@@ -3281,13 +3298,19 @@
 
       function fascia(titolo, voci, cls) {
         if (!voci.length) return '';
-        var taglia = cls === 'poi' && voci.length > MURO && !backlogAperte.__tutte;
+        /* Il tasto è un interruttore, non una porta a senso unico: una volta
+           aperta la lista si deve poterla richiudere. Sta sempre lì, cambia
+           solo cosa dice. */
+        var lunga = cls === 'poi' && voci.length > MURO;
+        var tutte = !!backlogAperte.__tutte;
+        var taglia = lunga && !tutte;
         var mostrate = taglia ? voci.slice(0, MURO) : voci;
         return '<div class="bk-fascia ' + cls + '">' +
           '<div class="bk-fascia-testa"><span class="bk-fascia-tit">' + titolo + '</span>' +
           (voci.length > 1 ? '<span class="bk-fascia-n">' + voci.length + '</span>' : '') + '</div>' +
           mostrate.map(function (x) { return bkItemHtml(x.b, { livello: cls, motivo: x.i.motivo, da: x.i.da }); }).join('') +
-          (taglia ? '<button class="bk-altre" data-tutte="1">' + ICO('chevronGiu', 14) + ' Mostra le altre ' + (voci.length - MURO) + '</button>' : '') +
+          (lunga ? '<button class="bk-altre' + (tutte ? ' aperto' : '') + '" data-tutte="1" aria-expanded="' + tutte + '">' +
+            ICO('chevronGiu', 14) + (taglia ? ' Mostra le altre ' + (voci.length - MURO) : ' Mostra solo le prime ' + MURO) + '</button>' : '') +
           '</div>';
       }
 
@@ -3328,7 +3351,20 @@
           formAdd();
 
         var bt = lista.querySelector('[data-tutte]');
-        if (bt) bt.addEventListener('click', function () { backlogAperte.__tutte = true; renderLista(); });
+        if (bt) bt.addEventListener('click', function () {
+          /* Richiudendo, le righe che spariscono stanno SOPRA il tasto: senza
+             correzione la pagina si accorcia e il tasto scappa da sotto il
+             dito. Teniamo il punto in cui si è cliccato dove era. */
+          var primaY = bt.getBoundingClientRect().top;
+          backlogAperte.__tutte = !backlogAperte.__tutte;
+          renderLista();
+          var nuovo = lista.querySelector('[data-tutte]');
+          if (nuovo) {
+            var delta = nuovo.getBoundingClientRect().top - primaY;
+            if (delta) window.scrollBy(0, delta);
+            nuovo.focus({ preventScroll: true });
+          }
+        });
         /* aprire il parcheggio mostra solo quel pezzo: il resto non si muove */
         var bp = lista.querySelector('[data-parcheggio]');
         if (bp) bp.addEventListener('click', function () {

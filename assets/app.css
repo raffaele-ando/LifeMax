@@ -1450,6 +1450,10 @@ body.sfondo-fermo { position: fixed; left: 0; right: 0; width: 100%; overflow: h
 .bk-pin { display: inline-flex; color: var(--avviso); }
 .bk-altre { display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; margin-top: 2px; padding: 9px; font-size: 12.5px; font-weight: 650; color: var(--inchiostro-2); background: none; border: 1px dashed var(--bordo-forte); border-radius: var(--raggio-s); cursor: pointer; }
 .bk-altre:hover { color: var(--inchiostro-1); border-color: var(--inchiostro-muto); }
+/* la freccia si gira: si vede che è un interruttore, non un punto di non ritorno */
+.bk-altre .ico { transition: transform var(--t-media); }
+.bk-altre.aperto .ico { transform: rotate(180deg); }
+@media (pointer: coarse) { .bk-altre { min-height: 44px; } }
 /* griglia a due colonne: il testo si stringe, i pulsanti restano sempre in
    linea (prima un titolo lungo li spediva a capo) */
 .bk-item-riga { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px; }
@@ -1561,6 +1565,9 @@ body.sfondo-fermo { position: fixed; left: 0; right: 0; width: 100%; overflow: h
 .att-chip.on { background: color-mix(in srgb, var(--c-area, var(--accento)) 14%, transparent); border-color: color-mix(in srgb, var(--c-area, var(--accento)) 50%, transparent); color: var(--c-area, var(--accento-testo)); }
 .att-chip.vuota { opacity: .72; font-weight: 600; }
 .att-chip.vuota:hover { opacity: 1; }
+/* il ritorno indietro: si legge come un comando, non come un'altra area */
+.att-chip-chiudi { border-style: dashed; color: var(--inchiostro-muto); }
+.att-chip-chiudi:hover { border-style: solid; color: var(--inchiostro-1); }
 @media (max-width: 700px) {
   /* i chip scorrono in una riga sola invece di impilarsi su quattro */
   .att-chips { flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden; padding-bottom: 4px; scrollbar-width: none; }
