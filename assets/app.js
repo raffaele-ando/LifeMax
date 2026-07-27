@@ -293,7 +293,10 @@
     { id: 'rituali',     nome: 'Rituali',     icona: 'sun',       gruppo: 'primaria',   livello: 'quotidiana' },
     { id: 'plancia',     nome: 'Panoramica',  icona: 'dashboard', gruppo: 'primaria',   livello: 'quotidiana' },
     { id: 'esperimenti', nome: 'Esperimenti', icona: 'flask',     gruppo: 'secondaria', livello: 'extra' },
-    { id: 'scienza',     nome: 'Perché funziona', icona: 'atom',  gruppo: 'secondaria', livello: 'extra' }
+    { id: 'scienza',     nome: 'Perché funziona', icona: 'atom',  gruppo: 'secondaria', livello: 'extra' },
+    /* stanza a parte: dieci vestiti per gli stessi elementi, da confrontare
+       per scegliere la base grafica di tutto il sito */
+    { id: 'lab',         nome: 'Design lab',  icona: 'palette',   gruppo: 'secondaria', livello: 'extra' }
   ];
   /* le 4 destinazioni quotidiane nella tab bar mobile; le altre primarie
      (es. Giornata) e le secondarie stanno nel menu "Altro" */
@@ -3731,6 +3734,38 @@
     }
   ];
 
+  /* ============================================================
+     VISTA: DESIGN LAB — dieci vestiti per gli stessi elementi
+     ============================================================
+     Il foglio di stile del laboratorio si carica SOLO qui, la prima
+     volta che si apre la pagina: le altre pagine non lo scaricano
+     nemmeno. E ogni sua regola è annidata sotto #lab-demo o
+     #lab-scelta, quindi anche restando in memoria non può toccare
+     niente fuori da questa stanza. */
+
+  var labCssChiesto = false;
+  function caricaCssLab() {
+    if (labCssChiesto) return;
+    labCssChiesto = true;
+    var l = document.createElement('link');
+    l.rel = 'stylesheet';
+    l.href = 'assets/lab.css';
+    l.id = 'lab-css';
+    document.head.appendChild(l);
+  }
+
+  function vistaLab() {
+    caricaCssLab();
+    $vista.innerHTML = topbar('Design lab', 'Dieci direzioni grafiche sugli stessi elementi. Scegli quella che diventerà la base del sito.') +
+      '<div id="lab-radice"></div>';
+    var radice = document.getElementById('lab-radice');
+    if (!window.LM_LAB) {
+      radice.innerHTML = '<div class="card vuoto">Il laboratorio non si è caricato. Ricarica la pagina.</div>';
+      return;
+    }
+    window.LM_LAB.montaIn(radice);
+  }
+
   function vistaScienza() {
     var html = topbar('Perché l’app è fatta così', 'Ogni funzione nasce da una ricerca. Qui trovi quale, con le fonti.') +
       '<div class="card"><div class="sotto" style="margin:0">Le etichette dicono quanto è solida ogni prova: <span class="evidenza evidenza-alta">evidenza alta</span> significa meta-analisi o studi clinici controllati; <span class="evidenza evidenza-media">media</span> significa studi solidi ma non conclusivi; <span class="evidenza evidenza-euristica">euristica</span> significa pratica clinica ragionevole, non ancora dimostrata. In ogni caso la verifica finale spetta a te: la sezione Esperimenti serve proprio a controllare cosa funziona <b>nel tuo caso</b>.</div></div>' +
@@ -3889,6 +3924,7 @@
     else if (v === 'inbox') vistaInbox();
     else if (v === 'esperimenti') vistaEsperimenti();
     else if (v === 'scienza') vistaScienza();
+    else if (v === 'lab') vistaLab();
     $vista.classList.toggle('vista-oggi', v === 'oggi');
     vistaMostrata = v;
     if (cambioPagina) { animaIngresso($vista); window.scrollTo(0, 0); }
