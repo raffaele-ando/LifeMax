@@ -3756,7 +3756,7 @@
 
   function vistaLab() {
     caricaCssLab();
-    $vista.innerHTML = topbar('Design lab', 'Dieci direzioni grafiche sugli stessi elementi. Scegli quella che diventerà la base del sito.') +
+    $vista.innerHTML = topbar('Design lab', 'Scegli la base grafica del sito.') +
       '<div id="lab-radice"></div>';
     var radice = document.getElementById('lab-radice');
     if (!window.LM_LAB) {
