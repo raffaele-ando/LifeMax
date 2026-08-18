@@ -109,7 +109,7 @@
         '</aside>' +
         '<div class="s1-corpo">' +
           '<header class="s1-testa">' +
-            '<div><h1>Oggi</h1><p>' + C.giorno + ' · ' + C.ora + '</p></div>' +
+            '<div><h2 class="lab-h">Oggi</h2><p>' + C.giorno + ' · ' + C.ora + '</p></div>' +
             '<button class="s1-btn">' + I('plus', 15) + 'Aggiungi</button>' +
           '</header>' +
           '<section class="s1-adesso">' +
@@ -162,7 +162,7 @@
         '</aside>' +
         '<div class="s1-corpo">' +
           '<header class="s1-testa">' +
-            '<div><h1>Attività</h1><p>' + C.totaleDaFare + ' cose da fare</p></div>' +
+            '<div><h2 class="lab-h">Attività</h2><p>' + C.totaleDaFare + ' cose da fare</p></div>' +
           '</header>' +
           '<form class="s1-agg"><input type="text" placeholder="Aggiungi una cosa da fare">' +
             '<button class="s1-btn s1-pieno" type="submit">' + I('plus', 15) + 'Aggiungi</button></form>' +
@@ -215,7 +215,7 @@
             (p.badge ? '<em>' + p.badge + '</em>' : '') + '</a>';
         }).join('') + '</aside>' +
         '<div class="c2-corpo">' +
-          '<header class="c2-testa"><h1>Oggi</h1>' +
+          '<header class="c2-testa"><h2 class="lab-h">Oggi</h2>' +
             '<span class="c2-data">' + C.giorno + '</span>' +
             '<span class="c2-avanz">' + C.fatte + '/' + C.totali + '<i><b style="width:' + perc() + '%"></b></i></span>' +
             '<button class="c2-btn c2-pieno">' + I('plus', 14) + 'Aggiungi</button>' +
@@ -265,7 +265,7 @@
             (p.badge ? '<em>' + p.badge + '</em>' : '') + '</a>';
         }).join('') + '</aside>' +
         '<div class="c2-corpo">' +
-          '<header class="c2-testa"><h1>Attività</h1><span class="c2-data">' + C.totaleDaFare + ' da fare</span></header>' +
+          '<header class="c2-testa"><h2 class="lab-h">Attività</h2><span class="c2-data">' + C.totaleDaFare + ' da fare</span></header>' +
           '<form class="c2-agg"><input type="text" placeholder="Aggiungi una cosa da fare">' +
             '<button class="c2-btn c2-pieno" type="submit">' + I('plus', 14) + 'Aggiungi</button></form>' +
           '<div class="c2-chip">' + ['Tutte'].concat(C.aree).map(function (a, i) {
@@ -294,7 +294,7 @@
     oggi: function () {
       return '<div class="m3">' +
         '<div class="m3-scorri">' +
-          '<header class="m3-testa"><p>' + C.giorno + '</p><h1>Oggi</h1></header>' +
+          '<header class="m3-testa"><p>' + C.giorno + '</p><h2 class="lab-h">Oggi</h2></header>' +
           '<section class="m3-ades">' +
             '<span class="m3-eti">Adesso</span>' +
             '<h2>' + esc(C.mit) + '</h2>' +
@@ -328,7 +328,7 @@
     attivita: function () {
       return '<div class="m3">' +
         '<div class="m3-scorri">' +
-          '<header class="m3-testa"><p>' + C.totaleDaFare + ' cose da fare</p><h1>Attività</h1></header>' +
+          '<header class="m3-testa"><p>' + C.totaleDaFare + ' cose da fare</p><h2 class="lab-h">Attività</h2></header>' +
           '<form class="m3-agg"><input type="text" placeholder="Aggiungi una cosa da fare">' +
             '<button class="m3-tondo" type="submit" aria-label="Aggiungi">' + I('plus', 20) + '</button></form>' +
           '<div class="m3-chip">' + ['Tutte'].concat(C.aree).map(function (a, i) {
@@ -375,7 +375,7 @@
           '<button class="n4-btn n4-pieno">' + I('plus', 14) + 'Aggiungi</button>' +
         '</div>' +
         '<div class="n4-corpo">' +
-          '<div class="n4-testa"><h1>Oggi</h1><span>' + C.giorno + ' · ' + C.ora + '</span></div>' +
+          '<div class="n4-testa"><h2 class="lab-h">Oggi</h2><span>' + C.giorno + ' · ' + C.ora + '</span></div>' +
           '<section class="n4-ades">' +
             '<div class="n4-adestesto">' +
               '<span class="n4-eti">Adesso</span>' +
@@ -428,7 +428,7 @@
           }).join('') + '</nav>' +
         '</div>' +
         '<div class="n4-corpo">' +
-          '<div class="n4-testa"><h1>Attività</h1><span>' + C.totaleDaFare + ' cose da fare</span></div>' +
+          '<div class="n4-testa"><h2 class="lab-h">Attività</h2><span>' + C.totaleDaFare + ' cose da fare</span></div>' +
           '<form class="n4-agg"><input type="text" placeholder="Aggiungi una cosa da fare">' +
             '<button class="n4-btn n4-pieno" type="submit">' + I('plus', 14) + 'Aggiungi</button></form>' +
           '<div class="n4-chip">' + ['Tutte'].concat(C.aree).map(function (a, i) {
@@ -464,7 +464,7 @@
         '</div>' +
         '<div class="d5-due">' +
           '<section class="d5-col">' +
-            '<h1 class="d5-h">Oggi <span>' + C.giorno + '</span></h1>' +
+            '<h2 class="lab-h d5-h">Oggi <span>' + C.giorno + '</span></h2>' +
             '<div class="d5-ades">' +
               '<span class="d5-eti">Adesso · ' + C.mitTra + '</span>' +
               '<h2>' + esc(C.mit) + '</h2>' +
@@ -509,7 +509,7 @@
         '</div>' +
         '<div class="d5-due d5-rovescio">' +
           '<section class="d5-col">' +
-            '<h1 class="d5-h">Attività <span>' + C.totaleDaFare + ' da fare</span></h1>' +
+            '<h2 class="lab-h d5-h">Attività <span>' + C.totaleDaFare + ' da fare</span></h2>' +
             '<form class="d5-agg d5-aggl"><input type="text" placeholder="Aggiungi una cosa da fare">' +
               '<button class="d5-btn d5-pieno" type="submit">' + I('plus', 14) + 'Aggiungi</button></form>' +
             '<div class="d5-chip">' + ['Tutte'].concat(C.aree).map(function (a, i) {
@@ -569,7 +569,7 @@
         '<header class="t6-fascia">' +
           '<div class="t6-riga1"><span>' + C.giorno + '</span>' +
             '<button class="t6-ico" aria-label="Impostazioni">' + I('dots', 18) + '</button></div>' +
-          '<h1>Oggi</h1>' +
+          '<h2 class="lab-h">Oggi</h2>' +
           '<div class="t6-ades">' +
             '<span class="t6-eti">Adesso · ' + C.mitTra + '</span>' +
             '<b>' + esc(C.mit) + '</b>' +
@@ -602,7 +602,7 @@
         '<header class="t6-fascia t6-corta">' +
           '<div class="t6-riga1"><span>' + C.totaleDaFare + ' cose da fare</span>' +
             '<button class="t6-ico" aria-label="Impostazioni">' + I('dots', 18) + '</button></div>' +
-          '<h1>Attività</h1>' +
+          '<h2 class="lab-h">Attività</h2>' +
           '<form class="t6-agg"><input type="text" placeholder="Aggiungi una cosa da fare">' +
             '<button class="t6-btn t6-chiaro" type="submit">' + I('plus', 15) + 'Aggiungi</button></form>' +
         '</header>' +
@@ -650,7 +650,7 @@
           }).join('') +
         '</aside>' +
         '<div class="k7-corpo">' +
-          '<header class="k7-testa"><div><h1>Oggi</h1><p>' + C.giorno + ' · ' + C.ora + '</p></div>' +
+          '<header class="k7-testa"><div><h2 class="lab-h">Oggi</h2><p>' + C.giorno + ' · ' + C.ora + '</p></div>' +
             '<button class="k7-btn k7-pieno">' + I('plus', 15) + 'Aggiungi</button></header>' +
           '<section class="k7-ades">' +
             '<span class="k7-eti">' + I('bolt', 13) + 'Adesso · ' + C.mitTra + '</span>' +
@@ -700,7 +700,7 @@
           }).join('') +
         '</aside>' +
         '<div class="k7-corpo">' +
-          '<header class="k7-testa"><div><h1>Attività</h1><p>' + C.totaleDaFare + ' cose da fare</p></div></header>' +
+          '<header class="k7-testa"><div><h2 class="lab-h">Attività</h2><p>' + C.totaleDaFare + ' cose da fare</p></div></header>' +
           '<form class="k7-agg"><input type="text" placeholder="Aggiungi una cosa da fare">' +
             '<button class="k7-btn k7-pieno" type="submit">' + I('plus', 15) + 'Aggiungi</button></form>' +
           '<div class="k7-chip">' + ['Tutte'].concat(C.aree).map(function (a, i) {
@@ -727,7 +727,7 @@
     oggi: function () {
       return '<div class="g8">' +
         '<div class="g8-scorri">' +
-          '<header class="g8-testa"><span>' + C.giorno + '</span><h1>Oggi</h1>' +
+          '<header class="g8-testa"><span>' + C.giorno + '</span><h2 class="lab-h">Oggi</h2>' +
             '<div class="g8-avanz"><i><b style="width:' + perc() + '%"></b></i><span>' + C.fatte + ' di ' + C.totali + '</span></div>' +
           '</header>' +
           '<section class="g8-ades">' +
@@ -757,7 +757,7 @@
     attivita: function () {
       return '<div class="g8">' +
         '<div class="g8-scorri">' +
-          '<header class="g8-testa"><span>' + C.totaleDaFare + ' cose da fare</span><h1>Attività</h1></header>' +
+          '<header class="g8-testa"><span>' + C.totaleDaFare + ' cose da fare</span><h2 class="lab-h">Attività</h2></header>' +
           '<form class="g8-agg"><input type="text" placeholder="Cosa devi fare?">' +
             '<button class="g8-mega g8-corto" type="submit">' + I('plus', 20) + 'Aggiungi</button></form>' +
           '<h2 class="g8-sez">Importanti</h2>' +
@@ -801,7 +801,7 @@
             return '<a class="' + (p.id === 'oggi' ? 'qui' : '') + '">' + p.nome + '</a>';
           }).join('') + '</nav>' +
           '<button class="a9-btn a9-pieno">' + I('plus', 14) + 'Aggiungi</button></div>' +
-        '<div class="a9-testa"><h1>Oggi</h1><span>' + C.giorno + ' · ' + C.ora + '</span>' +
+        '<div class="a9-testa"><h2 class="lab-h">Oggi</h2><span>' + C.giorno + ' · ' + C.ora + '</span>' +
           '<span class="a9-conta">' + C.fatte + ' di ' + C.totali + ' fatte</span></div>' +
         '<div class="a9-ades">' +
           '<span class="a9-eti">Adesso · ' + C.mitTra + '</span>' +
@@ -848,7 +848,7 @@
           '<nav>' + C.pagine.map(function (p) {
             return '<a class="' + (p.id === 'attivita' ? 'qui' : '') + '">' + p.nome + '</a>';
           }).join('') + '</nav></div>' +
-        '<div class="a9-testa"><h1>Attività</h1><span>' + C.totaleDaFare + ' cose da fare</span></div>' +
+        '<div class="a9-testa"><h2 class="lab-h">Attività</h2><span>' + C.totaleDaFare + ' cose da fare</span></div>' +
         '<div class="a9-senza a9-pieno-largo">' +
           '<form class="a9-agg"><input type="text" placeholder="Aggiungi una cosa da fare">' +
             '<button class="a9-btn a9-pieno" type="submit">' + I('plus', 14) + 'Aggiungi</button></form>' +
@@ -883,7 +883,7 @@
           '</header>' +
           '<section class="p10-carta">' +
             '<span class="p10-eti">Da fare adesso · ' + C.mitTra + '</span>' +
-            '<h1>' + esc(C.mit) + '</h1>' +
+            '<h2 class="lab-h">' + esc(C.mit) + '</h2>' +
             '<p class="p10-quando">' + C.mitOra + ' · ' + C.mitArea + '</p>' +
             '<button class="p10-primo">' + I('check', 18) + 'Fatto</button>' +
             '<div class="p10-due"><button class="p10-btn">Rinvia</button><button class="p10-btn">Cambia</button></div>' +
@@ -918,7 +918,7 @@
           '</header>' +
           '<section class="p10-carta">' +
             '<span class="p10-eti">La più urgente</span>' +
-            '<h1>' + esc(C.prima[0].t) + '</h1>' +
+            '<h2 class="lab-h">' + esc(C.prima[0].t) + '</h2>' +
             '<p class="p10-quando p10-rosso">' + C.prima[0].quando + ' · ' + C.prima[0].area + '</p>' +
             '<button class="p10-primo">' + I('check', 18) + 'Fatta</button>' +
             '<div class="p10-due"><button class="p10-btn">Mettila oggi</button><button class="p10-btn">Sposta</button></div>' +

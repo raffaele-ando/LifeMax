@@ -149,15 +149,100 @@
     LM.save(); render();
   }
   function caricaDemo() {
-    if (confirm('Vuoi sostituire i dati attuali con 8 settimane di dati di esempio?')) {
+    avviso({
+      titolo: 'Sostituire i dati con quelli di esempio?',
+      testo: 'Al posto dei tuoi dati vengono caricate otto settimane di esempio. Quelli di adesso restano in un backup, che trovi nelle impostazioni.',
+      azione: 'Carica l’esempio'
+    }, function () {
       LM.seedDemo(); applicaTema(); chiudiSheet(); render();
       toast('Dati di esempio caricati.', 0, 'refresh');
-    }
+    });
   }
   function azzeraTutto() {
-    if (confirm('Vuoi cancellare tutti i dati e ripartire da zero? I dati sono salvati solo su questo browser.')) {
+    avviso({
+      titolo: 'Cancellare tutti i dati?',
+      testo: 'Riparti da zero. I dati stanno soltanto su questo browser: una volta cancellati non tornano indietro.',
+      azione: 'Cancella tutto', pericolo: true
+    }, function () {
       LM.reset(); chiudiSheet(); location.hash = '#/oggi'; render();
+    });
+  }
+
+  /* ---------- campi di testo ----------
+     Su un telefono la tastiera cambia a seconda di cosa le si dice: il
+     tasto Invio diventa «fine» invece di «vai a capo», la prima lettera si
+     scrive maiuscola, il correttore si accende. Sono attributi, non
+     comportamenti: metterli a mano su ogni campo significa dimenticarne
+     metà, quindi li mette una volta sola chi guarda il DOM. */
+  function preparaCampi(radice) {
+    if (!radice || !radice.querySelectorAll) return;
+    var campi = [].slice.call(radice.querySelectorAll('input[type="text"], input:not([type]), textarea'));
+    if (radice.matches && radice.matches('input, textarea')) campi.push(radice);
+    campi.forEach(function (c) {
+      var area = c.tagName === 'TEXTAREA';
+      if (!c.hasAttribute('enterkeyhint')) c.setAttribute('enterkeyhint', area ? 'enter' : 'done');
+      if (!c.hasAttribute('autocapitalize')) c.setAttribute('autocapitalize', 'sentences');
+      if (!c.hasAttribute('autocorrect')) c.setAttribute('autocorrect', 'on');
+    });
+  }
+  if (window.MutationObserver) {
+    var osservatore = new MutationObserver(function (mut) {
+      mut.forEach(function (m) {
+        [].slice.call(m.addedNodes).forEach(function (n) { if (n.nodeType === 1) preparaCampi(n); });
+      });
+    });
+    ['vista', 'sheet-corpo', 'onboarding-root'].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el) osservatore.observe(el, { childList: true, subtree: true });
+    });
+  }
+
+  /* ---------- avvisi ----------
+     Le domande importanti le fa l'app, non il browser. Un confirm() di
+     sistema arriva senza titolo, con i pulsanti «OK/Annulla» che non dicono
+     cosa stanno per fare, e su iPhone si presenta come un avviso del sito.
+     Le linee guida Apple (Alerts) chiedono l'opposto: un titolo che è la
+     domanda, una riga che spiega la conseguenza, e pulsanti che nominano
+     l'azione — con quella distruttiva in rosso. */
+  var avvisoAperto = null;
+
+  function avviso(opz, onSi) {
+    if (avvisoAperto) return;
+    var ovl = document.createElement('div');
+    ovl.className = 'avviso-ovl';
+    ovl.innerHTML = '<div class="avviso" role="alertdialog" aria-modal="true" aria-labelledby="avv-tit"' +
+      (opz.testo ? ' aria-describedby="avv-txt"' : '') + ' tabindex="-1">' +
+      '<h2 id="avv-tit">' + esc(opz.titolo) + '</h2>' +
+      (opz.testo ? '<p id="avv-txt">' + esc(opz.testo) + '</p>' : '') +
+      '<div class="avviso-azioni">' +
+      '<button class="btn btn-grande avv-no">' + esc(opz.annulla || 'Annulla') + '</button>' +
+      '<button class="btn btn-grande ' + (opz.pericolo ? 'btn-pericolo' : 'btn-primario') + ' avv-si">' + esc(opz.azione || 'Continua') + '</button>' +
+      '</div></div>';
+    document.body.appendChild(ovl);
+    avvisoAperto = ovl;
+    var pannello = ovl.querySelector('.avviso');
+    /* se l'avviso arriva sopra un pannello, anche quello diventa inerte */
+    var sottostante = $sheet.hidden ? null : $sheet;
+    if (sottostante) sottostante.setAttribute('inert', '');
+    bloccaSfondo(true);
+    entraFuoco(pannello);
+    function chiudi() {
+      if (!avvisoAperto) return;
+      avvisoAperto = null;
+      ovl.remove();
+      if (sottostante) sottostante.removeAttribute('inert');
+      bloccaSfondo(false);
+      esceFuoco();
     }
+    ovl.querySelector('.avv-no').addEventListener('click', chiudi);
+    ovl.querySelector('.avv-si').addEventListener('click', function () { chiudi(); onSi(); });
+    /* fuori dall'avviso e Esc = annulla: la via d'uscita non deve mai mancare */
+    ovl.addEventListener('click', function (e) { if (e.target === ovl) chiudi(); });
+    ovl.addEventListener('keydown', function (e) { if (e.key === 'Escape') { e.stopPropagation(); chiudi(); } });
+    document.addEventListener('keydown', function esc(e) {
+      if (e.key === 'Escape' && avvisoAperto === ovl) { chiudi(); document.removeEventListener('keydown', esc); }
+      if (!avvisoAperto) document.removeEventListener('keydown', esc);
+    });
   }
 
   /* ---------- toast ---------- */
@@ -194,9 +279,9 @@
     $ovl.hidden = false;
     bloccaSfondo(true);
     $inp.value = '';
-    setTimeout(function () { $inp.focus(); }, 30);
+    entraFuoco($ovl.querySelector('.pannello-cattura'), true);
   }
-  function chiudiCattura() { $ovl.hidden = true; bloccaSfondo(false); }
+  function chiudiCattura() { $ovl.hidden = true; bloccaSfondo(false); esceFuoco(); }
 
   document.getElementById('fab-cattura').innerHTML = ICO('plus', 25);
   document.getElementById('fab-cattura').addEventListener('click', apriCattura);
@@ -247,6 +332,73 @@
     el.__timerAnim = setTimeout(function () { el.classList.remove('vista-enter'); }, 900);
   }
 
+  /* ---------- modalità ----------
+     Un pannello modale, secondo le linee guida Apple, prende davvero il
+     controllo: quello che c'è sotto non si tocca e non si raggiunge, il
+     fuoco entra dentro, il tasto Tab gira in tondo lì dentro, e quando si
+     chiude il fuoco torna esattamente da dove era partito. Prima il fuoco
+     restava fuori: con la tastiera si continuava a girare per la pagina
+     dietro senza vedere dove si era, e chi usa un lettore di schermo
+     leggeva il contenuto coperto. */
+  /* i pannelli si possono impilare (un avviso sopra un pannello): si tiene
+     la pila, così l'ultimo che si chiude restituisce il fuoco a quello sotto
+     e lo sfondo torna vivo solo quando non c'è più niente sopra. */
+  var pilaModali = [];
+
+  function focalizzabili(radice) {
+    return [].slice.call(radice.querySelectorAll(
+      'a[href], button:not([disabled]), input:not([disabled]):not([type=hidden]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+    )).filter(function (e) { var r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0; });
+  }
+
+  /* il resto dell'app diventa inerte: niente clic, niente Tab, niente voce */
+  function isolaSfondo(attiva) {
+    ['.app', '.tabbar', '.fab', '#banda-demo'].forEach(function (sel) {
+      document.querySelectorAll(sel).forEach(function (el) {
+        if (attiva) { el.setAttribute('inert', ''); el.setAttribute('aria-hidden', 'true'); }
+        else { el.removeAttribute('inert'); el.removeAttribute('aria-hidden'); }
+      });
+    });
+  }
+
+  function entraFuoco(pannello, suCampo) {
+    pilaModali.push({ pannello: pannello, prima: document.activeElement });
+    isolaSfondo(true);
+    setTimeout(function () {
+      /* il fuoco va sul pannello, non sul primo campo: mettere a fuoco un
+         campo apre la tastiera del telefono anche quando il pannello serve
+         solo per leggere. Fa eccezione la cattura, che esiste per scrivere. */
+      var campo = suCampo ? focalizzabili(pannello).filter(function (e) {
+        return /input|textarea/i.test(e.tagName) && e.type !== 'button';
+      })[0] : null;
+      (campo || pannello).focus();
+    }, 30);
+  }
+  function esceFuoco() {
+    var uscito = pilaModali.pop();
+    if (!pilaModali.length) isolaSfondo(false);
+    if (!uscito) return;
+    /* si torna dove si era. Se quel pulsante nel frattempo è stato
+       ridisegnato, il fuoco va sul contenuto della pagina: mai sul nulla,
+       o col Tab si ricomincia dall'inizio del documento. */
+    var valido = uscito.prima && uscito.prima !== document.body && document.contains(uscito.prima);
+    var dove = valido ? uscito.prima : $vista;
+    if (dove) { try { dove.focus({ preventScroll: true }); } catch (e) { void e; } }
+  }
+  /* Tab gira dentro il pannello aperto invece di uscirne */
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Tab') return;
+    var pannello = avvisoAperto ? avvisoAperto.querySelector('.avviso')
+      : (!$sheet.hidden ? $sheetPanel : (!$ovl.hidden ? $ovl.querySelector('.pannello-cattura') : null));
+    if (!pannello) return;
+    var f = focalizzabili(pannello);
+    if (!f.length) { e.preventDefault(); pannello.focus(); return; }
+    var primo = f[0], ultimo = f[f.length - 1];
+    if (!pannello.contains(document.activeElement)) { e.preventDefault(); (e.shiftKey ? ultimo : primo).focus(); return; }
+    if (e.shiftKey && document.activeElement === primo) { e.preventDefault(); ultimo.focus(); }
+    else if (!e.shiftKey && document.activeElement === ultimo) { e.preventDefault(); primo.focus(); }
+  });
+
   function apriSheet(titolo, html, onWire, largo) {
     document.getElementById('sheet-titolo').textContent = titolo;
     document.getElementById('sheet-corpo').innerHTML = html;
@@ -255,11 +407,13 @@
     bloccaSfondo(true);
     wireSheet = onWire || null;
     if (wireSheet) wireSheet(document.getElementById('sheet-corpo'));
+    entraFuoco($sheetPanel);
   }
   function chiudiSheet() {
     $sheet.hidden = true; wireSheet = null;
     if ($sheetPanel) $sheetPanel.classList.remove('sheet-largo');
     bloccaSfondo(false);
+    esceFuoco();
   }
 
   /* Con un pannello aperto la pagina sotto deve stare FERMA: prima si poteva
@@ -268,7 +422,8 @@
      posizione, e lo restituiamo alla chiusura. */
   var scrollCongelato = 0;
   function bloccaSfondo(attiva) {
-    var altro = document.querySelector('.overlay:not([hidden])');
+    /* c'è ancora qualcosa sopra? allora lo sfondo resta fermo */
+    var altro = document.querySelector('.overlay:not([hidden]), .sheet-overlay:not([hidden]), .avviso-ovl');
     if (attiva) {
       if (document.body.classList.contains('sfondo-fermo')) return;
       scrollCongelato = window.scrollY || document.documentElement.scrollTop || 0;
@@ -601,10 +756,14 @@
       r.querySelectorAll('[data-ts]').forEach(function (btn) {
         btn.addEventListener('click', function () {
           var ts = +btn.getAttribute('data-ts');
-          if (confirm('Ripristinare questo backup? Lo stato attuale verrà salvato come backup.')) {
+          avviso({
+            titolo: 'Ripristinare questo backup?',
+            testo: 'I dati di adesso non vanno persi: prima di ripristinare vengono salvati come nuovo backup.',
+            azione: 'Ripristina'
+          }, function () {
             LM.restoreBackup(ts); chiudiSheet(); applicaTema(); render();
             toast('Backup ripristinato.', 0, 'save');
-          }
+          });
         });
       });
     });
@@ -768,7 +927,13 @@
           b.addEventListener('click', function () { var id = b.getAttribute('data-toggle-area'); var attiva = LM.load().areeAttive.indexOf(id) >= 0; LM.toggleArea(id, !attiva); render(); apriAree(); });
         });
         r.querySelectorAll('[data-del-area]').forEach(function (b) {
-          b.addEventListener('click', function () { if (confirm('Rimuovere questa area? Le sue attività passano ad «Altro».')) { LM.rimuoviArea(b.getAttribute('data-del-area')); render(); apriAree(); } });
+          b.addEventListener('click', function () {
+            avviso({
+              titolo: 'Rimuovere questa area?',
+              testo: 'Le attività che ci stavano dentro passano ad «Altro»: non si perde niente.',
+              azione: 'Rimuovi', pericolo: true
+            }, function () { LM.rimuoviArea(b.getAttribute('data-del-area')); render(); apriAree(); });
+          });
         });
         r.querySelectorAll('.ico-pick').forEach(function (b) {
           b.addEventListener('click', function () { r.querySelectorAll('.ico-pick').forEach(function (x) { x.classList.remove('sel'); }); b.classList.add('sel'); icoSel = b.getAttribute('data-ico'); });
@@ -1391,6 +1556,10 @@
       var ar = areaById(e.areaId), col = LM.coloreArea(ar);
       var fatto = e.tipo === 'azione' ? e.done : e.fatto;
       var attr = e.tipo === 'azione' ? 'data-tl-az="' + e.id + '"' : 'data-tl-ab="' + e.id + '"';
+      /* un blocco più basso di un dito non può ospitare una spunta: si
+         segna come «basso» e col tocco la spunta sparisce (si apre la
+         scheda del blocco, dove «Fatto» è grande quanto serve) */
+      var basso = hgt < 46;
       var check = (opts.spuntabile && !opts.mini) ? '<button class="tl-blk-check" ' + attr + ' aria-label="Fatto">' + ICO('check', 11) + '</button>' : '';
       /* nella pagina Giornata il blocco si tocca per modificarlo (orario,
          durata, area) in un pannellino: niente più lista doppia sotto. */
@@ -1403,7 +1572,7 @@
          Così col dito si prende subito, senza che il browser rubi il gesto
          per selezionare il testo. */
       if (e.tipo === 'azione') clic += ' data-drag-az="' + e.id + '"' + (opts.mini ? ' data-manico' : '');
-      return '<div class="tl-blk tl-blk-att' + (fatto ? ' fatta' : '') + (opts.interactive && !opts.mini ? ' tl-blk-clic' : '') + '"' + clic + ' style="' + pos + ';--c-area:' + col + '" title="' + esc(e.testo) + '">' +
+      return '<div class="tl-blk tl-blk-att' + (fatto ? ' fatta' : '') + (basso ? ' tl-blk-basso' : '') + (opts.interactive && !opts.mini ? ' tl-blk-clic' : '') + '"' + clic + ' style="' + pos + ';--c-area:' + col + '" title="' + esc(e.testo) + '">' +
         check + (e.tipo === 'azione' && !opts.mini && opts.interactive ? '<span class="manico" data-manico aria-hidden="true">' + ICO('dots', 12) + '</span>' : '') +
         '<span class="tl-blk-t">' + (e.mit ? ICO('star', 9) + ' ' : '') + esc(e.testo) + '</span>' +
         (hgt > 30 && !opts.mini ? '<span class="tl-blk-ora">' + e.ora + '–' + fmtMin(e.min + dur) + '</span>' : '') + '</div>';
@@ -2482,7 +2651,9 @@
         '<div class="lista-azioni" id="lista-oggi"></div>' +
         '<form id="form-add" class="riga-flex mt-s"><input type="text" id="testo-add" aria-label="Aggiungi una cosa a oggi" placeholder="Aggiungi un’altra cosa a oggi…" style="flex:1;min-width:150px">' +
         '<span style="width:132px">' + selectAree('area-add') + '</span>' +
-        '<button class="btn btn-mini btn-primario" type="submit" aria-label="Aggiungi">' + ICO('plus', 14) + '</button></form></div>' +
+        /* pieno ce n'è uno per schermata: qui la voce principale è «Vai a
+           Oggi», e aggiungere una cosa è un'azione di servizio */
+        '<button class="btn btn-mini" type="submit" aria-label="Aggiungi">' + ICO('plus', 14) + '</button></form></div>' +
         '<div class="card" style="--i:1"><h2>' + ICO('trendUp', 16) + ' Costanza</h2>' +
         '<div class="sotto">XP guadagnati ogni giorno, nelle ultime 12 settimane.</div>' +
         '<div id="heatmap"></div></div></div>';
@@ -2781,7 +2952,9 @@
       '<form id="form-piano" class="mt-s"><div class="riga-flex">' +
       '<input type="text" id="piano-testo" aria-label="Una cosa da fare oggi" placeholder="' + (oggi.length === 0 ? 'La cosa più importante di oggi…' : 'Un’altra cosa (se vuoi)…') + '" style="flex:1;min-width:180px">' +
       '<span style="width:155px">' + selectAree('piano-area') + '</span>' +
-      '<button class="btn btn-primario" type="submit" aria-label="Aggiungi">' + ICO('plus', 16) + '</button></div>' +
+      /* il pieno di questa scheda è «Salva e parti»: aggiungere una riga
+         alla lista è il passaggio, non il traguardo */
+      '<button class="btn" type="submit" aria-label="Aggiungi">' + ICO('plus', 16) + '</button></div>' +
       (oggi.length >= 3 ? '<div class="sotto" style="margin:8px 0 0">Hai <b>' + oggi.length + '</b> azioni per oggi. Oltre tre diventa difficile finirle: le altre si possono spostare a domani da <i>La giornata</i>.</div>' : '') +
       '</form>' +
       '<label class="campo" for="piano-ifthen">Quando e dove inizi la prima?</label>' +

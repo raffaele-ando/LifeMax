@@ -54,7 +54,7 @@
 
 <!-- pannello (bottom sheet su mobile, modale al centro su desktop) -->
 <div class="sheet-overlay" id="sheet-overlay" hidden>
-  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-titolo">
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-titolo" tabindex="-1">
     <div class="sheet-maniglia" aria-hidden="true"></div>
     <div class="sheet-testa"><h2 id="sheet-titolo"></h2><button class="sheet-chiudi" id="sheet-chiudi" aria-label="Chiudi"></button></div>
     <div class="sheet-corpo" id="sheet-corpo"></div>
@@ -62,7 +62,7 @@
 </div>
 
 <div class="overlay" id="overlay-cattura" hidden>
-  <div class="pannello-cattura" role="dialog" aria-modal="true" aria-label="Cattura rapida">
+  <div class="pannello-cattura" role="dialog" aria-modal="true" aria-label="Cattura rapida" tabindex="-1">
     <div class="corpo-cattura" id="corpo-cattura">
       <input type="text" id="input-cattura" placeholder="Scrivi un pensiero…" autocomplete="off" enterkeyhint="done">
       <!-- col dito non c'è nessun tasto Invio a portata: serve un pulsante -->

@@ -83,7 +83,7 @@
 #lab-demo .lab-schermo button { cursor: pointer; }
 #lab-demo .lab-schermo a { text-decoration: none; color: inherit; cursor: pointer; }
 #lab-demo .lab-schermo ul, #lab-demo .lab-schermo ol { list-style: none; margin: 0; padding: 0; }
-#lab-demo .lab-schermo h1, #lab-demo .lab-schermo h2, #lab-demo .lab-schermo h3,
+#lab-demo .lab-schermo h2.lab-h, #lab-demo .lab-schermo h2, #lab-demo .lab-schermo h3,
 #lab-demo .lab-schermo h4, #lab-demo .lab-schermo p, #lab-demo .lab-schermo dl,
 #lab-demo .lab-schermo dd, #lab-demo .lab-schermo dt { margin: 0; }
 #lab-demo .lab-schermo :focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
@@ -117,7 +117,7 @@
 #lab-demo .s1-voce.qui em { background-color: var(--a); color: #fff; }
 #lab-demo .s1-corpo { padding: 20px 22px 26px; display: flex; flex-direction: column; gap: 16px; min-width: 0; }
 #lab-demo .s1-testa { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
-#lab-demo .s1-testa h1 { font-size: 25px; font-weight: 800; letter-spacing: -0.03em; }
+#lab-demo .s1-testa h2.lab-h { font-size: 25px; font-weight: 800; letter-spacing: -0.03em; }
 #lab-demo .s1-testa p { font-size: 13px; color: var(--m); margin-top: 2px; }
 #lab-demo .s1-btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 6px;
@@ -196,7 +196,7 @@
   #lab-demo .s1-voce em { position: absolute; margin: 0; transform: translate(14px, -12px); }
   #lab-demo .s1-voce { position: relative; }
   #lab-demo .s1-corpo { padding: 16px 14px 20px; }
-  #lab-demo .s1-testa h1 { font-size: 22px; }
+  #lab-demo .s1-testa h2.lab-h { font-size: 22px; }
 }
 
 /* ============================================================
@@ -222,7 +222,7 @@
   display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
   padding: 11px 16px; border-bottom: 1px solid var(--b);
 }
-#lab-demo .c2-testa h1 { font-size: 16px; font-weight: 800; letter-spacing: -0.02em; }
+#lab-demo .c2-testa h2.lab-h { font-size: 16px; font-weight: 800; letter-spacing: -0.02em; }
 #lab-demo .c2-data { font-size: 12px; color: var(--m); }
 #lab-demo .c2-avanz { margin-left: auto; display: inline-flex; align-items: center; gap: 7px; font-size: 11.5px; font-weight: 800; color: var(--m); font-variant-numeric: tabular-nums; }
 #lab-demo .c2-avanz i { display: block; width: 54px; height: 4px; border-radius: 99px; background-color: #e9ecf1; overflow: hidden; }
@@ -307,7 +307,7 @@
 }
 #lab-demo .m3-scorri { flex: 1; padding: 20px 16px 12px; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
 #lab-demo .m3-testa p { font-size: 13px; font-weight: 650; color: var(--m); }
-#lab-demo .m3-testa h1 { font-size: 28px; font-weight: 800; letter-spacing: -0.035em; margin-top: 2px; }
+#lab-demo .m3-testa h2.lab-h { font-size: 28px; font-weight: 800; letter-spacing: -0.035em; margin-top: 2px; }
 #lab-demo .m3-ades { background-color: var(--c); border: 1px solid var(--b); border-radius: 22px; padding: 18px; box-shadow: 0 6px 18px rgba(80, 55, 40, .07); }
 #lab-demo .m3-eti { display: inline-block; font-size: 11.5px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--a); background-color: var(--at); padding: 4px 10px; border-radius: 99px; }
 #lab-demo .m3-ades h2 { font-size: 21px; font-weight: 750; letter-spacing: -0.025em; margin-top: 10px; }
@@ -414,7 +414,7 @@
 #lab-demo .n4-ico:hover { border-color: var(--i); color: var(--i); }
 #lab-demo .n4-corpo { flex: 1; padding: 18px; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
 #lab-demo .n4-testa { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
-#lab-demo .n4-testa h1 { font-size: 26px; font-weight: 900; letter-spacing: -0.04em; text-transform: uppercase; }
+#lab-demo .n4-testa h2.lab-h { font-size: 26px; font-weight: 900; letter-spacing: -0.04em; text-transform: uppercase; }
 #lab-demo .n4-testa span { font-size: 12.5px; font-weight: 650; color: var(--m); }
 #lab-demo .n4-ades {
   display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;
@@ -467,7 +467,7 @@
   #lab-demo .n4-cima { padding: 8px 12px; }
   #lab-demo .n4-cima > .n4-btn { margin-left: 0; }
   #lab-demo .n4-corpo { padding: 14px 12px; }
-  #lab-demo .n4-testa h1 { font-size: 22px; }
+  #lab-demo .n4-testa h2.lab-h { font-size: 22px; }
   #lab-demo .n4-ades { box-shadow: 4px 4px 0 var(--g); }
   #lab-demo .n4-adesbtn { width: 100%; }
   #lab-demo .n4-adesbtn .n4-btn { flex: 1; }
@@ -574,7 +574,7 @@
 #lab-demo .t6-riga1 span { font-size: 12.5px; font-weight: 650; color: rgba(255, 255, 255, .88); }
 #lab-demo .t6-ico { width: 34px; height: 34px; border-radius: 99px; border: 1px solid rgba(255, 255, 255, .3); background: none; color: #fff; display: inline-flex; align-items: center; justify-content: center; }
 #lab-demo .t6-ico:hover { background-color: rgba(255, 255, 255, .14); }
-#lab-demo .t6-fascia h1 { font-size: 27px; font-weight: 800; letter-spacing: -0.035em; margin-top: 4px; }
+#lab-demo .t6-fascia h2.lab-h { font-size: 27px; font-weight: 800; letter-spacing: -0.035em; margin-top: 4px; }
 #lab-demo .t6-ades { margin-top: 16px; background-color: rgba(255, 255, 255, .13); border: 1px solid rgba(255, 255, 255, .26); border-radius: 14px; padding: 14px 16px; }
 #lab-demo .t6-eti { display: block; font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: rgba(255, 255, 255, .9); }
 #lab-demo .t6-ades > b { display: block; font-size: 18px; font-weight: 750; letter-spacing: -0.02em; margin-top: 7px; }
@@ -655,7 +655,7 @@
 #lab-demo .k7-nav a.qui em { background-color: var(--a); color: #0b1220; }
 #lab-demo .k7-corpo { padding: 20px 22px 26px; display: flex; flex-direction: column; gap: 15px; min-width: 0; }
 #lab-demo .k7-testa { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
-#lab-demo .k7-testa h1 { font-size: 24px; font-weight: 800; letter-spacing: -0.03em; }
+#lab-demo .k7-testa h2.lab-h { font-size: 24px; font-weight: 800; letter-spacing: -0.03em; }
 #lab-demo .k7-testa p { font-size: 12.5px; color: var(--m); margin-top: 3px; }
 #lab-demo .k7-btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 6px;
@@ -716,7 +716,7 @@
   #lab-demo .k7-nav a span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
   #lab-demo .k7-nav em { display: none; }
   #lab-demo .k7-corpo { padding: 16px 14px 20px; }
-  #lab-demo .k7-testa h1 { font-size: 22px; }
+  #lab-demo .k7-testa h2.lab-h { font-size: 22px; }
 }
 
 /* ============================================================
@@ -730,7 +730,7 @@
 }
 #lab-demo .g8-scorri { flex: 1; padding: 22px 18px 14px; display: flex; flex-direction: column; gap: 16px; min-width: 0; }
 #lab-demo .g8-testa > span { font-size: 14px; font-weight: 650; color: var(--m); }
-#lab-demo .g8-testa h1 { font-size: 32px; font-weight: 800; letter-spacing: -0.035em; margin-top: 2px; }
+#lab-demo .g8-testa h2.lab-h { font-size: 32px; font-weight: 800; letter-spacing: -0.035em; margin-top: 2px; }
 #lab-demo .g8-avanz { display: flex; align-items: center; gap: 10px; margin-top: 12px; }
 #lab-demo .g8-avanz i { flex: 1; height: 10px; border-radius: 99px; background-color: var(--p); overflow: hidden; }
 #lab-demo .g8-avanz b { display: block; height: 100%; background-color: var(--a); border-radius: 99px; }
@@ -788,7 +788,7 @@
 }
 @container (max-width: 360px) {
   #lab-demo .g8-scorri { padding: 18px 13px 12px; }
-  #lab-demo .g8-testa h1 { font-size: 28px; }
+  #lab-demo .g8-testa h2.lab-h { font-size: 28px; }
   #lab-demo .g8-corto { width: 100%; }
 }
 
@@ -820,7 +820,7 @@
 #lab-demo .a9-ico { flex: none; width: 28px; height: 28px; border-radius: 7px; border: 1px solid transparent; background: none; color: #868e9c; display: inline-flex; align-items: center; justify-content: center; }
 #lab-demo .a9-ico:hover { border-color: var(--b); color: var(--i); }
 #lab-demo .a9-testa { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; padding: 14px 16px 10px; }
-#lab-demo .a9-testa h1 { font-size: 22px; font-weight: 800; letter-spacing: -0.03em; }
+#lab-demo .a9-testa h2.lab-h { font-size: 22px; font-weight: 800; letter-spacing: -0.03em; }
 #lab-demo .a9-testa span { font-size: 12.5px; color: var(--m); }
 #lab-demo .a9-conta { margin-left: auto; font-weight: 750; }
 #lab-demo .a9-ades { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 0 16px 12px; padding: 11px 14px; border-radius: 10px; background-color: var(--at); border: 1px solid #cddcf7; }
@@ -903,7 +903,7 @@
 #lab-demo .p10-passi span { font-size: 12px; font-weight: 700; color: var(--m); margin-left: 4px; }
 #lab-demo .p10-carta { background-color: var(--c); border: 1px solid var(--b); border-radius: 20px; padding: 20px 18px; box-shadow: 0 8px 22px rgba(40, 30, 60, .07); }
 #lab-demo .p10-eti { display: inline-block; font-size: 11.5px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--a); background-color: var(--at); padding: 4px 10px; border-radius: 99px; }
-#lab-demo .p10-carta h1 { font-size: 25px; font-weight: 780; letter-spacing: -0.03em; line-height: 1.15; margin-top: 12px; }
+#lab-demo .p10-carta h2.lab-h { font-size: 25px; font-weight: 780; letter-spacing: -0.03em; line-height: 1.15; margin-top: 12px; }
 #lab-demo .p10-quando { font-size: 13.5px; font-weight: 650; color: var(--m); margin-top: 6px; }
 #lab-demo .p10-rosso { color: var(--r); }
 #lab-demo .p10-primo {
