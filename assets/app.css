@@ -1779,17 +1779,25 @@ body.sfondo-fermo { position: fixed; left: 0; right: 0; width: 100%; overflow: h
   .segmenti.sez-nav { flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden; justify-content: flex-start; scrollbar-width: none; }
   .segmenti.sez-nav::-webkit-scrollbar { display: none; }
   .segmenti.sez-nav > button { flex: none; }
-  .att-tabs.sez-nav {
-    display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
+  /* Vale per TUTTE le barre di sezione: Attività, Panoramica, Giornata,
+     Rituali. Le colonne si generano da sole quante sono i pulsanti
+     (grid-auto-flow: column), quindi la barra ci sta a qualsiasi larghezza
+     senza sapere in anticipo se le voci sono quattro o cinque. */
+  .segmenti.tabs-fisse {
+    display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr);
     gap: 2px; overflow: visible; border-radius: 18px; width: 100%;
   }
-  .att-tabs.sez-nav > button {
+  .segmenti.tabs-fisse > button {
     position: relative; flex: none; min-width: 0; flex-direction: column; gap: 3px;
     padding: 8px 3px 7px; border-radius: 15px; font-size: 11px; line-height: 1.15; font-weight: 700;
   }
-  .att-tabs .att-eti { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .att-tabs .att-badge { position: absolute; top: 4px; right: 6px; margin: 0; }
-  .att-tabs.sez-nav > button.attivo .att-ico { color: var(--accento-testo); }
+  .segmenti.tabs-fisse .seg-eti { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .segmenti.tabs-fisse .att-badge { position: absolute; top: 4px; right: 6px; margin: 0; }
+  .segmenti.tabs-fisse > button.attivo .seg-ico { color: var(--accento-testo); }
+  /* il puntino «consigliato ora» dei Rituali non sta più in fila col testo */
+  .segmenti.tabs-fisse .seg-ora { position: absolute; top: 6px; right: 8px; margin: 0; }
+  /* cinque voci in 320px: un filo più piccole per non troncare «Abitudini» */
+  .segmenti.tabs-fisse.tabs-cinque > button { font-size: 10.5px; padding-left: 2px; padding-right: 2px; }
 }
 .att-chip.on span { background: color-mix(in srgb, var(--c-area, var(--accento)) 22%, transparent); color: var(--inchiostro-1); }
 .backlog-piatto { display: flex; flex-direction: column; }

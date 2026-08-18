@@ -2276,9 +2276,12 @@
 
   function vistaGiornata() {
     if (!giornataAncora) giornataAncora = LM.todayKey();
-    function orizz(id, ico, et) { return '<button data-orizz="' + id + '" class="' + (giornataOrizzonte === id ? 'attivo' : '') + '">' + ICO(ico, 15) + et + '</button>'; }
+    function orizz(id, ico, et) {
+      return '<button data-orizz="' + id + '" class="' + (giornataOrizzonte === id ? 'attivo' : '') + '">' +
+        '<span class="seg-ico">' + ICO(ico, 15) + '</span><span class="seg-eti">' + et + '</span></button>';
+    }
     var html = topbar('La giornata', 'Le tue ore, giorno per giorno. Con ‹ › cambi giorno.');
-    html += '<div class="segmenti sez-nav" id="orizz-nav">' +
+    html += '<div class="segmenti sez-nav tabs-fisse" id="orizz-nav">' +
       orizz('giorno', 'clock', 'Giorno') + orizz('settimana', 'calendar', 'Settimana') +
       orizz('mese', 'dashboard', 'Mese') + orizz('anno', 'trendUp', 'Anno') + '</div>' +
       '<div id="orizz-corpo"></div>';
@@ -2400,8 +2403,11 @@
       '</div>';
 
     /* schede interne: si vede una sezione per volta */
-    function segp(id, ico, et) { return '<button data-sez="' + id + '" class="' + (sezPlancia === id ? 'attivo' : '') + '">' + ICO(ico, 15) + et + '</button>'; }
-    html += '<div class="segmenti sez-nav" id="sez-plancia">' + segp('riepilogo', 'dashboard', 'Riepilogo') + segp('diario', 'book', 'Diario') + segp('aree', 'sparkles', 'Aree') + segp('andamento', 'trendUp', 'Andamento') + '</div>';
+    function segp(id, ico, et) {
+      return '<button data-sez="' + id + '" class="' + (sezPlancia === id ? 'attivo' : '') + '">' +
+        '<span class="seg-ico">' + ICO(ico, 15) + '</span><span class="seg-eti">' + et + '</span></button>';
+    }
+    html += '<div class="segmenti sez-nav tabs-fisse" id="sez-plancia">' + segp('riepilogo', 'dashboard', 'Riepilogo') + segp('diario', 'book', 'Diario') + segp('aree', 'sparkles', 'Aree') + segp('andamento', 'trendUp', 'Andamento') + '</div>';
     html += '<div id="sez-corpo"></div>';
 
     $vista.innerHTML = html;
@@ -2574,7 +2580,7 @@
 
     var suggerito = (ora < 12 ? 'mattina' : (ora >= 19 ? 'sera' : 'checkin'));
     var html = topbar('Rituali', 'Mattina, sera e abitudini.') +
-      '<div class="rituali-nav segmenti" id="seg-rituali">' +
+      '<div class="rituali-nav segmenti tabs-fisse tabs-cinque" id="seg-rituali">' +
       seg('mattina', 'sun', 'Mattina') + seg('abitudini', 'refresh', 'Abitudini') + seg('checkin', 'bolt', 'Check-in') + seg('sera', 'moon', 'Sera') + seg('settimana', 'calendar', 'Settimana') +
       '</div>' +
       '<div class="passo-rituale" id="corpo-rituale"></div>';
@@ -2596,7 +2602,8 @@
       var ora2 = new Date().getHours();
       var sugg = (ora2 < 12 ? 'mattina' : (ora2 >= 19 ? 'sera' : 'checkin'));
       var puntino = (id === sugg && sub !== id) ? '<span class="seg-ora" title="Consigliato ora"></span>' : '';
-      return '<button data-sub="' + id + '" class="' + (sub === id ? 'attivo' : '') + '">' + ICO(icona, 15) + nome + puntino + '</button>';
+      return '<button data-sub="' + id + '" class="' + (sub === id ? 'attivo' : '') + '">' +
+        '<span class="seg-ico">' + ICO(icona, 15) + '</span><span class="seg-eti">' + nome + '</span>' + puntino + '</button>';
     }
   }
 
@@ -2837,7 +2844,11 @@
           return '<button data-v="' + v + '" aria-label="' + v + ', ' + anc[v - 1] + '">' + v + '</button>';
         }).join('') + '</div>' +
         '<div class="scala-legenda"><span>1 · ' + anc[0] + '</span><span>3 · ' + anc[2] + '</span><span>5 · ' + anc[4] + '</span></div>' +
-        (base ? '<div class="scala-solito">' + ICO('trendUp', 12) + ' La tua media recente è <b>' + base.toFixed(1) + '</b>.</div>' : '') +
+        (base ? '<div class="scala-solito">' + ICO('trendUp', 12) +
+          /* tutto il testo in un solo elemento: il contenitore è inline-flex
+             con un gap, e un punto lasciato fuori diventava un pezzo a sé
+             staccato di sei pixel («è 4.3 .») */
+          '<span>La tua media recente è <b>' + base.toFixed(1) + '</b>.</span></div>' : '') +
         '</div>';
     }
     corpo.querySelectorAll('.scala').forEach(function (sc) {
@@ -2980,11 +2991,11 @@
        costruzione, a qualsiasi larghezza. */
     function tb(id, ico, et, n) {
       return '<button data-att="' + id + '" class="' + (attTab === id ? 'attivo' : '') + '">' +
-        '<span class="att-ico">' + ICO(ico, 16) + '</span>' +
-        '<span class="att-eti">' + et + '</span>' +
+        '<span class="seg-ico">' + ICO(ico, 16) + '</span>' +
+        '<span class="seg-eti">' + et + '</span>' +
         (n ? '<span class="att-badge">' + n + '</span>' : '') + '</button>';
     }
-    html += '<div class="segmenti sez-nav att-tabs" id="att-tabs">' +
+    html += '<div class="segmenti sez-nav tabs-fisse att-tabs" id="att-tabs">' +
       tb('sistemare', 'inbox', 'Sistemare', nInbox) + tb('dafare', 'lista', 'Da fare', s.backlog.length) +
       tb('arrivo', 'calendar', 'In arrivo', nArrivo) + tb('progetti', 'rocket', 'Progetti', nProg) + '</div>' +
       '<div id="att-corpo"></div>';
