@@ -339,6 +339,38 @@ small { color: var(--inchiostro-2); }
 .topbar .sottotitolo { font-size: 13px; color: var(--inchiostro-muto); margin-top: 3px; font-weight: 500; }
 .topbar .spazio { flex: 1; }
 
+/* ---------- linguette della porta corrente ----------
+   Stanno sotto al titolo: si vede prima dove si è, poi cos'altro c'è nella
+   stessa porta. Sono linguette sottolineate, non pillole: dentro le pagine le
+   pillole servono già a un altro lavoro (Giorno/Settimana/Mese), e due file di
+   pillole attaccate si leggono come lo stesso comando. Qui la forma dice il
+   ruolo: sottolineato = cambio schermata, pillola = cambio vista.
+   La linguetta attiva si distingue per colore E per peso E per la riga sotto,
+   così non dipende dal solo colore. */
+.sottonav {
+  display: flex; gap: 4px; margin: -14px 0 20px;
+  box-shadow: inset 0 -1px 0 var(--bordo);
+  overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: none;
+  max-width: 100%;
+}
+.sottonav::-webkit-scrollbar { display: none; }
+.sottonav-voce {
+  flex: none; display: inline-flex; align-items: center; justify-content: center;
+  min-height: 38px; padding: 0 12px 2px; border-bottom: 2px solid transparent;
+  font-size: 13.5px; font-weight: 650; color: var(--inchiostro-2); white-space: nowrap;
+  transition: color var(--t-veloce), border-color var(--t-veloce);
+}
+.sottonav-voce:hover { color: var(--inchiostro-1); border-bottom-color: var(--bordo-forte); }
+.sottonav-voce.attiva { color: var(--accento-testo); font-weight: 800; border-bottom-color: var(--accento-testo); }
+.sottonav-voce:focus-visible { outline: 2px solid var(--accento); outline-offset: -2px; border-radius: 6px; }
+@media (max-width: 860px) {
+  /* sul telefono la riga costa altezza a «Oggi», che deve stare in una
+     schermata sola: sta più stretta addosso al titolo, e i bersagli
+     restano alti 36 px con tutta la larghezza della linguetta */
+  .sottonav { margin: -14px 0 12px; }
+  .sottonav-voce { min-height: 36px; font-size: 13px; padding: 0 11px 2px; }
+}
+
 /* tab bar mobile */
 .tabbar { display: none; }
 @media (max-width: 860px) {
@@ -523,14 +555,15 @@ label.campo { display: block; font-size: 12px; font-weight: 700; letter-spacing:
    La scena occupa lo spazio che resta (togliendo topbar, barra della giornata,
    margini della pagina e l'eventuale banda in cima) invece di imporre 600px
    fissi, che facevano sbordare la pagina di 75-190px senza motivo. */
-.vista-oggi { display: flex; flex-direction: column; min-height: calc(100dvh - 130px - var(--banda-h, 0px)); }
+.vista-oggi { display: flex; flex-direction: column; min-height: calc(100dvh - 130px - var(--banda-h, 0px) - var(--sottonav-h, 0px)); }
 .vista-oggi .focus-scena { flex: 1 1 auto; min-height: 0; padding: 10px 0; }
+@media (max-width: 860px) { .vista-oggi .focus-scena { padding: 4px 0; } }
 @media (max-width: 860px) {
   /* spazio a destra per non finire sotto al pulsante + flottante */
   .vista-oggi .focus-coda { padding-right: 76px; }
 }
 @media (max-width: 860px) {
-  .vista-oggi { min-height: calc(100dvh - 140px - var(--banda-h, 0px)); }
+  .vista-oggi { min-height: calc(100dvh - 140px - var(--banda-h, 0px) - var(--sottonav-h, 0px)); }
 }
 .focus-eyebrow {
   display: inline-flex; align-items: center; gap: 8px;

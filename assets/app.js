@@ -138,6 +138,16 @@
     LM.registra('impostazioni', 'Aspetto impostato su ' + (sk === 'arcade' ? 'Arcade' : 'Aurora'), false);
     LM.save(); applicaTema(); render();
   }
+  /* La barra a tre porte si può spegnere: chi la vuole com'era prima
+     ritrova le otto voci, e nessuna schermata sparisce in nessuno dei due
+     casi — cambia solo da dove ci si arriva. */
+  function setNav(v) {
+    var s = LM.load();
+    if ((s.profilo.nav || 'tre') === v) return;
+    s.profilo.nav = v;
+    LM.registra('impostazioni', 'Navigazione impostata su ' + (v === 'tutte' ? 'tutte le pagine' : 'tre porte'), false);
+    LM.save(); render();
+  }
   function caricaDemo() {
     if (confirm('Vuoi sostituire i dati attuali con 8 settimane di dati di esempio?')) {
       LM.seedDemo(); applicaTema(); chiudiSheet(); render();
@@ -301,6 +311,33 @@
   /* le 4 destinazioni quotidiane nella tab bar mobile; le altre primarie
      (es. Giornata) e le secondarie stanno nel menu "Altro" */
   var TAB_MOBILE = ['oggi', 'plancia', 'rituali', 'inbox'];
+  /* ---------- le tre porte ----------
+     Otto voci in una barra sono otto decisioni prima ancora di cominciare, e
+     la decisione su DOVE andare non è il lavoro: è l'attrito che sta davanti
+     al lavoro. Quindi la barra ne fa tre, e sono tre domande, non tre nomi:
+     «cosa faccio adesso», «cosa ho da fare», «come sta andando».
+     Le schermate restano tutte, con lo stesso indirizzo di prima: quelle
+     dentro un gruppo si raggiungono da una riga di linguette sotto al titolo,
+     dove sono già in vista e costano un tocco, non una ricerca. */
+  var GRUPPI = [
+    { id: 'oggi', nome: 'Oggi', icona: 'target', viste: [
+      { id: 'oggi', eti: 'Adesso' }, { id: 'giornata', eti: 'La giornata' }, { id: 'rituali', eti: 'Rituali' }
+    ] },
+    { id: 'inbox', nome: 'Attività', icona: 'lista', viste: [
+      { id: 'inbox', eti: 'Attività' }
+    ] },
+    { id: 'plancia', nome: 'Andamento', icona: 'dashboard', viste: [
+      { id: 'plancia', eti: 'Panoramica' }, { id: 'esperimenti', eti: 'Esperimenti' },
+      { id: 'scienza', eti: 'Perché funziona' }, { id: 'lab', eti: 'Design lab' }
+    ] }
+  ];
+  function navTre() { return ((LM.load().profilo || {}).nav || 'tre') !== 'tutte'; }
+  function gruppoDi(id) {
+    return GRUPPI.filter(function (g) {
+      return g.viste.some(function (v) { return v.id === id; });
+    })[0] || GRUPPI[0];
+  }
+
   function vistaById(id) { return VISTE.find(function (v) { return v.id === id; }); }
   function primarie() { return VISTE.filter(function (v) { return v.gruppo === 'primaria'; }); }
 
@@ -328,9 +365,16 @@
     /* niente etichette di gruppo: raggruppano già la distanza e il peso
        (principio di prossimità), e una scritta in più è una cosa in più da
        leggere in una barra che serve a non leggere niente */
-    lato.innerHTML =
-      livello('ancora') + livello('quotidiana') +
-      '<div class="nav-sep"></div>' + livello('extra');
+    var tre = navTre();
+    var gCorr = gruppoDi(corrente);
+    function voceGruppo(g, dim) {
+      return '<a class="nav-item nav-ancora' + (g.id === gCorr.id ? ' attivo' : '') + '" href="#/' + g.viste[0].id + '">' +
+        ICO(g.icona, dim) + '<span>' + g.nome + '</span>' + badgeInbox({ id: g.id }, s) + '</a>';
+    }
+    lato.innerHTML = tre
+      ? GRUPPI.map(function (g) { return voceGruppo(g, 20); }).join('')
+      : livello('ancora') + livello('quotidiana') +
+        '<div class="nav-sep"></div>' + livello('extra');
 
     /* footer sidebar: account + impostazioni */
     document.getElementById('sidebar-fondo').innerHTML = footerSidebar();
@@ -340,11 +384,16 @@
        secondarie stanno in "Altro"; in Oggi c'è comunque la barra compatta) */
     var tab = document.getElementById('nav-tab');
     var primNav = TAB_MOBILE.map(vistaById);
-    var inSecondaria = !primNav.some(function (v) { return v.id === corrente; });
-    tab.innerHTML = primNav.map(function (v) {
-      return '<button data-vai="' + v.id + '" class="' + (corrente === v.id ? 'attivo' : '') + '">' +
-        '<span class="tab-ico">' + ICO(v.icona, 21) + badgeInbox(v, s) + '</span>' + v.nome + '</button>';
-    }).join('') +
+    var inSecondaria = !tre && !primNav.some(function (v) { return v.id === corrente; });
+    tab.innerHTML = (tre
+      ? GRUPPI.map(function (g) {
+        return '<button data-vai="' + g.viste[0].id + '" class="' + (g.id === gCorr.id ? 'attivo' : '') + '">' +
+          '<span class="tab-ico">' + ICO(g.icona, 21) + badgeInbox({ id: g.id }, s) + '</span>' + g.nome + '</button>';
+      }).join('')
+      : primNav.map(function (v) {
+        return '<button data-vai="' + v.id + '" class="' + (corrente === v.id ? 'attivo' : '') + '">' +
+          '<span class="tab-ico">' + ICO(v.icona, 21) + badgeInbox(v, s) + '</span>' + v.nome + '</button>';
+      }).join('')) +
       '<button data-menu="1" class="' + (inSecondaria ? 'attivo' : '') + '"><span class="tab-ico">' + ICO('sparkles', 21) + '</span>Altro</button>';
     tab.querySelectorAll('[data-vai]').forEach(function (b) {
       b.addEventListener('click', function () { location.hash = '#/' + b.getAttribute('data-vai'); });
@@ -410,7 +459,12 @@
     var skin = s.profilo.skin || 'quiete';
     function segM(v, ico, et) { return '<button data-modo="' + v + '" class="' + (modo === v ? 'attivo' : '') + '">' + ICO(ico, 15) + et + '</button>'; }
     function segS(v, et) { return '<button data-skin="' + v + '" class="' + (skin === v ? 'attivo' : '') + '">' + et + '</button>'; }
-    return '<div class="imp-sezione"><div class="imp-eti">Personalizza</div>' +
+    var nav = s.profilo.nav || 'tre';
+    function segN(v, et) { return '<button data-nav="' + v + '" class="' + (nav === v ? 'attivo' : '') + '">' + et + '</button>'; }
+    return '<div class="imp-sezione"><div class="imp-eti">Navigazione</div>' +
+      '<div class="segmenti imp-seg" id="seg-nav">' + segN('tre', 'Tre porte') + segN('tutte', 'Tutte le pagine') + '</div>' +
+      '<div class="imp-nota">Con <b>Tre porte</b> nella barra restano <b>Oggi</b>, <b>Attività</b> e <b>Andamento</b>, e le altre schermate stanno dentro, in una riga di linguette sotto al titolo. Con <b>Tutte le pagine</b> torna la barra lunga di prima. In tutti e due i casi non sparisce niente: cambia solo da dove ci si arriva.</div></div>' +
+      '<div class="imp-sezione"><div class="imp-eti">Personalizza</div>' +
       '<div class="imp-azioni">' +
       '<button class="btn btn-mini" id="imp-aree">' + ICO('sparkles', 14) + ' Gestisci le aree</button> ' +
       '<button class="btn btn-mini" id="imp-guida">' + ICO('aiuto', 14) + ' Come si usa</button></div></div>' +
@@ -445,6 +499,14 @@
   }
 
   function wireAspettoDati(root) {
+    root.querySelectorAll('#seg-nav [data-nav]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        /* il pannello resta aperto: il segmento si aggiorna da sé, così si
+           vede subito la barra cambiare dietro senza chiudere niente */
+        root.querySelectorAll('#seg-nav [data-nav]').forEach(function (o) { o.classList.toggle('attivo', o === b); });
+        setNav(b.getAttribute('data-nav'));
+      });
+    });
     root.querySelectorAll('#seg-modo [data-modo]').forEach(function (b) {
       b.addEventListener('click', function () { setModo(b.getAttribute('data-modo')); });
     });
@@ -728,9 +790,11 @@
       return '<button class="menu-voce menu-' + (v.livello || 'quotidiana') + '" data-vai="' + v.id + '">' +
         ICO(v.icona, v.livello === 'extra' ? 16 : 18) + '<span>' + v.nome + '</span>' + ICO('arrowRight', 15) + '</button>';
     }
-    var link = extra.map(voceMenu).join('') +
+    /* con le tre porte qui non serve nessun elenco di pagine: ogni schermata
+       sta a un tocco dalle linguette sotto al titolo della sua porta */
+    var link = navTre() ? '' : (extra.map(voceMenu).join('') +
       (extra.length ? '<div class="nav-sep"></div>' : '') +
-      VISTE.filter(function (v) { return v.gruppo === 'secondaria'; }).map(voceMenu).join('');
+      VISTE.filter(function (v) { return v.gruppo === 'secondaria'; }).map(voceMenu).join(''));
     var a = window.LM_AUTH || { available: false, user: null };
     var acct;
     if (a.user) {
@@ -750,7 +814,7 @@
        si passava davanti a trenta comandi che non si stavano cercando. Ora è
        un menu di pagine, e le impostazioni sono una porta sola — come su
        desktop, dove hanno sempre funzionato così. */
-    apriSheet('Menu', '<div class="menu-lista">' + link + '</div>' +
+    apriSheet('Menu', (link ? '<div class="menu-lista">' + link + '</div>' : '') +
       '<div class="imp-sezione"><div class="imp-eti">Account</div>' + acct + '</div>' +
       '<button class="btn-strumento-largo" id="menu-impostazioni">' + ICO('sun', 16) + '<span>Impostazioni</span>' + ICO('arrowRight', 14) + '</button>',
       function (root) {
@@ -3903,6 +3967,29 @@
      "sfarfallare" e sparire/riapparire. Qui la si concede solo alla vera
      navigazione, e si conserva la posizione di scorrimento quando la pagina
      è la stessa — così gli elementi restano fermi sotto il dito. */
+  /* La riga di linguette della porta corrente. Sta SOTTO al titolo, non
+     sopra: prima leggi dove sei, poi vedi cos'altro c'è dentro. Se la porta
+     ha una schermata sola (Attività) non compare niente — una linguetta che
+     non porta da nessuna parte è solo un'altra cosa da guardare. */
+  function sottoNav(v) {
+    var vecchia = $vista.querySelector('.sottonav');
+    if (vecchia) vecchia.remove();
+    document.documentElement.style.setProperty('--sottonav-h', '0px');
+    if (!navTre()) return;
+    var g = gruppoDi(v);
+    if (g.viste.length < 2) return;
+    var bar = document.createElement('nav');
+    bar.className = 'sottonav';
+    bar.setAttribute('aria-label', 'Schermate di ' + g.nome);
+    bar.innerHTML = g.viste.map(function (x) {
+      return '<a class="sottonav-voce' + (x.id === v ? ' attiva' : '') + '" href="#/' + x.id + '"' +
+        (x.id === v ? ' aria-current="page"' : '') + '>' + x.eti + '</a>';
+    }).join('');
+    var tb = $vista.querySelector('.topbar');
+    if (tb) tb.insertAdjacentElement('afterend', bar); else $vista.prepend(bar);
+    document.documentElement.style.setProperty('--sottonav-h', (bar.offsetHeight + 14) + 'px');
+  }
+
   var vistaMostrata = '';
   function render() {
     var s = LM.load();
@@ -3925,6 +4012,7 @@
     else if (v === 'esperimenti') vistaEsperimenti();
     else if (v === 'scienza') vistaScienza();
     else if (v === 'lab') vistaLab();
+    sottoNav(v);
     $vista.classList.toggle('vista-oggi', v === 'oggi');
     vistaMostrata = v;
     if (cambioPagina) { animaIngresso($vista); window.scrollTo(0, 0); }
