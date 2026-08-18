@@ -327,14 +327,20 @@
       { id: 'inbox', eti: 'Attività' }
     ] },
     { id: 'plancia', nome: 'Andamento', icona: 'dashboard', viste: [
-      { id: 'plancia', eti: 'Panoramica' }, { id: 'esperimenti', eti: 'Esperimenti' },
-      { id: 'scienza', eti: 'Perché funziona' }, { id: 'lab', eti: 'Design lab' }
-    ] }
+      { id: 'plancia', eti: 'Panoramica' }, { id: 'esperimenti', eti: 'Esperimenti' }
+    ],
+      /* Queste due appartengono alla porta ma NON stanno fra le linguette:
+         si leggono una volta e poi mai più, e una linguetta che non si tocca
+         è solo una parola in più da scartare ogni volta che si guarda la riga.
+         Si aprono dalle impostazioni, e la linguetta compare soltanto mentre
+         ci sei dentro, per sapere dove sei e come tornare. */
+      anche: ['scienza', 'lab'] }
   ];
   function navTre() { return ((LM.load().profilo || {}).nav || 'tre') !== 'tutte'; }
   function gruppoDi(id) {
     return GRUPPI.filter(function (g) {
-      return g.viste.some(function (v) { return v.id === id; });
+      return g.viste.some(function (v) { return v.id === id; }) ||
+        (g.anche || []).indexOf(id) >= 0;
     })[0] || GRUPPI[0];
   }
 
@@ -472,7 +478,9 @@
       '<div class="imp-sezione"><div class="imp-eti">Personalizza</div>' +
       '<div class="imp-azioni">' +
       '<button class="btn btn-mini" id="imp-aree">' + ICO('sparkles', 14) + ' Gestisci le aree</button> ' +
-      '<button class="btn btn-mini" id="imp-guida">' + ICO('aiuto', 14) + ' Come si usa</button></div></div>' +
+      '<button class="btn btn-mini" id="imp-guida">' + ICO('aiuto', 14) + ' Come si usa</button> ' +
+      '<button class="btn btn-mini" id="imp-scienza">' + ICO('atom', 14) + ' Perché funziona</button></div>' +
+      '<div class="imp-nota">«Perché funziona» racconta su quali studi è appoggiata ogni scelta dell’app. Si legge una volta, quindi non occupa una linguetta.</div></div>' +
       '<div class="imp-sezione"><div class="imp-eti">La giornata</div>' +
       '<div class="imp-azioni"><button class="btn btn-mini" id="imp-ritmo">' + ICO('clock', 14) + ' Sonno e pasti</button></div>' +
       '<div class="imp-nota">La barra della giornata è sempre in cima a <b>Oggi</b>; la pagina <b>Giornata</b> mostra anche settimana, mese e anno.</div></div>' +
@@ -480,7 +488,9 @@
       '<div class="segmenti imp-seg" id="seg-modo">' + segM('auto', 'refresh', 'Auto') + segM('light', 'sun', 'Chiaro') + segM('dark', 'moon', 'Scuro') + '</div></div>' +
       '<div class="imp-sezione"><div class="imp-eti">Aspetto</div>' +
       '<div class="segmenti imp-seg" id="seg-skin">' + segS('quiete', 'Aurora') + segS('arcade', 'Arcade') + '</div>' +
-      '<div class="imp-nota">Aurora è più sobrio, Arcade più acceso. Cambia solo l’aspetto, non i dati.</div></div>';
+      '<div class="imp-nota">Aurora è più sobrio, Arcade più acceso. Cambia solo l’aspetto, non i dati.</div>' +
+      '<div class="imp-azioni" style="margin-top:10px"><button class="btn btn-mini" id="imp-lab">' + ICO('palette', 14) + ' Design lab</button></div>' +
+      '<div class="imp-nota">Dieci interfacce complete per la stessa app, da confrontare per scegliere la base grafica di tutto il sito.</div></div>';
   }
 
   function htmlDati() {
@@ -531,6 +541,10 @@
     var b2 = root.querySelector('#imp-backup'); if (b2) b2.addEventListener('click', apriBackups);
     var ar = root.querySelector('#imp-aree'); if (ar) ar.addEventListener('click', apriAree);
     var gu = root.querySelector('#imp-guida'); if (gu) gu.addEventListener('click', apriGuida);
+    var sc = root.querySelector('#imp-scienza');
+    if (sc) sc.addEventListener('click', function () { chiudiSheet(); location.hash = '#/scienza'; });
+    var lb = root.querySelector('#imp-lab');
+    if (lb) lb.addEventListener('click', function () { chiudiSheet(); location.hash = '#/lab'; });
     var ri = root.querySelector('#imp-ritmo'); if (ri) ri.addEventListener('click', apriRitmo);
     var dg = root.querySelector('#imp-diag'); if (dg) dg.addEventListener('click', apriDiagnostica);
     root.querySelectorAll('[data-diag]').forEach(function (b) { b.addEventListener('click', apriDiagnostica); });
@@ -4021,11 +4035,19 @@
     document.documentElement.style.setProperty('--sottonav-h', '0px');
     if (!navTre()) return;
     var g = gruppoDi(v);
-    if (g.viste.length < 2) return;
+    var lista = g.viste.slice();
+    /* se sei in una schermata «di passaggio» (Perché funziona, Design lab) la
+       sua linguetta si aggiunge in fondo, attiva: non c'è normalmente, ma
+       mentre ci sei dentro dice dove sei e ti riporta indietro */
+    if ((g.anche || []).indexOf(v) >= 0) {
+      var vi = vistaById(v);
+      lista.push({ id: v, eti: (vi && vi.nome) || v });
+    }
+    if (lista.length < 2) return;
     var bar = document.createElement('nav');
     bar.className = 'sottonav';
     bar.setAttribute('aria-label', 'Schermate di ' + g.nome);
-    bar.innerHTML = g.viste.map(function (x) {
+    bar.innerHTML = lista.map(function (x) {
       return '<a class="sottonav-voce' + (x.id === v ? ' attiva' : '') + '" href="#/' + x.id + '"' +
         (x.id === v ? ' aria-current="page"' : '') + '>' + x.eti + '</a>';
     }).join('');
