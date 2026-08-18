@@ -2619,6 +2619,27 @@
     { id: 'settimana', ico: 'calendar', nome: 'Review della settimana', quando: 'ogni tanto' },
     { id: 'abitudini', ico: 'refresh',  nome: 'Abitudini',              quando: 'ogni tanto' }
   ];
+  /* Le sezioni si ridisegnano da sole (le abitudini, per esempio, si
+     riscrivono senza passare da render()): senza questo, la riga sopra
+     continuava a dire «0 di 3 oggi» dopo che ne avevi spuntata una.
+     Si riscrivono solo le etichette di stato: niente ridisegno, niente fuoco
+     perso mentre si scrive in un campo. */
+  function aggiornaStatiRituali() {
+    var righe = document.querySelectorAll('#vista .rit-riga');
+    if (!righe.length) return;
+    righe.forEach(function (riga) {
+      var id = riga.getAttribute('data-sub');
+      var el = riga.querySelector('.rit-stato');
+      if (!id || !el) return;
+      var st = statoRituale(id);
+      el.className = 'rit-stato' + (st.fatto ? ' fatto' : '');
+      el.innerHTML = (st.fatto ? ICO('check', 12) + ' ' : '') + esc(st.testo);
+    });
+  }
+  document.addEventListener('lm:change', function () {
+    if (vistaCorrente() === 'rituali') aggiornaStatiRituali();
+  });
+
   function ritualeDellOra() {
     var ora = new Date().getHours();
     return ora < 12 ? 'mattina' : (ora >= 19 ? 'sera' : 'checkin');
@@ -2627,8 +2648,13 @@
   function statoRituale(id) {
     var s = LM.load(), t = LM.todayKey();
     if (id === 'mattina') {
-      var p = s.pianoMattina[t];
-      return p ? { fatto: true, testo: 'fatto stamattina' } : { fatto: false, testo: 'da fare' };
+      if (s.pianoMattina[t]) return { fatto: true, testo: 'fatto stamattina' };
+      /* le azioni possono essere state scelte anche senza passare dal rituale
+         (dalla Giornata, o tirandole su da Attività): dire «da fare» quando ce
+         ne sono già tre in lista è una bugia che chiede una cosa già fatta */
+      var n = LM.azioniDiOggi().length;
+      return n ? { fatto: false, testo: n === 1 ? '1 azione scelta' : n + ' azioni scelte' }
+               : { fatto: false, testo: 'da fare' };
     }
     if (id === 'checkin') {
       var n = s.checkins.filter(function (c) { return c.data === t; }).length;

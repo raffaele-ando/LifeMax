@@ -208,18 +208,34 @@ var LMCharts = (function () {
     /* etichette dirette a fine linea, de-collise verticalmente:
        se più serie chiudono sullo stesso valore le etichette si
        distanziano di almeno 14px (testo in inchiostro, swatch a lato) */
+    /* La distanza minima si applicava, ma poi ogni etichetta veniva riportata
+       dentro il bordo alto UNA PER UNA (Math.max(m.t + 8, y)): due etichette
+       spinte oltre il bordo finivano schiacciate sulla stessa riga e si
+       leggevano sovrapposte («Focus» sopra «Umore»). Ora la sistemata è una
+       sola per tutte: passata in avanti dal bordo alto, e se si sfonda quello
+       basso passata all'indietro con lo stesso passo — che si stringe se le
+       serie sono tante e il grafico è basso. */
     finali.sort(function (a, b) { return a.y - b.y; });
-    for (var fi = 1; fi < finali.length; fi++) {
-      if (finali[fi].y - finali[fi - 1].y < 14) finali[fi].y = finali[fi - 1].y + 14;
-    }
-    if (finali.length) {
-      var overflow = finali[finali.length - 1].y - (H - m.b - 4);
-      if (overflow > 0) finali.forEach(function (f) { f.y -= overflow; });
+    var n = finali.length;
+    if (n) {
+      var alto = m.t + 8, basso = H - m.b - 4, passo = 14;
+      if (n > 1 && (n - 1) * passo > basso - alto) passo = Math.max(9, (basso - alto) / (n - 1));
+      var k;
+      for (k = 0; k < n; k++) {
+        var minimo = k === 0 ? alto : finali[k - 1].y + passo;
+        if (finali[k].y < minimo) finali[k].y = minimo;
+      }
+      if (finali[n - 1].y > basso) {
+        finali[n - 1].y = basso;
+        for (k = n - 2; k >= 0; k--) {
+          if (finali[k].y > finali[k + 1].y - passo) finali[k].y = finali[k + 1].y - passo;
+        }
+        if (finali[0].y < alto) for (k = 0; k < n; k++) finali[k].y = alto + k * passo;
+      }
     }
     finali.forEach(function (f) {
-      var yl = Math.max(m.t + 8, f.y);
-      el('circle', { cx: W - m.r + 4, cy: yl, r: 3, fill: f.s.colore }, svg);
-      var lbl = el('text', { x: W - m.r + 10, y: yl + 4, 'font-size': 11, fill: 'var(--inchiostro-2)' }, svg);
+      el('circle', { cx: W - m.r + 4, cy: f.y, r: 3, fill: f.s.colore }, svg);
+      var lbl = el('text', { x: W - m.r + 10, y: f.y + 4, 'font-size': 11, fill: 'var(--inchiostro-2)' }, svg);
       lbl.textContent = f.s.nome;
     });
 

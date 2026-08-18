@@ -1888,9 +1888,13 @@ label.campo {
   background: var(--superficie-2); min-height: 58px;
 }
 .rit-corpo { padding: 4px 0 0; }
-/* dentro la riga aperta la card non ha più bisogno del suo bordo: il bordo è
-   quello del blocco */
-.rit-corpo > .card { border: 0; box-shadow: none; border-radius: 0; background: none; margin: 0; }
+/* La PRIMA card non ha più bisogno del suo bordo: il bordo è quello del
+   blocco aperto. Le successive sì: il check-in e la review della sera ne hanno
+   due (il rituale e il grafico dell'andamento), e senza cornice si fondevano
+   in un unico muro bianco senza stacco. */
+.rit-corpo > .card:first-child { border: 0; box-shadow: none; border-radius: 0; background: none; margin: 0; }
+.rit-corpo > .card + .card { margin: 0 14px 14px; }
+@media (max-width: 560px) { .rit-corpo > .card + .card { margin: 0 10px 12px; } }
 .rituale-intro { font-size: 12.5px; color: var(--inchiostro-2); margin: 0 0 14px; line-height: 1.5; }
 @media (max-width: 560px) {
   /* una riga sola anche sul telefono: cinque righe da 88px sarebbero 440px
