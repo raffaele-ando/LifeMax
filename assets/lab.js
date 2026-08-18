@@ -170,7 +170,7 @@
             return '<button class="' + (i === 0 ? 'on' : '') + '">' + a + '</button>';
           }).join('') + '</div>' +
           '<section class="s1-card">' +
-            '<div class="s1-cardtesta"><h3>Prima queste</h3><span>3</span></div>' +
+            '<div class="s1-cardtesta"><h3>Importanti</h3><span>3</span></div>' +
             C.prima.map(function (b) {
               return '<div class="s1-cosa">' +
                 '<input type="checkbox" aria-label="Segna fatta">' +
@@ -183,7 +183,7 @@
             }).join('') +
           '</section>' +
           '<section class="s1-card s1-tenue">' +
-            '<div class="s1-cardtesta"><h3>Poi</h3><span>3</span></div>' +
+            '<div class="s1-cardtesta"><h3>Altre</h3><span>3</span></div>' +
             C.poi.map(function (b) {
               return '<div class="s1-cosa">' +
                 '<input type="checkbox" aria-label="Segna fatta">' +
@@ -195,7 +195,7 @@
             }).join('') +
             '<button class="s1-altre">' + I('chevronGiu', 14) + 'Mostra le altre ' + C.altre + '</button>' +
           '</section>' +
-          '<p class="s1-piede">' + C.ferme + ' ferme da tre settimane. <button class="s1-link">Rivedile</button></p>' +
+          '<p class="s1-piede">' + C.ferme + ' inattive da tre settimane. <button class="s1-link">Rivedile</button></p>' +
         '</div>' +
       '</div>';
     }
@@ -271,13 +271,13 @@
           '<div class="c2-chip">' + ['Tutte'].concat(C.aree).map(function (a, i) {
             return '<button class="' + (i === 0 ? 'on' : '') + '">' + a + '</button>';
           }).join('') + '</div>' +
-          '<h2 class="c2-sez">Prima queste<span>3</span></h2>' +
+          '<h2 class="c2-sez">Importanti<span>3</span></h2>' +
           '<ul class="c2-lista">' + C.prima.map(function (b) { return riga(b, true); }).join('') + '</ul>' +
-          '<h2 class="c2-sez">Poi<span>3</span></h2>' +
+          '<h2 class="c2-sez">Altre<span>3</span></h2>' +
           '<ul class="c2-lista c2-tenue">' + C.poi.map(function (b) { return riga(b, false); }).join('') + '</ul>' +
           '<div class="c2-piede">' +
             '<button class="c2-btn">' + I('chevronGiu', 14) + 'Mostra le altre ' + C.altre + '</button>' +
-            '<span>' + C.ferme + ' ferme da tre settimane</span>' +
+            '<span>' + C.ferme + ' inattive da tre settimane</span>' +
           '</div>' +
         '</div>' +
       '</div>';
@@ -334,7 +334,7 @@
           '<div class="m3-chip">' + ['Tutte'].concat(C.aree).map(function (a, i) {
             return '<button class="' + (i === 0 ? 'on' : '') + '">' + a + '</button>';
           }).join('') + '</div>' +
-          '<h2 class="m3-sez">Prima queste</h2>' +
+          '<h2 class="m3-sez">Importanti</h2>' +
           C.prima.map(function (b) {
             return '<div class="m3-cosa">' +
               '<label class="m3-riga m3-nudo"><input type="checkbox">' +
@@ -343,14 +343,14 @@
               '<div class="m3-due"><button class="m3-btn m3-forte">Fai oggi</button><button class="m3-btn">Sposta</button></div>' +
             '</div>';
           }).join('') +
-          '<h2 class="m3-sez">Poi</h2>' +
+          '<h2 class="m3-sez">Altre</h2>' +
           '<section class="m3-box">' + C.poi.map(function (b) {
             return '<label class="m3-riga"><input type="checkbox">' +
               '<span class="m3-testo"><b>' + esc(b.t) + '</b>' +
               '<i>' + b.area + (b.quando ? ' · ' + b.quando : '') + '</i></span></label>';
           }).join('') + '</section>' +
           '<button class="m3-largo">' + I('chevronGiu', 16) + 'Mostra le altre ' + C.altre + '</button>' +
-          '<p class="m3-piede">' + C.ferme + ' ferme da tre settimane</p>' +
+          '<p class="m3-piede">' + C.ferme + ' inattive da tre settimane</p>' +
         '</div>' +
         '<nav class="m3-barrabasso">' + C.pagine.map(function (p) {
           return '<a class="' + (p.id === 'attivita' ? 'qui' : '') + '">' + I(p.ico, 22) + '<span>' + p.nome + '</span></a>';
@@ -435,13 +435,13 @@
             return '<button class="' + (i === 0 ? 'on' : '') + '">' + a + '</button>';
           }).join('') + '</div>' +
           '<section class="n4-box">' +
-            '<h3>Prima queste <b>3</b></h3>' + C.prima.map(function (b) { return riga(b, true); }).join('') +
+            '<h3>Importanti <b>3</b></h3>' + C.prima.map(function (b) { return riga(b, true); }).join('') +
           '</section>' +
           '<section class="n4-box">' +
-            '<h3>Poi <b>3</b></h3>' + C.poi.map(function (b) { return riga(b, false); }).join('') +
+            '<h3>Altre <b>3</b></h3>' + C.poi.map(function (b) { return riga(b, false); }).join('') +
             '<button class="n4-largo">' + I('chevronGiu', 14) + 'Mostra le altre ' + C.altre + '</button>' +
           '</section>' +
-          '<p class="n4-piede">' + C.ferme + ' ferme da tre settimane. <button class="n4-link">Rivedile</button></p>' +
+          '<p class="n4-piede">' + C.ferme + ' inattive da tre settimane. <button class="n4-link">Rivedile</button></p>' +
         '</div>' +
       '</div>';
     }
@@ -483,14 +483,14 @@
           '<section class="d5-col d5-lato">' +
             '<h2 class="d5-h2">Da fare <span>' + C.totaleDaFare + '</span></h2>' +
             '<form class="d5-agg"><input type="text" placeholder="Aggiungi"><button class="d5-btn" type="submit" aria-label="Aggiungi">' + I('plus', 14) + '</button></form>' +
-            '<p class="d5-eti2">Prima queste</p>' +
+            '<p class="d5-eti2">Importanti</p>' +
             C.prima.map(function (b) {
               return '<div class="d5-cosa"><input type="checkbox" aria-label="Segna fatta">' +
                 '<div><b>' + esc(b.t) + '</b><span><i class="d5-tag">' + b.area + '</i>' +
                 (b.quando ? '<i class="d5-quando' + (b.urgente ? ' rosso' : '') + '">' + b.quando + '</i>' : '') + '</span></div>' +
                 '<button class="d5-btn d5-mini">Oggi</button></div>';
             }).join('') +
-            '<p class="d5-eti2">Poi</p>' +
+            '<p class="d5-eti2">Altre</p>' +
             C.poi.map(function (b) {
               return '<div class="d5-cosa d5-tenue"><input type="checkbox" aria-label="Segna fatta">' +
                 '<div><b>' + esc(b.t) + '</b><span><i class="d5-tag">' + b.area + '</i></span></div></div>';
@@ -515,7 +515,7 @@
             '<div class="d5-chip">' + ['Tutte'].concat(C.aree).map(function (a, i) {
               return '<button class="' + (i === 0 ? 'on' : '') + '">' + a + '</button>';
             }).join('') + '</div>' +
-            '<p class="d5-eti2">Prima queste <b>3</b></p>' +
+            '<p class="d5-eti2">Importanti <b>3</b></p>' +
             C.prima.map(function (b) {
               return '<div class="d5-cosa d5-grande"><input type="checkbox" aria-label="Segna fatta">' +
                 '<div><b>' + esc(b.t) + '</b><span><i class="d5-tag">' + b.area + '</i>' +
@@ -523,7 +523,7 @@
                 '<button class="d5-btn d5-pieno d5-mini">Fai oggi</button>' +
                 '<button class="d5-ico" aria-label="Altre opzioni">' + I('dots', 15) + '</button></div>';
             }).join('') +
-            '<p class="d5-eti2">Poi <b>3</b></p>' +
+            '<p class="d5-eti2">Altre <b>3</b></p>' +
             C.poi.map(function (b) {
               return '<div class="d5-cosa d5-grande d5-tenue"><input type="checkbox" aria-label="Segna fatta">' +
                 '<div><b>' + esc(b.t) + '</b><span><i class="d5-tag">' + b.area + '</i>' +
@@ -610,21 +610,21 @@
           '<div class="t6-chip">' + ['Tutte'].concat(C.aree).map(function (a, i) {
             return '<button class="' + (i === 0 ? 'on' : '') + '">' + a + '</button>';
           }).join('') + '</div>' +
-          '<h2 class="t6-sez">Prima queste<span>3</span></h2>' +
+          '<h2 class="t6-sez">Importanti<span>3</span></h2>' +
           C.prima.map(function (b) {
             return '<div class="t6-cosa"><input type="checkbox" aria-label="Segna fatta">' +
               '<div class="t6-testo"><b>' + esc(b.t) + '</b>' +
               '<i>' + b.area + (b.quando ? ' · <em' + (b.urgente ? ' class="rosso"' : '') + '>' + b.quando + '</em>' : '') + '</i></div>' +
               '<button class="t6-btn t6-forte">Fai oggi</button></div>';
           }).join('') +
-          '<h2 class="t6-sez">Poi<span>3</span></h2>' +
+          '<h2 class="t6-sez">Altre<span>3</span></h2>' +
           C.poi.map(function (b) {
             return '<div class="t6-cosa"><input type="checkbox" aria-label="Segna fatta">' +
               '<div class="t6-testo"><b>' + esc(b.t) + '</b><i>' + b.area + (b.quando ? ' · ' + b.quando : '') + '</i></div>' +
               '<button class="t6-ico2" aria-label="Altre opzioni">' + I('dots', 16) + '</button></div>';
           }).join('') +
           '<button class="t6-largo">' + I('chevronGiu', 15) + 'Mostra le altre ' + C.altre + '</button>' +
-          '<p class="t6-piede">' + C.ferme + ' ferme da tre settimane</p>' +
+          '<p class="t6-piede">' + C.ferme + ' inattive da tre settimane</p>' +
         '</div>' +
         '<nav class="t6-basso">' + C.pagine.map(function (p) {
           return '<a class="' + (p.id === 'attivita' ? 'qui' : '') + '">' + I(p.ico, 21) + '<span>' + p.nome + '</span></a>';
@@ -706,12 +706,12 @@
           '<div class="k7-chip">' + ['Tutte'].concat(C.aree).map(function (a, i) {
             return '<button class="' + (i === 0 ? 'on' : '') + '">' + a + '</button>';
           }).join('') + '</div>' +
-          '<section class="k7-box"><div class="k7-boxtesta"><h3>Prima queste</h3><span>3</span></div>' +
+          '<section class="k7-box"><div class="k7-boxtesta"><h3>Importanti</h3><span>3</span></div>' +
             C.prima.map(function (b) { return riga(b, true); }).join('') + '</section>' +
-          '<section class="k7-box"><div class="k7-boxtesta"><h3>Poi</h3><span>3</span></div>' +
+          '<section class="k7-box"><div class="k7-boxtesta"><h3>Altre</h3><span>3</span></div>' +
             C.poi.map(function (b) { return riga(b, false); }).join('') +
             '<button class="k7-largo">' + I('chevronGiu', 14) + 'Mostra le altre ' + C.altre + '</button></section>' +
-          '<p class="k7-piede">' + C.ferme + ' ferme da tre settimane. <button class="k7-link">Rivedile</button></p>' +
+          '<p class="k7-piede">' + C.ferme + ' inattive da tre settimane. <button class="k7-link">Rivedile</button></p>' +
         '</div>' +
       '</div>';
     }
@@ -737,7 +737,7 @@
             '<button class="g8-mega">' + I('check', 22) + 'Fatto</button>' +
             '<button class="g8-btn">Rinvia di un’ora</button>' +
           '</section>' +
-          '<h2 class="g8-sez">Poi oggi</h2>' +
+          '<h2 class="g8-sez">Altre oggi</h2>' +
           C.blocchi.slice(3).concat(C.senzaOra).map(function (b) {
             return '<label class="g8-riga"><input type="checkbox">' +
               '<span><b>' + esc(b.t) + '</b><i>' + (b.da ? b.da : 'senza ora') + ' · ' + b.area + '</i></span></label>';
@@ -760,7 +760,7 @@
           '<header class="g8-testa"><span>' + C.totaleDaFare + ' cose da fare</span><h1>Attività</h1></header>' +
           '<form class="g8-agg"><input type="text" placeholder="Cosa devi fare?">' +
             '<button class="g8-mega g8-corto" type="submit">' + I('plus', 20) + 'Aggiungi</button></form>' +
-          '<h2 class="g8-sez">Prima queste</h2>' +
+          '<h2 class="g8-sez">Importanti</h2>' +
           C.prima.map(function (b) {
             return '<div class="g8-cosa">' +
               '<label><input type="checkbox"><span><b>' + esc(b.t) + '</b>' +
@@ -768,13 +768,13 @@
               '<button class="g8-mega g8-corto">Fai oggi</button>' +
             '</div>';
           }).join('') +
-          '<h2 class="g8-sez">Poi</h2>' +
+          '<h2 class="g8-sez">Altre</h2>' +
           C.poi.map(function (b) {
             return '<label class="g8-riga"><input type="checkbox">' +
               '<span><b>' + esc(b.t) + '</b><i>' + b.area + (b.quando ? ' · ' + b.quando : '') + '</i></span></label>';
           }).join('') +
           '<button class="g8-btn g8-largo">' + I('chevronGiu', 18) + 'Mostra le altre ' + C.altre + '</button>' +
-          '<p class="g8-piede">' + C.ferme + ' ferme da tre settimane</p>' +
+          '<p class="g8-piede">' + C.ferme + ' inattive da tre settimane</p>' +
         '</div>' +
         '<nav class="g8-basso">' + C.pagine.slice(0, 4).map(function (p) {
           return '<a class="' + (p.id === 'attivita' ? 'qui' : '') + '">' + I(p.ico, 26) + '<span>' + p.nome + '</span></a>';
@@ -855,12 +855,12 @@
           '<div class="a9-chip">' + ['Tutte'].concat(C.aree).map(function (a, i) {
             return '<button class="' + (i === 0 ? 'on' : '') + '">' + a + '</button>';
           }).join('') + '</div>' +
-          '<h2>Prima queste<span>3</span></h2>' +
+          '<h2>Importanti<span>3</span></h2>' +
           C.prima.map(function (b) { return riga(b, true); }).join('') +
-          '<h2>Poi<span>3</span></h2>' +
+          '<h2>Altre<span>3</span></h2>' +
           C.poi.map(function (b) { return riga(b, false); }).join('') +
           '<div class="a9-coda"><button class="a9-btn">' + I('chevronGiu', 14) + 'Mostra le altre ' + C.altre + '</button>' +
-            '<span>' + C.ferme + ' ferme da tre settimane</span></div>' +
+            '<span>' + C.ferme + ' inattive da tre settimane</span></div>' +
         '</div>' +
       '</div>';
     }
@@ -924,7 +924,7 @@
             '<div class="p10-due"><button class="p10-btn">Mettila oggi</button><button class="p10-btn">Sposta</button></div>' +
           '</section>' +
           '<section class="p10-dopo">' +
-            '<span class="p10-eti2">Poi queste due</span>' +
+            '<span class="p10-eti2">Altre queste due</span>' +
             C.prima.slice(1).map(function (b) {
               return '<div class="p10-riga p10-cliccabile"><input type="checkbox" aria-label="Segna fatta">' +
                 '<b>' + esc(b.t) + '</b><span class="p10-tag">' + b.quando + '</span>' +
@@ -937,7 +937,7 @@
             '<div class="p10-aree">' + C.aree.map(function (a) {
               return '<button>' + a + '</button>';
             }).join('') + '</div>' +
-            '<p class="p10-piede">' + C.ferme + ' ferme da tre settimane. <button class="p10-link">Rivedile</button></p>' +
+            '<p class="p10-piede">' + C.ferme + ' inattive da tre settimane. <button class="p10-link">Rivedile</button></p>' +
           '</section>' +
         '</div>' +
         '<nav class="p10-basso">' + C.pagine.map(function (p) {
@@ -967,7 +967,7 @@
         '<p class="lab-guida">Dieci interfacce vere per la stessa app. In tutte c’è un titolo che dice dove sei, ' +
         'un solo pulsante pieno con la cosa che conviene fare, caselle da spuntare e voci fatte allo stesso modo. ' +
         'Cambia il resto: dove sta la navigazione, quanto è densa la lista, chiaro o scuro, una colonna o due, ' +
-        'quanto è grande il tocco. I contenuti sono identici, così il confronto è onesto: guardale e dimmi il numero.</p>' +
+        'quanto è grande il tocco. I contenuti sono identici in tutte, così il confronto è onesto.</p>' +
         '<div class="lab-rail" role="tablist" aria-label="Dieci interfacce">' +
           DESIGN.map(function (d) {
             return '<button role="tab" class="lab-tab' + (d.n === scelto ? ' on' : '') + '" data-d="' + d.n + '" aria-selected="' + (d.n === scelto) + '">' +

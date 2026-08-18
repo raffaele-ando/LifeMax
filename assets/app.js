@@ -201,14 +201,14 @@
   document.getElementById('fab-cattura').innerHTML = ICO('plus', 25);
   document.getElementById('fab-cattura').addEventListener('click', apriCattura);
   var $sideCatt = document.getElementById('side-cattura');
-  $sideCatt.querySelector('.cattura-cta-testo').innerHTML = ICO('bolt', 16) + ' Cattura un pensiero';
+  $sideCatt.querySelector('.cattura-cta-testo').innerHTML = ICO('bolt', 16) + ' Aggiungi una nota';
   $sideCatt.addEventListener('click', apriCattura);
   $ovl.addEventListener('click', function (e) { if (e.target === $ovl) chiudiCattura(); });
   function salvaCattura() {
     var t = $inp.value.trim();
     if (!t) return;
     var xp = LM.cattura(t);
-    toast('Salvato. Torna pure a quello che stavi facendo.', xp, 'inbox');
+    toast('Salvato.', xp, 'inbox');
     chiudiCattura();
     aggiornaNav(); render();
   }
@@ -635,7 +635,7 @@
     if (!window.LMLog) return '<div class="imp-nota" style="margin:0">Registro non disponibile.</div>';
     var r = LMLog.righe();
     if (LOG_SOLO_PROBLEMI) r = r.filter(function (x) { return x.liv !== 'info'; });
-    if (!r.length) return '<div class="diag-vuoto">' + (LOG_SOLO_PROBLEMI ? 'Nessun problema registrato. Buon segno.' : 'Ancora niente da mostrare.') + '</div>';
+    if (!r.length) return '<div class="diag-vuoto">' + (LOG_SOLO_PROBLEMI ? 'Nessun problema registrato.' : 'Ancora niente da mostrare.') + '</div>';
     /* dal più recente: su un telefono l'ultima cosa avvenuta deve stare
        davanti agli occhi, non in fondo a 300 righe */
     return r.slice().reverse().map(function (x) {
@@ -684,7 +684,7 @@
       }
       if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(t).then(function () {
-          toast('Registro copiato: puoi incollarlo dove vuoi.', 0, 'copy');
+          toast('Registro copiato.', 0, 'copy');
         }, aMano);
       } else aMano();
     });
@@ -697,7 +697,7 @@
     root.querySelector('#diag-riprova').addEventListener('click', function () {
       LM.save();   // forza un giro di salvataggio: rilancia anche il push sul cloud
       if (window.LMLog) LMLog.info('registro', 'Salvataggio richiesto a mano dall’utente');
-      toast('Salvataggio richiesto. Guarda le righe qui sotto.', 0, 'refresh');
+      toast('Salvataggio richiesto: le righe qui sotto dicono com’è andato.', 0, 'refresh');
     });
 
     root.querySelector('#diag-svuota').addEventListener('click', function () {
@@ -789,16 +789,16 @@
       return '<div class="guida-voce"><span class="guida-ico">' + ICO(ico, 16) + '</span><div><b>' + tit + '</b><p>' + testo + '</p></div></div>';
     }
     apriSheet('Come si usa LifeMax',
-      '<div class="imp-nota" style="margin-top:0">Tutto gira intorno a tre parole: <b>butta giù</b> un pensiero, <b>decidi</b> cosa farne, <b>fai</b> una cosa alla volta. Bastano pochi minuti al giorno.</div>' +
+      '<div class="imp-nota" style="margin-top:0">Tre passaggi: <b>annoti</b> quello che ti viene in mente, <b>decidi</b> cosa farne, <b>fai</b> una cosa per volta.</div>' +
       '<div class="guida">' +
-      voce('bolt', '1 · Butta giù tutto', 'Ti viene in mente qualcosa? Premi <kbd>C</kbd> (o il tasto ＋) e scrivilo al volo. Non devi decidere niente adesso: finisce in <b>Attività</b>, alla voce «Da sistemare».') +
-      voce('lista', '2 · Decidi cosa farne', 'In <b>Attività</b>, per ogni nota scegli <b>Oggi</b> (la fai oggi), <b>Da fare</b> (più avanti, senza data) o <b>Scarta</b>. Le cose «Da fare» restano lì, divise per area, finché non le porti in Oggi.') +
-      voce('target', '3 · Fai, una alla volta', 'La schermata <b>Oggi</b> ti mette davanti una cosa sola: fai quella, poi arriva la prossima. Al mattino scegli le tue tre cose in <b>Rituali</b>; la sera chiudi con la review. Ogni giorno riparte pulito.') +
-      voce('clock', 'La giornata', 'La timeline «La giornata» mostra come sono divise le tue ore: sonno, pasti, abitudini e cose di oggi con un orario. Puoi scegliere dove vederla dal menù a tendina sulla timeline.') +
-      voce('smile', 'Check-in in 10 secondi', 'Energia, concentrazione, umore. Rispondi a istinto partendo dal «tuo solito». Serve a vedere l’andamento nei giorni, più che il numero di oggi.') +
-      voce('flask', 'Esperimenti su di te', 'Provi un cambiamento (es. sport al mattino) e l’app confronta il prima e il dopo sui tuoi numeri. Così scopri cosa funziona <b>per te</b>.') +
+      voce('bolt', '1 · Annota', 'Premi <kbd>C</kbd> (o il tasto ＋) e scrivi. La nota finisce in <b>Attività</b>, sezione «Sistemare»: non serve decidere altro adesso.') +
+      voce('lista', '2 · Decidi cosa farne', 'In <b>Attività</b>, per ogni nota scegli <b>Oggi</b>, <b>Da fare</b> (più avanti, senza data) o <b>Scarta</b>. Quelle in «Da fare» restano in elenco, con il filtro per area, finché non le porti in Oggi.') +
+      voce('target', '3 · Fai una cosa per volta', 'La schermata <b>Oggi</b> mostra una sola azione. Al mattino scegli le tre azioni del giorno in <b>Rituali</b>, la sera chiudi con la review.') +
+      voce('clock', 'La giornata', 'Mostra come sono divise le tue ore: sonno, pasti, abitudini e azioni con un orario. Dove vederla si sceglie dal menù sulla timeline.') +
+      voce('smile', 'Check-in', 'Energia, concentrazione, umore, su una scala da 1 a 5. Conta l’andamento nei giorni, non il numero di oggi.') +
+      voce('flask', 'Esperimenti', 'Introduci un cambiamento (per esempio sport al mattino) e l’app confronta i tuoi dati prima e dopo.') +
       voce('trendUp', 'Panoramica e Diario', 'In <b>Panoramica</b> vedi progressi, costanza e andamento; nel <b>Diario</b> lo storico giorno per giorno.') +
-      voce('save', 'I tuoi dati sono al sicuro', 'Backup automatici, esporta e importa in .json, e sincronizzazione sul tuo account Google tra dispositivi.') +
+      voce('save', 'I dati', 'Backup automatici, esportazione e importazione in .json, sincronizzazione sull’account Google fra dispositivi.') +
       '</div>', null);
   }
 
@@ -1043,7 +1043,7 @@
       if (ela) ela.style.setProperty('--p', Math.min(1, 1 - resta / (timer.durata * 60000)).toFixed(4));
       if (resta <= 0) {
         fermaTimer(true);
-        toast('Timer finito. Ho registrato i minuti: continua o fai una pausa.', 0, 'clock');
+        toast('Timer finito. Minuti registrati.', 0, 'clock');
         render();
       }
     }, 250);
@@ -1071,7 +1071,7 @@
     var oggi = LM.azioniDiOggi();
     var fatte = oggi.filter(function (a) { return a.done; }).length;
     var inCoda = oggi.filter(function (a) { return !a.done; }).length - (prossima ? 1 : 0);
-    var html = topbar('Oggi', 'Una cosa alla volta. Finisci questa, poi arriva la prossima.',
+    var html = topbar('Oggi', 'L’azione da fare adesso.',
       '<span class="chip">' + ICO('check', 14) + ' <b>&nbsp;' + fatte + '/' + oggi.length + '</b>&nbsp;oggi</span>');
     html += '<div id="oggi-giornata"></div>';
 
@@ -1175,8 +1175,8 @@
       /* il suggerimento cambia col dispositivo: su un telefono non c'è nessun
          tasto C da premere, c'è il pulsante + in basso */
       '<span class="solo-tastiera">·</span>' +
-      '<span class="solo-tastiera">Ti è venuto in mente qualcosa? Premi <kbd>C</kbd> per annotarlo senza perdere il filo.</span>' +
-      '<span class="solo-tocco">Ti è venuto in mente altro? Tocca <b>+</b> e lo metti da parte senza perdere il filo.</span>' +
+      '<span class="solo-tastiera">Premi <kbd>C</kbd> per aggiungere una nota.</span>' +
+      '<span class="solo-tocco">Tocca <b>+</b> per aggiungere una nota.</span>' +
       '</div>' +
       altreHtml +
       '</div>';
@@ -1212,13 +1212,13 @@
       fermaTimer(false);
       if (fuocoScelto === prossima.id) fuocoScelto = null;
       LM.rimandaAzione(prossima.id);
-      toast('Va bene, la rivedrai più tardi.', 0, 'arrowRight');
+      toast('Rimandata.', 0, 'arrowRight');
       render();
     });
     if (timerAttivo) {
       document.getElementById('btn-stop-timer').addEventListener('click', function () {
         fermaTimer(true);
-        toast('Ho registrato i minuti dedicati a ' + area.nome + '.', 0, 'clock');
+        toast('Minuti registrati per ' + area.nome + '.', 0, 'clock');
         render();
       });
     } else {
@@ -1615,7 +1615,7 @@
       '<div class="ig-fondo">' +
       (e.ora ? '<button class="btn btn-mini btn-ghost ig-noora">' + ICO('clock', 13) + ' Togli l’orario</button>' : '') +
       (isAz
-        ? '<button class="btn btn-mini ig-indietro">' + ICO('lista', 13) + ' Togli dal giorno' + (e.passoDi ? '' : ' (torna tra le cose da fare)') + '</button>' +
+        ? '<button class="btn btn-mini ig-indietro">' + ICO('lista', 13) + ' Togli dal giorno' + (e.passoDi ? '' : ' (torna in «Da fare»)') + '</button>' +
           '<button class="btn btn-mini btn-ghost imp-pericolo ig-rimuovi">' + ICO('trash', 13) + ' Elimina</button>'
         : /* un'abitudine si toglie da QUESTO giorno senza cancellarla né
              toccare le altre; il resto si gestisce in Rituali */
@@ -1665,7 +1665,7 @@
       var ind = root.querySelector('.ig-indietro');
       if (ind) ind.addEventListener('click', function () {
         LM.azioneInBacklog(id);
-        toast(e.passoDi ? 'Tolta dal giorno: il passo resta nel progetto.' : 'Rimessa tra le cose da fare.', 0, 'lista');
+        toast(e.passoDi ? 'Tolta dal giorno: il passo resta nel progetto.' : 'Rimessa in «Da fare».', 0, 'lista');
         chiudiSheet(); ricarica();
       });
       var rim = root.querySelector('.ig-rimuovi');
@@ -1790,7 +1790,7 @@
       if (nonFatte.length && !isFuturo) {
         var doveVa = etichettaGiorno(LM.addDays(k, 1)).toLowerCase();
         footer = '<div class="tl-piede"><button class="btn btn-mini" id="tl-rimanda">' + ICO('arrowRight', 14) + ' Sposta a ' + doveVa + ' le ' + nonFatte.length + ' cose non fatte</button>' +
-          '<span class="sotto" style="margin:0">Niente penalità: ripianificare è parte del gioco.</span></div>';
+          '<span class="sotto" style="margin:0">Ripianificare non comporta nessuna penalità.</span></div>';
       }
     }
     if (compact && opts.controls !== false) {
@@ -1929,7 +1929,7 @@
       var spAdd = container.querySelector('#sp-add');
       if (spAdd) spAdd.addEventListener('click', function () { var arr = leggiPasti(); arr.push({ id: 'p' + Date.now().toString(36), nome: 'Pasto', ora: '', durata: 30 }); LM.setRitmoGiorno(k, { pasti: arr }); montaGiornata(container, opts); });
       var spReset = container.querySelector('#sp-reset');
-      if (spReset) spReset.addEventListener('click', function () { LM.azzeraRitmoGiorno(k); toast('Torna al ritmo di base.', 0, 'refresh'); montaGiornata(container, opts); });
+      if (spReset) spReset.addEventListener('click', function () { LM.azzeraRitmoGiorno(k); toast('Ripristinato il ritmo di base.', 0, 'refresh'); montaGiornata(container, opts); });
       var spBase = container.querySelector('#sp-base');
       if (spBase) spBase.addEventListener('click', apriRitmo);
       var gsT = container.querySelector('#gio-sonno-toggle');
@@ -2277,7 +2277,7 @@
   function vistaGiornata() {
     if (!giornataAncora) giornataAncora = LM.todayKey();
     function orizz(id, ico, et) { return '<button data-orizz="' + id + '" class="' + (giornataOrizzonte === id ? 'attivo' : '') + '">' + ICO(ico, 15) + et + '</button>'; }
-    var html = topbar('La giornata', 'Con le frecce ‹ › vai avanti e indietro: i giorni futuri puoi già prepararli. Oppure allarga lo sguardo con settimana, mese e anno.');
+    var html = topbar('La giornata', 'Le tue ore, giorno per giorno. Con ‹ › cambi giorno.');
     html += '<div class="segmenti sez-nav" id="orizz-nav">' +
       orizz('giorno', 'clock', 'Giorno') + orizz('settimana', 'calendar', 'Settimana') +
       orizz('mese', 'dashboard', 'Mese') + orizz('anno', 'trendUp', 'Anno') + '</div>' +
@@ -2377,7 +2377,7 @@
        un angolo di tutte le pagine. Sta in «Andamento» perché è la porta di
        quello che riguarda l'app e non la giornata, e su monitor non compare —
        là c'è il piede della barra laterale, dove ha sempre funzionato. */
-    var html = topbar('Panoramica', 'I tuoi dati e i tuoi progressi, una sezione per volta.',
+    var html = topbar('Panoramica', 'Dati e progressi.',
       '<button type="button" class="btn btn-mini imp-porta" id="plancia-imp">' + ICO('ingranaggio', 15) + ' Impostazioni</button>',
       't-plancia');
 
@@ -2442,20 +2442,20 @@
     function sezRiepilogo(c) {
       c.innerHTML = '<div class="griglia griglia-2">' +
         '<div class="card" style="--i:0"><h2>' + ICO('target', 16) + ' Le azioni di oggi</h2>' +
-        '<div class="sotto">Le scegli la mattina in <a href="#/rituali">Rituali</a>, le fai una alla volta in <a href="#/oggi">Oggi</a>. Qui le vedi tutte insieme.</div>' +
+        '<div class="sotto">Scelte in <a href="#/rituali">Rituali</a>, fatte una per volta in <a href="#/oggi">Oggi</a>. Qui sono tutte insieme.</div>' +
         '<div class="lista-azioni" id="lista-oggi"></div>' +
         '<form id="form-add" class="riga-flex mt-s"><input type="text" id="testo-add" placeholder="Aggiungi un’altra cosa a oggi…" style="flex:1;min-width:150px">' +
         '<span style="width:132px">' + selectAree('area-add') + '</span>' +
         '<button class="btn btn-mini btn-primario" type="submit" aria-label="Aggiungi">' + ICO('plus', 14) + '</button></form></div>' +
         '<div class="card" style="--i:1"><h2>' + ICO('trendUp', 16) + ' Costanza</h2>' +
-        '<div class="sotto">XP guadagnati ogni giorno, nelle ultime 12 settimane. Quello che conta è tornarci spesso.</div>' +
+        '<div class="sotto">XP guadagnati ogni giorno, nelle ultime 12 settimane.</div>' +
         '<div id="heatmap"></div></div></div>';
 
       LMCharts.heatmap(document.getElementById('heatmap'), LM.heatmapConsistenza(12));
 
       var lista = document.getElementById('lista-oggi');
       if (!oggi.length) {
-        lista.innerHTML = '<div class="vuoto" style="padding:16px 8px">Non hai ancora scelto le azioni di oggi.<br><a href="#/rituali">Scegli cosa fare</a> in un minuto.</div>';
+        lista.innerHTML = '<div class="vuoto" style="padding:16px 8px">Nessuna azione scelta per oggi.<br><a href="#/rituali">Scegline in Rituali</a>.</div>';
       } else {
         lista.innerHTML = oggi.map(function (a) {
           var ar = areaById(a.areaId);
@@ -2573,7 +2573,7 @@
     sottoRituale = sub;
 
     var suggerito = (ora < 12 ? 'mattina' : (ora >= 19 ? 'sera' : 'checkin'));
-    var html = topbar('Rituali', 'Piccole routine fisse: te le trovi già pronte, così non devi ripensarci ogni volta.') +
+    var html = topbar('Rituali', 'Mattina, sera e abitudini.') +
       '<div class="rituali-nav segmenti" id="seg-rituali">' +
       seg('mattina', 'sun', 'Mattina') + seg('abitudini', 'refresh', 'Abitudini') + seg('checkin', 'bolt', 'Check-in') + seg('sera', 'moon', 'Sera') + seg('settimana', 'calendar', 'Settimana') +
       '</div>' +
@@ -2613,7 +2613,7 @@
 
     corpo.innerHTML = '<div class="card">' +
       testaRituale('sun', 'Le azioni di oggi',
-        'Qui le <b>scegli</b> (poi le fai in <i>Oggi</i>). La prima è la più importante: se fai solo quella, la giornata è già a posto. Domani si riparte da capo.') +
+        'Le scegli qui e le fai in <i>Oggi</i>. La prima è quella più importante. Ogni giorno riparte da capo.') +
       '<div class="lista-azioni" id="piano-lista"></div>' +
       /* Tre è il consiglio, non un muro: chi ha una giornata piena deve poter
          scrivere quello che gli serve. Oltre le tre lo diciamo e basta. */
@@ -2621,7 +2621,7 @@
       '<input type="text" id="piano-testo" placeholder="' + (oggi.length === 0 ? 'La cosa più importante di oggi…' : 'Un’altra cosa (se vuoi)…') + '" style="flex:1;min-width:180px">' +
       '<span style="width:155px">' + selectAree('piano-area') + '</span>' +
       '<button class="btn btn-primario" type="submit" aria-label="Aggiungi">' + ICO('plus', 16) + '</button></div>' +
-      (oggi.length >= 3 ? '<div class="sotto" style="margin:8px 0 0">Hai già <b>' + oggi.length + '</b> cose per oggi. Tre bastano quasi sempre: se ne aggiungi altre, valuta se qualcuna può aspettare domani (la sposti da <i>La giornata</i>).</div>' : '') +
+      (oggi.length >= 3 ? '<div class="sotto" style="margin:8px 0 0">Hai <b>' + oggi.length + '</b> azioni per oggi. Oltre tre diventa difficile finirle: le altre si possono spostare a domani da <i>La giornata</i>.</div>' : '') +
       '</form>' +
       '<label class="campo">Quando e dove inizi la prima?</label>' +
       '<input type="text" id="piano-ifthen" placeholder="Es. alle 9:00, appena mi siedo alla scrivania, apro solo il file su cui devo lavorare" value="' + (piano ? esc(piano.intenzione) : '') + '">' +
@@ -2637,7 +2637,7 @@
             (a.mit ? '<span class="tag-mit">' + ICO('star', 10) + 'Priorità</span>' : '') +
             '<span class="tag-area" style="--c-area:' + LM.coloreArea(ar) + '" title="' + esc(ar.nome) + '">' + ICO(ar.icona, 15) + '</span></div>';
         }).join('')
-      : '<div class="vuoto" style="padding:14px">Ancora niente. La prima cosa che scrivi diventa quella più importante.</div>';
+      : '<div class="vuoto" style="padding:14px">Niente scelto. La prima che scrivi diventa la più importante.</div>';
 
     var form = document.getElementById('form-piano');
     if (form) form.addEventListener('submit', function (e) {
@@ -2734,7 +2734,7 @@
       testaRituale('refresh', 'Abitudini',
         /* tre righe di spiegazione diventavano tre righe di schermo su ogni
            apertura, per un testo che si legge una volta sola */
-        'Le cose che vuoi ripetere spesso. Ogni volta che le fai, la serie cresce.') +
+        'Le azioni che vuoi ripetere. Ogni volta che le fai, la serie cresce.') +
       rigaAggiunta('agg-ab', 'Nuova abitudine…',
         '<span class="agg-eti">In che giorni?</span>' +
         '<div id="agg-ab-giorni" class="agg-giorni">' + chipsGiorni([]) + '</div>' +
@@ -2821,7 +2821,7 @@
     var voti = { energia: 0, focus: 0, umore: 0 };
     corpo.innerHTML = '<div class="card">' +
       testaRituale('bolt', 'Come stai adesso',
-        'Tre tocchi, a istinto. Rispondi com’è la giornata per te adesso, senza pensarci troppo. Ti serve a vedere come cambi nei giorni, un numero da solo non dice molto.') +
+        'Energia, concentrazione e umore su una scala da 1 a 5. Conta l’andamento nei giorni, non il numero di oggi.') +
       scala('energia', 'bolt', 'Quanta energia hai?') +
       scala('focus', 'target', 'Quanto riesci a concentrarti?') +
       scala('umore', 'smile', 'Come ti senti?') +
@@ -2837,7 +2837,7 @@
           return '<button data-v="' + v + '" aria-label="' + v + ', ' + anc[v - 1] + '">' + v + '</button>';
         }).join('') + '</div>' +
         '<div class="scala-legenda"><span>1 · ' + anc[0] + '</span><span>3 · ' + anc[2] + '</span><span>5 · ' + anc[4] + '</span></div>' +
-        (base ? '<div class="scala-solito">' + ICO('trendUp', 12) + ' Di solito qui stai intorno a <b>' + base.toFixed(1) + '</b>. Parti da lì: oggi sei sopra o sotto?</div>' : '') +
+        (base ? '<div class="scala-solito">' + ICO('trendUp', 12) + ' La tua media recente è <b>' + base.toFixed(1) + '</b>.</div>' : '') +
         '</div>';
     }
     corpo.querySelectorAll('.scala').forEach(function (sc) {
@@ -2854,7 +2854,7 @@
       var xp = LM.registraCheckin(voti.energia, voti.focus, voti.umore);
       var r = ev.currentTarget.getBoundingClientRect();
       flyXp(r.left + r.width / 2, r.top, xp);
-      toast('Salvato. Puoi tornare a ciò che stavi facendo.', xp, 'bolt');
+      toast('Salvato.', xp, 'bolt');
       render();
     });
 
@@ -2877,7 +2877,7 @@
 
     corpo.innerHTML = '<div class="card">' +
       testaRituale('moon', 'Review della sera',
-        'Due minuti per chiudere la giornata. Vota le aree su cui hai lavorato, scrivi una cosa andata bene e un ostacolo. Poi è <b>finita</b>: puoi staccare.') +
+        'Voto alle aree su cui hai lavorato, una cosa andata bene e un ostacolo. Due minuti.') +
       '<div id="voti-aree">' + ordinate.map(function (a) {
         return '<div class="voto-area" data-area="' + a.id + '" style="--c-area:' + LM.coloreArea(a) + '">' +
           '<span class="nome">' + ICO(a.icona, 16) + ' ' + esc(a.nome) + '</span>' +
@@ -2907,7 +2907,7 @@
         blocco: document.getElementById('sera-blocco').value.trim(),
         shutdown: true
       });
-      toast('Giornata conclusa. Domani si ricomincia.', xp, 'moon');
+      toast('Giornata conclusa.', xp, 'moon');
       render();
     });
   }
@@ -2923,7 +2923,7 @@
 
     corpo.innerHTML = '<div class="card">' +
       testaRituale('calendar', 'Review della settimana',
-        'Dieci minuti per guardare la settimana da fuori e portarti dietro una cosa utile per quella che arriva. Niente pagelle: serve solo a te.') +
+        'Riepilogo della settimana e una cosa da portare in quella dopo. Dieci minuti.') +
       '<div class="eroe-statistiche" style="justify-content:center;margin-bottom:16px">' +
       '<div class="stat"><span class="stat-val">' + xpSett + '</span><span class="stat-eti">XP guadagnati</span></div>' +
       '<div class="stat"><span class="stat-val">' + azioniSett + '</span><span class="stat-eti">azioni completate</span></div>' +
@@ -2971,7 +2971,7 @@
     var nArrivo = LM.scadenzeVicine(14).length;
     if (!attTab || (attTab === 'sistemare' && !nInbox)) attTab = nInbox ? 'sistemare' : 'dafare';
 
-    var html = topbar('Attività', 'Butta giù tutto, decidi dopo.');
+    var html = topbar('Attività', 'Tutto quello che hai da fare.');
     /* Le quattro sezioni stanno in quattro colonne uguali. Prima erano quattro
        pastiglie in una riga che scorreva di lato: servivano 519px e su un
        telefono ce ne sono 356, quindi «In arrivo» e «Progetti» erano fuori
@@ -3015,7 +3015,7 @@
     function disegnaArrivo(box) {
       var vic = LM.scadenzeVicine(60);
       if (!vic.length) {
-        box.innerHTML = '<div class="card"><div class="vuoto" style="padding:22px 8px">' + ICO('calendar', 28) + '<br><b>Niente con una data, per ora.</b><br>Dai una scadenza a una cosa «Da fare» e comparirà qui, con il conto alla rovescia.</div></div>';
+        box.innerHTML = '<div class="card"><div class="vuoto" style="padding:22px 8px">' + ICO('calendar', 28) + '<br><b>Niente con una data.</b><br>Aggiungi una scadenza a un’attività e comparirà qui, con i giorni che restano.</div></div>';
         return;
       }
       /* Stesse card di «Da fare», non una riga tutta sua. Prima questa
@@ -3035,10 +3035,10 @@
     function disegnaSmista(box) {
       var st = LM.load();
       if (!st.inbox.length) {
-        box.innerHTML = '<div class="card"><div class="vuoto" style="padding:22px 8px">' + illoInbox() + '<b>Non c’è niente da sistemare.</b><br>Premi <kbd>C</kbd> per buttare giù un pensiero: lo ritrovi qui e decidi con calma.</div></div>';
+        box.innerHTML = '<div class="card"><div class="vuoto" style="padding:22px 8px">' + illoInbox() + '<b>Niente da sistemare.</b><br>Premi <kbd>C</kbd> per aggiungere una nota: la ritrovi qui.</div></div>';
         return;
       }
-      box.innerHTML = '<div class="card"><div class="sotto" style="margin-top:0">Per ognuna scegli: <b>Oggi</b>, <b>Da fare</b> o <b>Scarta</b>.</div>' +
+      box.innerHTML = '<div class="card"><div class="sotto" style="margin-top:0">Per ognuna: <b>Oggi</b>, <b>Da fare</b> o <b>Scarta</b>.</div>' +
         '<div class="griglia" id="lista-inbox" style="gap:9px"></div></div>';
       var lista = document.getElementById('lista-inbox');
       lista.innerHTML = st.inbox.map(function (el, i) {
@@ -3074,7 +3074,7 @@
             var esito = b.getAttribute('data-fai');
             var area = document.getElementById('sel-' + id).value;
             LM.triageInbox(id, esito, area);
-            toast(esito === 'azione' ? 'Ora è tra le cose di oggi.' : esito === 'backlog' ? 'Messo tra le cose da fare.' : 'Scartato.', LM.XP_EVENTI.triage,
+            toast(esito === 'azione' ? 'Aggiunto alle azioni di oggi.' : esito === 'backlog' ? 'Aggiunto a «Da fare».' : 'Scartato.', LM.XP_EVENTI.triage,
               esito === 'azione' ? 'arrowRight' : esito === 'backlog' ? 'lista' : 'trash');
             aggiornaNav(); ridisegna();
           });
@@ -3128,14 +3128,14 @@
           '<div class="bk-menu-scad"><input type="date" id="bkm-scad" aria-label="Scadenza"' + (b.scadenza ? ' value="' + b.scadenza + '"' : '') + '>' +
           (b.scadenza ? '<button class="btn btn-mini btn-ghost" id="bkm-scad-x">Togli</button>' : '') + '</div>' +
           '<div class="bk-sez-nota">Solo il conto alla rovescia: non la mette in agenda.</div>', false) +
-        sez('sistema', 'sparkles', 'Sistemala',
+        sez('sistema', 'sparkles', 'Sistema',
           '<div class="bk-menu-riga"><span class="bk-menu-eti">Area</span>' + selectAree('bkm-area', b.areaId) + '</div>' +
           '<div class="bk-menu-azioni">' +
           /* la spilla sta qui e non sulla riga: una stellina su ogni riga
              sarebbero nove cose in più da guardare per una che si usa di rado */
-          '<button class="btn btn-mini' + (b.pin ? ' on' : '') + '" id="bkm-pin">' + ICO('star', 13) + ' ' + (b.pin ? 'Non è più importante' : 'Tienila in cima') + '</button>' +
+          '<button class="btn btn-mini' + (b.pin ? ' on' : '') + '" id="bkm-pin">' + ICO('star', 13) + ' ' + (b.pin ? 'Togli dalla cima' : 'Tieni in cima') + '</button>' +
           '<button class="btn btn-mini" id="bkm-steps">' + ICO('lista', 13) + ' ' + (isProg ? 'Apri i passi' : 'Dividi in passi') + '</button>' +
-          '<button class="btn btn-mini" id="bkm-abitudine">' + ICO('refresh', 13) + ' Trasformala in abitudine</button>' +
+          '<button class="btn btn-mini" id="bkm-abitudine">' + ICO('refresh', 13) + ' Trasforma in abitudine</button>' +
           '<button class="btn btn-mini" id="bkm-mod">' + ICO('pencil', 13) + ' Rinomina</button>' +
           '<button class="btn btn-mini btn-ghost imp-pericolo" id="bkm-del">' + ICO('trash', 13) + ' Rimuovi</button>' +
           '</div>', false) +
@@ -3233,7 +3233,7 @@
         '<div class="bk-sez-nota">Vuoti vanno bene: l’abitudine resta senza orario fisso.</div>' +
         '</div>' +
         '<button class="btn btn-primario" id="ab-crea">' + ICO('check', 15) + ' Crea l’abitudine</button>' +
-        '<div class="bk-sez-nota" style="text-align:center">Esce dalle cose da fare e la ritrovi in <b>Rituali → Abitudini</b>.</div>' +
+        '<div class="bk-sez-nota" style="text-align:center">Esce da «Da fare» e la ritrovi in <b>Rituali → Abitudini</b>.</div>' +
         '</div>';
       apriSheet(b.testo, html, function (root) {
         root.querySelectorAll('#ab-giorni .giorno-chip').forEach(function (c) {
@@ -3244,7 +3244,7 @@
           var ora = root.querySelector('#ab-ora').value || null;
           var dur = root.querySelector('#ab-dur').value;
           LM.backlogInAbitudine(b.id, giorni, { ora: ora, durata: dur ? +dur : null });
-          toast('Ora è un’abitudine: la trovi in Rituali.', 0, 'refresh');
+          toast('Diventata un’abitudine: la trovi in Rituali.', 0, 'refresh');
           chiudiSheet(); aggiornaNav(); ridisegna();
         });
       });
@@ -3479,7 +3479,7 @@
           LM.backlogInOggi(nb.id, giorno);
           toast('«' + v + '» messa ' + etichettaGiorno(giorno).toLowerCase() + '.', 0, 'calendar');
         } else {
-          toast('«' + v + '» è tra le cose da fare.', 0, 'lista');
+          toast('«' + v + '» aggiunta a «Da fare».', 0, 'lista');
         }
         /* il «quando» torna al predefinito: la scelta valeva per quella cosa,
            non per tutte quelle che scriverai dopo */
@@ -3505,7 +3505,7 @@
            si sta mettendo in piedi il piano. */
         box.innerHTML = '<div class="card">' +
           rigaAggiunta('agg-bk', 'Aggiungi una cosa da fare…', opzDaFare()) +
-          '<div class="vuoto" style="padding:18px 8px 6px">' + illoInbox() + '<b>Niente da fare, per ora.</b><br>Scrivi qui sopra, oppure sistema ciò che hai buttato giù.</div></div>';
+          '<div class="vuoto" style="padding:18px 8px 6px">' + illoInbox() + '<b>Nessuna attività.</b><br>Aggiungine una qui sopra, o sistema le note in «Sistemare».</div></div>';
         wireAggiunta(box);
         return;
       }
@@ -3533,7 +3533,7 @@
       /* La ricerca compare quando serve davvero cercare: con nove voci si
          trova a occhio, e un campo in più è solo una cosa in più da guardare. */
       var cerca = (totale >= 10 || attQuery)
-        ? '<div class="att-cerca">' + ICO('target', 14) + '<input type="text" id="att-q" placeholder="Cerca tra le cose da fare…" value="' + esc(attQuery) + '" aria-label="Cerca"></div>'
+        ? '<div class="att-cerca">' + ICO('target', 14) + '<input type="text" id="att-q" placeholder="Cerca un’attività…" value="' + esc(attQuery) + '" aria-label="Cerca"></div>'
         : '';
       box.innerHTML = '<div class="card">' +
         rigaAggiunta('agg-bk', 'Aggiungi una cosa da fare…', opzDaFare()) + cerca +
@@ -3609,17 +3609,17 @@
            a un tocco, nelle pastiglie qui sopra. */
         var g = LM.backlogPerImportanza({ areaId: attArea, tetto: 3 });
         if (!g.totale) {
-          lista.innerHTML = '<div class="bk-vuoto">Niente in «' + esc(areaById(attArea).nome) + '». Usa il campo qui sopra per aggiungerci qualcosa.</div>';
+          lista.innerHTML = '<div class="bk-vuoto">Nessuna attività in «' + esc(areaById(attArea).nome) + '».</div>';
           return;
         }
         var apertoParcheggio = !!backlogAperte.__parcheggio;
         lista.innerHTML =
-          fascia('Prima queste', g.ora, 'ora') +
-          fascia('Le altre', g.poi, 'poi') +
+          fascia('Importanti', g.ora, 'ora') +
+          fascia('Altre', g.poi, 'poi') +
           (g.parcheggio.length
             ? '<div class="bk-fascia parcheggio">' +
               '<button class="bk-fascia-testa bk-fascia-btn" data-parcheggio="1" aria-expanded="' + apertoParcheggio + '">' +
-              '<span class="bk-fascia-tit">Ferme da un po’</span><span class="bk-fascia-n">' + g.parcheggio.length + '</span>' +
+              '<span class="bk-fascia-tit">Inattive</span><span class="bk-fascia-n">' + g.parcheggio.length + '</span>' +
               '<span class="bk-chevron' + (apertoParcheggio ? ' aperta' : '') + '">' + ICO('chevronGiu', 15) + '</span></button>' +
               '<div class="bk-fascia-corpo"' + (apertoParcheggio ? '' : ' hidden') + '>' +
               g.parcheggio.map(function (x) { return bkItemHtml(x.b, { livello: 'parcheggio', motivo: x.i.motivo, da: x.i.da }); }).join('') +
@@ -3668,8 +3668,8 @@
         ? '<div class="backlog-piatto">' + ordinati.map(function (x, i) {
             return bkItemHtml(x.b, { livello: i === 0 ? 'ora' : 'poi', primo: i === 0, motivo: x.i.motivo, da: x.i.da });
           }).join('') + '</div>'
-        : '<div class="vuoto" style="padding:20px 8px">' + illoInbox() + '<b>Nessun progetto, per ora.</b><br>Un progetto è una cosa grande divisa in passi: la fai un pezzo per volta.</div>';
-      box.innerHTML = '<div class="card"><div class="sotto" style="margin-top:0">Le cose grandi, spezzate in <b>passi</b>: «Passo» porta in Oggi solo il prossimo.</div>' +
+        : '<div class="vuoto" style="padding:20px 8px">' + illoInbox() + '<b>Nessun progetto.</b><br>Un progetto è un’attività divisa in passi.</div>';
+      box.innerHTML = '<div class="card"><div class="sotto" style="margin-top:0">Attività divise in <b>passi</b>. «Passo» porta in Oggi il prossimo.</div>' +
         lista +
         '<form class="bk-add mt" id="nuovo-prog"><input type="text" placeholder="Nuovo progetto…" aria-label="Nuovo progetto"><span style="width:150px">' + selectAree('prog-area') + '</span><button class="btn btn-mini btn-primario" type="submit">' + ICO('plus', 13) + ' Crea</button></form></div>';
       wireBk(box);
@@ -3694,7 +3694,7 @@
 
   function vistaEsperimenti() {
     var s = LM.load();
-    var html = topbar('Esperimenti', 'Verifica cosa funziona davvero per te, usando i tuoi dati.',
+    var html = topbar('Esperimenti', 'Confronto prima/dopo sui tuoi dati.',
       '<button class="btn btn-primario" id="btn-nuovo-exp">' + ICO('plus', 16) + ' Nuovo esperimento</button>') +
       '<div class="card"><div class="sotto" style="margin:0">Come funziona: prima misuri una metrica senza cambiare nulla (fase <b>A</b>, la base di partenza), poi introduci una modifica e continui a misurare (fase <b>B</b>). Il confronto tra le due fasi ti dice se la modifica ha avuto effetto. Un avvertimento onesto: senza gruppo di controllo il risultato è un’indicazione, non una prova definitiva; ripetere l’esperimento lo rende più affidabile.</div></div>' +
       '<div id="form-exp-zona"></div><div class="griglia mt" id="lista-exp" style="gap:16px"></div>';
@@ -3921,7 +3921,7 @@
   }
 
   function vistaScienza() {
-    var html = topbar('Perché l’app è fatta così', 'Ogni funzione nasce da una ricerca. Qui trovi quale, con le fonti.') +
+    var html = topbar('Perché l’app è fatta così', 'Le ricerche dietro ogni funzione, con le fonti.') +
       '<div class="card"><div class="sotto" style="margin:0">Le etichette dicono quanto è solida ogni prova: <span class="evidenza evidenza-alta">evidenza alta</span> significa meta-analisi o studi clinici controllati; <span class="evidenza evidenza-media">media</span> significa studi solidi ma non conclusivi; <span class="evidenza evidenza-euristica">euristica</span> significa pratica clinica ragionevole, non ancora dimostrata. In ogni caso la verifica finale spetta a te: la sezione Esperimenti serve proprio a controllare cosa funziona <b>nel tuo caso</b>.</div></div>' +
       '<div class="griglia griglia-2 mt">' +
       PRINCIPI.map(function (p, i) {

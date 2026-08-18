@@ -659,14 +659,14 @@ var LM = (function () {
     var s = load();
     var b = { id: uid(), testo: testo, areaId: areaId || 'altro', creata: Date.now() };
     s.backlog.push(b);
-    if (!interna) registra('backlog', 'Aggiunta tra le cose da fare: «' + testo + '»', false);
+    if (!interna) registra('backlog', 'Aggiunta a «Da fare»: «' + testo + '»', false);
     save();
     return b;
   }
   function modificaBacklog(id, testo) {
     var s = load();
     var b = s.backlog.find(function (x) { return x.id === id; });
-    if (!b) return; b.testo = testo; registra('backlog', 'Modificata una cosa da fare → «' + testo + '»', false); save();
+    if (!b) return; b.testo = testo; registra('backlog', 'Rinominata un’attività → «' + testo + '»', false); save();
   }
   function cambiaAreaBacklog(id, areaId) {
     var s = load();
@@ -678,7 +678,7 @@ var LM = (function () {
   function rimuoviBacklog(id) {
     var s = load();
     var i = s.backlog.findIndex(function (x) { return x.id === id; });
-    if (i >= 0) { registra('backlog', 'Eliminata la cosa da fare «' + s.backlog[i].testo + '»', true); s.backlog.splice(i, 1); save(); }
+    if (i >= 0) { registra('backlog', 'Eliminata l’attività «' + s.backlog[i].testo + '»', true); s.backlog.splice(i, 1); save(); }
   }
   /* porta un elemento del backlog tra le azioni di oggi (senza XP: è solo
      spostamento). mit true se oggi non c'è ancora nessuna azione. */
@@ -888,21 +888,21 @@ var LM = (function () {
       else { peso += 300 - gg; if (!motivo) { motivo = 'in agenda tra ' + gg + ' giorni'; da = 'agenda'; } }
     }
 
-    if (b.pin) { peso += 650; if (!motivo) { motivo = 'l’hai appuntata'; da = 'pin'; } fascia = 'ora'; }
+    if (b.pin) { peso += 650; if (!motivo) { motivo = 'appuntata'; da = 'pin'; } fascia = 'ora'; }
 
     /* progetto già cominciato: lasciarlo a metà costa più che finirlo */
     if (b.steps && b.steps.length) {
       var av = avanzamentoProgetto(b);
       if (av.fatti && av.fatti < av.tot) {
         peso += 260 + Math.round(av.pct / 2);
-        if (!motivo) { motivo = 'già cominciato, ' + av.fatti + ' di ' + av.tot; da = 'progetto'; }
+        if (!motivo) { motivo = 'iniziata, ' + av.fatti + ' di ' + av.tot; da = 'progetto'; }
       } else if (!av.fatti) peso += 60;
     }
 
     var eta = Math.floor((Date.now() - (b.creata || Date.now())) / 86400000);
     if (fascia === 'poi' && !b.scadenza && !inAg.length && !b.pin && eta >= FERMA_GIORNI) {
       fascia = 'parcheggio';
-      motivo = 'ferma da ' + (eta >= 60 ? 'mesi' : eta + ' giorni');
+      motivo = 'inattiva da ' + (eta >= 60 ? 'oltre due mesi' : eta + ' giorni');
       da = 'ferma';
     }
     /* a pari merito viene prima la più recente: quella vecchia è già
