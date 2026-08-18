@@ -380,8 +380,12 @@
     document.getElementById('sidebar-fondo').innerHTML = footerSidebar();
     wireFooterSidebar();
 
-    /* tab bar mobile: 4 destinazioni quotidiane + "Altro" (Giornata e le
-       secondarie stanno in "Altro"; in Oggi c'è comunque la barra compatta) */
+    /* tab bar mobile. Con le tre porte i pulsanti sono TRE: «Altro» era una
+       quarta destinazione che non è una destinazione — un contenitore di cose
+       diverse fra loro (pagine, account, impostazioni) che si apre per scoprire
+       cosa c'è dentro. Le impostazioni ora stanno dove stanno sempre su
+       telefono, nell'angolo in alto della schermata, e non costano una porta.
+       Senza le tre porte torna la barra di prima: quattro pagine + «Altro». */
     var tab = document.getElementById('nav-tab');
     var primNav = TAB_MOBILE.map(vistaById);
     var inSecondaria = !tre && !primNav.some(function (v) { return v.id === corrente; });
@@ -394,11 +398,12 @@
         return '<button data-vai="' + v.id + '" class="' + (corrente === v.id ? 'attivo' : '') + '">' +
           '<span class="tab-ico">' + ICO(v.icona, 21) + badgeInbox(v, s) + '</span>' + v.nome + '</button>';
       }).join('')) +
-      '<button data-menu="1" class="' + (inSecondaria ? 'attivo' : '') + '"><span class="tab-ico">' + ICO('sparkles', 21) + '</span>Altro</button>';
+      (tre ? '' : '<button data-menu="1" class="' + (inSecondaria ? 'attivo' : '') + '"><span class="tab-ico">' + ICO('sparkles', 21) + '</span>Altro</button>');
     tab.querySelectorAll('[data-vai]').forEach(function (b) {
       b.addEventListener('click', function () { location.hash = '#/' + b.getAttribute('data-vai'); });
     });
-    tab.querySelector('[data-menu]').addEventListener('click', apriMenuAltro);
+    var bMenu = tab.querySelector('[data-menu]');
+    if (bMenu) bMenu.addEventListener('click', apriMenuAltro);
   }
 
   /* ---------- footer sidebar (account + impostazioni) ---------- */
@@ -512,6 +517,13 @@
     });
     root.querySelectorAll('#seg-skin [data-skin]').forEach(function (b) {
       b.addEventListener('click', function () { setSkin(b.getAttribute('data-skin')); });
+    });
+    var la = root.querySelector('#imp-accedi');
+    if (la) la.addEventListener('click', function () { if (window.LMCloud && window.LMCloud.available) window.LMCloud.signIn(); });
+    var le = root.querySelector('#imp-esci');
+    if (le) le.addEventListener('click', function () {
+      if (window.LMCloud) window.LMCloud.signOut();
+      chiudiSheet(); toast('Hai effettuato la disconnessione.', 0, 'logout');
     });
     var d = root.querySelector('#imp-demo'); if (d) d.addEventListener('click', caricaDemo);
     var z = root.querySelector('#imp-azzera'); if (z) z.addEventListener('click', azzeraTutto);
@@ -776,8 +788,30 @@
       '</div>', null);
   }
 
+  /* Lo stesso blocco che stava nel menu «Altro»: chi è connesso, com'è andato
+     il salvataggio, entra ed esci. Toccava sparire con «Altro», e invece è la
+     cosa che si va a cercare quando si dubita che i dati siano al sicuro. */
+  function htmlAccount() {
+    var a = window.LM_AUTH || { available: false, user: null };
+    if (a.user) {
+      var y = statoSync();
+      return '<div class="imp-sezione"><div class="imp-eti">Account</div>' +
+        '<div class="menu-account">' + ICO('cloudCheck', 15) + ' Connesso come <b>' + esc(a.user.name || a.user.email) + '</b>' +
+        '<button class="btn btn-mini btn-ghost" id="imp-esci">' + ICO('logout', 14) + ' Esci</button></div>' +
+        '<button type="button" class="sync-chip sync-chip-largo ' + y.cls + '" data-diag="1" title="' + esc(y.title || 'Mostra cosa sta succedendo') + '">' +
+        ICO(y.ico, 13) + ' ' + y.testo + ICO('arrowRight', 13) + '</button></div>';
+    }
+    if (a.available) {
+      return '<div class="imp-sezione"><div class="imp-eti">Account</div>' +
+        '<button class="btn btn-accedi" id="imp-accedi" style="width:100%;justify-content:center">' + GOOGLE_G(17) + ' Accedi con Google</button>' +
+        '<div class="imp-nota">Accedi per ritrovare i tuoi dati su tutti i dispositivi.</div></div>';
+    }
+    return '<div class="imp-sezione"><div class="imp-eti">Account</div>' +
+      '<div class="fondo-locale">' + ICO('cloud', 13) + ' Dati salvati su questo dispositivo</div></div>';
+  }
+
   function apriImpostazioni() {
-    apriSheet('Impostazioni', htmlAspetto() + htmlDati(), wireAspettoDati);
+    apriSheet('Impostazioni', htmlAccount() + htmlAspetto() + htmlDati(), wireAspettoDati);
   }
 
   function apriMenuAltro() {
@@ -3987,7 +4021,34 @@
     }).join('');
     var tb = $vista.querySelector('.topbar');
     if (tb) tb.insertAdjacentElement('afterend', bar); else $vista.prepend(bar);
+    /* se le linguette non ci stanno tutte (schermo stretto, «Andamento» ne ha
+       quattro) l'ultima resta tagliata: una sfumatura sul bordo destro dice
+       che si scorre, invece di far sembrare troncata l'interfaccia */
+    if (bar.scrollWidth > bar.clientWidth + 1) bar.classList.add('scorre');
     document.documentElement.style.setProperty('--sottonav-h', (bar.offsetHeight + 14) + 'px');
+  }
+
+  /* Su telefono le impostazioni stanno nell'angolo in alto a destra del
+     titolo: sempre lì, su ogni schermata, dentro una riga che esiste già —
+     quindi non rubano un'altra riga a «Oggi», che deve stare in una schermata
+     sola. Su monitor non compare: là c'è il piede della barra laterale, dove
+     ha sempre funzionato. */
+  function bottoneImpostazioni() {
+    var tb = $vista.querySelector('.topbar');
+    if (!tb) return;
+    var vecchio = tb.querySelector('.topbar-imp');
+    if (vecchio) vecchio.remove();
+    tb.classList.remove('ha-imp');
+    if (!navTre()) return;
+    tb.classList.add('ha-imp');
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'topbar-imp';
+    b.setAttribute('aria-label', 'Impostazioni e account');
+    b.setAttribute('title', 'Impostazioni e account');
+    b.innerHTML = ICO('sun', 16);
+    b.addEventListener('click', apriImpostazioni);
+    tb.appendChild(b);
   }
 
   var vistaMostrata = '';
@@ -4012,6 +4073,7 @@
     else if (v === 'esperimenti') vistaEsperimenti();
     else if (v === 'scienza') vistaScienza();
     else if (v === 'lab') vistaLab();
+    bottoneImpostazioni();
     sottoNav(v);
     $vista.classList.toggle('vista-oggi', v === 'oggi');
     vistaMostrata = v;
