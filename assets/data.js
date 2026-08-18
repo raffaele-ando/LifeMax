@@ -306,6 +306,16 @@ var LM = (function () {
   function exportJson() {
     return JSON.stringify({ app: 'LifeMax', versione: 2, esportato: Date.now(), stato: load() }, null, 2);
   }
+  /* Ripristino leggero, per l'annulla subito dopo un'azione: rimette lo
+     stato com'era un attimo prima, senza backup e senza riga di diario —
+     quello che è stato annullato non è mai successo. */
+  function ripristinaStato(obj) {
+    if (!obj || typeof obj !== 'object') return false;
+    hydrate(obj);
+    save();
+    return true;
+  }
+
   function importJson(text) {
     var obj;
     try { obj = JSON.parse(text); } catch (e) { return { ok: false, err: 'File non valido: non è JSON leggibile.' }; }
@@ -1747,7 +1757,7 @@ var LM = (function () {
     XP_EVENTI: XP_EVENTI,
     load: load, save: save, reset: reset, seedDemo: seedDemo, hydrate: hydrate, snapshot: snapshot,
     backup: backup, listBackups: listBackups, restoreBackup: restoreBackup, ricchezza: ricchezza,
-    exportJson: exportJson, importJson: importJson,
+    exportJson: exportJson, importJson: importJson, ripristinaStato: ripristinaStato,
     todayKey: todayKey, dayKey: dayKey, addDays: addDays, lastNDays: lastNDays,
     weekKey: weekKey, weekdayShort: weekdayShort, fmtShort: fmtShort, daysBetween: daysBetween,
     coloreArea: coloreArea, livelloDaXp: livelloDaXp,

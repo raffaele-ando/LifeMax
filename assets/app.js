@@ -247,14 +247,33 @@
 
   /* ---------- toast ---------- */
 
-  function toast(testo, xp, icona) {
+  function toast(testo, xp, icona, azione) {
     var zona = document.getElementById('toast-zona');
     var t = document.createElement('div');
-    t.className = 'toast';
+    t.className = 'toast' + (azione ? ' toast-lungo' : '');
     t.innerHTML = (icona ? ICO(icona, 16) : ICO('check', 16)) + '<span>' + esc(testo) + '</span>' +
-      (xp ? ' <span class="xp">+' + xp + ' XP</span>' : '');
+      (xp ? ' <span class="xp">+' + xp + ' XP</span>' : '') +
+      (azione ? '<button class="toast-azione">' + esc(azione.eti) + '</button>' : '');
     zona.appendChild(t);
-    setTimeout(function () { t.remove(); }, 3000);
+    if (azione) {
+      t.querySelector('.toast-azione').addEventListener('click', function () { t.remove(); azione.fai(); });
+    }
+    setTimeout(function () { t.remove(); }, azione ? 7000 : 3000);
+  }
+
+  /* Le linee guida Apple preferiscono l'annulla alla domanda: chiedere
+     conferma ogni volta trasforma un gesto in una pratica, e chi la vede
+     dieci volte al giorno smette di leggerla. Quindi le cancellazioni
+     piccole si fanno subito, e per qualche secondo si possono rimettere a
+     posto. Restano dietro un avviso solo quelle che portano via tutto. */
+  function conAnnulla(testo, icona, fai) {
+    var prima = JSON.parse(JSON.stringify(LM.load()));
+    fai();
+    toast(testo, 0, icona, { eti: 'Annulla', fai: function () {
+      LM.ripristinaStato(prima);
+      render();
+      toast('Rimesso a posto.', 0, 'refresh');
+    } });
   }
 
   /* feedback per una spunta: XP che volano + toast quando si completa;
@@ -398,6 +417,41 @@
     if (e.shiftKey && document.activeElement === primo) { e.preventDefault(); ultimo.focus(); }
     else if (!e.shiftKey && document.activeElement === ultimo) { e.preventDefault(); primo.focus(); }
   });
+
+  /* Trascinare il pannello verso il basso per chiuderlo: su iOS è il gesto
+     con cui si congeda un foglio, e la maniglia in cima esiste per dirlo.
+     Il gesto parte solo dalla maniglia e dalla testata: dentro il corpo il
+     dito deve poter scorrere il contenuto. */
+  (function trascinaPerChiudere() {
+    var y0 = null, dy = 0, t0 = 0;
+    function partenza(e) {
+      if (window.innerWidth > 560) return;                 /* solo il foglio dal basso */
+      if (!e.target.closest('.sheet-maniglia, .sheet-testa')) return;
+      if (e.target.closest('button')) return;              /* la x resta la x */
+      y0 = e.clientY; dy = 0; t0 = e.timeStamp;
+      $sheetPanel.style.transition = 'none';
+      $sheetPanel.setPointerCapture && $sheetPanel.setPointerCapture(e.pointerId);
+    }
+    function muovi(e) {
+      if (y0 === null) return;
+      dy = Math.max(0, e.clientY - y0);
+      $sheetPanel.style.transform = 'translateY(' + dy + 'px)';
+      $sheet.style.opacity = String(Math.max(.35, 1 - dy / 420));
+    }
+    function fine(e) {
+      if (y0 === null) return;
+      var veloce = dy / Math.max(1, e.timeStamp - t0) > 0.5;
+      y0 = null;
+      $sheetPanel.style.transition = '';
+      $sheetPanel.style.transform = '';
+      $sheet.style.opacity = '';
+      if (dy > 110 || veloce) chiudiSheet();
+    }
+    $sheet.addEventListener('pointerdown', partenza);
+    $sheet.addEventListener('pointermove', muovi);
+    $sheet.addEventListener('pointerup', fine);
+    $sheet.addEventListener('pointercancel', fine);
+  })();
 
   function apriSheet(titolo, html, onWire, largo) {
     document.getElementById('sheet-titolo').textContent = titolo;
@@ -1869,7 +1923,7 @@
       });
       var rim = root.querySelector('.ig-rimuovi');
       if (rim) rim.addEventListener('click', function () {
-        LM.rimuoviAzione(id); toast('Rimossa da oggi.', 0, 'trash');
+        conAnnulla('Rimossa da oggi.', 'trash', function () { LM.rimuoviAzione(id); });
         chiudiSheet(); ricarica();
       });
       var salta = root.querySelector('.ig-salta');
@@ -3105,7 +3159,12 @@
       });
     });
     corpo.querySelectorAll('[data-abdel]').forEach(function (b) {
-      b.addEventListener('click', function () { LM.rimuoviAbitudine(b.getAttribute('data-abdel')); ritualeAbitudini(corpo); });
+      b.addEventListener('click', function () {
+        conAnnulla('Abitudine eliminata.', 'trash', function () {
+          LM.rimuoviAbitudine(b.getAttribute('data-abdel'));
+          ritualeAbitudini(corpo);
+        });
+      });
     });
     corpo.querySelectorAll('[data-abper]').forEach(function (b) {
       b.addEventListener('click', function () {
@@ -3437,9 +3496,14 @@
           b.addEventListener('click', function () {
             var esito = b.getAttribute('data-fai');
             var area = document.getElementById('sel-' + id).value;
+            if (esito === 'scarta') {
+              /* scartare butta via una nota: per qualche secondo si torna indietro */
+              conAnnulla('Scartato.', 'trash', function () { LM.triageInbox(id, esito, area); aggiornaNav(); ridisegna(); });
+              return;
+            }
             LM.triageInbox(id, esito, area);
-            toast(esito === 'azione' ? 'Aggiunto alle azioni di oggi.' : esito === 'backlog' ? 'Aggiunto a «Da fare».' : 'Scartato.', LM.XP_EVENTI.triage,
-              esito === 'azione' ? 'arrowRight' : esito === 'backlog' ? 'lista' : 'trash');
+            toast(esito === 'azione' ? 'Aggiunto alle azioni di oggi.' : 'Aggiunto a «Da fare».', LM.XP_EVENTI.triage,
+              esito === 'azione' ? 'arrowRight' : 'lista');
             aggiornaNav(); ridisegna();
           });
         });
@@ -3547,7 +3611,9 @@
         root.querySelector('#bkm-abitudine').addEventListener('click', function () { apriDaAbitudine(b); });
         root.querySelector('#bkm-steps').addEventListener('click', function () { progettiAperti[b.id] = true; chiudiSheet(); ridisegna(); });
         root.querySelector('#bkm-mod').addEventListener('click', function () { backlogEditId = b.id; chiudiSheet(); ridisegna(); });
-        root.querySelector('#bkm-del').addEventListener('click', function () { LM.rimuoviBacklog(b.id); chiudiSheet(); ridisegna(); });
+        root.querySelector('#bkm-del').addEventListener('click', function () {
+          conAnnulla('Attività eliminata.', 'trash', function () { LM.rimuoviBacklog(b.id); chiudiSheet(); ridisegna(); });
+        });
       });
     }
 
@@ -4058,17 +4124,27 @@
 
   function vistaEsperimenti() {
     var s = LM.load();
+    /* con la lista vuota il pulsante sta una volta sola, dentro il riquadro
+       che spiega cosa manca: due pulsanti uguali sulla stessa schermata
+       sono due volte la stessa domanda */
+    var vuota = !s.esperimenti.length;
     var html = topbar('Esperimenti', 'Confronto prima/dopo sui tuoi dati.',
-      '<button class="btn btn-primario" id="btn-nuovo-exp">' + ICO('plus', 16) + ' Nuovo esperimento</button>') +
+      vuota ? '' : '<button class="btn btn-primario" id="btn-nuovo-exp">' + ICO('plus', 16) + ' Nuovo esperimento</button>') +
       '<div class="card"><div class="sotto" style="margin:0">Come funziona: prima misuri una metrica senza cambiare nulla (fase <b>A</b>, la base di partenza), poi introduci una modifica e continui a misurare (fase <b>B</b>). Il confronto tra le due fasi ti dice se la modifica ha avuto effetto. Un avvertimento onesto: senza gruppo di controllo il risultato è un’indicazione, non una prova definitiva; ripetere l’esperimento lo rende più affidabile.</div></div>' +
       '<div id="form-exp-zona"></div><div class="griglia mt" id="lista-exp" style="gap:16px"></div>';
     $vista.innerHTML = html;
 
-    document.getElementById('btn-nuovo-exp').addEventListener('click', mostraFormExp);
+    var bNuovo = document.getElementById('btn-nuovo-exp');
+    if (bNuovo) bNuovo.addEventListener('click', mostraFormExp);
 
     var lista = document.getElementById('lista-exp');
     if (!s.esperimenti.length) {
-      lista.innerHTML = '<div class="card vuoto">' + illoFlask() + '<b>Non hai ancora nessun esperimento.</b><br>Qualche idea per iniziare: verificare se fare sport al mattino migliora il focus, se tenere il telefono in un’altra stanza aumenta i minuti di studio, o se andare a letto prima ti dà più energia.</div>';
+      /* uno stato vuoto porta con sé la sua via d'uscita: il pulsante sta
+         qui dentro, dove si sta guardando, non solo in cima alla pagina */
+      lista.innerHTML = '<div class="card vuoto">' + illoFlask() + '<b>Non hai ancora nessun esperimento.</b><br>Qualche idea per iniziare: verificare se fare sport al mattino migliora il focus, se tenere il telefono in un’altra stanza aumenta i minuti di studio, o se andare a letto prima ti dà più energia.' +
+        '<div class="vuoto-azione"><button class="btn btn-primario" id="btn-primo-exp">' + ICO('plus', 16) + ' Crea il primo esperimento</button></div></div>';
+      var primo = document.getElementById('btn-primo-exp');
+      if (primo) primo.addEventListener('click', mostraFormExp);
     }
     s.esperimenti.forEach(function (e, i) {
       var ris = LM.risultatiEsperimento(e);
