@@ -2628,6 +2628,10 @@
      aprirne una non chiude le altre (linee guida Apple: le sezioni a
      scomparsa sono indipendenti, e lo stato di chi le ha aperte si rispetta) */
   var ritualiAperti = null;
+  /* per quanto tempo vale un'abitudine si decide una volta e poi non si
+     tocca più: sta dietro una riga che dice già com'è, e si apre solo
+     quando serve (divulgazione progressiva). */
+  var periodiAperti = {};
 
   var RITUALI = [
     { id: 'mattina',   ico: 'sun',      nome: 'Le azioni di oggi',      quando: 'giorno' },
@@ -2840,6 +2844,15 @@
     return GIORNI_ORD.filter(function (d) { return giorni.indexOf(d) >= 0; }).map(function (d) { return GIORNI_LAB[d]; }).join(' ');
   }
 
+  /* «sempre», «dal 3 set», «3 set → 30 set»: la riga chiusa dice già tutto
+     quello che serve sapere senza aprire niente. */
+  function riepilogoPeriodo(h) {
+    if (h.da && h.a) return LM.fmtShort(h.da) + ' → ' + LM.fmtShort(h.a);
+    if (h.a) return 'fino al ' + LM.fmtShort(h.a);
+    if (h.da) return 'dal ' + LM.fmtShort(h.da);
+    return 'sempre';
+  }
+
   function ritualeAbitudini(corpo) {
     var s = LM.load();
     var oggi = LM.abitudiniDiOggi();
@@ -2867,14 +2880,20 @@
           '<button class="icona-btn" data-abdel="' + h.id + '" title="Rimuovi">' + ICO('trash', 14) + '</button></div>' +
           '<div class="abit-riga-giorni">' + chipsGiorni(h.giorni) + '<span class="abit-giorni-rec">' + riepilogoGiorni(h.giorni) + '</span></div>' +
           /* Per quanto tempo vale: di default da quando l'hai creata e senza
-             fine, ma si può dare un periodo preciso (es. "per un mese"). */
-          '<div class="abit-periodo">' +
-          '<span class="ap-eti">' + ICO('calendar', 12) + ' vale</span>' +
+             fine, ma si può dare un periodo preciso (es. "per un mese").
+             Chiusa è una riga sola, perché è una cosa che si decide una
+             volta e poi resta lì. */
+          '<div class="abit-periodo' + (periodiAperti[h.id] ? ' aperto' : '') + '">' +
+          '<button class="ap-toggle" data-abper="' + h.id + '" aria-expanded="' + (periodiAperti[h.id] ? 'true' : 'false') + '" aria-controls="ap-' + h.id + '">' +
+          ICO('calendar', 12) + '<span class="ap-quando">' + esc(riepilogoPeriodo(h)) + '</span>' +
+          '<span class="ap-chevron">' + ICO('chevronGiu', 13) + '</span></button>' +
+          (Object.keys(h.salti || {}).length ? (function () { var n = Object.keys(h.salti).length;
+            return '<span class="ap-salti" title="' + esc(Object.keys(h.salti).sort().map(LM.fmtShort).join(', ')) + '">' + n + (n === 1 ? ' giorno saltato' : ' giorni saltati') + '</span>'; })() : '') +
+          '<div class="ap-campi" id="ap-' + h.id + '"' + (periodiAperti[h.id] ? '' : ' hidden') + '>' +
           '<label class="ap-campo">dal <input type="date" data-abda="' + h.id + '" value="' + (h.da || '') + '" aria-label="Dal giorno"></label>' +
           '<label class="ap-campo">al <input type="date" data-aba="' + h.id + '" value="' + (h.a || '') + '" min="' + (h.da || '') + '" aria-label="Al giorno (vuoto = senza fine)"></label>' +
           (h.a ? '<button class="btn btn-mini btn-ghost" data-abnofine="' + h.id + '">Senza fine</button>' : '<span class="ap-nota">vuoto = senza fine</span>') +
-          (Object.keys(h.salti || {}).length ? (function () { var n = Object.keys(h.salti).length;
-            return '<span class="ap-salti" title="' + esc(Object.keys(h.salti).sort().map(LM.fmtShort).join(', ')) + '">' + n + (n === 1 ? ' giorno saltato' : ' giorni saltati') + '</span>'; })() : '') +
+          '</div>' +
           '</div>' +
           '</div>';
       }).join('')
@@ -2914,6 +2933,17 @@
     });
     corpo.querySelectorAll('[data-abdel]').forEach(function (b) {
       b.addEventListener('click', function () { LM.rimuoviAbitudine(b.getAttribute('data-abdel')); ritualeAbitudini(corpo); });
+    });
+    corpo.querySelectorAll('[data-abper]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var id = b.getAttribute('data-abper');
+        var apri = !periodiAperti[id];
+        if (apri) periodiAperti[id] = true; else delete periodiAperti[id];
+        b.setAttribute('aria-expanded', apri ? 'true' : 'false');
+        b.parentNode.classList.toggle('aperto', apri);
+        var campi = document.getElementById('ap-' + id);
+        if (campi) campi.hidden = !apri;
+      });
     });
     corpo.querySelectorAll('[data-abda]').forEach(function (inp) {
       inp.addEventListener('change', function () {

@@ -2223,6 +2223,19 @@ body.sto-trascinando { cursor: grabbing; user-select: none; -webkit-user-select:
 .abit-nome { flex: 1; min-width: 0; padding: 7px 10px; font-size: 13.5px; }
 .abit-riga-giorni { display: flex; align-items: center; gap: 10px; margin-top: 8px; flex-wrap: wrap; }
 .abit-periodo { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--griglia); }
+/* la riga chiusa: una pillola che dice già per quanto vale l'abitudine */
+.ap-toggle {
+  display: inline-flex; align-items: center; gap: 5px;
+  min-height: var(--h-btn-s); padding: 0 9px 0 8px;
+  border: 1px solid var(--bordo); border-radius: var(--r-tondo);
+  background: var(--superficie-1); color: var(--inchiostro-2);
+  font-size: 11.5px; font-weight: 700; transition: all var(--t-veloce);
+}
+.ap-toggle:hover { border-color: var(--bordo-forte); color: var(--inchiostro-1); }
+.ap-chevron { display: inline-flex; color: var(--inchiostro-muto); transition: transform var(--t-media); }
+.abit-periodo.aperto .ap-chevron { transform: rotate(180deg); }
+.ap-campi { flex: 1 1 100%; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.ap-campi[hidden] { display: none; }
 .ap-eti { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; color: var(--inchiostro-muto); }
 .ap-campo { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 650; color: var(--inchiostro-2); }
 .ap-campo input[type="date"] { padding: 4px 7px; font-size: 11.5px; border-radius: var(--r-1); }
