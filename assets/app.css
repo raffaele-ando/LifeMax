@@ -2223,43 +2223,92 @@ body.sto-trascinando { cursor: grabbing; user-select: none; -webkit-user-select:
 .sp-riga .tl-time { width: 100px; }
 .tl-sleep-lbl { position: absolute; left: 50px; top: 4px; font-size: 11px; font-weight: 700; color: var(--inchiostro-muto); display: inline-flex; align-items: center; gap: 4px; background: var(--superficie-1); padding: 1px 6px; border-radius: var(--r-tondo); }
 
-/* ---------- abitudini ---------- */
+/* ---------- abitudini ----------
+   Una lista sola, sul modello degli elenchi raggruppati di iOS: la riga si
+   spunta a sinistra e si apre a destra. Tutto il resto (nome, giorni, area,
+   periodo, storia) sta nella scheda della singola abitudine. */
 
-.abit-lista-oggi { display: flex; flex-direction: column; gap: 7px; margin-top: 4px; }
-.abit-oggi { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: var(--r-2); background: var(--superficie-1); border: 1px solid var(--bordo); box-shadow: var(--e1); }
-.abit-oggi .spunta { width: 26px; height: 26px; flex: none; border-radius: var(--r-1); border: 2px solid var(--baseline); background: var(--superficie-1); display: inline-flex; align-items: center; justify-content: center; color: transparent; transition: all var(--t-veloce); }
-.abit-oggi .spunta:hover { border-color: var(--ok); color: var(--ok); transform: scale(1.1); }
-.abit-oggi.fatta .spunta { background: var(--ok-pieno); border-color: transparent; color: #fff; }
-.abit-oggi.fatta .testo { text-decoration: line-through; color: var(--inchiostro-muto); }
-.abit-oggi .testo { flex: 1; min-width: 0; font-weight: 550; }
-.abit-streak { flex: none; font-size: 12px; font-weight: 750; color: #eb6834; display: inline-flex; align-items: center; gap: 3px; font-variant-numeric: tabular-nums; }
-.abit-tutte { display: flex; flex-direction: column; gap: 10px; margin: 10px 0 4px; }
-.abit-riga { padding: 11px 0; border-top: 1px solid var(--griglia); }
-.abit-riga:first-child { border-top: none; padding-top: 2px; }
-.abit-riga-top { display: flex; align-items: center; gap: 9px; }
-.abit-riga-top .tag-area { color: var(--c-area); }
-.abit-nome { flex: 1; min-width: 0; padding: 7px 10px; font-size: 13.5px; }
-.abit-riga-giorni { display: flex; align-items: center; gap: 4px 10px; margin-top: 8px; flex-wrap: wrap; }
-.abit-periodo { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--griglia); }
-/* la riga chiusa: una pillola che dice già per quanto vale l'abitudine */
-.ap-toggle {
-  display: inline-flex; align-items: center; gap: 5px;
-  min-height: var(--h-btn-s); padding: 0 9px 0 8px;
-  border: 1px solid var(--bordo); border-radius: var(--r-tondo);
-  background: var(--superficie-1); color: var(--inchiostro-2);
-  font-size: 11.5px; font-weight: 700; transition: all var(--t-veloce);
+/* il conto di oggi: una riga e una barra, in cima, dove si guarda per primo */
+.ab-prog { margin: 2px 0 12px; }
+.ab-prog-testo { font-size: 13px; font-weight: 650; color: var(--inchiostro-2); display: flex; align-items: center; gap: 6px; }
+.ab-prog-testo b { color: var(--inchiostro-1); font-weight: 830; font-variant-numeric: tabular-nums; }
+.ab-prog-barra { margin-top: 6px; height: 6px; border-radius: var(--r-tondo); background: var(--superficie-3); overflow: hidden; }
+.ab-prog-barra span { display: block; height: 100%; border-radius: var(--r-tondo); background: var(--accento-pieno); transition: width var(--t-media); }
+.ab-prog.piena .ab-prog-barra span { background: var(--ok-pieno); }
+.ab-prog.piena .ab-prog-testo { color: var(--ok-testo); }
+.ab-prog.piena .ab-prog-testo .ico { color: var(--ok-pieno); }
+
+/* il campo per aggiungerne una sta in fondo, staccato dalla lista */
+.ab-nuova { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--griglia); }
+
+.ab-eti {
+  font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--inchiostro-2); margin: 16px 2px 7px;
 }
-.ap-toggle:hover { border-color: var(--bordo-forte); color: var(--inchiostro-1); }
-.ap-chevron { display: inline-flex; color: var(--inchiostro-muto); transition: transform var(--t-media); }
-.abit-periodo.aperto .ap-chevron { transform: rotate(180deg); }
-.ap-campi { flex: 1 1 100%; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.ap-campi[hidden] { display: none; }
-.ap-eti { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; color: var(--inchiostro-muto); }
+.ab-gruppo {
+  border: 1px solid var(--bordo); border-radius: var(--r-2);
+  background: var(--superficie-1); overflow: hidden;
+}
+.ab-gruppo > .ab-riga + .ab-riga { border-top: 1px solid var(--griglia); }
+.ab-riga { display: flex; align-items: center; gap: 10px; padding: 0 4px 0 12px; }
+.ab-riga .spunta {
+  flex: none; width: 26px; height: 26px; border-radius: var(--r-1);
+  border: 2px solid var(--baseline); background: var(--superficie-1);
+  display: inline-flex; align-items: center; justify-content: center;
+  color: transparent; transition: all var(--t-veloce);
+}
+.ab-riga .spunta:hover { border-color: var(--ok); color: var(--ok); transform: scale(1.1); }
+.ab-riga.fatta .spunta { background: var(--ok-pieno); border-color: transparent; color: #fff; }
+.ab-salto { flex: none; width: 26px; height: 26px; display: inline-flex; align-items: center; justify-content: center; color: var(--inchiostro-muto); }
+.ab-apri {
+  flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px;
+  min-height: 52px; padding: 8px 8px 8px 0; text-align: left;
+  transition: background var(--t-veloce);
+}
+.ab-apri:hover { background: color-mix(in srgb, var(--inchiostro-1) 4%, transparent); }
+.ab-testo { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.ab-nome { font-weight: 620; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ab-sotto { font-size: 11.5px; color: var(--inchiostro-muto); display: inline-flex; align-items: center; gap: 4px; }
+.ab-sotto.serie { color: #c2410c; font-weight: 700; }
+:root[data-mode="dark"] .ab-sotto.serie { color: #f97316; }
+.ab-sotto.saltata { color: var(--inchiostro-2); font-style: italic; }
+.ab-riga .tag-area { flex: none; color: var(--c-area); }
+/* la freccina di apertura punta a destra, come in ogni elenco di iOS */
+.ab-chevron { flex: none; display: inline-flex; color: var(--inchiostro-muto); transform: rotate(-90deg); }
+.ab-riga.fatta .ab-nome { text-decoration: line-through; color: var(--inchiostro-muto); }
+.ab-riga.saltata .ab-nome { color: var(--inchiostro-muto); }
+
+/* la scheda della singola abitudine */
+.abd-oggi { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 2px 0 12px; }
+.abd-oggi .btn-grande { flex: 1 1 200px; justify-content: center; }
+.abd-numeri { display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: 12.5px; color: var(--inchiostro-2); }
+.abd-numeri b { color: var(--inchiostro-1); font-weight: 830; font-variant-numeric: tabular-nums; }
+.abd-numeri .ico { color: #eb6834; vertical-align: -2px; }
+/* la catena: quattro settimane incolonnate per giorno della settimana */
+.abd-testa { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; margin-top: 12px; }
+.abd-testa span { text-align: center; font-size: 11px; font-weight: 800; color: var(--inchiostro-muto); }
+.abd-catena { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; margin-top: 5px; }
+.abd-g.futuro { background: none; border-color: transparent; }
+.abd-g {
+  min-height: 40px; border-radius: var(--r-1); border: 1px solid var(--bordo);
+  background: var(--superficie-2); color: var(--inchiostro-muto);
+  font-size: 11px; font-weight: 700; font-variant-numeric: tabular-nums;
+  display: inline-flex; align-items: center; justify-content: center;
+  transition: all var(--t-veloce);
+}
+.abd-g:hover { border-color: var(--baseline); }
+.abd-g.fatto { background: var(--ok-pieno); border-color: transparent; color: #fff; }
+.abd-g.saltato { background: var(--superficie-1); border-style: dashed; }
+.abd-g.fuori { opacity: .45; }
+.abd-g.oggi { box-shadow: 0 0 0 2px var(--accento-pieno); }
+.abd-nota { margin: 8px 0 0; font-size: 11.5px; color: var(--inchiostro-muto); }
+.abd-nota-giorni { margin-top: 6px; font-size: 11.5px; color: var(--inchiostro-muto); }
+.abd-periodo { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.abd-fondo { margin-top: 18px; padding-top: 12px; border-top: 1px solid var(--griglia); display: flex; }
+
 .ap-campo { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 650; color: var(--inchiostro-2); }
 .ap-campo input[type="date"] { padding: 4px 7px; font-size: 11.5px; border-radius: var(--r-1); }
 .ap-nota { font-size: 11px; color: var(--inchiostro-muto); }
-.ap-salti { font-size: 11px; font-weight: 750; color: var(--inchiostro-2); background: var(--superficie-2); border: 1px solid var(--bordo); border-radius: var(--r-tondo); padding: 1px 8px; }
-.abit-giorni-rec { font-size: 11.5px; color: var(--inchiostro-muto); }
 /* la settimana è una riga sola: sette caselle uguali che si prendono la
    larghezza che c'è. Andare a capo (L M M G / V S D) spezza la settimana in
    due e la fa rileggere ogni volta. */
@@ -2268,7 +2317,6 @@ body.sto-trascinando { cursor: grabbing; user-select: none; -webkit-user-select:
 .giorno-chip { width: 31px; height: 31px; border-radius: var(--r-1); border: 1px solid var(--bordo-forte); background: var(--superficie-1); font-size: 12px; font-weight: 700; color: var(--inchiostro-muto); transition: all var(--t-veloce); }
 .giorno-chip:hover { border-color: var(--baseline); }
 .giorno-chip.sel { background: var(--accento-pieno); color: var(--accento-ink); border-color: transparent; }
-.abit-nuova { margin-top: 12px; border-top: 1px solid var(--griglia); padding-top: 12px; }
 
 /* ---------- scadenze ---------- */
 
@@ -2380,10 +2428,9 @@ body.sto-trascinando { cursor: grabbing; user-select: none; -webkit-user-select:
   .bk-item-azioni { gap: 10px; }
   .bk-item { padding: 9px 11px; }
   .spunta-mini { width: 44px; height: 44px; border-radius: var(--r-1); }
+  .abd-g { min-height: 44px; }
   .step-riga { gap: 10px; }
-  .att-chip, .q-chip, .chip-tempo, .ap-toggle { min-height: 44px; }
   .q-chip { padding: 11px 16px; }
-  .abit-periodo .ap-campo input[type="date"] { min-height: 44px; }
   .giorno-chip { min-width: 40px; min-height: 44px; }
   .strip-legenda .lg { min-height: 32px; } /* è una legenda, non un comando */
   .sottonav-voce { min-height: 44px; }
@@ -2399,14 +2446,12 @@ body.sto-trascinando { cursor: grabbing; user-select: none; -webkit-user-select:
   input[type="text"], input[type="time"], input[type="date"], select, textarea { min-height: 44px; }
   /* i select non accettano pseudo-elementi: qui l'area si allarga per davvero */
   .sel-compatto, .sel-area-azione { min-height: 44px; font-size: 15px; }
-  .abit-periodo .ap-campo input[type="date"], .ap-campo input[type="date"] { font-size: 15px; }
 
   /* comandi piccoli per scelta: stessa forma, area del dito piena */
   .banda-x { width: 44px; height: 44px; }
   .giorno-chip { min-width: 0; }
   .gio-so-corpo { min-height: 44px; }
   /* le caselle: il quadratino resta di 26, l'area del dito arriva a 44 */
-  .riga-azione .spunta, .abit-oggi .spunta, .tl-check, .prog-apri, .step-quando, .fa-fai { position: relative; }
   /* dentro la giornata un blocco di un quarto d'ora è alto meno di un dito:
      lì la spunta sparisce e si tocca il blocco, che apre la sua scheda con
      il pulsante «Fatto» a misura piena (è quello che fa Calendario). */
@@ -2415,7 +2460,7 @@ body.sto-trascinando { cursor: grabbing; user-select: none; -webkit-user-select:
      il blocco, che apre la sua scheda con «Fatto» a misura piena — è quello
      che fa Calendario, che dentro gli eventi non mette comandi. */
   .tl-blk-check { display: none; }
-  .riga-azione .spunta::after, .abit-oggi .spunta::after, .tl-check::after, .prog-apri::after,
+  .riga-azione .spunta::after, .ab-riga .spunta::after, .tl-check::after, .prog-apri::after,
   .step-quando::after, .fa-fai::after {
     content: ''; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
     width: max(100%, 44px); height: max(100%, 44px);

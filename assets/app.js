@@ -2853,11 +2853,6 @@
      aprirne una non chiude le altre (linee guida Apple: le sezioni a
      scomparsa sono indipendenti, e lo stato di chi le ha aperte si rispetta) */
   var ritualiAperti = null;
-  /* per quanto tempo vale un'abitudine si decide una volta e poi non si
-     tocca più: sta dietro una riga che dice già com'è, e si apre solo
-     quando serve (divulgazione progressiva). */
-  var periodiAperti = {};
-
   var RITUALI = [
     { id: 'mattina',   ico: 'sun',      nome: 'Le azioni di oggi',      quando: 'giorno' },
     { id: 'checkin',   ico: 'bolt',     nome: 'Check-in',               quando: 'giorno' },
@@ -2988,7 +2983,8 @@
 
   function testaRituale(icona, titolo, sotto) {
     void icona; void titolo;
-    return '<p class="rituale-intro">' + sotto + '</p>';
+    /* senza testo non resta un paragrafo vuoto a fare spazio */
+    return sotto ? '<p class="rituale-intro">' + sotto + '</p>' : '';
   }
 
   function ritualeMattina(corpo) {
@@ -3071,86 +3067,146 @@
     return GIORNI_ORD.filter(function (d) { return giorni.indexOf(d) >= 0; }).map(function (d) { return GIORNI_LAB[d]; }).join(' ');
   }
 
-  /* «sempre», «dal 3 set», «3 set → 30 set»: la riga chiusa dice già tutto
-     quello che serve sapere senza aprire niente. */
-  function riepilogoPeriodo(h) {
-    if (h.da && h.a) return LM.fmtShort(h.da) + ' → ' + LM.fmtShort(h.a);
-    if (h.a) return 'fino al ' + LM.fmtShort(h.a);
-    if (h.da) return 'dal ' + LM.fmtShort(h.da);
-    return 'sempre';
+  /* ============================================================
+     ABITUDINI
+     Il lavoro di ogni giorno è spuntare tre righe; il lavoro di una volta
+     è decidere quali sono e quando. Prima stavano nella stessa schermata,
+     con lo stesso peso: ogni abitudine compariva DUE volte — una nella
+     lista di oggi e una nell'elenco per modificarla — e l'elenco delle
+     modifiche si prendeva il 70% dell'altezza (713 px su 1039 con tre
+     abitudini, 1770 su 2256 con otto). Il gesto quotidiano finiva
+     schiacciato in una striscia dentro un pannello di impostazioni.
+     Adesso c'è una lista sola, in stile elenco di iOS: la riga si spunta,
+     e toccandola si apre la sua scheda con tutto il resto (nome, giorni,
+     area, periodo, la catena degli ultimi 28 giorni, salta oggi,
+     elimina). Le cose che non tocchi quasi mai non occupano più lo
+     schermo di quelle che tocchi tutti i giorni.
+     ============================================================ */
+
+  /* La catena: gli ultimi n giorni, per vedere a colpo d'occhio come sta
+     andando. Le caselle passate si toccano — capita di ricordarsi la sera
+     di una cosa fatta il giorno prima, e i dati lo permettevano già senza
+     che ci fosse un modo per dirlo. */
+  function giorniAbitudine(h, settimane) {
+    /* incolonnati per giorno della settimana, come un calendario: se le
+       caselle scorrono via una dietro l'altra non si vede più che «il
+       martedì salta sempre», che è l'unica cosa che una griglia sa dire e
+       una lista no. Si parte dal lunedì di N settimane fa e si arriva a
+       fine settimana: gli ultimi giorni possono essere nel futuro. */
+    var oggi = LM.todayKey();
+    var inizio = LM.addDays(LM.weekKey(oggi), -7 * (settimane - 1));
+    var out = [];
+    for (var i = 0; i < settimane * 7; i++) {
+      var k = LM.addDays(inizio, i);
+      out.push({
+        k: k,
+        fatto: !!(h.fatti && h.fatti[k]),
+        saltato: !!(h.salti && h.salti[k]),
+        prevista: LM.abitudinePrevista(h, k),
+        futuro: k > oggi,
+        oggi: k === oggi
+      });
+    }
+    return out;
+  }
+
+  function statoAbitudineOggi(h) {
+    var k = LM.todayKey();
+    return { fatta: !!(h.fatti && h.fatti[k]), saltata: !!(h.salti && h.salti[k]) };
+  }
+
+  /* Cosa dice la riga sotto al nome: la serie se c'è, altrimenti il motivo
+     per cui oggi non è in lista. */
+  function sottoAbitudine(h, previstaOggi) {
+    var st = statoAbitudineOggi(h);
+    if (st.saltata) return { testo: 'saltata oggi', cls: 'saltata' };
+    if (!previstaOggi) {
+      var oggi = LM.todayKey();
+      if (h.da && oggi < h.da) return { testo: 'comincia il ' + LM.fmtShort(h.da), cls: '' };
+      if (h.a && oggi > h.a) return { testo: 'finita il ' + LM.fmtShort(h.a), cls: '' };
+      return { testo: riepilogoGiorni(h.giorni), cls: '' };
+    }
+    /* Per le abitudini di oggi la seconda riga la merita solo la serie:
+       ripetere «ogni giorno» sotto ogni riga di una lista intitolata
+       «Oggi» è una parola che si legge sei volte e non dice niente. */
+    var serie = LM.streakAbitudine(h);
+    if (serie > 1) return { testo: serie + ' giorni di fila', cls: 'serie', ico: 'flame' };
+    if (serie === 1) return { testo: 'cominciata oggi', cls: 'serie', ico: 'flame' };
+    return null;
+  }
+
+  function rigaAbitudine(h, previstaOggi) {
+    var st = statoAbitudineOggi(h);
+    var sotto = sottoAbitudine(h, previstaOggi);
+    var ar = areaById(h.areaId);
+    return '<div class="ab-riga' + (st.fatta ? ' fatta' : '') + (st.saltata ? ' saltata' : '') +
+      '" data-abid="' + h.id + '" style="--c-area:' + LM.coloreArea(ar) + '">' +
+      (st.saltata
+        ? '<span class="ab-salto" aria-hidden="true">' + ICO('moon', 14) + '</span>'
+        : '<button class="spunta" data-toggle-ab="' + h.id + '" aria-pressed="' + (st.fatta ? 'true' : 'false') +
+          '" aria-label="' + esc(h.testo) + (st.fatta ? ', fatta oggi' : ', segna come fatta') + '">' + ICO('check', 13) + '</button>') +
+      '<button class="ab-apri" data-abdett="' + h.id + '" aria-label="Apri ' + esc(h.testo) + '">' +
+      '<span class="ab-testo"><span class="ab-nome">' + esc(h.testo) + '</span>' +
+      (sotto ? '<span class="ab-sotto' + (sotto.cls ? ' ' + sotto.cls : '') + '">' +
+        (sotto.ico ? ICO(sotto.ico, 11, 'fiamma') + ' ' : '') + esc(sotto.testo) + '</span>' : '') + '</span>' +
+      '<span class="tag-area" title="' + esc(ar.nome) + '">' + ICO(ar.icona, 14) + '</span>' +
+      '<span class="ab-chevron">' + ICO('chevronGiu', 15) + '</span></button>' +
+      '</div>';
   }
 
   function ritualeAbitudini(corpo) {
     var s = LM.load();
     var oggi = LM.abitudiniDiOggi();
-    var tutte = s.abitudini;
+    var idOggi = {};
+    oggi.forEach(function (h) { idOggi[h.id] = true; });
+    var altre = s.abitudini.filter(function (h) { return !idOggi[h.id]; });
+    var fatte = oggi.filter(function (h) { return !!h.fatti[LM.todayKey()]; }).length;
 
-    var listaOggi = oggi.length
-      ? oggi.map(function (h) {
-        var fatto = !!h.fatti[LM.todayKey()];
-        var st = LM.streakAbitudine(h);
-        var ar = areaById(h.areaId);
-        return '<div class="abit-oggi' + (fatto ? ' fatta' : '') + '" data-ab="' + h.id + '">' +
-          '<button class="spunta" data-toggle-ab="' + h.id + '" aria-label="Segna come fatta">' + ICO('check', 13) + '</button>' +
-          '<span class="testo">' + esc(h.testo) + '</span>' +
-          (st > 0 ? '<span class="abit-streak">' + ICO('flame', 12, 'fiamma') + ' ' + st + '</span>' : '') +
-          '<span class="tag-area" style="--c-area:' + LM.coloreArea(ar) + '" title="' + esc(ar.nome) + '">' + ICO(ar.icona, 14) + '</span></div>';
-      }).join('')
-      : '<div class="vuoto" style="padding:14px 8px">Nessuna abitudine prevista per oggi.</div>';
+    /* Il conto di oggi, in cima e in una riga: è la sola cosa che si
+       guarda arrivando, e quando è pieno vale come premio. */
+    var prog = '';
+    if (oggi.length) {
+      var tutte = fatte === oggi.length;
+      prog = '<div class="ab-prog' + (tutte ? ' piena' : '') + '">' +
+        '<div class="ab-prog-testo">' +
+        (tutte ? ICO('check', 14) + ' <b>Fatte tutte</b>, per oggi ci sei.'
+               : '<b>' + fatte + '</b> di ' + oggi.length + ' per oggi') + '</div>' +
+        '<div class="ab-prog-barra"><span style="width:' + Math.round(fatte / oggi.length * 100) + '%"></span></div>' +
+        '</div>';
+    }
 
-    var listaTutte = tutte.length
-      ? tutte.map(function (h) {
-        return '<div class="abit-riga" data-abrow="' + h.id + '" style="--c-area:' + LM.coloreArea(areaById(h.areaId)) + '">' +
-          '<div class="abit-riga-top">' +
-          '<span class="tag-area">' + ICO(areaById(h.areaId).icona, 14) + '</span>' +
-          '<input type="text" class="abit-nome" data-abnome="' + h.id + '" value="' + esc(h.testo) + '" aria-label="Nome abitudine">' +
-          '<button class="icona-btn" data-abdel="' + h.id + '" title="Rimuovi">' + ICO('trash', 14) + '</button></div>' +
-          '<div class="abit-riga-giorni">' + chipsGiorni(h.giorni) + '<span class="abit-giorni-rec">' + riepilogoGiorni(h.giorni) + '</span></div>' +
-          /* Per quanto tempo vale: di default da quando l'hai creata e senza
-             fine, ma si può dare un periodo preciso (es. "per un mese").
-             Chiusa è una riga sola, perché è una cosa che si decide una
-             volta e poi resta lì. */
-          '<div class="abit-periodo' + (periodiAperti[h.id] ? ' aperto' : '') + '">' +
-          '<button class="ap-toggle" data-abper="' + h.id + '" aria-expanded="' + (periodiAperti[h.id] ? 'true' : 'false') + '" aria-controls="ap-' + h.id + '">' +
-          ICO('calendar', 12) + '<span class="ap-quando">' + esc(riepilogoPeriodo(h)) + '</span>' +
-          '<span class="ap-chevron">' + ICO('chevronGiu', 13) + '</span></button>' +
-          (Object.keys(h.salti || {}).length ? (function () { var n = Object.keys(h.salti).length;
-            return '<span class="ap-salti" title="' + esc(Object.keys(h.salti).sort().map(LM.fmtShort).join(', ')) + '">' + n + (n === 1 ? ' giorno saltato' : ' giorni saltati') + '</span>'; })() : '') +
-          '<div class="ap-campi" id="ap-' + h.id + '"' + (periodiAperti[h.id] ? '' : ' hidden') + '>' +
-          '<label class="ap-campo">dal <input type="date" data-abda="' + h.id + '" value="' + (h.da || '') + '" aria-label="Dal giorno"></label>' +
-          '<label class="ap-campo">al <input type="date" data-aba="' + h.id + '" value="' + (h.a || '') + '" min="' + (h.da || '') + '" aria-label="Al giorno (vuoto = senza fine)"></label>' +
-          (h.a ? '<button class="btn btn-mini btn-ghost" data-abnofine="' + h.id + '">Senza fine</button>' : '<span class="ap-nota">vuoto = senza fine</span>') +
-          '</div>' +
-          '</div>' +
-          '</div>';
-      }).join('')
-      : '';
-
-    /* La nuova abitudine sta in CIMA, non in fondo. In fondo significava dopo
-       tutte quelle che hai già: con tre abitudini il campo era a
-       millequattrocento pixel dall'inizio, con dieci diventa irraggiungibile,
-       e un pensiero che ti viene ora non sopravvive a quello scorrimento.
-       Sopra la lista di oggi costa una riga — quarantasei pixel, ripagati
-       dalla testata più compatta — e non toglie niente a ciò che devi fare:
-       la lista di oggi resta interamente sopra la piega. */
+    /* Ordine: prima com'è messa oggi, poi le abitudini, e in fondo il campo
+       per aggiungerne una — come negli elenchi di iOS, dove la riga nuova
+       sta sotto quelle che ci sono già. Prima stava in cima perché sopra
+       c'erano millequattrocento pixel di impostazioni da scavalcare: adesso
+       che quelle sono dentro le schede, la sezione intera sta in uno schermo
+       e il campo si raggiunge senza scorrere.
+       La spiegazione compare solo finché non c'è niente: dopo si è già
+       capito, e sarebbero due righe rilette ogni volta. */
     corpo.innerHTML = '<div class="card">' +
-      testaRituale('refresh', 'Abitudini',
-        /* tre righe di spiegazione diventavano tre righe di schermo su ogni
-           apertura, per un testo che si legge una volta sola */
-        'Le azioni che vuoi ripetere. Ogni volta che le fai, la serie cresce.') +
+      (s.abitudini.length
+        ? testaRituale('refresh', 'Abitudini', '')
+        : testaRituale('refresh', 'Abitudini',
+          'Le azioni che vuoi ripetere. Ogni volta che le fai, la serie cresce.')) +
+      prog +
+      (oggi.length
+        ? '<div class="ab-eti">Oggi</div><div class="ab-gruppo">' +
+          oggi.map(function (h) { return rigaAbitudine(h, true); }).join('') + '</div>'
+        : (s.abitudini.length
+          ? '<div class="vuoto" style="padding:14px 8px">Per oggi non è prevista nessuna abitudine.</div>'
+          : '<div class="vuoto" style="padding:14px 8px">Non ne hai ancora. Scrivine una qui sotto: «leggere 20 minuti», «camminare», quello che vuoi ripetere.</div>')) +
+      (altre.length
+        ? '<div class="ab-eti">Le altre</div><div class="ab-gruppo">' +
+          altre.map(function (h) { return rigaAbitudine(h, false); }).join('') + '</div>'
+        : '') +
+      '<div class="ab-nuova">' +
       rigaAggiunta('agg-ab', 'Nuova abitudine…',
         '<span class="agg-eti">In che giorni?</span>' +
         '<div id="agg-ab-giorni" class="agg-giorni">' + chipsGiorni([]) + '</div>' +
         '<span class="agg-nota">nessuno selezionato = ogni giorno</span>' +
-        /* stessa area che userebbe il livello dati se non si scegliesse niente */
         '<label class="agg-area"><span class="agg-eti">in</span>' + selectAree('agg-ab-area', 'salute') + '</label>') +
-      '<h2 style="font-size:14px">Oggi</h2><div class="abit-lista-oggi">' + listaOggi + '</div>' +
       '</div>' +
-      (tutte.length
-        ? '<div class="card mt"><h2>' + ICO('lista', 16) + ' Le tue abitudini</h2>' +
-          '<div class="sotto">Tocca i giorni per cambiare quando ripeterla.</div>' +
-          '<div class="abit-tutte">' + listaTutte + '</div></div>'
-        : '');
+      '</div>';
 
     corpo.querySelectorAll('[data-toggle-ab]').forEach(function (b) {
       b.addEventListener('click', function (ev) {
@@ -3158,56 +3214,9 @@
         ritualeAbitudini(corpo);
       });
     });
-    corpo.querySelectorAll('[data-abdel]').forEach(function (b) {
+    corpo.querySelectorAll('[data-abdett]').forEach(function (b) {
       b.addEventListener('click', function () {
-        conAnnulla('Abitudine eliminata.', 'trash', function () {
-          LM.rimuoviAbitudine(b.getAttribute('data-abdel'));
-          ritualeAbitudini(corpo);
-        });
-      });
-    });
-    corpo.querySelectorAll('[data-abper]').forEach(function (b) {
-      b.addEventListener('click', function () {
-        var id = b.getAttribute('data-abper');
-        var apri = !periodiAperti[id];
-        if (apri) periodiAperti[id] = true; else delete periodiAperti[id];
-        b.setAttribute('aria-expanded', apri ? 'true' : 'false');
-        b.parentNode.classList.toggle('aperto', apri);
-        var campi = document.getElementById('ap-' + id);
-        if (campi) campi.hidden = !apri;
-      });
-    });
-    corpo.querySelectorAll('[data-abda]').forEach(function (inp) {
-      inp.addEventListener('change', function () {
-        var h = LM.load().abitudini.find(function (x) { return x.id === inp.getAttribute('data-abda'); });
-        LM.impostaPeriodoAbitudine(inp.getAttribute('data-abda'), inp.value || null, h ? h.a : null);
-        ritualeAbitudini(corpo);
-      });
-    });
-    corpo.querySelectorAll('[data-aba]').forEach(function (inp) {
-      inp.addEventListener('change', function () {
-        var h = LM.load().abitudini.find(function (x) { return x.id === inp.getAttribute('data-aba'); });
-        LM.impostaPeriodoAbitudine(inp.getAttribute('data-aba'), h ? h.da : null, inp.value || null);
-        ritualeAbitudini(corpo);
-      });
-    });
-    corpo.querySelectorAll('[data-abnofine]').forEach(function (b) {
-      b.addEventListener('click', function () {
-        var h = LM.load().abitudini.find(function (x) { return x.id === b.getAttribute('data-abnofine'); });
-        LM.impostaPeriodoAbitudine(b.getAttribute('data-abnofine'), h ? h.da : null, null);
-        ritualeAbitudini(corpo);
-      });
-    });
-    corpo.querySelectorAll('[data-abnome]').forEach(function (inp) {
-      inp.addEventListener('change', function () { LM.modificaAbitudine(inp.getAttribute('data-abnome'), { testo: inp.value.trim() }); });
-    });
-    corpo.querySelectorAll('[data-abrow]').forEach(function (row) {
-      row.querySelectorAll('.giorno-chip').forEach(function (chip) {
-        chip.addEventListener('click', function () {
-          chip.classList.toggle('sel');
-          LM.modificaAbitudine(row.getAttribute('data-abrow'), { giorni: leggiGiorni(row) });
-          row.querySelector('.abit-giorni-rec').textContent = riepilogoGiorni(leggiGiorni(row));
-        });
+        apriDettaglioAbitudine(b.getAttribute('data-abdett'), function () { ritualeAbitudini(corpo); });
       });
     });
     var nuovaG = corpo.querySelector('#agg-ab-giorni');
@@ -3224,6 +3233,143 @@
       var i = corpo.querySelector('#agg-ab .agg-testo');
       if (i) i.focus({ preventScroll: true });
     });
+  }
+
+  /* La scheda di un'abitudine: quello che prima stava sempre in vista per
+     tutte, qui sta per una sola e solo quando serve. In cima c'è oggi
+     (fatta / salta), poi la catena, poi le impostazioni. */
+  function apriDettaglioAbitudine(id, dopo) {
+    function trova() { return LM.load().abitudini.find(function (x) { return x.id === id; }); }
+    var h0 = trova();
+    if (!h0) return;
+
+    function corpoHtml() {
+      var h = trova();
+      if (!h) return '';
+      var st = statoAbitudineOggi(h);
+      var serie = LM.streakAbitudine(h);
+      var volte = Object.keys(h.fatti || {}).length;
+      var giorni = giorniAbitudine(h, 4);
+      var prevista = LM.abitudinePrevista(h, LM.todayKey());
+
+      var catena = '<div class="abd-testa">' + GIORNI_ORD.map(function (d) {
+          return '<span>' + GIORNI_LAB[d] + '</span>';
+        }).join('') + '</div>' +
+        '<div class="abd-catena" role="group" aria-label="Le ultime quattro settimane">' +
+        giorni.map(function (g) {
+          if (g.futuro) return '<span class="abd-g futuro" aria-hidden="true"></span>';
+          var cls = 'abd-g' + (g.fatto ? ' fatto' : '') + (g.saltato ? ' saltato' : '') +
+            (!g.prevista && !g.fatto && !g.saltato ? ' fuori' : '') + (g.oggi ? ' oggi' : '');
+          var che = g.fatto ? 'fatta' : g.saltato ? 'saltata' : g.prevista ? 'non fatta' : 'non prevista';
+          return '<button class="' + cls + '" data-giorno-ab="' + g.k + '" aria-pressed="' + (g.fatto ? 'true' : 'false') +
+            '" aria-label="' + LM.fmtShort(g.k) + ', ' + che + '" title="' + LM.fmtShort(g.k) + '">' +
+            '<span>' + LM.fmtShort(g.k).split(' ')[0] + '</span></button>';
+        }).join('') + '</div>';
+
+      return '<div class="abd">' +
+        '<div class="abd-oggi">' +
+        (st.saltata
+          ? '<button class="btn btn-grande" id="abd-rimetti">' + ICO('refresh', 16) + ' Rimetti oggi</button>' +
+            '<p class="abd-nota">Oggi è saltata: non conta come mancata e la serie non si rompe.</p>'
+          : '<button class="btn btn-grande ' + (st.fatta ? 'btn-ok' : 'btn-primario') + '" id="abd-fatta">' +
+            ICO('check', 16) + (st.fatta ? ' Fatta oggi' : ' Segna come fatta') + '</button>' +
+            (prevista ? '<button class="btn btn-mini btn-ghost" id="abd-salta">' + ICO('moon', 14) + ' Salta oggi</button>' : '')) +
+        '</div>' +
+        '<div class="abd-numeri">' +
+        /* una fiamma accanto a uno zero è solo un rimprovero: quando la
+           serie non c'è si dice com'è, senza medaglia spenta */
+        (serie > 0
+          ? '<span>' + ICO('flame', 13, 'fiamma') + ' <b>' + serie + '</b> ' + (serie === 1 ? 'giorno di fila' : 'giorni di fila') + '</span>'
+          : '<span>nessuna serie aperta</span>') +
+        '<span><b>' + volte + '</b> ' + (volte === 1 ? 'volta in tutto' : 'volte in tutto') + '</span>' +
+        '</div>' +
+        catena +
+        '<p class="abd-nota">Tocca un giorno passato se te ne sei ricordato dopo.</p>' +
+        '<hr class="separatore">' +
+        '<label class="campo" for="abd-nome">Nome</label>' +
+        '<input type="text" id="abd-nome" value="' + esc(h.testo) + '">' +
+        '<label class="campo">Quando ripeterla</label>' +
+        '<div id="abd-giorni">' + chipsGiorni(h.giorni) + '</div>' +
+        '<div class="abd-nota-giorni">' + esc(riepilogoGiorni(h.giorni)) + '</div>' +
+        '<label class="campo" for="abd-area">Area</label>' + selectAree('abd-area', h.areaId) +
+        '<label class="campo">Per quanto vale</label>' +
+        '<div class="abd-periodo">' +
+        '<label class="ap-campo">dal <input type="date" id="abd-da" value="' + (h.da || '') + '"></label>' +
+        '<label class="ap-campo">al <input type="date" id="abd-a" value="' + (h.a || '') + '" min="' + (h.da || '') + '"></label>' +
+        (h.a ? '<button class="btn btn-mini btn-ghost" id="abd-nofine">Senza fine</button>' : '<span class="ap-nota">vuoto = senza fine</span>') +
+        '</div>' +
+        '<div class="abd-fondo"><button class="btn btn-mini btn-ghost imp-pericolo" id="abd-del">' + ICO('trash', 14) + ' Elimina l’abitudine</button></div>' +
+        '</div>';
+    }
+
+    function ridisegna() {
+      var root = document.getElementById('sheet-corpo');
+      if (!root) return;
+      root.innerHTML = corpoHtml();
+      collega(root);
+      if (dopo) dopo();
+    }
+
+    function collega(root) {
+      var h = trova();
+      if (!h) { chiudiSheet(); if (dopo) dopo(); return; }
+      var f = root.querySelector('#abd-fatta');
+      if (f) f.addEventListener('click', function (ev) {
+        feedbackSpunta(ev, LM.completaAbitudine(id), 'Fatta. Continua così', 'flame');
+        ridisegna();
+      });
+      var salta = root.querySelector('#abd-salta');
+      if (salta) salta.addEventListener('click', function () {
+        LM.saltaGiornoAbitudine(id);
+        toast('Saltata per oggi. La serie regge.', 0, 'moon');
+        ridisegna();
+      });
+      var rim = root.querySelector('#abd-rimetti');
+      if (rim) rim.addEventListener('click', function () { LM.saltaGiornoAbitudine(id); ridisegna(); });
+      root.querySelectorAll('[data-giorno-ab]').forEach(function (b) {
+        b.addEventListener('click', function () {
+          var k = b.getAttribute('data-giorno-ab');
+          if (k > LM.todayKey()) return;
+          LM.completaAbitudine(id, k);
+          ridisegna();
+        });
+      });
+      var nome = root.querySelector('#abd-nome');
+      nome.addEventListener('change', function () {
+        var v = nome.value.trim();
+        if (!v) { nome.value = h.testo; return; }
+        LM.modificaAbitudine(id, { testo: v });
+        var tit = document.getElementById('sheet-titolo');
+        if (tit) tit.textContent = v;
+        if (dopo) dopo();
+      });
+      var gg = root.querySelector('#abd-giorni');
+      gg.querySelectorAll('.giorno-chip').forEach(function (chip) {
+        chip.addEventListener('click', function () {
+          chip.classList.toggle('sel');
+          LM.modificaAbitudine(id, { giorni: leggiGiorni(gg) });
+          ridisegna();
+        });
+      });
+      root.querySelector('#abd-area').addEventListener('change', function (e) {
+        LM.modificaAbitudine(id, { areaId: e.target.value });
+        if (dopo) dopo();
+      });
+      var da = root.querySelector('#abd-da'), a = root.querySelector('#abd-a');
+      da.addEventListener('change', function () { LM.impostaPeriodoAbitudine(id, da.value || null, trova().a); ridisegna(); });
+      a.addEventListener('change', function () { LM.impostaPeriodoAbitudine(id, trova().da, a.value || null); ridisegna(); });
+      var nf = root.querySelector('#abd-nofine');
+      if (nf) nf.addEventListener('click', function () { LM.impostaPeriodoAbitudine(id, trova().da, null); ridisegna(); });
+      root.querySelector('#abd-del').addEventListener('click', function () {
+        conAnnulla('Abitudine eliminata.', 'trash', function () {
+          LM.rimuoviAbitudine(id);
+          chiudiSheet();
+          if (dopo) dopo();
+        });
+      });
+    }
+
+    apriSheet(h0.testo, corpoHtml(), collega);
   }
 
   /* Ancore comportamentali (BARS) per ogni punto della scala: descrivere
