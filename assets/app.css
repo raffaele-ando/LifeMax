@@ -17,6 +17,7 @@
   --grad-brand: linear-gradient(118deg, var(--brand-a), var(--brand-b) 55%, var(--brand-c));
   --accento: #5a5fe0;
   --accento-ink: #ffffff;
+  --accento-pieno: var(--accento); /* sfondo per superfici accento con testo sopra */
   --accento-testo: #4a4fd0; /* variante scura del brand: testo accento su superfici chiare, AA */
 
   /* superfici e inchiostro — chiaro */
@@ -116,6 +117,7 @@
   --brand-c: #22d3ee;
   --accento: #8b5cf6;
   --accento-testo: #6d34e0; /* viola arcade abbastanza scuro per AA su chiaro */
+  --accento-pieno: #6d34e0; /* il viola chiaro non regge il bianco: pieno più scuro */
   --r-1: 6px;
   --r-2: 10px;
   --r-3: 14px;
@@ -125,6 +127,7 @@
 :root[data-skin="arcade"][data-mode="dark"] {
   --accento: #a78bfa;
   --accento-testo: #a78bfa;
+  --accento-pieno: var(--accento);
   --pagina: #0b0912;
   --superficie-1: #16121f;
   --superficie-2: #1e1929;
@@ -165,6 +168,9 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 input, textarea, select { font: inherit; color: var(--inchiostro-1); }
 a { color: var(--accento-testo); text-decoration: none; }
 a:hover { text-decoration: underline; }
+/* un link dentro un blocco di testo non si distingue solo dal colore:
+   i link inline (quelli senza classe) restano sottolineati sempre. */
+a:not([class]) { text-decoration: underline; text-underline-offset: 2px; text-decoration-thickness: 1px; }
 small { color: var(--inchiostro-2); }
 :focus-visible { outline: 2px solid var(--accento); outline-offset: 2px; border-radius: var(--r-1); }
 
@@ -235,7 +241,7 @@ small { color: var(--inchiostro-2); }
 .logo svg { filter: drop-shadow(0 3px 8px color-mix(in srgb, var(--brand-b) 40%, transparent)); }
 .logo .logo-tag {
   margin-left: auto; font-size: 9.5px; font-weight: 800; letter-spacing: .1em;
-  color: var(--accento); border: 1px solid color-mix(in srgb, var(--accento) 35%, transparent);
+  color: var(--accento-testo); border: 1px solid color-mix(in srgb, var(--accento) 35%, transparent);
   background: color-mix(in srgb, var(--accento) 8%, transparent);
   padding: 2px 7px; border-radius: var(--r-tondo); text-transform: uppercase;
 }
@@ -263,7 +269,7 @@ small { color: var(--inchiostro-2); }
 .nav-item span { flex: 1; }
 .nav-item .nav-badge {
   margin-left: auto; flex: none; font-size: 11px; font-weight: 800;
-  background: var(--accento); color: var(--accento-ink);
+  background: var(--accento-pieno); color: var(--accento-ink);
   border-radius: var(--r-tondo); padding: 1px 7.5px;
   font-variant-numeric: tabular-nums;
   box-shadow: var(--e1);
@@ -438,7 +444,7 @@ small { color: var(--inchiostro-2); }
   .tabbar button .tab-ico .nav-badge {
     position: absolute; top: -5px; left: 11px;
     font-size: 9px; font-weight: 800; line-height: 1;
-    background: var(--accento); color: var(--accento-ink);
+    background: var(--accento-pieno); color: var(--accento-ink);
     border-radius: var(--r-tondo); padding: 2px 5px; box-shadow: var(--e1);
     border: 1.5px solid var(--superficie-1);
   }
@@ -588,7 +594,7 @@ label.campo { display: block; margin: 14px 0 6px; }
 }
 .scala button:hover { transform: translateY(-2px); box-shadow: var(--e2); border-color: color-mix(in srgb, var(--accento) 40%, var(--bordo-forte)); }
 .scala button.sel {
-  background: var(--accento); color: var(--accento-ink); border-color: transparent;
+  background: var(--accento-pieno); color: var(--accento-ink); border-color: transparent;
   transform: translateY(-2px) scale(1.06); box-shadow: var(--e2);
 }
 
@@ -773,7 +779,7 @@ kbd {
 .riga-azione .tag-mit {
   display: inline-flex; align-items: center; gap: 4px;
   font-size: 9.5px; font-weight: 850; letter-spacing: .09em;
-  background: var(--accento); color: var(--accento-ink);
+  background: var(--accento-pieno); color: var(--accento-ink);
   padding: 3px 8px; border-radius: var(--r-tondo);
   box-shadow: var(--e1);
 }
@@ -989,7 +995,7 @@ select.sel-compatto {
 }
 .voto-area .stelline button:hover { transform: translateY(-1px); border-color: color-mix(in srgb, var(--accento) 40%, var(--bordo-forte)); }
 .voto-area .stelline button.sel {
-  background: var(--accento); color: var(--accento-ink); border-color: transparent;
+  background: var(--accento-pieno); color: var(--accento-ink); border-color: transparent;
   transform: scale(1.08); box-shadow: var(--e2);
 }
 
@@ -1106,7 +1112,7 @@ select.sel-compatto {
   background: var(--superficie-2); color: var(--inchiostro-2);
   transition: all var(--t-veloce);
 }
-.selettore-modi button.sel .icona-modo { background: var(--accento); color: var(--accento-ink); box-shadow: var(--e1); }
+.selettore-modi button.sel .icona-modo { background: var(--accento-pieno); color: var(--accento-ink); box-shadow: var(--e1); }
 .selettore-modi .titolo-modo { font-weight: 750; letter-spacing: -0.01em; }
 .selettore-modi .desc-modo { font-size: 12.5px; color: var(--inchiostro-2); margin-top: 2px; }
 
@@ -1258,7 +1264,7 @@ label.campo {
 .avatar-ph {
   display: inline-flex; align-items: center; justify-content: center;
   color: var(--accento-ink); font-weight: 750; font-size: 13px;
-  background: var(--accento); border-color: transparent;
+  background: var(--accento-pieno); border-color: transparent;
 }
 .btn-accedi {
   background: var(--superficie-1); color: var(--inchiostro-1);
@@ -1507,7 +1513,7 @@ label.campo {
 
 /* ---------- Attività: da smistare + backlog ---------- */
 
-.conta { font-size: 12px; font-weight: 800; color: var(--accento-ink); background: var(--accento); border-radius: var(--r-tondo); padding: 1px 9px; vertical-align: 2px; font-variant-numeric: tabular-nums; }
+.conta { font-size: 12px; font-weight: 800; color: var(--accento-ink); background: var(--accento-pieno); border-radius: var(--r-tondo); padding: 1px 9px; vertical-align: 2px; font-variant-numeric: tabular-nums; }
 
 .bk-chevron { flex: none; color: var(--inchiostro-muto); display: inline-flex; transition: transform var(--t-media); }
 .bk-chevron.aperta { transform: rotate(180deg); }
@@ -1850,27 +1856,39 @@ label.campo {
 }
 
 /* ============================================================
-   RITUALI — righe in ordine di giornata, una aperta per volta
+   RITUALI — elenco a gruppi, sezioni indipendenti
+   Impianto preso dagli elenchi «inset grouped» di iOS: ogni gruppo è un
+   riquadro arrotondato con le righe separate da una linea sottile e una
+   breve etichetta sopra. Ogni riga si apre e si chiude per conto suo:
+   aprirne una non chiude le altre, e quello che apri resta aperto.
    ============================================================ */
-.rit-lista { display: flex; flex-direction: column; gap: 8px; }
 .rit-eti {
   font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase;
-  color: var(--inchiostro-2); margin: 20px 0 8px;
+  color: var(--inchiostro-2); margin: 22px 2px 8px;
 }
+.rit-eti:first-of-type { margin-top: 4px; }
+.rit-gruppo {
+  border: 1px solid var(--bordo); border-radius: var(--r-3);
+  background: var(--superficie-1); box-shadow: var(--e1); overflow: hidden;
+}
+.rit-gruppo > .rit-blocco + .rit-blocco { border-top: 1px solid var(--bordo); }
 .rit-riga {
   display: flex; align-items: center; gap: 10px; width: 100%; text-align: left;
-  min-height: 54px; padding: 0 14px; border-radius: var(--r-2);
-  background: var(--superficie-1); border: 1px solid var(--bordo); box-shadow: var(--e1);
-  transition: border-color var(--t-veloce), background var(--t-veloce);
+  min-height: 56px; padding: 0 14px; background: none; border: 0; border-radius: 0;
+  transition: background var(--t-veloce);
 }
-.rit-riga:hover { border-color: color-mix(in srgb, var(--accento) 40%, var(--bordo-forte)); }
-.rit-ico { flex: none; display: inline-flex; color: var(--inchiostro-2); }
-.rit-nome { flex: 1; min-width: 0; font-size: 14.5px; font-weight: 700; }
+.rit-riga:hover { background: var(--superficie-2); }
+.rit-blocco.aperto > .rit-riga { background: var(--superficie-2); }
+/* icona in un quadratino tinto, come le righe di Impostazioni su iOS */
+.rit-ico {
+  flex: none; display: inline-flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; border-radius: var(--r-1);
+  background: color-mix(in srgb, var(--accento) 12%, transparent); color: var(--accento-testo);
+}
+.rit-nome { flex: 1; min-width: 0; font-size: 14.5px; font-weight: 650; }
 /* «adesso»: l'app dice qual è il rituale di questo momento, invece di
-   lasciartelo indovinare fra cinque schede */
+   lasciartelo indovinare */
 .rit-ora {
-  /* stessa forma delle altre pastiglie di stato: tinta tenue e testo accento.
-     Il bianco sull'accento pieno stava a 4.23:1 con lo skin Arcade, sotto AA. */
   flex: none; font-size: 10.5px; font-weight: 800; letter-spacing: .07em; text-transform: uppercase;
   color: var(--accento-testo); background: color-mix(in srgb, var(--accento) 15%, transparent);
   padding: 3px 8px; border-radius: var(--r-tondo);
@@ -1879,29 +1897,20 @@ label.campo {
 .rit-stato.fatto { color: var(--ok-testo); font-weight: 700; }
 .rit-chevron { flex: none; display: inline-flex; color: var(--inchiostro-muto); transition: transform var(--t-media); }
 .rit-chevron.aperta { transform: rotate(180deg); }
-.rit-blocco.aperto {
-  border-radius: var(--r-3); border: 1px solid var(--bordo-forte);
-  background: var(--superficie-1); box-shadow: var(--e2); overflow: hidden;
-}
-.rit-blocco.aperto > .rit-riga {
-  border: 0; border-bottom: 1px solid var(--bordo); border-radius: 0; box-shadow: none;
-  background: var(--superficie-2); min-height: 58px;
-}
-.rit-corpo { padding: 4px 0 0; }
-/* La PRIMA card non ha più bisogno del suo bordo: il bordo è quello del
-   blocco aperto. Le successive sì: il check-in e la review della sera ne hanno
-   due (il rituale e il grafico dell'andamento), e senza cornice si fondevano
-   in un unico muro bianco senza stacco. */
+.rit-corpo { padding: 2px 0 0; border-top: 1px solid var(--bordo); }
+/* la prima card del corpo non ha bordo suo: la cornice è quella del gruppo.
+   Le successive sì — il check-in e la review della sera hanno anche il
+   grafico dell'andamento, e senza cornice si fondevano in un muro bianco. */
 .rit-corpo > .card:first-child { border: 0; box-shadow: none; border-radius: 0; background: none; margin: 0; }
 .rit-corpo > .card + .card { margin: 0 14px 14px; }
-@media (max-width: 560px) { .rit-corpo > .card + .card { margin: 0 10px 12px; } }
+.rit-corpo .card { padding: 18px 20px 20px; }
 .rituale-intro { font-size: 12.5px; color: var(--inchiostro-2); margin: 0 0 14px; line-height: 1.5; }
 @media (max-width: 560px) {
-  /* una riga sola anche sul telefono: cinque righe da 88px sarebbero 440px
-     di elenco prima di arrivare al rituale aperto */
-  .rit-riga { min-height: 52px; padding: 0 12px; gap: 8px; }
+  .rit-riga { min-height: 54px; padding: 0 12px; gap: 9px; }
   .rit-nome { font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .rit-stato { font-size: 11.5px; }
+  .rit-corpo .card { padding: 14px 14px 16px; }
+  .rit-corpo > .card + .card { margin: 0 10px 12px; }
 }
 
 /* la riga del rituale di adesso, dentro «Oggi»: un tocco, e sa già quale */
@@ -2223,7 +2232,7 @@ body.sto-trascinando { cursor: grabbing; user-select: none; -webkit-user-select:
 .giorni-chips { display: inline-flex; gap: 4px; }
 .giorno-chip { width: 31px; height: 31px; border-radius: var(--r-1); border: 1px solid var(--bordo-forte); background: var(--superficie-1); font-size: 12px; font-weight: 700; color: var(--inchiostro-muto); transition: all var(--t-veloce); }
 .giorno-chip:hover { border-color: var(--baseline); }
-.giorno-chip.sel { background: var(--accento); color: var(--accento-ink); border-color: transparent; }
+.giorno-chip.sel { background: var(--accento-pieno); color: var(--accento-ink); border-color: transparent; }
 .abit-nuova { margin-top: 12px; border-top: 1px solid var(--griglia); padding-top: 12px; }
 
 /* ---------- scadenze ---------- */
@@ -2262,13 +2271,13 @@ body.sto-trascinando { cursor: grabbing; user-select: none; -webkit-user-select:
 .ico-picker { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 4px; }
 .ico-pick { width: 38px; height: 38px; border-radius: var(--r-2); border: 1px solid var(--bordo-forte); background: var(--superficie-1); color: var(--inchiostro-2); display: inline-flex; align-items: center; justify-content: center; transition: all var(--t-veloce); }
 .ico-pick:hover { border-color: var(--baseline); }
-.ico-pick.sel { border-color: transparent; background: var(--accento); color: var(--accento-ink); box-shadow: var(--e1); }
+.ico-pick.sel { border-color: transparent; background: var(--accento-pieno); color: var(--accento-ink); box-shadow: var(--e1); }
 
 /* ---------- guida ---------- */
 
 .guida { display: flex; flex-direction: column; gap: 12px; margin-top: 8px; }
 .guida-voce { display: flex; gap: 12px; align-items: flex-start; }
-.guida-ico { flex: none; width: 32px; height: 32px; border-radius: var(--r-2); display: inline-flex; align-items: center; justify-content: center; color: var(--accento-ink); background: var(--accento); box-shadow: var(--e1); }
+.guida-ico { flex: none; width: 32px; height: 32px; border-radius: var(--r-2); display: inline-flex; align-items: center; justify-content: center; color: var(--accento-ink); background: var(--accento-pieno); box-shadow: var(--e1); }
 .guida-voce b { font-size: 14px; font-weight: 700; }
 .guida-voce p { font-size: 13px; color: var(--inchiostro-2); margin-top: 2px; }
 

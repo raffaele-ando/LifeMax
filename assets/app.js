@@ -1638,9 +1638,9 @@
         ? '<button class="btn ' + (fatto ? 'btn-ghost' : 'btn-primario') + ' ig-fatto"><span class="ig-fatto-ico">' + ICO(fatto ? 'refresh' : 'check', 16) + '</span>' + (fatto ? 'Fatta — togli la spunta' : 'Segna come fatta') + '</button>'
         : '<div class="ig-nota-futuro">' + ICO('calendar', 13) + ' La spunterai quando arriva il giorno.</div>') +
       '<div class="ig-griglia">' +
-      '<label class="campo">' + ICO('clock', 12) + ' Orario</label><input type="time" class="tl-time" id="ig-ora" value="' + (e.ora || '') + '">' +
-      '<label class="campo">Durata</label><select class="tl-dur" id="ig-dur">' + durOpt + '</select>' +
-      '<label class="campo">Area</label>' + selectAree('ig-area', e.areaId) +
+      '<label class="campo" for="ig-ora">' + ICO('clock', 12) + ' Orario</label><input type="time" class="tl-time" id="ig-ora" value="' + (e.ora || '') + '">' +
+      '<label class="campo" for="ig-dur">Durata</label><select class="tl-dur" id="ig-dur">' + durOpt + '</select>' +
+      '<label class="campo" for="ig-area">Area</label>' + selectAree('ig-area', e.areaId) +
       '</div>' +
       '<div class="ig-fondo">' +
       (e.ora ? '<button class="btn btn-mini btn-ghost ig-noora">' + ICO('clock', 13) + ' Togli l’orario</button>' : '') +
@@ -1791,8 +1791,8 @@
            la pagina, così il grafico sopra non si muove */
         ('<div class="gio-sonno-corpo"' + (aperto ? '' : ' hidden') + '>' +
           '<div class="sp-sonno">' +
-          '<label class="sp-lab">' + ICO('bed', 13) + ' A letto</label><input type="time" class="tl-time" id="sp-aletto" value="' + d.sonno + '">' +
-          '<label class="sp-lab">' + ICO('sun', 13) + ' Sveglia</label><input type="time" class="tl-time" id="sp-sveglia" value="' + d.sveglia + '">' +
+          '<label class="sp-lab" for="sp-aletto">' + ICO('bed', 13) + ' A letto</label><input type="time" class="tl-time" id="sp-aletto" value="' + d.sonno + '">' +
+          '<label class="sp-lab" for="sp-sveglia">' + ICO('sun', 13) + ' Sveglia</label><input type="time" class="tl-time" id="sp-sveglia" value="' + d.sveglia + '">' +
           '<span class="sp-dorm">' + ICO('clock', 12) + ' dormi <b id="sp-dorm">' + fmtOre(LM.minutiSonno(k)) + '</b></span>' +
           '</div>' +
           '<div class="sp-pasti" id="sp-pasti">' + pastiRows + '</div>' +
@@ -2262,8 +2262,8 @@
     }
     apriSheet('Sonno e pasti',
       '<div class="imp-nota" style="margin-top:0">È il tuo ritmo di base: disegna lo sfondo della giornata. Un singolo giorno lo puoi registrare a parte dalla pagina <i>Giornata</i>.</div>' +
-      '<div class="ritmo-riga2"><label class="campo">A letto</label><input type="time" id="ritmo-sonno" value="' + esc(r.sonno) + '">' +
-      '<label class="campo">Sveglia</label><input type="time" id="ritmo-sveglia" value="' + esc(r.sveglia) + '"></div>' +
+      '<div class="ritmo-riga2"><label class="campo" for="ritmo-sonno">A letto</label><input type="time" id="ritmo-sonno" value="' + esc(r.sonno) + '">' +
+      '<label class="campo" for="ritmo-sveglia">Sveglia</label><input type="time" id="ritmo-sveglia" value="' + esc(r.sveglia) + '"></div>' +
       '<div class="sp-dorm" style="margin:2px 0 4px">' + ICO('clock', 12) + ' dormi <b id="ritmo-dorm">' + fmtOre(durSonno(r.sonno, r.sveglia)) + '</b></div>' +
       '<div class="imp-sezione"><div class="imp-eti">Pasti (nome · ora · durata)</div><div id="ritmo-pasti">' + (r.pasti || []).map(pastoRiga).join('') + '</div>' +
       '<button class="btn btn-mini mt-s" id="ritmo-add">' + ICO('plus', 13) + ' Aggiungi un pasto</button></div>' +
@@ -2480,7 +2480,7 @@
         '<div class="card" style="--i:0"><h2>' + ICO('target', 16) + ' Le azioni di oggi</h2>' +
         '<div class="sotto">Scelte in <a href="#/rituali">Rituali</a>, fatte una per volta in <a href="#/oggi">Oggi</a>. Qui sono tutte insieme.</div>' +
         '<div class="lista-azioni" id="lista-oggi"></div>' +
-        '<form id="form-add" class="riga-flex mt-s"><input type="text" id="testo-add" placeholder="Aggiungi un’altra cosa a oggi…" style="flex:1;min-width:150px">' +
+        '<form id="form-add" class="riga-flex mt-s"><input type="text" id="testo-add" aria-label="Aggiungi una cosa a oggi" placeholder="Aggiungi un’altra cosa a oggi…" style="flex:1;min-width:150px">' +
         '<span style="width:132px">' + selectAree('area-add') + '</span>' +
         '<button class="btn btn-mini btn-primario" type="submit" aria-label="Aggiungi">' + ICO('plus', 14) + '</button></form></div>' +
         '<div class="card" style="--i:1"><h2>' + ICO('trendUp', 16) + ' Costanza</h2>' +
@@ -2612,6 +2612,23 @@
      e sotto, staccato, quello che si fa ogni tanto (settimana, abitudini).
      Ogni riga dice se è già stata fatta oggi, e quella dell'ora è già
      aperta: non c'è niente da scegliere per cominciare. */
+  /* Tre nature diverse, tre gruppi — come le sezioni di un elenco iOS:
+       il piano        decidere cosa fare oggi (si scrive)
+       come è andata   registrare com'è andata (si misura: check-in, review)
+       si ripetono     configurare le cose ricorrenti (si imposta una volta)
+     Mettere «Le azioni di oggi» accanto al check-in era mettere una decisione
+     accanto a una misura, e le abitudini accanto a entrambe era metterci
+     dentro anche un pannello di configurazione. */
+  var GRUPPI_RIT = [
+    { eti: 'Il piano di oggi', ids: ['mattina'] },
+    { eti: 'Come è andata',    ids: ['checkin', 'sera', 'settimana'] },
+    { eti: 'Cose che si ripetono', ids: ['abitudini'] }
+  ];
+  /* quali sezioni sono aperte: ognuna si apre e si chiude per conto suo, e
+     aprirne una non chiude le altre (linee guida Apple: le sezioni a
+     scomparsa sono indipendenti, e lo stato di chi le ha aperte si rispetta) */
+  var ritualiAperti = null;
+
   var RITUALI = [
     { id: 'mattina',   ico: 'sun',      nome: 'Le azioni di oggi',      quando: 'giorno' },
     { id: 'checkin',   ico: 'bolt',     nome: 'Check-in',               quando: 'giorno' },
@@ -2674,64 +2691,72 @@
 
   function vistaRituali() {
     var adesso = ritualeDellOra();
-    /* quello aperto: se non hai scelto tu, è quello dell'ora. Uno per volta:
-       due rituali aperti insieme sono di nuovo una lista di cose da leggere. */
-    var apri = sottoRituale || adesso;
-    sottoRituale = apri;
+    /* alla prima apertura è aperto quello dell'ora; dopo vale quello che hai
+       deciso tu, e non lo tocca più nessuno */
+    if (!ritualiAperti) { ritualiAperti = {}; ritualiAperti[adesso] = true; }
+    /* chi arriva da un collegamento (la riga in Oggi, «vai alle abitudini»)
+       apre quella sezione SENZA chiudere le altre */
+    var daScorrere = null;
+    if (sottoRituale) { ritualiAperti[sottoRituale] = true; daScorrere = sottoRituale; sottoRituale = null; }
 
-    function riga(r) {
+    function rigaRit(r) {
       var st = statoRituale(r.id);
-      var suo = r.id === adesso;
-      if (r.id === apri) {
-        return '<section class="rit-blocco aperto">' +
-          '<button class="rit-riga" data-sub="' + r.id + '" aria-expanded="true">' +
-          '<span class="rit-ico">' + ICO(r.ico, 17) + '</span>' +
-          '<span class="rit-nome">' + r.nome + '</span>' +
-          (suo ? '<span class="rit-ora">adesso</span>' : '') +
-          '<span class="rit-stato' + (st.fatto ? ' fatto' : '') + '">' + (st.fatto ? ICO('check', 12) + ' ' : '') + st.testo + '</span>' +
-          '<span class="rit-chevron aperta">' + ICO('chevronGiu', 15) + '</span></button>' +
-          '<div class="rit-corpo" id="corpo-rituale"></div></section>';
-      }
-      return '<button class="rit-riga" data-sub="' + r.id + '" aria-expanded="false">' +
-        '<span class="rit-ico">' + ICO(r.ico, 17) + '</span>' +
+      var aperto = !!ritualiAperti[r.id];
+      return '<section class="rit-blocco' + (aperto ? ' aperto' : '') + '" data-rit="' + r.id + '">' +
+        '<button class="rit-riga" data-sub="' + r.id + '" aria-expanded="' + aperto + '" aria-controls="corpo-rit-' + r.id + '">' +
+        '<span class="rit-ico">' + ICO(r.ico, 16) + '</span>' +
         '<span class="rit-nome">' + r.nome + '</span>' +
-        (suo ? '<span class="rit-ora">adesso</span>' : '') +
-        '<span class="rit-stato' + (st.fatto ? ' fatto' : '') + '">' + (st.fatto ? ICO('check', 12) + ' ' : '') + st.testo + '</span>' +
-        '<span class="rit-chevron">' + ICO('chevronGiu', 15) + '</span></button>';
+        (r.id === adesso ? '<span class="rit-ora">adesso</span>' : '') +
+        '<span class="rit-stato' + (st.fatto ? ' fatto' : '') + '">' + (st.fatto ? ICO('check', 12) + ' ' : '') + esc(st.testo) + '</span>' +
+        '<span class="rit-chevron' + (aperto ? ' aperta' : '') + '">' + ICO('chevronGiu', 15) + '</span></button>' +
+        (aperto ? '<div class="rit-corpo" id="corpo-rit-' + r.id + '"></div>' : '') +
+        '</section>';
     }
 
-    var giorno = RITUALI.filter(function (r) { return r.quando === 'giorno'; }).map(riga).join('');
-    var altro = RITUALI.filter(function (r) { return r.quando === 'ogni tanto'; }).map(riga).join('');
+    var corpoHtml = GRUPPI_RIT.map(function (g) {
+      var righe = g.ids.map(function (id) {
+        return rigaRit(RITUALI.filter(function (r) { return r.id === id; })[0]);
+      }).join('');
+      return '<div class="rit-eti">' + g.eti + '</div><div class="rit-gruppo">' + righe + '</div>';
+    }).join('');
 
-    $vista.innerHTML = topbar('Rituali', 'Mattina, sera e abitudini.') +
-      '<div class="rit-lista">' + giorno + '</div>' +
-      '<div class="rit-eti">Ogni tanto</div>' +
-      '<div class="rit-lista">' + altro + '</div>';
+    $vista.innerHTML = topbar('Rituali', 'Mattina, sera e abitudini.') + corpoHtml;
 
-    var corpo = document.getElementById('corpo-rituale');
-    if (apri === 'mattina') ritualeMattina(corpo);
-    if (apri === 'abitudini') ritualeAbitudini(corpo);
-    if (apri === 'checkin') ritualeCheckin(corpo);
-    if (apri === 'sera') ritualeSera(corpo);
-    if (apri === 'settimana') ritualeSettimana(corpo);
+    /* disegna il contenuto di TUTTE le sezioni aperte */
+    var disegna = {
+      mattina: ritualeMattina, abitudini: ritualeAbitudini,
+      checkin: ritualeCheckin, sera: ritualeSera, settimana: ritualeSettimana
+    };
+    Object.keys(disegna).forEach(function (id) {
+      var c = document.getElementById('corpo-rit-' + id);
+      if (c) disegna[id](c);
+    });
 
     $vista.querySelectorAll('.rit-riga').forEach(function (b) {
       b.addEventListener('click', function () {
         var id = b.getAttribute('data-sub');
-        /* toccare l'intestazione di quello aperto non lo chiude lasciando la
-           pagina senza niente: riporta a quello dell'ora */
-        sottoRituale = (id === apri && id !== adesso) ? adesso : id;
+        var eraAperto = !!ritualiAperti[id];
+        if (eraAperto) delete ritualiAperti[id]; else ritualiAperti[id] = true;
+        /* la riga resta dove sta: si tiene la posizione di scorrimento di
+           quella riga, così aprire una sezione in fondo non fa saltare la
+           pagina sotto il dito */
+        var primaY = b.getBoundingClientRect().top;
         render();
-        var el = document.querySelector('.rit-blocco.aperto');
-        if (el) el.scrollIntoView({ block: 'nearest' });
+        var nuova = $vista.querySelector('.rit-riga[data-sub="' + id + '"]');
+        if (nuova) {
+          var delta = nuova.getBoundingClientRect().top - primaY;
+          if (delta) window.scrollBy(0, delta);
+          nuova.focus({ preventScroll: true });
+        }
       });
     });
+
+    if (daScorrere) {
+      var el = $vista.querySelector('.rit-blocco[data-rit="' + daScorrere + '"]');
+      if (el) el.scrollIntoView({ block: 'nearest' });
+    }
   }
 
-  /* Dentro la riga aperta il titolo e l'icona ci sono già: la testa del
-     rituale resta solo la frase che spiega cosa si fa. Prima ogni sezione
-     ripeteva icona da 38px + titolo + frase: centodieci pixel di intestazione
-     sopra un rituale che deve durare un minuto. */
   function testaRituale(icona, titolo, sotto) {
     void icona; void titolo;
     return '<p class="rituale-intro">' + sotto + '</p>';
@@ -2750,12 +2775,12 @@
       /* Tre è il consiglio, non un muro: chi ha una giornata piena deve poter
          scrivere quello che gli serve. Oltre le tre lo diciamo e basta. */
       '<form id="form-piano" class="mt-s"><div class="riga-flex">' +
-      '<input type="text" id="piano-testo" placeholder="' + (oggi.length === 0 ? 'La cosa più importante di oggi…' : 'Un’altra cosa (se vuoi)…') + '" style="flex:1;min-width:180px">' +
+      '<input type="text" id="piano-testo" aria-label="Una cosa da fare oggi" placeholder="' + (oggi.length === 0 ? 'La cosa più importante di oggi…' : 'Un’altra cosa (se vuoi)…') + '" style="flex:1;min-width:180px">' +
       '<span style="width:155px">' + selectAree('piano-area') + '</span>' +
       '<button class="btn btn-primario" type="submit" aria-label="Aggiungi">' + ICO('plus', 16) + '</button></div>' +
       (oggi.length >= 3 ? '<div class="sotto" style="margin:8px 0 0">Hai <b>' + oggi.length + '</b> azioni per oggi. Oltre tre diventa difficile finirle: le altre si possono spostare a domani da <i>La giornata</i>.</div>' : '') +
       '</form>' +
-      '<label class="campo">Quando e dove inizi la prima?</label>' +
+      '<label class="campo" for="piano-ifthen">Quando e dove inizi la prima?</label>' +
       '<input type="text" id="piano-ifthen" placeholder="Es. alle 9:00, appena mi siedo alla scrivania, apro solo il file su cui devo lavorare" value="' + (piano ? esc(piano.intenzione) : '') + '">' +
       '<div class="riga-flex mt"><button class="btn btn-primario btn-grande" id="btn-salva-piano">' + (piano ? 'Aggiorna' : 'Salva e parti') + ' <small>+' + LM.XP_EVENTI.pianoMattina + ' XP</small></button>' +
       '<button class="btn btn-ghost" id="btn-vai-focus">Inizia ora ' + ICO('arrowRight', 15) + '</button></div>' +
@@ -3021,9 +3046,9 @@
             return '<button data-v="' + v + '"' + (votiOggi[a.id] === v ? ' class="sel"' : '') + '>' + v + '</button>';
           }).join('') + '</span></div>';
       }).join('') + '</div>' +
-      '<label class="campo">Una cosa andata bene oggi, anche piccola</label>' +
+      '<label class="campo" for="sera-vittoria">Una cosa andata bene oggi, anche piccola</label>' +
       '<input type="text" id="sera-vittoria" value="' + (rev ? esc(rev.vittoria || '') : '') + '" placeholder="Es. ho studiato 90 minuti senza guardare il telefono">' +
-      '<label class="campo">Un ostacolo che hai incontrato</label>' +
+      '<label class="campo" for="sera-blocco">Un ostacolo che hai incontrato</label>' +
       '<input type="text" id="sera-blocco" value="' + (rev ? esc(rev.blocco || '') : '') + '" placeholder="Es. ho iniziato tardi, mi hanno distratto le notifiche">' +
       '<div class="riga-flex mt"><button class="btn btn-primario btn-grande" id="btn-salva-sera">' + (rev ? 'Aggiorna' : 'Concludi la giornata') + ' <small>+' + LM.XP_EVENTI.reviewSera + ' XP</small></button></div>' +
       '</div>';
@@ -3065,10 +3090,10 @@
       '<div class="stat"><span class="stat-val">' + azioniSett + '</span><span class="stat-eti">azioni completate</span></div>' +
       '<div class="stat"><span class="stat-val">' + attivi + '/7</span><span class="stat-eti">giorni attivi</span></div>' +
       '</div>' +
-      '<label class="campo">Cosa ha funzionato questa settimana</label><textarea id="w-vittorie">' + (rev ? esc(rev.vittorie || '') : '') + '</textarea>' +
-      '<label class="campo">Gli ostacoli che si sono ripetuti</label><textarea id="w-blocchi">' + (rev ? esc(rev.blocchi || '') : '') + '</textarea>' +
-      '<label class="campo">Cosa hai imparato sul tuo metodo</label><textarea id="w-imparato">' + (rev ? esc(rev.imparato || '') : '') + '</textarea>' +
-      '<label class="campo">L’unica cosa che vuoi cambiare la prossima settimana</label><textarea id="w-prossima">' + (rev ? esc(rev.prossima || '') : '') + '</textarea>' +
+      '<label class="campo" for="w-vittorie">Cosa ha funzionato questa settimana</label><textarea id="w-vittorie">' + (rev ? esc(rev.vittorie || '') : '') + '</textarea>' +
+      '<label class="campo" for="w-blocchi">Gli ostacoli che si sono ripetuti</label><textarea id="w-blocchi">' + (rev ? esc(rev.blocchi || '') : '') + '</textarea>' +
+      '<label class="campo" for="w-imparato">Cosa hai imparato sul tuo metodo</label><textarea id="w-imparato">' + (rev ? esc(rev.imparato || '') : '') + '</textarea>' +
+      '<label class="campo" for="w-prossima">L’unica cosa che vuoi cambiare la prossima settimana</label><textarea id="w-prossima">' + (rev ? esc(rev.prossima || '') : '') + '</textarea>' +
       '<div class="riga-flex mt"><button class="btn btn-primario btn-grande" id="btn-salva-sett">' + (rev ? 'Aggiorna' : 'Salva la review') + ' <small>+' + LM.XP_EVENTI.reviewSettimana + ' XP</small></button>' +
       '<button class="btn btn-ghost" data-vai="esperimenti">' + ICO('flask', 16) + ' Trasformala in un esperimento</button></div>' +
       '</div>';
@@ -3878,13 +3903,13 @@
       var zona = document.getElementById('form-exp-zona');
       zona.innerHTML = '<div class="card mt">' +
         '<h2>Nuovo esperimento</h2><div class="sotto">I giorni già passati fanno da base di partenza; la modifica che vuoi testare inizia oggi.</div>' +
-        '<label class="campo">Cosa vuoi scoprire</label><input type="text" id="exp-nome" placeholder="Es. studiare in biblioteca mi fa studiare di più?">' +
-        '<label class="campo">La modifica che vuoi testare</label><input type="text" id="exp-int" placeholder="Es. ogni pomeriggio studio in biblioteca invece che in camera">' +
-        '<div class="griglia griglia-3 mt-s"><div><label class="campo">Cosa misuri</label><select id="exp-metrica">' +
+        '<label class="campo" for="exp-nome">Cosa vuoi scoprire</label><input type="text" id="exp-nome" placeholder="Es. studiare in biblioteca mi fa studiare di più?">' +
+        '<label class="campo" for="exp-int">La modifica che vuoi testare</label><input type="text" id="exp-int" placeholder="Es. ogni pomeriggio studio in biblioteca invece che in camera">' +
+        '<div class="griglia griglia-3 mt-s"><div><label class="campo" for="exp-metrica">Cosa misuri</label><select id="exp-metrica">' +
         LM.METRICHE_ESPERIMENTO.map(function (m2) { return '<option value="' + m2.id + '">' + esc(m2.nome) + '</option>'; }).join('') +
         '</select></div>' +
-        '<div><label class="campo">Area (se serve)</label>' + selectAree('exp-area') + '</div>' +
-        '<div><label class="campo">Durata</label><select id="exp-durata">' +
+        '<div><label class="campo" for="exp-area">Area (se serve)</label>' + selectAree('exp-area') + '</div>' +
+        '<div><label class="campo" for="exp-durata">Durata</label><select id="exp-durata">' +
         '<option value="7-14">7 giorni di base, 14 di test</option>' +
         '<option value="14-14" selected>14 giorni di base, 14 di test</option>' +
         '<option value="14-21">14 giorni di base, 21 di test</option>' +
@@ -4086,8 +4111,8 @@
       var step = '';
       if (passo === 0) {
         step = '<div class="card"><h2>Come ti chiami</h2><div class="sotto">Puoi compilare ora oppure saltare: quasi tutto qui è facoltativo.</div>' +
-          '<label class="campo">Nome</label><input type="text" id="ob-nome" value="' + esc(scelte.nome) + '" placeholder="Il tuo nome">' +
-          '<label class="campo">In una frase, cosa vuoi ottenere migliorando</label>' +
+          '<label class="campo" for="ob-nome">Nome</label><input type="text" id="ob-nome" value="' + esc(scelte.nome) + '" placeholder="Il tuo nome">' +
+          '<label class="campo" for="ob-visione">In una frase, cosa vuoi ottenere migliorando</label>' +
           '<textarea id="ob-visione" placeholder="Es. imparare più in fretta, restare in salute e costruire progetti che contano">' + esc(scelte.visione) + '</textarea>' +
           '<div class="riga-flex mt"><button class="btn btn-primario btn-grande" id="ob-avanti">Avanti ' + ICO('arrowRight', 16) + '</button>' +
           '<button class="btn btn-ghost" id="ob-demo">Salta e vai alla demo</button></div></div>';
