@@ -951,8 +951,8 @@
     return s.aree.filter(function (a) { return s.areeAttive.indexOf(a.id) >= 0; });
   }
 
-  function selectAree(id, selezionata, etichetta) {
-    return '<select id="' + id + '" aria-label="' + esc(etichetta || 'Area') + '">' + areeAttive().map(function (a) {
+  function selectAree(id, selezionata, etichetta, cls) {
+    return '<select id="' + id + '"' + (cls ? ' class="' + cls + '"' : '') + ' aria-label="' + esc(etichetta || 'Area') + '">' + areeAttive().map(function (a) {
       return '<option value="' + a.id + '"' + (a.id === selezionata ? ' selected' : '') + '>' + esc(a.nome) + '</option>';
     }).join('') + '</select>';
   }
@@ -2972,11 +2972,20 @@
     if (!attTab || (attTab === 'sistemare' && !nInbox)) attTab = nInbox ? 'sistemare' : 'dafare';
 
     var html = topbar('Attività', 'Butta giù tutto, decidi dopo.');
+    /* Le quattro sezioni stanno in quattro colonne uguali. Prima erano quattro
+       pastiglie in una riga che scorreva di lato: servivano 519px e su un
+       telefono ce ne sono 356, quindi «In arrivo» e «Progetti» erano fuori
+       dallo schermo — due sezioni su quattro invisibili, dietro uno
+       scorrimento che non si vede che c'è. Quattro colonne ci stanno per
+       costruzione, a qualsiasi larghezza. */
     function tb(id, ico, et, n) {
-      return '<button data-att="' + id + '" class="' + (attTab === id ? 'attivo' : '') + '">' + ICO(ico, 15) + et + (n ? ' <span class="att-badge">' + n + '</span>' : '') + '</button>';
+      return '<button data-att="' + id + '" class="' + (attTab === id ? 'attivo' : '') + '">' +
+        '<span class="att-ico">' + ICO(ico, 16) + '</span>' +
+        '<span class="att-eti">' + et + '</span>' +
+        (n ? '<span class="att-badge">' + n + '</span>' : '') + '</button>';
     }
     html += '<div class="segmenti sez-nav att-tabs" id="att-tabs">' +
-      tb('sistemare', 'inbox', 'Da sistemare', nInbox) + tb('dafare', 'lista', 'Da fare', s.backlog.length) +
+      tb('sistemare', 'inbox', 'Sistemare', nInbox) + tb('dafare', 'lista', 'Da fare', s.backlog.length) +
       tb('arrivo', 'calendar', 'In arrivo', nArrivo) + tb('progetti', 'rocket', 'Progetti', nProg) + '</div>' +
       '<div id="att-corpo"></div>';
     $vista.innerHTML = html;
@@ -3009,23 +3018,16 @@
         box.innerHTML = '<div class="card"><div class="vuoto" style="padding:22px 8px">' + ICO('calendar', 28) + '<br><b>Niente con una data, per ora.</b><br>Dai una scadenza a una cosa «Da fare» e comparirà qui, con il conto alla rovescia.</div></div>';
         return;
       }
-      box.innerHTML = '<div class="card"><div class="sotto" style="margin-top:0">Cose da fare con una data, dalla più vicina. Tirale in «Oggi» prima che diventino una corsa.</div>' +
-        '<div class="scad-lista">' + vic.map(function (b) {
-          var ar = areaById(b.areaId); var si = scadInfo(b.scadenza);
-          /* stessa grammatica delle altre schede: azione principale + «⋯»,
-             così da qui si può anche pianificare, rinominare o rimuovere */
-          /* pieno solo per la più vicina: se ogni riga ha il pulsante a pieno
-             colore, il colore non indica più dove guardare */
-          var urgente = LM.daysBetween(LM.todayKey(), b.scadenza) <= 3;
-          return '<div class="scad-riga' + (urgente ? ' urgente' : '') + '"><span class="scad-badge ' + si.cls + '">' + si.testo + '</span>' +
-            '<span class="scad-testo">' + esc(b.testo) + '</span>' +
-            '<span class="tag-area" style="--c-area:' + LM.coloreArea(ar) + '" title="' + esc(ar.nome) + '">' + ICO(ar.icona, 13) + '</span>' +
-            '<button class="btn btn-mini' + (urgente ? ' btn-primario' : '') + '" data-scadoggi="' + b.id + '">' + ICO('arrowRight', 12) + ' Oggi</button>' +
-            '<button class="icona-btn" data-bkmenu="' + b.id + '" title="Altro" aria-label="Altro">' + ICO('dots', 16) + '</button></div>';
+      /* Stesse card di «Da fare», non una riga tutta sua. Prima questa
+         sezione aveva la sua grammatica: pastiglia della scadenza, titolo,
+         area, pulsante, «⋯», tutto su una riga sola — e con badge e pulsanti
+         a larghezza fissa l'unica cosa che si stringeva era il titolo: su un
+         telefono gli restavano 89px, su uno stretto 19. Ora il titolo ha la
+         sua riga e la scadenza sta nella riga sotto, come altrove. */
+      box.innerHTML = '<div class="card"><div class="sotto" style="margin-top:0">Con una data, dalla più vicina.</div>' +
+        '<div class="backlog-piatto">' + vic.map(function (b, i) {
+          return bkItemHtml(b, { livello: i === 0 ? 'ora' : 'poi', primo: i === 0, da: 'scadenza' });
         }).join('') + '</div></div>';
-      box.querySelectorAll('[data-scadoggi]').forEach(function (b) {
-        b.addEventListener('click', function () { LM.backlogInOggi(b.getAttribute('data-scadoggi')); toast('Portato tra le azioni di oggi.', 0, 'arrowRight'); ridisegna(); aggiornaNav(); });
-      });
       wireBk(box);
     }
 
@@ -3036,7 +3038,7 @@
         box.innerHTML = '<div class="card"><div class="vuoto" style="padding:22px 8px">' + illoInbox() + '<b>Non c’è niente da sistemare.</b><br>Premi <kbd>C</kbd> per buttare giù un pensiero: lo ritrovi qui e decidi con calma.</div></div>';
         return;
       }
-      box.innerHTML = '<div class="card"><div class="sotto" style="margin-top:0">Le cose che hai buttato giù. Per ognuna scegli: <b>Oggi</b> se la fai oggi, <b>Da fare</b> se la rimandi, <b>Scarta</b> se lasci perdere.</div>' +
+      box.innerHTML = '<div class="card"><div class="sotto" style="margin-top:0">Per ognuna scegli: <b>Oggi</b>, <b>Da fare</b> o <b>Scarta</b>.</div>' +
         '<div class="griglia" id="lista-inbox" style="gap:9px"></div></div>';
       var lista = document.getElementById('lista-inbox');
       lista.innerHTML = st.inbox.map(function (el, i) {
@@ -3047,11 +3049,19 @@
             '<button class="btn btn-mini btn-primario" type="submit">' + ICO('save', 13) + ' Salva</button>' +
             '<button class="btn btn-mini btn-ghost" type="button" data-annulla="1">Annulla</button></form>'
           : '<div class="inbox-testo-riga"><div class="testo">' + esc(el.testo) + '</div>' +
-            '<button class="inbox-edit" data-modifica="' + el.id + '" title="Modifica" aria-label="Modifica">' + ICO('pencil', 14) + '</button></div>' +
-            '<div class="quando">' + quando + '</div>' +
-            '<div class="azioni-riga mt-s">' +
-            '<span style="min-width:0;flex:1 1 150px">' + selectAree('sel-' + el.id) + '</span>' +
-            '<button class="btn btn-mini btn-primario" data-fai="azione">' + ICO('arrowRight', 13) + ' Oggi</button>' +
+            '<button class="inbox-edit" data-modifica="' + el.id + '" title="Modifica" aria-label="Modifica">' + ICO('pencil', 15) + '</button></div>' +
+            /* Quando e area sulla stessa riga di servizio: l'area era il
+               comando più grande della card (200x43) pur essendo la decisione
+               che conta meno — si finiva per guardarla per prima ogni volta. */
+            '<div class="inbox-meta"><span class="quando">' + quando + '</span>' +
+            selectAree('sel-' + el.id, null, 'Area', 'sel-compatto') + '</div>' +
+            /* Le tre scelte in tre colonne uguali, sempre nello stesso ordine:
+               prima erano quattro comandi che andavano a capo dove capitava,
+               con «Oggi» in alto a destra e «Scarta» in basso a sinistra. */
+            '<div class="inbox-scelte">' +
+            /* il colore pieno solo sulla prima: si sistema una cosa per volta,
+               e tre pulsanti pieni in colonna tornano a essere rumore */
+            '<button class="btn btn-mini' + (i === 0 ? ' btn-primario' : '') + '" data-fai="azione">' + ICO('arrowRight', 13) + ' Oggi</button>' +
             '<button class="btn btn-mini" data-fai="backlog">' + ICO('lista', 13) + ' Da fare</button>' +
             '<button class="btn btn-mini btn-ghost" data-fai="scarta">' + ICO('trash', 13) + ' Scarta</button></div>';
         return '<div class="riga-inbox" data-id="' + el.id + '" style="--i:' + i + '"><div style="flex:1;min-width:0">' + contenuto + '</div></div>';
@@ -3245,6 +3255,7 @@
        con l'azione a pieno colore, 'poi' è compatta con l'azione a contorno,
        'parcheggio' è smorzata. Un colore d'accento ripetuto su nove righe
        non è un accento: è uno sfondo. */
+    function I18chev() { return ICO('chevronGiu', 13); }
     function bkItemHtml(b, opts) {
       var livello = (opts && opts.livello) || 'poi';
       var motivo = (opts && opts.motivo) || '';
@@ -3263,15 +3274,20 @@
           (b.steps || []).map(function (st) {
             /* ogni passo si può mettere in un giorno preciso, uno per uno */
             var inAg = LM.snapshot().azioni.find(function (a) { return !a.done && a.passoDi && a.passoDi.b === b.id && a.passoDi.s === st.id; });
+            /* Il passo e i suoi comandi non competono più per la stessa riga:
+               prima spunta, testo, pastiglia del giorno, calendario, un
+               separatore e cestino stavano tutti in fila, e sul telefono al
+               testo del passo restavano 40px («Recuperare …»). Ora il testo ha
+               la larghezza che resta e va a capo, e la pastiglia del giorno
+               scende sotto di lui invece di rubargli metà riga. */
             return '<div class="step-riga' + (st.done ? ' fatta' : '') + '">' +
               '<button class="spunta-mini" data-steptoggle="' + b.id + '|' + st.id + '" aria-label="Segna passo">' + ICO('check', 12) + '</button>' +
-              '<span class="step-testo">' + esc(st.testo) + '</span>' +
+              '<span class="step-corpo"><span class="step-testo">' + esc(st.testo) + '</span>' +
               (inAg ? '<button class="step-quando" data-steppulisci="' + inAg.id + '" title="Togli dal giorno">' + ICO('calendar', 10) + ' ' + esc(etichettaGiorno(inAg.data).toLowerCase()) + ' ' + ICO('x', 9) + '</button>' : '') +
+              '</span>' +
+              '<span class="step-azioni">' +
               (st.done ? '' : '<button class="icona-btn" data-stepquando="' + b.id + '|' + st.id + '" title="Mettilo in un giorno" aria-label="Mettilo in un giorno">' + ICO('calendar', 13) + '</button>') +
-              /* il cestino sta staccato dagli altri: prima era attaccato a un
-                 campo data invisibile e si finiva per aprire il calendario */
-              '<span class="step-sep"></span>' +
-              '<button class="icona-btn icona-pericolo" data-stepdel="' + b.id + '|' + st.id + '" title="Rimuovi passo" aria-label="Rimuovi passo">' + ICO('trash', 13) + '</button></div>';
+              '<button class="icona-btn icona-pericolo" data-stepdel="' + b.id + '|' + st.id + '" title="Rimuovi passo" aria-label="Rimuovi passo">' + ICO('trash', 13) + '</button></span></div>';
           }).join('') +
           '<form class="step-add" data-stepadd="' + b.id + '"><input type="text" placeholder="Aggiungi un passo…" aria-label="Aggiungi un passo"><button class="btn btn-mini" type="submit" aria-label="Aggiungi un passo">' + ICO('plus', 12) + '</button></form>' +
           '</div>';
@@ -3289,15 +3305,23 @@
          leggibile di una barra continua. Con tanti passi torna a barra. */
       var avanz = '';
       if (isProg) {
+        /* La riga dell'avanzamento È il pulsante che apre i passi. Prima
+           l'avanzamento era muto e i passi si aprivano da un tasto-icona senza
+           etichetta accanto agli altri: tre bersagli in fila di cui due da
+           indovinare. Adesso quello che si tocca ha scritto sopra cosa fa. */
+        var dentro;
         if (av.tot <= 12) {
           var seg = '';
           for (var si = 0; si < av.tot; si++) seg += '<i' + (si < av.fatti ? ' class="on"' : '') + '></i>';
-          avanz = '<div class="prog-riga"><span class="prog-segmenti">' + seg + '</span>' +
-            '<span class="prog-eti"><b>' + av.fatti + '</b> di <b>' + av.tot + '</b> passi' + (av.fatti === av.tot ? ' · finito' : '') + '</span></div>';
+          dentro = '<span class="prog-segmenti">' + seg + '</span>' +
+            '<span class="prog-eti"><b>' + av.fatti + '</b> di <b>' + av.tot + '</b> passi' + (av.fatti === av.tot ? ' · finito' : '') + '</span>';
         } else {
-          avanz = '<div class="prog-riga"><span class="prog-barra"><span style="width:' + av.pct + '%"></span></span>' +
-            '<span class="prog-eti"><b>' + av.fatti + '</b> di <b>' + av.tot + '</b> passi</span></div>';
+          dentro = '<span class="prog-barra"><span style="width:' + av.pct + '%"></span></span>' +
+            '<span class="prog-eti"><b>' + av.fatti + '</b> di <b>' + av.tot + '</b> passi</span>';
         }
+        avanz = '<button class="prog-riga prog-apri' + (apertoP ? ' aperto' : '') + '" data-bksteps="' + b.id + '" ' +
+          'aria-expanded="' + apertoP + '" title="' + (apertoP ? 'Chiudi i passi' : 'Mostra i passi') + '">' +
+          dentro + '<span class="prog-chevron">' + I18chev() + '</span></button>';
       }
       /* Il perché di questa posizione, dove serve: un ordine che non si
          spiega sembra arbitrario e si smette di fidarsi. Solo in evidenza e
@@ -3322,7 +3346,11 @@
             (si.d < 0 ? 'scaduta ' + si.testo : 'entro ' + si.testo) + '</span>';
         })(scadInfo(b.scadenza)) : '') +
         badgeAgenda;
-      var pieno = livello === 'ora';
+      /* Il colore pieno indica DA DOVE COMINCIARE, quindi ne serve uno per
+         schermata. Prima lo prendeva tutta la fascia «Prima queste»: tre
+         pulsanti a colore pieno uno sotto l'altro, e il colore non indicava
+         più niente. */
+      var pieno = !!(opts && opts.primo);
       return '<div class="bk-item liv-' + livello + (isProg ? ' progetto' : '') + '" data-bid="' + b.id + '" style="--c-area:' + LM.coloreArea(ar) + '">' +
         '<div class="bk-item-riga">' +
         '<div class="bk-item-corpo">' +
@@ -3330,12 +3358,14 @@
         (meta ? '<div class="bk-item-meta">' + meta + '</div>' : '') +
         avanz +
         '</div>' +
-        /* una sola azione in evidenza (Oggi / Passo). Tutto il resto sta dietro
-           «⋯». I pulsanti non vanno mai a capo: il testo si accorcia, loro no. */
+        /* DUE bersagli, sempre gli stessi due, sempre nello stesso posto:
+           l'azione che serve (Oggi / Passo) e «⋯» per tutto il resto. Prima
+           sui progetti ce n'era un terzo, e nelle fasce basse sparivamo il
+           terzo ma non gli altri: la stessa card cambiava comandi a seconda
+           di dove stava, e bisognava rileggerla ogni volta. */
         '<div class="bk-item-azioni">' +
         (isProg
-          ? '<button class="btn btn-mini' + (pieno ? ' btn-primario' : '') + '" data-bkpasso="' + b.id + '" title="Porta in Oggi il prossimo passo">' + ICO('arrowRight', 13) + ' Passo</button>' +
-            '<button class="icona-btn' + (apertoP ? ' on' : '') + '" data-bksteps="' + b.id + '" title="Passi del progetto" aria-label="Passi del progetto">' + ICO('lista', 14) + '</button>'
+          ? '<button class="btn btn-mini' + (pieno ? ' btn-primario' : '') + '" data-bkpasso="' + b.id + '" title="Porta in Oggi il prossimo passo">' + ICO('arrowRight', 13) + ' Passo</button>'
           : '<button class="btn btn-mini' + (pieno ? ' btn-primario' : '') + '" data-bkoggi="' + b.id + '">' + ICO('arrowRight', 13) + ' Oggi</button>') +
         '<button class="icona-btn" data-bkmenu="' + b.id + '" title="Altro" aria-label="Altro">' + ICO('dots', 16) + '</button>' +
         '</div></div>' +
@@ -3526,6 +3556,8 @@
         if (vuote0.some(function (g) { return g.area.id === attArea; })) attArea = 'tutte';
         disegnaDaFare(box);
       });
+      var fila = box.querySelector('.att-chips');
+      if (fila && fila.scrollWidth > fila.clientWidth + 1) fila.classList.add('scorre');
       box.querySelectorAll('[data-chip]').forEach(function (b) {
         b.addEventListener('click', function () {
           attArea = b.getAttribute('data-chip');
@@ -3553,7 +3585,7 @@
         return '<div class="bk-fascia ' + cls + '">' +
           '<div class="bk-fascia-testa"><span class="bk-fascia-tit">' + titolo + '</span>' +
           (voci.length > 1 ? '<span class="bk-fascia-n">' + voci.length + '</span>' : '') + '</div>' +
-          mostrate.map(function (x) { return bkItemHtml(x.b, { livello: cls, motivo: x.i.motivo, da: x.i.da }); }).join('') +
+          mostrate.map(function (x, i) { return bkItemHtml(x.b, { livello: cls, primo: cls === 'ora' && i === 0, motivo: x.i.motivo, da: x.i.da }); }).join('') +
           (lunga ? '<button class="bk-altre' + (tutte ? ' aperto' : '') + '" data-tutte="1" aria-expanded="' + tutte + '">' +
             ICO('chevronGiu', 14) + (taglia ? ' Mostra le altre ' + (voci.length - MURO) : ' Mostra solo le prime ' + MURO) + '</button>' : '') +
           '</div>';
@@ -3634,10 +3666,10 @@
         .sort(function (x, y) { return y.i.peso - x.i.peso; });
       var lista = prog.length
         ? '<div class="backlog-piatto">' + ordinati.map(function (x, i) {
-            return bkItemHtml(x.b, { livello: i === 0 ? 'ora' : 'poi', motivo: x.i.motivo, da: x.i.da });
+            return bkItemHtml(x.b, { livello: i === 0 ? 'ora' : 'poi', primo: i === 0, motivo: x.i.motivo, da: x.i.da });
           }).join('') + '</div>'
         : '<div class="vuoto" style="padding:20px 8px">' + illoInbox() + '<b>Nessun progetto, per ora.</b><br>Un progetto è una cosa grande divisa in passi: la fai un pezzo per volta.</div>';
-      box.innerHTML = '<div class="card"><div class="sotto" style="margin-top:0">Le cose grandi, spezzate in <b>passi</b>. Il pulsante «Passo» porta in Oggi solo il prossimo, così parti senza sentirti sopraffatto.</div>' +
+      box.innerHTML = '<div class="card"><div class="sotto" style="margin-top:0">Le cose grandi, spezzate in <b>passi</b>: «Passo» porta in Oggi solo il prossimo.</div>' +
         lista +
         '<form class="bk-add mt" id="nuovo-prog"><input type="text" placeholder="Nuovo progetto…" aria-label="Nuovo progetto"><span style="width:150px">' + selectAree('prog-area') + '</span><button class="btn btn-mini btn-primario" type="submit">' + ICO('plus', 13) + ' Crea</button></form></div>';
       wireBk(box);

@@ -757,6 +757,25 @@ kbd {
 .riga-inbox .testo { font-weight: 550; }
 .riga-inbox .quando { font-size: 11.5px; color: var(--inchiostro-muto); margin-top: 1px; }
 .riga-inbox .azioni-riga { display: flex; gap: 7px; flex-wrap: wrap; align-items: center; }
+/* riga di servizio: quando è arrivato il pensiero e in che area finisce.
+   Il menu dell'area era il comando più grande della card pur essendo la
+   decisione che conta meno: adesso è una pastiglia come le altre. */
+.inbox-meta { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; margin-top: 3px; }
+.inbox-meta .quando { margin: 0; }
+select.sel-compatto {
+  width: auto; max-width: 62%; min-height: 34px; padding: 5px 30px 5px 11px;
+  font-size: 12.5px; font-weight: 600; border-radius: 99px;
+}
+/* le tre scelte: tre colonne uguali, sempre nello stesso ordine, mai a capo */
+.inbox-scelte { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 11px; }
+.inbox-scelte .btn { width: 100%; justify-content: center; padding-left: 6px; padding-right: 6px; }
+@media (max-width: 380px) {
+  /* a 320px tre etichette CON icona vanno a capo: si tiene la parola, che è
+     quella che dice cosa fa, e si lascia l'icona */
+  .inbox-scelte .btn { font-size: 12.5px; gap: 0; }
+  .inbox-scelte .btn .ico { display: none; }
+}
+@media (pointer: coarse) { select.sel-compatto { min-height: 40px; } }
 
 /* ---------- overlay cattura ---------- */
 
@@ -1461,7 +1480,12 @@ body.sfondo-fermo { position: fixed; left: 0; right: 0; width: 100%; overflow: h
 
 .inbox-testo-riga { display: flex; align-items: flex-start; gap: 8px; }
 .inbox-testo-riga .testo { flex: 1; min-width: 0; }
-.inbox-edit { flex: none; padding: 4px; border-radius: 7px; color: var(--inchiostro-muto); transition: background var(--t-veloce), color var(--t-veloce); }
+.inbox-edit {
+  flex: none; display: inline-flex; align-items: center; justify-content: center;
+  width: 32px; height: 32px; margin: -4px -4px 0 0; border-radius: 8px;
+  color: var(--inchiostro-muto); transition: background var(--t-veloce), color var(--t-veloce);
+}
+@media (pointer: coarse) { .inbox-edit { width: 40px; height: 40px; } }
 .inbox-edit:hover { background: var(--superficie-2); color: var(--accento); }
 .inbox-modifica { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .inbox-input { flex: 1 1 180px; min-width: 0; padding: 9px 12px; }
@@ -1532,22 +1556,36 @@ body.sfondo-fermo { position: fixed; left: 0; right: 0; width: 100%; overflow: h
   .step-riga .step-testo { white-space: normal; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; }
 }
 @media (max-width: 560px) {
-  /* Su un telefono un titolo, un pulsante con la scritta e due tasti-icona
-     sulla stessa riga non ci stanno: al titolo restavano 68px e leggeva
-     «Recuperar…». Nelle tre in evidenza i pulsanti scendono su una riga
-     loro — sempre in linea tra di loro, mai a capo dentro sé stessi — così
-     il titolo prende tutta la larghezza e il tasto per partire è largo
-     quanto lo schermo: cominciare è il passaggio che costa, e un bersaglio
-     grande abbassa quel costo. */
-  .bk-item.liv-ora .bk-item-riga { grid-template-columns: minmax(0, 1fr); gap: 8px; }
-  .bk-item.liv-ora .bk-item-azioni { justify-content: flex-end; }
-  .bk-item.liv-ora .bk-item-azioni .btn { flex: 1; justify-content: center; }
-  /* Nelle fasce sotto no: là il pulsante alto 44px messo su una riga a parte
-     raddoppierebbe l'altezza di ogni voce, e una fascia "il resto" alta come
-     quella in evidenza cancella la gerarchia appena costruita. Resta in
-     linea, e sui progetti sparisce il tasto dei passi (sta nel menu «⋯»)
-     per restituire al titolo i quaranta pixel che occupava. */
-  .bk-item.liv-poi [data-bksteps], .bk-item.liv-parcheggio [data-bksteps] { display: none; }
+  /* NELLA FASCIA IN EVIDENZA i due comandi stanno in fondo alla riga di
+     servizio (area, scadenza, avanzamento), non su una riga tutta loro: quella
+     riga esiste già, e la card costa 23px in meno. Il titolo tiene la riga
+     intera e non si stringe mai per fare posto a un pulsante.
+     Prima il pulsante principale si allargava a tutta la card: tre card in
+     evidenza facevano tre barre colorate in fila, e il colore non diceva più
+     da dove cominciare.
+     `display: contents` scioglie il corpo dentro la griglia della card, così
+     titolo, riga di servizio e comandi diventano celle della stessa griglia:
+     niente margini negativi e niente numeri da indovinare. */
+  .bk-item.liv-ora .bk-item-riga { grid-template-columns: minmax(0, 1fr) auto; gap: 6px 10px; align-items: center; }
+  .bk-item.liv-ora .bk-item-corpo { display: contents; }
+  .bk-item.liv-ora .bk-item-testo { grid-column: 1 / -1; }
+  .bk-item.liv-ora .bk-item-meta { grid-column: 1; row-gap: 7px; }
+  .bk-item.liv-ora .prog-riga { grid-column: 1; }
+  .bk-item.liv-ora .bk-item-azioni { grid-column: 2; justify-self: end; align-self: center; }
+  /* Nelle fasce sotto il titolo resta in linea con i comandi: là una riga in
+     più per card raddoppierebbe l'altezza di una lista di sei o dieci voci, e
+     una fascia «il resto» alta come quella in evidenza cancella la gerarchia.
+     Il titolo però non condivide più la riga con badge e pastiglie (sono
+     scesi nella riga di servizio), quindi passa da 89px a 157. */
+  .bk-item .prog-segmenti, .bk-item .prog-barra { display: none; }
+}
+@media (max-width: 340px) {
+  /* Solo sugli schermi davvero stretti (320px) l'avanzamento si riprende la
+     riga intera: accanto ai comandi gli resterebbero 77px e «1 di 3 passi»
+     andrebbe a capo. A 375px — l'iPhone SE, che è ancora in giro — ce ne sono
+     319 e ci sta in linea: mettere il limite a 380 costava una riga in più
+     proprio sul telefono più piccolo che deve far vedere tre card. */
+  .bk-item.liv-ora .prog-riga { grid-column: 1 / -1; }
 }
 .bk-item-meta { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .bk-item-azioni { display: flex; align-items: center; gap: 6px; flex-wrap: nowrap; flex: none; }
@@ -1590,6 +1628,20 @@ body.sfondo-fermo { position: fixed; left: 0; right: 0; width: 100%; overflow: h
 .bk-item.progetto { border-left: 3px solid color-mix(in srgb, var(--accento) 45%, transparent); }
 .prog-mini { flex: none; margin-left: 4px; font-size: 11px; font-weight: 750; padding: 1px 7px; border-radius: 99px; background: color-mix(in srgb, var(--accento) 14%, transparent); color: var(--accento-testo); font-variant-numeric: tabular-nums; }
 .prog-riga { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
+/* la riga dell'avanzamento È il pulsante dei passi: ha una freccina, si
+   illumina al passaggio e dice a parole quanti passi ci sono */
+.prog-apri {
+  /* larghezza a misura del contenuto: a tutta riga la freccina finiva a un
+     palmo dalla scritta, come se appartenesse a qualcos'altro */
+  width: fit-content; max-width: 100%; text-align: left; padding: 4px 9px 4px 6px; margin-left: -6px;
+  border: 1px solid transparent; border-radius: 9px; background: none; cursor: pointer;
+  transition: background var(--t-veloce), border-color var(--t-veloce);
+}
+.prog-apri:hover { background: var(--superficie-2); border-color: var(--bordo); }
+.prog-apri .prog-chevron { display: inline-flex; color: var(--inchiostro-muto); transition: transform var(--t-media); }
+.prog-apri.aperto .prog-chevron { transform: rotate(180deg); }
+.prog-apri:focus-visible { outline: 2px solid var(--accento); outline-offset: 1px; }
+@media (pointer: coarse) { .prog-apri { min-height: 40px; } }
 .prog-segmenti { display: inline-flex; gap: 3px; flex: none; }
 .prog-segmenti i { width: 15px; height: 6px; border-radius: 3px; background: var(--superficie-3); border: 1px solid var(--bordo); }
 .prog-segmenti i.on { background: var(--grad-brand); border-color: transparent; }
@@ -1598,13 +1650,30 @@ body.sfondo-fermo { position: fixed; left: 0; right: 0; width: 100%; overflow: h
 .prog-barra { flex: 1 1 90px; min-width: 60px; height: 6px; border-radius: 99px; background: var(--superficie-3); overflow: hidden; }
 .prog-barra span { display: block; height: 100%; border-radius: 99px; background: var(--grad-brand); transition: width var(--t-media); }
 .steps-panel { display: flex; flex-direction: column; gap: 5px; margin: 10px 0 2px; padding: 9px 11px; border-radius: var(--raggio-s); background: var(--superficie-2); border: 1px solid var(--griglia); }
+@media (max-width: 560px) {
+  /* i 22px di riempimento laterale del pannello sono 22px in meno al testo dei
+     passi, che su un telefono è la cosa che ne ha più bisogno */
+  .steps-panel { padding: 9px 5px; }
+}
 .step-riga { display: flex; align-items: center; gap: 9px; }
+.step-corpo { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 3px; }
+.step-azioni { flex: none; display: inline-flex; align-items: center; gap: 6px; }
+/* il cestino è l'unica cosa irreversibile della riga: resta raggiungibile con
+   lo stesso bersaglio degli altri, ma senza cornice non pesa come loro */
+.step-azioni .icona-pericolo { border-color: transparent; background: none; }
+.step-azioni .icona-pericolo:hover { border-color: color-mix(in srgb, var(--critico) 45%, transparent); background: color-mix(in srgb, var(--critico) 8%, transparent); }
 /* il testo del passo non si riduce a due lettere quando c'è il segno del
    giorno: ha una larghezza minima e il segno si accorcia prima di lui */
-.step-riga .step-testo { flex: 1 1 auto; min-width: 84px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* due righe piene invece di una troncata: «Recuperare mod…» non dice niente.
+   (La regola sta qui e non in una media query perché è questa, più in basso
+   nel foglio, quella che vince: la clamp messa più su non arrivava mai.) */
+.step-riga .step-testo {
+  max-width: 100%; overflow: hidden;
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2;
+}
 .step-quando { flex: none; display: inline-flex; align-items: center; gap: 3px; font-size: 10px; font-weight: 750; color: var(--accento-testo); background: color-mix(in srgb, var(--accento) 12%, transparent); border: 1px solid transparent; border-radius: 99px; padding: 1px 7px; cursor: pointer; }
 .step-quando:hover { border-color: var(--critico); color: var(--critico); background: color-mix(in srgb, var(--critico) 10%, transparent); }
-.step-quando { max-width: 45%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.step-quando { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .step-testo { flex: 1; min-width: 0; font-size: 13px; overflow-wrap: anywhere; }
 .step-riga.fatta .step-testo { text-decoration: line-through; color: var(--inchiostro-muto); }
 .spunta-mini { flex: none; width: 22px; height: 22px; border-radius: 6px; border: 2px solid var(--baseline); background: var(--superficie-1); display: inline-flex; align-items: center; justify-content: center; color: transparent; transition: all var(--t-veloce); }
@@ -1615,6 +1684,13 @@ body.sfondo-fermo { position: fixed; left: 0; right: 0; width: 100%; overflow: h
 .bk-vuoto { font-size: 12.5px; color: var(--inchiostro-muto); padding: 4px 0; }
 .bk-add { display: flex; gap: 8px; margin-top: 6px; align-items: center; flex-wrap: wrap; }
 .bk-add input { flex: 1; min-width: 0; padding: 8px 11px; font-size: 13px; }
+@media (max-width: 560px) {
+  /* nome, area e «Crea» su una riga sola lasciavano 72px al nome del progetto:
+     il nome prende la riga tutta sua, area e pulsante stanno sotto */
+  .bk-add input { flex: 1 0 100%; min-height: 40px; }
+  .bk-add > span { flex: 1 1 auto; }
+  .bk-add > span select { width: 100%; }
+}
 /* uno solo, staccato dalla lista: prima ce n'era uno per area — cinque campi
    di testo sempre aperti per una cosa che si fa una volta ogni tanto */
 .bk-add-solo { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--bordo); }
@@ -1661,7 +1737,7 @@ body.sfondo-fermo { position: fixed; left: 0; right: 0; width: 100%; overflow: h
      segni identici per due azioni diverse si confondono. Il nome per chi non
      vede resta comunque nell'aria-label. */
   .agg-ok .agg-ok-eti { display: none; }
-  .agg-ok { padding: 0; width: 38px; min-width: 38px; justify-content: center; }
+  .agg-ok { padding: 0; width: 42px; min-width: 42px; justify-content: center; }
 }
 
 /* attività: tab, ricerca, chip per area, lista piatta */
@@ -1687,11 +1763,33 @@ body.sfondo-fermo { position: fixed; left: 0; right: 0; width: 100%; overflow: h
   /* i chip scorrono in una riga sola invece di impilarsi su quattro */
   .att-chips { flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden; padding-bottom: 4px; scrollbar-width: none; }
   .att-chips::-webkit-scrollbar { display: none; }
+  /* le aree sono tante e scorrono di lato: la sfumatura sul bordo destro dice
+     che c'è dell'altro, invece di far sembrare la fila tagliata */
+  .att-chips.scorre {
+    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 26px), transparent);
+    mask-image: linear-gradient(to right, #000 calc(100% - 26px), transparent);
+  }
   .att-chip { flex: none; }
-  /* anche le schede in cima: una riga che scorre invece di due mezze righe */
+  /* Le schede in cima NON scorrono più di lato. Quattro pastiglie con icona,
+     etichetta e numero chiedevano 519px: su un telefono ce ne sono 356, e le
+     ultime due finivano fuori dallo schermo dietro uno scorrimento che non si
+     vede che esiste. Ora sono quattro colonne uguali con l'icona sopra e la
+     parola sotto — la stessa forma della barra in basso — e ci stanno per
+     costruzione a qualsiasi larghezza. */
   .segmenti.sez-nav { flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden; justify-content: flex-start; scrollbar-width: none; }
   .segmenti.sez-nav::-webkit-scrollbar { display: none; }
   .segmenti.sez-nav > button { flex: none; }
+  .att-tabs.sez-nav {
+    display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 2px; overflow: visible; border-radius: 18px; width: 100%;
+  }
+  .att-tabs.sez-nav > button {
+    position: relative; flex: none; min-width: 0; flex-direction: column; gap: 3px;
+    padding: 8px 3px 7px; border-radius: 15px; font-size: 11px; line-height: 1.15; font-weight: 700;
+  }
+  .att-tabs .att-eti { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .att-tabs .att-badge { position: absolute; top: 4px; right: 6px; margin: 0; }
+  .att-tabs.sez-nav > button.attivo .att-ico { color: var(--accento-testo); }
 }
 .att-chip.on span { background: color-mix(in srgb, var(--c-area, var(--accento)) 22%, transparent); color: var(--inchiostro-1); }
 .backlog-piatto { display: flex; flex-direction: column; }
@@ -1712,8 +1810,9 @@ body.sfondo-fermo { position: fixed; left: 0; right: 0; width: 100%; overflow: h
   .btn-mini { min-height: 42px; padding: 8px 14px; }
   .bk-item-azioni { gap: 10px; }
   .bk-item { padding: 9px 11px; }
-  .spunta-mini { width: 30px; height: 30px; }
-  .step-riga { gap: 11px; }
+  .spunta-mini { width: 40px; height: 40px; border-radius: 10px; }
+  .step-riga { gap: 10px; }
+  .att-chip { min-height: 40px; }
   .abit-periodo .ap-campo input[type="date"] { min-height: 40px; }
   .q-chip { padding: 11px 16px; }
   .giorno-chip { min-width: 40px; min-height: 40px; }
@@ -2026,18 +2125,19 @@ body.sto-trascinando { cursor: grabbing; user-select: none; -webkit-user-select:
 
 /* ---------- scadenze ---------- */
 
-.scad-lista { display: flex; flex-direction: column; gap: 8px; }
-.scad-riga { display: flex; align-items: center; gap: 10px; }
-.scad-testo { flex: 1; min-width: 0; font-size: 13.5px; overflow-wrap: anywhere; }
+/* .scad-lista / .scad-riga / .scad-testo sono state rimosse: «In arrivo» usa
+   le stesse card di «Da fare», e quella riga tutta sua era il posto dove il
+   titolo si riduceva a 89px. Resta la pastiglia della scadenza, che serve
+   dentro le card e nella pagina dell'anno. */
 .scad-badge { flex: none; font-size: 11px; font-weight: 750; padding: 2px 8px; border-radius: 99px; background: var(--superficie-2); color: var(--inchiostro-2); white-space: nowrap; font-variant-numeric: tabular-nums; }
 .scad-badge.scad-ritardo { background: color-mix(in srgb, var(--critico) 16%, transparent); color: var(--critico-testo); }
 .scad-badge.scad-oggi, .scad-badge.scad-vicina { background: color-mix(in srgb, var(--avviso) 20%, transparent); color: #7a5200; }
 :root[data-mode="dark"] .scad-badge.scad-oggi, :root[data-mode="dark"] .scad-badge.scad-vicina { color: var(--avviso); }
-/* separatore prima di un'azione distruttiva: il cestino non deve essere
-   attaccato ai pulsanti "normali", si sbaglia mira */
-.step-sep { flex: none; width: 1px; height: 20px; background: var(--griglia); margin: 0 2px; }
+/* Il separatore .step-sep non c'è più: serviva a staccare il cestino dagli
+   altri comandi quando erano tutti in fila col testo del passo. Adesso i
+   comandi stanno in un gruppo loro e il cestino è senza cornice: si distingue
+   perché pesa meno, non perché c'è una lineetta. */
 .icona-pericolo:hover { color: var(--critico); border-color: color-mix(in srgb, var(--critico) 45%, var(--bordo-forte)); background: color-mix(in srgb, var(--critico) 8%, transparent); }
-@media (pointer: coarse) { .step-sep { margin: 0 5px; } }
 
 
 /* ---------- check-in: scala ancorata ---------- */
