@@ -375,28 +375,16 @@ small { color: var(--inchiostro-2); }
   .sottonav-voce { min-height: 36px; font-size: 13px; padding: 0 11px 2px; }
 }
 
-/* Impostazioni nell'angolo del titolo: solo su telefono, dove non c'è il
-   piede della barra laterale. Sta dentro la riga del titolo, quindi non
-   aggiunge altezza a nessuna schermata. */
-.topbar-imp { display: none; }
+/* La porta delle impostazioni su telefono: sta nella riga del titolo di
+   «Panoramica», l'unica schermata che la ospita. Su monitor non serve — c'è
+   il piede della barra laterale — e sparisce del tutto. */
+.btn.imp-porta { display: none; }
 @media (max-width: 860px) {
-  /* Fuori dal flusso, così non manda a capo niente e non aggiunge righe. Si
-     accorcia SOLO il titolo, non il sottotitolo: riservando spazio a tutto il
-     blocco, su uno schermo da 390px il sottotitolo di «Oggi» passava da una
-     riga a due, e la schermata cominciava a scorrere per 10px.
-     Il quadratino è alto 30px come la riga del titolo, ma si tocca su 44px
-     grazie all'area invisibile intorno: piccolo da vedere, grande da premere. */
-  .topbar.ha-imp { position: relative; }
-  .topbar.ha-imp > :first-child > h1 { padding-right: 36px; }
-  .topbar-imp {
-    display: inline-flex; align-items: center; justify-content: center;
-    position: absolute; top: 0; right: 0; width: 30px; height: 30px;
-    border-radius: 9px; border: 1px solid var(--bordo);
-    background-color: var(--superficie-1); color: var(--inchiostro-2);
-    box-shadow: var(--e1);
-  }
-  .topbar-imp::after { content: ''; position: absolute; inset: -7px; }
-  .topbar-imp:active { transform: scale(.94); }
+  .btn.imp-porta { display: inline-flex; }
+  /* su telefono il sottotitolo di «Panoramica» ripete quello che la pagina
+     dice già da sé, e occupava la riga che serve al pulsante: così la riga è
+     una sola e la schermata è più corta di prima, non più lunga */
+  .topbar.t-plancia .sottotitolo { display: none; }
 }
 
 /* tab bar mobile */

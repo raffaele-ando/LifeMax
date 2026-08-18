@@ -42,6 +42,10 @@
     pause: '<path d="M8.5 5.5v13M15.5 5.5v13"/>',
     clock: '<circle cx="12" cy="12" r="8.6"/><path d="M12 7v5.2l3.4 2"/>',
     refresh: '<path d="M20.6 12a8.6 8.6 0 1 1-2.5-6"/><path d="M20.8 3.2v5h-5"/>',
+    /* impostazioni: l'ingranaggio. Prima qui c'era il sole, che vuol dire
+       «tema chiaro» e non «impostazioni»: sei denti, valli ad arco, stessa
+       griglia e stesso spessore del resto del set. */
+    ingranaggio: '<path d="M9.89 2.84L14.11 2.84L14.47 5.56A6.9 6.9 0 0 1 16.34 6.64L18.87 5.59L20.99 9.25L18.82 10.92A6.9 6.9 0 0 1 18.82 13.08L20.99 14.75L18.87 18.41L16.34 17.36A6.9 6.9 0 0 1 14.47 18.44L14.11 21.16L9.89 21.16L9.53 18.44A6.9 6.9 0 0 1 7.66 17.36L5.13 18.41L3.01 14.75L5.18 13.08A6.9 6.9 0 0 1 5.18 10.92L3.01 9.25L5.13 5.59L7.66 6.64A6.9 6.9 0 0 1 9.53 5.56Z"/><circle cx="12" cy="12" r="3.3"/>',
     trash: '<path d="M3.6 6.4h16.8M8.6 6.4V5a1.8 1.8 0 0 1 1.8-1.8h3.2A1.8 1.8 0 0 1 15.4 5v1.4M18.6 6.4l-.9 12.7a2.2 2.2 0 0 1-2.2 2.1H8.5a2.2 2.2 0 0 1-2.2-2.1L5.4 6.4M10 10.6v6M14 10.6v6"/>',
     palette: '<path d="M12 3a9 9 0 1 0 .9 17.95c1.3-.13 1.75-1.3 1.2-2.3-.6-1.2.15-2.65 1.6-2.65H18a3.9 3.9 0 0 0 3.9-3.9C21.9 6.6 17.4 3 12 3z"/><circle cx="7.8" cy="10.2" r="1.05" fill="currentColor" stroke="none"/><circle cx="12" cy="7.4" r="1.05" fill="currentColor" stroke="none"/><circle cx="16.2" cy="10.2" r="1.05" fill="currentColor" stroke="none"/>',
     keyboard: '<rect x="2.6" y="6" width="18.8" height="12" rx="2.4"/><path d="M6.4 10h.01M10.2 10h.01M14 10h.01M17.8 10h.01M6.4 14h11.4"/>',

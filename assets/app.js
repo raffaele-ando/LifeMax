@@ -444,7 +444,7 @@
     } else {
       acct = '<div class="fondo-locale">' + ICO('cloud', 13) + ' Dati salvati su questo dispositivo</div>';
     }
-    return acct + '<button class="btn-strumento-largo" id="fondo-impostazioni">' + ICO('sun', 16) + '<span>Impostazioni</span></button>';
+    return acct + '<button class="btn-strumento-largo" id="fondo-impostazioni">' + ICO('ingranaggio', 16) + '<span>Impostazioni</span></button>';
   }
 
   function wireFooterSidebar() {
@@ -850,7 +850,7 @@
        desktop, dove hanno sempre funzionato così. */
     apriSheet('Menu', (link ? '<div class="menu-lista">' + link + '</div>' : '') +
       '<div class="imp-sezione"><div class="imp-eti">Account</div>' + acct + '</div>' +
-      '<button class="btn-strumento-largo" id="menu-impostazioni">' + ICO('sun', 16) + '<span>Impostazioni</span>' + ICO('arrowRight', 14) + '</button>',
+      '<button class="btn-strumento-largo" id="menu-impostazioni">' + ICO('ingranaggio', 16) + '<span>Impostazioni</span>' + ICO('arrowRight', 14) + '</button>',
       function (root) {
         root.querySelectorAll('[data-vai]').forEach(function (b) {
           b.addEventListener('click', function () { chiudiSheet(); location.hash = '#/' + b.getAttribute('data-vai'); });
@@ -952,8 +952,8 @@
       }).join('') + '</select>';
   }
 
-  function topbar(titolo, sottotitolo, destra) {
-    return '<div class="topbar"><div><h1>' + titolo + '</h1>' +
+  function topbar(titolo, sottotitolo, destra, cls) {
+    return '<div class="topbar' + (cls ? ' ' + cls : '') + '"><div><h1>' + titolo + '</h1>' +
       (sottotitolo ? '<div class="sottotitolo">' + sottotitolo + '</div>' : '') +
       '</div><div class="spazio"></div>' + (destra || '') + '</div>';
   }
@@ -2333,7 +2333,7 @@
       ico = '<span class="diario-ico">' + ICO('calendar', 14) + '</span>';
       testo = 'Review della settimana' + (ev.imparato ? ' · <span class="diario-sec">' + esc(ev.imparato) + '</span>' : '');
     } else if (ev.tipo === 'registro') {
-      var icoCat = { azione: 'target', abitudine: 'refresh', backlog: 'lista', inbox: 'inbox', area: 'sparkles', giornata: 'clock', focus: 'clock', impostazioni: 'sun', dati: 'save' };
+      var icoCat = { azione: 'target', abitudine: 'refresh', backlog: 'lista', inbox: 'inbox', area: 'sparkles', giornata: 'clock', focus: 'clock', impostazioni: 'ingranaggio', dati: 'save' };
       ico = '<span class="diario-ico' + (ev.imp ? '' : ' minore') + '">' + ICO(icoCat[ev.cat] || 'bolt', 13) + '</span>';
       testo = '<span class="diario-log">' + esc(ev.testo) + '</span>';
       cls = ev.imp ? '' : ' minore';
@@ -2358,7 +2358,14 @@
     var t = LM.todayKey();
     var checkinOggi = s.checkins.filter(function (c) { return c.data === t; }).length;
 
-    var html = topbar('Panoramica', 'I tuoi dati e i tuoi progressi, una sezione per volta.');
+    /* L'unica porta per le impostazioni su telefono. Sta QUI e non in cima a
+       ogni schermata: un pulsante che si usa una volta al mese non può occupare
+       un angolo di tutte le pagine. Sta in «Andamento» perché è la porta di
+       quello che riguarda l'app e non la giornata, e su monitor non compare —
+       là c'è il piede della barra laterale, dove ha sempre funzionato. */
+    var html = topbar('Panoramica', 'I tuoi dati e i tuoi progressi, una sezione per volta.',
+      '<button type="button" class="btn btn-mini imp-porta" id="plancia-imp">' + ICO('ingranaggio', 15) + ' Impostazioni</button>',
+      't-plancia');
 
     /* eroe essenziale: anello + XP + tre indicatori come chip (niente
        muro di didascalie: le spiegazioni stanno nei tooltip) */
@@ -2384,6 +2391,9 @@
     html += '<div id="sez-corpo"></div>';
 
     $vista.innerHTML = html;
+
+    var bImp = document.getElementById('plancia-imp');
+    if (bImp) bImp.addEventListener('click', apriImpostazioni);
 
     countUp(document.getElementById('xp-contatore'), s.xp);
     LMCharts.ring(document.getElementById('anello-livello'), lvl.pct, { size: 96, centro: 'L' + lvl.livello, label: 'Livello ' + lvl.livello + ', ' + Math.round(lvl.pct * 100) + '% verso il prossimo' });
@@ -4028,29 +4038,6 @@
     document.documentElement.style.setProperty('--sottonav-h', (bar.offsetHeight + 14) + 'px');
   }
 
-  /* Su telefono le impostazioni stanno nell'angolo in alto a destra del
-     titolo: sempre lì, su ogni schermata, dentro una riga che esiste già —
-     quindi non rubano un'altra riga a «Oggi», che deve stare in una schermata
-     sola. Su monitor non compare: là c'è il piede della barra laterale, dove
-     ha sempre funzionato. */
-  function bottoneImpostazioni() {
-    var tb = $vista.querySelector('.topbar');
-    if (!tb) return;
-    var vecchio = tb.querySelector('.topbar-imp');
-    if (vecchio) vecchio.remove();
-    tb.classList.remove('ha-imp');
-    if (!navTre()) return;
-    tb.classList.add('ha-imp');
-    var b = document.createElement('button');
-    b.type = 'button';
-    b.className = 'topbar-imp';
-    b.setAttribute('aria-label', 'Impostazioni e account');
-    b.setAttribute('title', 'Impostazioni e account');
-    b.innerHTML = ICO('sun', 16);
-    b.addEventListener('click', apriImpostazioni);
-    tb.appendChild(b);
-  }
-
   var vistaMostrata = '';
   function render() {
     var s = LM.load();
@@ -4073,7 +4060,6 @@
     else if (v === 'esperimenti') vistaEsperimenti();
     else if (v === 'scienza') vistaScienza();
     else if (v === 'lab') vistaLab();
-    bottoneImpostazioni();
     sottoNav(v);
     $vista.classList.toggle('vista-oggi', v === 'oggi');
     vistaMostrata = v;
