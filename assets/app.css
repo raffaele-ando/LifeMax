@@ -478,7 +478,7 @@ small { color: var(--inchiostro-2); }
      titolo di pagina  29/800        titolo di sezione 17/750
      corpo             13.5/450      secondario        12.5/450 inchiostro-2
      etichetta         11/800 maiuscoletto, lettere spaziate */
-.card h2, .rituale-testa h2, .exp-testa h2, .sheet-testa h2, .ob-step h2 {
+.card h2, .exp-testa h2, .sheet-testa h2, .ob-step h2 {
   font-size: 17px; font-weight: 750; letter-spacing: -0.02em;
 }
 .card h2 { margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
@@ -969,35 +969,11 @@ select.sel-compatto {
 
 /* ---------- rituali ---------- */
 
-.passo-rituale { max-width: 660px; margin: 0 auto; }
-.passo-rituale .card { padding: 28px; }
-/* su un telefono 28px di bordo per lato sono 56px che non mostrano niente */
-@media (max-width: 560px) { .passo-rituale .card { padding: 18px 16px; } }
-/* Testata su una riga invece che a colonna centrata: prima erano 158px di
-   icona grande, titolo e paragrafo prima di far vedere una sola cosa da
-   fare — su un telefono un quinto dello schermo speso in decorazione, su
-   ogni sotto-sezione dei Rituali. Ora l'icona sta accanto al titolo e il
-   testo sotto: stessa informazione, un terzo dello spazio. */
-.rituale-testa {
-  display: grid; grid-template-columns: auto minmax(0, 1fr);
-  gap: 4px 12px; align-items: center; margin-bottom: 16px;
-}
-.rituale-icona {
-  width: 38px; height: 38px; border-radius: var(--r-2); grid-row: span 2;
-  display: flex; align-items: center; justify-content: center; color: #fff;
-  background: var(--accento);
-  box-shadow: var(--e1);
-}
-.rituale-icona .ico { width: 20px; height: 20px; }
-.vista-enter .rituale-icona { animation: alzati .5s var(--ease-spring) both; }
-.rituale-testa h2 { align-self: end; }
-.rituale-testa p { color: var(--inchiostro-2); font-size: 12.5px; line-height: 1.45; align-self: start; }
-@media (max-width: 560px) {
-  /* sullo stretto il paragrafo passa sotto a tutta larghezza */
-  .rituale-testa { grid-template-columns: auto minmax(0, 1fr); }
-  .rituale-icona { grid-row: 1; }
-  .rituale-testa p { grid-column: 1 / -1; }
-}
+/* Il corpo del rituale aperto. Sparite .passo-rituale, .rituale-testa e
+   .rituale-icona: la testata (icona da 38px + titolo + paragrafo) è diventata
+   la riga dell'elenco, che c'era comunque, e il paragrafo è .rituale-intro. */
+.rit-corpo .card { padding: 20px 22px; }
+@media (max-width: 560px) { .rit-corpo .card { padding: 14px 14px 16px; } }
 
 .voto-area { display: flex; align-items: center; gap: 10px; padding: 11px 0; border-bottom: 1px solid var(--griglia); }
 .voto-area:last-child { border-bottom: none; }
@@ -1253,13 +1229,7 @@ label.campo {
 
 /* ---------- rituali: sotto-navigazione ---------- */
 
-.rituali-nav { display: inline-flex; margin-bottom: 18px; }
-.rituali-nav button { position: relative; }
-.seg-ora { width: 6px; height: 6px; border-radius: var(--r-tondo); background: var(--accento); display: inline-block; margin-left: 2px; }
 @media (max-width: 860px) {
-  .rituali-nav { display: flex; width: 100%; overflow-x: auto; scrollbar-width: none; }
-  .rituali-nav::-webkit-scrollbar { display: none; }
-  .rituali-nav button { flex: 1; justify-content: center; white-space: nowrap; }
 }
 
 /* ---------- banda demo (richiudibile) ---------- */
@@ -1848,8 +1818,6 @@ label.campo {
   .segmenti.tabs-fisse .seg-eti { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .segmenti.tabs-fisse .att-badge { position: absolute; top: 4px; right: 6px; margin: 0; }
   .segmenti.tabs-fisse > button.attivo .seg-ico { color: var(--accento-testo); }
-  /* il puntino «consigliato ora» dei Rituali non sta più in fila col testo */
-  .segmenti.tabs-fisse .seg-ora { position: absolute; top: 6px; right: 8px; margin: 0; }
   /* cinque voci in 320px: un filo più piccole per non troncare «Abitudini» */
   .segmenti.tabs-fisse.tabs-cinque > button { padding-left: 1px; padding-right: 1px; letter-spacing: -0.01em; }
 }
@@ -1880,6 +1848,72 @@ label.campo {
   .giorno-chip { min-width: 40px; min-height: 40px; }
   .strip-legenda .lg { min-height: 32px; }
 }
+
+/* ============================================================
+   RITUALI — righe in ordine di giornata, una aperta per volta
+   ============================================================ */
+.rit-lista { display: flex; flex-direction: column; gap: 8px; }
+.rit-eti {
+  font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--inchiostro-2); margin: 20px 0 8px;
+}
+.rit-riga {
+  display: flex; align-items: center; gap: 10px; width: 100%; text-align: left;
+  min-height: 54px; padding: 0 14px; border-radius: var(--r-2);
+  background: var(--superficie-1); border: 1px solid var(--bordo); box-shadow: var(--e1);
+  transition: border-color var(--t-veloce), background var(--t-veloce);
+}
+.rit-riga:hover { border-color: color-mix(in srgb, var(--accento) 40%, var(--bordo-forte)); }
+.rit-ico { flex: none; display: inline-flex; color: var(--inchiostro-2); }
+.rit-nome { flex: 1; min-width: 0; font-size: 14.5px; font-weight: 700; }
+/* «adesso»: l'app dice qual è il rituale di questo momento, invece di
+   lasciartelo indovinare fra cinque schede */
+.rit-ora {
+  /* stessa forma delle altre pastiglie di stato: tinta tenue e testo accento.
+     Il bianco sull'accento pieno stava a 4.23:1 con lo skin Arcade, sotto AA. */
+  flex: none; font-size: 10.5px; font-weight: 800; letter-spacing: .07em; text-transform: uppercase;
+  color: var(--accento-testo); background: color-mix(in srgb, var(--accento) 15%, transparent);
+  padding: 3px 8px; border-radius: var(--r-tondo);
+}
+.rit-stato { flex: none; font-size: 12px; color: var(--inchiostro-2); display: inline-flex; align-items: center; gap: 4px; }
+.rit-stato.fatto { color: var(--ok-testo); font-weight: 700; }
+.rit-chevron { flex: none; display: inline-flex; color: var(--inchiostro-muto); transition: transform var(--t-media); }
+.rit-chevron.aperta { transform: rotate(180deg); }
+.rit-blocco.aperto {
+  border-radius: var(--r-3); border: 1px solid var(--bordo-forte);
+  background: var(--superficie-1); box-shadow: var(--e2); overflow: hidden;
+}
+.rit-blocco.aperto > .rit-riga {
+  border: 0; border-bottom: 1px solid var(--bordo); border-radius: 0; box-shadow: none;
+  background: var(--superficie-2); min-height: 58px;
+}
+.rit-corpo { padding: 4px 0 0; }
+/* dentro la riga aperta la card non ha più bisogno del suo bordo: il bordo è
+   quello del blocco */
+.rit-corpo > .card { border: 0; box-shadow: none; border-radius: 0; background: none; margin: 0; }
+.rituale-intro { font-size: 12.5px; color: var(--inchiostro-2); margin: 0 0 14px; line-height: 1.5; }
+@media (max-width: 560px) {
+  /* una riga sola anche sul telefono: cinque righe da 88px sarebbero 440px
+     di elenco prima di arrivare al rituale aperto */
+  .rit-riga { min-height: 52px; padding: 0 12px; gap: 8px; }
+  .rit-nome { font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .rit-stato { font-size: 11.5px; }
+}
+
+/* la riga del rituale di adesso, dentro «Oggi»: un tocco, e sa già quale */
+.rit-adesso {
+  display: inline-flex; align-items: center; gap: 9px; align-self: center;
+  min-height: 42px; padding: 0 14px; margin-top: 2px;
+  border-radius: var(--r-tondo); border: 1px solid var(--bordo-forte);
+  background: var(--superficie-1); color: var(--inchiostro-1);
+  font-size: 13.5px; box-shadow: var(--e1);
+  transition: border-color var(--t-veloce), transform var(--t-veloce), box-shadow var(--t-media);
+}
+.rit-adesso:hover { transform: translateY(-1px); box-shadow: var(--e2); border-color: color-mix(in srgb, var(--accento) 40%, var(--bordo-forte)); }
+.rit-adesso b { font-weight: 700; }
+.rit-adesso > .ico:first-child { color: var(--inchiostro-2); }
+.rit-adesso > .ico:last-child { color: var(--inchiostro-muto); }
+@media (pointer: coarse) { .rit-adesso { min-height: 44px; } }
 
 /* ---------- la giornata: griglia oraria a blocchi ---------- */
 

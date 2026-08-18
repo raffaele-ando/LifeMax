@@ -1071,6 +1071,26 @@
     var oggi = LM.azioniDiOggi();
     var fatte = oggi.filter(function (a) { return a.done; }).length;
     var inCoda = oggi.filter(function (a) { return !a.done; }).length - (prossima ? 1 : 0);
+    /* Il rituale di QUESTO momento, a un tocco da Oggi: prima stava a due
+       tocchi più una scelta fra cinque schede, e il check-in si fa più volte
+       al giorno. Compare solo se non è ancora stato fatto: appena lo fai
+       sparisce e non chiede più niente. */
+    function rigaRitualeAdesso() {
+      var rid = ritualeDellOra();
+      var st = statoRituale(rid);
+      /* Il mattino e le review si fanno una volta: quando sono fatte la riga
+         sparisce. Il check-in no — si fa più volte al giorno, quindi resta e
+         al posto di «adesso» dice quanti ne hai già fatti. */
+      if (st.fatto && rid !== 'checkin') return '';
+      var r = RITUALI.filter(function (x) { return x.id === rid; })[0];
+      return '<button class="rit-adesso" data-vai="rituali" data-sub="' + rid + '">' +
+        ICO(r.ico, 16) + '<b>' + r.nome + '</b>' +
+        (st.fatto ? '<span class="rit-stato fatto">' + ICO('check', 12) + ' ' + st.testo + '</span>'
+                  : '<span class="rit-ora">adesso</span>') +
+        ICO('arrowRight', 15) + '</button>';
+    }
+    var ritAdesso = rigaRitualeAdesso();
+
     var html = topbar('Oggi', 'L’azione da fare adesso.',
       '<span class="chip">' + ICO('check', 14) + ' <b>&nbsp;' + fatte + '/' + oggi.length + '</b>&nbsp;oggi</span>');
     html += '<div id="oggi-giornata"></div>';
@@ -1081,7 +1101,7 @@
                      : '<b>Oggi non hai ancora scelto cosa fare.</b><br>Bastano pochi secondi: scegli la prima cosa e parti.') +
         '</div>' +
         '<div class="focus-azioni-riga">' +
-        '<button class="btn btn-primario btn-grande" data-vai="rituali">' + ICO('sun', 18) + ' Scegli le azioni di oggi</button>' +
+        '<button class="btn btn-primario btn-grande" data-vai="rituali" data-sub="mattina">' + ICO('sun', 18) + ' Scegli le azioni di oggi</button>' +
         '<button class="btn" data-vai="inbox">' + ICO('inbox', 17) + ' Prendi dalle attività</button>' +
         (oggi.length ? '<button class="btn" data-vai="rituali" data-sub="sera">' + ICO('moon', 17) + ' Review della sera</button>' : '') +
         '</div>' +
@@ -1173,16 +1193,26 @@
         ? '<span class="pila-coda">' + '<i></i>'.repeat(Math.min(3, inCoda)) + '</span> Dopo questa hai ancora <b>' + inCoda + '</b> ' + (inCoda === 1 ? 'azione' : 'azioni') + ', una alla volta.'
         : 'È l’ultima azione della giornata.') + '</span>' +
       /* il suggerimento cambia col dispositivo: su un telefono non c'è nessun
-         tasto C da premere, c'è il pulsante + in basso */
-      '<span class="solo-tastiera">·</span>' +
-      '<span class="solo-tastiera">Premi <kbd>C</kbd> per aggiungere una nota.</span>' +
-      '<span class="solo-tocco">Tocca <b>+</b> per aggiungere una nota.</span>' +
-      '</div>' +
+         tasto C da premere, c'è il pulsante + in basso. E se c'è il rituale di
+         adesso lascia il posto a quello: vale più un rituale da fare che il
+         promemoria di un tasto. */
+      (ritAdesso ? '' :
+        '<span class="solo-tastiera">·</span>' +
+        '<span class="solo-tastiera">Premi <kbd>C</kbd> per aggiungere una nota.</span>' +
+        '<span class="solo-tocco">Tocca <b>+</b> per aggiungere una nota.</span>') +
+      '</div>' + ritAdesso +
       altreHtml +
       '</div>';
 
     $vista.innerHTML = html;
     montaOggiGiornata();
+
+    $vista.querySelectorAll('[data-vai]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        if (b.getAttribute('data-sub')) sottoRituale = b.getAttribute('data-sub');
+        location.hash = '#/' + b.getAttribute('data-vai');
+      });
+    });
 
     var btnAltre = document.getElementById('btn-altre');
     if (btnAltre) btnAltre.addEventListener('click', function () { mostraAltre = !mostraAltre; vistaFocus(); });
@@ -2571,45 +2601,114 @@
      ============================================================ */
 
   var sottoRituale = null;
+
+  /* ============================================================
+     I RITUALI, IN ORDINE DI GIORNATA
+     Prima erano cinque schede pari in una barra: tre momenti del giorno,
+     uno della settimana e una schermata di gestione da 38 comandi. Quattro
+     nature diverse presentate come cinque scelte uguali — e la scelta
+     toccava all'utente anche se l'app sa già che ora è.
+     Adesso i momenti del giorno stanno in ordine (mattina, check-in, sera),
+     e sotto, staccato, quello che si fa ogni tanto (settimana, abitudini).
+     Ogni riga dice se è già stata fatta oggi, e quella dell'ora è già
+     aperta: non c'è niente da scegliere per cominciare. */
+  var RITUALI = [
+    { id: 'mattina',   ico: 'sun',      nome: 'Le azioni di oggi',      quando: 'giorno' },
+    { id: 'checkin',   ico: 'bolt',     nome: 'Check-in',               quando: 'giorno' },
+    { id: 'sera',      ico: 'moon',     nome: 'Review della sera',      quando: 'giorno' },
+    { id: 'settimana', ico: 'calendar', nome: 'Review della settimana', quando: 'ogni tanto' },
+    { id: 'abitudini', ico: 'refresh',  nome: 'Abitudini',              quando: 'ogni tanto' }
+  ];
+  function ritualeDellOra() {
+    var ora = new Date().getHours();
+    return ora < 12 ? 'mattina' : (ora >= 19 ? 'sera' : 'checkin');
+  }
+  /* per ogni rituale: se è già stato fatto oggi e come si racconta in una riga */
+  function statoRituale(id) {
+    var s = LM.load(), t = LM.todayKey();
+    if (id === 'mattina') {
+      var p = s.pianoMattina[t];
+      return p ? { fatto: true, testo: 'fatto stamattina' } : { fatto: false, testo: 'da fare' };
+    }
+    if (id === 'checkin') {
+      var n = s.checkins.filter(function (c) { return c.data === t; }).length;
+      return { fatto: n > 0, testo: n === 0 ? 'nessuno oggi' : (n === 1 ? '1 oggi' : n + ' oggi') };
+    }
+    if (id === 'sera') {
+      return s.reviewSera[t] ? { fatto: true, testo: 'fatta' } : { fatto: false, testo: 'da fare' };
+    }
+    if (id === 'settimana') {
+      var wk = LM.weekKey(t);
+      return s.reviewSettimana[wk] ? { fatto: true, testo: 'fatta' } : { fatto: false, testo: 'da fare' };
+    }
+    var ab = LM.abitudiniDiOggi(), f = ab.filter(function (h) { return !!h.fatti[t]; }).length;
+    return { fatto: ab.length > 0 && f === ab.length, testo: ab.length ? f + ' di ' + ab.length + ' oggi' : 'nessuna per oggi' };
+  }
   var inboxEditId = null;
 
   function vistaRituali() {
-    var ora = new Date().getHours();
-    var sub = sottoRituale || (ora < 12 ? 'mattina' : (ora >= 19 ? 'sera' : 'checkin'));
-    sottoRituale = sub;
+    var adesso = ritualeDellOra();
+    /* quello aperto: se non hai scelto tu, è quello dell'ora. Uno per volta:
+       due rituali aperti insieme sono di nuovo una lista di cose da leggere. */
+    var apri = sottoRituale || adesso;
+    sottoRituale = apri;
 
-    var suggerito = (ora < 12 ? 'mattina' : (ora >= 19 ? 'sera' : 'checkin'));
-    var html = topbar('Rituali', 'Mattina, sera e abitudini.') +
-      '<div class="rituali-nav segmenti tabs-fisse tabs-cinque" id="seg-rituali">' +
-      seg('mattina', 'sun', 'Mattina') + seg('abitudini', 'refresh', 'Abitudini') + seg('checkin', 'bolt', 'Check-in') + seg('sera', 'moon', 'Sera') + seg('settimana', 'calendar', 'Settimana') +
-      '</div>' +
-      '<div class="passo-rituale" id="corpo-rituale"></div>';
-    $vista.innerHTML = html;
-    void suggerito;
+    function riga(r) {
+      var st = statoRituale(r.id);
+      var suo = r.id === adesso;
+      if (r.id === apri) {
+        return '<section class="rit-blocco aperto">' +
+          '<button class="rit-riga" data-sub="' + r.id + '" aria-expanded="true">' +
+          '<span class="rit-ico">' + ICO(r.ico, 17) + '</span>' +
+          '<span class="rit-nome">' + r.nome + '</span>' +
+          (suo ? '<span class="rit-ora">adesso</span>' : '') +
+          '<span class="rit-stato' + (st.fatto ? ' fatto' : '') + '">' + (st.fatto ? ICO('check', 12) + ' ' : '') + st.testo + '</span>' +
+          '<span class="rit-chevron aperta">' + ICO('chevronGiu', 15) + '</span></button>' +
+          '<div class="rit-corpo" id="corpo-rituale"></div></section>';
+      }
+      return '<button class="rit-riga" data-sub="' + r.id + '" aria-expanded="false">' +
+        '<span class="rit-ico">' + ICO(r.ico, 17) + '</span>' +
+        '<span class="rit-nome">' + r.nome + '</span>' +
+        (suo ? '<span class="rit-ora">adesso</span>' : '') +
+        '<span class="rit-stato' + (st.fatto ? ' fatto' : '') + '">' + (st.fatto ? ICO('check', 12) + ' ' : '') + st.testo + '</span>' +
+        '<span class="rit-chevron">' + ICO('chevronGiu', 15) + '</span></button>';
+    }
 
-    document.getElementById('seg-rituali').querySelectorAll('button').forEach(function (b) {
-      b.addEventListener('click', function () { sottoRituale = b.getAttribute('data-sub'); render(); });
-    });
+    var giorno = RITUALI.filter(function (r) { return r.quando === 'giorno'; }).map(riga).join('');
+    var altro = RITUALI.filter(function (r) { return r.quando === 'ogni tanto'; }).map(riga).join('');
+
+    $vista.innerHTML = topbar('Rituali', 'Mattina, sera e abitudini.') +
+      '<div class="rit-lista">' + giorno + '</div>' +
+      '<div class="rit-eti">Ogni tanto</div>' +
+      '<div class="rit-lista">' + altro + '</div>';
 
     var corpo = document.getElementById('corpo-rituale');
-    if (sub === 'mattina') ritualeMattina(corpo);
-    if (sub === 'abitudini') ritualeAbitudini(corpo);
-    if (sub === 'checkin') ritualeCheckin(corpo);
-    if (sub === 'sera') ritualeSera(corpo);
-    if (sub === 'settimana') ritualeSettimana(corpo);
+    if (apri === 'mattina') ritualeMattina(corpo);
+    if (apri === 'abitudini') ritualeAbitudini(corpo);
+    if (apri === 'checkin') ritualeCheckin(corpo);
+    if (apri === 'sera') ritualeSera(corpo);
+    if (apri === 'settimana') ritualeSettimana(corpo);
 
-    function seg(id, icona, nome) {
-      var ora2 = new Date().getHours();
-      var sugg = (ora2 < 12 ? 'mattina' : (ora2 >= 19 ? 'sera' : 'checkin'));
-      var puntino = (id === sugg && sub !== id) ? '<span class="seg-ora" title="Consigliato ora"></span>' : '';
-      return '<button data-sub="' + id + '" class="' + (sub === id ? 'attivo' : '') + '">' +
-        '<span class="seg-ico">' + ICO(icona, 15) + '</span><span class="seg-eti">' + nome + '</span>' + puntino + '</button>';
-    }
+    $vista.querySelectorAll('.rit-riga').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var id = b.getAttribute('data-sub');
+        /* toccare l'intestazione di quello aperto non lo chiude lasciando la
+           pagina senza niente: riporta a quello dell'ora */
+        sottoRituale = (id === apri && id !== adesso) ? adesso : id;
+        render();
+        var el = document.querySelector('.rit-blocco.aperto');
+        if (el) el.scrollIntoView({ block: 'nearest' });
+      });
+    });
   }
 
+  /* Dentro la riga aperta il titolo e l'icona ci sono già: la testa del
+     rituale resta solo la frase che spiega cosa si fa. Prima ogni sezione
+     ripeteva icona da 38px + titolo + frase: centodieci pixel di intestazione
+     sopra un rituale che deve durare un minuto. */
   function testaRituale(icona, titolo, sotto) {
-    return '<div class="rituale-testa"><div class="rituale-icona">' + ICO(icona, 24) + '</div>' +
-      '<h2>' + titolo + '</h2><p>' + sotto + '</p></div>';
+    void icona; void titolo;
+    return '<p class="rituale-intro">' + sotto + '</p>';
   }
 
   function ritualeMattina(corpo) {
