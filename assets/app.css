@@ -1784,6 +1784,8 @@ label.campo {
 .agg-eti { font-size: 11.5px; font-weight: 750; color: var(--inchiostro-2); text-transform: uppercase; letter-spacing: .05em; }
 .agg-nota { font-size: 11.5px; color: var(--inchiostro-muto); }
 .agg-quando, .agg-giorni { display: flex; gap: 6px; flex-wrap: wrap; }
+.agg-ora { display: inline-flex; align-items: center; gap: 7px; }
+.agg-ora .tl-time { width: auto; }
 .agg-area { display: inline-flex; align-items: center; gap: 7px; }
 .agg-area select { width: auto; max-width: 170px; }
 @media (pointer: coarse) {
@@ -2272,6 +2274,9 @@ body.sto-trascinando { cursor: grabbing; user-select: none; -webkit-user-select:
 .ab-sotto.serie { color: #c2410c; font-weight: 700; }
 :root[data-mode="dark"] .ab-sotto.serie { color: #f97316; }
 .ab-sotto.saltata { color: var(--inchiostro-2); font-style: italic; }
+/* l'ora sta in coda, come valore secondario della riga */
+.ab-ora { flex: none; font-size: 12px; font-weight: 700; color: var(--inchiostro-2); font-variant-numeric: tabular-nums; }
+.ab-riga.fatta .ab-ora { color: var(--inchiostro-muto); }
 .ab-riga .tag-area { flex: none; color: var(--c-area); }
 /* la freccina di apertura punta a destra, come in ogni elenco di iOS */
 .ab-chevron { flex: none; display: inline-flex; color: var(--inchiostro-muto); transform: rotate(-90deg); }
@@ -2304,6 +2309,9 @@ body.sto-trascinando { cursor: grabbing; user-select: none; -webkit-user-select:
 .abd-nota { margin: 8px 0 0; font-size: 11.5px; color: var(--inchiostro-muto); }
 .abd-nota-giorni { margin-top: 6px; font-size: 11.5px; color: var(--inchiostro-muto); }
 .abd-periodo { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.abd-orario { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.abd-orario .tl-time { width: auto; flex: none; }
+.abd-orario .tl-dur { width: auto; flex: 0 1 150px; }
 .abd-fondo { margin-top: 18px; padding-top: 12px; border-top: 1px solid var(--griglia); display: flex; }
 
 .ap-campo { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 650; color: var(--inchiostro-2); }

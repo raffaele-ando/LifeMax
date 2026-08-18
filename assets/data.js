@@ -1088,6 +1088,37 @@ var LM = (function () {
     return count;
   }
 
+  /* La serie più lunga mai fatta. Serve dopo un giorno saltato: la serie
+     corrente riparte da zero, e senza un record da riprendere il numero
+     appena perso sembra sparito per sempre — che è il momento in cui si
+     molla. */
+  function recordAbitudine(h) {
+    var giorni = Object.keys(h.fatti || {});
+    if (!giorni.length) return 0;
+    giorni.sort();
+    var k = giorni[0], fine = todayKey(), record = 0, corrente = 0;
+    for (var i = 0; i < 1500 && k <= fine; i++) {
+      if (abitudinePrevista(h, k) || (h.fatti && h.fatti[k])) {
+        if (h.fatti && h.fatti[k]) { corrente++; if (corrente > record) record = corrente; }
+        else corrente = 0;
+      }
+      k = addDays(k, 1);
+    }
+    return record;
+  }
+
+  /* Il prossimo giorno in cui tocca, entro un anno: «torna martedì» dice
+     più di «L M V», che va riletto e tradotto ogni volta. */
+  function prossimaAbitudine(h) {
+    var k = todayKey();
+    for (var i = 1; i <= 366; i++) {
+      k = addDays(k, 1);
+      if (h.a && k > h.a) return null;
+      if (abitudinePrevista(h, k)) return k;
+    }
+    return null;
+  }
+
   /* ---------- gestione aree (personalizzabili) ---------- */
 
   function rinominaArea(id, nome) {
@@ -1779,6 +1810,7 @@ var LM = (function () {
     aggiungiAbitudine: aggiungiAbitudine, modificaAbitudine: modificaAbitudine, rimuoviAbitudine: rimuoviAbitudine,
     abitudinePrevista: abitudinePrevista, abitudiniDiOggi: abitudiniDiOggi, completaAbitudine: completaAbitudine, streakAbitudine: streakAbitudine,
     impostaPeriodoAbitudine: impostaPeriodoAbitudine, saltaGiornoAbitudine: saltaGiornoAbitudine,
+    recordAbitudine: recordAbitudine, prossimaAbitudine: prossimaAbitudine,
     rinominaArea: rinominaArea, modificaRegolaArea: modificaRegolaArea, toggleArea: toggleArea,
     aggiungiArea: aggiungiArea, rimuoviArea: rimuoviArea, baselineCheckin: baselineCheckin,
     registraCheckin: registraCheckin, salvaPianoMattina: salvaPianoMattina,

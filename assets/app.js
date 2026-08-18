@@ -2916,8 +2916,16 @@
   function vistaRituali() {
     var adesso = ritualeDellOra();
     /* alla prima apertura è aperto quello dell'ora; dopo vale quello che hai
-       deciso tu, e non lo tocca più nessuno */
-    if (!ritualiAperti) { ritualiAperti = {}; ritualiAperti[adesso] = true; }
+       deciso tu, e non lo tocca più nessuno.
+       Con delle abitudini ancora da spuntare si apre anche quella sezione:
+       è la sola che ha un lavoro in sospeso ogni giorno, e trovarla chiusa
+       significa che le abitudini di oggi non le vede chi passa di qui. */
+    if (!ritualiAperti) {
+      ritualiAperti = {};
+      ritualiAperti[adesso] = true;
+      var restano = LM.abitudiniDiOggi().filter(function (h) { return !h.fatti[LM.todayKey()]; }).length;
+      if (restano) ritualiAperti.abitudini = true;
+    }
     /* chi arriva da un collegamento (la riga in Oggi, «vai alle abitudini»)
        apre quella sezione SENZA chiudere le altre */
     var daScorrere = null;
@@ -3117,6 +3125,18 @@
 
   /* Cosa dice la riga sotto al nome: la serie se c'è, altrimenti il motivo
      per cui oggi non è in lista. */
+  /* «torna martedì» invece di «L M V»: il giorno in cui tocca è
+     un'informazione, l'elenco delle iniziali va tradotto ogni volta. */
+  function quandoTorna(h) {
+    var k = LM.prossimaAbitudine(h);
+    if (!k) return null;
+    if (k === LM.addDays(LM.todayKey(), 1)) return 'torna domani';
+    var g = LM.weekdayShort(k);
+    var nomi = { lun: 'lunedì', mar: 'martedì', mer: 'mercoledì', gio: 'giovedì', ven: 'venerdì', sab: 'sabato', dom: 'domenica' };
+    if (LM.daysBetween(LM.todayKey(), k) <= 7) return 'torna ' + (nomi[g] || g);
+    return 'torna il ' + LM.fmtShort(k);
+  }
+
   function sottoAbitudine(h, previstaOggi) {
     var st = statoAbitudineOggi(h);
     if (st.saltata) return { testo: 'saltata oggi', cls: 'saltata' };
@@ -3124,7 +3144,7 @@
       var oggi = LM.todayKey();
       if (h.da && oggi < h.da) return { testo: 'comincia il ' + LM.fmtShort(h.da), cls: '' };
       if (h.a && oggi > h.a) return { testo: 'finita il ' + LM.fmtShort(h.a), cls: '' };
-      return { testo: riepilogoGiorni(h.giorni), cls: '' };
+      return { testo: quandoTorna(h) || riepilogoGiorni(h.giorni), cls: '' };
     }
     /* Per le abitudini di oggi la seconda riga la merita solo la serie:
        ripetere «ogni giorno» sotto ogni riga di una lista intitolata
@@ -3149,6 +3169,7 @@
       '<span class="ab-testo"><span class="ab-nome">' + esc(h.testo) + '</span>' +
       (sotto ? '<span class="ab-sotto' + (sotto.cls ? ' ' + sotto.cls : '') + '">' +
         (sotto.ico ? ICO(sotto.ico, 11, 'fiamma') + ' ' : '') + esc(sotto.testo) + '</span>' : '') + '</span>' +
+      (h.ora ? '<span class="ab-ora">' + esc(h.ora) + '</span>' : '') +
       '<span class="tag-area" title="' + esc(ar.nome) + '">' + ICO(ar.icona, 14) + '</span>' +
       '<span class="ab-chevron">' + ICO('chevronGiu', 15) + '</span></button>' +
       '</div>';
@@ -3156,7 +3177,14 @@
 
   function ritualeAbitudini(corpo) {
     var s = LM.load();
-    var oggi = LM.abitudiniDiOggi();
+    /* con un orario la lista prende la forma della giornata: prima quelle
+       che hanno un'ora, in ordine, poi quelle che si fanno quando capita */
+    var oggi = LM.abitudiniDiOggi().slice().sort(function (a, b) {
+      if (a.ora && b.ora) return a.ora < b.ora ? -1 : (a.ora > b.ora ? 1 : 0);
+      if (a.ora) return -1;
+      if (b.ora) return 1;
+      return 0;
+    });
     var idOggi = {};
     oggi.forEach(function (h) { idOggi[h.id] = true; });
     var altre = s.abitudini.filter(function (h) { return !idOggi[h.id]; });
@@ -3204,6 +3232,10 @@
         '<span class="agg-eti">In che giorni?</span>' +
         '<div id="agg-ab-giorni" class="agg-giorni">' + chipsGiorni([]) + '</div>' +
         '<span class="agg-nota">nessuno selezionato = ogni giorno</span>' +
+        /* l'ora si decide adesso, mentre l'intenzione è fresca: è il
+           momento in cui si sa ancora quando la si vuole fare */
+        '<label class="agg-ora"><span class="agg-eti">alle</span>' +
+        '<input type="time" class="tl-time" id="agg-ab-ora" aria-label="A che ora (facoltativo)"></label>' +
         '<label class="agg-area"><span class="agg-eti">in</span>' + selectAree('agg-ab-area', 'salute') + '</label>') +
       '</div>' +
       '</div>';
@@ -3225,8 +3257,9 @@
     });
     wireRigaAggiunta(corpo, 'agg-ab', function (testo, opz) {
       var giorni = leggiGiorni(opz.querySelector('#agg-ab-giorni'));
-      LM.aggiungiAbitudine(testo, opz.querySelector('#agg-ab-area').value, giorni);
-      toast('«' + testo + '» ' + riepilogoGiorni(giorni) + ', da oggi.', 0, 'refresh');
+      var ora = opz.querySelector('#agg-ab-ora').value || null;
+      LM.aggiungiAbitudine(testo, opz.querySelector('#agg-ab-area').value, giorni, { ora: ora });
+      toast('«' + testo + '» ' + riepilogoGiorni(giorni) + (ora ? ' alle ' + ora : '') + ', da oggi.', 0, 'refresh');
       ritualeAbitudini(corpo);
       /* i giorni tornano vuoti e il fuoco resta nel campo: la scelta valeva
          per quell'abitudine, non per la prossima */
@@ -3248,6 +3281,7 @@
       if (!h) return '';
       var st = statoAbitudineOggi(h);
       var serie = LM.streakAbitudine(h);
+      var record = LM.recordAbitudine(h);
       var volte = Object.keys(h.fatti || {}).length;
       var giorni = giorniAbitudine(h, 4);
       var prevista = LM.abitudinePrevista(h, LM.todayKey());
@@ -3281,6 +3315,7 @@
         (serie > 0
           ? '<span>' + ICO('flame', 13, 'fiamma') + ' <b>' + serie + '</b> ' + (serie === 1 ? 'giorno di fila' : 'giorni di fila') + '</span>'
           : '<span>nessuna serie aperta</span>') +
+        (record > serie ? '<span>record <b>' + record + '</b></span>' : '') +
         '<span><b>' + volte + '</b> ' + (volte === 1 ? 'volta in tutto' : 'volte in tutto') + '</span>' +
         '</div>' +
         catena +
@@ -3291,6 +3326,21 @@
         '<label class="campo">Quando ripeterla</label>' +
         '<div id="abd-giorni">' + chipsGiorni(h.giorni) + '</div>' +
         '<div class="abd-nota-giorni">' + esc(riepilogoGiorni(h.giorni)) + '</div>' +
+        /* Un'abitudine attaccata a un'ora precisa si fa molto più spesso di
+           una lasciata a «quando capita»: è la parte «quando e dove» delle
+           intenzioni di attuazione, l'unica cosa che nella ricerca sposta
+           davvero la percentuale di volte in cui una cosa viene fatta.
+           E con un'ora l'abitudine compare anche nella giornata, al suo
+           posto, invece di restare una riga fuori dal tempo. */
+        '<label class="campo" for="abd-ora">A che ora</label>' +
+        '<div class="abd-orario">' +
+        '<input type="time" class="tl-time" id="abd-ora" value="' + (h.ora || '') + '">' +
+        '<select class="tl-dur" id="abd-dur" aria-label="Quanto dura">' +
+        DURATE.map(function (o) { return '<option value="' + o.v + '"' + ((h.durata || '') === o.v ? ' selected' : '') + '>' + o.t + '</option>'; }).join('') +
+        '</select>' +
+        (h.ora ? '<button class="btn btn-mini btn-ghost" id="abd-noora">' + ICO('clock', 13) + ' Togli l’orario</button>'
+               : '<span class="ap-nota">senza orario: la fai quando capita</span>') +
+        '</div>' +
         '<label class="campo" for="abd-area">Area</label>' + selectAree('abd-area', h.areaId) +
         '<label class="campo">Per quanto vale</label>' +
         '<div class="abd-periodo">' +
@@ -3351,6 +3401,12 @@
           ridisegna();
         });
       });
+      var ora = root.querySelector('#abd-ora');
+      ora.addEventListener('change', function () { LM.modificaAbitudine(id, { ora: ora.value || null }); ridisegna(); });
+      var dur = root.querySelector('#abd-dur');
+      dur.addEventListener('change', function () { LM.modificaAbitudine(id, { durata: dur.value ? +dur.value : null }); if (dopo) dopo(); });
+      var noora = root.querySelector('#abd-noora');
+      if (noora) noora.addEventListener('click', function () { LM.modificaAbitudine(id, { ora: null }); ridisegna(); });
       root.querySelector('#abd-area').addEventListener('change', function (e) {
         LM.modificaAbitudine(id, { areaId: e.target.value });
         if (dopo) dopo();
