@@ -166,7 +166,13 @@ h1, h2, h3, p, span, div, a, small, b, label, button, input, textarea, li {
   overflow-wrap: break-word;
 }
 
-button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
+button {
+  font: inherit; color: inherit; background: none; border: 0; cursor: pointer;
+  /* niente lampo grigio al tocco e niente attesa per il doppio tocco:
+     un comando deve rispondere subito, come nelle app di sistema */
+  -webkit-tap-highlight-color: transparent; touch-action: manipulation;
+  -webkit-user-select: none; user-select: none;
+}
 input, textarea, select { font: inherit; color: var(--inchiostro-1); }
 a { color: var(--accento-testo); text-decoration: none; }
 a:hover { text-decoration: underline; }
@@ -811,6 +817,13 @@ select.sel-compatto {
 /* le tre scelte: tre colonne uguali, sempre nello stesso ordine, mai a capo */
 .inbox-scelte { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 11px; }
 .inbox-scelte .btn { width: 100%; justify-content: center; padding-left: 6px; padding-right: 6px; }
+/* col mouse la card è larga più di mille pixel: tre pulsanti tirati per
+   tutta quella larghezza sono tre bersagli enormi per tre parole. Restano
+   della loro misura, in fila da sinistra. */
+@media (min-width: 861px) {
+  .inbox-scelte { display: flex; flex-wrap: wrap; justify-content: flex-start; }
+  .inbox-scelte .btn { width: auto; padding-left: 16px; padding-right: 16px; }
+}
 @media (max-width: 380px) {
   /* a 320px tre etichette CON icona vanno a capo: si tiene la parola, che è
      quella che dice cosa fa, e si lascia l'icona */
@@ -1179,7 +1192,7 @@ body.sfondo-fermo { position: fixed; left: 0; right: 0; width: 100%; overflow: h
 }
 .sheet-overlay[hidden] { display: none; }
 .sheet {
-  width: 100%; max-width: 460px; max-height: 88vh; max-height: 88dvh; overflow-y: auto;
+  width: 100%; max-width: 460px; max-height: 88vh; max-height: 88dvh; overflow-y: auto; overscroll-behavior: contain;
   background: var(--superficie-1); border: 1px solid var(--bordo);
   border-radius: var(--r-3); box-shadow: var(--e3); padding: 8px 20px 22px;
   animation: entra .3s var(--ease-spring);
@@ -2312,6 +2325,11 @@ body.sto-trascinando { cursor: grabbing; user-select: none; -webkit-user-select:
 .backup-riga .btn { flex: none; }
 
 ::selection { background: color-mix(in srgb, var(--accento) 80%, #000); color: #fff; }
+
+/* il selettore dell'area dentro una riga di aggiunta: stretto quanto basta
+   sul telefono, largo abbastanza da leggere il nome intero col mouse */
+.campo-area { width: 132px; flex: none; }
+@media (min-width: 861px) { .campo-area { width: 200px; } }
 
 .vuoto-azione { margin-top: 14px; display: flex; justify-content: center; }
 

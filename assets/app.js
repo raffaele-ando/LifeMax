@@ -2704,7 +2704,7 @@
         '<div class="sotto">Scelte in <a href="#/rituali">Rituali</a>, fatte una per volta in <a href="#/oggi">Oggi</a>. Qui sono tutte insieme.</div>' +
         '<div class="lista-azioni" id="lista-oggi"></div>' +
         '<form id="form-add" class="riga-flex mt-s"><input type="text" id="testo-add" aria-label="Aggiungi una cosa a oggi" placeholder="Aggiungi un’altra cosa a oggi…" style="flex:1;min-width:150px">' +
-        '<span style="width:132px">' + selectAree('area-add') + '</span>' +
+        '<span class="campo-area">' + selectAree('area-add') + '</span>' +
         /* pieno ce n'è uno per schermata: qui la voce principale è «Vai a
            Oggi», e aggiungere una cosa è un'azione di servizio */
         '<button class="btn btn-mini" type="submit" aria-label="Aggiungi">' + ICO('plus', 14) + '</button></form></div>' +
@@ -3005,7 +3005,7 @@
          scrivere quello che gli serve. Oltre le tre lo diciamo e basta. */
       '<form id="form-piano" class="mt-s"><div class="riga-flex">' +
       '<input type="text" id="piano-testo" aria-label="Una cosa da fare oggi" placeholder="' + (oggi.length === 0 ? 'La cosa più importante di oggi…' : 'Un’altra cosa (se vuoi)…') + '" style="flex:1;min-width:180px">' +
-      '<span style="width:155px">' + selectAree('piano-area') + '</span>' +
+      '<span class="campo-area">' + selectAree('piano-area') + '</span>' +
       /* il pieno di questa scheda è «Salva e parti»: aggiungere una riga
          alla lista è il passaggio, non il traguardo */
       '<button class="btn" type="submit" aria-label="Aggiungi">' + ICO('plus', 16) + '</button></div>' +
@@ -4101,7 +4101,7 @@
         : '<div class="vuoto" style="padding:20px 8px">' + illoInbox() + '<b>Nessun progetto.</b><br>Un progetto è un’attività divisa in passi.</div>';
       box.innerHTML = '<div class="card"><div class="sotto" style="margin-top:0">Attività divise in <b>passi</b>. «Passo» porta in Oggi il prossimo.</div>' +
         lista +
-        '<form class="bk-add mt" id="nuovo-prog"><input type="text" placeholder="Nuovo progetto…" aria-label="Nuovo progetto"><span style="width:150px">' + selectAree('prog-area') + '</span><button class="btn btn-mini btn-primario" type="submit">' + ICO('plus', 13) + ' Crea</button></form></div>';
+        '<form class="bk-add mt" id="nuovo-prog"><input type="text" placeholder="Nuovo progetto…" aria-label="Nuovo progetto"><span class="campo-area">' + selectAree('prog-area') + '</span><button class="btn btn-mini btn-primario" type="submit">' + ICO('plus', 13) + ' Crea</button></form></div>';
       wireBk(box);
       box.querySelector('#nuovo-prog').addEventListener('submit', function (e) {
         e.preventDefault();
