@@ -2468,9 +2468,25 @@ body.sto-trascinando { cursor: grabbing; user-select: none; -webkit-user-select:
      il blocco, che apre la sua scheda con «Fatto» a misura piena — è quello
      che fa Calendario, che dentro gli eventi non mette comandi. */
   .tl-blk-check { display: none; }
-  .riga-azione .spunta::after, .ab-riga .spunta::after, .tl-check::after, .prog-apri::after,
+
+  /* Le caselle e i comandi minuti: il disegno resta piccolo, l'area del dito
+     arriva a 44. Le misure sono FISSE, mai percentuali: una percentuale su
+     un elemento posizionato in assoluto si calcola sull'antenato
+     posizionato, e il giorno in cui questi elementi non sono più
+     `position: relative` l'area invisibile diventa grande quanto tutta la
+     card e si mangia i clic di tutto quello che ha intorno. È successo
+     davvero, per una riga di CSS cancellata insieme a codice morto: da
+     allora c'è anche una prova che lo controlla (clic.js). */
+  .riga-azione .spunta, .ab-riga .spunta, .tl-check, .step-quando, .fa-fai { position: relative; }
+  .riga-azione .spunta::after, .ab-riga .spunta::after, .tl-check::after,
   .step-quando::after, .fa-fai::after {
     content: ''; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
-    width: max(100%, 44px); height: max(100%, 44px);
+    width: 44px; height: 44px;
   }
+  /* questa è larga e bassa: si alza per davvero, senza sovrapporsi a niente */
+  .prog-apri { min-height: 44px; }
+
+  /* tornate qui dopo essere finite sotto la scure del codice morto */
+  .att-chip, .q-chip, .chip-tempo { min-height: 44px; }
+  .ap-campo input[type="date"] { min-height: 44px; font-size: 15px; }
 }
