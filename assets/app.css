@@ -1194,6 +1194,14 @@ body.sfondo-fermo { position: fixed; left: 0; right: 0; width: 100%; overflow: h
   animation: entra .3s var(--ease-spring);
 }
 .sheet-maniglia { display: none; }
+/* il titolo del pannello, quando si può cambiare: stessa faccia del titolo,
+   nessuna cornice, si scrive dentro */
+textarea.sheet-titolo-inp {
+  font: inherit; width: 100%; border: 0; background: none; box-shadow: none;
+  padding: 0; min-height: 0; color: inherit; resize: none; overflow: hidden;
+  line-height: inherit; display: block;
+}
+textarea.sheet-titolo-inp:focus { box-shadow: none; outline: 2px solid var(--accento); outline-offset: 3px; border-radius: var(--r-1); }
 .sheet-testa { display: flex; align-items: center; justify-content: space-between; padding: 10px 0 6px; position: sticky; top: 0; background: var(--superficie-1); z-index: 1; }
 
 /* TASTI-ICONA — stessa misura e stesso angolo in tutta l'app (34px, r-1):
@@ -1568,6 +1576,9 @@ label.campo {
 }
 .lista > .lista-riga + .lista-riga { border-top: 1px solid var(--griglia); }
 .lista-riga { display: flex; align-items: center; gap: 10px; padding: 0 4px 0 12px; min-height: 56px; }
+/* una riga che è un pulsante deve occupare la riga: i pulsanti si stringono
+   sul contenuto, e la riga finiva larga come la sua scritta */
+button.lista-riga { width: 100%; text-align: left; }
 /* il comando a sinistra: sempre nello stesso posto, sempre della stessa misura */
 .lista-azione {
   /* relative DEVE stare qui, nella regola del comando: l'area del dito
@@ -1673,8 +1684,13 @@ label.campo {
 
 /* la testata: campo per aggiungere, ricerca, filtro. Un solo riquadro. */
 .att-testa { padding-bottom: 12px; }
-.att-strumenti { display: flex; align-items: center; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
-.att-strumenti .att-cerca { flex: 1 1 180px; margin: 0; }
+/* la barra sopra la lista: cercare e filtrare, due modi di guardare quello
+   che c'è già. Il campo per aggiungere sta altrove: è un'azione. */
+.att-barra { display: flex; align-items: center; gap: 8px; margin: 14px 0 0; flex-wrap: wrap; }
+.att-barra .att-cerca { flex: 1 1 160px; max-width: 380px; margin: 0; }
+/* la barra tiene le sue cose a sinistra: un campo di ricerca largo mille
+   pixel non è un campo, è un muro */
+@media (min-width: 861px) { .att-barra { justify-content: flex-start; } }
 /* il filtro: dice già quale è attivo, e si apre come tutto il resto */
 .att-filtro {
   flex: none; display: inline-flex; align-items: center; gap: 6px;
@@ -1718,21 +1734,59 @@ label.campo {
 }
 
 /* ---------- la scheda di un'attività ----------
-   Piatta: etichette sopra i gruppi, niente cassetti dentro cassetti. */
+   Una riga per attributo, il valore a destra: la forma degli elenchi di
+   iOS. Prima erano tre riquadri con dentro altri riquadri (il gruppo, il
+   campo, il bordo del campo): trentuno cornici in un solo pannello. */
 .sc { display: flex; flex-direction: column; }
 .sc-primaria { width: 100%; justify-content: center; margin: 2px 0 4px; }
-.sc-gruppo {
-  border: 1px solid var(--bordo); border-radius: var(--r-2); background: var(--superficie-1);
-  padding: 12px; display: flex; flex-direction: column; gap: 10px;
+.sc-quando { margin-bottom: 2px; }
+/* la pastiglia che contiene un campo data: si vede la pastiglia, il campo
+   sta dentro e si apre col calendario del sistema */
+.q-chip-data { position: relative; cursor: pointer; gap: 5px; }
+.q-chip-data input {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  opacity: 0; border: 0; padding: 0; min-height: 0; cursor: pointer;
 }
-.sc-campo { display: flex; align-items: center; gap: 10px; font-size: 12.5px; color: var(--inchiostro-2); }
-.sc-campo > span { flex: none; min-width: 96px; }
-.sc-campo input, .sc-campo select { flex: 1; min-width: 0; width: auto; }
-.sc-nota { font-size: 11.5px; line-height: 1.45; color: var(--inchiostro-muto); }
-.sc-azioni { display: flex; flex-wrap: wrap; gap: 8px; }
-.sc-agg { display: flex; gap: 8px; align-items: center; margin-top: 8px; }
-.sc-agg input { flex: 1; min-width: 0; }
+.sc-riga { min-height: 52px; padding: 6px 12px; gap: 10px; }
+.sc-eti { flex: 1; min-width: 0; display: inline-flex; align-items: center; gap: 7px; font-size: 13.5px; font-weight: 620; color: var(--inchiostro-1); text-align: left; }
+.sc-eti .ico { color: var(--inchiostro-muto); }
+/* il valore: dentro la riga non ha una cornice sua, è testo che si tocca */
+.sc-val { flex: 0 1 auto; min-width: 0; display: inline-flex; align-items: center; gap: 6px; justify-content: flex-end; font-size: 13px; color: var(--inchiostro-2); text-align: right; }
+/* input[type="text"] pesa più di una classe: per spegnere la cornice del
+   campo dentro una riga serve il tag davanti alla classe */
+input.sc-inline, select.sc-inline, input[type="date"].sc-inline {
+  border: none; background: none; box-shadow: none; padding: 0 2px; width: auto; max-width: 100%;
+  font-size: 13px; text-align: right; color: var(--inchiostro-2); min-height: 32px;
+}
+input.sc-inline:focus, select.sc-inline:focus, input[type="date"].sc-inline:focus {
+  box-shadow: none; border: none; color: var(--inchiostro-1); outline: 2px solid var(--accento); outline-offset: 2px; border-radius: var(--r-1);
+}
+select.sc-inline { background-image: none; padding-right: 2px; }
+.sc-si { color: var(--ok-pieno); }
+/* il campo data che sta dietro la riga: si apre col tocco sulla riga.
+   Deve sparire davvero, tag e classe insieme: con la sola classe le regole
+   dei campi (44px di altezza col dito) lo rimettevano in mezzo alla riga
+   come una lineetta di due pixel. */
+input.sc-nascosta {
+  position: absolute; width: 1px; height: 1px; min-height: 0;
+  padding: 0; border: 0; box-shadow: none; opacity: 0; pointer-events: none;
+  clip-path: inset(50%);
+}
+.sc-tocca { cursor: pointer; transition: background var(--t-veloce); }
+.sc-tocca:hover { background: color-mix(in srgb, var(--inchiostro-1) 4%, transparent); }
+.sc-pericolo .sc-eti { color: var(--critico-testo); }
+.sc-pericolo .sc-eti .ico { color: var(--critico-testo); }
+.sc-riga-alta { flex-wrap: wrap; }
+.sc-riga-alta .sc-val { flex: 1 1 100%; justify-content: flex-start; }
+/* la riga per aggiungere un passo: ultima della lista, senza cornice */
+.sc-agg { gap: 8px; }
+.sc-agg input { flex: 1; min-width: 0; border: none; background: none; box-shadow: none; padding: 0; font-size: 13.5px; }
+.sc-agg input:focus { box-shadow: none; }
 .sc-passo .lista-tit { font-weight: 550; }
+@media (pointer: coarse) {
+  input.sc-inline, select.sc-inline { min-height: 44px; }
+  .sc-riga { min-height: 56px; }
+}
 
 
 .conta { font-size: 12px; font-weight: 800; color: var(--accento-ink); background: var(--accento-pieno); border-radius: var(--r-tondo); padding: 1px 9px; vertical-align: 2px; font-variant-numeric: tabular-nums; }
@@ -1816,11 +1870,13 @@ label.campo {
   transition: border-color var(--t-veloce), box-shadow var(--t-veloce);
 }
 .agg-riga:focus-within { border-color: var(--accento); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accento) 16%, transparent); }
-.agg-testo {
+/* tag + classe: `input[type="text"]` pesa più di una classe sola, e senza il
+   tag il campo si teneva la sua cornice DENTRO la cornice della riga */
+input.agg-testo {
   flex: 1; min-width: 0; border: none; background: none; box-shadow: none;
   padding: 8px 10px; font-size: 14px; font-weight: 550;
 }
-.agg-testo:focus { box-shadow: none; }
+input.agg-testo:focus { box-shadow: none; }
 /* Il tasto resta visibile anche a campo vuoto: al dito serve un bersaglio,
    e su un telefono non c'è nessun tasto Invio a portata di mano. */
 .agg-ok { flex: none; white-space: nowrap; }
@@ -1832,10 +1888,13 @@ label.campo {
 .agg-eti { font-size: 11.5px; font-weight: 750; color: var(--inchiostro-2); text-transform: uppercase; letter-spacing: .05em; }
 .agg-nota { font-size: 11.5px; color: var(--inchiostro-muto); }
 .agg-quando, .agg-giorni { display: flex; gap: 6px; flex-wrap: wrap; }
+.agg-opz { align-items: center; }
 .agg-ora { display: inline-flex; align-items: center; gap: 7px; }
 .agg-ora .tl-time { width: auto; }
 .agg-area { display: inline-flex; align-items: center; gap: 7px; }
 .agg-area select { width: auto; max-width: 170px; }
+/* l'area sta sulla riga delle pastiglie, non su una riga tutta sua */
+select.agg-sel-area { width: auto; max-width: 190px; flex: 0 1 auto; font-size: 13px; }
 @media (pointer: coarse) {
   .agg-testo { padding: 10px; }
   .agg-ok { min-height: 38px; }

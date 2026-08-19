@@ -65,6 +65,8 @@
     /* imbuto: «guarda solo…». Tre linee che si restringono e una goccia
        sotto — la stessa idea del filtro di Promemoria, disegnata col tratto
        delle altre icone. */
+    /* lente: la ricerca aveva l'icona del bersaglio, che vuol dire un'altra cosa */
+    lente: '<circle cx="11" cy="11" r="6.5"/><path d="M15.8 15.8L21 21"/>',
     imbuto: '<path d="M4 5h16l-6 7v5.5l-4 2.5V12L4 5z"/>',
     lista: '<path d="M9 6.5h11M9 12h11M9 17.5h11"/><path d="M4.6 6.5l.9.9 1.6-1.9M4.6 12l.9.9 1.6-1.9M4.6 17.5l.9.9 1.6-1.9"/>',
     dots: '<circle cx="5.2" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="18.8" cy="12" r="1.5" fill="currentColor" stroke="none"/>',

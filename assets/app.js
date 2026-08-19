@@ -481,6 +481,35 @@
     if (giaAperto) { if ($sheetPanel) { $sheetPanel.scrollTop = 0; $sheetPanel.focus({ preventScroll: true }); } }
     else entraFuoco($sheetPanel);
   }
+  /* Il nome di una cosa si cambia dove lo si legge: nel titolo del
+     pannello. Prima c'era una riga «Nome» con dentro un campo, cioè lo
+     stesso testo scritto due volte a tre centimetri di distanza. */
+  function titoloSheetModificabile(valore, onCambio) {
+    var t = document.getElementById('sheet-titolo');
+    if (!t) return;
+    t.innerHTML = '';
+    /* una casella di testo, non un campo a riga sola: i nomi lunghi devono
+       andare a capo come faceva il titolo, non scomparire a destra */
+    var inp = document.createElement('textarea');
+    inp.className = 'sheet-titolo-inp';
+    inp.rows = 1;
+    inp.value = valore;
+    inp.setAttribute('aria-label', 'Nome');
+    t.appendChild(inp);
+    function adatta() { inp.style.height = 'auto'; inp.style.height = inp.scrollHeight + 'px'; }
+    adatta();
+    inp.addEventListener('input', adatta);
+    inp.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); inp.blur(); } });
+    inp.addEventListener('change', function () {
+      var v = inp.value.replace(/\s+/g, ' ').trim();
+      if (!v) { inp.value = valore; adatta(); return; }
+      valore = v;
+      inp.value = v;
+      adatta();
+      onCambio(v);
+    });
+  }
+
   function chiudiSheet() {
     $sheet.hidden = true; wireSheet = null;
     if ($sheetPanel) $sheetPanel.classList.remove('sheet-largo');
@@ -3753,15 +3782,15 @@
     /* ---------- Da fare: una lista, una fila di filtri ---------- */
     var MURO = 12;
 
+    /* Le opzioni compaiono mentre scrivi, su una riga sola: prima c'era
+       «QUANDO?» sopra le pastiglie e «in» davanti all'area — due etichette
+       per due cose che si capiscono da sole. */
     function opzDaFare() {
       var oggiK = LM.todayKey();
-      return '<span class="agg-eti">Quando?</span>' +
-        '<div class="agg-quando">' +
-        '<button type="button" class="q-chip" data-nuovoq="' + oggiK + '">Oggi</button>' +
+      return '<button type="button" class="q-chip" data-nuovoq="' + oggiK + '">Oggi</button>' +
         '<button type="button" class="q-chip" data-nuovoq="' + LM.addDays(oggiK, 1) + '">Domani</button>' +
-        '<button type="button" class="q-chip on" data-nuovoq="">Poi, senza data</button>' +
-        '</div>' +
-        '<label class="agg-area"><span class="agg-eti">in</span>' + selectAree('agg-bk-area', areaFiltro() || 'altro') + '</label>';
+        '<button type="button" class="q-chip on" data-nuovoq="">Senza data</button>' +
+        selectAree('agg-bk-area', areaFiltro() || 'altro', 'Area', 'agg-sel-area');
     }
 
     function wireAggiunta(box) {
@@ -3802,10 +3831,9 @@
       var nProg = st.backlog.filter(function (b) { return b.steps && b.steps.length; }).length;
 
       if (!totale) {
-        box.innerHTML = '<div class="card">' +
-          rigaAggiunta('agg-bk', 'Aggiungi una cosa da fare…', opzDaFare()) +
-          '<div class="vuoto" style="padding:18px 8px 6px">' + illoInbox() + '<b>Nessuna attività.</b><br>Aggiungine una qui sopra' +
-          (st.inbox.length ? ', o sistema le note in «Da sistemare».' : '.') + '</div></div>';
+        box.innerHTML = rigaAggiunta('agg-bk', 'Aggiungi una cosa da fare…', opzDaFare()) +
+          '<div class="vuoto" style="padding:22px 8px 6px">' + illoInbox() + '<b>Nessuna attività.</b><br>Aggiungine una qui sopra' +
+          (st.inbox.length ? ', o sistema le note in «Da sistemare».' : '.') + '</div>';
         wireAggiunta(box);
         return;
       }
@@ -3816,17 +3844,25 @@
          diventavano cinque righe: duecento pixel di filtri sopra la cosa che
          si è venuti a leggere. Il filtro si cambia di rado; l'ordine per
          importanza è la strada principale. */
+      /* Scrivere una cosa nuova e cercarne una vecchia sono due lavori
+         opposti, e prima erano due campi identici affiancati dentro la
+         stessa card, uno sopra l'altro nella stessa cornice. Adesso: il
+         campo per aggiungere sta da solo in cima (è un'azione), e sopra la
+         lista c'è una barra sottile con la lente e il filtro (sono modi di
+         guardare quello che c'è già). Nessuna card intorno: una cornice in
+         meno per ogni cosa. */
       var cerca = (totale >= 10 || attQuery)
-        ? '<div class="att-cerca">' + ICO('target', 14) + '<input type="text" id="att-q" placeholder="Cerca un’attività…" value="' + esc(attQuery) + '" aria-label="Cerca"></div>'
+        ? '<label class="att-cerca">' + ICO('lente', 15) +
+          '<input type="text" id="att-q" placeholder="Cerca…" value="' + esc(attQuery) + '" aria-label="Cerca un’attività"></label>'
         : '';
 
-      box.innerHTML = '<div class="card att-testa">' +
+      box.innerHTML =
         rigaAggiunta('agg-bk', 'Aggiungi una cosa da fare…', opzDaFare()) +
-        '<div class="att-strumenti">' + cerca +
+        '<div class="att-barra">' + cerca +
         '<button class="att-filtro' + (attArea === 'tutte' ? '' : ' on') + '" id="att-filtro" aria-haspopup="dialog">' +
         ICO('imbuto', 14) + '<span>' + esc(nomeFiltro()) + '</span>' +
         '<span class="lista-chev">' + ICO('chevronGiu', 14) + '</span></button>' +
-        '</div></div>' +
+        '</div>' +
         '<div id="dafare-lista"></div>';
       wireAggiunta(box);
       var q = box.querySelector('#att-q');
@@ -4026,9 +4062,17 @@
         var isProg = !!(b.steps && b.steps.length);
         var oggi = LM.todayKey();
         var av = isProg ? LM.avanzamentoProgetto(b) : null;
-        var apertiOra = (b.steps || []).filter(function (st) { return !st.done; }).length;
+        var aperti = (b.steps || []).filter(function (st) { return !st.done; }).length;
+        var ar = areaById(b.areaId);
 
         function gChip(k, et) { return '<button class="q-chip" data-quando="' + k + '">' + et + '</button>'; }
+
+        /* una riga per attributo, valore a destra: è la forma degli elenchi
+           di iOS, e sostituisce tre riquadri che contenevano altri riquadri */
+        function riga(eti, valore, attrib, cls) {
+          return '<div class="lista-riga sc-riga' + (cls ? ' ' + cls : '') + '"' + (attrib || '') + '>' +
+            '<span class="sc-eti">' + eti + '</span>' + valore + '</div>';
+        }
 
         var passi = (b.steps || []).map(function (st) {
           var inAg = LM.snapshot().azioni.find(function (a) { return !a.done && a.passoDi && a.passoDi.b === b.id && a.passoDi.s === st.id; });
@@ -4043,48 +4087,60 @@
         }).join('');
 
         return '<div class="sc">' +
+          /* l'azione: una sola, e la pastiglia «Oggi» non la ripete più */
           '<button class="btn btn-primario btn-grande sc-primaria" id="sc-oggi">' + ICO('arrowRight', 16) + ' ' +
           (isProg ? 'Prossimo passo in Oggi' : 'Portala in Oggi') + '</button>' +
 
-          '<div class="lista-eti">Quando farla</div>' +
-          '<div class="sc-gruppo">' +
-          '<div class="q-chips">' + gChip(oggi, 'Oggi') + gChip(LM.addDays(oggi, 1), 'Domani') +
+          '<div class="lista-eti">Se non oggi</div>' +
+          '<div class="q-chips sc-quando">' +
+          gChip(LM.addDays(oggi, 1), 'Domani') +
           gChip(LM.addDays(oggi, 2), etichettaGiorno(LM.addDays(oggi, 2)).split(' ')[0]) +
-          gChip(LM.addDays(oggi, 7), 'Tra una settimana') + '</div>' +
-          '<label class="sc-campo"><span>un altro giorno</span>' +
-          '<input type="date" id="sc-quando" min="' + oggi + '"></label>' +
-          (isProg && apertiOra > 1
-            ? '<div class="sc-nota">Un progetto non sta in un giorno solo: puoi spalmare i passi aperti.</div>' +
-              '<div class="q-chips">' +
-              '<button class="q-chip" data-distrib="1">Uno al giorno</button>' +
-              '<button class="q-chip" data-distrib="2">Uno ogni 2 giorni</button>' +
-              '<button class="q-chip" data-distrib="7">Uno a settimana</button></div>'
-            : '') +
-          '</div>' +
-
-          '<div class="lista-eti">Entro quando</div>' +
-          '<div class="sc-gruppo">' +
-          '<label class="sc-campo"><span>scadenza</span>' +
-          '<input type="date" id="sc-scad"' + (b.scadenza ? ' value="' + b.scadenza + '"' : '') + '></label>' +
-          (b.scadenza ? '<button class="btn btn-mini btn-ghost" id="sc-scad-x">' + ICO('x', 13) + ' Togli la scadenza</button>' : '') +
-          '<div class="sc-nota">È solo un conto alla rovescia: non la mette in agenda.</div>' +
+          gChip(LM.addDays(oggi, 7), 'Tra una settimana') +
+          '<label class="q-chip q-chip-data">' + ICO('calendar', 13) + ' <span>Un altro giorno</span>' +
+          '<input type="date" id="sc-quando" min="' + oggi + '" aria-label="Un altro giorno"></label>' +
           '</div>' +
 
           '<div class="lista-eti">Passi' + (isProg ? ' <span>' + av.fatti + ' di ' + av.tot + '</span>' : '') + '</div>' +
-          (isProg ? '<div class="lista">' + passi + '</div>' : '') +
-          '<form class="sc-agg" id="sc-passo-add">' +
+          '<div class="lista">' + passi +
+          '<form class="lista-riga sc-agg" id="sc-passo-add">' +
+          '<span class="lista-vuoto">' + ICO('plus', 15) + '</span>' +
           '<input type="text" placeholder="' + (isProg ? 'Aggiungi un passo…' : 'Dividila in passi: scrivi il primo…') + '" aria-label="Aggiungi un passo">' +
-          '<button class="btn btn-mini" type="submit">' + ICO('plus', 13) + ' Aggiungi</button></form>' +
+          '<button class="btn btn-mini" type="submit">Aggiungi</button></form>' +
+          (isProg && aperti > 1
+            ? riga('Spalma i passi aperti',
+              '<span class="sc-val q-chips">' +
+              '<button class="q-chip" data-distrib="1">ogni giorno</button>' +
+              '<button class="q-chip" data-distrib="2">ogni 2</button>' +
+              '<button class="q-chip" data-distrib="7">ogni settimana</button></span>', '', 'sc-riga-alta')
+            : '') +
+          '</div>' +
 
-          '<div class="lista-eti">Sistemazione</div>' +
-          '<div class="sc-gruppo">' +
-          '<label class="sc-campo"><span>nome</span><input type="text" id="sc-nome" value="' + esc(b.testo) + '"></label>' +
-          '<label class="sc-campo"><span>area</span>' + selectAree('sc-area', b.areaId) + '</label>' +
-          '<div class="sc-azioni">' +
-          '<button class="btn btn-mini' + (b.pin ? ' on' : '') + '" id="sc-pin">' + ICO('star', 13) + ' ' + (b.pin ? 'Togli dalla cima' : 'Tieni in cima') + '</button>' +
-          '<button class="btn btn-mini" id="sc-abitudine">' + ICO('refresh', 13) + ' Diventa un’abitudine</button>' +
-          '<button class="btn btn-mini btn-ghost imp-pericolo" id="sc-del">' + ICO('trash', 13) + ' Elimina</button>' +
-          '</div></div>' +
+          '<div class="lista-eti">Dettagli</div>' +
+          '<div class="lista">' +
+          riga('Area', '<span class="sc-val">' + selectAree('sc-area', b.areaId, 'Area', 'sc-inline') + '</span>') +
+          /* senza scadenza la riga dice «nessuna» e il campo compare al
+             tocco: un «mm/gg/aaaa» vuoto in una riga di valori è l'unica
+             cosa che si legge, e non dice niente */
+          (b.scadenza
+            ? riga('Scadenza', '<span class="sc-val">' + LM.fmtShort(b.scadenza) + ' · ' + scadInfo(b.scadenza).testo +
+              '</span><button class="icona-btn" id="sc-scad-x" title="Togli la scadenza" aria-label="Togli la scadenza">' + ICO('x', 13) + '</button>' +
+              '<input type="date" class="sc-nascosta" id="sc-scad" value="' + b.scadenza + '" aria-label="Scadenza">', ' data-apri-scad="1"', 'sc-tocca')
+            : riga('Scadenza', '<span class="sc-val">nessuna</span>' +
+              '<span class="lista-chev">' + ICO('chevronGiu', 15) + '</span>' +
+              '<input type="date" class="sc-nascosta" id="sc-scad" aria-label="Scadenza">', ' data-apri-scad="1"', 'sc-tocca')) +
+          '<button class="lista-riga sc-riga sc-tocca" id="sc-pin">' +
+          '<span class="sc-eti">Tieni in cima</span>' +
+          '<span class="sc-val">' + (b.pin ? ICO('check', 14, 'sc-si') + ' sì' : 'no') + '</span></button>' +
+          '</div>' +
+          '<p class="lista-nota">«Se non oggi» la mette tra le cose di quel giorno. La scadenza è solo un conto alla rovescia: non la mette in agenda.</p>' +
+
+          '<div class="lista mt">' +
+          '<button class="lista-riga sc-riga sc-tocca" id="sc-abitudine">' +
+          '<span class="sc-eti">' + ICO('refresh', 14) + ' Diventa un’abitudine</span>' +
+          '<span class="lista-chev">' + ICO('chevronGiu', 15) + '</span></button>' +
+          '<button class="lista-riga sc-riga sc-tocca sc-pericolo" id="sc-del">' +
+          '<span class="sc-eti">' + ICO('trash', 14) + ' Elimina l’attività</span></button>' +
+          '</div>' +
           '</div>';
       }
 
@@ -4112,7 +4168,8 @@
         root.querySelectorAll('[data-quando]').forEach(function (c) {
           c.addEventListener('click', function () { pianifica(c.getAttribute('data-quando')); });
         });
-        root.querySelector('#sc-quando').addEventListener('change', function () { pianifica(this.value); });
+        var quandoData = root.querySelector('#sc-quando');
+        quandoData.addEventListener('change', function () { pianifica(this.value); });
         root.querySelectorAll('[data-distrib]').forEach(function (c) {
           c.addEventListener('click', function () {
             var n = LM.distribuisciPassi(b.id, LM.todayKey(), +c.getAttribute('data-distrib'));
@@ -4120,9 +4177,18 @@
             chiudiSheet(); aggiornaNav(); ridisegna();
           });
         });
-        root.querySelector('#sc-scad').addEventListener('change', function () {
+        var scad = root.querySelector('#sc-scad');
+        scad.addEventListener('change', function () {
           LM.impostaScadenzaBacklog(b.id, this.value || null); ridisegnaScheda();
         });
+        /* la riga è il bersaglio: tocca e si apre il calendario del sistema */
+        var rigaScad = root.querySelector('[data-apri-scad]');
+        if (rigaScad) rigaScad.addEventListener('click', function (ev) {
+          if (ev.target.closest('#sc-scad-x')) return;
+          if (scad.showPicker) { try { scad.showPicker(); return; } catch (e) { void e; } }
+          scad.focus();
+        });
+        /* «spalma» sta in una riga di attributo, non più in un cassetto */
         var sx = root.querySelector('#sc-scad-x');
         if (sx) sx.addEventListener('click', function () { LM.impostaScadenzaBacklog(b.id, null); ridisegnaScheda(); });
 
@@ -4156,20 +4222,10 @@
           if (nuovo) nuovo.focus({ preventScroll: true });
         });
 
-        var nome = root.querySelector('#sc-nome');
-        nome.addEventListener('change', function () {
-          var v = nome.value.trim();
-          if (!v) { nome.value = b.testo; return; }
-          LM.modificaBacklog(b.id, v);
-          var tit = document.getElementById('sheet-titolo');
-          if (tit) tit.textContent = v;
-          ridisegna();
-        });
+
         root.querySelector('#sc-area').addEventListener('change', function () { LM.cambiaAreaBacklog(b.id, this.value); ridisegna(); });
         root.querySelector('#sc-pin').addEventListener('click', function () {
           LM.appuntaBacklog(b.id);
-          toast(LM.load().backlog.some(function (x) { return x.id === b.id && x.pin; })
-            ? 'Tenuta in cima finché non la togli.' : 'Non più in cima.', 0, 'star');
           ridisegnaScheda();
         });
         root.querySelector('#sc-abitudine').addEventListener('click', function () { apriDaAbitudine(trova()); });
@@ -4179,6 +4235,7 @@
       }
 
       apriSheet(trova().testo, corpoHtml(), collega);
+      titoloSheetModificabile(trova().testo, function (v) { LM.modificaBacklog(id, v); ridisegna(); });
     }
 
     /* Quando fare UN passo: gli stessi tasti-giorno della scheda. */
