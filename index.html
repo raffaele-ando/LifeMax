@@ -55,7 +55,10 @@
 <!-- pannello (bottom sheet su mobile, modale al centro su desktop) -->
 <div class="sheet-overlay" id="sheet-overlay" hidden>
   <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-titolo" tabindex="-1">
-    <div class="sheet-maniglia" aria-hidden="true"></div>
+    <!-- una via d'uscita sola: col dito la maniglia (si trascina giù o si
+         tocca), col mouse la x. Averle entrambe insieme erano due comandi
+         per la stessa cosa nello stesso angolo. -->
+    <button class="sheet-maniglia" id="sheet-maniglia" aria-label="Chiudi"></button>
     <div class="sheet-testa"><h2 id="sheet-titolo"></h2><button class="sheet-chiudi" id="sheet-chiudi" aria-label="Chiudi"></button></div>
     <div class="sheet-corpo" id="sheet-corpo"></div>
   </div>

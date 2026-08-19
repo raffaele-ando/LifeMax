@@ -341,6 +341,9 @@
   var $sheet = document.getElementById('sheet-overlay');
   document.getElementById('sheet-chiudi').innerHTML = ICO('x', 18);
   document.getElementById('sheet-chiudi').addEventListener('click', chiudiSheet);
+  /* la maniglia è il comando di chiusura col dito: si trascina giù, e se la
+     si tocca chiude. Non è una decorazione accanto a una x. */
+  document.getElementById('sheet-maniglia').addEventListener('click', chiudiSheet);
   $sheet.addEventListener('click', function (e) { if (e.target === $sheet) chiudiSheet(); });
 
   var wireSheet = null;
@@ -433,7 +436,9 @@
     function partenza(e) {
       if (window.innerWidth > 560) return;                 /* solo il foglio dal basso */
       if (!e.target.closest('.sheet-maniglia, .sheet-testa')) return;
-      if (e.target.closest('button')) return;              /* la x resta la x */
+      /* la maniglia è un pulsante ed è anche la presa del gesto; gli altri
+         pulsanti della testata (la x) restano pulsanti */
+      if (e.target.closest('button') && !e.target.closest('.sheet-maniglia')) return;
       y0 = e.clientY; dy = 0; t0 = e.timeStamp;
       $sheetPanel.style.transition = 'none';
       $sheetPanel.setPointerCapture && $sheetPanel.setPointerCapture(e.pointerId);
@@ -3184,19 +3189,19 @@
     var st = statoAbitudineOggi(h);
     var sotto = sottoAbitudine(h, previstaOggi);
     var ar = areaById(h.areaId);
-    return '<div class="ab-riga' + (st.fatta ? ' fatta' : '') + (st.saltata ? ' saltata' : '') +
+    return '<div class="lista-riga ab-riga' + (st.fatta ? ' fatta' : '') + (st.saltata ? ' saltata' : '') +
       '" data-abid="' + h.id + '" style="--c-area:' + LM.coloreArea(ar) + '">' +
       (st.saltata
-        ? '<span class="ab-salto" aria-hidden="true">' + ICO('moon', 14) + '</span>'
-        : '<button class="spunta" data-toggle-ab="' + h.id + '" aria-pressed="' + (st.fatta ? 'true' : 'false') +
+        ? '<span class="lista-vuoto" aria-hidden="true">' + ICO('moon', 14) + '</span>'
+        : '<button class="lista-azione spunta" data-toggle-ab="' + h.id + '" aria-pressed="' + (st.fatta ? 'true' : 'false') +
           '" aria-label="' + esc(h.testo) + (st.fatta ? ', fatta oggi' : ', segna come fatta') + '">' + ICO('check', 13) + '</button>') +
-      '<button class="ab-apri" data-abdett="' + h.id + '" aria-label="Apri ' + esc(h.testo) + '">' +
-      '<span class="ab-testo"><span class="ab-nome">' + esc(h.testo) + '</span>' +
-      (sotto ? '<span class="ab-sotto' + (sotto.cls ? ' ' + sotto.cls : '') + '">' +
+      '<button class="lista-apri" data-abdett="' + h.id + '" aria-label="Apri ' + esc(h.testo) + '">' +
+      '<span class="lista-corpo"><span class="lista-tit">' + esc(h.testo) + '</span>' +
+      (sotto ? '<span class="lista-sub' + (sotto.cls ? ' ' + sotto.cls : '') + '">' +
         (sotto.ico ? ICO(sotto.ico, 11, 'fiamma') + ' ' : '') + esc(sotto.testo) + '</span>' : '') + '</span>' +
-      (h.ora ? '<span class="ab-ora">' + esc(h.ora) + '</span>' : '') +
-      '<span class="tag-area" title="' + esc(ar.nome) + '">' + ICO(ar.icona, 14) + '</span>' +
-      '<span class="ab-chevron">' + ICO('chevronGiu', 15) + '</span></button>' +
+      (h.ora ? '<span class="lista-val">' + esc(h.ora) + '</span>' : '') +
+      '<span class="tit-area" style="--c-area:' + LM.coloreArea(ar) + '" title="' + esc(ar.nome) + '">' + ICO(ar.icona, 13) + '</span>' +
+      '<span class="lista-chev">' + ICO('chevronGiu', 15) + '</span></button>' +
       '</div>';
   }
 
@@ -3243,13 +3248,13 @@
           'Le azioni che vuoi ripetere. Ogni volta che le fai, la serie cresce.')) +
       prog +
       (oggi.length
-        ? '<div class="ab-eti">Oggi</div><div class="ab-gruppo">' +
+        ? '<div class="lista-eti">Oggi</div><div class="lista">' +
           oggi.map(function (h) { return rigaAbitudine(h, true); }).join('') + '</div>'
         : (s.abitudini.length
           ? '<div class="vuoto" style="padding:14px 8px">Per oggi non è prevista nessuna abitudine.</div>'
           : '<div class="vuoto" style="padding:14px 8px">Non ne hai ancora. Scrivine una qui sotto: «leggere 20 minuti», «camminare», quello che vuoi ripetere.</div>')) +
       (altre.length
-        ? '<div class="ab-eti">Le altre</div><div class="ab-gruppo">' +
+        ? '<div class="lista-eti">Le altre</div><div class="lista">' +
           altre.map(function (h) { return rigaAbitudine(h, false); }).join('') + '</div>'
         : '') +
       '<div class="ab-nuova">' +
@@ -3602,47 +3607,64 @@
     });
   }
 
-  /* ============================================================
-     VISTA: ATTIVITÀ (cattura da smistare + backlog per area)
-     ============================================================ */
+  var backlogAperte = {};   // { __tutte, __parcheggio }
+  var attTab = null;        // 'sistemare' | 'dafare'
+  var attTabMostrata = '';  // per animare solo al cambio di scheda
+  var attArea = 'tutte';    // il filtro: 'tutte' | 'data' | 'progetti' | id area
+  var attQuery = '';        // ricerca testo
 
-  var backlogAperte = {};
-  var backlogEditId = null;
-  var progettiAperti = {};
-  var attTab = null;      // 'sistemare' | 'dafare' | 'arrivo' | 'progetti'
-  var attTabMostrata = ''; // per animare solo al cambio di scheda
-  var attArea = 'tutte';  // filtro area nel tab "Da fare"
-  var attQuery = '';      // ricerca testo
+  /* ============================================================
+     VISTA: ATTIVITÀ
+     Rifatta partendo da cosa si viene a fare qui, non da cosa si può
+     mostrare. I lavori sono due: svuotare la coda delle note appena
+     catturate, e scegliere cosa fare da una lista. Tutto il resto — le
+     scadenze, i progetti, le aree — non è un altro posto: è un modo di
+     guardare la stessa lista.
+
+     Com'era: quattro linguette, di cui due («In arrivo», «Progetti») erano
+     sottoinsiemi della terza disegnati da funzioni diverse, con impaginati
+     diversi. Dentro, altri cinque modi di tagliare la stessa lista:
+     pastiglie delle aree, un interruttore per le aree vuote, la ricerca,
+     tre fasce di importanza, due tasti «mostra il resto». Fino a diciotto
+     comandi prima di vedere un'attività. E la stessa riga aveva tre
+     densità diverse a seconda della fascia, con una striscia di colore sul
+     fianco che ripeteva un'informazione già data dall'icona.
+
+     Com'è: due destinazioni e UNA fila di filtri, dove «Con una data» e
+     «Progetti» stanno accanto alle aree. Una sola riga, uguale in ogni
+     elenco dell'app: comando a sinistra, titolo, valore a destra,
+     freccina. Toccando la riga si apre la sua scheda, che è l'unico posto
+     dove si sistemano le cose (giorno, scadenza, passi, area, nome).
+     ============================================================ */
 
   function vistaInbox() {
     var s = LM.load();
     var nInbox = s.inbox.length;
-    var nProg = s.backlog.filter(function (b) { return b.steps && b.steps.length; }).length;
-    var nArrivo = LM.scadenzeVicine(14).length;
-    if (!attTab || (attTab === 'sistemare' && !nInbox)) attTab = nInbox ? 'sistemare' : 'dafare';
+    if (attTab !== 'sistemare' || !nInbox) attTab = nInbox && attTab !== 'dafare' ? 'sistemare' : 'dafare';
+    if (!nInbox) attTab = 'dafare';
 
     var html = topbar('Attività', 'Tutto quello che hai da fare.');
-    /* Le quattro sezioni stanno in quattro colonne uguali. Prima erano quattro
-       pastiglie in una riga che scorreva di lato: servivano 519px e su un
-       telefono ce ne sono 356, quindi «In arrivo» e «Progetti» erano fuori
-       dallo schermo — due sezioni su quattro invisibili, dietro uno
-       scorrimento che non si vede che c'è. Quattro colonne ci stanno per
-       costruzione, a qualsiasi larghezza. */
+    /* Due linguette, e la prima esiste solo finché c'è una coda da
+       svuotare: una destinazione sempre a zero è una parola in più da
+       scartare ogni volta. */
     function tb(id, ico, et, n) {
       return '<button data-att="' + id + '" class="' + (attTab === id ? 'attivo' : '') + '">' +
         '<span class="seg-ico">' + ICO(ico, 16) + '</span>' +
         '<span class="seg-eti">' + et + '</span>' +
         (n ? '<span class="att-badge">' + n + '</span>' : '') + '</button>';
     }
-    html += '<div class="segmenti sez-nav tabs-fisse att-tabs" id="att-tabs">' +
-      tb('sistemare', 'inbox', 'Sistemare', nInbox) + tb('dafare', 'lista', 'Da fare', s.backlog.length) +
-      tb('arrivo', 'calendar', 'In arrivo', nArrivo) + tb('progetti', 'rocket', 'Progetti', nProg) + '</div>' +
-      '<div id="att-corpo"></div>';
+    if (nInbox) {
+      html += '<div class="segmenti sez-nav tabs-fisse tabs-due att-tabs" id="att-tabs">' +
+        tb('sistemare', 'inbox', 'Da sistemare', nInbox) +
+        tb('dafare', 'lista', 'Da fare', s.backlog.length) + '</div>';
+    }
+    html += '<div id="att-corpo"></div>';
     $vista.innerHTML = html;
-    document.getElementById('att-tabs').querySelectorAll('[data-att]').forEach(function (b) {
+    var tabs = document.getElementById('att-tabs');
+    if (tabs) tabs.querySelectorAll('[data-att]').forEach(function (b) {
       b.addEventListener('click', function () {
         attTab = b.getAttribute('data-att');
-        document.getElementById('att-tabs').querySelectorAll('[data-att]').forEach(function (x) { x.classList.toggle('attivo', x.getAttribute('data-att') === attTab); });
+        tabs.querySelectorAll('[data-att]').forEach(function (x) { x.classList.toggle('attivo', x.getAttribute('data-att') === attTab); });
         ridisegna();
       });
     });
@@ -3650,215 +3672,530 @@
 
     function ridisegna() {
       var c = document.getElementById('att-corpo');
+      if (!c) return;
       var cambio = attTab !== attTabMostrata;
       var scrollPrima = cambio ? 0 : (window.scrollY || document.documentElement.scrollTop || 0);
-      if (attTab === 'sistemare') disegnaSmista(c);
-      else if (attTab === 'dafare') disegnaDaFare(c);
-      else if (attTab === 'arrivo') disegnaArrivo(c);
-      else disegnaProgetti(c);
+      if (attTab === 'sistemare' && LM.load().inbox.length) disegnaSmista(c);
+      else disegnaDaFare(c);
       attTabMostrata = attTab;
       if (cambio) animaIngresso(c);
       else if (scrollPrima) window.scrollTo(0, scrollPrima);
     }
 
-    /* --- In arrivo: attività con una data vicina o già passata --- */
-    function disegnaArrivo(box) {
-      var vic = LM.scadenzeVicine(60);
-      if (!vic.length) {
-        box.innerHTML = '<div class="card"><div class="vuoto" style="padding:22px 8px">' + ICO('calendar', 28) + '<br><b>Niente con una data.</b><br>Aggiungi una scadenza a un’attività e comparirà qui, con i giorni che restano.</div></div>';
-        return;
-      }
-      /* Stesse card di «Da fare», non una riga tutta sua. Prima questa
-         sezione aveva la sua grammatica: pastiglia della scadenza, titolo,
-         area, pulsante, «⋯», tutto su una riga sola — e con badge e pulsanti
-         a larghezza fissa l'unica cosa che si stringeva era il titolo: su un
-         telefono gli restavano 89px, su uno stretto 19. Ora il titolo ha la
-         sua riga e la scadenza sta nella riga sotto, come altrove. */
-      box.innerHTML = '<div class="card"><div class="sotto" style="margin-top:0">Con una data, dalla più vicina.</div>' +
-        '<div class="backlog-piatto">' + vic.map(function (b, i) {
-          return bkItemHtml(b, { livello: i === 0 ? 'ora' : 'poi', primo: i === 0, da: 'scadenza' });
-        }).join('') + '</div></div>';
-      wireBk(box);
-    }
-
-    /* --- Da sistemare: le catture grezze --- */
+    /* ---------- Da sistemare: le note appena catturate ---------- */
     function disegnaSmista(box) {
       var st = LM.load();
-      if (!st.inbox.length) {
-        box.innerHTML = '<div class="card"><div class="vuoto" style="padding:22px 8px">' + illoInbox() + '<b>Niente da sistemare.</b><br>Premi <kbd>C</kbd> per aggiungere una nota: la ritrovi qui.</div></div>';
-        return;
-      }
-      box.innerHTML = '<div class="card"><div class="sotto" style="margin-top:0">Per ognuna: <b>Oggi</b>, <b>Da fare</b> o <b>Scarta</b>.</div>' +
-        '<div class="griglia" id="lista-inbox" style="gap:9px"></div></div>';
-      var lista = document.getElementById('lista-inbox');
-      lista.innerHTML = st.inbox.map(function (el, i) {
-        var quando = new Date(el.creata).toLocaleString('it-IT', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
-        var inMod = el.id === inboxEditId;
-        var contenuto = inMod
-          ? '<form class="inbox-modifica" data-edit="' + el.id + '"><input type="text" class="inbox-input" value="' + esc(el.testo) + '" aria-label="Modifica il testo">' +
-            '<button class="btn btn-mini btn-primario" type="submit">' + ICO('save', 13) + ' Salva</button>' +
-            '<button class="btn btn-mini btn-ghost" type="button" data-annulla="1">Annulla</button></form>'
-          : '<div class="inbox-testo-riga"><div class="testo">' + esc(el.testo) + '</div>' +
-            '<button class="inbox-edit" data-modifica="' + el.id + '" title="Modifica" aria-label="Modifica">' + ICO('pencil', 15) + '</button></div>' +
-            /* Quando e area sulla stessa riga di servizio: l'area era il
-               comando più grande della card (200x43) pur essendo la decisione
-               che conta meno — si finiva per guardarla per prima ogni volta. */
-            '<div class="inbox-meta"><span class="quando">' + quando + '</span>' +
-            selectAree('sel-' + el.id, null, 'Area', 'sel-compatto') + '</div>' +
-            /* Le tre scelte in tre colonne uguali, sempre nello stesso ordine:
-               prima erano quattro comandi che andavano a capo dove capitava,
-               con «Oggi» in alto a destra e «Scarta» in basso a sinistra. */
-            '<div class="inbox-scelte">' +
-            /* il colore pieno solo sulla prima: si sistema una cosa per volta,
-               e tre pulsanti pieni in colonna tornano a essere rumore */
-            '<button class="btn btn-mini' + (i === 0 ? ' btn-primario' : '') + '" data-fai="azione">' + ICO('arrowRight', 13) + ' Oggi</button>' +
-            '<button class="btn btn-mini" data-fai="backlog">' + ICO('lista', 13) + ' Da fare</button>' +
-            '<button class="btn btn-mini btn-ghost" data-fai="scarta">' + ICO('trash', 13) + ' Scarta</button></div>';
-        return '<div class="riga-inbox" data-id="' + el.id + '" style="--i:' + i + '"><div style="flex:1;min-width:0">' + contenuto + '</div></div>';
-      }).join('');
+      box.innerHTML = '<div class="lista-eti">Da sistemare</div>' +
+        '<div class="lista">' + st.inbox.map(function (el, idx) {
+          var quando = new Date(el.creata).toLocaleString('it-IT', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+          var primo = idx === 0;
+          if (el.id === inboxEditId) {
+            return '<div class="lista-riga sm-riga" data-iid="' + el.id + '">' +
+              '<form class="sm-modifica" data-edit="' + el.id + '">' +
+              '<input type="text" value="' + esc(el.testo) + '" aria-label="Testo della nota">' +
+              '<button class="btn btn-mini btn-primario" type="submit">' + ICO('save', 13) + ' Salva</button>' +
+              '<button class="btn btn-mini btn-ghost" type="button" data-annulla="1">Annulla</button></form></div>';
+          }
+          /* Cosa è, e cosa farne: due blocchi, non cinque righe. Sopra il
+             testo con la matita per correggerlo e, nella riga sotto, quando
+             l'hai scritta e in che area va. Sotto, le tre scelte.
+             Il pulsante pieno è solo sulla prima: sei gradienti uno sotto
+             l'altro non indicano più niente. */
+          return '<div class="lista-riga sm-riga" data-iid="' + el.id + '">' +
+            '<div class="sm-cosa">' +
+            '<button class="sm-testo" data-modifica="' + el.id + '" aria-label="Correggi il testo">' +
+            '<span class="lista-tit">' + esc(el.testo) + '</span></button>' +
+            '<button class="icona-btn" data-modifica="' + el.id + '" title="Correggi il testo" aria-label="Correggi il testo">' + ICO('pencil', 13) + '</button>' +
+            '</div>' +
+            '<div class="lista-sub sm-quando">' + esc(quando) + ' · in ' +
+            selectAree('sel-' + el.id, el.areaSug || 'altro', 'Area', 'sel-compatto') + '</div>' +
+            '<div class="sm-scelte">' +
+            '<button class="btn btn-mini' + (primo ? ' btn-primario' : '') + '" data-fai="azione" data-iid="' + el.id + '">' + ICO('arrowRight', 13) + ' Oggi</button>' +
+            '<button class="btn btn-mini" data-fai="backlog" data-iid="' + el.id + '">' + ICO('lista', 13) + ' Da fare</button>' +
+            '<button class="btn btn-mini btn-ghost" data-fai="scarta" data-iid="' + el.id + '">' + ICO('trash', 13) + ' Scarta</button>' +
+            '</div>' +
+            '</div>';
+        }).join('') + '</div>' +
+        '<p class="lista-nota">Per ognuna: <b>Oggi</b> se la fai adesso, <b>Da fare</b> se la fai più avanti, <b>Scarta</b> se non serve.</p>';
 
-      lista.querySelectorAll('.riga-inbox').forEach(function (riga) {
-        var id = riga.getAttribute('data-id');
-        riga.querySelectorAll('[data-fai]').forEach(function (b) {
-          b.addEventListener('click', function () {
-            var esito = b.getAttribute('data-fai');
-            var area = document.getElementById('sel-' + id).value;
-            if (esito === 'scarta') {
-              /* scartare butta via una nota: per qualche secondo si torna indietro */
-              conAnnulla('Scartato.', 'trash', function () { LM.triageInbox(id, esito, area); aggiornaNav(); ridisegna(); });
-              return;
-            }
-            LM.triageInbox(id, esito, area);
-            toast(esito === 'azione' ? 'Aggiunto alle azioni di oggi.' : 'Aggiunto a «Da fare».', LM.XP_EVENTI.triage,
-              esito === 'azione' ? 'arrowRight' : 'lista');
-            aggiornaNav(); ridisegna();
-          });
+      box.querySelectorAll('[data-fai]').forEach(function (b) {
+        b.addEventListener('click', function () {
+          var id = b.getAttribute('data-iid');
+          var esito = b.getAttribute('data-fai');
+          var sel = document.getElementById('sel-' + id);
+          var area = sel ? sel.value : 'altro';
+          if (esito === 'scarta') {
+            conAnnulla('Scartata.', 'trash', function () { LM.triageInbox(id, esito, area); aggiornaNav(); ridisegna(); });
+            return;
+          }
+          LM.triageInbox(id, esito, area);
+          toast(esito === 'azione' ? 'Messa tra le cose di oggi.' : 'Aggiunta a «Da fare».', LM.XP_EVENTI.triage,
+            esito === 'azione' ? 'arrowRight' : 'lista');
+          aggiornaNav(); ridisegna();
         });
-        var edit = riga.querySelector('[data-modifica]');
-        if (edit) edit.addEventListener('click', function () { inboxEditId = id; ridisegna(); });
-        var form = riga.querySelector('[data-edit]');
-        if (form) {
-          var input = form.querySelector('.inbox-input');
-          setTimeout(function () { input.focus(); input.setSelectionRange(input.value.length, input.value.length); }, 20);
-          form.addEventListener('submit', function (e) { e.preventDefault(); var v = input.value.trim(); if (v) LM.modificaInbox(id, v); inboxEditId = null; ridisegna(); toast('Nota aggiornata.', 0, 'save'); });
-          form.querySelector('[data-annulla]').addEventListener('click', function () { inboxEditId = null; ridisegna(); });
-          input.addEventListener('keydown', function (e) { if (e.key === 'Escape') { inboxEditId = null; ridisegna(); } });
-        }
+      });
+      box.querySelectorAll('[data-modifica]').forEach(function (b) {
+        b.addEventListener('click', function () { inboxEditId = b.getAttribute('data-modifica'); ridisegna(); });
+      });
+      box.querySelectorAll('[data-edit]').forEach(function (form) {
+        var input = form.querySelector('input');
+        setTimeout(function () { input.focus(); input.setSelectionRange(input.value.length, input.value.length); }, 20);
+        form.addEventListener('submit', function (e) {
+          e.preventDefault();
+          var v = input.value.trim();
+          if (v) LM.modificaInbox(form.getAttribute('data-edit'), v);
+          inboxEditId = null; ridisegna();
+        });
+        form.querySelector('[data-annulla]').addEventListener('click', function () { inboxEditId = null; ridisegna(); });
       });
     }
 
-    /* Menu "⋯" di una cosa da fare: le azioni poco frequenti (scadenza, area,
-       passi, rinomina, rimuovi) tolte dalla riga per non affollarla. */
-    function apriBkMenu(b) {
-      var isProg = b.steps && b.steps.length;
-      var oggi = LM.todayKey();
-      /* Il menu era diventato lungo cinque schermate sul telefono. Ora: la cosa
-         che si fa quasi sempre (dare un giorno) è aperta, il resto sta in
-         sezioni che si aprono con un tocco. */
-      function gChip(k, et) { return '<button class="q-chip" data-quando="' + k + '">' + et + '</button>'; }
-      function sez(id, icona, titolo, corpo, aperta) {
-        return '<div class="bk-sez' + (aperta ? ' aperta' : '') + '">' +
-          '<button class="bk-sez-testa" data-sez="' + id + '" aria-expanded="' + (aperta ? 'true' : 'false') + '">' +
-          ICO(icona, 14) + '<span>' + titolo + '</span>' +
-          '<span class="bk-chevron' + (aperta ? ' aperta' : '') + '">' + ICO('chevronGiu', 15) + '</span></button>' +
-          '<div class="bk-sez-corpo"' + (aperta ? '' : ' hidden') + '>' + corpo + '</div></div>';
+    /* ---------- Da fare: una lista, una fila di filtri ---------- */
+    var MURO = 12;
+
+    function opzDaFare() {
+      var oggiK = LM.todayKey();
+      return '<span class="agg-eti">Quando?</span>' +
+        '<div class="agg-quando">' +
+        '<button type="button" class="q-chip" data-nuovoq="' + oggiK + '">Oggi</button>' +
+        '<button type="button" class="q-chip" data-nuovoq="' + LM.addDays(oggiK, 1) + '">Domani</button>' +
+        '<button type="button" class="q-chip on" data-nuovoq="">Poi, senza data</button>' +
+        '</div>' +
+        '<label class="agg-area"><span class="agg-eti">in</span>' + selectAree('agg-bk-area', areaFiltro() || 'altro') + '</label>';
+    }
+
+    function wireAggiunta(box) {
+      wireRigaAggiunta(box, 'agg-bk', function (v, opz) {
+        var sel = opz.querySelector('[data-nuovoq].on');
+        var giorno = sel ? sel.getAttribute('data-nuovoq') : '';
+        var selArea = opz.querySelector('#agg-bk-area');
+        var nb = LM.aggiungiBacklog(v, selArea ? selArea.value : 'altro');
+        if (giorno) {
+          LM.backlogInOggi(nb.id, giorno);
+          toast('«' + v + '» messa ' + etichettaGiorno(giorno).toLowerCase() + '.', 0, 'calendar');
+        } else {
+          toast('«' + v + '» aggiunta a «Da fare».', 0, 'lista');
+        }
+        opz.querySelectorAll('[data-nuovoq]').forEach(function (c) { c.classList.toggle('on', !c.getAttribute('data-nuovoq')); });
+        aggiornaNav(); ridisegna();
+      });
+    }
+
+    /* i due filtri che non sono aree */
+    function areaFiltro() { return (attArea === 'tutte' || attArea === 'data' || attArea === 'progetti') ? null : attArea; }
+    function passaFiltro(b) {
+      if (attArea === 'data') return !!b.scadenza;
+      if (attArea === 'progetti') return !!(b.steps && b.steps.length);
+      return true;
+    }
+    function nomeFiltro() {
+      if (attArea === 'data') return 'Con una data';
+      if (attArea === 'progetti') return 'Progetti';
+      if (attArea === 'tutte') return 'Tutte';
+      return areaById(attArea).nome;
+    }
+
+    function disegnaDaFare(box) {
+      var st = LM.load();
+      var totale = st.backlog.length;
+      var conData = st.backlog.filter(function (b) { return b.scadenza; }).length;
+      var nProg = st.backlog.filter(function (b) { return b.steps && b.steps.length; }).length;
+
+      if (!totale) {
+        box.innerHTML = '<div class="card">' +
+          rigaAggiunta('agg-bk', 'Aggiungi una cosa da fare…', opzDaFare()) +
+          '<div class="vuoto" style="padding:18px 8px 6px">' + illoInbox() + '<b>Nessuna attività.</b><br>Aggiungine una qui sopra' +
+          (st.inbox.length ? ', o sistema le note in «Da sistemare».' : '.') + '</div></div>';
+        wireAggiunta(box);
+        return;
       }
-      var html = '<div class="bk-menu">' +
-        sez('quando', 'clock', isProg ? 'Quando fare il prossimo passo' : 'Quando farla',
+
+      /* I modi di guardare la lista stanno dietro UN comando che dice già
+         quale è attivo. Erano una fila di pastiglie — con le due viste che
+         prima erano linguette, più un'area per ogni area — e su un telefono
+         diventavano cinque righe: duecento pixel di filtri sopra la cosa che
+         si è venuti a leggere. Il filtro si cambia di rado; l'ordine per
+         importanza è la strada principale. */
+      var cerca = (totale >= 10 || attQuery)
+        ? '<div class="att-cerca">' + ICO('target', 14) + '<input type="text" id="att-q" placeholder="Cerca un’attività…" value="' + esc(attQuery) + '" aria-label="Cerca"></div>'
+        : '';
+
+      box.innerHTML = '<div class="card att-testa">' +
+        rigaAggiunta('agg-bk', 'Aggiungi una cosa da fare…', opzDaFare()) +
+        '<div class="att-strumenti">' + cerca +
+        '<button class="att-filtro' + (attArea === 'tutte' ? '' : ' on') + '" id="att-filtro" aria-haspopup="dialog">' +
+        ICO('imbuto', 14) + '<span>' + esc(nomeFiltro()) + '</span>' +
+        '<span class="lista-chev">' + ICO('chevronGiu', 14) + '</span></button>' +
+        '</div></div>' +
+        '<div id="dafare-lista"></div>';
+      wireAggiunta(box);
+      var q = box.querySelector('#att-q');
+      if (q) q.addEventListener('input', function () { attQuery = q.value; renderLista(); });
+      box.querySelector('#att-filtro').addEventListener('click', apriFiltri);
+      renderLista();
+
+      /* la scelta del filtro è un elenco, come tutti gli altri elenchi */
+      function apriFiltri() {
+        function voce(id, ico, eti, n) {
+          return '<div class="lista-riga">' +
+            '<button class="lista-apri" data-filtro="' + id + '">' +
+            '<span class="lista-vuoto">' + (attArea === id ? ICO('check', 15) : '') + '</span>' +
+            '<span class="lista-corpo"><span class="lista-tit">' +
+            (ico ? '<span class="tit-area"' + (ico === 'area' ? ' style="--c-area:' + LM.coloreArea(areaById(id)) + '"' : '') + '>' +
+              ICO(ico === 'area' ? areaById(id).icona : ico, 13) + '</span>' : '') +
+            esc(eti) + '</span></span>' +
+            '<span class="lista-val">' + n + '</span></button></div>';
+        }
+        var html = '<div class="sc">' +
+          '<div class="lista-eti">Tutto</div><div class="lista">' + voce('tutte', 'lista', 'Tutte le attività', totale) + '</div>' +
+          ((conData || nProg)
+            ? '<div class="lista-eti">Per come sono fatte</div><div class="lista">' +
+              (conData ? voce('data', 'calendar', 'Con una data', conData) : '') +
+              (nProg ? voce('progetti', 'rocket', 'Divise in passi', nProg) : '') + '</div>'
+            : '') +
+          '<div class="lista-eti">Per area</div><div class="lista">' +
+          LM.backlogPerArea().filter(function (g) { return g.items.length; })
+            .map(function (g) { return voce(g.area.id, 'area', g.area.nome, g.items.length); }).join('') +
+          '</div></div>';
+        apriSheet('Guarda solo', html, function (root) {
+          root.querySelectorAll('[data-filtro]').forEach(function (t) {
+            t.addEventListener('click', function () {
+              attArea = t.getAttribute('data-filtro');
+              chiudiSheet();
+              disegnaDaFare(box);
+            });
+          });
+        });
+      }
+
+      function gruppo(titolo, voci, cls, opts) {
+        if (!voci.length) return '';
+        var lunga = (opts && opts.taglia) && voci.length > MURO;
+        var tutte = !!backlogAperte.__tutte;
+        var taglia = lunga && !tutte;
+        var mostrate = taglia ? voci.slice(0, MURO) : voci;
+        return '<div class="lista-eti">' + titolo + (voci.length > 1 ? ' <span>' + voci.length + '</span>' : '') + '</div>' +
+          '<div class="lista lista-' + cls + '">' +
+          mostrate.map(function (x, i) { return attRigaHtml(x.b, { primo: cls === 'ora' && i === 0, motivo: x.i && x.i.motivo, da: x.i && x.i.da }); }).join('') +
+          '</div>' +
+          (lunga ? '<button class="lista-altre' + (tutte ? ' aperto' : '') + '" data-tutte="1" aria-expanded="' + tutte + '">' +
+            ICO('chevronGiu', 14) + (taglia ? ' Mostra le altre ' + (voci.length - MURO) : ' Mostra solo le prime ' + MURO) + '</button>' : '');
+      }
+
+      function renderLista() {
+        var lista = box.querySelector('#dafare-lista');
+        var query = attQuery.trim().toLowerCase();
+        if (query) {
+          var ris = LM.load().backlog.filter(function (b) { return b.testo.toLowerCase().indexOf(query) >= 0; });
+          lista.innerHTML = '<div class="lista-eti">' + ris.length + (ris.length === 1 ? ' risultato' : ' risultati') + '</div>' +
+            (ris.length
+              ? '<div class="lista">' + ris.map(function (b) { return attRigaHtml(b, {}); }).join('') + '</div>'
+              : '<p class="lista-nota">Nessuna corrispondenza per «' + esc(attQuery.trim()) + '».</p>');
+          wireLista(lista); return;
+        }
+        var g = LM.backlogPerImportanza({ areaId: areaFiltro() || 'tutte', tetto: 3 });
+        var ora = g.ora.filter(function (x) { return passaFiltro(x.b); });
+        var poi = g.poi.filter(function (x) { return passaFiltro(x.b); });
+        var parch = g.parcheggio.filter(function (x) { return passaFiltro(x.b); });
+        if (!ora.length && !poi.length && !parch.length) {
+          lista.innerHTML = '<p class="lista-nota">Niente in «' + esc(nomeFiltro()) + '».</p>';
+          return;
+        }
+        var apertoParcheggio = !!backlogAperte.__parcheggio;
+        lista.innerHTML =
+          gruppo('Importanti', ora, 'ora') +
+          gruppo('Altre', poi, 'poi', { taglia: true }) +
+          (parch.length
+            ? '<button class="lista-eti lista-eti-btn" data-parcheggio="1" aria-expanded="' + apertoParcheggio + '">' +
+              'Inattive <span>' + parch.length + '</span>' +
+              '<span class="lista-chev' + (apertoParcheggio ? ' aperta' : '') + '">' + ICO('chevronGiu', 14) + '</span></button>' +
+              '<div class="lista lista-parcheggio"' + (apertoParcheggio ? '' : ' hidden') + '>' +
+              parch.map(function (x) { return attRigaHtml(x.b, { motivo: x.i && x.i.motivo }); }).join('') + '</div>'
+            : '');
+
+        var bt = lista.querySelector('[data-tutte]');
+        if (bt) bt.addEventListener('click', function () {
+          var primaY = bt.getBoundingClientRect().top;
+          backlogAperte.__tutte = !backlogAperte.__tutte;
+          renderLista();
+          var nuovo = lista.querySelector('[data-tutte]');
+          if (nuovo) {
+            var delta = nuovo.getBoundingClientRect().top - primaY;
+            if (delta) window.scrollBy(0, delta);
+            nuovo.focus({ preventScroll: true });
+          }
+        });
+        var bp = lista.querySelector('[data-parcheggio]');
+        if (bp) bp.addEventListener('click', function () {
+          var ap = !backlogAperte.__parcheggio;
+          backlogAperte.__parcheggio = ap;
+          var corpo = lista.querySelector('.lista-parcheggio');
+          if (corpo) corpo.hidden = !ap;
+          bp.setAttribute('aria-expanded', ap);
+          var ch = bp.querySelector('.lista-chev');
+          if (ch) ch.classList.toggle('aperta', ap);
+        });
+        wireLista(lista);
+      }
+    }
+
+    /* ---------- la riga, una sola in tutta l'app ----------
+       comando a sinistra, titolo (più una riga sotto solo se ha qualcosa da
+       dire), valore a destra, freccina. Niente tre densità, niente striscia
+       di colore sul fianco: l'area la dice la sua icona davanti al titolo. */
+    function attRigaHtml(b, opts) {
+      var isProg = !!(b.steps && b.steps.length);
+      var av = isProg ? LM.avanzamentoProgetto(b) : null;
+      var ar = areaById(b.areaId);
+      var inAgenda = LM.snapshot().azioni.filter(function (a) {
+        return !a.done && a.data >= LM.todayKey() && (isProg ? (a.passoDi && a.passoDi.b === b.id) : a.passoDi === null && a.testo === b.testo);
+      }).sort(function (x, y) { return x.data < y.data ? -1 : 1; });
+
+      var sotto = [];
+      if (b.scadenza) {
+        var si = scadInfo(b.scadenza);
+        sotto.push('<span class="sub-scad ' + si.cls + '">' + (si.d < 0 ? 'scaduta ' + si.testo : 'entro ' + si.testo) + '</span>');
+      }
+      if (inAgenda.length) {
+        sotto.push('<span class="sub-agenda">' + (isProg && inAgenda.length > 1
+          ? inAgenda.length + ' passi in agenda'
+          : 'in agenda ' + etichettaGiorno(inAgenda[0].data).toLowerCase()) + '</span>');
+      }
+      /* il motivo si scrive solo se dice qualcosa che la riga non dice già:
+         «iniziata, 1 di 3» accanto a «1 di 3» in coda è la stessa cosa due volte */
+      if (!sotto.length && opts && opts.motivo && !isProg && !(opts.da === 'scadenza' && b.scadenza)) {
+        sotto.push('<span>' + esc(opts.motivo) + '</span>');
+      }
+
+      var pieno = !!(opts && opts.primo);
+      return '<div class="lista-riga att-riga" data-bid="' + b.id + '">' +
+        '<button class="lista-azione' + (pieno ? ' piena' : '') + '" data-bkoggi="' + b.id + '"' +
+        ' aria-label="' + (isProg ? 'Porta in Oggi il prossimo passo di ' : 'Porta in Oggi ') + esc(b.testo) + '"' +
+        ' title="' + (isProg ? 'Porta in Oggi il prossimo passo' : 'Porta in Oggi') + '">' + ICO('arrowRight', 15) + '</button>' +
+        '<button class="lista-apri" data-bkapri="' + b.id + '" aria-label="Apri ' + esc(b.testo) + '">' +
+        '<span class="lista-corpo">' +
+        '<span class="lista-tit">' +
+        (b.pin ? '<span class="tit-pin" title="Tenuta in cima">' + ICO('star', 11) + '</span>' : '') +
+        '<span class="tit-area" style="--c-area:' + LM.coloreArea(ar) + '" title="' + esc(ar.nome) + '">' + ICO(ar.icona, 12) + '</span>' +
+        esc(b.testo) + '</span>' +
+        (sotto.length ? '<span class="lista-sub">' + sotto.join(' · ') + '</span>' : '') +
+        '</span>' +
+        (isProg ? '<span class="lista-val">' + av.fatti + ' di ' + av.tot + '</span>' : '') +
+        '<span class="lista-chev">' + ICO('chevronGiu', 15) + '</span></button>' +
+        '</div>';
+    }
+
+    function wireLista(scope) {
+      scope.querySelectorAll('[data-bkoggi]').forEach(function (t) {
+        t.addEventListener('click', function () {
+          var id = t.getAttribute('data-bkoggi');
+          var it = LM.load().backlog.find(function (x) { return x.id === id; });
+          if (!it) return;
+          if (it.steps && it.steps.length) {
+            var passo = LM.prossimoPassoInOggi(id);
+            toast(passo ? 'Prossimo passo portato in Oggi.' : 'Nessun passo da fare: sono tutti in agenda o completati.', 0, passo ? 'arrowRight' : 'check');
+          } else {
+            LM.backlogInOggi(id);
+            toast('Portata tra le cose di oggi.', 0, 'arrowRight');
+          }
+          aggiornaNav(); ridisegna();
+        });
+      });
+      scope.querySelectorAll('[data-bkapri]').forEach(function (t) {
+        t.addEventListener('click', function () {
+          var it = LM.load().backlog.find(function (x) { return x.id === t.getAttribute('data-bkapri'); });
+          if (it) apriScheda(it.id);
+        });
+      });
+    }
+
+    /* ---------- la scheda di un'attività ----------
+       L'unico posto dove si sistema una cosa. Prima erano quattro cassetti
+       grigi dentro il foglio, ognuno col titolo in maiuscolo DENTRO la
+       scatola e una freccina: scatole dentro scatole, e per dare un giorno
+       tre modi diversi nello stesso cassetto. Adesso è piatta: le sezioni
+       sono etichette sopra il gruppo, come negli elenchi di iOS, e si
+       scorre invece di aprire. */
+    function apriScheda(id) {
+      function trova() { return LM.load().backlog.find(function (x) { return x.id === id; }); }
+      if (!trova()) return;
+
+      function corpoHtml() {
+        var b = trova();
+        if (!b) return '';
+        var isProg = !!(b.steps && b.steps.length);
+        var oggi = LM.todayKey();
+        var av = isProg ? LM.avanzamentoProgetto(b) : null;
+        var apertiOra = (b.steps || []).filter(function (st) { return !st.done; }).length;
+
+        function gChip(k, et) { return '<button class="q-chip" data-quando="' + k + '">' + et + '</button>'; }
+
+        var passi = (b.steps || []).map(function (st) {
+          var inAg = LM.snapshot().azioni.find(function (a) { return !a.done && a.passoDi && a.passoDi.b === b.id && a.passoDi.s === st.id; });
+          return '<div class="lista-riga sc-passo' + (st.done ? ' fatta' : '') + '">' +
+            '<button class="lista-azione spunta" data-steptoggle="' + st.id + '" aria-pressed="' + (st.done ? 'true' : 'false') +
+            '" aria-label="' + esc(st.testo) + (st.done ? ', fatto' : ', segna come fatto') + '">' + ICO('check', 13) + '</button>' +
+            '<span class="lista-corpo"><span class="lista-tit">' + esc(st.testo) + '</span>' +
+            (inAg ? '<span class="lista-sub">in agenda ' + esc(etichettaGiorno(inAg.data).toLowerCase()) + '</span>' : '') + '</span>' +
+            (st.done ? '' : '<button class="icona-btn" data-stepquando="' + st.id + '" title="Mettilo in un giorno" aria-label="Metti «' + esc(st.testo) + '» in un giorno">' + ICO('calendar', 14) + '</button>') +
+            '<button class="icona-btn icona-pericolo" data-stepdel="' + st.id + '" title="Rimuovi" aria-label="Rimuovi «' + esc(st.testo) + '»">' + ICO('trash', 14) + '</button>' +
+            '</div>';
+        }).join('');
+
+        return '<div class="sc">' +
+          '<button class="btn btn-primario btn-grande sc-primaria" id="sc-oggi">' + ICO('arrowRight', 16) + ' ' +
+          (isProg ? 'Prossimo passo in Oggi' : 'Portala in Oggi') + '</button>' +
+
+          '<div class="lista-eti">Quando farla</div>' +
+          '<div class="sc-gruppo">' +
           '<div class="q-chips">' + gChip(oggi, 'Oggi') + gChip(LM.addDays(oggi, 1), 'Domani') +
           gChip(LM.addDays(oggi, 2), etichettaGiorno(LM.addDays(oggi, 2)).split(' ')[0]) +
           gChip(LM.addDays(oggi, 7), 'Tra una settimana') + '</div>' +
-          '<div class="bk-menu-scad mt-s"><input type="date" id="bkm-quando" min="' + oggi + '" aria-label="Un altro giorno">' +
-          '<button class="btn btn-mini" id="bkm-pianifica">Pianifica</button></div>' +
-          '<div class="bk-sez-nota">Finisce tra le cose di quel giorno, in <b>La giornata</b>.</div>', true) +
-        (isProg ? sez('spalma', 'lista', 'Tutti i passi, spalmati',
-          '<div class="bk-sez-nota" style="margin:0 0 9px">Un progetto non sta in un giorno solo: mette in agenda ogni passo aperto, uno per volta.</div>' +
-          '<div class="q-chips">' +
-          '<button class="q-chip" data-distrib="1">Uno al giorno</button>' +
-          '<button class="q-chip" data-distrib="2">Uno ogni 2 giorni</button>' +
-          '<button class="q-chip" data-distrib="7">Uno a settimana</button></div>' +
-          '<div class="bk-menu-scad mt-s"><input type="date" id="bkm-dadata" min="' + oggi + '" value="' + oggi + '" aria-label="Da quale giorno">' +
-          '<span class="bk-menu-eti">da qui</span></div>', false) : '') +
-        sez('scadenza', 'calendar', 'Entro quando (scadenza)' + (b.scadenza ? ' · ' + scadInfo(b.scadenza).testo : ''),
-          '<div class="bk-menu-scad"><input type="date" id="bkm-scad" aria-label="Scadenza"' + (b.scadenza ? ' value="' + b.scadenza + '"' : '') + '>' +
-          (b.scadenza ? '<button class="btn btn-mini btn-ghost" id="bkm-scad-x">Togli</button>' : '') + '</div>' +
-          '<div class="bk-sez-nota">Solo il conto alla rovescia: non la mette in agenda.</div>', false) +
-        sez('sistema', 'sparkles', 'Sistema',
-          '<div class="bk-menu-riga"><span class="bk-menu-eti">Area</span>' + selectAree('bkm-area', b.areaId) + '</div>' +
-          '<div class="bk-menu-azioni">' +
-          /* la spilla sta qui e non sulla riga: una stellina su ogni riga
-             sarebbero nove cose in più da guardare per una che si usa di rado */
-          '<button class="btn btn-mini' + (b.pin ? ' on' : '') + '" id="bkm-pin">' + ICO('star', 13) + ' ' + (b.pin ? 'Togli dalla cima' : 'Tieni in cima') + '</button>' +
-          '<button class="btn btn-mini" id="bkm-steps">' + ICO('lista', 13) + ' ' + (isProg ? 'Apri i passi' : 'Dividi in passi') + '</button>' +
-          '<button class="btn btn-mini" id="bkm-abitudine">' + ICO('refresh', 13) + ' Trasforma in abitudine</button>' +
-          '<button class="btn btn-mini" id="bkm-mod">' + ICO('pencil', 13) + ' Rinomina</button>' +
-          '<button class="btn btn-mini btn-ghost imp-pericolo" id="bkm-del">' + ICO('trash', 13) + ' Rimuovi</button>' +
-          '</div>', false) +
-        '</div>';
-      apriSheet(b.testo, html, function (root) {
-        root.querySelectorAll('[data-sez]').forEach(function (t) {
-          t.addEventListener('click', function () {
-            var box = t.parentNode, corpo = box.querySelector('.bk-sez-corpo');
-            var apri = corpo.hidden;
-            corpo.hidden = !apri;
-            box.classList.toggle('aperta', apri);
-            t.setAttribute('aria-expanded', apri ? 'true' : 'false');
-            var ch = t.querySelector('.bk-chevron'); if (ch) ch.classList.toggle('aperta', apri);
-          });
-        });
+          '<label class="sc-campo"><span>un altro giorno</span>' +
+          '<input type="date" id="sc-quando" min="' + oggi + '"></label>' +
+          (isProg && apertiOra > 1
+            ? '<div class="sc-nota">Un progetto non sta in un giorno solo: puoi spalmare i passi aperti.</div>' +
+              '<div class="q-chips">' +
+              '<button class="q-chip" data-distrib="1">Uno al giorno</button>' +
+              '<button class="q-chip" data-distrib="2">Uno ogni 2 giorni</button>' +
+              '<button class="q-chip" data-distrib="7">Uno a settimana</button></div>'
+            : '') +
+          '</div>' +
+
+          '<div class="lista-eti">Entro quando</div>' +
+          '<div class="sc-gruppo">' +
+          '<label class="sc-campo"><span>scadenza</span>' +
+          '<input type="date" id="sc-scad"' + (b.scadenza ? ' value="' + b.scadenza + '"' : '') + '></label>' +
+          (b.scadenza ? '<button class="btn btn-mini btn-ghost" id="sc-scad-x">' + ICO('x', 13) + ' Togli la scadenza</button>' : '') +
+          '<div class="sc-nota">È solo un conto alla rovescia: non la mette in agenda.</div>' +
+          '</div>' +
+
+          '<div class="lista-eti">Passi' + (isProg ? ' <span>' + av.fatti + ' di ' + av.tot + '</span>' : '') + '</div>' +
+          (isProg ? '<div class="lista">' + passi + '</div>' : '') +
+          '<form class="sc-agg" id="sc-passo-add">' +
+          '<input type="text" placeholder="' + (isProg ? 'Aggiungi un passo…' : 'Dividila in passi: scrivi il primo…') + '" aria-label="Aggiungi un passo">' +
+          '<button class="btn btn-mini" type="submit">' + ICO('plus', 13) + ' Aggiungi</button></form>' +
+
+          '<div class="lista-eti">Sistemazione</div>' +
+          '<div class="sc-gruppo">' +
+          '<label class="sc-campo"><span>nome</span><input type="text" id="sc-nome" value="' + esc(b.testo) + '"></label>' +
+          '<label class="sc-campo"><span>area</span>' + selectAree('sc-area', b.areaId) + '</label>' +
+          '<div class="sc-azioni">' +
+          '<button class="btn btn-mini' + (b.pin ? ' on' : '') + '" id="sc-pin">' + ICO('star', 13) + ' ' + (b.pin ? 'Togli dalla cima' : 'Tieni in cima') + '</button>' +
+          '<button class="btn btn-mini" id="sc-abitudine">' + ICO('refresh', 13) + ' Diventa un’abitudine</button>' +
+          '<button class="btn btn-mini btn-ghost imp-pericolo" id="sc-del">' + ICO('trash', 13) + ' Elimina</button>' +
+          '</div></div>' +
+          '</div>';
+      }
+
+      function ridisegnaScheda() {
+        var root = document.getElementById('sheet-corpo');
+        if (!root) return;
+        root.innerHTML = corpoHtml();
+        collega(root);
+        ridisegna();
+      }
+
+      function collega(root) {
+        var b = trova();
+        if (!b) { chiudiSheet(); ridisegna(); return; }
+        var isProg = !!(b.steps && b.steps.length);
+
         function pianifica(k) {
           if (!k) return;
           var fatto = isProg ? LM.prossimoPassoInOggi(b.id, k) : LM.backlogInOggi(b.id, k);
-          if (!fatto) { toast('Nessun passo da pianificare: sono tutti aperti o completati.', 0, 'check'); return; }
+          if (!fatto) { toast('Nessun passo da pianificare: sono tutti in agenda o completati.', 0, 'check'); return; }
           toast(k === LM.todayKey() ? 'Messa tra le cose di oggi.' : 'Pianificata per ' + etichettaGiorno(k).toLowerCase() + '.', 0, 'calendar');
           chiudiSheet(); aggiornaNav(); ridisegna();
         }
+        root.querySelector('#sc-oggi').addEventListener('click', function () { pianifica(LM.todayKey()); });
         root.querySelectorAll('[data-quando]').forEach(function (c) {
           c.addEventListener('click', function () { pianifica(c.getAttribute('data-quando')); });
         });
-        root.querySelector('#bkm-pianifica').addEventListener('click', function () { pianifica(root.querySelector('#bkm-quando').value); });
-        root.querySelector('#bkm-scad').addEventListener('change', function () { LM.impostaScadenzaBacklog(b.id, this.value || null); chiudiSheet(); ridisegna(); });
-        var sx = root.querySelector('#bkm-scad-x');
-        if (sx) sx.addEventListener('click', function () { LM.impostaScadenzaBacklog(b.id, null); chiudiSheet(); ridisegna(); });
-        root.querySelector('#bkm-area').addEventListener('change', function () { LM.cambiaAreaBacklog(b.id, this.value); chiudiSheet(); ridisegna(); });
+        root.querySelector('#sc-quando').addEventListener('change', function () { pianifica(this.value); });
         root.querySelectorAll('[data-distrib]').forEach(function (c) {
           c.addEventListener('click', function () {
-            var da = (root.querySelector('#bkm-dadata') || {}).value || LM.todayKey();
-            var n = LM.distribuisciPassi(b.id, da, +c.getAttribute('data-distrib'));
-            toast(n ? n + (n === 1 ? ' passo messo in agenda.' : ' passi messi in agenda, uno per volta.') : 'Nessun passo da distribuire: sono già in agenda o completati.', 0, n ? 'calendar' : 'check');
+            var n = LM.distribuisciPassi(b.id, LM.todayKey(), +c.getAttribute('data-distrib'));
+            toast(n ? n + (n === 1 ? ' passo messo in agenda.' : ' passi messi in agenda, uno per volta.') : 'Nessun passo da distribuire.', 0, n ? 'calendar' : 'check');
             chiudiSheet(); aggiornaNav(); ridisegna();
           });
         });
-        root.querySelector('#bkm-pin').addEventListener('click', function () {
+        root.querySelector('#sc-scad').addEventListener('change', function () {
+          LM.impostaScadenzaBacklog(b.id, this.value || null); ridisegnaScheda();
+        });
+        var sx = root.querySelector('#sc-scad-x');
+        if (sx) sx.addEventListener('click', function () { LM.impostaScadenzaBacklog(b.id, null); ridisegnaScheda(); });
+
+        root.querySelectorAll('[data-steptoggle]').forEach(function (t) {
+          t.addEventListener('click', function (ev) {
+            feedbackSpunta(ev, LM.togglePasso(b.id, t.getAttribute('data-steptoggle')), 'Passo fatto.', 'check');
+            ridisegnaScheda();
+          });
+        });
+        root.querySelectorAll('[data-stepdel]').forEach(function (t) {
+          t.addEventListener('click', function () {
+            var sid = t.getAttribute('data-stepdel');
+            conAnnulla('Passo rimosso.', 'trash', function () { LM.rimuoviPasso(b.id, sid); ridisegnaScheda(); });
+          });
+        });
+        root.querySelectorAll('[data-stepquando]').forEach(function (t) {
+          t.addEventListener('click', function () {
+            var st = (trova().steps || []).find(function (x) { return x.id === t.getAttribute('data-stepquando'); });
+            if (st) apriQuandoPasso(trova(), st);
+          });
+        });
+        root.querySelector('#sc-passo-add').addEventListener('submit', function (e) {
+          e.preventDefault();
+          var inp = this.querySelector('input');
+          var v = inp.value.trim();
+          if (!v) return;
+          LM.aggiungiPasso(b.id, v);
+          inp.value = '';
+          ridisegnaScheda();
+          var nuovo = document.querySelector('#sc-passo-add input');
+          if (nuovo) nuovo.focus({ preventScroll: true });
+        });
+
+        var nome = root.querySelector('#sc-nome');
+        nome.addEventListener('change', function () {
+          var v = nome.value.trim();
+          if (!v) { nome.value = b.testo; return; }
+          LM.modificaBacklog(b.id, v);
+          var tit = document.getElementById('sheet-titolo');
+          if (tit) tit.textContent = v;
+          ridisegna();
+        });
+        root.querySelector('#sc-area').addEventListener('change', function () { LM.cambiaAreaBacklog(b.id, this.value); ridisegna(); });
+        root.querySelector('#sc-pin').addEventListener('click', function () {
           LM.appuntaBacklog(b.id);
           toast(LM.load().backlog.some(function (x) { return x.id === b.id && x.pin; })
-            ? 'Appuntata: resta in cima finché non la togli.' : 'Non più appuntata.', 0, 'star');
-          chiudiSheet(); ridisegna();
+            ? 'Tenuta in cima finché non la togli.' : 'Non più in cima.', 0, 'star');
+          ridisegnaScheda();
         });
-        root.querySelector('#bkm-abitudine').addEventListener('click', function () { apriDaAbitudine(b); });
-        root.querySelector('#bkm-steps').addEventListener('click', function () { progettiAperti[b.id] = true; chiudiSheet(); ridisegna(); });
-        root.querySelector('#bkm-mod').addEventListener('click', function () { backlogEditId = b.id; chiudiSheet(); ridisegna(); });
-        root.querySelector('#bkm-del').addEventListener('click', function () {
+        root.querySelector('#sc-abitudine').addEventListener('click', function () { apriDaAbitudine(trova()); });
+        root.querySelector('#sc-del').addEventListener('click', function () {
           conAnnulla('Attività eliminata.', 'trash', function () { LM.rimuoviBacklog(b.id); chiudiSheet(); ridisegna(); });
         });
-      });
+      }
+
+      apriSheet(trova().testo, corpoHtml(), collega);
     }
 
-    /* Quando fare UN passo: stessi tasti-giorno del menu, così non serve mai il
-       calendario del sistema (che partiva per sbaglio accanto al cestino). */
+    /* Quando fare UN passo: gli stessi tasti-giorno della scheda. */
     function apriQuandoPasso(prog, passo) {
       var oggi = LM.todayKey();
       var gia = LM.snapshot().azioni.find(function (a) { return !a.done && a.passoDi && a.passoDi.b === prog.id && a.passoDi.s === passo.id; });
       function chip(k, et) { return '<button class="q-chip' + (gia && gia.data === k ? ' on' : '') + '" data-qp="' + k + '">' + et + '</button>'; }
-      var html = '<div class="bk-menu"><div class="bk-sez">' +
-        '<div class="bk-sez-tit">' + ICO('clock', 13) + ' Quando fare questo passo</div>' +
+      var html = '<div class="sc">' +
+        '<div class="lista-eti">Quando fare questo passo</div>' +
+        '<div class="sc-gruppo">' +
         '<div class="q-chips">' + chip(oggi, 'Oggi') + chip(LM.addDays(oggi, 1), 'Domani') +
         chip(LM.addDays(oggi, 2), etichettaGiorno(LM.addDays(oggi, 2)).split(' ')[0]) +
         chip(LM.addDays(oggi, 7), 'Tra una settimana') + '</div>' +
-        '<div class="bk-menu-scad mt-s"><input type="date" id="qp-data" min="' + oggi + '" value="' + (gia ? gia.data : LM.addDays(oggi, 1)) + '" aria-label="Un altro giorno">' +
-        '<button class="btn btn-mini" id="qp-vai">Metti</button></div>' +
-        (gia ? '<button class="btn btn-mini btn-ghost mt-s" id="qp-togli">' + ICO('x', 13) + ' Togli dal giorno (' + esc(etichettaGiorno(gia.data).toLowerCase()) + ')</button>' : '') +
-        '<div class="bk-sez-nota">Comparirà tra le cose di quel giorno, in <b>La giornata</b>.</div>' +
+        '<label class="sc-campo"><span>un altro giorno</span>' +
+        '<input type="date" id="qp-data" min="' + oggi + '" value="' + (gia ? gia.data : LM.addDays(oggi, 1)) + '"></label>' +
+        (gia ? '<button class="btn btn-mini btn-ghost" id="qp-togli">' + ICO('x', 13) + ' Togli dal giorno (' + esc(etichettaGiorno(gia.data).toLowerCase()) + ')</button>' : '') +
+        '<div class="sc-nota">Comparirà tra le cose di quel giorno, in <b>La giornata</b>.</div>' +
         '</div></div>';
       apriSheet(passo.testo, html, function (root) {
         function metti(k) {
@@ -3868,7 +4205,7 @@
           chiudiSheet(); aggiornaNav(); ridisegna();
         }
         root.querySelectorAll('[data-qp]').forEach(function (c) { c.addEventListener('click', function () { metti(c.getAttribute('data-qp')); }); });
-        root.querySelector('#qp-vai').addEventListener('click', function () { metti(root.querySelector('#qp-data').value); });
+        root.querySelector('#qp-data').addEventListener('change', function () { metti(this.value); });
         var tg = root.querySelector('#qp-togli');
         if (tg) tg.addEventListener('click', function () {
           LM.azioneInBacklog(gia.id);
@@ -3880,17 +4217,18 @@
 
     /* Da cosa-da-fare a abitudine: si scelgono i giorni e (se serve) l'ora. */
     function apriDaAbitudine(b) {
-      var html = '<div class="bk-menu">' +
-        '<div class="bk-sez">' +
-        '<div class="bk-sez-tit">' + ICO('refresh', 13) + ' In che giorni</div>' +
-        '<div class="riga-flex" id="ab-giorni">' + chipsGiorni([1, 2, 3, 4, 5, 6, 0]) + '</div>' +
-        '<div class="bk-menu-riga mt-s"><span class="bk-menu-eti">Orario</span>' +
-        '<input type="time" class="tl-time" id="ab-ora" aria-label="Orario"> ' +
-        '<select class="tl-dur" id="ab-dur" aria-label="Durata">' + DURATE.map(function (o) { return '<option value="' + o.v + '">' + o.t + '</option>'; }).join('') + '</select></div>' +
-        '<div class="bk-sez-nota">Vuoti vanno bene: l’abitudine resta senza orario fisso.</div>' +
+      var html = '<div class="sc">' +
+        '<div class="lista-eti">In che giorni</div>' +
+        '<div class="sc-gruppo">' +
+        '<div id="ab-giorni">' + chipsGiorni([1, 2, 3, 4, 5, 6, 0]) + '</div>' +
+        '<label class="sc-campo"><span>a che ora</span>' +
+        '<input type="time" class="tl-time" id="ab-ora"></label>' +
+        '<label class="sc-campo"><span>quanto dura</span>' +
+        '<select class="tl-dur" id="ab-dur">' + DURATE.map(function (o) { return '<option value="' + o.v + '">' + o.t + '</option>'; }).join('') + '</select></label>' +
+        '<div class="sc-nota">Vuoti vanno bene: l’abitudine resta senza orario fisso.</div>' +
         '</div>' +
-        '<button class="btn btn-primario" id="ab-crea">' + ICO('check', 15) + ' Crea l’abitudine</button>' +
-        '<div class="bk-sez-nota" style="text-align:center">Esce da «Da fare» e la ritrovi in <b>Rituali → Abitudini</b>.</div>' +
+        '<button class="btn btn-primario btn-grande sc-primaria" id="ab-crea">' + ICO('check', 15) + ' Crea l’abitudine</button>' +
+        '<div class="sc-nota" style="text-align:center">Esce da «Da fare» e la ritrovi in <b>Rituali → Abitudini</b>.</div>' +
         '</div>';
       apriSheet(b.testo, html, function (root) {
         root.querySelectorAll('#ab-giorni .giorno-chip').forEach(function (c) {
@@ -3906,443 +4244,6 @@
         });
       });
     }
-
-    /* --- HTML di un elemento "da fare" (anche progetto con passi) ---
-       `opts.livello` decide quanto peso visivo prende: 'ora' è in evidenza
-       con l'azione a pieno colore, 'poi' è compatta con l'azione a contorno,
-       'parcheggio' è smorzata. Un colore d'accento ripetuto su nove righe
-       non è un accento: è uno sfondo. */
-    function I18chev() { return ICO('chevronGiu', 13); }
-    function bkItemHtml(b, opts) {
-      var livello = (opts && opts.livello) || 'poi';
-      var motivo = (opts && opts.motivo) || '';
-      if (b.id === backlogEditId) {
-        return '<div class="bk-item"><form class="inbox-modifica" data-bkedit="' + b.id + '" style="flex:1">' +
-          '<input type="text" class="inbox-input" value="' + esc(b.testo) + '" aria-label="Modifica">' +
-          '<button class="btn btn-mini btn-primario" type="submit" aria-label="Salva">' + ICO('save', 13) + '</button>' +
-          '<button class="btn btn-mini btn-ghost" type="button" data-bkannulla="1">Annulla</button></form></div>';
-      }
-      var isProg = b.steps && b.steps.length;
-      var av = isProg ? LM.avanzamentoProgetto(b) : null;
-      var apertoP = !!progettiAperti[b.id];
-      var passi = '';
-      if (apertoP) {
-        passi = '<div class="steps-panel">' +
-          (b.steps || []).map(function (st) {
-            /* ogni passo si può mettere in un giorno preciso, uno per uno */
-            var inAg = LM.snapshot().azioni.find(function (a) { return !a.done && a.passoDi && a.passoDi.b === b.id && a.passoDi.s === st.id; });
-            /* Il passo e i suoi comandi non competono più per la stessa riga:
-               prima spunta, testo, pastiglia del giorno, calendario, un
-               separatore e cestino stavano tutti in fila, e sul telefono al
-               testo del passo restavano 40px («Recuperare …»). Ora il testo ha
-               la larghezza che resta e va a capo, e la pastiglia del giorno
-               scende sotto di lui invece di rubargli metà riga. */
-            return '<div class="step-riga' + (st.done ? ' fatta' : '') + '">' +
-              '<button class="spunta-mini" data-steptoggle="' + b.id + '|' + st.id + '" aria-label="Segna passo">' + ICO('check', 12) + '</button>' +
-              '<span class="step-corpo"><span class="step-testo">' + esc(st.testo) + '</span>' +
-              (inAg ? '<button class="step-quando" data-steppulisci="' + inAg.id + '" title="Togli dal giorno">' + ICO('calendar', 10) + ' ' + esc(etichettaGiorno(inAg.data).toLowerCase()) + ' ' + ICO('x', 9) + '</button>' : '') +
-              '</span>' +
-              '<span class="step-azioni">' +
-              (st.done ? '' : '<button class="icona-btn" data-stepquando="' + b.id + '|' + st.id + '" title="Mettilo in un giorno" aria-label="Mettilo in un giorno">' + ICO('calendar', 13) + '</button>') +
-              '<button class="icona-btn icona-pericolo" data-stepdel="' + b.id + '|' + st.id + '" title="Rimuovi passo" aria-label="Rimuovi passo">' + ICO('trash', 13) + '</button></span></div>';
-          }).join('') +
-          '<form class="step-add" data-stepadd="' + b.id + '"><input type="text" placeholder="Aggiungi un passo…" aria-label="Aggiungi un passo"><button class="btn btn-mini" type="submit" aria-label="Aggiungi un passo">' + ICO('plus', 12) + '</button></form>' +
-          '</div>';
-      }
-      /* Cosa è GIA' IN AGENDA di questa attività: senza questo, dopo aver
-         pianificato qualcosa la riga sembrava identica a una mai toccata. */
-      var inAgenda = LM.snapshot().azioni.filter(function (a) {
-        return !a.done && a.data >= LM.todayKey() && (isProg ? (a.passoDi && a.passoDi.b === b.id) : a.passoDi === null && a.testo === b.testo);
-      }).sort(function (x, y) { return x.data < y.data ? -1 : 1; });
-      var badgeAgenda = inAgenda.length
-        ? '<span class="bk-inagenda" title="' + esc(inAgenda.map(function (a) { return a.testo + ' — ' + etichettaGiorno(a.data); }).join('\n')) + '">' + ICO('calendar', 11) + ' ' +
-          (isProg && inAgenda.length > 1 ? inAgenda.length + ' passi in agenda' : 'in agenda ' + etichettaGiorno(inAgenda[0].data).toLowerCase()) + '</span>'
-        : '';
-      /* Avanzamento a segmenti: con pochi passi si contano a occhio, molto più
-         leggibile di una barra continua. Con tanti passi torna a barra. */
-      var avanz = '';
-      if (isProg) {
-        /* La riga dell'avanzamento È il pulsante che apre i passi. Prima
-           l'avanzamento era muto e i passi si aprivano da un tasto-icona senza
-           etichetta accanto agli altri: tre bersagli in fila di cui due da
-           indovinare. Adesso quello che si tocca ha scritto sopra cosa fa. */
-        var dentro;
-        if (av.tot <= 12) {
-          var seg = '';
-          for (var si = 0; si < av.tot; si++) seg += '<i' + (si < av.fatti ? ' class="on"' : '') + '></i>';
-          dentro = '<span class="prog-segmenti">' + seg + '</span>' +
-            '<span class="prog-eti"><b>' + av.fatti + '</b> di <b>' + av.tot + '</b> passi' + (av.fatti === av.tot ? ' · finito' : '') + '</span>';
-        } else {
-          dentro = '<span class="prog-barra"><span style="width:' + av.pct + '%"></span></span>' +
-            '<span class="prog-eti"><b>' + av.fatti + '</b> di <b>' + av.tot + '</b> passi</span>';
-        }
-        avanz = '<button class="prog-riga prog-apri' + (apertoP ? ' aperto' : '') + '" data-bksteps="' + b.id + '" ' +
-          'aria-expanded="' + apertoP + '" title="' + (apertoP ? 'Chiudi i passi' : 'Mostra i passi') + '">' +
-          dentro + '<span class="prog-chevron">' + I18chev() + '</span></button>';
-      }
-      /* Il perché di questa posizione, dove serve: un ordine che non si
-         spiega sembra arbitrario e si smette di fidarsi. Solo in evidenza e
-         in parcheggio — in mezzo non aggiunge niente. */
-      var ar = areaById(b.areaId);
-      /* il motivo non ripete quello che la pastiglia della scadenza già dice:
-         due volte la stessa informazione è solo una cosa in più da leggere */
-      var fonte = (opts && opts.da) || '';
-      /* «già cominciato, 1 di 3» diceva la stessa cosa della riga di
-         avanzamento sotto («1 di 3 passi»): una riga intera di schermo per
-         un'informazione già presente due centimetri più in basso */
-      var ridondante = (fonte === 'scadenza' && b.scadenza) || (fonte === 'progetto' && avanz);
-      var perche = (motivo && livello !== 'poi' && !ridondante)
-        ? '<span class="bk-perche">' + esc(motivo) + '</span>' : '';
-      /* l'area come pastiglia di colore muta: l'informazione resta, senza
-         costare una riga di intestazione per gruppo */
-      var tagArea = '<span class="tag-area" style="--c-area:' + LM.coloreArea(ar) + '" title="' + esc(ar.nome) + '">' + ICO(ar.icona, 12) + '</span>';
-      var meta = perche + (b.pin ? '<span class="bk-pin" title="Appuntata come importante">' + ICO('star', 11) + '</span>' : '') +
-        (b.scadenza ? (function (si) {
-          /* «entro 2g fa» non è italiano: se è passata, è scaduta */
-          return '<span class="scad-badge ' + si.cls + '">' + ICO('calendar', 10) + ' ' +
-            (si.d < 0 ? 'scaduta ' + si.testo : 'entro ' + si.testo) + '</span>';
-        })(scadInfo(b.scadenza)) : '') +
-        badgeAgenda;
-      /* Il colore pieno indica DA DOVE COMINCIARE, quindi ne serve uno per
-         schermata. Prima lo prendeva tutta la fascia «Prima queste»: tre
-         pulsanti a colore pieno uno sotto l'altro, e il colore non indicava
-         più niente. */
-      var pieno = !!(opts && opts.primo);
-      return '<div class="bk-item liv-' + livello + (isProg ? ' progetto' : '') + '" data-bid="' + b.id + '" style="--c-area:' + LM.coloreArea(ar) + '">' +
-        '<div class="bk-item-riga">' +
-        '<div class="bk-item-corpo">' +
-        '<div class="bk-item-testo">' + tagArea + esc(b.testo) + '</div>' +
-        (meta ? '<div class="bk-item-meta">' + meta + '</div>' : '') +
-        avanz +
-        '</div>' +
-        /* DUE bersagli, sempre gli stessi due, sempre nello stesso posto:
-           l'azione che serve (Oggi / Passo) e «⋯» per tutto il resto. Prima
-           sui progetti ce n'era un terzo, e nelle fasce basse sparivamo il
-           terzo ma non gli altri: la stessa card cambiava comandi a seconda
-           di dove stava, e bisognava rileggerla ogni volta. */
-        '<div class="bk-item-azioni">' +
-        (isProg
-          ? '<button class="btn btn-mini' + (pieno ? ' btn-primario' : '') + '" data-bkpasso="' + b.id + '" title="Porta in Oggi il prossimo passo">' + ICO('arrowRight', 13) + ' Passo</button>'
-          : '<button class="btn btn-mini' + (pieno ? ' btn-primario' : '') + '" data-bkoggi="' + b.id + '">' + ICO('arrowRight', 13) + ' Oggi</button>') +
-        '<button class="icona-btn" data-bkmenu="' + b.id + '" title="Altro" aria-label="Altro">' + ICO('dots', 16) + '</button>' +
-        '</div></div>' +
-        passi + '</div>';
-    }
-
-    /* --- collega gli eventi degli elementi "da fare" dentro `scope` --- */
-    function wireBk(scope) {
-      scope.querySelectorAll('[data-bkoggi]').forEach(function (b) {
-        b.addEventListener('click', function () { LM.backlogInOggi(b.getAttribute('data-bkoggi')); toast('Portato tra le azioni di oggi.', 0, 'arrowRight'); aggiornaNav(); ridisegna(); });
-      });
-      scope.querySelectorAll('[data-bkdel]').forEach(function (b) {
-        b.addEventListener('click', function () { LM.rimuoviBacklog(b.getAttribute('data-bkdel')); ridisegna(); });
-      });
-      scope.querySelectorAll('[data-bkmod]').forEach(function (b) {
-        b.addEventListener('click', function () { backlogEditId = b.getAttribute('data-bkmod'); ridisegna(); });
-      });
-      scope.querySelectorAll('[data-bkedit]').forEach(function (form) {
-        var input = form.querySelector('.inbox-input');
-        setTimeout(function () { if (input) { input.focus(); input.setSelectionRange(input.value.length, input.value.length); } }, 20);
-        form.addEventListener('submit', function (e) { e.preventDefault(); var v = input.value.trim(); if (v) LM.modificaBacklog(form.getAttribute('data-bkedit'), v); backlogEditId = null; ridisegna(); });
-        form.querySelector('[data-bkannulla]').addEventListener('click', function () { backlogEditId = null; ridisegna(); });
-      });
-      scope.querySelectorAll('select[data-bk-area]').forEach(function (sel) {
-        sel.addEventListener('change', function () { LM.cambiaAreaBacklog(sel.getAttribute('data-bk-area'), sel.value); ridisegna(); });
-      });
-      scope.querySelectorAll('[data-scaddate]').forEach(function (inp) {
-        inp.addEventListener('change', function () { LM.impostaScadenzaBacklog(inp.getAttribute('data-scaddate'), inp.value || null); ridisegna(); });
-      });
-      scope.querySelectorAll('[data-bkmenu]').forEach(function (b) {
-        b.addEventListener('click', function () {
-          var it = LM.load().backlog.find(function (x) { return x.id === b.getAttribute('data-bkmenu'); });
-          if (it) apriBkMenu(it);
-        });
-      });
-      scope.querySelectorAll('[data-bksteps]').forEach(function (b) {
-        b.addEventListener('click', function () { var id = b.getAttribute('data-bksteps'); progettiAperti[id] = !progettiAperti[id]; ridisegna(); });
-      });
-      scope.querySelectorAll('[data-bkpasso]').forEach(function (b) {
-        b.addEventListener('click', function () {
-          var passo = LM.prossimoPassoInOggi(b.getAttribute('data-bkpasso'));
-          toast(passo ? 'Prossimo passo portato in Oggi.' : 'Nessun passo da fare: sono tutti aperti o completati.', 0, passo ? 'arrowRight' : 'check');
-          aggiornaNav(); ridisegna();
-        });
-      });
-      scope.querySelectorAll('[data-steptoggle]').forEach(function (b) {
-        b.addEventListener('click', function () { var p = b.getAttribute('data-steptoggle').split('|'); LM.togglePasso(p[0], p[1]); ridisegna(); });
-      });
-      scope.querySelectorAll('[data-steppulisci]').forEach(function (b) {
-        b.addEventListener('click', function () {
-          LM.azioneInBacklog(b.getAttribute('data-steppulisci'));
-          toast('Passo tolto dal giorno.', 0, 'lista');
-          aggiornaNav(); ridisegna();
-        });
-      });
-      scope.querySelectorAll('[data-stepquando]').forEach(function (btn) {
-        btn.addEventListener('click', function () {
-          var pz = btn.getAttribute('data-stepquando').split('|');
-          var prog = LM.load().backlog.find(function (x) { return x.id === pz[0]; });
-          var passo = prog && (prog.steps || []).find(function (x) { return x.id === pz[1]; });
-          if (passo) apriQuandoPasso(prog, passo);
-        });
-      });
-      scope.querySelectorAll('[data-stepdel]').forEach(function (b) {
-        b.addEventListener('click', function () { var p = b.getAttribute('data-stepdel').split('|'); LM.rimuoviPasso(p[0], p[1]); ridisegna(); });
-      });
-      scope.querySelectorAll('[data-stepadd]').forEach(function (form) {
-        form.addEventListener('submit', function (e) {
-          e.preventDefault();
-          var bid = form.getAttribute('data-stepadd');
-          var input = form.querySelector('input'); var v = input.value.trim();
-          if (!v) return;
-          LM.aggiungiPasso(bid, v); progettiAperti[bid] = true; ridisegna();
-        });
-      });
-    }
-
-    /* --- Da fare: prima le poche che contano, poi il resto --- */
-    var areeVuoteAperte = false;
-    /* Oltre questa soglia «Le altre» smette di essere una lista e diventa un
-       muro: si mostra il primo pezzo e il resto con un tocco. Sotto la soglia
-       si mostra tutto — nascondere per abitudine è peggio che mostrare, perché
-       quello che non si vede si dimentica. */
-    var MURO = 8;
-
-    /* Quando farla, deciso nel momento in cui la scrivi: è lì che sai perché
-       ti è venuta in mente, e deciderlo dopo vuol dire tornarci sopra una
-       seconda volta. Non è obbligatorio: «Poi» è il predefinito e la lascia
-       tra le cose da fare senza data. */
-    function opzDaFare() {
-      var oggiK = LM.todayKey();
-      return '<span class="agg-eti">Quando?</span>' +
-        '<div class="agg-quando">' +
-        '<button type="button" class="q-chip" data-nuovoq="' + oggiK + '">Oggi</button>' +
-        '<button type="button" class="q-chip" data-nuovoq="' + LM.addDays(oggiK, 1) + '">Domani</button>' +
-        '<button type="button" class="q-chip on" data-nuovoq="">Poi, senza data</button>' +
-        '</div>' +
-        /* senza filtro attivo l'area predefinita è il contenitore generico, non
-           la prima dell'elenco: sceglierne una a caso mette le cose nel posto
-           sbagliato senza dirlo, e poi si ritrovano dove non ci si aspetta */
-        '<label class="agg-area"><span class="agg-eti">in</span>' + selectAree('agg-bk-area', attArea === 'tutte' ? 'altro' : attArea) + '</label>';
-    }
-
-    function wireAggiunta(box) {
-      wireRigaAggiunta(box, 'agg-bk', function (v, opz) {
-        var sel = opz.querySelector('[data-nuovoq].on');
-        var giorno = sel ? sel.getAttribute('data-nuovoq') : '';
-        var selArea = opz.querySelector('#agg-bk-area');
-        var nb = LM.aggiungiBacklog(v, selArea ? selArea.value : 'altro');
-        if (giorno) {
-          LM.backlogInOggi(nb.id, giorno);
-          toast('«' + v + '» messa ' + etichettaGiorno(giorno).toLowerCase() + '.', 0, 'calendar');
-        } else {
-          toast('«' + v + '» aggiunta a «Da fare».', 0, 'lista');
-        }
-        /* il «quando» torna al predefinito: la scelta valeva per quella cosa,
-           non per tutte quelle che scriverai dopo */
-        opz.querySelectorAll('[data-nuovoq]').forEach(function (c) { c.classList.toggle('on', !c.getAttribute('data-nuovoq')); });
-        aggiornaNav(); ridisegna();
-        var i = box.querySelector('#agg-bk .agg-testo');
-        if (i) i.focus({ preventScroll: true });
-      });
-      box.querySelectorAll('#agg-bk [data-nuovoq]').forEach(function (c) {
-        c.addEventListener('click', function () {
-          box.querySelectorAll('#agg-bk [data-nuovoq]').forEach(function (x) { x.classList.toggle('on', x === c); });
-        });
-      });
-    }
-
-    function disegnaDaFare(box) {
-      var perArea = LM.backlogPerArea();
-      var totale = perArea.reduce(function (n, g) { return n + g.items.length; }, 0);
-      if (!totale) {
-        /* Anche a lista vuota il campo sta in cima e ha le stesse opzioni: la
-           posizione e i comandi non cambiano da uno stato all'altro, così il
-           dito li impara una volta. Ed è proprio quando la lista è vuota che
-           si sta mettendo in piedi il piano. */
-        box.innerHTML = '<div class="card">' +
-          rigaAggiunta('agg-bk', 'Aggiungi una cosa da fare…', opzDaFare()) +
-          '<div class="vuoto" style="padding:18px 8px 6px">' + illoInbox() + '<b>Nessuna attività.</b><br>Aggiungine una qui sopra, o sistema le note in «Sistemare».</div></div>';
-        wireAggiunta(box);
-        return;
-      }
-      /* Le aree vuote stanno dietro un solo tasto: una fila di pastiglie a
-         zero è inchiostro che non porta informazione, e sul telefono si
-         mangiava mezzo schermo prima di far vedere un'attività. */
-      var conRoba0 = perArea.filter(function (g) { return g.items.length; });
-      var vuote0 = perArea.filter(function (g) { return !g.items.length; });
-      function chipArea(g, vuota) {
-        return '<button class="att-chip' + (vuota ? ' vuota' : '') + (attArea === g.area.id ? ' on' : '') + '" data-chip="' + g.area.id +
-          '" style="--c-area:' + LM.coloreArea(g.area) + '">' + ICO(g.area.icona, 13) + ' ' + esc(g.area.nome) +
-          (vuota ? '' : ' <span>' + g.items.length + '</span>') + '</button>';
-      }
-      /* anche questo va in due direzioni: aperto, mostra come richiuderlo */
-      var vuotaSelezionata = vuote0.some(function (g) { return g.area.id === attArea; });
-      var mostraVuote = areeVuoteAperte || vuotaSelezionata;
-      var chips = '<button class="att-chip' + (attArea === 'tutte' ? ' on' : '') + '" data-chip="tutte">Tutte <span>' + totale + '</span></button>' +
-        conRoba0.map(function (g) { return chipArea(g, false); }).join('') +
-        (vuote0.length
-          ? (mostraVuote
-            ? vuote0.map(function (g) { return chipArea(g, true); }).join('') +
-              '<button class="att-chip vuota att-chip-chiudi" id="att-vuote-chiudi" title="Nascondi le aree senza niente dentro">' + ICO('x', 11) + ' Nascondi le vuote</button>'
-            : '<button class="att-chip vuota" id="att-vuote">' + ICO('plus', 12) + ' ' + vuote0.length + (vuote0.length === 1 ? ' area vuota' : ' aree vuote') + '</button>')
-          : '');
-      /* La ricerca compare quando serve davvero cercare: con nove voci si
-         trova a occhio, e un campo in più è solo una cosa in più da guardare. */
-      var cerca = (totale >= 10 || attQuery)
-        ? '<div class="att-cerca">' + ICO('target', 14) + '<input type="text" id="att-q" placeholder="Cerca un’attività…" value="' + esc(attQuery) + '" aria-label="Cerca"></div>'
-        : '';
-      box.innerHTML = '<div class="card">' +
-        rigaAggiunta('agg-bk', 'Aggiungi una cosa da fare…', opzDaFare()) + cerca +
-        '<div class="att-chips">' + chips + '</div>' +
-        '<div id="dafare-lista"></div></div>';
-      wireAggiunta(box);
-      var q = box.querySelector('#att-q');
-      if (q) q.addEventListener('input', function () { attQuery = q.value; renderLista(); });
-      var bv = box.querySelector('#att-vuote');
-      if (bv) bv.addEventListener('click', function () { areeVuoteAperte = true; disegnaDaFare(box); });
-      var bvc = box.querySelector('#att-vuote-chiudi');
-      if (bvc) bvc.addEventListener('click', function () {
-        areeVuoteAperte = false;
-        /* Il filtro si legge ADESSO, non da com'era quando la pastiglia è
-           stata disegnata: scegliere un'area rifà solo la lista, non le
-           pastiglie, quindi un valore catturato prima sarebbe vecchio.
-           Se il filtro attivo è un'area vuota, nasconderla lascerebbe la
-           lista appesa a una pastiglia che non si vede più: si torna a
-           «Tutte». */
-        if (vuote0.some(function (g) { return g.area.id === attArea; })) attArea = 'tutte';
-        disegnaDaFare(box);
-      });
-      var fila = box.querySelector('.att-chips');
-      if (fila && fila.scrollWidth > fila.clientWidth + 1) fila.classList.add('scorre');
-      box.querySelectorAll('[data-chip]').forEach(function (b) {
-        b.addEventListener('click', function () {
-          attArea = b.getAttribute('data-chip');
-          box.querySelectorAll('[data-chip]').forEach(function (x) { x.classList.toggle('on', x.getAttribute('data-chip') === attArea); });
-          /* L'area scelta col filtro diventa anche quella del campo in cima:
-             se filtro «Studio» e poi scrivo qualcosa, va in Studio. Il campo
-             non viene ridisegnato quando cambia il filtro (per non far muovere
-             la pagina), quindi il valore glielo si passa a mano. */
-          var selArea = box.querySelector('#agg-bk-area');
-          if (selArea) selArea.value = attArea === 'tutte' ? 'altro' : attArea;
-          renderLista();
-        });
-      });
-      renderLista();
-
-      function fascia(titolo, voci, cls) {
-        if (!voci.length) return '';
-        /* Il tasto è un interruttore, non una porta a senso unico: una volta
-           aperta la lista si deve poterla richiudere. Sta sempre lì, cambia
-           solo cosa dice. */
-        var lunga = cls === 'poi' && voci.length > MURO;
-        var tutte = !!backlogAperte.__tutte;
-        var taglia = lunga && !tutte;
-        var mostrate = taglia ? voci.slice(0, MURO) : voci;
-        return '<div class="bk-fascia ' + cls + '">' +
-          '<div class="bk-fascia-testa"><span class="bk-fascia-tit">' + titolo + '</span>' +
-          (voci.length > 1 ? '<span class="bk-fascia-n">' + voci.length + '</span>' : '') + '</div>' +
-          mostrate.map(function (x, i) { return bkItemHtml(x.b, { livello: cls, primo: cls === 'ora' && i === 0, motivo: x.i.motivo, da: x.i.da }); }).join('') +
-          (lunga ? '<button class="bk-altre' + (tutte ? ' aperto' : '') + '" data-tutte="1" aria-expanded="' + tutte + '">' +
-            ICO('chevronGiu', 14) + (taglia ? ' Mostra le altre ' + (voci.length - MURO) : ' Mostra solo le prime ' + MURO) + '</button>' : '') +
-          '</div>';
-      }
-
-      function renderLista() {
-        var lista = box.querySelector('#dafare-lista');
-        var query = attQuery.trim().toLowerCase();
-        if (query) {
-          var ris = LM.load().backlog.filter(function (b) { return b.testo.toLowerCase().indexOf(query) >= 0; });
-          lista.innerHTML = '<div class="sotto">' + ris.length + (ris.length === 1 ? ' risultato' : ' risultati') + ' per «' + esc(attQuery.trim()) + '»</div>' +
-            '<div class="backlog-piatto">' + (ris.map(function (b) { return bkItemHtml(b, { livello: 'poi' }); }).join('') || '<div class="bk-vuoto">Nessuna corrispondenza.</div>') + '</div>';
-          wireBk(lista); return;
-        }
-
-        /* L'ordine è per IMPORTANZA, non per categoria. Una lista divisa per
-           area mette sullo stesso piano una scadenza di domani e un'idea di
-           tre mesi fa: l'utente deve rifare da zero la scelta ogni volta che
-           apre la pagina, e con la memoria di lavoro sotto sforzo quella
-           scelta è la parte più costosa di tutte. Le aree restano un filtro,
-           a un tocco, nelle pastiglie qui sopra. */
-        var g = LM.backlogPerImportanza({ areaId: attArea, tetto: 3 });
-        if (!g.totale) {
-          lista.innerHTML = '<div class="bk-vuoto">Nessuna attività in «' + esc(areaById(attArea).nome) + '».</div>';
-          return;
-        }
-        var apertoParcheggio = !!backlogAperte.__parcheggio;
-        lista.innerHTML =
-          fascia('Importanti', g.ora, 'ora') +
-          fascia('Altre', g.poi, 'poi') +
-          (g.parcheggio.length
-            ? '<div class="bk-fascia parcheggio">' +
-              '<button class="bk-fascia-testa bk-fascia-btn" data-parcheggio="1" aria-expanded="' + apertoParcheggio + '">' +
-              '<span class="bk-fascia-tit">Inattive</span><span class="bk-fascia-n">' + g.parcheggio.length + '</span>' +
-              '<span class="bk-chevron' + (apertoParcheggio ? ' aperta' : '') + '">' + ICO('chevronGiu', 15) + '</span></button>' +
-              '<div class="bk-fascia-corpo"' + (apertoParcheggio ? '' : ' hidden') + '>' +
-              g.parcheggio.map(function (x) { return bkItemHtml(x.b, { livello: 'parcheggio', motivo: x.i.motivo, da: x.i.da }); }).join('') +
-              '</div></div>'
-            : '');
-
-        var bt = lista.querySelector('[data-tutte]');
-        if (bt) bt.addEventListener('click', function () {
-          /* Richiudendo, le righe che spariscono stanno SOPRA il tasto: senza
-             correzione la pagina si accorcia e il tasto scappa da sotto il
-             dito. Teniamo il punto in cui si è cliccato dove era. */
-          var primaY = bt.getBoundingClientRect().top;
-          backlogAperte.__tutte = !backlogAperte.__tutte;
-          renderLista();
-          var nuovo = lista.querySelector('[data-tutte]');
-          if (nuovo) {
-            var delta = nuovo.getBoundingClientRect().top - primaY;
-            if (delta) window.scrollBy(0, delta);
-            nuovo.focus({ preventScroll: true });
-          }
-        });
-        /* aprire il parcheggio mostra solo quel pezzo: il resto non si muove */
-        var bp = lista.querySelector('[data-parcheggio]');
-        if (bp) bp.addEventListener('click', function () {
-          var ap = !backlogAperte.__parcheggio;
-          backlogAperte.__parcheggio = ap;
-          var corpo = bp.parentNode.querySelector('.bk-fascia-corpo');
-          if (corpo) corpo.hidden = !ap;
-          bp.setAttribute('aria-expanded', ap);
-          var ch = bp.querySelector('.bk-chevron');
-          if (ch) ch.classList.toggle('aperta', ap);
-        });
-        wireBk(lista);
-      }
-    }
-
-    /* --- Progetti: cose da fare divise in passi --- */
-    function disegnaProgetti(box) {
-      var prog = LM.load().backlog.filter(function (b) { return (b.steps && b.steps.length) || progettiAperti[b.id]; });
-      prog.forEach(function (b) { if (progettiAperti[b.id] === undefined) progettiAperti[b.id] = true; });
-      /* anche qui prima quello che chiede attenzione: il primo è il candidato,
-         gli altri restano leggibili senza urlare */
-      var ordinati = prog.map(function (b) { return { b: b, i: LM.importanzaBacklog(b) }; })
-        .sort(function (x, y) { return y.i.peso - x.i.peso; });
-      var lista = prog.length
-        ? '<div class="backlog-piatto">' + ordinati.map(function (x, i) {
-            return bkItemHtml(x.b, { livello: i === 0 ? 'ora' : 'poi', primo: i === 0, motivo: x.i.motivo, da: x.i.da });
-          }).join('') + '</div>'
-        : '<div class="vuoto" style="padding:20px 8px">' + illoInbox() + '<b>Nessun progetto.</b><br>Un progetto è un’attività divisa in passi.</div>';
-      box.innerHTML = '<div class="card"><div class="sotto" style="margin-top:0">Attività divise in <b>passi</b>. «Passo» porta in Oggi il prossimo.</div>' +
-        lista +
-        '<form class="bk-add mt" id="nuovo-prog"><input type="text" placeholder="Nuovo progetto…" aria-label="Nuovo progetto"><span class="campo-area">' + selectAree('prog-area') + '</span><button class="btn btn-mini btn-primario" type="submit">' + ICO('plus', 13) + ' Crea</button></form></div>';
-      wireBk(box);
-      box.querySelector('#nuovo-prog').addEventListener('submit', function (e) {
-        e.preventDefault();
-        var inp = box.querySelector('#nuovo-prog input'); var v = inp.value.trim();
-        if (!v) return;
-        var nb = LM.aggiungiBacklog(v, box.querySelector('#prog-area').value);
-        progettiAperti[nb.id] = true; ridisegna();
-      });
-    }
-  }
-
-  function selectBacklogArea(id, areaId) {
-    return '<select class="sel-area-azione mini" data-bk-area="' + id + '" title="Cambia area" aria-label="Cambia area">' +
-      areeAttive().map(function (a) { return '<option value="' + a.id + '"' + (a.id === areaId ? ' selected' : '') + '>' + esc(a.nome) + '</option>'; }).join('') + '</select>';
   }
 
   /* ============================================================
