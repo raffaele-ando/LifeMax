@@ -233,6 +233,7 @@
       if (sottostante) sottostante.removeAttribute('inert');
       bloccaSfondo(false);
       esceFuoco();
+      verificaModalita();
     }
     ovl.querySelector('.avv-no').addEventListener('click', chiudi);
     ovl.querySelector('.avv-si').addEventListener('click', function () { chiudi(); onSi(); });
@@ -295,12 +296,17 @@
   document.getElementById('corpo-cattura').insertAdjacentHTML('afterbegin', ICO('bolt', 20));
 
   function apriCattura() {
+    /* se era già aperto non si entra una seconda volta nella modalità:
+       si entrerebbe due volte e si uscirebbe una sola, e la pila resterebbe
+       con dentro un livello che non se ne va più */
+    var giaAperto = !$ovl.hidden;
     $ovl.hidden = false;
     bloccaSfondo(true);
     $inp.value = '';
-    entraFuoco($ovl.querySelector('.pannello-cattura'), true);
+    if (giaAperto) $inp.focus();
+    else entraFuoco($ovl.querySelector('.pannello-cattura'), true);
   }
-  function chiudiCattura() { $ovl.hidden = true; bloccaSfondo(false); esceFuoco(); }
+  function chiudiCattura() { $ovl.hidden = true; bloccaSfondo(false); esceFuoco(); verificaModalita(); }
 
   document.getElementById('fab-cattura').innerHTML = ICO('plus', 25);
   document.getElementById('fab-cattura').addEventListener('click', apriCattura);
@@ -454,6 +460,12 @@
   })();
 
   function apriSheet(titolo, html, onWire, largo) {
+    /* Un pannello che ne apre un altro (impostazioni → «le tue aree») non è
+       un secondo pannello: è lo stesso foglio con dentro un'altra cosa. Se
+       si entrasse di nuovo nella modalità, la pila si riempirebbe di un
+       livello che nessuno toglie e il resto dell'app resterebbe inerte —
+       cioè non cliccabile — per sempre. */
+    var giaAperto = !$sheet.hidden;
     document.getElementById('sheet-titolo').textContent = titolo;
     document.getElementById('sheet-corpo').innerHTML = html;
     if ($sheetPanel) $sheetPanel.classList.toggle('sheet-largo', !!largo);
@@ -461,13 +473,26 @@
     bloccaSfondo(true);
     wireSheet = onWire || null;
     if (wireSheet) wireSheet(document.getElementById('sheet-corpo'));
-    entraFuoco($sheetPanel);
+    if (giaAperto) { if ($sheetPanel) { $sheetPanel.scrollTop = 0; $sheetPanel.focus({ preventScroll: true }); } }
+    else entraFuoco($sheetPanel);
   }
   function chiudiSheet() {
     $sheet.hidden = true; wireSheet = null;
     if ($sheetPanel) $sheetPanel.classList.remove('sheet-largo');
     bloccaSfondo(false);
     esceFuoco();
+    verificaModalita();
+  }
+
+  /* Rete di sicurezza: se non c'è più niente di aperto, l'app deve essere
+     viva. Un livello di modalità rimasto appeso non si vede — si scopre
+     scoprendo che l'app non risponde più a niente. */
+  function verificaModalita() {
+    var qualcosaAperto = !$sheet.hidden || !$ovl.hidden || !!avvisoAperto;
+    if (qualcosaAperto) return;
+    pilaModali.length = 0;
+    isolaSfondo(false);
+    if (document.body.classList.contains('sfondo-fermo')) bloccaSfondo(false);
   }
 
   /* Con un pannello aperto la pagina sotto deve stare FERMA: prima si poteva
