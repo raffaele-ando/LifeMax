@@ -185,15 +185,30 @@
       if (!c.hasAttribute('autocorrect')) c.setAttribute('autocorrect', 'on');
     });
   }
+  /* Le file di linguette si distinguono a occhio dal fondo bianco, ma per chi
+     usa VoiceOver quella differenza non esiste: senza aria-pressed sono tre
+     pulsanti identici e non si sa quale sia aperto. La classe .attivo è già
+     l'unica convenzione in tutta l'app, quindi si traduce da sola. */
+  function marcaSegmenti(radice) {
+    if (!radice || !radice.querySelectorAll) return;
+    [].slice.call(radice.querySelectorAll('.segmenti button')).forEach(function (b) {
+      b.setAttribute('aria-pressed', b.classList.contains('attivo') ? 'true' : 'false');
+    });
+  }
   if (window.MutationObserver) {
     var osservatore = new MutationObserver(function (mut) {
+      var tocca = false;
       mut.forEach(function (m) {
-        [].slice.call(m.addedNodes).forEach(function (n) { if (n.nodeType === 1) preparaCampi(n); });
+        if (m.type === 'attributes') { tocca = true; return; }
+        [].slice.call(m.addedNodes).forEach(function (n) {
+          if (n.nodeType === 1) { preparaCampi(n); tocca = true; }
+        });
       });
+      if (tocca) marcaSegmenti(document);
     });
     ['vista', 'sheet-corpo', 'onboarding-root'].forEach(function (id) {
       var el = document.getElementById(id);
-      if (el) osservatore.observe(el, { childList: true, subtree: true });
+      if (el) osservatore.observe(el, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] });
     });
   }
 
@@ -2964,7 +2979,6 @@
     var wk = LM.weekKey(t);
     return s.reviewSettimana[wk] ? { fatto: true, testo: 'fatta' } : { fatto: false, testo: 'da fare' };
   }
-  var inboxEditId = null;
 
   function vistaRituali() {
     var adesso = ritualeDellOra();
@@ -3697,71 +3711,105 @@
       else if (scrollPrima) window.scrollTo(0, scrollPrima);
     }
 
-    /* ---------- Da sistemare: le note appena catturate ---------- */
+    /* ---------- Da sistemare: una nota per volta ----------
+       Il lavoro è svuotare una coda: per ogni nota, una decisione fra tre.
+       Prima la coda si mostrava tutta insieme — sei note da centosettanta
+       pixel, sei comandi ciascuna, trentasei comandi in una schermata e tre
+       note su sei visibili senza scorrere. Per svuotarla bisognava prima
+       scegliere DA QUALE cominciare: una decisione in più, e la più costosa,
+       ripetuta ogni volta che si torna qui.
+       Adesso la coda ne mostra una: quella che hai scritto per ultima, con
+       la sua decisione davanti e quello che viene dopo elencato sotto, come
+       promemoria e non come scelta. È la stessa forma della schermata Oggi,
+       che mostra un'azione sola: una decisione per volta, e la successiva
+       arriva quando questa è chiusa. */
     function disegnaSmista(box) {
       var st = LM.load();
-      box.innerHTML = '<div class="lista-eti">Da sistemare</div>' +
-        '<div class="lista">' + st.inbox.map(function (el, idx) {
-          var quando = new Date(el.creata).toLocaleString('it-IT', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
-          var primo = idx === 0;
-          if (el.id === inboxEditId) {
-            return '<div class="lista-riga sm-riga" data-iid="' + el.id + '">' +
-              '<form class="sm-modifica" data-edit="' + el.id + '">' +
-              '<input type="text" value="' + esc(el.testo) + '" aria-label="Testo della nota">' +
-              '<button class="btn btn-mini btn-primario" type="submit">' + ICO('save', 13) + ' Salva</button>' +
-              '<button class="btn btn-mini btn-ghost" type="button" data-annulla="1">Annulla</button></form></div>';
-          }
-          /* Cosa è, e cosa farne: due blocchi, non cinque righe. Sopra il
-             testo con la matita per correggerlo e, nella riga sotto, quando
-             l'hai scritta e in che area va. Sotto, le tre scelte.
-             Il pulsante pieno è solo sulla prima: sei gradienti uno sotto
-             l'altro non indicano più niente. */
-          return '<div class="lista-riga sm-riga" data-iid="' + el.id + '">' +
-            '<div class="sm-cosa">' +
-            '<button class="sm-testo" data-modifica="' + el.id + '" aria-label="Correggi il testo">' +
-            '<span class="lista-tit">' + esc(el.testo) + '</span></button>' +
-            '<button class="icona-btn" data-modifica="' + el.id + '" title="Correggi il testo" aria-label="Correggi il testo">' + ICO('pencil', 13) + '</button>' +
-            '</div>' +
-            '<div class="lista-sub sm-quando">' + esc(quando) + ' · in ' +
-            selectAree('sel-' + el.id, el.areaSug || 'altro', 'Area', 'sel-compatto') + '</div>' +
-            '<div class="sm-scelte">' +
-            '<button class="btn btn-mini' + (primo ? ' btn-primario' : '') + '" data-fai="azione" data-iid="' + el.id + '">' + ICO('arrowRight', 13) + ' Oggi</button>' +
-            '<button class="btn btn-mini" data-fai="backlog" data-iid="' + el.id + '">' + ICO('lista', 13) + ' Da fare</button>' +
-            '<button class="btn btn-mini btn-ghost" data-fai="scarta" data-iid="' + el.id + '">' + ICO('trash', 13) + ' Scarta</button>' +
-            '</div>' +
-            '</div>';
-        }).join('') + '</div>' +
-        '<p class="lista-nota">Per ognuna: <b>Oggi</b> se la fai adesso, <b>Da fare</b> se la fai più avanti, <b>Scarta</b> se non serve.</p>';
+      /* la più recente prima: di quella ti ricordi ancora perché l'hai
+         scritta, e il ricordo è metà della decisione */
+      var coda = st.inbox.slice().sort(function (a, b) { return (b.creata || 0) - (a.creata || 0); });
+      var nota = coda[0];
+      if (!nota) { disegnaDaFare(box); return; }
+      var resto = coda.slice(1);
+      var quando = new Date(nota.creata).toLocaleString('it-IT', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+      var MOSTRA = 4;
+
+      box.innerHTML =
+        /* una colonna sola, larga quanto si legge comodamente: sullo schermo
+           grande la decisione non deve attraversare mezzo metro di monitor */
+        '<div class="sm-uno">' +
+        '<div class="lista-eti">Da sistemare <span>' + coda.length + '</span></div>' +
+        '<div class="lista">' +
+        /* il testo è un campo, non un testo con una matita accanto: si
+           corregge scrivendoci sopra, senza entrare e uscire da un modo */
+        '<div class="lista-riga sm-testa">' +
+        '<textarea class="sm-titolo" id="sm-testo" rows="1" aria-label="Testo della nota">' + esc(nota.testo) + '</textarea>' +
+        '</div>' +
+        '<div class="lista-riga sc-riga"><span class="sc-eti">Scritta</span><span class="sc-val">' + esc(quando) + '</span></div>' +
+        '<div class="lista-riga sc-riga"><span class="sc-eti">Area</span>' +
+        '<span class="sc-val">' + selectAree('sm-area', nota.areaSug || 'altro', 'Area', 'sc-inline') + '</span></div>' +
+        '</div>' +
+
+        '<button class="btn btn-primario btn-grande sc-primaria" data-fai="azione">' +
+        ICO('arrowRight', 16) + ' Fallo oggi</button>' +
+        '<div class="lista">' +
+        '<button class="lista-riga sc-riga sc-tocca" data-fai="backlog">' +
+        '<span class="sc-eti">' + ICO('lista', 14) + ' Mettila in «Da fare»</span>' +
+        '<span class="sc-val">più avanti</span></button>' +
+        '<button class="lista-riga sc-riga sc-tocca sc-pericolo" data-fai="scarta">' +
+        '<span class="sc-eti">' + ICO('trash', 14) + ' Scarta</span>' +
+        '<span class="sc-val">non serve</span></button>' +
+        '</div>' +
+
+        (resto.length
+          ? '<div class="lista-eti">Dopo questa <span>' + resto.length + '</span></div>' +
+            '<div class="sm-coda">' +
+            resto.slice(0, MOSTRA).map(function (x) { return '<p>' + esc(x.testo) + '</p>'; }).join('') +
+            (resto.length > MOSTRA ? '<p class="sm-coda-piu">e altre ' + (resto.length - MOSTRA) + '</p>' : '') +
+            '</div>'
+          : '<p class="lista-nota">È l’ultima della coda.</p>') +
+        '</div>';
+
+      /* il testo si salva quando si esce dal campo: nessun tasto «salva» per
+         una correzione di due lettere */
+      var testo = box.querySelector('#sm-testo');
+      function adatta() { testo.style.height = 'auto'; testo.style.height = testo.scrollHeight + 'px'; }
+      adatta();
+      testo.addEventListener('input', adatta);
+      testo.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); testo.blur(); } });
+      testo.addEventListener('change', function () {
+        var v = testo.value.replace(/\s+/g, ' ').trim();
+        if (!v) { testo.value = nota.testo; adatta(); return; }
+        LM.modificaInbox(nota.id, v);
+      });
 
       box.querySelectorAll('[data-fai]').forEach(function (b) {
         b.addEventListener('click', function () {
-          var id = b.getAttribute('data-iid');
           var esito = b.getAttribute('data-fai');
-          var sel = document.getElementById('sel-' + id);
+          var sel = box.querySelector('#sm-area');
           var area = sel ? sel.value : 'altro';
-          if (esito === 'scarta') {
-            conAnnulla('Scartata.', 'trash', function () { LM.triageInbox(id, esito, area); aggiornaNav(); ridisegna(); });
-            return;
+          /* il testo appena corretto e non ancora salvato non si perde */
+          var v = testo.value.replace(/\s+/g, ' ').trim();
+          if (v && v !== nota.testo) LM.modificaInbox(nota.id, v);
+
+          function fatto() {
+            LM.triageInbox(nota.id, esito, area);
+            aggiornaNav();
+            if (!LM.load().inbox.length) {
+              /* coda finita: la linguetta non ha più ragione di esistere */
+              attTab = 'dafare';
+              render();
+              toast('Coda svuotata: non c’è più niente da sistemare.', 0, 'check');
+              return;
+            }
+            ridisegna();
+            animaIngresso(document.getElementById('att-corpo'));
           }
-          LM.triageInbox(id, esito, area);
+          if (esito === 'scarta') { conAnnulla('Scartata.', 'trash', fatto); return; }
           toast(esito === 'azione' ? 'Messa tra le cose di oggi.' : 'Aggiunta a «Da fare».', LM.XP_EVENTI.triage,
             esito === 'azione' ? 'arrowRight' : 'lista');
-          aggiornaNav(); ridisegna();
+          fatto();
         });
-      });
-      box.querySelectorAll('[data-modifica]').forEach(function (b) {
-        b.addEventListener('click', function () { inboxEditId = b.getAttribute('data-modifica'); ridisegna(); });
-      });
-      box.querySelectorAll('[data-edit]').forEach(function (form) {
-        var input = form.querySelector('input');
-        setTimeout(function () { input.focus(); input.setSelectionRange(input.value.length, input.value.length); }, 20);
-        form.addEventListener('submit', function (e) {
-          e.preventDefault();
-          var v = input.value.trim();
-          if (v) LM.modificaInbox(form.getAttribute('data-edit'), v);
-          inboxEditId = null; ridisegna();
-        });
-        form.querySelector('[data-annulla]').addEventListener('click', function () { inboxEditId = null; ridisegna(); });
       });
     }
 

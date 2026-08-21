@@ -1706,32 +1706,32 @@ button.lista-riga { width: 100%; text-align: left; }
 /* una nota da sistemare: titolo (che si tocca per correggerlo), le tre
    scelte, l'area. Righe della stessa lista di tutto il resto, solo più alte
    perché contengono una decisione invece di un'informazione. */
-.sm-riga { flex-direction: column; align-items: stretch; gap: 8px; padding: 12px; }
-.sm-cosa { display: flex; align-items: flex-start; gap: 8px; }
-.sm-testo { flex: 1; min-width: 0; text-align: left; align-self: stretch; display: flex; align-items: center; }
-@media (pointer: coarse) { .sm-testo { min-height: 44px; } }
-.sm-testo .lista-tit { white-space: normal; }
-/* il nome dell'area per intero: troncato («Altro / Esplorazion») non è un
-   nome, è un indovinello */
-.sm-quando { gap: 7px; }
-.sm-quando select { flex: 1; min-width: 0; max-width: none; }
-.sm-scelte { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
-.sm-scelte .btn { width: 100%; justify-content: center; padding-left: 6px; padding-right: 6px; }
-.sm-modifica { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; width: 100%; }
-.sm-modifica input { flex: 1 1 180px; min-width: 0; }
-@media (min-width: 861px) {
-  /* col mouse tre pulsanti tirati per tutta la card sono tre bersagli enormi
-     per tre parole: restano della loro misura, in fila da sinistra */
-  .sm-riga { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; column-gap: 14px; }
-  .sm-cosa { grid-column: 1; }
-  .sm-quando { grid-column: 1; }
-  .sm-scelte { grid-column: 2; grid-row: 1 / span 2; display: flex; }
-  .sm-scelte .btn { width: auto; padding-left: 16px; padding-right: 16px; }
+/* la nota in cima alla coda: il testo è un campo, non un titolo con una
+   matita accanto — si corregge scrivendoci sopra */
+/* la colonna della decisione: sullo schermo largo si ferma dove il testo
+   resta leggibile, allineata al titolo della pagina come tutto il resto. */
+.sm-uno { max-width: 620px; }
+.sm-testa { padding: 0 12px; }
+/* il campo si prende tutta l'altezza della riga con il suo padding: così si
+   tocca dove si vede il testo e anche nello spazio intorno, senza che quello
+   spazio sia un buco che non fa niente. */
+textarea.sm-titolo {
+  width: 100%; border: 0; background: none; box-shadow: none;
+  padding: 17px 0; min-height: 0; resize: none; overflow: hidden; display: block;
+  font-size: 16px; font-weight: 700; line-height: 1.35; color: var(--inchiostro-1);
+  letter-spacing: -0.01em;
 }
-@media (max-width: 380px) {
-  .sm-scelte .btn { font-size: 12.5px; gap: 0; }
-  .sm-scelte .btn .ico { display: none; }
+textarea.sm-titolo:focus { box-shadow: none; outline: 2px solid var(--accento); outline-offset: 3px; border-radius: var(--r-1); }
+/* quello che viene dopo: promemoria, non comandi. Nessuna cornice, nessuna
+   freccina: se sembrasse una riga da toccare tornerebbe la domanda «da quale
+   comincio», che è quella che si è tolta di mezzo. */
+.sm-coda { padding: 2px 4px; }
+.sm-coda p {
+  margin: 0; padding: 5px 8px; font-size: 13px; line-height: 1.35;
+  color: var(--inchiostro-muto);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
+.sm-coda-piu { font-weight: 700; }
 
 /* ---------- la scheda di un'attività ----------
    Una riga per attributo, il valore a destra: la forma degli elenchi di
