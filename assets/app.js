@@ -1421,23 +1421,37 @@
     }
     var ritAdesso = rigaRitualeAdesso();
 
+    /* il contatore è UNO, e sta qui: prima lo stesso fatto era scritto tre
+       volte — il chip in cima, «Dopo questa hai ancora N azioni» in fondo con
+       una pila di rettangolini disegnati, e il numero nel tasto delle altre.
+       Con la giornata vuota non compare: «0/0 oggi» è un conto di niente. */
     var html = topbar('Oggi', 'L’azione da fare adesso.',
-      '<span class="chip">' + ICO('check', 15) + ' <b>&nbsp;' + fatte + '/' + oggi.length + '</b>&nbsp;oggi</span>');
+      oggi.length ? '<span class="chip">' + ICO('check', 15) + ' <b>&nbsp;' + fatte + '/' + oggi.length + '</b>&nbsp;oggi</span>' : '');
     html += '<div id="oggi-giornata"></div>';
 
     if (!prossima) {
+      var finita = oggi.length > 0;
       html += '<div class="focus-scena"><div class="vuoto">' + illoSole() +
         (oggi.length ? '<b>Per oggi hai finito tutto.</b><br>Puoi chiudere con la review della sera, o aggiungere qualcosa se ti va.'
                      : '<b>Oggi non hai ancora scelto cosa fare.</b><br>Bastano pochi secondi: scegli la prima cosa e parti.') +
         '</div>' +
+        /* Un pieno solo. Prima ce n'erano due — «Scegli le azioni di oggi» e la
+           freccia del campo — cioè due «premi qui» senza sapere quale: e con
+           quattro strade per la stessa cosa (scegli / prendi / review /
+           scrivi) la schermata che dovrebbe far ripartire era la più difficile
+           da leggere di tutte. Il campo è la riga d'aggiunta di tutta l'app. */
+        /* Il pieno è il passo che il testo qui sopra consiglia. A giornata
+           finita il testo diceva «puoi chiudere con la review della sera» e
+           il tasto pieno diceva «scegli le azioni di oggi»: il consiglio e
+           l'evidenza puntavano in due direzioni diverse. */
         '<div class="focus-azioni-riga">' +
-        '<button class="btn btn-primario btn-grande" data-vai="rituali" data-sub="mattina">' + ICO('sun', 18) + ' Scegli le azioni di oggi</button>' +
-        '<button class="btn" data-vai="inbox">' + ICO('inbox', 18) + ' Prendi dalle attività</button>' +
-        (oggi.length ? '<button class="btn" data-vai="rituali" data-sub="sera">' + ICO('moon', 18) + ' Review della sera</button>' : '') +
+        (finita
+          ? '<button class="btn btn-primario btn-grande" data-vai="rituali" data-sub="sera">' + ICO('moon', 18) + ' Review della sera</button>' +
+            '<button class="btn" data-vai="rituali" data-sub="mattina">' + ICO('sun', 18) + ' Aggiungi altro a oggi</button>'
+          : '<button class="btn btn-primario btn-grande" data-vai="rituali" data-sub="mattina">' + ICO('sun', 18) + ' Scegli le azioni di oggi</button>' +
+            '<button class="btn" data-vai="inbox">' + ICO('inbox', 18) + ' Prendi dalle attività</button>') +
         '</div>' +
-        '<form id="form-rapida" class="riga-flex" style="max-width:580px;width:100%">' +
-        '<input type="text" id="testo-rapida" placeholder="Oppure scrivi qui una cosa da fare" style="flex:1;min-width:220px">' +
-        '<button class="btn btn-primario" type="submit" aria-label="Aggiungi e parti">' + ICO('arrowRight', 18) + '</button></form>' +
+        '<div class="focus-agg">' + rigaAggiunta('agg-rapida', 'Scrivi una cosa da fare…') + '</div>' +
         '</div>';
       $vista.innerHTML = html;
       montaOggiGiornata();
@@ -1447,11 +1461,8 @@
           location.hash = '#/' + b.getAttribute('data-vai');
         });
       });
-      document.getElementById('form-rapida').addEventListener('submit', function (e) {
-        e.preventDefault();
-        var t = document.getElementById('testo-rapida').value.trim();
-        if (!t) return;
-        LM.aggiungiAzione(t, 'altro', { mit: LM.serveMit() });
+      wireRigaAggiunta($vista, 'agg-rapida', function (testo) {
+        LM.aggiungiAzione(testo, 'altro', { mit: LM.serveMit() });
         render();
       });
       return;
@@ -1477,19 +1488,26 @@
     var altre = oggi.filter(function (a) { return !a.done && (!prossima || a.id !== prossima.id); });
     var altreHtml = '';
     if (altre.length) {
+      /* L'elenco è quello di tutta l'app: un contenitore con i separatori e il
+         comando da 26px DENTRO la riga. Prima era un quarto disegno — una
+         spunta quadrata staccata a sinistra di una pastiglia bianca — e ogni
+         riga ripeteva «Fai questa →», che è esattamente quello che fa la riga
+         quando la tocchi: due comandi per lo stesso gesto, e il titolo si
+         troncava per far posto all'etichetta. */
       altreHtml = '<div class="focus-altre">' +
-        '<button class="focus-altre-toggle" id="btn-altre" aria-expanded="' + mostraAltre + '">' +
-        (mostraAltre ? 'Nascondi le altre' : 'Devi fare altro? Scegli tra le altre') + ' <b>' + altre.length + '</b>' +
-        '<span class="bk-chevron' + (mostraAltre ? ' aperta' : '') + '">' + ICO('chevronGiu', 15) + '</span></button>' +
-        (mostraAltre ? '<div class="focus-altre-lista">' + altre.map(function (a) {
-          var ar = areaById(a.areaId), col = LM.coloreArea(ar);
-          return '<div class="fa-riga" style="--c-area:' + col + '">' +
-            '<button class="tl-check" data-fa-fatto="' + a.id + '" aria-label="Fatto">' + ICO('check', 13) + '</button>' +
-            '<button class="fa-corpo" data-fa-fuoco="' + a.id + '">' +
-            segnoArea(ar, 13, 'tl-tag') +
-            '<span class="fa-testo">' + esc(a.testo) + (a.mit ? ' ' + ICO('star', 11) : '') + '</span>' +
-            (a.ora ? '<span class="fa-ora">' + ICO('clock', 11) + ' ' + a.ora + '</span>' : '') +
-            '<span class="fa-fai">Fai questa ' + ICO('arrowRight', 13) + '</span></button></div>';
+        '<button class="lista-eti lista-eti-btn" id="btn-altre" aria-expanded="' + mostraAltre + '">' +
+        (mostraAltre ? 'Nascondi le altre' : 'Devi fare altro?') + ' <span>' + altre.length + '</span>' +
+        '<span class="lista-chev' + (mostraAltre ? ' aperta' : '') + '">' + ICO('chevronGiu', 15) + '</span></button>' +
+        (mostraAltre ? '<div class="lista">' + altre.map(function (a) {
+          var ar = areaById(a.areaId);
+          return '<div class="lista-riga">' +
+            '<button class="lista-azione spunta" data-fa-fatto="' + a.id + '" aria-label="Segna come fatta">' + ICO('check', 13) + '</button>' +
+            '<button class="lista-apri" data-fa-fuoco="' + a.id + '" aria-label="Fai questa: ' + esc(a.testo) + '">' +
+            '<span class="lista-corpo"><span class="lista-tit">' +
+            segnoArea(ar, 13, 'tit-area') + esc(a.testo) +
+            (a.mit ? ' ' + ICO('star', 11) : '') + '</span></span>' +
+            (a.ora ? '<span class="lista-val">' + ICO('clock', 11) + ' ' + a.ora + '</span>' : '') +
+            '<span class="lista-chev">' + ICO('chevronGiu', 15) + '</span></button></div>';
         }).join('') + '</div>' : '') + '</div>';
     }
 
@@ -1498,7 +1516,9 @@
       (timerAttivo
         ? '<div class="timer-anello" id="timer-anello" style="--p:0"><div class="timer-interno">' +
           '<div class="timer-display" id="timer-display">–:––</div>' +
-          '<div class="timer-eti">nel blocco</div></div></div>'
+          /* è un conto alla rovescia sui minuti che hai scelto tu, non il
+             blocco della giornata: diceva la cosa sbagliata */
+          '<div class="timer-eti">restano</div></div></div>'
         : '') +
       '<div class="focus-azione">' + esc(prossima.testo) + '</div>' +
       '<div class="focus-area" style="--c-area:' + colArea + '">' +
@@ -1518,19 +1538,19 @@
           '<button class="chip-tempo" data-min="50">50′</button></span>') +
       '<button class="btn btn-mini btn-ghost" id="btn-nonora">Più tardi ' + ICO('arrowRight', 15) + '</button>' +
       '</div>' +
-      '<div class="focus-coda">' +
-      '<span>' + (inCoda > 0
-        ? '<span class="pila-coda">' + '<i></i>'.repeat(Math.min(3, inCoda)) + '</span> Dopo questa hai ancora <b>' + inCoda + '</b> ' + (inCoda === 1 ? 'azione' : 'azioni') + ', una alla volta.'
-        : 'È l’ultima azione della giornata.') + '</span>' +
-      /* il suggerimento cambia col dispositivo: su un telefono non c'è nessun
-         tasto C da premere, c'è il pulsante + in basso. E se c'è il rituale di
-         adesso lascia il posto a quello: vale più un rituale da fare che il
-         promemoria di un tasto. */
-      (ritAdesso ? '' :
-        '<span class="solo-tastiera">·</span>' +
-        '<span class="solo-tastiera">Premi <kbd>C</kbd> per aggiungere una nota.</span>' +
-        '<span class="solo-tocco">Tocca <b>+</b> per aggiungere una nota.</span>') +
-      '</div>' + ritAdesso +
+      /* Quante ne restano lo dice già il contatore in cima e il tasto delle
+         altre. Qui resta solo la cosa che nessuno dei due dice: che questa
+         chiude la giornata. Il promemoria del tasto per annotare si vede solo
+         da tastiera e solo se non c'è un rituale da fare: un rituale vale più
+         del ripasso di una scorciatoia. */
+      ((inCoda > 0 && ritAdesso) ? '' :
+        '<div class="focus-coda">' +
+        (inCoda > 0 ? '' : '<span>È l’ultima di oggi.</span>') +
+        (ritAdesso ? '' :
+          (inCoda > 0 ? '' : '<span class="solo-tastiera">·</span>') +
+          '<span class="solo-tastiera">Premi <kbd>C</kbd> per aggiungere una nota.</span>' +
+          '<span class="solo-tocco">Tocca <b>+</b> per aggiungere una nota.</span>') +
+        '</div>') + ritAdesso +
       altreHtml +
       '</div>';
 
@@ -2554,18 +2574,18 @@
     var pross = d.placed.filter(function (e) { return e.min >= nm && !(e.tipo === 'azione' ? e.done : e.fatto); })[0];
     var sotto = pross ? 'poi ' + esc(pross.nome || pross.testo) + ' · ' + pross.ora
       : (d.placed.length ? 'niente altro in agenda oggi' : 'nessun orario per oggi — tocca per aggiungerne');
-    var lg = [];
-    if (conDur) lg.push('<span class="lg"><i class="lg-seg"></i>' + conDur + ' con durata</span>');
-    if (soloOra) lg.push('<span class="lg"><i class="lg-dot"></i>' + soloOra + ' a un orario</span>');
-    if (pasti) lg.push('<span class="lg"><i class="lg-pasto"></i>' + pasti + ' pasti</span>');
-    if (d.tray.length) lg.push('<span class="lg"><i class="lg-none"></i>' + d.tray.length + ' senza orario</span>');
-    var legenda = lg.length ? '<div class="strip-legenda">' + lg.join('') + '</div>' : '';
+    /* In cima a «Oggi» questa è la cosa MENO importante della schermata: dice
+       dove sei nella giornata, non cosa fare. Prima aveva un titolo suo, una
+       freccia e tre statistiche («4 con durata · 3 pasti · 1 senza orario»),
+       pesava 131px e spingeva l'azione al quarto posto, a trecento pixel dal
+       bordo. Il conto dei blocchi sta nella pagina «Giornata», a un tocco da
+       qui. Qui resta quello che si guarda in mezzo secondo: quanto è passato,
+       e cosa viene dopo. Da 131px a settanta. */
     return '<button class="giornata-strip" id="giornata-strip-btn" aria-label="Apri la giornata">' +
-      '<div class="strip-testa"><span class="strip-tit">' + ICO('clock', 15) + ' La giornata</span>' +
-      '<span class="strip-sotto">' + sotto + ' ' + ICO('arrowRight', 13) + '</span></div>' +
       '<div class="strip-barra">' + marks + nowEl + '</div>' +
-      '<div class="strip-estremi"><span>' + d.sveglia + '</span><span>' + d.sonnoRoutine + '</span></div>' +
-      legenda +
+      '<div class="strip-estremi"><span>' + d.sveglia + '</span>' +
+      '<span class="strip-sotto">' + sotto + ' ' + ICO('arrowRight', 11) + '</span>' +
+      '<span>' + d.sonnoRoutine + '</span></div>' +
       '</button>';
   }
   function montaGiornataStrip(container) {
