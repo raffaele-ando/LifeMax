@@ -15,7 +15,7 @@ await p.goto('http://localhost:8621/index.html');await p.waitForTimeout(500);
 await p.evaluate(()=>{LM.seedDemo();});
 
 const viva=()=>p.evaluate(()=>{
-  const morta=[...document.querySelectorAll('.app, .tabbar, .fab, #banda-demo')].some(e=>e.hasAttribute('inert')||e.getAttribute('aria-hidden')==='true');
+  const morta=[...document.querySelectorAll('.app, .tabbar, #banda-demo')].some(e=>e.hasAttribute('inert')||e.getAttribute('aria-hidden')==='true');
   const t=document.querySelector('.tabbar button');
   const r=t.getBoundingClientRect();
   const sopra=document.elementFromPoint(r.left+r.width/2, r.top+r.height/2);
@@ -38,7 +38,7 @@ const PANNELLI=[
   ['La giornata (da Oggi)', async()=>{await vaiA('oggi');await p.evaluate(()=>{const b=document.querySelector('.giornata-strip');if(b)b.click();});}],
   ['Blocco della giornata', async()=>{await vaiA('giornata');await p.evaluate(()=>{const b=document.querySelector('.tl-blk-clic');if(b)b.click();});}],
   ['Scheda abitudine', async()=>{await apriAbitudini();await p.evaluate(()=>{const b=document.querySelector('[data-abdett]');if(b)b.click();});}],
-  ['Cattura rapida', async()=>{await vaiA('oggi');await p.evaluate(()=>document.getElementById('fab-cattura').click());}]
+  ['Cattura rapida', async()=>{await vaiA('oggi');await p.evaluate(()=>document.querySelector('.tabbar [data-catt]').click());}]
 ];
 const CHIUSURE=[
   ['la x', async()=>{await p.evaluate(()=>{const c=document.getElementById('sheet-chiudi');if(c&&!document.getElementById('sheet-overlay').hidden)c.click();else{const o=document.getElementById('overlay-cattura');if(!o.hidden)o.click();}});}],

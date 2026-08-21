@@ -72,7 +72,6 @@
     dots: '<circle cx="5.2" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="18.8" cy="12" r="1.5" fill="currentColor" stroke="none"/>',
     aiuto: '<circle cx="12" cy="12" r="9"/><path d="M9.4 9.3a2.7 2.7 0 0 1 5.2 1c0 1.7-2.6 2.1-2.6 3.9"/><path d="M12 17.4h.01"/>',
     chevronGiu: '<path d="M6 9.5l6 6 6-6"/>',
-    piu2: '<path d="M12 5v14M5 12h14"/>',
     copy: '<rect x="9" y="9" width="11.5" height="11.5" rx="2.4"/><path d="M15.6 5.8V5.4A2.4 2.4 0 0 0 13.2 3H6a2.4 2.4 0 0 0-2.4 2.4v7.2A2.4 2.4 0 0 0 6 15h.4"/>',
     share: '<circle cx="18" cy="5.6" r="2.6"/><circle cx="6" cy="12" r="2.6"/><circle cx="18" cy="18.4" r="2.6"/><path d="M8.3 10.8 15.7 6.8M8.3 13.2l7.4 4"/>',
     terminale: '<rect x="3" y="4" width="18" height="16" rx="2.6"/><path d="M7.2 9.6 9.8 12l-2.6 2.4M12.4 15h4.2"/>',
@@ -82,17 +81,59 @@
     bed: '<path d="M3 6v13M3 12h18a0 0 0 0 1 0 0v7M21 19v-4a3 3 0 0 0-3-3H3M6.5 12v-2a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/>'
   };
 
+  /* ---------- la scala ----------
+     Le icone avevano quattordici misure diverse (da 9 a 28), e nello stesso
+     posto ne convivevano tre: un pulsante con la sua da 14 accanto a uno con
+     la sua da 18. Sono cinque gradini, uno per ruolo, e non ce n'è un sesto:
+     una misura fuori scala viene tirata al gradino più vicino, così non se ne
+     reintroduce una per distrazione.
+
+       11  micro    glifo appiccicato a un testo minuscolo (la stellina della
+                    priorità, la scadenza dentro una cella di calendario)
+       13  piccola  dentro la riga secondaria di un elenco
+       15  riga     righe di elenco e pulsanti: il caso normale
+       18  azione   l'azione principale, i titoli
+       26  grande   stati vuoti e il pulsante tondo
+
+     Lo spessore invece è il contrario: era fisso a 1.8 su una griglia da 24,
+     quindi la stessa icona veniva disegnata a 0.9px da 12 e a 1.35px da 18 —
+     le piccole sbiadivano e le grandi ingrassavano. Qui lo spessore si ricava
+     dalla misura perché il tratto ARRIVI sempre a 1.25px, che è la stessa
+     densità del testo accanto. Sopra i 26 il tratto cresce piano, come fanno
+     i caratteri quando diventano titoli. */
+  var SCALA = [11, 13, 15, 18, 26];
+  function gradino(n) {
+    n = +n || 15;
+    var vicino = SCALA[0];
+    for (var i = 1; i < SCALA.length; i++) {
+      /* a pari distanza si sale: fra 14 e i gradini 13 e 15 vince 15, perché
+         una misura tirata verso il basso sparisce, tirata in su no */
+      if (Math.abs(SCALA[i] - n) <= Math.abs(vicino - n)) vicino = SCALA[i];
+    }
+    /* oltre la scala (loghi, illustrazioni) si passa la misura così com'è */
+    return n > 30 ? n : vicino;
+  }
+  function tratto(size) {
+    var sw = 30 / size;
+    return Math.round(Math.min(2.5, Math.max(1.15, sw)) * 100) / 100;
+  }
+
   window.ICO = function (nome, size, cls) {
     var d = PATHS[nome];
     if (!d) return '<span class="ico-pallino"></span>';
-    size = size || 18;
-    return '<svg class="ico' + (cls ? ' ' + cls : '') + '" width="' + size + '" height="' + size + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + d + '</svg>';
+    size = gradino(size);
+    return '<svg class="ico' + (cls ? ' ' + cls : '') + '" width="' + size + '" height="' + size +
+      '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="' + tratto(size) +
+      '" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + d + '</svg>';
   };
+  window.ICO.SCALA = SCALA;
 
   /* Logo Google ufficiale a 4 colori (fill, non stroke): usato solo
      sul pulsante di accesso, come richiesto dalle linee guida del brand. */
   window.GOOGLE_G = function (size) {
-    size = size || 16;
+    /* anche il marchio Google passa dalla scala: se resta fuori si siede a
+       mezzo pixel di distanza dal testo che gli sta accanto */
+    size = gradino(size || 15);
     return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 48 48" aria-hidden="true" style="flex:none;vertical-align:-3px">' +
       '<path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>' +
       '<path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>' +

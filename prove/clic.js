@@ -47,14 +47,14 @@ const COPERTI=`(() => {
   /* la mobilia fissa (tab bar, pulsante di cattura, pannello aperto) copre
      per mestiere: quello che sta sotto si raggiunge scorrendo. Qui si cerca
      altro: qualcosa che copre senza che si veda. */
-  const fissi=[...document.querySelectorAll('.tabbar, .fab, .sheet-overlay:not([hidden]), .overlay:not([hidden]), .avviso-ovl, .toast-zona, #banda-demo')]
+  const fissi=[...document.querySelectorAll('.tabbar, .sheet-overlay:not([hidden]), .overlay:not([hidden]), .avviso-ovl, .toast-zona, #banda-demo')]
     .map(e=>e.getBoundingClientRect()).filter(r=>r.width>0);
   const sottoLaMobilia=r=>fissi.some(f=>!(r.right<f.left||r.left>f.right||r.bottom<f.top||r.top>f.bottom));
   const modaleAperto=!!document.querySelector('.sheet-overlay:not([hidden]), .overlay:not([hidden]), .avviso-ovl');
   return [...document.querySelectorAll('button, a[href], input, select, textarea')].filter(e=>{
     const r=e.getBoundingClientRect();
     if (modaleAperto && !e.closest('.sheet, .pannello-cattura, .avviso')) return false;
-    if (sottoLaMobilia(r) && !e.closest('.tabbar, .fab, #banda-demo')) return false;
+    if (sottoLaMobilia(r) && !e.closest('.tabbar, #banda-demo')) return false;
     return r.width>4 && r.height>4 && r.top>=0 && r.bottom<=innerHeight && r.left>=0 && r.right<=innerWidth
       && getComputedStyle(e).visibility!=='hidden' && !e.closest('[hidden]');
   }).map(e=>{

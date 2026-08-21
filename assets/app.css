@@ -393,7 +393,7 @@ small { color: var(--inchiostro-2); }
   mask-image: linear-gradient(to right, #000 calc(100% - 26px), transparent);
 }
 .sottonav-voce {
-  flex: none; display: inline-flex; align-items: center; justify-content: center;
+  flex: none; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
   min-height: 38px; padding: 0 12px 2px; border-bottom: 2px solid transparent;
   font-size: 13.5px; font-weight: 650; color: var(--inchiostro-2); white-space: nowrap;
   transition: color var(--t-veloce), border-color var(--t-veloce);
@@ -406,7 +406,7 @@ small { color: var(--inchiostro-2); }
      schermata sola: sta più stretta addosso al titolo, e i bersagli
      restano alti 36 px con tutta la larghezza della linguetta */
   .sottonav { margin: -14px 0 12px; }
-  .sottonav-voce { min-height: 36px; font-size: 13px; padding: 0 11px 2px; }
+  .sottonav-voce { min-height: 36px; font-size: 13px; padding: 0 10px 2px; gap: 5px; }
 }
 
 /* La porta delle impostazioni su telefono: sta nella riga del titolo di
@@ -446,6 +446,23 @@ small { color: var(--inchiostro-2); }
     padding: 5px 2px; border-radius: var(--r-2);
     transition: color var(--t-veloce), transform var(--t-veloce);
   }
+  /* il tasto della cattura: non è una destinazione, quindi non si comporta
+     come le tre linguette — non si accende, non porta da nessuna parte, e un
+     filo di bordo lo stacca da loro */
+  .tabbar .tab-catt {
+    flex: none; width: 46px; align-self: stretch; margin-left: 6px;
+    padding: 0; border-radius: var(--r-2);
+    background: var(--grad-brand); color: #fff; box-shadow: var(--e1);
+    align-items: center; justify-content: center;
+  }
+  .tabbar .tab-catt::before {
+    content: ''; position: absolute; left: -6px; top: 6px; bottom: 6px;
+    width: 1px; background: var(--bordo);
+  }
+  .tabbar .tab-catt { position: relative; }
+  .tabbar .tab-catt:active { transform: scale(.94); }
+  .tabbar .tab-catt .ico { transition: transform var(--t-media); }
+  .tabbar .tab-catt:hover .ico { transform: rotate(90deg); }
   .tabbar button.attivo { color: var(--accento-testo); }
   .tabbar button.attivo .tab-ico { transform: translateY(-2px) scale(1.12); }
   .tabbar button .tab-ico { position: relative; display: inline-flex; transition: transform var(--t-media); }
@@ -545,6 +562,16 @@ small { color: var(--inchiostro-2); }
 .btn-ok:hover { filter: brightness(1.06); box-shadow: var(--e2); }
 .btn-ok small { color: rgba(255, 255, 255, .92); }
 
+/* Il gradino in mezzo fra il pieno e il trasparente: si vede che è un tasto
+   senza pesare come l'azione principale. Serve dove il tasto sta DENTRO a un
+   altro comando — il «Aggiungi» dentro la cornice del campo — e la scheda ha
+   già il suo pieno da un'altra parte: due pieni nello stesso riquadro sono
+   due «premi qui» e non si capisce quale. */
+.btn-tinta {
+  background: color-mix(in srgb, var(--accento) 13%, var(--superficie-1));
+  color: var(--accento-testo); border-color: transparent; box-shadow: none;
+}
+.btn-tinta:hover { background: color-mix(in srgb, var(--accento) 20%, var(--superficie-1)); box-shadow: none; }
 .btn-ghost { background: transparent; border-color: transparent; box-shadow: none; color: var(--inchiostro-2); }
 .btn-ghost:hover { background: color-mix(in srgb, var(--inchiostro-1) 6%, transparent); color: var(--inchiostro-1); box-shadow: none; }
 .btn-grande { padding: 0 24px; font-size: 16px; min-height: var(--h-btn-l); }
@@ -876,20 +903,6 @@ select.sel-compatto {
   .pannello-cattura .piede span[style] { display: none; }
 }
 
-/* FAB */
-.fab {
-  position: fixed; right: 24px; bottom: 24px; z-index: 50;
-  width: 58px; height: 58px; border-radius: var(--r-3);
-  background: var(--grad-brand); color: #fff;
-  box-shadow: var(--e3);
-  display: flex; align-items: center; justify-content: center;
-  transition: transform var(--t-media), box-shadow var(--t-media);
-}
-.fab .ico { transition: transform var(--t-media); }
-.fab:hover { transform: translateY(-3px) scale(1.04); }
-.fab:hover .ico { transform: rotate(90deg); }
-.fab:active { transform: scale(.94); }
-@media (max-width: 860px) { .fab { bottom: calc(96px + env(safe-area-inset-bottom)); right: calc(16px + env(safe-area-inset-right)); } }
 
 /* ---------- toast & particelle ---------- */
 
@@ -1386,7 +1399,6 @@ label.campo {
 .chip-tempo:hover { transform: translateY(-1px); border-color: color-mix(in srgb, var(--accento) 45%, var(--bordo-forte)); }
 
 /* Cattura: FAB solo su mobile (su desktop c'è il pulsante in sidebar) */
-@media (min-width: 861px) { .fab { display: none; } }
 
 /* ---------- rifiniture mobile ---------- */
 @media (max-width: 860px) {
@@ -2090,6 +2102,9 @@ select.agg-sel-area { width: auto; max-width: 190px; flex: 0 1 auto; font-size: 
 .tl-check:hover { border-color: var(--ok); color: var(--ok); }
 .tl-ed-riga.fatta .tl-check { background: var(--ok-pieno); border-color: transparent; color: #fff; }
 .tl-tag { flex: none; display: inline-flex; }
+/* il segno dell'area, uno per tutta l'app: prende il colore dell'area e non
+   si stringe mai, così il titolo accanto può accorciarsi quanto serve */
+.segno-area { flex: none; display: inline-flex; color: var(--c-area, var(--inchiostro-muto)); }
 .tl-time { flex: none; width: 92px; padding: 4px 6px; font-size: 11.5px; border-radius: var(--r-1); }
 
 /* editor "orari e durate" */
@@ -2412,8 +2427,6 @@ body.sto-trascinando { cursor: grabbing; user-select: none; -webkit-user-select:
 
 /* il selettore dell'area dentro una riga di aggiunta: stretto quanto basta
    sul telefono, largo abbastanza da leggere il nome intero col mouse */
-.campo-area { width: 132px; flex: none; }
-@media (min-width: 861px) { .campo-area { width: 200px; } }
 
 .vuoto-azione { margin-top: 14px; display: flex; justify-content: center; }
 

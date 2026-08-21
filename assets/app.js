@@ -267,7 +267,7 @@
     var zona = document.getElementById('toast-zona');
     var t = document.createElement('div');
     t.className = 'toast' + (azione ? ' toast-lungo' : '');
-    t.innerHTML = (icona ? ICO(icona, 16) : ICO('check', 16)) + '<span>' + esc(testo) + '</span>' +
+    t.innerHTML = (icona ? ICO(icona, 15) : ICO('check', 15)) + '<span>' + esc(testo) + '</span>' +
       (xp ? ' <span class="xp">+' + xp + ' XP</span>' : '') +
       (azione ? '<button class="toast-azione">' + esc(azione.eti) + '</button>' : '');
     zona.appendChild(t);
@@ -308,7 +308,7 @@
 
   var $ovl = document.getElementById('overlay-cattura');
   var $inp = document.getElementById('input-cattura');
-  document.getElementById('corpo-cattura').insertAdjacentHTML('afterbegin', ICO('bolt', 20));
+  document.getElementById('corpo-cattura').insertAdjacentHTML('afterbegin', ICO('bolt', 18));
 
   function apriCattura() {
     /* se era già aperto non si entra una seconda volta nella modalità:
@@ -323,10 +323,8 @@
   }
   function chiudiCattura() { $ovl.hidden = true; bloccaSfondo(false); esceFuoco(); verificaModalita(); }
 
-  document.getElementById('fab-cattura').innerHTML = ICO('plus', 25);
-  document.getElementById('fab-cattura').addEventListener('click', apriCattura);
   var $sideCatt = document.getElementById('side-cattura');
-  $sideCatt.querySelector('.cattura-cta-testo').innerHTML = ICO('bolt', 16) + ' Aggiungi una nota';
+  $sideCatt.querySelector('.cattura-cta-testo').innerHTML = ICO('bolt', 15) + ' Aggiungi una nota';
   $sideCatt.addEventListener('click', apriCattura);
   $ovl.addEventListener('click', function (e) { if (e.target === $ovl) chiudiCattura(); });
   function salvaCattura() {
@@ -396,7 +394,7 @@
 
   /* il resto dell'app diventa inerte: niente clic, niente Tab, niente voce */
   function isolaSfondo(attiva) {
-    ['.app', '.tabbar', '.fab', '#banda-demo'].forEach(function (sel) {
+    ['.app', '.tabbar', '#banda-demo'].forEach(function (sel) {
       document.querySelectorAll(sel).forEach(function (el) {
         if (attiva) { el.setAttribute('inert', ''); el.setAttribute('aria-hidden', 'true'); }
         else { el.removeAttribute('inert'); el.removeAttribute('aria-hidden'); }
@@ -586,10 +584,10 @@
     { id: 'rituali',     nome: 'Rituali',     icona: 'sun',       gruppo: 'primaria',   livello: 'quotidiana' },
     { id: 'plancia',     nome: 'Panoramica',  icona: 'dashboard', gruppo: 'primaria',   livello: 'quotidiana' },
     { id: 'esperimenti', nome: 'Esperimenti', icona: 'flask',     gruppo: 'secondaria', livello: 'extra' },
-    { id: 'scienza',     nome: 'Perché funziona', icona: 'atom',  gruppo: 'secondaria', livello: 'extra' },
+    { id: 'scienza',     nome: 'Perché funziona', breve: 'Scienza', icona: 'atom', gruppo: 'secondaria', livello: 'extra' },
     /* stanza a parte: dieci vestiti per gli stessi elementi, da confrontare
        per scegliere la base grafica di tutto il sito */
-    { id: 'lab',         nome: 'Design lab',  icona: 'palette',   gruppo: 'secondaria', livello: 'extra' }
+    { id: 'lab',         nome: 'Design lab',  breve: 'Lab', icona: 'palette',  gruppo: 'secondaria', livello: 'extra' }
   ];
   /* le 4 destinazioni quotidiane nella tab bar mobile; le altre primarie
      (es. Giornata) e le secondarie stanno nel menu "Altro" */
@@ -646,7 +644,7 @@
     /* sidebar desktop: l'ancora, poi le quotidiane, poi gli extra */
     var lato = document.getElementById('nav-lato');
     function voce(v) {
-      var dim = v.livello === 'ancora' ? 20 : (v.livello === 'extra' ? 15 : 17);
+      var dim = v.livello === 'ancora' ? 18 : 15;
       return '<a class="nav-item nav-' + (v.livello || 'quotidiana') + (corrente === v.id ? ' attivo' : '') + '" href="#/' + v.id + '">' +
         ICO(v.icona, dim) + '<span>' + v.nome + '</span>' + badgeInbox(v, s) + '</a>';
     }
@@ -661,7 +659,7 @@
         ICO(g.icona, dim) + '<span>' + g.nome + '</span>' + badgeInbox({ id: g.id }, s) + '</a>';
     }
     lato.innerHTML = tre
-      ? GRUPPI.map(function (g) { return voceGruppo(g, 20); }).join('')
+      ? GRUPPI.map(function (g) { return voceGruppo(g, 18); }).join('')
       : livello('ancora') + livello('quotidiana') +
         '<div class="nav-sep"></div>' + livello('extra');
 
@@ -681,18 +679,28 @@
     tab.innerHTML = (tre
       ? GRUPPI.map(function (g) {
         return '<button data-vai="' + g.viste[0].id + '" class="' + (g.id === gCorr.id ? 'attivo' : '') + '">' +
-          '<span class="tab-ico">' + ICO(g.icona, 21) + badgeInbox({ id: g.id }, s) + '</span>' + g.nome + '</button>';
+          '<span class="tab-ico">' + ICO(g.icona, 18) + badgeInbox({ id: g.id }, s) + '</span>' + g.nome + '</button>';
       }).join('')
       : primNav.map(function (v) {
         return '<button data-vai="' + v.id + '" class="' + (corrente === v.id ? 'attivo' : '') + '">' +
-          '<span class="tab-ico">' + ICO(v.icona, 21) + badgeInbox(v, s) + '</span>' + v.nome + '</button>';
+          '<span class="tab-ico">' + ICO(v.icona, 18) + badgeInbox(v, s) + '</span>' + v.nome + '</button>';
       }).join('')) +
-      (tre ? '' : '<button data-menu="1" class="' + (inSecondaria ? 'attivo' : '') + '"><span class="tab-ico">' + ICO('sparkles', 21) + '</span>Altro</button>');
+      (tre ? '' : '<button data-menu="1" class="' + (inSecondaria ? 'attivo' : '') + '"><span class="tab-ico">' + ICO('sparkles', 18) + '</span>Altro</button>') +
+      /* La cattura sta DENTRO la barra, non su un pulsante che galleggia sopra
+         la pagina. Quello tondo, fisso in basso a destra, stava sopra un
+         comando in ventun punti diversi fra sei schermate: la riga di «Review
+         della settimana» ci finiva sotto per milleottocento pixel quadrati e
+         non c'era modo di scorrere per liberarla. Qui non copre mai niente e
+         resta a un dito di distanza, che è tutto quello che deve fare. */
+      '<button class="tab-catt" data-catt="1" aria-label="Cattura un pensiero" title="Cattura un pensiero (tasto C)">' +
+      ICO('plus', 18) + '</button>';
     tab.querySelectorAll('[data-vai]').forEach(function (b) {
       b.addEventListener('click', function () { location.hash = '#/' + b.getAttribute('data-vai'); });
     });
     var bMenu = tab.querySelector('[data-menu]');
     if (bMenu) bMenu.addEventListener('click', apriMenuAltro);
+    var bCatt = tab.querySelector('[data-catt]');
+    if (bCatt) bCatt.addEventListener('click', apriCattura);
   }
 
   /* ---------- footer sidebar (account + impostazioni) ---------- */
@@ -727,13 +735,13 @@
         /* lo stato è cliccabile: chi legge "Salvataggio…" vuole sapere subito
            perché, e la spiegazione deve stare dietro quella parola, non
            sepolta nelle impostazioni */
-        '<button type="button" class="sync-chip ' + y.cls + '" data-diag="1" title="' + esc(y.title || 'Mostra cosa sta succedendo') + '">' + ICO(y.ico, 12) + ' ' + (y.breve || y.testo) + '</button></div></div>';
+        '<button type="button" class="sync-chip ' + y.cls + '" data-diag="1" title="' + esc(y.title || 'Mostra cosa sta succedendo') + '">' + ICO(y.ico, 13) + ' ' + (y.breve || y.testo) + '</button></div></div>';
     } else if (a.available) {
       acct = '<button class="btn btn-mini btn-accedi" id="fondo-accedi">' + GOOGLE_G(15) + ' Accedi con Google</button>';
     } else {
       acct = '<div class="fondo-locale">' + ICO('cloud', 13) + ' Dati salvati su questo dispositivo</div>';
     }
-    return acct + '<button class="btn-strumento-largo" id="fondo-impostazioni">' + ICO('ingranaggio', 16) + '<span>Impostazioni</span></button>';
+    return acct + '<button class="btn-strumento-largo" id="fondo-impostazioni">' + ICO('ingranaggio', 15) + '<span>Impostazioni</span></button>';
   }
 
   function wireFooterSidebar() {
@@ -760,19 +768,19 @@
       '<div class="imp-nota">Con <b>Tre porte</b> nella barra restano <b>Oggi</b>, <b>Attività</b> e <b>Andamento</b>, e le altre schermate stanno dentro, in una riga di linguette sotto al titolo. Con <b>Tutte le pagine</b> torna la barra lunga di prima. In tutti e due i casi non sparisce niente: cambia solo da dove ci si arriva.</div></div>' +
       '<div class="imp-sezione"><div class="imp-eti">Personalizza</div>' +
       '<div class="imp-azioni">' +
-      '<button class="btn btn-mini" id="imp-aree">' + ICO('sparkles', 14) + ' Gestisci le aree</button> ' +
-      '<button class="btn btn-mini" id="imp-guida">' + ICO('aiuto', 14) + ' Come si usa</button> ' +
-      '<button class="btn btn-mini" id="imp-scienza">' + ICO('atom', 14) + ' Perché funziona</button></div>' +
+      '<button class="btn btn-mini" id="imp-aree">' + ICO('sparkles', 15) + ' Gestisci le aree</button> ' +
+      '<button class="btn btn-mini" id="imp-guida">' + ICO('aiuto', 15) + ' Come si usa</button> ' +
+      '<button class="btn btn-mini" id="imp-scienza">' + ICO('atom', 15) + ' Perché funziona</button></div>' +
       '<div class="imp-nota">«Perché funziona» racconta su quali studi è appoggiata ogni scelta dell’app. Si legge una volta, quindi non occupa una linguetta.</div></div>' +
       '<div class="imp-sezione"><div class="imp-eti">La giornata</div>' +
-      '<div class="imp-azioni"><button class="btn btn-mini" id="imp-ritmo">' + ICO('clock', 14) + ' Sonno e pasti</button></div>' +
+      '<div class="imp-azioni"><button class="btn btn-mini" id="imp-ritmo">' + ICO('clock', 15) + ' Sonno e pasti</button></div>' +
       '<div class="imp-nota">La barra della giornata è sempre in cima a <b>Oggi</b>; la pagina <b>Giornata</b> mostra anche settimana, mese e anno.</div></div>' +
       '<div class="imp-sezione"><div class="imp-eti">Tema</div>' +
       '<div class="segmenti imp-seg" id="seg-modo">' + segM('auto', 'refresh', 'Auto') + segM('light', 'sun', 'Chiaro') + segM('dark', 'moon', 'Scuro') + '</div></div>' +
       '<div class="imp-sezione"><div class="imp-eti">Aspetto</div>' +
       '<div class="segmenti imp-seg" id="seg-skin">' + segS('quiete', 'Aurora') + segS('arcade', 'Arcade') + '</div>' +
       '<div class="imp-nota">Aurora è più sobrio, Arcade più acceso. Cambia solo l’aspetto, non i dati.</div>' +
-      '<div class="imp-azioni" style="margin-top:10px"><button class="btn btn-mini" id="imp-lab">' + ICO('palette', 14) + ' Design lab</button></div>' +
+      '<div class="imp-azioni" style="margin-top:10px"><button class="btn btn-mini" id="imp-lab">' + ICO('palette', 15) + ' Design lab</button></div>' +
       '<div class="imp-nota">Dieci interfacce complete per la stessa app, da confrontare per scegliere la base grafica di tutto il sito.</div></div>';
   }
 
@@ -780,19 +788,19 @@
     var nBackup = LM.listBackups().length;
     return '<div class="imp-sezione"><div class="imp-eti">I tuoi dati</div>' +
       '<div class="imp-azioni">' +
-      '<button class="btn btn-mini" id="imp-esporta">' + ICO('download', 14) + ' Esporta (.json)</button> ' +
-      '<button class="btn btn-mini" id="imp-importa">' + ICO('upload', 14) + ' Importa da file</button> ' +
-      '<button class="btn btn-mini" id="imp-backup">' + ICO('save', 14) + ' Backup e ripristino' + (nBackup ? ' (' + nBackup + ')' : '') + '</button>' +
+      '<button class="btn btn-mini" id="imp-esporta">' + ICO('download', 15) + ' Esporta (.json)</button> ' +
+      '<button class="btn btn-mini" id="imp-importa">' + ICO('upload', 15) + ' Importa da file</button> ' +
+      '<button class="btn btn-mini" id="imp-backup">' + ICO('save', 15) + ' Backup e ripristino' + (nBackup ? ' (' + nBackup + ')' : '') + '</button>' +
       '<input type="file" id="imp-file" accept="application/json,.json" hidden></div>' +
       '<div class="imp-nota">Esporta un file con tutti i tuoi dati per conservarlo o spostarlo. Ogni operazione che sostituisce i dati crea prima un backup ripristinabile.</div>' +
       '</div>' +
       '<div class="imp-sezione"><div class="imp-eti">Ripartenza</div>' +
       '<div class="imp-azioni">' +
-      '<button class="btn btn-mini" id="imp-demo">' + ICO('refresh', 14) + ' Carica dati di esempio</button> ' +
-      '<button class="btn btn-mini imp-pericolo" id="imp-azzera">' + ICO('trash', 14) + ' Azzera tutto</button></div>' +
+      '<button class="btn btn-mini" id="imp-demo">' + ICO('refresh', 15) + ' Carica dati di esempio</button> ' +
+      '<button class="btn btn-mini imp-pericolo" id="imp-azzera">' + ICO('trash', 15) + ' Azzera tutto</button></div>' +
       '<div class="imp-nota">L’azzeramento crea comunque un backup: potrai recuperare i dati da «Backup e ripristino».</div></div>' +
       '<div class="imp-sezione"><div class="imp-eti">Se qualcosa non torna</div>' +
-      '<div class="imp-azioni"><button class="btn btn-mini" id="imp-diag">' + ICO('terminale', 14) + ' Cosa sta succedendo</button></div>' +
+      '<div class="imp-azioni"><button class="btn btn-mini" id="imp-diag">' + ICO('terminale', 15) + ' Cosa sta succedendo</button></div>' +
       '<div class="imp-nota">Mostra se i dati sono davvero salvati e il registro di tutto quello che l’app sta facendo, da copiare e inviare.</div></div>';
   }
 
@@ -938,10 +946,10 @@
     apriSheet('Cosa sta succedendo',
       '<div class="diag-stato ' + st.cls + '"><b>' + esc(st.tit) + '</b><span>' + esc(st.txt.trim()) + '</span></div>' +
       '<div class="diag-barra">' +
-      '<button class="btn btn-mini btn-primario" id="diag-copia">' + ICO('copy', 14) + ' Copia tutto</button>' +
-      (navigator.share ? '<button class="btn btn-mini" id="diag-condividi">' + ICO('share', 14) + ' Condividi</button>' : '') +
-      '<button class="btn btn-mini" id="diag-riprova">' + ICO('refresh', 14) + ' Riprova ora</button>' +
-      '<button class="btn btn-mini btn-ghost" id="diag-svuota">' + ICO('trash', 14) + ' Svuota</button>' +
+      '<button class="btn btn-mini btn-primario" id="diag-copia">' + ICO('copy', 15) + ' Copia tutto</button>' +
+      (navigator.share ? '<button class="btn btn-mini" id="diag-condividi">' + ICO('share', 15) + ' Condividi</button>' : '') +
+      '<button class="btn btn-mini" id="diag-riprova">' + ICO('refresh', 15) + ' Riprova ora</button>' +
+      '<button class="btn btn-mini btn-ghost" id="diag-svuota">' + ICO('trash', 15) + ' Svuota</button>' +
       '</div>' +
       /* la nota sta SOPRA il registro: sotto c'è un'area che scorre da sola e
          quello che finisce là in fondo non lo legge nessuno */
@@ -1035,11 +1043,11 @@
       return '<div class="area-riga' + (attiva ? '' : ' spenta') + '" style="--c-area:' + LM.coloreArea(a) + '">' +
         '<span class="icona-area">' + ICO(a.icona, 15) + '</span>' +
         '<input type="text" class="area-nome-input" data-rin="' + a.id + '" value="' + esc(a.nome) + '" aria-label="Nome dell’area">' +
-        '<button class="icona-btn' + (attiva ? ' on' : '') + '" data-toggle-area="' + a.id + '" title="' + (attiva ? 'Attiva (tocca per disattivare)' : 'Disattivata (tocca per attivare)') + '">' + ICO(attiva ? 'check' : 'x', 14) + '</button>' +
-        '<button class="icona-btn" data-del-area="' + a.id + '" title="Rimuovi">' + ICO('trash', 14) + '</button>' +
+        '<button class="icona-btn' + (attiva ? ' on' : '') + '" data-toggle-area="' + a.id + '" title="' + (attiva ? 'Attiva (tocca per disattivare)' : 'Disattivata (tocca per attivare)') + '">' + ICO(attiva ? 'check' : 'x', 15) + '</button>' +
+        '<button class="icona-btn" data-del-area="' + a.id + '" title="Rimuovi">' + ICO('trash', 15) + '</button>' +
         '</div>';
     }).join('');
-    var picker = ICONE_AREA.map(function (ic, i) { return '<button class="ico-pick' + (i === 0 ? ' sel' : '') + '" data-ico="' + ic + '" aria-label="' + ic + '">' + ICO(ic, 16) + '</button>'; }).join('');
+    var picker = ICONE_AREA.map(function (ic, i) { return '<button class="ico-pick' + (i === 0 ? ' sel' : '') + '" data-ico="' + ic + '" aria-label="' + ic + '">' + ICO(ic, 15) + '</button>'; }).join('');
     apriSheet('Le tue aree',
       '<div class="imp-nota" style="margin-top:0">Rinomina, disattiva o rimuovi le aree, oppure creane di tue (es. i tuoi progetti). Rimuovendo un’area, le sue attività passano ad «Altro»: nulla va perso.</div>' +
       '<div class="aree-lista">' + righe + '</div>' +
@@ -1079,7 +1087,7 @@
 
   function apriGuida() {
     function voce(ico, tit, testo) {
-      return '<div class="guida-voce"><span class="guida-ico">' + ICO(ico, 16) + '</span><div><b>' + tit + '</b><p>' + testo + '</p></div></div>';
+      return '<div class="guida-voce"><span class="guida-ico">' + ICO(ico, 15) + '</span><div><b>' + tit + '</b><p>' + testo + '</p></div></div>';
     }
     apriSheet('Come si usa LifeMax',
       '<div class="imp-nota" style="margin-top:0">Tre passaggi: <b>annoti</b> quello che ti viene in mente, <b>decidi</b> cosa farne, <b>fai</b> una cosa per volta.</div>' +
@@ -1104,13 +1112,13 @@
       var y = statoSync();
       return '<div class="imp-sezione"><div class="imp-eti">Account</div>' +
         '<div class="menu-account">' + ICO('cloudCheck', 15) + ' Connesso come <b>' + esc(a.user.name || a.user.email) + '</b>' +
-        '<button class="btn btn-mini btn-ghost" id="imp-esci">' + ICO('logout', 14) + ' Esci</button></div>' +
+        '<button class="btn btn-mini btn-ghost" id="imp-esci">' + ICO('logout', 15) + ' Esci</button></div>' +
         '<button type="button" class="sync-chip sync-chip-largo ' + y.cls + '" data-diag="1" title="' + esc(y.title || 'Mostra cosa sta succedendo') + '">' +
         ICO(y.ico, 13) + ' ' + y.testo + ICO('arrowRight', 13) + '</button></div>';
     }
     if (a.available) {
       return '<div class="imp-sezione"><div class="imp-eti">Account</div>' +
-        '<button class="btn btn-accedi" id="imp-accedi" style="width:100%;justify-content:center">' + GOOGLE_G(17) + ' Accedi con Google</button>' +
+        '<button class="btn btn-accedi" id="imp-accedi" style="width:100%;justify-content:center">' + GOOGLE_G(15) + ' Accedi con Google</button>' +
         '<div class="imp-nota">Accedi per ritrovare i tuoi dati su tutti i dispositivi.</div></div>';
     }
     return '<div class="imp-sezione"><div class="imp-eti">Account</div>' +
@@ -1129,7 +1137,7 @@
     var extra = primarie().filter(function (v) { return TAB_MOBILE.indexOf(v.id) < 0; }); /* es. Giornata */
     function voceMenu(v) {
       return '<button class="menu-voce menu-' + (v.livello || 'quotidiana') + '" data-vai="' + v.id + '">' +
-        ICO(v.icona, v.livello === 'extra' ? 16 : 18) + '<span>' + v.nome + '</span>' + ICO('arrowRight', 15) + '</button>';
+        ICO(v.icona, v.livello === 'extra' ? 15 : 18) + '<span>' + v.nome + '</span>' + ICO('arrowRight', 15) + '</button>';
     }
     /* con le tre porte qui non serve nessun elenco di pagine: ogni schermata
        sta a un tocco dalle linguette sotto al titolo della sua porta */
@@ -1141,10 +1149,10 @@
     if (a.user) {
       var y = statoSync();
       acct = '<div class="menu-account">' + ICO('cloudCheck', 15) + ' Connesso come <b>' + esc(a.user.name || a.user.email) + '</b>' +
-        '<button class="btn btn-mini btn-ghost" id="menu-esci">' + ICO('logout', 14) + ' Esci</button></div>' +
+        '<button class="btn btn-mini btn-ghost" id="menu-esci">' + ICO('logout', 15) + ' Esci</button></div>' +
         '<button type="button" class="sync-chip sync-chip-largo ' + y.cls + '" data-diag="1" title="' + esc(y.title || 'Mostra cosa sta succedendo') + '">' + ICO(y.ico, 13) + ' ' + y.testo + ICO('arrowRight', 13) + '</button>';
     } else if (a.available) {
-      acct = '<button class="btn btn-accedi" id="menu-accedi" style="width:100%;justify-content:center">' + GOOGLE_G(17) + ' Accedi con Google</button>' +
+      acct = '<button class="btn btn-accedi" id="menu-accedi" style="width:100%;justify-content:center">' + GOOGLE_G(15) + ' Accedi con Google</button>' +
         '<div class="imp-nota">Accedi per ritrovare i tuoi dati su tutti i dispositivi.</div>';
     } else {
       acct = '<div class="fondo-locale">' + ICO('cloud', 13) + ' Dati salvati su questo dispositivo</div>';
@@ -1157,7 +1165,7 @@
        desktop, dove hanno sempre funzionato così. */
     apriSheet('Menu', (link ? '<div class="menu-lista">' + link + '</div>' : '') +
       '<div class="imp-sezione"><div class="imp-eti">Account</div>' + acct + '</div>' +
-      '<button class="btn-strumento-largo" id="menu-impostazioni">' + ICO('ingranaggio', 16) + '<span>Impostazioni</span>' + ICO('arrowRight', 14) + '</button>',
+      '<button class="btn-strumento-largo" id="menu-impostazioni">' + ICO('ingranaggio', 15) + '<span>Impostazioni</span>' + ICO('arrowRight', 15) + '</button>',
       function (root) {
         root.querySelectorAll('[data-vai]').forEach(function (b) {
           b.addEventListener('click', function () { chiudiSheet(); location.hash = '#/' + b.getAttribute('data-vai'); });
@@ -1191,7 +1199,7 @@
       '<input type="text" class="agg-testo" placeholder="' + esc(segnaposto) + '" aria-label="' + esc(segnaposto) + '" enterkeyhint="done">' +
       /* il segno più dice da sé cosa fa: quando lo schermo è strettissimo la
          scritta sparisce e il tasto resta comunque comprensibile */
-      '<button class="btn btn-mini btn-primario agg-ok" type="submit" aria-label="Aggiungi">' + ICO('piu2', 14) + '<span class="agg-ok-eti">Aggiungi</span></button></div>' +
+      '<button class="btn btn-mini btn-tinta agg-ok" type="submit" aria-label="Aggiungi">' + ICO('plus', 15) + '<span class="agg-ok-eti">Aggiungi</span></button></div>' +
       (opzioniHtml ? '<div class="agg-opz" hidden>' + opzioniHtml + '</div>' : '') +
       '</form>';
   }
@@ -1239,6 +1247,18 @@
     return LM.load().aree.find(function (a) { return a.id === id; }) || LM.load().aree[LM.load().aree.length - 1];
   }
 
+  /* Il segno dell'area: il glifo colorato che sta accanto a una cosa da fare.
+     Era scritto a mano in sei posti con quattro nomi di classe diversi, e in
+     quattro di quei sei non diceva il proprio nome a nessuno — il title non
+     esiste sul tocco e l'icona è aria-hidden, quindi per chi legge con la voce
+     l'area non c'era affatto. Uno solo, che si annuncia. */
+  function segnoArea(ar, dim, cls) {
+    if (!ar) return '';
+    return '<span class="segno-area' + (cls ? ' ' + cls : '') + '" role="img"' +
+      ' aria-label="Area: ' + esc(ar.nome) + '" title="' + esc(ar.nome) + '"' +
+      ' style="--c-area:' + LM.coloreArea(ar) + '">' + ICO(ar.icona, dim || 13) + '</span>';
+  }
+
   function areeAttive() {
     var s = LM.load();
     return s.aree.filter(function (a) { return s.areeAttive.indexOf(a.id) >= 0; });
@@ -1270,7 +1290,7 @@
     if (!el) return;
     var a = window.LM_AUTH || { available: false, user: null };
     if (a.user) {
-      el.innerHTML = '<div class="ob-account-in">' + ICO('cloudCheck', 16) + ' Accesso eseguito come <b>' + esc(a.user.name || a.user.email) + '</b></div>';
+      el.innerHTML = '<div class="ob-account-in">' + ICO('cloudCheck', 15) + ' Accesso eseguito come <b>' + esc(a.user.name || a.user.email) + '</b></div>';
     } else if (a.available) {
       el.innerHTML = '<button class="btn btn-accedi" id="ob-accedi">' + GOOGLE_G(18) + ' Accedi con Google</button>' +
         '<div class="ob-account-nota">Accedi per ritrovare i tuoi dati su tutti i dispositivi. Puoi anche continuare senza account e collegarlo più avanti.</div>';
@@ -1295,7 +1315,7 @@
     /* sul telefono il testo lungo occupava due righe e mangiava mezzo schermo */
     banda.innerHTML = '<div class="banda-demo"><span>' + ICO('sparkles', 13) +
       ' <b>Dati di esempio</b><span class="banda-piu">· modifica pure, tutto resta salvato</span></span>' +
-      '<button class="banda-x" id="banda-x" aria-label="Nascondi">' + ICO('x', 14) + '</button></div>';
+      '<button class="banda-x" id="banda-x" aria-label="Nascondi">' + ICO('x', 15) + '</button></div>';
     misura();
     document.getElementById('banda-x').addEventListener('click', function () {
       LM.load().demoChiusa = true; LM.save(); banda.innerHTML = ''; misura();
@@ -1377,15 +1397,15 @@
       if (st.fatto && rid !== 'checkin') return '';
       var r = RITUALI.filter(function (x) { return x.id === rid; })[0];
       return '<button class="rit-adesso" data-vai="rituali" data-sub="' + rid + '">' +
-        ICO(r.ico, 16) + '<b>' + r.nome + '</b>' +
-        (st.fatto ? '<span class="rit-stato fatto">' + ICO('check', 12) + ' ' + st.testo + '</span>'
+        ICO(r.ico, 15) + '<b>' + r.nome + '</b>' +
+        (st.fatto ? '<span class="rit-stato fatto">' + ICO('check', 13) + ' ' + st.testo + '</span>'
                   : '<span class="rit-ora">adesso</span>') +
         ICO('arrowRight', 15) + '</button>';
     }
     var ritAdesso = rigaRitualeAdesso();
 
     var html = topbar('Oggi', 'L’azione da fare adesso.',
-      '<span class="chip">' + ICO('check', 14) + ' <b>&nbsp;' + fatte + '/' + oggi.length + '</b>&nbsp;oggi</span>');
+      '<span class="chip">' + ICO('check', 15) + ' <b>&nbsp;' + fatte + '/' + oggi.length + '</b>&nbsp;oggi</span>');
     html += '<div id="oggi-giornata"></div>';
 
     if (!prossima) {
@@ -1395,12 +1415,12 @@
         '</div>' +
         '<div class="focus-azioni-riga">' +
         '<button class="btn btn-primario btn-grande" data-vai="rituali" data-sub="mattina">' + ICO('sun', 18) + ' Scegli le azioni di oggi</button>' +
-        '<button class="btn" data-vai="inbox">' + ICO('inbox', 17) + ' Prendi dalle attività</button>' +
-        (oggi.length ? '<button class="btn" data-vai="rituali" data-sub="sera">' + ICO('moon', 17) + ' Review della sera</button>' : '') +
+        '<button class="btn" data-vai="inbox">' + ICO('inbox', 18) + ' Prendi dalle attività</button>' +
+        (oggi.length ? '<button class="btn" data-vai="rituali" data-sub="sera">' + ICO('moon', 18) + ' Review della sera</button>' : '') +
         '</div>' +
         '<form id="form-rapida" class="riga-flex" style="max-width:580px;width:100%">' +
         '<input type="text" id="testo-rapida" placeholder="Oppure scrivi qui una cosa da fare" style="flex:1;min-width:220px">' +
-        '<button class="btn btn-primario" type="submit" aria-label="Aggiungi e parti">' + ICO('arrowRight', 17) + '</button></form>' +
+        '<button class="btn btn-primario" type="submit" aria-label="Aggiungi e parti">' + ICO('arrowRight', 18) + '</button></form>' +
         '</div>';
       $vista.innerHTML = html;
       montaOggiGiornata();
@@ -1447,12 +1467,12 @@
         (mostraAltre ? '<div class="focus-altre-lista">' + altre.map(function (a) {
           var ar = areaById(a.areaId), col = LM.coloreArea(ar);
           return '<div class="fa-riga" style="--c-area:' + col + '">' +
-            '<button class="tl-check" data-fa-fatto="' + a.id + '" aria-label="Fatto">' + ICO('check', 12) + '</button>' +
+            '<button class="tl-check" data-fa-fatto="' + a.id + '" aria-label="Fatto">' + ICO('check', 13) + '</button>' +
             '<button class="fa-corpo" data-fa-fuoco="' + a.id + '">' +
-            '<span class="tl-tag" style="color:' + col + '">' + ICO(ar.icona, 13) + '</span>' +
-            '<span class="fa-testo">' + esc(a.testo) + (a.mit ? ' ' + ICO('star', 9) : '') + '</span>' +
-            (a.ora ? '<span class="fa-ora">' + ICO('clock', 10) + ' ' + a.ora + '</span>' : '') +
-            '<span class="fa-fai">Fai questa ' + ICO('arrowRight', 12) + '</span></button></div>';
+            segnoArea(ar, 13, 'tl-tag') +
+            '<span class="fa-testo">' + esc(a.testo) + (a.mit ? ' ' + ICO('star', 11) : '') + '</span>' +
+            (a.ora ? '<span class="fa-ora">' + ICO('clock', 11) + ' ' + a.ora + '</span>' : '') +
+            '<span class="fa-fai">Fai questa ' + ICO('arrowRight', 13) + '</span></button></div>';
         }).join('') + '</div>' : '') + '</div>';
     }
 
@@ -1465,7 +1485,7 @@
         : '') +
       '<div class="focus-azione">' + esc(prossima.testo) + '</div>' +
       '<div class="focus-area" style="--c-area:' + colArea + '">' +
-      '<span style="color:' + colArea + ';display:inline-flex">' + ICO(area.icona, 15) + '</span>' +
+      segnoArea(area, 15) +
       selectAreaAzione(prossima.id, prossima.areaId) + '</div>' +
       (prossima.ifThen ? '<div class="focus-ifthen">' + ICO('bolt', 15) + '<span>' + esc(prossima.ifThen) + '</span></div>' : '') +
       /* gerarchia chiara: un'unica azione dominante, il resto recede */
@@ -1475,11 +1495,11 @@
       '<div class="focus-secondarie">' +
       (timerAttivo
         ? '<button class="btn btn-mini" id="btn-stop-timer">' + ICO('pause', 15) + ' Ferma e registra</button>'
-        : '<span class="timer-gruppo">' + ICO('play', 14) + ' Timer' +
+        : '<span class="timer-gruppo">' + ICO('play', 15) + ' Timer' +
           '<button class="chip-tempo" data-min="25" id="btn-timer">25′</button>' +
           '<button class="chip-tempo" data-min="10">10′</button>' +
           '<button class="chip-tempo" data-min="50">50′</button></span>') +
-      '<button class="btn btn-mini btn-ghost" id="btn-nonora">Più tardi ' + ICO('arrowRight', 14) + '</button>' +
+      '<button class="btn btn-mini btn-ghost" id="btn-nonora">Più tardi ' + ICO('arrowRight', 15) + '</button>' +
       '</div>' +
       '<div class="focus-coda">' +
       '<span>' + (inCoda > 0
@@ -1679,7 +1699,7 @@
       var w = 100 / it.ncols, left = it.col * w;
       var pos = 'top:' + top + 'px;height:' + hgt + 'px;left:calc(' + left + '% + 1px);width:calc(' + w + '% - 3px)';
       if (e.tipo === 'pasto') {
-        return '<div class="tl-blk tl-blk-pasto" style="' + pos + '">' + ICO(e.icona, 12) + (opts.mini ? '' : '<span class="tl-blk-t">' + esc(e.nome) + '</span>') + '</div>';
+        return '<div class="tl-blk tl-blk-pasto" style="' + pos + '">' + ICO(e.icona, 13) + (opts.mini ? '' : '<span class="tl-blk-t">' + esc(e.nome) + '</span>') + '</div>';
       }
       var ar = areaById(e.areaId), col = LM.coloreArea(ar);
       var fatto = e.tipo === 'azione' ? e.done : e.fatto;
@@ -1701,8 +1721,8 @@
          per selezionare il testo. */
       if (e.tipo === 'azione') clic += ' data-drag-az="' + e.id + '"' + (opts.mini ? ' data-manico' : '');
       return '<div class="tl-blk tl-blk-att' + (fatto ? ' fatta' : '') + (basso ? ' tl-blk-basso' : '') + (opts.interactive && !opts.mini ? ' tl-blk-clic' : '') + '"' + clic + ' style="' + pos + ';--c-area:' + col + '" title="' + esc(e.testo) + '">' +
-        check + (e.tipo === 'azione' && !opts.mini && opts.interactive ? '<span class="manico" data-manico aria-hidden="true">' + ICO('dots', 12) + '</span>' : '') +
-        '<span class="tl-blk-t">' + (e.mit ? ICO('star', 9) + ' ' : '') + esc(e.testo) + '</span>' +
+        check + (e.tipo === 'azione' && !opts.mini && opts.interactive ? '<span class="manico" data-manico aria-hidden="true">' + ICO('dots', 13) + '</span>' : '') +
+        '<span class="tl-blk-t">' + (e.mit ? ICO('star', 11) + ' ' : '') + esc(e.testo) + '</span>' +
         (hgt > 30 && !opts.mini ? '<span class="tl-blk-ora">' + e.ora + '–' + fmtMin(e.min + dur) + '</span>' : '') + '</div>';
     }).join('');
     var now = '';
@@ -1932,10 +1952,10 @@
       '<input type="text" class="ig-nome" id="ig-nome" value="' + esc(e.testo) + '" aria-label="Testo" placeholder="Cosa devi fare">' +
       /* su un giorno futuro non si spunta: si sta pianificando, non facendo */
       (spuntabile
-        ? '<button class="btn ' + (fatto ? 'btn-ghost' : 'btn-primario') + ' ig-fatto"><span class="ig-fatto-ico">' + ICO(fatto ? 'refresh' : 'check', 16) + '</span>' + (fatto ? 'Fatta — togli la spunta' : 'Segna come fatta') + '</button>'
+        ? '<button class="btn ' + (fatto ? 'btn-ghost' : 'btn-primario') + ' ig-fatto"><span class="ig-fatto-ico">' + ICO(fatto ? 'refresh' : 'check', 15) + '</span>' + (fatto ? 'Fatta — togli la spunta' : 'Segna come fatta') + '</button>'
         : '<div class="ig-nota-futuro">' + ICO('calendar', 13) + ' La spunterai quando arriva il giorno.</div>') +
       '<div class="ig-griglia">' +
-      '<label class="campo" for="ig-ora">' + ICO('clock', 12) + ' Orario</label><input type="time" class="tl-time" id="ig-ora" value="' + (e.ora || '') + '">' +
+      '<label class="campo" for="ig-ora">' + ICO('clock', 13) + ' Orario</label><input type="time" class="tl-time" id="ig-ora" value="' + (e.ora || '') + '">' +
       '<label class="campo" for="ig-dur">Durata</label><select class="tl-dur" id="ig-dur">' + durOpt + '</select>' +
       '<label class="campo" for="ig-area">Area</label>' + selectAree('ig-area', e.areaId) +
       '</div>' +
@@ -2039,7 +2059,7 @@
        Le cose CON orario si modificano toccando il loro blocco nel grafico. */
     var senzaOra = '';
     if (!compact && interactive && d.tray.length) {
-      senzaOra = '<div class="gio-so"><div class="gio-so-eti">' + ICO('clock', 12) + ' Senza orario <span class="gio-so-n">' + d.tray.length + '</span> — toccale per dargli un posto nella giornata</div>' +
+      senzaOra = '<div class="gio-so"><div class="gio-so-eti">' + ICO('clock', 13) + ' Senza orario <span class="gio-so-n">' + d.tray.length + '</span> — toccale per dargli un posto nella giornata</div>' +
         d.tray.map(function (e) {
           var ar = areaById(e.areaId), col = LM.coloreArea(ar);
           var fatto = e.tipo === 'azione' ? e.done : e.fatto;
@@ -2047,12 +2067,12 @@
           var bAttr = 'data-blk-' + (e.tipo === 'azione' ? 'az' : 'ab') + '="' + e.id + '"';
           return '<div class="gio-so-riga' + (fatto ? ' fatta' : '') + '" style="--c-area:' + col + '"' +
             (e.tipo === 'azione' ? ' data-drag-az="' + e.id + '"' : '') + '>' +
-            (spuntabile ? '<button class="tl-check" ' + attr + ' aria-label="Fatto">' + ICO('check', 12) + '</button>' : '') +
-            (e.tipo === 'azione' ? '<span class="manico" data-manico aria-hidden="true">' + ICO('dots', 12) + '</span>' : '') +
+            (spuntabile ? '<button class="tl-check" ' + attr + ' aria-label="Fatto">' + ICO('check', 13) + '</button>' : '') +
+            (e.tipo === 'azione' ? '<span class="manico" data-manico aria-hidden="true">' + ICO('dots', 13) + '</span>' : '') +
             '<button class="gio-so-corpo" ' + bAttr + '>' +
-            '<span class="tl-tag" style="color:' + col + '" title="' + esc(ar.nome) + '">' + ICO(ar.icona, 13) + '</span>' +
-            '<span class="gio-so-testo">' + esc(e.testo) + (e.mit ? ' ' + ICO('star', 9) : '') + '</span>' +
-            '<span class="gio-so-cta">' + ICO('clock', 12) + ' dai un orario</span></button></div>';
+            segnoArea(ar, 13, 'tl-tag') +
+            '<span class="gio-so-testo">' + esc(e.testo) + (e.mit ? ' ' + ICO('star', 11) : '') + '</span>' +
+            '<span class="gio-so-cta">' + ICO('clock', 13) + ' dai un orario</span></button></div>';
         }).join('') + '</div>';
     }
     /* Aggiunta rapida: solo il testo e l'area. L'orario si dà dopo, toccando
@@ -2062,7 +2082,7 @@
       var doveAdd = d.isToday ? 'a oggi' : ('a ' + etichettaGiorno(k).toLowerCase());
       quickAdd = '<form class="tl-add" id="tl-add"><input type="text" id="tl-add-testo" placeholder="Aggiungi qualcosa ' + esc(doveAdd) + '…" aria-label="Aggiungi">' +
         '<span class="tl-add-area">' + selectAree('tl-add-area') + '</span>' +
-        '<button class="btn btn-mini btn-primario" type="submit">' + ICO('plus', 14) + ' Aggiungi</button></form>';
+        '<button class="btn btn-mini btn-primario" type="submit">' + ICO('plus', 15) + ' Aggiungi</button></form>';
     }
 
     /* sonno e pasti del giorno: UN solo posto, in cima alla pagina, con un
@@ -2070,12 +2090,12 @@
     var sonnoTop = '';
     if (!compact && interactive) {
       var aperto = giornataSonnoAperto;
-      var pastiIco = (d.pasti || []).slice(0, 5).map(function (p) { return ICO(/colaz|coffee/i.test((p.id || '') + p.nome) ? 'coffee' : 'utensils', 12); }).join(' ');
+      var pastiIco = (d.pasti || []).slice(0, 5).map(function (p) { return ICO(/colaz|coffee/i.test((p.id || '') + p.nome) ? 'coffee' : 'utensils', 13); }).join(' ');
       var riass = ICO('bed', 13) + ' <b>' + d.sonno + '</b>→<b>' + d.sveglia + '</b> · dormi ' + fmtOre(LM.minutiSonno(k)) + ' · ' + (pastiIco || '—') + ' ' + (d.pasti || []).length + ' pasti';
       var durOpt = function (v) { return DURATE.map(function (o) { return '<option value="' + o.v + '"' + ((v || '') === o.v ? ' selected' : '') + '>' + o.t + '</option>'; }).join(''); };
       var pastiRows = (d.pasti || []).map(function (p, i) {
         return '<div class="sp-riga" data-pi="' + i + '">' +
-          '<span class="sp-ico">' + ICO(/colaz|coffee/i.test((p.id || '') + p.nome) ? 'coffee' : 'utensils', 14) + '</span>' +
+          '<span class="sp-ico">' + ICO(/colaz|coffee/i.test((p.id || '') + p.nome) ? 'coffee' : 'utensils', 15) + '</span>' +
           '<input type="text" class="sp-nome" data-sp-nome="' + i + '" value="' + esc(p.nome) + '" aria-label="Nome del pasto">' +
           '<input type="time" class="tl-time" data-sp-ora="' + i + '" value="' + (p.ora || '') + '" aria-label="Orario">' +
           '<select class="tl-dur" data-sp-dur="' + i + '" aria-label="Durata">' + durOpt(p.durata) + '</select>' +
@@ -2083,14 +2103,14 @@
       }).join('');
       sonnoTop = '<div class="gio-sonno">' +
         '<button class="gio-sonno-testa" id="gio-sonno-toggle" aria-expanded="' + aperto + '"><span class="gs-riass">' + riass + (d.dalRegistro ? ' <span class="tl-ed-badge">registrato</span>' : '') + '</span>' +
-        '<span class="bk-chevron' + (aperto ? ' aperta' : '') + '">' + ICO('chevronGiu', 16) + '</span></button>' +
+        '<span class="bk-chevron' + (aperto ? ' aperta' : '') + '">' + ICO('chevronGiu', 15) + '</span></button>' +
         /* il corpo c'è sempre (nascosto se chiuso): aprirlo non ricostruisce
            la pagina, così il grafico sopra non si muove */
         ('<div class="gio-sonno-corpo"' + (aperto ? '' : ' hidden') + '>' +
           '<div class="sp-sonno">' +
           '<label class="sp-lab" for="sp-aletto">' + ICO('bed', 13) + ' A letto</label><input type="time" class="tl-time" id="sp-aletto" value="' + d.sonno + '">' +
           '<label class="sp-lab" for="sp-sveglia">' + ICO('sun', 13) + ' Sveglia</label><input type="time" class="tl-time" id="sp-sveglia" value="' + d.sveglia + '">' +
-          '<span class="sp-dorm">' + ICO('clock', 12) + ' dormi <b id="sp-dorm">' + fmtOre(LM.minutiSonno(k)) + '</b></span>' +
+          '<span class="sp-dorm">' + ICO('clock', 13) + ' dormi <b id="sp-dorm">' + fmtOre(LM.minutiSonno(k)) + '</b></span>' +
           '</div>' +
           '<div class="sp-pasti" id="sp-pasti">' + pastiRows + '</div>' +
           '<div class="riga-flex mt-s"><button class="btn btn-mini" id="sp-add">' + ICO('plus', 13) + ' Aggiungi un pasto</button>' +
@@ -2105,7 +2125,7 @@
       trayRo = '<div class="tl-tray"><div class="tl-tray-eti">Senza orario</div>' +
         d.tray.map(function (e) {
           var ar = areaById(e.areaId), col = LM.coloreArea(ar);
-          return '<div class="tl-ed-riga" style="--c-area:' + col + '"><span class="tl-tag" style="color:' + col + '">' + ICO(ar.icona, 13) + '</span><span class="tl-ed-testo">' + esc(e.testo) + '</span></div>';
+          return '<div class="tl-ed-riga" style="--c-area:' + col + '">' + segnoArea(ar, 13, 'tl-tag') + '<span class="tl-ed-testo">' + esc(e.testo) + '</span></div>';
         }).join('') + '</div>';
     }
 
@@ -2116,12 +2136,12 @@
       var nonFatte = d.placed.concat(d.tray).filter(function (e) { return e.tipo === 'azione' && !e.done; });
       if (nonFatte.length && !isFuturo) {
         var doveVa = etichettaGiorno(LM.addDays(k, 1)).toLowerCase();
-        footer = '<div class="tl-piede"><button class="btn btn-mini" id="tl-rimanda">' + ICO('arrowRight', 14) + ' Sposta a ' + doveVa + ' le ' + nonFatte.length + ' cose non fatte</button>' +
+        footer = '<div class="tl-piede"><button class="btn btn-mini" id="tl-rimanda">' + ICO('arrowRight', 15) + ' Sposta a ' + doveVa + ' le ' + nonFatte.length + ' cose non fatte</button>' +
           '<span class="sotto" style="margin:0">Ripianificare non comporta nessuna penalità.</span></div>';
       }
     }
     if (compact && opts.controls !== false) {
-      footer = '<div class="tl-piede"><button class="btn btn-primario btn-mini" id="tl-apri-pagina">' + ICO('calendar', 14) + ' Gestisci la giornata ' + ICO('arrowRight', 13) + '</button></div>';
+      footer = '<div class="tl-piede"><button class="btn btn-primario btn-mini" id="tl-apri-pagina">' + ICO('calendar', 15) + ' Gestisci la giornata ' + ICO('arrowRight', 13) + '</button></div>';
     }
 
     /* pop-up: la griglia si adatta all'altezza disponibile, così NON si scrolla */
@@ -2148,14 +2168,14 @@
     /* nel pop-up il titolo è già nell'intestazione del pannello: ripeterlo
        "La giornata / La giornata" era solo rumore */
     var head = opts.header === false ? '' : '<div class="tl-head"><div>' +
-      (compact ? '' : '<h2>' + ICO('clock', 16) + ' ' + (opts.giorno && !d.isToday ? etichettaGiorno(k) : 'La giornata') + '</h2>') +
+      (compact ? '' : '<h2>' + ICO('clock', 15) + ' ' + (opts.giorno && !d.isToday ? etichettaGiorno(k) : 'La giornata') + '</h2>') +
       '<div class="sotto">' + sottoHead + '</div></div></div>';
     var gridHtml = vuota
       ? '<div class="vuoto" style="padding:18px 8px"><b>Niente in agenda per questo giorno.</b>' + (isFuturo ? '<br>Puoi già prepararlo: aggiungi qui sotto le cose che vuoi fare.' : interactive ? '<br>Aggiungi una cosa qui sotto, o dai un orario a un’abitudine.' : '') + '</div>'
       : htmlTimeGrid(d, { interactive: interactive, spuntabile: spuntabile, nowMin: nowMin, pxh: pxh });
 
     if (compact) {
-      var popNota = d.tray.length ? '<div class="tl-pop-note">' + ICO('clock', 12) + ' ' + d.tray.length + (d.tray.length === 1 ? ' cosa senza orario' : ' cose senza orario') + ' — dàgli un posto qui sotto.</div>' : '';
+      var popNota = d.tray.length ? '<div class="tl-pop-note">' + ICO('clock', 13) + ' ' + d.tray.length + (d.tray.length === 1 ? ' cosa senza orario' : ' cose senza orario') + ' — dàgli un posto qui sotto.</div>' : '';
       container.innerHTML = '<div class="card giornata giornata-pop">' + head + '<div id="tl-grid-host">' + gridHtml + '</div>' + popNota + footer + '</div>';
     } else {
       var navGiorno = orizzNav('giorno', k);
@@ -2351,7 +2371,7 @@
       var heat = xp <= 0 ? 0 : Math.min(3, Math.ceil(xp / maxXp * 3));
       var mattoni = fatti.slice(0, 10).map(function (aid) { return '<i style="background:' + LM.coloreArea(areaById(aid)) + '"></i>'; }).join('') +
         (fatti.length > 10 ? '<span class="me-piu">+' + (fatti.length - 10) + '</span>' : '');
-      var scadBadge = scadG.length ? '<span class="me-scad" title="' + esc(scadG.map(function (b) { return b.testo; }).join(', ')) + '">' + ICO('calendar', 9) + (scadG.length > 1 ? ' ' + scadG.length : '') + '</span>' : '';
+      var scadBadge = scadG.length ? '<span class="me-scad" title="' + esc(scadG.map(function (b) { return b.testo; }).join(', ')) + '">' + ICO('calendar', 11) + (scadG.length > 1 ? ' ' + scadG.length : '') + '</span>' : '';
       /* le cose ancora da fare diventano pastiglie che si possono prendere e
          portare su un altro giorno (ripianificare guardando tutto il mese) */
       var daFare = LM.azioniDelGiorno(k).filter(function (a) { return !a.done; });
@@ -2403,7 +2423,7 @@
       var ar = areaById(b.areaId); var si = scadInfo(b.scadenza);
       return '<div class="an-scad"><span class="scad-badge ' + si.cls + '">' + LM.fmtShort(b.scadenza) + '</span>' +
         '<span class="scad-testo">' + esc(b.testo) + '</span>' +
-        '<span class="tl-tag" style="color:' + LM.coloreArea(ar) + '">' + ICO(ar.icona, 13) + '</span></div>';
+        segnoArea(ar, 13, 'tl-tag') + '</div>';
     }).join('') : '<div class="sotto" style="margin:0">Nessuna scadenza registrata per il ' + anno + '.</div>';
 
     container.innerHTML = orizzNav('anno', giornataAncora, null, '' + anno) +
@@ -2413,7 +2433,7 @@
       '<div class="stat"><span class="stat-val">' + xpAnno + '</span><span class="stat-eti">XP</span></div></div>' +
       '<h2 style="font-size:14px">' + ICO('trendUp', 15) + ' La tua attività, giorno per giorno</h2>' +
       '<div class="an-heat-wrap"><div id="an-heat"></div></div></div>' +
-      '<div class="card mt"><h2>' + ICO('calendar', 16) + ' Scadenze del ' + anno + '</h2><div class="an-scad-lista mt-s">' + scadHtml + '</div></div>';
+      '<div class="card mt"><h2>' + ICO('calendar', 15) + ' Scadenze del ' + anno + '</h2><div class="an-scad-lista mt-s">' + scadHtml + '</div></div>';
     LMCharts.heatmap(document.getElementById('an-heat'), giorni);
     wireOrizzNav(container, 'anno');
   }
@@ -2433,9 +2453,9 @@
         (dist === 1 ? 'domani' : dist === -1 ? 'ieri' : dist > 0 ? 'tra ' + dist + ' giorni' : dist + ' giorni fa').replace('-', '') + '</span>';
     }
     return '<div class="orizz-barra' + (lontano ? ' via-da-oggi' : '') + '">' +
-      '<button class="icona-btn" data-nav="prev" aria-label="' + (orizz === 'giorno' ? 'Giorno precedente' : 'Periodo precedente') + '">' + ICO('chevronGiu', 16) + '</button>' +
+      '<button class="icona-btn" data-nav="prev" aria-label="' + (orizz === 'giorno' ? 'Giorno precedente' : 'Periodo precedente') + '">' + ICO('chevronGiu', 15) + '</button>' +
       '<span class="orizz-eti">' + testo + quanto + '</span>' +
-      '<button class="icona-btn" data-nav="next" aria-label="' + (orizz === 'giorno' ? 'Giorno successivo' : 'Periodo successivo') + '">' + ICO('chevronGiu', 16) + '</button>' +
+      '<button class="icona-btn" data-nav="next" aria-label="' + (orizz === 'giorno' ? 'Giorno successivo' : 'Periodo successivo') + '">' + ICO('chevronGiu', 15) + '</button>' +
       /* "Oggi" compare solo se serve: se ci sei già non fa nulla e confondeva
          stando attaccato alla freccia "successivo" */
       (lontano ? '<button class="btn btn-mini btn-primario" data-nav="oggi">' + ICO('target', 13) + ' Oggi</button>' : '') +
@@ -2524,7 +2544,7 @@
     if (d.tray.length) lg.push('<span class="lg"><i class="lg-none"></i>' + d.tray.length + ' senza orario</span>');
     var legenda = lg.length ? '<div class="strip-legenda">' + lg.join('') + '</div>' : '';
     return '<button class="giornata-strip" id="giornata-strip-btn" aria-label="Apri la giornata">' +
-      '<div class="strip-testa"><span class="strip-tit">' + ICO('clock', 14) + ' La giornata</span>' +
+      '<div class="strip-testa"><span class="strip-tit">' + ICO('clock', 15) + ' La giornata</span>' +
       '<span class="strip-sotto">' + sotto + ' ' + ICO('arrowRight', 13) + '</span></div>' +
       '<div class="strip-barra">' + marks + nowEl + '</div>' +
       '<div class="strip-estremi"><span>' + d.sveglia + '</span><span>' + d.sonnoRoutine + '</span></div>' +
@@ -2561,7 +2581,7 @@
       '<div class="imp-nota" style="margin-top:0">È il tuo ritmo di base: disegna lo sfondo della giornata. Un singolo giorno lo puoi registrare a parte dalla pagina <i>Giornata</i>.</div>' +
       '<div class="ritmo-riga2"><label class="campo" for="ritmo-sonno">A letto</label><input type="time" id="ritmo-sonno" value="' + esc(r.sonno) + '">' +
       '<label class="campo" for="ritmo-sveglia">Sveglia</label><input type="time" id="ritmo-sveglia" value="' + esc(r.sveglia) + '"></div>' +
-      '<div class="sp-dorm" style="margin:2px 0 4px">' + ICO('clock', 12) + ' dormi <b id="ritmo-dorm">' + fmtOre(durSonno(r.sonno, r.sveglia)) + '</b></div>' +
+      '<div class="sp-dorm" style="margin:2px 0 4px">' + ICO('clock', 13) + ' dormi <b id="ritmo-dorm">' + fmtOre(durSonno(r.sonno, r.sveglia)) + '</b></div>' +
       '<div class="imp-sezione"><div class="imp-eti">Pasti (nome · ora · durata)</div><div id="ritmo-pasti">' + (r.pasti || []).map(pastoRiga).join('') + '</div>' +
       '<button class="btn btn-mini mt-s" id="ritmo-add">' + ICO('plus', 13) + ' Aggiungi un pasto</button></div>' +
       '<div class="riga-flex mt"><button class="btn btn-primario btn-grande" id="ritmo-salva">' + ICO('save', 15) + ' Salva</button></div>',
@@ -2658,23 +2678,23 @@
     var ico, testo, cls = '';
     if (ev.tipo === 'azione') {
       var ar = areaById(ev.areaId);
-      ico = '<span class="diario-ico ok">' + ICO('check', 14) + '</span>';
+      ico = '<span class="diario-ico ok">' + ICO('check', 15) + '</span>';
       testo = 'Completata · <b>' + esc(ev.testo) + '</b>' +
-        ' <span class="diario-area" style="color:' + LM.coloreArea(ar) + '" title="' + esc(ar.nome) + '">' + ICO(ar.icona, 13) + '</span>' +
-        (ev.mit ? ' <span class="tag-mit">' + ICO('star', 9) + 'Priorità</span>' : '');
+        ' ' + segnoArea(ar, 13, 'diario-area') +
+        (ev.mit ? ' <span class="tag-mit">' + ICO('star', 11) + 'Priorità</span>' : '');
     } else if (ev.tipo === 'checkin') {
-      ico = '<span class="diario-ico">' + ICO('bolt', 14) + '</span>';
+      ico = '<span class="diario-ico">' + ICO('bolt', 15) + '</span>';
       testo = 'Check-in · energia <b>' + ev.energia + '</b> · focus <b>' + ev.focus + '</b> · umore <b>' + ev.umore + '</b>';
     } else if (ev.tipo === 'mattina') {
-      ico = '<span class="diario-ico">' + ICO('sun', 14) + '</span>';
+      ico = '<span class="diario-ico">' + ICO('sun', 15) + '</span>';
       testo = 'Piano del mattino' + (ev.intenzione ? ' · <span class="diario-sec">' + esc(ev.intenzione) + '</span>' : '');
     } else if (ev.tipo === 'sera') {
-      ico = '<span class="diario-ico">' + ICO('moon', 14) + '</span>';
+      ico = '<span class="diario-ico">' + ICO('moon', 15) + '</span>';
       testo = 'Review della sera' +
         (ev.vittoria ? ' · <span class="diario-sec">andata bene: ' + esc(ev.vittoria) + '</span>' : '') +
         (ev.blocco ? ' · <span class="diario-sec">ostacolo: ' + esc(ev.blocco) + '</span>' : '');
     } else if (ev.tipo === 'settimana') {
-      ico = '<span class="diario-ico">' + ICO('calendar', 14) + '</span>';
+      ico = '<span class="diario-ico">' + ICO('calendar', 15) + '</span>';
       testo = 'Review della settimana' + (ev.imparato ? ' · <span class="diario-sec">' + esc(ev.imparato) + '</span>' : '');
     } else if (ev.tipo === 'registro') {
       var icoCat = { azione: 'target', abitudine: 'refresh', backlog: 'lista', inbox: 'inbox', area: 'sparkles', giornata: 'clock', focus: 'clock', impostazioni: 'ingranaggio', dati: 'save' };
@@ -2682,7 +2702,7 @@
       testo = '<span class="diario-log">' + esc(ev.testo) + '</span>';
       cls = ev.imp ? '' : ' minore';
     } else { /* cattura */
-      ico = '<span class="diario-ico">' + ICO('inbox', 14) + '</span>';
+      ico = '<span class="diario-ico">' + ICO('inbox', 15) + '</span>';
       testo = 'Annotato · <b>' + esc(ev.testo) + '</b>';
     }
     /* per le azioni si può riassegnare l'area anche a distanza di giorni */
@@ -2714,7 +2734,7 @@
     /* eroe essenziale: anello + XP + tre indicatori come chip (niente
        muro di didascalie: le spiegazioni stanno nei tooltip) */
     function chip(ico, testo, cls, titolo) {
-      return '<span class="chip"' + (titolo ? ' title="' + esc(titolo) + '"' : '') + '>' + ICO(ico, 14, cls) + ' ' + testo + '</span>';
+      return '<span class="chip"' + (titolo ? ' title="' + esc(titolo) + '"' : '') + '>' + ICO(ico, 15, cls) + ' ' + testo + '</span>';
     }
     html += '<div class="card eroe2">' +
       '<div id="anello-livello" title="Progresso verso il prossimo livello"></div>' +
@@ -2726,7 +2746,7 @@
       chip('check', '<b>' + fatte + '/' + oggi.length + '</b> azioni oggi') +
       chip('bolt', '<b>' + checkinOggi + '</b> check-in oggi') +
       '</div></div>' +
-      '<button class="btn btn-primario eroe2-cta" data-vai="oggi">' + ICO('target', 16) + ' Vai a Oggi</button>' +
+      '<button class="btn btn-primario eroe2-cta" data-vai="oggi">' + ICO('target', 15) + ' Vai a Oggi</button>' +
       '</div>';
 
     /* schede interne: si vede una sezione per volta */
@@ -2774,15 +2794,18 @@
     /* --- Riepilogo: azioni di oggi + costanza --- */
     function sezRiepilogo(c) {
       c.innerHTML = '<div class="griglia griglia-2">' +
-        '<div class="card" style="--i:0"><h2>' + ICO('target', 16) + ' Le azioni di oggi</h2>' +
+        '<div class="card" style="--i:0"><h2>' + ICO('target', 15) + ' Le azioni di oggi</h2>' +
         '<div class="sotto">Scelte in <a href="#/rituali">Rituali</a>, fatte una per volta in <a href="#/oggi">Oggi</a>. Qui sono tutte insieme.</div>' +
         '<div class="lista-azioni" id="lista-oggi"></div>' +
-        '<form id="form-add" class="riga-flex mt-s"><input type="text" id="testo-add" aria-label="Aggiungi una cosa a oggi" placeholder="Aggiungi un’altra cosa a oggi…" style="flex:1;min-width:150px">' +
-        '<span class="campo-area">' + selectAree('area-add') + '</span>' +
-        /* pieno ce n'è uno per schermata: qui la voce principale è «Vai a
-           Oggi», e aggiungere una cosa è un'azione di servizio */
-        '<button class="btn btn-mini" type="submit" aria-label="Aggiungi">' + ICO('plus', 14) + '</button></form></div>' +
-        '<div class="card" style="--i:1"><h2>' + ICO('trendUp', 16) + ' Costanza</h2>' +
+        /* la stessa riga d'aggiunta di tutte le altre: era la terza variante
+           in tre schermate — qui campo, tendina e tasto in fila; in Rituali
+           gli stessi tre su tre righe; in «Da fare» e nelle abitudini quella
+           giusta. Ora è una sola, e l'area si apre solo quando serve. */
+        '<div class="mt-s">' +
+        rigaAggiunta('agg-riep', 'Aggiungi un’altra cosa a oggi…',
+          '<label class="agg-area"><span class="agg-eti">in</span>' + selectAree('agg-riep-area') + '</label>') +
+        '</div></div>' +
+        '<div class="card" style="--i:1"><h2>' + ICO('trendUp', 15) + ' Costanza</h2>' +
         '<div class="sotto">XP guadagnati ogni giorno, nelle ultime 12 settimane.</div>' +
         '<div id="heatmap"></div></div></div>';
 
@@ -2797,8 +2820,8 @@
           return '<div class="riga-azione' + (a.done ? ' fatta' : '') + '">' +
             '<button class="spunta" data-id="' + a.id + '" aria-label="Completa">' + ICO('check', 13) + '</button>' +
             '<span class="testo">' + esc(a.testo) + '</span>' +
-            (a.mit ? '<span class="tag-mit">' + ICO('star', 10) + 'Priorità</span>' : '') +
-            '<span class="tag-area" style="--c-area:' + LM.coloreArea(ar) + '" title="' + esc(ar.nome) + '">' + ICO(ar.icona, 15) + '</span></div>';
+            (a.mit ? '<span class="tag-mit">' + ICO('star', 11) + 'Priorità</span>' : '') +
+            segnoArea(ar, 15, 'tag-area') + '</div>';
         }).join('');
         lista.querySelectorAll('.spunta').forEach(function (b) {
           b.addEventListener('click', function (ev) {
@@ -2807,11 +2830,9 @@
           });
         });
       }
-      document.getElementById('form-add').addEventListener('submit', function (e) {
-        e.preventDefault();
-        var t2 = document.getElementById('testo-add').value.trim();
-        if (!t2) return;
-        LM.aggiungiAzione(t2, document.getElementById('area-add').value, { mit: LM.serveMit() });
+      wireRigaAggiunta(c, 'agg-riep', function (testo, opz) {
+        var sel = opz && opz.querySelector('select');
+        LM.aggiungiAzione(testo, sel ? sel.value : 'altro', { mit: LM.serveMit() });
         render();
       });
     }
@@ -2824,7 +2845,7 @@
         var media = LM.mediaValutazioneArea(a.id, 7);
         var min7 = LM.serieMinuti(a.id, 7).reduce(function (x, p) { return x + p.valore; }, 0);
         return '<div class="card card-area card-hover" style="--i:' + i + ';--c-area:' + LM.coloreArea(a) + '">' +
-          '<div class="testata"><span class="icona-area">' + ICO(a.icona, 16) + '</span>' + esc(a.nome) + '</div>' +
+          '<div class="testata"><span class="icona-area">' + ICO(a.icona, 15) + '</span>' + esc(a.nome) + '</div>' +
           '<div id="spark-' + a.id + '"></div>' +
           '<div class="area-metriche"><div><b>' + (media ? LMCharts.fmtNum(media) : '—') + '</b><span>voto medio 7g</span></div>' +
           '<div><b>' + min7 + '</b><span>minuti 7g</span></div></div>' +
@@ -2839,12 +2860,12 @@
     /* --- Andamento: check-in nel tempo + minuti per area --- */
     function sezAndamento(c) {
       var dark = document.documentElement.getAttribute('data-mode') === 'dark';
-      c.innerHTML = '<div class="card" style="--i:0"><div class="card-testa"><h2>' + ICO('bolt', 16) + ' Energia, focus e umore</h2>' +
+      c.innerHTML = '<div class="card" style="--i:0"><div class="card-testa"><h2>' + ICO('bolt', 15) + ' Energia, focus e umore</h2>' +
         '<div class="segmenti mini-seg" id="seg-periodo">' +
         '<button data-g="14" class="' + (periodoTrend === 14 ? 'attivo' : '') + '">14 giorni</button>' +
         '<button data-g="30" class="' + (periodoTrend === 30 ? 'attivo' : '') + '">30 giorni</button></div></div>' +
         '<div class="sotto">Media dei tuoi check-in, su una scala da 1 a 5.</div><div id="trend-checkin"></div></div>' +
-        '<div class="card mt" style="--i:1"><h2>' + ICO('clock', 16) + ' Come hai speso il tempo</h2>' +
+        '<div class="card mt" style="--i:1"><h2>' + ICO('clock', 15) + ' Come hai speso il tempo</h2>' +
         '<div class="sotto">Minuti registrati per ciascuna area negli ultimi 7 giorni.</div><div id="hbar-minuti"></div></div>';
 
       LMCharts.trend(document.getElementById('trend-checkin'), [
@@ -2855,7 +2876,7 @@
 
       LMCharts.hbar(document.getElementById('hbar-minuti'),
         LM.minutiSettimanaPerArea().sort(function (a, b) { return b.minuti - a.minuti; })
-          .map(function (r) { return { label: r.area.nome, icona: ICO(r.area.icona, 14), value: r.minuti, colore: LM.coloreArea(r.area) }; }),
+          .map(function (r) { return { label: r.area.nome, icona: ICO(r.area.icona, 15), value: r.minuti, colore: LM.coloreArea(r.area) }; }),
         { unita: 'min' });
 
       document.getElementById('seg-periodo').querySelectorAll('[data-g]').forEach(function (b) {
@@ -2872,7 +2893,7 @@
       var html;
       if (!giorni.length) {
         html = '<div class="card diario"><div class="card-testa"><div class="sotto" style="margin:0">La storia di tutto ciò che fai, dal più recente.</div>' + filtro + '</div>' +
-          '<div class="vuoto" style="padding:20px 8px">' + ICO('book', 28) + '<br><b>Ancora niente da mostrare.</b><br>Appena fai qualcosa comparirà qui, giorno per giorno.</div></div>';
+          '<div class="vuoto" style="padding:20px 8px">' + ICO('book', 26) + '<br><b>Ancora niente da mostrare.</b><br>Appena fai qualcosa comparirà qui, giorno per giorno.</div></div>';
       } else {
         html = '<div class="card diario"><div class="card-testa"><div class="sotto" style="margin:0">La storia di tutto ciò che fai — azioni, note, scelte, impostazioni. ' + (diarioTutto ? 'Stai vedendo <b>tutto</b>.' : 'Mostro le <b>cose importanti</b>; con «Tutto» vedi anche le modifiche minori.') + '</div>' + filtro + '</div>';
         giorni.forEach(function (g) {
@@ -2946,7 +2967,7 @@
       if (!id || !el) return;
       var st = statoRituale(id);
       el.className = 'rit-stato' + (st.fatto ? ' fatto' : '');
-      el.innerHTML = (st.fatto ? ICO('check', 12) + ' ' : '') + esc(st.testo);
+      el.innerHTML = (st.fatto ? ICO('check', 13) + ' ' : '') + esc(st.testo);
     });
   }
   document.addEventListener('lm:change', function () {
@@ -2998,10 +3019,10 @@
       var aperto = !!ritualiAperti[r.id];
       return '<section class="rit-blocco' + (aperto ? ' aperto' : '') + '" data-rit="' + r.id + '">' +
         '<button class="rit-riga" data-sub="' + r.id + '" aria-expanded="' + aperto + '" aria-controls="corpo-rit-' + r.id + '">' +
-        '<span class="rit-ico">' + ICO(r.ico, 16) + '</span>' +
+        '<span class="rit-ico">' + ICO(r.ico, 15) + '</span>' +
         '<span class="rit-nome">' + r.nome + '</span>' +
         (r.id === adesso ? '<span class="rit-ora">adesso</span>' : '') +
-        '<span class="rit-stato' + (st.fatto ? ' fatto' : '') + '">' + (st.fatto ? ICO('check', 12) + ' ' : '') + esc(st.testo) + '</span>' +
+        '<span class="rit-stato' + (st.fatto ? ' fatto' : '') + '">' + (st.fatto ? ICO('check', 13) + ' ' : '') + esc(st.testo) + '</span>' +
         '<span class="rit-chevron' + (aperto ? ' aperta' : '') + '">' + ICO('chevronGiu', 15) + '</span></button>' +
         (aperto ? '<div class="rit-corpo" id="corpo-rit-' + r.id + '"></div>' : '') +
         '</section>';
@@ -3069,17 +3090,18 @@
       '<div class="lista-azioni" id="piano-lista"></div>' +
       /* Tre è il consiglio, non un muro: chi ha una giornata piena deve poter
          scrivere quello che gli serve. Oltre le tre lo diciamo e basta. */
-      '<form id="form-piano" class="mt-s"><div class="riga-flex">' +
-      '<input type="text" id="piano-testo" aria-label="Una cosa da fare oggi" placeholder="' + (oggi.length === 0 ? 'La cosa più importante di oggi…' : 'Un’altra cosa (se vuoi)…') + '" style="flex:1;min-width:180px">' +
-      '<span class="campo-area">' + selectAree('piano-area') + '</span>' +
-      /* il pieno di questa scheda è «Salva e parti»: aggiungere una riga
-         alla lista è il passaggio, non il traguardo */
-      '<button class="btn" type="submit" aria-label="Aggiungi">' + ICO('plus', 16) + '</button></div>' +
+      /* la stessa riga d'aggiunta di «Da fare» e delle abitudini: campo e
+         «Aggiungi», e l'area compare solo quando hai cominciato a scrivere.
+         Prima qui c'erano campo, tendina e tasto tutti in fila, che sul
+         telefono andavano a capo su tre righe per aggiungere una cosa. */
+      '<div class="mt-s">' +
+      rigaAggiunta('agg-piano', oggi.length === 0 ? 'La cosa più importante di oggi…' : 'Un’altra cosa (se vuoi)…',
+        '<label class="agg-area"><span class="agg-eti">in</span>' + selectAree('agg-piano-area') + '</label>') +
+      '</div>' +
       (oggi.length >= 3 ? '<div class="sotto" style="margin:8px 0 0">Hai <b>' + oggi.length + '</b> azioni per oggi. Oltre tre diventa difficile finirle: le altre si possono spostare a domani da <i>La giornata</i>.</div>' : '') +
-      '</form>' +
       '<label class="campo" for="piano-ifthen">Quando e dove inizi la prima?</label>' +
       '<input type="text" id="piano-ifthen" placeholder="Es. alle 9:00, appena mi siedo alla scrivania, apro solo il file su cui devo lavorare" value="' + (piano ? esc(piano.intenzione) : '') + '">' +
-      '<div class="riga-flex mt"><button class="btn btn-primario btn-grande" id="btn-salva-piano">' + (piano ? 'Aggiorna' : 'Salva e parti') + ' <small>+' + LM.XP_EVENTI.pianoMattina + ' XP</small></button>' +
+      '<div class="riga-flex mt"><button class="btn btn-primario btn-grande" id="btn-salva-piano">' + (piano ? ICO('save', 15) + ' Aggiorna' : ICO('arrowRight', 15) + ' Salva e parti') + ' <small>+' + LM.XP_EVENTI.pianoMattina + ' XP</small></button>' +
       '<button class="btn btn-ghost" id="btn-vai-focus">Inizia ora ' + ICO('arrowRight', 15) + '</button></div>' +
       '</div>';
 
@@ -3088,17 +3110,14 @@
       ? oggi.map(function (a) {
           var ar = areaById(a.areaId);
           return '<div class="riga-azione' + (a.done ? ' fatta' : '') + '"><span class="testo">' + esc(a.testo) + '</span>' +
-            (a.mit ? '<span class="tag-mit">' + ICO('star', 10) + 'Priorità</span>' : '') +
-            '<span class="tag-area" style="--c-area:' + LM.coloreArea(ar) + '" title="' + esc(ar.nome) + '">' + ICO(ar.icona, 15) + '</span></div>';
+            (a.mit ? '<span class="tag-mit">' + ICO('star', 11) + 'Priorità</span>' : '') +
+            segnoArea(ar, 15, 'tag-area') + '</div>';
         }).join('')
       : '<div class="vuoto" style="padding:14px">Niente scelto. La prima che scrivi diventa la più importante.</div>';
 
-    var form = document.getElementById('form-piano');
-    if (form) form.addEventListener('submit', function (e) {
-      e.preventDefault();
-      var testo = document.getElementById('piano-testo').value.trim();
-      if (!testo) return;
-      LM.aggiungiAzione(testo, document.getElementById('piano-area').value, { mit: LM.serveMit() });
+    wireRigaAggiunta(corpo, 'agg-piano', function (testo, opz) {
+      var sel = opz && opz.querySelector('select');
+      LM.aggiungiAzione(testo, sel ? sel.value : 'altro', { mit: LM.serveMit() });
       render();
     });
     document.getElementById('btn-salva-piano').addEventListener('click', function () {
@@ -3224,7 +3243,7 @@
     return '<div class="lista-riga ab-riga' + (st.fatta ? ' fatta' : '') + (st.saltata ? ' saltata' : '') +
       '" data-abid="' + h.id + '" style="--c-area:' + LM.coloreArea(ar) + '">' +
       (st.saltata
-        ? '<span class="lista-vuoto" aria-hidden="true">' + ICO('moon', 14) + '</span>'
+        ? '<span class="lista-vuoto" aria-hidden="true">' + ICO('moon', 15) + '</span>'
         : '<button class="lista-azione spunta" data-toggle-ab="' + h.id + '" aria-pressed="' + (st.fatta ? 'true' : 'false') +
           '" aria-label="' + esc(h.testo) + (st.fatta ? ', fatta oggi' : ', segna come fatta') + '">' + ICO('check', 13) + '</button>') +
       '<button class="lista-apri" data-abdett="' + h.id + '" aria-label="Apri ' + esc(h.testo) + '">' +
@@ -3232,7 +3251,7 @@
       (sotto ? '<span class="lista-sub' + (sotto.cls ? ' ' + sotto.cls : '') + '">' +
         (sotto.ico ? ICO(sotto.ico, 11, 'fiamma') + ' ' : '') + esc(sotto.testo) + '</span>' : '') + '</span>' +
       (h.ora ? '<span class="lista-val">' + esc(h.ora) + '</span>' : '') +
-      '<span class="tit-area" style="--c-area:' + LM.coloreArea(ar) + '" title="' + esc(ar.nome) + '">' + ICO(ar.icona, 13) + '</span>' +
+      segnoArea(ar, 13, 'tit-area') +
       '<span class="lista-chev">' + ICO('chevronGiu', 15) + '</span></button>' +
       '</div>';
   }
@@ -3259,7 +3278,7 @@
       var tutte = fatte === oggi.length;
       prog = '<div class="ab-prog' + (tutte ? ' piena' : '') + '">' +
         '<div class="ab-prog-testo">' +
-        (tutte ? ICO('check', 14) + ' <b>Fatte tutte</b>, per oggi ci sei.'
+        (tutte ? ICO('check', 15) + ' <b>Fatte tutte</b>, per oggi ci sei.'
                : '<b>' + fatte + '</b> di ' + oggi.length + ' per oggi') + '</div>' +
         '<div class="ab-prog-barra"><span style="width:' + Math.round(fatte / oggi.length * 100) + '%"></span></div>' +
         '</div>';
@@ -3357,11 +3376,11 @@
       return '<div class="abd">' +
         '<div class="abd-oggi">' +
         (st.saltata
-          ? '<button class="btn btn-grande" id="abd-rimetti">' + ICO('refresh', 16) + ' Rimetti oggi</button>' +
+          ? '<button class="btn btn-grande" id="abd-rimetti">' + ICO('refresh', 15) + ' Rimetti oggi</button>' +
             '<p class="abd-nota">Oggi è saltata: non conta come mancata e la serie non si rompe.</p>'
           : '<button class="btn btn-grande ' + (st.fatta ? 'btn-ok' : 'btn-primario') + '" id="abd-fatta">' +
-            ICO('check', 16) + (st.fatta ? ' Fatta oggi' : ' Segna come fatta') + '</button>' +
-            (prevista ? '<button class="btn btn-mini btn-ghost" id="abd-salta">' + ICO('moon', 14) + ' Salta oggi</button>' : '')) +
+            ICO('check', 15) + (st.fatta ? ' Fatta oggi' : ' Segna come fatta') + '</button>' +
+            (prevista ? '<button class="btn btn-mini btn-ghost" id="abd-salta">' + ICO('moon', 15) + ' Salta oggi</button>' : '')) +
         '</div>' +
         '<div class="abd-numeri">' +
         /* una fiamma accanto a uno zero è solo un rimprovero: quando la
@@ -3402,7 +3421,7 @@
         '<label class="ap-campo">al <input type="date" id="abd-a" value="' + (h.a || '') + '" min="' + (h.da || '') + '"></label>' +
         (h.a ? '<button class="btn btn-mini btn-ghost" id="abd-nofine">Senza fine</button>' : '<span class="ap-nota">vuoto = senza fine</span>') +
         '</div>' +
-        '<div class="abd-fondo"><button class="btn btn-mini btn-ghost imp-pericolo" id="abd-del">' + ICO('trash', 14) + ' Elimina l’abitudine</button></div>' +
+        '<div class="abd-fondo"><button class="btn btn-mini btn-ghost imp-pericolo" id="abd-del">' + ICO('trash', 15) + ' Elimina l’abitudine</button></div>' +
         '</div>';
     }
 
@@ -3500,8 +3519,8 @@
       scala('energia', 'bolt', 'Quanta energia hai?') +
       scala('focus', 'target', 'Quanto riesci a concentrarti?') +
       scala('umore', 'smile', 'Come ti senti?') +
-      '<div class="riga-flex mt"><button class="btn btn-primario btn-grande" id="btn-salva-checkin" disabled>Registra <small>+' + LM.XP_EVENTI.checkin + ' XP</small></button></div>' +
-      '</div><div class="card mt"><h2>' + ICO('trendUp', 16) + ' Andamento degli ultimi 14 giorni</h2><div id="mini-trend"></div></div>';
+      '<div class="riga-flex mt"><button class="btn btn-primario btn-grande" id="btn-salva-checkin" disabled>' + ICO('check', 15) + ' Registra <small>+' + LM.XP_EVENTI.checkin + ' XP</small></button></div>' +
+      '</div><div class="card mt"><h2>' + ICO('trendUp', 15) + ' Andamento degli ultimi 14 giorni</h2><div id="mini-trend"></div></div>';
 
     function scala(campo, icona, nome) {
       var base = LM.baselineCheckin(campo, 30);
@@ -3512,7 +3531,7 @@
           return '<button data-v="' + v + '" aria-label="' + v + ', ' + anc[v - 1] + '">' + v + '</button>';
         }).join('') + '</div>' +
         '<div class="scala-legenda"><span>1 · ' + anc[0] + '</span><span>3 · ' + anc[2] + '</span><span>5 · ' + anc[4] + '</span></div>' +
-        (base ? '<div class="scala-solito">' + ICO('trendUp', 12) +
+        (base ? '<div class="scala-solito">' + ICO('trendUp', 13) +
           /* tutto il testo in un solo elemento: il contenitore è inline-flex
              con un gap, e un punto lasciato fuori diventava un pezzo a sé
              staccato di sei pixel («è 4.3 .») */
@@ -3559,7 +3578,7 @@
         'Voto alle aree su cui hai lavorato, una cosa andata bene e un ostacolo. Due minuti.') +
       '<div id="voti-aree">' + ordinate.map(function (a) {
         return '<div class="voto-area" data-area="' + a.id + '" style="--c-area:' + LM.coloreArea(a) + '">' +
-          '<span class="nome">' + ICO(a.icona, 16) + ' ' + esc(a.nome) + '</span>' +
+          '<span class="nome">' + ICO(a.icona, 15) + ' ' + esc(a.nome) + '</span>' +
           '<span class="stelline">' + [1, 2, 3, 4, 5].map(function (v) {
             return '<button data-v="' + v + '"' + (votiOggi[a.id] === v ? ' class="sel"' : '') + '>' + v + '</button>';
           }).join('') + '</span></div>';
@@ -3568,7 +3587,7 @@
       '<input type="text" id="sera-vittoria" value="' + (rev ? esc(rev.vittoria || '') : '') + '" placeholder="Es. ho studiato 90 minuti senza guardare il telefono">' +
       '<label class="campo" for="sera-blocco">Un ostacolo che hai incontrato</label>' +
       '<input type="text" id="sera-blocco" value="' + (rev ? esc(rev.blocco || '') : '') + '" placeholder="Es. ho iniziato tardi, mi hanno distratto le notifiche">' +
-      '<div class="riga-flex mt"><button class="btn btn-primario btn-grande" id="btn-salva-sera">' + (rev ? 'Aggiorna' : 'Concludi la giornata') + ' <small>+' + LM.XP_EVENTI.reviewSera + ' XP</small></button></div>' +
+      '<div class="riga-flex mt"><button class="btn btn-primario btn-grande" id="btn-salva-sera">' + (rev ? ICO('save', 15) + ' Aggiorna' : ICO('moon', 15) + ' Concludi la giornata') + ' <small>+' + LM.XP_EVENTI.reviewSera + ' XP</small></button></div>' +
       '</div>';
 
     corpo.querySelectorAll('.voto-area').forEach(function (riga) {
@@ -3612,8 +3631,8 @@
       '<label class="campo" for="w-blocchi">Gli ostacoli che si sono ripetuti</label><textarea id="w-blocchi">' + (rev ? esc(rev.blocchi || '') : '') + '</textarea>' +
       '<label class="campo" for="w-imparato">Cosa hai imparato sul tuo metodo</label><textarea id="w-imparato">' + (rev ? esc(rev.imparato || '') : '') + '</textarea>' +
       '<label class="campo" for="w-prossima">L’unica cosa che vuoi cambiare la prossima settimana</label><textarea id="w-prossima">' + (rev ? esc(rev.prossima || '') : '') + '</textarea>' +
-      '<div class="riga-flex mt"><button class="btn btn-primario btn-grande" id="btn-salva-sett">' + (rev ? 'Aggiorna' : 'Salva la review') + ' <small>+' + LM.XP_EVENTI.reviewSettimana + ' XP</small></button>' +
-      '<button class="btn btn-ghost" data-vai="esperimenti">' + ICO('flask', 16) + ' Trasformala in un esperimento</button></div>' +
+      '<div class="riga-flex mt"><button class="btn btn-primario btn-grande" id="btn-salva-sett">' + (rev ? ICO('save', 15) + ' Aggiorna' : ICO('check', 15) + ' Salva la review') + ' <small>+' + LM.XP_EVENTI.reviewSettimana + ' XP</small></button>' +
+      '<button class="btn btn-ghost" data-vai="esperimenti">' + ICO('flask', 15) + ' Trasformala in un esperimento</button></div>' +
       '</div>';
 
     document.getElementById('btn-salva-sett').addEventListener('click', function () {
@@ -3677,7 +3696,7 @@
        un pannello di configurazione in mezzo a un piano e a due resoconti. */
     function tb(id, ico, et, n) {
       return '<button data-att="' + id + '" class="' + (attTab === id ? 'attivo' : '') + '">' +
-        '<span class="seg-ico">' + ICO(ico, 16) + '</span>' +
+        '<span class="seg-ico">' + ICO(ico, 15) + '</span>' +
         '<span class="seg-eti">' + et + '</span>' +
         (n ? '<span class="att-badge">' + n + '</span>' : '') + '</button>';
     }
@@ -3751,13 +3770,13 @@
         '</div>' +
 
         '<button class="btn btn-primario btn-grande sc-primaria" data-fai="azione">' +
-        ICO('arrowRight', 16) + ' Fallo oggi</button>' +
+        ICO('arrowRight', 15) + ' Fallo oggi</button>' +
         '<div class="lista">' +
         '<button class="lista-riga sc-riga sc-tocca" data-fai="backlog">' +
-        '<span class="sc-eti">' + ICO('lista', 14) + ' Mettila in «Da fare»</span>' +
+        '<span class="sc-eti">' + ICO('lista', 15) + ' Mettila in «Da fare»</span>' +
         '<span class="sc-val">più avanti</span></button>' +
         '<button class="lista-riga sc-riga sc-tocca sc-pericolo" data-fai="scarta">' +
-        '<span class="sc-eti">' + ICO('trash', 14) + ' Scarta</span>' +
+        '<span class="sc-eti">' + ICO('trash', 15) + ' Scarta</span>' +
         '<span class="sc-val">non serve</span></button>' +
         '</div>' +
 
@@ -3894,8 +3913,8 @@
         rigaAggiunta('agg-bk', 'Aggiungi una cosa da fare…', opzDaFare()) +
         '<div class="att-barra">' + cerca +
         '<button class="att-filtro' + (attArea === 'tutte' ? '' : ' on') + '" id="att-filtro" aria-haspopup="dialog">' +
-        ICO('imbuto', 14) + '<span>' + esc(nomeFiltro()) + '</span>' +
-        '<span class="lista-chev">' + ICO('chevronGiu', 14) + '</span></button>' +
+        ICO('imbuto', 15) + '<span>' + esc(nomeFiltro()) + '</span>' +
+        '<span class="lista-chev">' + ICO('chevronGiu', 15) + '</span></button>' +
         '</div>' +
         '<div id="dafare-lista"></div>';
       wireAggiunta(box);
@@ -3949,7 +3968,7 @@
           mostrate.map(function (x, i) { return attRigaHtml(x.b, { primo: cls === 'ora' && i === 0, motivo: x.i && x.i.motivo, da: x.i && x.i.da }); }).join('') +
           '</div>' +
           (lunga ? '<button class="lista-altre' + (tutte ? ' aperto' : '') + '" data-tutte="1" aria-expanded="' + tutte + '">' +
-            ICO('chevronGiu', 14) + (taglia ? ' Mostra le altre ' + (voci.length - MURO) : ' Mostra solo le prime ' + MURO) + '</button>' : '');
+            ICO('chevronGiu', 15) + (taglia ? ' Mostra le altre ' + (voci.length - MURO) : ' Mostra solo le prime ' + MURO) + '</button>' : '');
       }
 
       function renderLista() {
@@ -3978,7 +3997,7 @@
           (parch.length
             ? '<button class="lista-eti lista-eti-btn" data-parcheggio="1" aria-expanded="' + apertoParcheggio + '">' +
               'Inattive <span>' + parch.length + '</span>' +
-              '<span class="lista-chev' + (apertoParcheggio ? ' aperta' : '') + '">' + ICO('chevronGiu', 14) + '</span></button>' +
+              '<span class="lista-chev' + (apertoParcheggio ? ' aperta' : '') + '">' + ICO('chevronGiu', 15) + '</span></button>' +
               '<div class="lista lista-parcheggio"' + (apertoParcheggio ? '' : ' hidden') + '>' +
               parch.map(function (x) { return attRigaHtml(x.b, { motivo: x.i && x.i.motivo }); }).join('') + '</div>'
             : '');
@@ -4046,7 +4065,7 @@
         '<span class="lista-corpo">' +
         '<span class="lista-tit">' +
         (b.pin ? '<span class="tit-pin" title="Tenuta in cima">' + ICO('star', 11) + '</span>' : '') +
-        '<span class="tit-area" style="--c-area:' + LM.coloreArea(ar) + '" title="' + esc(ar.nome) + '">' + ICO(ar.icona, 12) + '</span>' +
+        segnoArea(ar, 13, 'tit-area') +
         esc(b.testo) + '</span>' +
         (sotto.length ? '<span class="lista-sub">' + sotto.join(' · ') + '</span>' : '') +
         '</span>' +
@@ -4115,14 +4134,14 @@
             '" aria-label="' + esc(st.testo) + (st.done ? ', fatto' : ', segna come fatto') + '">' + ICO('check', 13) + '</button>' +
             '<span class="lista-corpo"><span class="lista-tit">' + esc(st.testo) + '</span>' +
             (inAg ? '<span class="lista-sub">in agenda ' + esc(etichettaGiorno(inAg.data).toLowerCase()) + '</span>' : '') + '</span>' +
-            (st.done ? '' : '<button class="icona-btn" data-stepquando="' + st.id + '" title="Mettilo in un giorno" aria-label="Metti «' + esc(st.testo) + '» in un giorno">' + ICO('calendar', 14) + '</button>') +
-            '<button class="icona-btn icona-pericolo" data-stepdel="' + st.id + '" title="Rimuovi" aria-label="Rimuovi «' + esc(st.testo) + '»">' + ICO('trash', 14) + '</button>' +
+            (st.done ? '' : '<button class="icona-btn" data-stepquando="' + st.id + '" title="Mettilo in un giorno" aria-label="Metti «' + esc(st.testo) + '» in un giorno">' + ICO('calendar', 15) + '</button>') +
+            '<button class="icona-btn icona-pericolo" data-stepdel="' + st.id + '" title="Rimuovi" aria-label="Rimuovi «' + esc(st.testo) + '»">' + ICO('trash', 15) + '</button>' +
             '</div>';
         }).join('');
 
         return '<div class="sc">' +
           /* l'azione: una sola, e la pastiglia «Oggi» non la ripete più */
-          '<button class="btn btn-primario btn-grande sc-primaria" id="sc-oggi">' + ICO('arrowRight', 16) + ' ' +
+          '<button class="btn btn-primario btn-grande sc-primaria" id="sc-oggi">' + ICO('arrowRight', 15) + ' ' +
           (isProg ? 'Prossimo passo in Oggi' : 'Portala in Oggi') + '</button>' +
 
           '<div class="lista-eti">Se non oggi</div>' +
@@ -4164,16 +4183,16 @@
               '<input type="date" class="sc-nascosta" id="sc-scad" aria-label="Scadenza">', ' data-apri-scad="1"', 'sc-tocca')) +
           '<button class="lista-riga sc-riga sc-tocca" id="sc-pin">' +
           '<span class="sc-eti">Tieni in cima</span>' +
-          '<span class="sc-val">' + (b.pin ? ICO('check', 14, 'sc-si') + ' sì' : 'no') + '</span></button>' +
+          '<span class="sc-val">' + (b.pin ? ICO('check', 15, 'sc-si') + ' sì' : 'no') + '</span></button>' +
           '</div>' +
           '<p class="lista-nota">«Se non oggi» la mette tra le cose di quel giorno. La scadenza è solo un conto alla rovescia: non la mette in agenda.</p>' +
 
           '<div class="lista mt">' +
           '<button class="lista-riga sc-riga sc-tocca" id="sc-abitudine">' +
-          '<span class="sc-eti">' + ICO('refresh', 14) + ' Diventa un’abitudine</span>' +
+          '<span class="sc-eti">' + ICO('refresh', 15) + ' Diventa un’abitudine</span>' +
           '<span class="lista-chev">' + ICO('chevronGiu', 15) + '</span></button>' +
           '<button class="lista-riga sc-riga sc-tocca sc-pericolo" id="sc-del">' +
-          '<span class="sc-eti">' + ICO('trash', 14) + ' Elimina l’attività</span></button>' +
+          '<span class="sc-eti">' + ICO('trash', 15) + ' Elimina l’attività</span></button>' +
           '</div>' +
           '</div>';
       }
@@ -4348,7 +4367,7 @@
        sono due volte la stessa domanda */
     var vuota = !s.esperimenti.length;
     var html = topbar('Esperimenti', 'Confronto prima/dopo sui tuoi dati.',
-      vuota ? '' : '<button class="btn btn-primario" id="btn-nuovo-exp">' + ICO('plus', 16) + ' Nuovo esperimento</button>') +
+      vuota ? '' : '<button class="btn btn-primario" id="btn-nuovo-exp">' + ICO('plus', 15) + ' Nuovo esperimento</button>') +
       '<div class="card"><div class="sotto" style="margin:0">Come funziona: prima misuri una metrica senza cambiare nulla (fase <b>A</b>, la base di partenza), poi introduci una modifica e continui a misurare (fase <b>B</b>). Il confronto tra le due fasi ti dice se la modifica ha avuto effetto. Un avvertimento onesto: senza gruppo di controllo il risultato è un’indicazione, non una prova definitiva; ripetere l’esperimento lo rende più affidabile.</div></div>' +
       '<div id="form-exp-zona"></div><div class="griglia mt" id="lista-exp" style="gap:16px"></div>';
     $vista.innerHTML = html;
@@ -4361,7 +4380,7 @@
       /* uno stato vuoto porta con sé la sua via d'uscita: il pulsante sta
          qui dentro, dove si sta guardando, non solo in cima alla pagina */
       lista.innerHTML = '<div class="card vuoto">' + illoFlask() + '<b>Non hai ancora nessun esperimento.</b><br>Qualche idea per iniziare: verificare se fare sport al mattino migliora il focus, se tenere il telefono in un’altra stanza aumenta i minuti di studio, o se andare a letto prima ti dà più energia.' +
-        '<div class="vuoto-azione"><button class="btn btn-primario" id="btn-primo-exp">' + ICO('plus', 16) + ' Crea il primo esperimento</button></div></div>';
+        '<div class="vuoto-azione"><button class="btn btn-primario" id="btn-primo-exp">' + ICO('plus', 15) + ' Crea il primo esperimento</button></div></div>';
       var primo = document.getElementById('btn-primo-exp');
       if (primo) primo.addEventListener('click', mostraFormExp);
     }
@@ -4376,12 +4395,12 @@
         var diff = ris.intervento.media - ris.baseline.media;
         var dEff = ris.effetto;
         var forza = dEff === null ? '' : (Math.abs(dEff) < 0.2 ? 'trascurabile' : Math.abs(dEff) < 0.5 ? 'piccola' : Math.abs(dEff) < 0.8 ? 'media' : 'grande');
-        verdetto = '<div class="exp-verdetto">' + ICO('trendUp', 16) +
+        verdetto = '<div class="exp-verdetto">' + ICO('trendUp', 15) +
           '<span>Nella fase iniziale la media era <b>' + LMCharts.fmtNum(ris.baseline.media) + '</b> (su ' + ris.baseline.n + ' giorni); dopo la modifica è <b>' + LMCharts.fmtNum(ris.intervento.media) + '</b> (su ' + ris.intervento.n + ' giorni), con una differenza di <b>' + (diff > 0 ? '+' : '') + LMCharts.fmtNum(diff) + '</b>' +
           (dEff !== null ? '. L’entità del cambiamento è <b>' + forza + '</b> (d≈' + LMCharts.fmtNum(dEff) + ')' : '') + '.' +
           '<br><small>È un indizio utile, non una prova definitiva: se il risultato ti interessa, ripeti l’esperimento per confermarlo.</small></span></div>';
       } else {
-        verdetto = '<div class="exp-verdetto">' + ICO('clock', 16) + '<span>Non ci sono ancora abbastanza dati: servono almeno due giorni con una misura in ciascuna fase. Continua a fare i check-in.</span></div>';
+        verdetto = '<div class="exp-verdetto">' + ICO('clock', 15) + '<span>Non ci sono ancora abbastanza dati: servono almeno due giorni con una misura in ciascuna fase. Continua a fare i check-in.</span></div>';
       }
       card.innerHTML = '<div class="exp-testa"><h2>' + esc(e.nome) + '</h2>' +
         '<span class="chip">' + (e.stato === 'attivo' ? '<span class="punto-vivo"></span> attivo' : ICO('check', 13) + ' concluso') + '</span>' +
@@ -4412,7 +4431,7 @@
         '<option value="14-14" selected>14 giorni di base, 14 di test</option>' +
         '<option value="14-21">14 giorni di base, 21 di test</option>' +
         '</select></div></div>' +
-        '<div class="riga-flex mt"><button class="btn btn-primario" id="exp-crea">' + ICO('flask', 16) + ' Avvia</button>' +
+        '<div class="riga-flex mt"><button class="btn btn-primario" id="exp-crea">' + ICO('flask', 15) + ' Avvia</button>' +
         '<button class="btn btn-ghost" id="exp-annulla">Annulla</button></div></div>';
       document.getElementById('exp-annulla').addEventListener('click', function () { zona.innerHTML = ''; });
       document.getElementById('exp-crea').addEventListener('click', function () {
@@ -4590,7 +4609,7 @@
           '<div class="riga-flex" style="justify-content:space-between;flex-wrap:nowrap;align-items:flex-start"><h2 style="margin:0">' + p.titolo + '</h2><span class="evidenza ' + cls + '">' + eti + '</span></div>' +
           '<p style="font-size:13.5px;color:var(--inchiostro-2)">' + p.claim + '</p>' +
           '<div class="uso"><b>Nel prototipo:</b> ' + p.uso + '</div>' +
-          '<div class="fonte">' + ICO('book', 14) + '<span>' + p.fonti + '</span></div>' +
+          '<div class="fonte">' + ICO('book', 15) + '<span>' + p.fonti + '</span></div>' +
           '</div>';
       }).join('') + '</div>';
     $vista.innerHTML = html;
@@ -4612,16 +4631,16 @@
           '<label class="campo" for="ob-nome">Nome</label><input type="text" id="ob-nome" value="' + esc(scelte.nome) + '" placeholder="Il tuo nome">' +
           '<label class="campo" for="ob-visione">In una frase, cosa vuoi ottenere migliorando</label>' +
           '<textarea id="ob-visione" placeholder="Es. imparare più in fretta, restare in salute e costruire progetti che contano">' + esc(scelte.visione) + '</textarea>' +
-          '<div class="riga-flex mt"><button class="btn btn-primario btn-grande" id="ob-avanti">Avanti ' + ICO('arrowRight', 16) + '</button>' +
+          '<div class="riga-flex mt"><button class="btn btn-primario btn-grande" id="ob-avanti">Avanti ' + ICO('arrowRight', 15) + '</button>' +
           '<button class="btn btn-ghost" id="ob-demo">Salta e vai alla demo</button></div></div>';
       } else if (passo === 1) {
         step = '<div class="card"><h2>Le aree della tua vita</h2><div class="sotto">Sono tutte attive: disattiva quelle che non ti servono, potrai riattivarle quando vuoi.</div>' +
           '<div class="selettore-aree">' + LM.AREE_DEFAULT.map(function (a) {
             var sel = scelte.aree.indexOf(a.id) >= 0;
             return '<button data-area="' + a.id + '" class="' + (sel ? 'sel' : '') + '" style="--c-area:' + LM.SLOT_COLORI[a.slot][0] + '">' +
-              ICO(a.icona, 17) + esc(a.nome) + '<span class="segno">' + ICO('check', 15) + '</span></button>';
+              ICO(a.icona, 18) + esc(a.nome) + '<span class="segno">' + ICO('check', 15) + '</span></button>';
           }).join('') + '</div>' +
-          '<div class="riga-flex mt"><button class="btn btn-primario btn-grande" id="ob-avanti">Avanti ' + ICO('arrowRight', 16) + '</button>' +
+          '<div class="riga-flex mt"><button class="btn btn-primario btn-grande" id="ob-avanti">Avanti ' + ICO('arrowRight', 15) + '</button>' +
           '<button class="btn btn-ghost" id="ob-indietro">Indietro</button></div></div>';
       } else {
         step = '<div class="card"><h2>Da dove vuoi partire?</h2><div class="sotto">Sono tre modi di usare la stessa app, sugli stessi dati. Scegline uno per iniziare: potrai cambiare quando vuoi.</div>' +
@@ -4631,7 +4650,7 @@
           modo('rituali', 'sun', 'Rituali', 'Brevi routine al mattino e alla sera che ti danno una struttura fissa.') +
           '</div>' +
           '<div class="riga-flex mt">' +
-          '<button class="btn btn-primario btn-grande" id="ob-fine-demo">Parti con 8 settimane di dati demo</button>' +
+          '<button class="btn btn-primario btn-grande" id="ob-fine-demo">' + ICO('sparkles', 15) + ' Parti con 8 settimane di dati demo</button>' +
           '<button class="btn" id="ob-fine-vuoto">Parti da zero</button>' +
           '<button class="btn btn-ghost" id="ob-indietro">Indietro</button></div></div>';
       }
@@ -4642,9 +4661,9 @@
         '<div class="ob-titolo">Misura. Ingegnerizza.<br><em>Massimizza.</em></div>' +
         '<p>Uno spazio unico per organizzare, misurare e migliorare le diverse aree della tua vita. È pensato per chi fatica a mantenere costanza e concentrazione: poca fatica per usarlo, riscontro immediato.</p>' +
         '<div class="ob-punti">' +
-        '<div class="ob-punto">' + ICO('bolt', 16) + '<span><b>Annota subito.</b> Un tasto per salvare qualsiasi pensiero; deciderai dopo cosa farne.</span></div>' +
-        '<div class="ob-punto">' + ICO('target', 16) + '<span><b>Una cosa alla volta.</b> Ti proponiamo la prossima azione, così eviti la paralisi da troppe scelte.</span></div>' +
-        '<div class="ob-punto">' + ICO('flask', 16) + '<span><b>Scienza applicata a te.</b> Esperimenti sui tuoi dati per capire cosa funziona davvero, non sulle medie di altri.</span></div>' +
+        '<div class="ob-punto">' + ICO('bolt', 15) + '<span><b>Annota subito.</b> Un tasto per salvare qualsiasi pensiero; deciderai dopo cosa farne.</span></div>' +
+        '<div class="ob-punto">' + ICO('target', 15) + '<span><b>Una cosa alla volta.</b> Ti proponiamo la prossima azione, così eviti la paralisi da troppe scelte.</span></div>' +
+        '<div class="ob-punto">' + ICO('flask', 15) + '<span><b>Scienza applicata a te.</b> Esperimenti sui tuoi dati per capire cosa funziona davvero, non sulle medie di altri.</span></div>' +
         '</div>' +
         '<div id="ob-account" class="ob-account"></div>' +
         illoOrbita() + '</aside>' +
@@ -4655,7 +4674,7 @@
 
       function modo(id, icona, nome, desc) {
         return '<button data-modo="' + id + '" class="' + (scelte.modo === id ? 'sel' : '') + '">' +
-          '<span class="icona-modo">' + ICO(icona, 20) + '</span>' +
+          '<span class="icona-modo">' + ICO(icona, 18) + '</span>' +
           '<span><span class="titolo-modo">' + nome + '</span><div class="desc-modo">' + desc + '</div></span></button>';
       }
 
@@ -4731,16 +4750,25 @@
        sua linguetta si aggiunge in fondo, attiva: non c'è normalmente, ma
        mentre ci sei dentro dice dove sei e ti riporta indietro */
     if ((g.anche || []).indexOf(v) >= 0) {
+      /* qui il nome sta corto: la linguetta è quella su cui SEI e il titolo
+         sopra lo scrive già per intero, mentre «Perché funziona» da solo si
+         mangiava cento pixel e mandava la riga a scorrere sul telefono */
       var vi = vistaById(v);
-      lista.push({ id: v, eti: (vi && vi.nome) || v });
+      lista.push({ id: v, eti: (vi && (vi.breve || vi.nome)) || v });
     }
     if (lista.length < 2) return;
     var bar = document.createElement('nav');
     bar.className = 'sottonav';
     bar.setAttribute('aria-label', 'Schermate di ' + g.nome);
     bar.innerHTML = lista.map(function (x) {
+      /* la stessa icona della barra in basso e della colonna sul desktop: è
+         la stessa destinazione, quindi è lo stesso segno. Prima qui c'era
+         solo la parola, e la riga di linguette non somigliava a nessuna
+         delle altre due navigazioni. */
+      var vi = vistaById(x.id);
       return '<a class="sottonav-voce' + (x.id === v ? ' attiva' : '') + '" href="#/' + x.id + '"' +
-        (x.id === v ? ' aria-current="page"' : '') + '>' + x.eti + '</a>';
+        (x.id === v ? ' aria-current="page"' : '') + '>' +
+        ((vi && vi.icona) ? ICO(vi.icona, 15) : '') + x.eti + '</a>';
     }).join('');
     var tb = $vista.querySelector('.topbar');
     if (tb) tb.insertAdjacentElement('afterend', bar); else $vista.prepend(bar);
