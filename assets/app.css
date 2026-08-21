@@ -1572,6 +1572,9 @@ label.campo {
   font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase;
   color: var(--inchiostro-2); margin: 18px 2px 7px;
 }
+/* il segno dell'etichetta sta addosso alla parola e un tono più indietro:
+   deve farti trovare il blocco, non farsi leggere prima del nome */
+.lista-eti > .ico { margin-right: -3px; opacity: .75; }
 .lista-eti span {
   font-size: 11px; font-weight: 800; letter-spacing: 0; padding: 0 6px;
   border-radius: var(--r-tondo); background: var(--superficie-3); color: var(--inchiostro-muto);

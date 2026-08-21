@@ -1,9 +1,61 @@
 /* ============================================================
    LifeMax — iconografia proprietaria
-   Set coerente: griglia 24px, stroke 1.8, terminali arrotondati.
-   Le icone sostituiscono le emoji in tutto il "chrome" dell'app;
-   il colore è sempre currentColor: l'identità cromatica resta
-   al testo/contesto, mai all'icona da sola.
+   Griglia 24px, terminali arrotondati, colore sempre currentColor:
+   l'identità cromatica resta al testo e al contesto, mai all'icona
+   da sola. Lo spessore non è fisso — lo calcola `tratto()` più sotto.
+
+   UN SEGNO, UNA COSA
+   Il set è diviso in due famiglie che non si mescolano.
+
+   · SEGNI DI SISTEMA — dicono un'azione o uno stato, e la dicono in
+     tutta l'app allo stesso modo. Nessuno di questi può essere scelto
+     come icona di un'area.
+
+       target      Oggi, l'azione più importante
+       lista       le cose da fare
+       inbox       le note da sistemare
+       refresh     ciò che si ripete (le abitudini), e il riprovare
+       dashboard   l'andamento
+       quaderno    il diario           fonte     lo studio citato
+       flask       gli esperimenti
+       atom        perché funziona
+       palette     il design lab
+       ingranaggio le impostazioni
+       aree        le aree di vita
+       sun/moon    il mattino / la sera (e il tema chiaro / scuro)
+       calendar    le date e la settimana
+       clock       gli orari e le durate
+       bed         l'ora di dormire
+       coffee      la colazione       utensils   gli altri pasti
+       polso       il check-in
+       batteria    l'energia          mirino     la concentrazione
+       smile       l'umore
+       star        la priorità e il «tieni in cima»
+       flame       la serie di giorni
+       bolt        la cattura rapida
+       ancora      il gancio dell'intenzione (quando e dove)
+       salta       scavalca oggi
+       check       fatto, scelto, concluso
+       plus        crea            x         chiudi, togli
+       trash       elimina         save      salva
+       arrowRight  vai            chevronGiu  apri, mostra le altre
+       presa       trascina        lente     cerca      imbuto  filtra
+       play/pause  il timer
+       download/upload/copy/share  i dati
+       cloud/cloudCheck/logout/user  l'account
+       aiuto       come si usa     terminale  cosa sta succedendo
+       sparkles    gli extra e i dati di esempio
+       lightbulb   un'idea, e l'area «Altro / Esplorazione»
+       trendUp     la crescita
+
+   · SEGNI DELLE AREE — nominano un pezzo di vita e servono solo come
+     icona di un'area: book, heart, users, wallet, landmark, rocket,
+     briefcase, lightbulb, casa, musica, globo, pesi, user, shield.
+
+   Se un segno serve per due cose diverse non si riusa: se ne disegna
+   uno. È il motivo per cui esistono polso, batteria, mirino, ancora,
+   salta, presa, quaderno, fonte e aree — ognuno è nato da una figura
+   che diceva già un'altra cosa da un'altra parte.
    ============================================================ */
 'use strict';
 
@@ -19,7 +71,13 @@
     flask: '<path d="M9.4 3h5.2M10.2 3v5.6l-5.5 9.3A1.8 1.8 0 0 0 6.3 20.6h11.4a1.8 1.8 0 0 0 1.6-2.7l-5.5-9.3V3"/><path d="M7.4 14.4h9.2"/>',
     atom: '<circle cx="12" cy="12" r="1.3" fill="currentColor" stroke="none"/><ellipse cx="12" cy="12" rx="9.2" ry="3.9"/><ellipse cx="12" cy="12" rx="9.2" ry="3.9" transform="rotate(60 12 12)"/><ellipse cx="12" cy="12" rx="9.2" ry="3.9" transform="rotate(120 12 12)"/>',
 
-    /* aree di vita */
+    /* ---------- i segni delle aree ----------
+       Questi nominano un pezzo di vita, e servono SOLO come icona di un'area.
+       Fuori da qui non vogliono dire niente, e per il motivo opposto nessuno
+       dei segni di sistema (la stella della priorità, la fiamma della serie,
+       il fulmine della cattura, la provetta degli esperimenti) può finire
+       nella scelta di un'area: l'icona di un'area comparirebbe accanto alla
+       stessa figura che, due righe sopra, vuol dire un'altra cosa. */
     book: '<path d="M4.5 19.2V5.6A2.6 2.6 0 0 1 7.1 3h12.4v15.4H7.1a2.6 2.6 0 0 0-2.6 2.6 2.6 2.6 0 0 0 2.6 2.6h12.4v-2.6"/><path d="M8.6 7.2h6.8"/>',
     heart: '<path d="M12 20.4 4.3 13a4.9 4.9 0 0 1 6.9-6.9l.8.8.8-.8a4.9 4.9 0 0 1 6.9 6.9z"/><path d="M6.6 12.4h2.6l1.3-2.4 2 4.4 1.4-2h3"/>',
     users: '<circle cx="9" cy="8" r="3.4"/><path d="M2.8 19.8c.8-3.2 3.3-4.9 6.2-4.9s5.4 1.7 6.2 4.9"/><circle cx="17.2" cy="9.2" r="2.6"/><path d="M17.8 15.2c2.1.4 3.4 1.8 3.9 4.1"/>',
@@ -27,6 +85,10 @@
     landmark: '<path d="M3 21h18M5.4 21v-10M9.8 21v-10M14.2 21v-10M18.6 21v-10M2.8 10.4 12 3.4l9.2 7z"/>',
     rocket: '<path d="M12.4 14.6 9.4 11.6C10 9 11.5 6.4 13.9 4.3 16.4 2.1 19.9 2.4 20.8 3.2s1.1 4.4-1.1 6.9c-2.1 2.4-4.7 3.9-7.3 4.5z"/><circle cx="15.5" cy="8.5" r="1.5"/><path d="M9.4 11.6c-1.6.3-3 1.2-3.9 2.7M12.4 14.6c-.3 1.6-1.2 3-2.7 3.9M5.2 16.2c-1.5 1.5-1.9 4.6-1.9 4.6s3.1-.4 4.6-1.9"/>',
     briefcase: '<rect x="3" y="7.4" width="18" height="13" rx="2.4"/><path d="M9 7.4V6a2.4 2.4 0 0 1 2.4-2.4h1.2A2.4 2.4 0 0 1 15 6v1.4M3 12.4h18"/>',
+    casa: '<path d="M3.4 10.6 12 3.6l8.6 7v8.8a1.8 1.8 0 0 1-1.8 1.8H5.2a1.8 1.8 0 0 1-1.8-1.8z"/><path d="M9.4 21.2v-6h5.2v6"/>',
+    musica: '<circle cx="6.4" cy="17.6" r="2.8"/><circle cx="17.6" cy="15.4" r="2.8"/><path d="M9.2 17.6V6.2l11.2-2.2v11.4"/>',
+    globo: '<circle cx="12" cy="12" r="8.8"/><path d="M3.4 12h17.2"/><path d="M12 3.2c2.4 2.5 3.6 5.4 3.6 8.8s-1.2 6.3-3.6 8.8c-2.4-2.5-3.6-5.4-3.6-8.8S9.6 5.7 12 3.2z"/>',
+    pesi: '<path d="M4.2 9.4v5.2M7 7.6v8.8M17 7.6v8.8M19.8 9.4v5.2M7 12h10"/>',
     sparkles: '<path d="M11 4.6l1.5 3.9 3.9 1.5-3.9 1.5L11 15.4 9.5 11.5 5.6 10l3.9-1.5z"/><path d="M18.6 14.6l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"/>',
 
     /* azioni e stato */
@@ -48,8 +110,6 @@
     ingranaggio: '<path d="M9.89 2.84L14.11 2.84L14.47 5.56A6.9 6.9 0 0 1 16.34 6.64L18.87 5.59L20.99 9.25L18.82 10.92A6.9 6.9 0 0 1 18.82 13.08L20.99 14.75L18.87 18.41L16.34 17.36A6.9 6.9 0 0 1 14.47 18.44L14.11 21.16L9.89 21.16L9.53 18.44A6.9 6.9 0 0 1 7.66 17.36L5.13 18.41L3.01 14.75L5.18 13.08A6.9 6.9 0 0 1 5.18 10.92L3.01 9.25L5.13 5.59L7.66 6.64A6.9 6.9 0 0 1 9.53 5.56Z"/><circle cx="12" cy="12" r="3.3"/>',
     trash: '<path d="M3.6 6.4h16.8M8.6 6.4V5a1.8 1.8 0 0 1 1.8-1.8h3.2A1.8 1.8 0 0 1 15.4 5v1.4M18.6 6.4l-.9 12.7a2.2 2.2 0 0 1-2.2 2.1H8.5a2.2 2.2 0 0 1-2.2-2.1L5.4 6.4M10 10.6v6M14 10.6v6"/>',
     palette: '<path d="M12 3a9 9 0 1 0 .9 17.95c1.3-.13 1.75-1.3 1.2-2.3-.6-1.2.15-2.65 1.6-2.65H18a3.9 3.9 0 0 0 3.9-3.9C21.9 6.6 17.4 3 12 3z"/><circle cx="7.8" cy="10.2" r="1.05" fill="currentColor" stroke="none"/><circle cx="12" cy="7.4" r="1.05" fill="currentColor" stroke="none"/><circle cx="16.2" cy="10.2" r="1.05" fill="currentColor" stroke="none"/>',
-    keyboard: '<rect x="2.6" y="6" width="18.8" height="12" rx="2.4"/><path d="M6.4 10h.01M10.2 10h.01M14 10h.01M17.8 10h.01M6.4 14h11.4"/>',
-    send: '<path d="M20.6 3.4 3.4 10.2l7 2.4 2.4 7z"/><path d="M20.6 3.4 10.4 12.6"/>',
     trendUp: '<path d="M3.4 17.4l5.4-5.4 3.6 3.6 8.2-8.2"/><path d="M15.4 7.4h5.2v5.2"/>',
     calendar: '<rect x="3.4" y="4.8" width="17.2" height="16" rx="2.4"/><path d="M8 2.8v4M16 2.8v4M3.4 10h17.2"/>',
     lightbulb: '<path d="M9.2 18.2v-1.4c0-1-.6-1.8-1.3-2.6a6.4 6.4 0 1 1 8.2 0c-.7.8-1.3 1.6-1.3 2.6v1.4z"/><path d="M9.6 21.2h4.8"/>',
@@ -58,7 +118,6 @@
     cloudCheck: '<path d="M7 18.5a4.2 4.2 0 0 1-.5-8.37 5.6 5.6 0 0 1 10.86-1.2A3.9 3.9 0 0 1 17.4 18.5z"/><path d="M9.6 13.6l1.8 1.8 3.4-3.6"/>',
     logout: '<path d="M9 21H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3M16 17l5-5-5-5M21 12H9"/>',
     user: '<circle cx="12" cy="8" r="3.6"/><path d="M5 20c.7-3.4 3.4-5.2 7-5.2s6.3 1.8 7 5.2"/>',
-    pencil: '<path d="M4.5 19.5h4L18.6 9.4a2.05 2.05 0 0 0-2.9-2.9L5.6 16.6z"/><path d="M14 8l2 2"/>',
     download: '<path d="M12 3.5v11M7.7 10.2 12 14.5l4.3-4.3"/><path d="M4.8 20h14.4"/>',
     upload: '<path d="M12 15.5v-11M7.7 8.8 12 4.5l4.3 4.3"/><path d="M4.8 20h14.4"/>',
     save: '<path d="M6 20h12a2 2 0 0 0 2-2V8.5L15.5 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2z"/><path d="M8 4v5h6.5M8 20v-6h8v6"/>',
@@ -69,7 +128,37 @@
     lente: '<circle cx="11" cy="11" r="6.5"/><path d="M15.8 15.8L21 21"/>',
     imbuto: '<path d="M4 5h16l-6 7v5.5l-4 2.5V12L4 5z"/>',
     lista: '<path d="M9 6.5h11M9 12h11M9 17.5h11"/><path d="M4.6 6.5l.9.9 1.6-1.9M4.6 12l.9.9 1.6-1.9M4.6 17.5l.9.9 1.6-1.9"/>',
-    dots: '<circle cx="5.2" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="18.8" cy="12" r="1.5" fill="currentColor" stroke="none"/>',
+    /* presa: la maniglia per trascinare. Prima era «dots», tre puntini in
+       fila, che in ogni interfaccia del mondo vuol dire «altre opzioni»: chi
+       la vedeva cercava un menu e trovava un trascinamento. */
+    presa: '<circle cx="9" cy="6.5" r="1.4" fill="currentColor" stroke="none"/><circle cx="15" cy="6.5" r="1.4" fill="currentColor" stroke="none"/><circle cx="9" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="15" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="9" cy="17.5" r="1.4" fill="currentColor" stroke="none"/><circle cx="15" cy="17.5" r="1.4" fill="currentColor" stroke="none"/>',
+    /* polso: il check-in. Prima usava il fulmine — lo stesso segno della
+       cattura rapida E della scala «quanta energia hai» dentro la scheda
+       stessa: nello stesso riquadro compariva due volte per due cose. */
+    polso: '<path d="M2.6 12.4h4.2l2.2-5.6 3.4 10.4 2.4-4.8h6.6"/>',
+    /* mirino: la concentrazione. Prima era il bersaglio, che in quest'app è
+       «Oggi» e «l'azione più importante» — e stava nella riga sotto, nella
+       barra, mentre lo si usava per «quanto riesci a concentrarti». */
+    mirino: '<circle cx="12" cy="12" r="3"/><path d="M4 8.4V6a2 2 0 0 1 2-2h2.4M15.6 4H18a2 2 0 0 1 2 2v2.4M20 15.6V18a2 2 0 0 1-2 2h-2.4M8.4 20H6a2 2 0 0 1-2-2v-2.4"/>',
+    /* batteria: l'energia del check-in. Prima era il fulmine, che in questa
+       app vuol dire «cattura rapida» ed era già preso. */
+    batteria: '<rect x="2.4" y="7.4" width="16.2" height="9.2" rx="2.4"/><path d="M21.2 10.6v2.8"/><path d="M5.8 10.4v3.2M9.2 10.4v3.2M12.6 10.4v3.2"/>',
+    /* ancora: il gancio dell'intenzione, «alle 9:00, appena mi siedo». Non è
+       né un orario né un luogo: è la cosa a cui agganci l'azione. */
+    ancora: '<circle cx="12" cy="4.9" r="2.3"/><path d="M12 7.2v13.4"/><path d="M7.6 10.6h8.8"/><path d="M4 14.4a8.2 8.2 0 0 0 8 6.4 8.2 8.2 0 0 0 8-6.4"/>',
+    /* salta: scavalca oggi e riprende domani. Prima era la luna, che nell'app
+       vuol dire «la sera». */
+    salta: '<path d="M5.4 6l8 6-8 6z"/><path d="M18.2 5.4v13.2"/>',
+    /* fonte: lo studio citato in «Perché funziona». Prima era il libro, che è
+       anche l'icona dell'area «Studio»: la stessa figura per «la tua area» e
+       per «la ricerca da cui viene questa scelta». */
+    fonte: '<path d="M13.6 3.2H7A2 2 0 0 0 5 5.2v13.6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8.6z"/><path d="M13.4 3.3v5.3H19"/><path d="M8.6 13h6.8M8.6 16.6h4.4"/>',
+    /* quaderno: il diario. Prima usava il libro, che è anche l'icona
+       dell'area «Studio»: la stessa figura per due cose diverse. */
+    quaderno: '<rect x="5" y="3" width="14.4" height="18" rx="2.4"/><path d="M5 8H2.8M5 12H2.8M5 16H2.8"/><path d="M9.2 8.6h6M9.2 12.4h6M9.2 16.2h3.4"/>',
+    /* aree: le aree di vita, la torta divisa. Prima «Gestisci le aree» usava
+       le stelline, che vogliono dire «extra» e «dati di esempio». */
+    aree: '<circle cx="12" cy="12" r="8.8"/><path d="M12 3.2v17.6M3.2 12h17.6"/>',
     aiuto: '<circle cx="12" cy="12" r="9"/><path d="M9.4 9.3a2.7 2.7 0 0 1 5.2 1c0 1.7-2.6 2.1-2.6 3.9"/><path d="M12 17.4h.01"/>',
     chevronGiu: '<path d="M6 9.5l6 6 6-6"/>',
     copy: '<rect x="9" y="9" width="11.5" height="11.5" rx="2.4"/><path d="M15.6 5.8V5.4A2.4 2.4 0 0 0 13.2 3H6a2.4 2.4 0 0 0-2.4 2.4v7.2A2.4 2.4 0 0 0 6 15h.4"/>',

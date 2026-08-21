@@ -71,7 +71,7 @@ var LM = (function () {
     { id: 'associazioni', nome: 'Associazioni',        icona: 'landmark',  slot: 5, sistema: 'Blocco settimanale dedicato, non frammentato' },
     { id: 'founder',      nome: 'Progetti Founder',    icona: 'rocket',    slot: 6, sistema: 'Prima ora del mattino sul progetto, prima delle mail' },
     { id: 'lavoro',       nome: 'Lavoro',              icona: 'briefcase', slot: 7, sistema: 'Chiusura giornata con lista per domani' },
-    { id: 'altro',        nome: 'Altro / Esplorazione',icona: 'sparkles',  slot: 8, sistema: 'Spazio libero per la novità: una cosa nuova a settimana' }
+    { id: 'altro',        nome: 'Altro / Esplorazione',icona: 'lightbulb', slot: 8, sistema: 'Spazio libero per la novità: una cosa nuova a settimana' }
   ];
 
   /* Palette categorica di riferimento (validata: vedi README).
@@ -1147,7 +1147,7 @@ var LM = (function () {
     var usati = s.aree.map(function (a) { return a.slot; });
     var scelto = slot || 1;
     if (!slot) { for (var n = 1; n <= 8; n++) { if (usati.indexOf(n) < 0) { scelto = n; break; } scelto = ((s.aree.length) % 8) + 1; } }
-    s.aree.push({ id: id, nome: nome.trim() || 'Nuova area', icona: icona || 'sparkles', slot: scelto, sistema: '' });
+    s.aree.push({ id: id, nome: nome.trim() || 'Nuova area', icona: icona || 'lightbulb', slot: scelto, sistema: '' });
     s.areeAttive.push(id);
     registra('area', 'Nuova area: «' + (nome.trim() || 'Nuova area') + '»', true);
     save();

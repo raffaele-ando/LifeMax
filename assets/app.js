@@ -768,7 +768,7 @@
       '<div class="imp-nota">Con <b>Tre porte</b> nella barra restano <b>Oggi</b>, <b>Attività</b> e <b>Andamento</b>, e le altre schermate stanno dentro, in una riga di linguette sotto al titolo. Con <b>Tutte le pagine</b> torna la barra lunga di prima. In tutti e due i casi non sparisce niente: cambia solo da dove ci si arriva.</div></div>' +
       '<div class="imp-sezione"><div class="imp-eti">Personalizza</div>' +
       '<div class="imp-azioni">' +
-      '<button class="btn btn-mini" id="imp-aree">' + ICO('sparkles', 15) + ' Gestisci le aree</button> ' +
+      '<button class="btn btn-mini" id="imp-aree">' + ICO('aree', 15) + ' Gestisci le aree</button> ' +
       '<button class="btn btn-mini" id="imp-guida">' + ICO('aiuto', 15) + ' Come si usa</button> ' +
       '<button class="btn btn-mini" id="imp-scienza">' + ICO('atom', 15) + ' Perché funziona</button></div>' +
       '<div class="imp-nota">«Perché funziona» racconta su quali studi è appoggiata ogni scelta dell’app. Si legge una volta, quindi non occupa una linguetta.</div></div>' +
@@ -796,7 +796,7 @@
       '</div>' +
       '<div class="imp-sezione"><div class="imp-eti">Ripartenza</div>' +
       '<div class="imp-azioni">' +
-      '<button class="btn btn-mini" id="imp-demo">' + ICO('refresh', 15) + ' Carica dati di esempio</button> ' +
+      '<button class="btn btn-mini" id="imp-demo">' + ICO('sparkles', 15) + ' Carica dati di esempio</button> ' +
       '<button class="btn btn-mini imp-pericolo" id="imp-azzera">' + ICO('trash', 15) + ' Azzera tutto</button></div>' +
       '<div class="imp-nota">L’azzeramento crea comunque un backup: potrai recuperare i dati da «Backup e ripristino».</div></div>' +
       '<div class="imp-sezione"><div class="imp-eti">Se qualcosa non torna</div>' +
@@ -1034,7 +1034,13 @@
 
   /* ---------- gestione aree (personalizzabili) ---------- */
 
-  var ICONE_AREA =['book', 'heart', 'users', 'wallet', 'landmark', 'rocket', 'briefcase', 'sparkles', 'target', 'bolt', 'flask', 'star', 'flame', 'lightbulb', 'calendar', 'clock'];
+  /* Solo segni delle aree: prima si potevano scegliere anche la stella, la
+     fiamma, il fulmine, la provetta, il bersaglio e le stelline — che nell'app
+     vogliono già dire priorità, serie, cattura, esperimenti, «Oggi» e «extra».
+     Un'area con la stella finiva accanto alla stella della priorità, e le due
+     figure identiche dicevano due cose diverse nella stessa riga. */
+  var ICONE_AREA = ['book', 'heart', 'users', 'wallet', 'landmark', 'rocket', 'briefcase',
+    'lightbulb', 'casa', 'musica', 'globo', 'pesi', 'user', 'shield'];
 
   function apriAree() {
     var s = LM.load();
@@ -1192,6 +1198,17 @@
      Su un telefono c'è un motivo in più: la tastiera copre il fondo dello
      schermo, e un campo in basso finisce sotto la tastiera che serve a
      riempirlo. In alto resta sempre visibile. */
+
+  /* L'etichetta di un gruppo. Porta il segno della cosa che nomina, quando
+     quella cosa ha già un segno suo: dentro una scheda lunga è quello che
+     fa trovare il blocco giusto senza rileggere tutte le intestazioni. Dove
+     un segno onesto non c'è — «Dopo questa», «Le altre» — non se ne inventa
+     uno: un glifo scelto per riempire il posto è una figura in più da
+     decifrare, non un aiuto.  */
+  function etichetta(testo, ico, conta) {
+    return '<div class="lista-eti">' + (ico ? ICO(ico, 11) : '') + testo +
+      (conta != null ? ' <span>' + conta + '</span>' : '') + '</div>';
+  }
 
   function rigaAggiunta(id, segnaposto, opzioniHtml) {
     return '<form class="agg" id="' + id + '" autocomplete="off">' +
@@ -1487,7 +1504,7 @@
       '<div class="focus-area" style="--c-area:' + colArea + '">' +
       segnoArea(area, 15) +
       selectAreaAzione(prossima.id, prossima.areaId) + '</div>' +
-      (prossima.ifThen ? '<div class="focus-ifthen">' + ICO('bolt', 15) + '<span>' + esc(prossima.ifThen) + '</span></div>' : '') +
+      (prossima.ifThen ? '<div class="focus-ifthen">' + ICO('ancora', 15) + '<span>' + esc(prossima.ifThen) + '</span></div>' : '') +
       /* gerarchia chiara: un'unica azione dominante, il resto recede */
       '<div class="focus-primaria">' +
       '<button class="btn btn-ok btn-grande" id="btn-fatto">' + ICO('check', 18) + ' Fatto <small>+' + xpPrevisti + ' XP</small></button>' +
@@ -1721,7 +1738,7 @@
          per selezionare il testo. */
       if (e.tipo === 'azione') clic += ' data-drag-az="' + e.id + '"' + (opts.mini ? ' data-manico' : '');
       return '<div class="tl-blk tl-blk-att' + (fatto ? ' fatta' : '') + (basso ? ' tl-blk-basso' : '') + (opts.interactive && !opts.mini ? ' tl-blk-clic' : '') + '"' + clic + ' style="' + pos + ';--c-area:' + col + '" title="' + esc(e.testo) + '">' +
-        check + (e.tipo === 'azione' && !opts.mini && opts.interactive ? '<span class="manico" data-manico aria-hidden="true">' + ICO('dots', 13) + '</span>' : '') +
+        check + (e.tipo === 'azione' && !opts.mini && opts.interactive ? '<span class="manico" data-manico aria-hidden="true">' + ICO('presa', 13) + '</span>' : '') +
         '<span class="tl-blk-t">' + (e.mit ? ICO('star', 11) + ' ' : '') + esc(e.testo) + '</span>' +
         (hgt > 30 && !opts.mini ? '<span class="tl-blk-ora">' + e.ora + '–' + fmtMin(e.min + dur) + '</span>' : '') + '</div>';
     }).join('');
@@ -1968,7 +1985,7 @@
              toccare le altre; il resto si gestisce fra le Abitudini */
           '<button class="btn btn-mini ig-salta">' + ICO('x', 13) + ' Togli solo da ' + esc(etichettaGiorno(k).toLowerCase()) + '</button>' +
           '<button class="btn btn-mini ig-finequi">' + ICO('calendar', 13) + ' Finisce qui (non più da domani)</button>' +
-          '<button class="btn btn-mini btn-ghost ig-vairituali">' + ICO('refresh', 13) + ' Gestiscila in Attività</button>') +
+          '<button class="btn btn-mini btn-ghost ig-vairituali">' + ICO('arrowRight', 13) + ' Gestiscila in Attività</button>') +
       '</div>' +
       '</div>';
     apriSheet(esc(e.testo), html, function (root) {
@@ -2068,7 +2085,7 @@
           return '<div class="gio-so-riga' + (fatto ? ' fatta' : '') + '" style="--c-area:' + col + '"' +
             (e.tipo === 'azione' ? ' data-drag-az="' + e.id + '"' : '') + '>' +
             (spuntabile ? '<button class="tl-check" ' + attr + ' aria-label="Fatto">' + ICO('check', 13) + '</button>' : '') +
-            (e.tipo === 'azione' ? '<span class="manico" data-manico aria-hidden="true">' + ICO('dots', 13) + '</span>' : '') +
+            (e.tipo === 'azione' ? '<span class="manico" data-manico aria-hidden="true">' + ICO('presa', 13) + '</span>' : '') +
             '<button class="gio-so-corpo" ' + bAttr + '>' +
             segnoArea(ar, 13, 'tl-tag') +
             '<span class="gio-so-testo">' + esc(e.testo) + (e.mit ? ' ' + ICO('star', 11) : '') + '</span>' +
@@ -2115,7 +2132,7 @@
           '<div class="sp-pasti" id="sp-pasti">' + pastiRows + '</div>' +
           '<div class="riga-flex mt-s"><button class="btn btn-mini" id="sp-add">' + ICO('plus', 13) + ' Aggiungi un pasto</button>' +
           (d.dalRegistro ? '<button class="btn btn-mini btn-ghost" id="sp-reset">Torna al ritmo di base</button>' : '') +
-          '<button class="btn btn-mini btn-ghost" id="sp-base">' + ICO('sun', 13) + ' Cambia il ritmo di base</button></div>' +
+          '<button class="btn btn-mini btn-ghost" id="sp-base">' + ICO('ingranaggio', 13) + ' Cambia il ritmo di base</button></div>' +
           '<div class="imp-nota" style="margin-top:8px">Vale per <b>questo giorno</b> e resta nel registro. Il ritmo di base (per gli altri giorni) si cambia da «Cambia il ritmo di base».</div>' +
           '</div>') + '</div>';
     }
@@ -2697,8 +2714,14 @@
       ico = '<span class="diario-ico">' + ICO('calendar', 15) + '</span>';
       testo = 'Review della settimana' + (ev.imparato ? ' · <span class="diario-sec">' + esc(ev.imparato) + '</span>' : '');
     } else if (ev.tipo === 'registro') {
-      var icoCat = { azione: 'target', abitudine: 'refresh', backlog: 'lista', inbox: 'inbox', area: 'sparkles', giornata: 'clock', focus: 'clock', impostazioni: 'ingranaggio', dati: 'save' };
-      ico = '<span class="diario-ico' + (ev.imp ? '' : ' minore') + '">' + ICO(icoCat[ev.cat] || 'bolt', 13) + '</span>';
+      /* Nel diario ogni riga porta il segno della cosa di cui parla, e sono gli
+         stessi segni del resto dell'app: così il registro si legge a colpo
+         d'occhio invece che riga per riga. Prima «area» usava le stelline (che
+         vogliono dire «extra») e «focus» il quadrante come «giornata» — due
+         categorie diverse con la stessa figura. */
+      var icoCat = { azione: 'target', abitudine: 'refresh', backlog: 'lista', inbox: 'inbox',
+        area: 'aree', giornata: 'clock', focus: 'mirino', impostazioni: 'ingranaggio', dati: 'save' };
+      ico = '<span class="diario-ico' + (ev.imp ? '' : ' minore') + '">' + ICO(icoCat[ev.cat] || 'lista', 13) + '</span>';
       testo = '<span class="diario-log">' + esc(ev.testo) + '</span>';
       cls = ev.imp ? '' : ' minore';
     } else { /* cattura */
@@ -2754,7 +2777,7 @@
       return '<button data-sez="' + id + '" class="' + (sezPlancia === id ? 'attivo' : '') + '">' +
         '<span class="seg-ico">' + ICO(ico, 15) + '</span><span class="seg-eti">' + et + '</span></button>';
     }
-    html += '<div class="segmenti sez-nav tabs-fisse" id="sez-plancia">' + segp('riepilogo', 'dashboard', 'Riepilogo') + segp('diario', 'book', 'Diario') + segp('aree', 'sparkles', 'Aree') + segp('andamento', 'trendUp', 'Andamento') + '</div>';
+    html += '<div class="segmenti sez-nav tabs-fisse" id="sez-plancia">' + segp('riepilogo', 'dashboard', 'Riepilogo') + segp('diario', 'quaderno', 'Diario') + segp('aree', 'sparkles', 'Aree') + segp('andamento', 'trendUp', 'Andamento') + '</div>';
     html += '<div id="sez-corpo"></div>';
 
     $vista.innerHTML = html;
@@ -2860,7 +2883,7 @@
     /* --- Andamento: check-in nel tempo + minuti per area --- */
     function sezAndamento(c) {
       var dark = document.documentElement.getAttribute('data-mode') === 'dark';
-      c.innerHTML = '<div class="card" style="--i:0"><div class="card-testa"><h2>' + ICO('bolt', 15) + ' Energia, focus e umore</h2>' +
+      c.innerHTML = '<div class="card" style="--i:0"><div class="card-testa"><h2>' + ICO('polso', 15) + ' Energia, focus e umore</h2>' +
         '<div class="segmenti mini-seg" id="seg-periodo">' +
         '<button data-g="14" class="' + (periodoTrend === 14 ? 'attivo' : '') + '">14 giorni</button>' +
         '<button data-g="30" class="' + (periodoTrend === 30 ? 'attivo' : '') + '">30 giorni</button></div></div>' +
@@ -2893,7 +2916,7 @@
       var html;
       if (!giorni.length) {
         html = '<div class="card diario"><div class="card-testa"><div class="sotto" style="margin:0">La storia di tutto ciò che fai, dal più recente.</div>' + filtro + '</div>' +
-          '<div class="vuoto" style="padding:20px 8px">' + ICO('book', 26) + '<br><b>Ancora niente da mostrare.</b><br>Appena fai qualcosa comparirà qui, giorno per giorno.</div></div>';
+          '<div class="vuoto" style="padding:20px 8px">' + ICO('quaderno', 26) + '<br><b>Ancora niente da mostrare.</b><br>Appena fai qualcosa comparirà qui, giorno per giorno.</div></div>';
       } else {
         html = '<div class="card diario"><div class="card-testa"><div class="sotto" style="margin:0">La storia di tutto ciò che fai — azioni, note, scelte, impostazioni. ' + (diarioTutto ? 'Stai vedendo <b>tutto</b>.' : 'Mostro le <b>cose importanti</b>; con «Tutto» vedi anche le modifiche minori.') + '</div>' + filtro + '</div>';
         giorni.forEach(function (g) {
@@ -2904,7 +2927,7 @@
         html += '</div>';
         var totGiorni = LM.giorniConAttivita();
         if (totGiorni > giorni.length) {
-          html += '<div style="text-align:center" class="mt"><button class="btn" id="diario-altro">' + ICO('refresh', 15) + ' Mostra altri giorni</button></div>';
+          html += '<div style="text-align:center" class="mt"><button class="btn" id="diario-altro">' + ICO('chevronGiu', 15) + ' Mostra altri giorni</button></div>';
         }
       }
       c.innerHTML = html;
@@ -2949,7 +2972,7 @@
   var ritualiAperti = null;
   var RITUALI = [
     { id: 'mattina',   ico: 'sun',      nome: 'Le azioni di oggi',      quando: 'giorno' },
-    { id: 'checkin',   ico: 'bolt',     nome: 'Check-in',               quando: 'giorno' },
+    { id: 'checkin',   ico: 'polso',    nome: 'Check-in',               quando: 'giorno' },
     { id: 'sera',      ico: 'moon',     nome: 'Review della sera',      quando: 'giorno' },
     { id: 'settimana', ico: 'calendar', nome: 'Review della settimana', quando: 'ogni tanto' }
   ];
@@ -3380,7 +3403,7 @@
             '<p class="abd-nota">Oggi è saltata: non conta come mancata e la serie non si rompe.</p>'
           : '<button class="btn btn-grande ' + (st.fatta ? 'btn-ok' : 'btn-primario') + '" id="abd-fatta">' +
             ICO('check', 15) + (st.fatta ? ' Fatta oggi' : ' Segna come fatta') + '</button>' +
-            (prevista ? '<button class="btn btn-mini btn-ghost" id="abd-salta">' + ICO('moon', 15) + ' Salta oggi</button>' : '')) +
+            (prevista ? '<button class="btn btn-mini btn-ghost" id="abd-salta">' + ICO('salta', 15) + ' Salta oggi</button>' : '')) +
         '</div>' +
         '<div class="abd-numeri">' +
         /* una fiamma accanto a uno zero è solo un rimprovero: quando la
@@ -3514,10 +3537,10 @@
   function ritualeCheckin(corpo) {
     var voti = { energia: 0, focus: 0, umore: 0 };
     corpo.innerHTML = '<div class="card">' +
-      testaRituale('bolt', 'Come stai adesso',
+      testaRituale('polso', 'Come stai adesso',
         'Energia, concentrazione e umore su una scala da 1 a 5. Conta l’andamento nei giorni, non il numero di oggi.') +
-      scala('energia', 'bolt', 'Quanta energia hai?') +
-      scala('focus', 'target', 'Quanto riesci a concentrarti?') +
+      scala('energia', 'batteria', 'Quanta energia hai?') +
+      scala('focus', 'mirino', 'Quanto riesci a concentrarti?') +
       scala('umore', 'smile', 'Come ti senti?') +
       '<div class="riga-flex mt"><button class="btn btn-primario btn-grande" id="btn-salva-checkin" disabled>' + ICO('check', 15) + ' Registra <small>+' + LM.XP_EVENTI.checkin + ' XP</small></button></div>' +
       '</div><div class="card mt"><h2>' + ICO('trendUp', 15) + ' Andamento degli ultimi 14 giorni</h2><div id="mini-trend"></div></div>';
@@ -3757,7 +3780,7 @@
         /* una colonna sola, larga quanto si legge comodamente: sullo schermo
            grande la decisione non deve attraversare mezzo metro di monitor */
         '<div class="sm-uno">' +
-        '<div class="lista-eti">Da sistemare <span>' + coda.length + '</span></div>' +
+        etichetta('Da sistemare', 'inbox', coda.length) +
         '<div class="lista">' +
         /* il testo è un campo, non un testo con una matita accanto: si
            corregge scrivendoci sopra, senza entrare e uscire da un modo */
@@ -3942,7 +3965,7 @@
               (conData ? voce('data', 'calendar', 'Con una data', conData) : '') +
               (nProg ? voce('progetti', 'rocket', 'Divise in passi', nProg) : '') + '</div>'
             : '') +
-          '<div class="lista-eti">Per area</div><div class="lista">' +
+          etichetta('Per area', 'aree') + '<div class="lista">' +
           LM.backlogPerArea().filter(function (g) { return g.items.length; })
             .map(function (g) { return voce(g.area.id, 'area', g.area.nome, g.items.length); }).join('') +
           '</div></div>';
@@ -4144,7 +4167,7 @@
           '<button class="btn btn-primario btn-grande sc-primaria" id="sc-oggi">' + ICO('arrowRight', 15) + ' ' +
           (isProg ? 'Prossimo passo in Oggi' : 'Portala in Oggi') + '</button>' +
 
-          '<div class="lista-eti">Se non oggi</div>' +
+          etichetta('Se non oggi', 'calendar') +
           '<div class="q-chips sc-quando">' +
           gChip(LM.addDays(oggi, 1), 'Domani') +
           gChip(LM.addDays(oggi, 2), etichettaGiorno(LM.addDays(oggi, 2)).split(' ')[0]) +
@@ -4153,12 +4176,16 @@
           '<input type="date" id="sc-quando" min="' + oggi + '" aria-label="Un altro giorno"></label>' +
           '</div>' +
 
-          '<div class="lista-eti">Passi' + (isProg ? ' <span>' + av.fatti + ' di ' + av.tot + '</span>' : '') + '</div>' +
+          etichetta('Passi', 'lista', isProg ? av.fatti + ' di ' + av.tot : null) +
           '<div class="lista">' + passi +
           '<form class="lista-riga sc-agg" id="sc-passo-add">' +
           '<span class="lista-vuoto">' + ICO('plus', 15) + '</span>' +
           '<input type="text" placeholder="' + (isProg ? 'Aggiungi un passo…' : 'Dividila in passi: scrivi il primo…') + '" aria-label="Aggiungi un passo">' +
-          '<button class="btn btn-mini" type="submit">Aggiungi</button></form>' +
+          /* il «più» sta già in testa alla riga, dove si allinea alle spunte
+             dei passi sopra: qui la parola basta, e il colore è quello di
+             tutti gli altri «Aggiungi» dell'app. Due segni «più» nella
+             stessa riga per la stessa azione erano uno di troppo. */
+          '<button class="btn btn-mini btn-tinta" type="submit">Aggiungi</button></form>' +
           (isProg && aperti > 1
             ? riga('Spalma i passi aperti',
               '<span class="sc-val q-chips">' +
@@ -4168,7 +4195,7 @@
             : '') +
           '</div>' +
 
-          '<div class="lista-eti">Dettagli</div>' +
+          etichetta('Dettagli', 'ingranaggio') +
           '<div class="lista">' +
           riga('Area', '<span class="sc-val">' + selectAree('sc-area', b.areaId, 'Area', 'sc-inline') + '</span>') +
           /* senza scadenza la riga dice «nessuna» e il campo compare al
@@ -4183,7 +4210,7 @@
               '<input type="date" class="sc-nascosta" id="sc-scad" aria-label="Scadenza">', ' data-apri-scad="1"', 'sc-tocca')) +
           '<button class="lista-riga sc-riga sc-tocca" id="sc-pin">' +
           '<span class="sc-eti">Tieni in cima</span>' +
-          '<span class="sc-val">' + (b.pin ? ICO('check', 15, 'sc-si') + ' sì' : 'no') + '</span></button>' +
+          '<span class="sc-val">' + (b.pin ? ICO('star', 15, 'sc-si') + ' sì' : 'no') + '</span></button>' +
           '</div>' +
           '<p class="lista-nota">«Se non oggi» la mette tra le cose di quel giorno. La scadenza è solo un conto alla rovescia: non la mette in agenda.</p>' +
 
@@ -4297,7 +4324,7 @@
       var gia = LM.snapshot().azioni.find(function (a) { return !a.done && a.passoDi && a.passoDi.b === prog.id && a.passoDi.s === passo.id; });
       function chip(k, et) { return '<button class="q-chip' + (gia && gia.data === k ? ' on' : '') + '" data-qp="' + k + '">' + et + '</button>'; }
       var html = '<div class="sc">' +
-        '<div class="lista-eti">Quando fare questo passo</div>' +
+        etichetta('Quando fare questo passo', 'calendar') +
         '<div class="sc-gruppo">' +
         '<div class="q-chips">' + chip(oggi, 'Oggi') + chip(LM.addDays(oggi, 1), 'Domani') +
         chip(LM.addDays(oggi, 2), etichettaGiorno(LM.addDays(oggi, 2)).split(' ')[0]) +
@@ -4328,7 +4355,7 @@
     /* Da cosa-da-fare a abitudine: si scelgono i giorni e (se serve) l'ora. */
     function apriDaAbitudine(b) {
       var html = '<div class="sc">' +
-        '<div class="lista-eti">In che giorni</div>' +
+        etichetta('In che giorni', 'calendar') +
         '<div class="sc-gruppo">' +
         '<div id="ab-giorni">' + chipsGiorni([1, 2, 3, 4, 5, 6, 0]) + '</div>' +
         '<label class="sc-campo"><span>a che ora</span>' +
@@ -4337,7 +4364,7 @@
         '<select class="tl-dur" id="ab-dur">' + DURATE.map(function (o) { return '<option value="' + o.v + '">' + o.t + '</option>'; }).join('') + '</select></label>' +
         '<div class="sc-nota">Vuoti vanno bene: l’abitudine resta senza orario fisso.</div>' +
         '</div>' +
-        '<button class="btn btn-primario btn-grande sc-primaria" id="ab-crea">' + ICO('check', 15) + ' Crea l’abitudine</button>' +
+        '<button class="btn btn-primario btn-grande sc-primaria" id="ab-crea">' + ICO('plus', 15) + ' Crea l’abitudine</button>' +
         '<div class="sc-nota" style="text-align:center">Esce da «Da fare» e la ritrovi in <b>Attività → Abitudini</b>.</div>' +
         '</div>';
       apriSheet(b.testo, html, function (root) {
@@ -4609,7 +4636,7 @@
           '<div class="riga-flex" style="justify-content:space-between;flex-wrap:nowrap;align-items:flex-start"><h2 style="margin:0">' + p.titolo + '</h2><span class="evidenza ' + cls + '">' + eti + '</span></div>' +
           '<p style="font-size:13.5px;color:var(--inchiostro-2)">' + p.claim + '</p>' +
           '<div class="uso"><b>Nel prototipo:</b> ' + p.uso + '</div>' +
-          '<div class="fonte">' + ICO('book', 15) + '<span>' + p.fonti + '</span></div>' +
+          '<div class="fonte">' + ICO('fonte', 15) + '<span>' + p.fonti + '</span></div>' +
           '</div>';
       }).join('') + '</div>';
     $vista.innerHTML = html;
