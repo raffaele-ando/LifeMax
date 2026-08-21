@@ -2351,8 +2351,8 @@ body.sto-trascinando { cursor: grabbing; user-select: none; -webkit-user-select:
 .ab-prog.piena .ab-prog-testo { color: var(--ok-testo); }
 .ab-prog.piena .ab-prog-testo .ico { color: var(--ok-pieno); }
 
-/* il campo per aggiungerne una sta in fondo, staccato dalla lista */
-.ab-nuova { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--griglia); }
+/* il campo per aggiungerne una sta in cima, come in «Da fare» */
+.ab-nuova { margin-bottom: 4px; }
 
 /* ---------- scadenze ---------- */
 

@@ -24,8 +24,8 @@ const viva=()=>p.evaluate(()=>{
     aperto:!document.getElementById('sheet-overlay').hidden||!document.getElementById('overlay-cattura').hidden};});
 
 const vaiA=async v=>{await p.evaluate(x=>location.hash='#/'+x,v);await p.waitForTimeout(600);};
-const apriRituali=async()=>{await vaiA('rituali');
-  await p.evaluate(()=>{document.querySelectorAll('.rit-riga').forEach(r=>{if(r.getAttribute('aria-expanded')==='false')r.click();});});
+const apriAbitudini=async()=>{await vaiA('inbox');
+  await p.evaluate(()=>{const b=document.querySelector('[data-att="abitudini"]');if(b)b.click();});
   await p.waitForTimeout(700);};
 
 const PANNELLI=[
@@ -37,7 +37,7 @@ const PANNELLI=[
   ['Impostazioni → Cosa sta succedendo', async()=>{await vaiA('oggi');await p.evaluate(()=>{const b=[...document.querySelectorAll('button')].find(x=>/impostazioni/i.test(x.getAttribute('aria-label')||x.title||x.textContent));b.click();});await p.waitForTimeout(600);await p.evaluate(()=>{const b=[...document.querySelectorAll('.sheet button')].find(x=>/cosa sta succedendo/i.test(x.textContent));if(b)b.click();});}],
   ['La giornata (da Oggi)', async()=>{await vaiA('oggi');await p.evaluate(()=>{const b=document.querySelector('.giornata-strip');if(b)b.click();});}],
   ['Blocco della giornata', async()=>{await vaiA('giornata');await p.evaluate(()=>{const b=document.querySelector('.tl-blk-clic');if(b)b.click();});}],
-  ['Scheda abitudine', async()=>{await apriRituali();await p.evaluate(()=>{const b=document.querySelector('[data-abdett]');if(b)b.click();});}],
+  ['Scheda abitudine', async()=>{await apriAbitudini();await p.evaluate(()=>{const b=document.querySelector('[data-abdett]');if(b)b.click();});}],
   ['Cattura rapida', async()=>{await vaiA('oggi');await p.evaluate(()=>document.getElementById('fab-cattura').click());}]
 ];
 const CHIUSURE=[

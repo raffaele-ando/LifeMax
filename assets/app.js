@@ -1930,10 +1930,10 @@
         ? '<button class="btn btn-mini ig-indietro">' + ICO('lista', 13) + ' Togli dal giorno' + (e.passoDi ? '' : ' (torna in «Da fare»)') + '</button>' +
           '<button class="btn btn-mini btn-ghost imp-pericolo ig-rimuovi">' + ICO('trash', 13) + ' Elimina</button>'
         : /* un'abitudine si toglie da QUESTO giorno senza cancellarla né
-             toccare le altre; il resto si gestisce in Rituali */
+             toccare le altre; il resto si gestisce fra le Abitudini */
           '<button class="btn btn-mini ig-salta">' + ICO('x', 13) + ' Togli solo da ' + esc(etichettaGiorno(k).toLowerCase()) + '</button>' +
           '<button class="btn btn-mini ig-finequi">' + ICO('calendar', 13) + ' Finisce qui (non più da domani)</button>' +
-          '<button class="btn btn-mini btn-ghost ig-vairituali">' + ICO('refresh', 13) + ' Gestiscila in Rituali</button>') +
+          '<button class="btn btn-mini btn-ghost ig-vairituali">' + ICO('refresh', 13) + ' Gestiscila in Attività</button>') +
       '</div>' +
       '</div>';
     apriSheet(esc(e.testo), html, function (root) {
@@ -1999,7 +1999,7 @@
         chiudiSheet(); ricarica();
       });
       var vai = root.querySelector('.ig-vairituali');
-      if (vai) vai.addEventListener('click', function () { chiudiSheet(); sottoRituale = 'abitudini'; location.hash = '#/rituali'; });
+      if (vai) vai.addEventListener('click', function () { chiudiSheet(); attTab = 'abitudini'; location.hash = '#/inbox'; });
     });
   }
 
@@ -2905,8 +2905,7 @@
      dentro anche un pannello di configurazione. */
   var GRUPPI_RIT = [
     { eti: 'Il piano di oggi', ids: ['mattina'] },
-    { eti: 'Come è andata',    ids: ['checkin', 'sera', 'settimana'] },
-    { eti: 'Cose che si ripetono', ids: ['abitudini'] }
+    { eti: 'Come è andata',    ids: ['checkin', 'sera', 'settimana'] }
   ];
   /* quali sezioni sono aperte: ognuna si apre e si chiude per conto suo, e
      aprirne una non chiude le altre (linee guida Apple: le sezioni a
@@ -2916,8 +2915,7 @@
     { id: 'mattina',   ico: 'sun',      nome: 'Le azioni di oggi',      quando: 'giorno' },
     { id: 'checkin',   ico: 'bolt',     nome: 'Check-in',               quando: 'giorno' },
     { id: 'sera',      ico: 'moon',     nome: 'Review della sera',      quando: 'giorno' },
-    { id: 'settimana', ico: 'calendar', nome: 'Review della settimana', quando: 'ogni tanto' },
-    { id: 'abitudini', ico: 'refresh',  nome: 'Abitudini',              quando: 'ogni tanto' }
+    { id: 'settimana', ico: 'calendar', nome: 'Review della settimana', quando: 'ogni tanto' }
   ];
   /* Le sezioni si ridisegnano da sole (le abitudini, per esempio, si
      riscrivono senza passare da render()): senza questo, la riga sopra
@@ -2963,12 +2961,8 @@
     if (id === 'sera') {
       return s.reviewSera[t] ? { fatto: true, testo: 'fatta' } : { fatto: false, testo: 'da fare' };
     }
-    if (id === 'settimana') {
-      var wk = LM.weekKey(t);
-      return s.reviewSettimana[wk] ? { fatto: true, testo: 'fatta' } : { fatto: false, testo: 'da fare' };
-    }
-    var ab = LM.abitudiniDiOggi(), f = ab.filter(function (h) { return !!h.fatti[t]; }).length;
-    return { fatto: ab.length > 0 && f === ab.length, testo: ab.length ? f + ' di ' + ab.length + ' oggi' : 'nessuna per oggi' };
+    var wk = LM.weekKey(t);
+    return s.reviewSettimana[wk] ? { fatto: true, testo: 'fatta' } : { fatto: false, testo: 'da fare' };
   }
   var inboxEditId = null;
 
@@ -2979,12 +2973,7 @@
        Con delle abitudini ancora da spuntare si apre anche quella sezione:
        è la sola che ha un lavoro in sospeso ogni giorno, e trovarla chiusa
        significa che le abitudini di oggi non le vede chi passa di qui. */
-    if (!ritualiAperti) {
-      ritualiAperti = {};
-      ritualiAperti[adesso] = true;
-      var restano = LM.abitudiniDiOggi().filter(function (h) { return !h.fatti[LM.todayKey()]; }).length;
-      if (restano) ritualiAperti.abitudini = true;
-    }
+    if (!ritualiAperti) { ritualiAperti = {}; ritualiAperti[adesso] = true; }
     /* chi arriva da un collegamento (la riga in Oggi, «vai alle abitudini»)
        apre quella sezione SENZA chiudere le altre */
     var daScorrere = null;
@@ -3011,11 +3000,11 @@
       return '<div class="rit-eti">' + g.eti + '</div><div class="rit-gruppo">' + righe + '</div>';
     }).join('');
 
-    $vista.innerHTML = topbar('Rituali', 'Mattina, sera e abitudini.') + corpoHtml;
+    $vista.innerHTML = topbar('Rituali', 'I momenti della giornata: cosa fare, e com\u2019è andata.') + corpoHtml;
 
     /* disegna il contenuto di TUTTE le sezioni aperte */
     var disegna = {
-      mattina: ritualeMattina, abitudini: ritualeAbitudini,
+      mattina: ritualeMattina,
       checkin: ritualeCheckin, sera: ritualeSera, settimana: ritualeSettimana
     };
     Object.keys(disegna).forEach(function (id) {
@@ -3111,7 +3100,7 @@
     document.getElementById('btn-vai-focus').addEventListener('click', function () { location.hash = '#/oggi'; });
   }
 
-  /* ---------- Rituali → Abitudini ---------- */
+  /* ---------- Attività → Abitudini ---------- */
 
   var GIORNI_ORD = [1, 2, 3, 4, 5, 6, 0];
   var GIORNI_LAB = { 1: 'L', 2: 'M', 3: 'M', 4: 'G', 5: 'V', 6: 'S', 0: 'D' };
@@ -3234,7 +3223,7 @@
       '</div>';
   }
 
-  function ritualeAbitudini(corpo) {
+  function sezioneAbitudini(corpo) {
     var s = LM.load();
     /* con un orario la lista prende la forma della giornata: prima quelle
        che hanno un'ora, in ordine, poi quelle che si fanno quando capita */
@@ -3262,30 +3251,12 @@
         '</div>';
     }
 
-    /* Ordine: prima com'è messa oggi, poi le abitudini, e in fondo il campo
-       per aggiungerne una — come negli elenchi di iOS, dove la riga nuova
-       sta sotto quelle che ci sono già. Prima stava in cima perché sopra
-       c'erano millequattrocento pixel di impostazioni da scavalcare: adesso
-       che quelle sono dentro le schede, la sezione intera sta in uno schermo
-       e il campo si raggiunge senza scorrere.
-       La spiegazione compare solo finché non c'è niente: dopo si è già
-       capito, e sarebbero due righe rilette ogni volta. */
-    corpo.innerHTML = '<div class="card">' +
-      (s.abitudini.length
-        ? testaRituale('refresh', 'Abitudini', '')
-        : testaRituale('refresh', 'Abitudini',
-          'Le azioni che vuoi ripetere. Ogni volta che le fai, la serie cresce.')) +
+    /* Ordine identico a «Da fare», che adesso è la linguetta accanto: il
+       conto di oggi, il campo per aggiungerne una, poi la lista. Due
+       elenchi nella stessa pagina con il campo in posti diversi sono due
+       posti da imparare invece di uno. */
+    corpo.innerHTML =
       prog +
-      (oggi.length
-        ? '<div class="lista-eti">Oggi</div><div class="lista">' +
-          oggi.map(function (h) { return rigaAbitudine(h, true); }).join('') + '</div>'
-        : (s.abitudini.length
-          ? '<div class="vuoto" style="padding:14px 8px">Per oggi non è prevista nessuna abitudine.</div>'
-          : '<div class="vuoto" style="padding:14px 8px">Non ne hai ancora. Scrivine una qui sotto: «leggere 20 minuti», «camminare», quello che vuoi ripetere.</div>')) +
-      (altre.length
-        ? '<div class="lista-eti">Le altre</div><div class="lista">' +
-          altre.map(function (h) { return rigaAbitudine(h, false); }).join('') + '</div>'
-        : '') +
       '<div class="ab-nuova">' +
       rigaAggiunta('agg-ab', 'Nuova abitudine…',
         '<span class="agg-eti">In che giorni?</span>' +
@@ -3297,17 +3268,27 @@
         '<input type="time" class="tl-time" id="agg-ab-ora" aria-label="A che ora (facoltativo)"></label>' +
         '<label class="agg-area"><span class="agg-eti">in</span>' + selectAree('agg-ab-area', 'salute') + '</label>') +
       '</div>' +
-      '</div>';
+      (oggi.length
+        ? '<div class="lista-eti">Oggi</div><div class="lista">' +
+          oggi.map(function (h) { return rigaAbitudine(h, true); }).join('') + '</div>'
+        : (s.abitudini.length
+          ? '<div class="vuoto" style="padding:20px 8px">Per oggi non è prevista nessuna abitudine.</div>'
+          : '<div class="vuoto" style="padding:20px 8px">' + illoInbox() + '<b>Nessuna abitudine.</b><br>Le azioni che vuoi ripetere: ogni volta che le fai, la serie cresce. Scrivine una qui sopra — «leggere 20 minuti», «camminare».</div>')) +
+      (altre.length
+        ? '<div class="lista-eti">Le altre</div><div class="lista">' +
+          altre.map(function (h) { return rigaAbitudine(h, false); }).join('') + '</div>'
+        : '') +
+      '';
 
     corpo.querySelectorAll('[data-toggle-ab]').forEach(function (b) {
       b.addEventListener('click', function (ev) {
         feedbackSpunta(ev, LM.completaAbitudine(b.getAttribute('data-toggle-ab')), 'Fatta. Continua così', 'flame');
-        ritualeAbitudini(corpo);
+        sezioneAbitudini(corpo);
       });
     });
     corpo.querySelectorAll('[data-abdett]').forEach(function (b) {
       b.addEventListener('click', function () {
-        apriDettaglioAbitudine(b.getAttribute('data-abdett'), function () { ritualeAbitudini(corpo); });
+        apriDettaglioAbitudine(b.getAttribute('data-abdett'), function () { sezioneAbitudini(corpo); });
       });
     });
     var nuovaG = corpo.querySelector('#agg-ab-giorni');
@@ -3319,7 +3300,7 @@
       var ora = opz.querySelector('#agg-ab-ora').value || null;
       LM.aggiungiAbitudine(testo, opz.querySelector('#agg-ab-area').value, giorni, { ora: ora });
       toast('«' + testo + '» ' + riepilogoGiorni(giorni) + (ora ? ' alle ' + ora : '') + ', da oggi.', 0, 'refresh');
-      ritualeAbitudini(corpo);
+      sezioneAbitudini(corpo);
       /* i giorni tornano vuoti e il fuoco resta nel campo: la scelta valeva
          per quell'abitudine, non per la prossima */
       var i = corpo.querySelector('#agg-ab .agg-testo');
@@ -3669,24 +3650,28 @@
   function vistaInbox() {
     var s = LM.load();
     var nInbox = s.inbox.length;
-    if (attTab !== 'sistemare' || !nInbox) attTab = nInbox && attTab !== 'dafare' ? 'sistemare' : 'dafare';
-    if (!nInbox) attTab = 'dafare';
+    var ammessi = { dafare: 1, abitudini: 1 };
+    if (nInbox) ammessi.sistemare = 1;
+    if (!attTab || !ammessi[attTab]) attTab = nInbox ? 'sistemare' : 'dafare';
 
-    var html = topbar('Attività', 'Tutto quello che hai da fare.');
-    /* Due linguette, e la prima esiste solo finché c'è una coda da
+    var html = topbar('Attività', 'Tutto quello che hai da fare, una volta o sempre.');
+    /* Tre linguette, e la prima esiste solo finché c'è una coda da
        svuotare: una destinazione sempre a zero è una parola in più da
-       scartare ogni volta. */
+       scartare ogni volta.
+       Le abitudini stanno qui e non fra i Rituali: un'abitudine è una cosa
+       da fare che torna, non un momento della giornata. Nei Rituali erano
+       un pannello di configurazione in mezzo a un piano e a due resoconti. */
     function tb(id, ico, et, n) {
       return '<button data-att="' + id + '" class="' + (attTab === id ? 'attivo' : '') + '">' +
         '<span class="seg-ico">' + ICO(ico, 16) + '</span>' +
         '<span class="seg-eti">' + et + '</span>' +
         (n ? '<span class="att-badge">' + n + '</span>' : '') + '</button>';
     }
-    if (nInbox) {
-      html += '<div class="segmenti sez-nav tabs-fisse tabs-due att-tabs" id="att-tabs">' +
-        tb('sistemare', 'inbox', 'Da sistemare', nInbox) +
-        tb('dafare', 'lista', 'Da fare', s.backlog.length) + '</div>';
-    }
+    var nAb = LM.abitudiniDiOggi().filter(function (h) { return !h.fatti[LM.todayKey()]; }).length;
+    html += '<div class="segmenti sez-nav tabs-fisse' + (nInbox ? '' : ' tabs-due') + ' att-tabs" id="att-tabs">' +
+      (nInbox ? tb('sistemare', 'inbox', 'Da sistemare', nInbox) : '') +
+      tb('dafare', 'lista', 'Da fare', s.backlog.length) +
+      tb('abitudini', 'refresh', 'Abitudini', nAb) + '</div>';
     html += '<div id="att-corpo"></div>';
     $vista.innerHTML = html;
     var tabs = document.getElementById('att-tabs');
@@ -3704,7 +3689,8 @@
       if (!c) return;
       var cambio = attTab !== attTabMostrata;
       var scrollPrima = cambio ? 0 : (window.scrollY || document.documentElement.scrollTop || 0);
-      if (attTab === 'sistemare' && LM.load().inbox.length) disegnaSmista(c);
+      if (attTab === 'abitudini') sezioneAbitudini(c);
+      else if (attTab === 'sistemare' && LM.load().inbox.length) disegnaSmista(c);
       else disegnaDaFare(c);
       attTabMostrata = attTab;
       if (cambio) animaIngresso(c);
@@ -4285,7 +4271,7 @@
         '<div class="sc-nota">Vuoti vanno bene: l’abitudine resta senza orario fisso.</div>' +
         '</div>' +
         '<button class="btn btn-primario btn-grande sc-primaria" id="ab-crea">' + ICO('check', 15) + ' Crea l’abitudine</button>' +
-        '<div class="sc-nota" style="text-align:center">Esce da «Da fare» e la ritrovi in <b>Rituali → Abitudini</b>.</div>' +
+        '<div class="sc-nota" style="text-align:center">Esce da «Da fare» e la ritrovi in <b>Attività → Abitudini</b>.</div>' +
         '</div>';
       apriSheet(b.testo, html, function (root) {
         root.querySelectorAll('#ab-giorni .giorno-chip').forEach(function (c) {
@@ -4296,7 +4282,7 @@
           var ora = root.querySelector('#ab-ora').value || null;
           var dur = root.querySelector('#ab-dur').value;
           LM.backlogInAbitudine(b.id, giorni, { ora: ora, durata: dur ? +dur : null });
-          toast('Diventata un’abitudine: la trovi in Rituali.', 0, 'refresh');
+          toast('Diventata un’abitudine: la trovi fra le Abitudini.', 0, 'refresh');
           chiudiSheet(); aggiornaNav(); ridisegna();
         });
       });

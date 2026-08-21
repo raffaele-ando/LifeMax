@@ -76,6 +76,7 @@ for (const [w,h,tocco] of [[390,844,true],[768,1024,true],[1440,1000,false]]) {
   for (const v of PAGINE) {
     await p.evaluate(x=>location.hash='#/'+x,v);await p.waitForTimeout(700);
     if (v==='rituali') { await p.evaluate(()=>{document.querySelectorAll('.rit-riga').forEach(r=>{if(r.getAttribute('aria-expanded')==='false')r.click();});});await p.waitForTimeout(900); }
+    if (v==='inbox') { await p.evaluate(()=>{const b=document.querySelector('[data-att="abitudini"]');if(b)b.click();});await p.waitForTimeout(700); }
     /* tutta la pagina, non solo la prima schermata */
     const alt=await p.evaluate(()=>document.body.scrollHeight);
     for (let y=0; y<alt; y+=Math.round(h*0.9)) {
@@ -89,7 +90,7 @@ for (const [w,h,tocco] of [[390,844,true],[768,1024,true],[1440,1000,false]]) {
   }
   /* e dentro i pannelli */
   await p.evaluate(()=>{location.hash='#/rituali';});await p.waitForTimeout(700);
-  await p.evaluate(()=>{const r=[...document.querySelectorAll('.rit-riga')].find(x=>/Abitudini/.test(x.textContent));if(r&&r.getAttribute('aria-expanded')==='false')r.click();});
+  await p.evaluate(()=>{const t=document.querySelector('[data-att="abitudini"]');if(t)t.click();});
   await p.waitForTimeout(700);
   await p.evaluate(()=>{const b=document.querySelector('[data-abdett]');if(b)b.click();});await p.waitForTimeout(800);
   const rs=await p.evaluate(SONDA);
