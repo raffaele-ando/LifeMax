@@ -1039,6 +1039,52 @@
       '<div class="imp-nota">Dieci interfacce complete per la stessa app, da confrontare per scegliere la base grafica di tutto il sito.</div></div>';
   }
 
+  /* PROMEMORIA — il pannello per accenderli.
+     Sta in Impostazioni e in un posto solo: due interruttori per la stessa
+     cosa in due schermate sarebbero due modi di accendere la stessa luce.
+     Il permesso si chiede QUI, quando lo chiedi tu: chiederlo all'apertura è
+     il modo più sicuro di farselo negare per sempre. */
+  function htmlPromemoria() {
+    var P = window.LM_PROMEMORIA;
+    if (!P) return '';
+    var st = P.stato();
+    var riga, azione = '';
+    if (st === 'niente') {
+      riga = 'Questo browser non sa dare notifiche.';
+    } else if (P.serveInstallare()) {
+      /* su iPhone non è un dettaglio: da Safari il permesso non si può
+         nemmeno chiedere, e un pulsante che non fa niente è peggio di una
+         frase che spiega */
+      riga = 'Sull’iPhone i promemoria arrivano solo se aggiungi LifeMax alla schermata Home: tasto Condividi → «Aggiungi a schermata Home». Poi torna qui.';
+    } else if (st === 'denied') {
+      riga = 'Le notifiche sono bloccate per questo sito. Si riattivano dalle impostazioni del browser, alla voce di questo indirizzo.';
+    } else if (st === 'granted') {
+      riga = P.configurato()
+        ? 'Accesi. Ti arrivano i momenti della giornata, le abitudini con un’ora e un colpetto sulla priorità se nel pomeriggio è ancora lì.'
+        : 'Permesso concesso. Per adesso arriva solo la fine del timer: gli altri promemoria hanno bisogno del server, che non è ancora collegato.';
+      azione = '<button class="btn btn-mini" id="imp-prom-off">' + ICO('x', 15) + ' Spegni</button>';
+    } else if (!P.configurato()) {
+      /* senza il postino l'unica cosa che il web sa fare da solo è avvisare a
+         pagina aperta: dirlo prima è meglio che promettere le 8:30 e non
+         arrivare */
+      riga = 'Spenti. Accendendoli ti avviso quando finisce un timer. Per i promemoria a orario serve il server, che non è ancora collegato.';
+      azione = '<button class="btn btn-mini btn-tinta" id="imp-prom-on">' + ICO('campana', 15) + ' Accendi i promemoria</button>';
+    } else {
+      riga = 'Spenti. Servono per i momenti della giornata e per le abitudini con un’ora.';
+      azione = '<button class="btn btn-mini btn-tinta" id="imp-prom-on">' + ICO('campana', 15) + ' Accendi i promemoria</button>';
+    }
+    var n = P.piano().length;
+    return '<div class="imp-sezione"><div class="imp-eti">Promemoria</div>' +
+      '<div class="imp-nota">' + esc(riga) + '</div>' +
+      (azione ? '<div class="imp-azioni mt-s">' + azione + '</div>' : '') +
+      /* l'elenco di quello che arriva si mostra solo se arriverà davvero:
+         col permesso concesso ma senza il postino sarebbe una promessa */
+      (st === 'granted' && P.configurato() && n
+        ? '<div class="imp-nota">Oggi ne restano <b>' + n + '</b>: ' +
+          esc(P.piano().map(function (v) { return v.ora + ' ' + v.titolo; }).join(' · ')) + '</div>' : '') +
+      '</div>';
+  }
+
   function htmlDati() {
     var nBackup = LM.listBackups().length;
     return '<div class="imp-sezione"><div class="imp-eti">I tuoi dati</div>' +
@@ -1093,6 +1139,30 @@
     if (lb) lb.addEventListener('click', function () { chiudiSheet(); location.hash = '#/lab'; });
     var ri = root.querySelector('#imp-ritmo'); if (ri) ri.addEventListener('click', apriRitmo);
     var dg = root.querySelector('#imp-diag'); if (dg) dg.addEventListener('click', apriDiagnostica);
+    /* Promemoria: il pulsante racconta com'è andata, e il pannello si riscrive
+       da sé — se il permesso è appena cambiato, la riga sopra deve cambiare
+       con lui, altrimenti resta a dire «spenti» con le notifiche accese. */
+    function riscriviImpostazioni() { staTornandoSheet = true; apriImpostazioni(); staTornandoSheet = false; }
+    var pon = root.querySelector('#imp-prom-on');
+    if (pon) pon.addEventListener('click', function () {
+      pon.disabled = true;
+      window.LM_PROMEMORIA.accendi().then(function (esito) {
+        if (esito === 'negato') toast('Il permesso è stato negato: senza quello non arrivano notifiche.', 0, 'campana');
+        else if (!window.LM_PROMEMORIA.configurato()) toast('Fatto. Per adesso arriva la fine del timer.', 0, 'campana');
+        else toast('Promemoria accesi.', 0, 'campana');
+        riscriviImpostazioni();
+      });
+    });
+    var poff = root.querySelector('#imp-prom-off');
+    if (poff) poff.addEventListener('click', function () {
+      poff.disabled = true;
+      window.LM_PROMEMORIA.spegni().then(function () {
+        /* il permesso del browser non si può togliere da qui: si toglie
+           l'iscrizione, e il pannello lo dice senza far finta d'altro */
+        toast('Non ti manderò più promemoria da fuori.', 0, 'campana');
+        riscriviImpostazioni();
+      });
+    });
     root.querySelectorAll('[data-diag]').forEach(function (b) { b.addEventListener('click', apriDiagnostica); });
     var imp = root.querySelector('#imp-importa'); var file = root.querySelector('#imp-file');
     if (imp && file) {
@@ -1412,7 +1482,7 @@
   }
 
   function apriImpostazioni() {
-    apriSheet('Impostazioni', htmlAccount() + htmlAspetto() + htmlDati(), wireAspettoDati, false,
+    apriSheet('Impostazioni', htmlAccount() + htmlPromemoria() + htmlAspetto() + htmlDati(), wireAspettoDati, false,
       { nome: 'Impostazioni', apri: apriImpostazioni });
   }
 
@@ -1676,8 +1746,17 @@
       }
       if (ela) ela.style.setProperty('--p', Math.min(1, 1 - resta / (timer.durata * 60000)).toFixed(4));
       if (resta <= 0) {
+        var quale = LM.load().azioni.find(function (x) { return x.id === timer.azioneId; });
         fermaTimer(true);
         toast('Timer finito. Minuti registrati.', 0, 'clock');
+        /* un messaggio dentro l'app lo vedi solo se stai guardando l'app: il
+           timer serve proprio per andare a fare la cosa, quindi la fine deve
+           poter arrivare anche da fuori. È l'unica notifica che il web sa
+           dare senza un server, perché la pagina è ancora viva. */
+        if (window.LM_PROMEMORIA) {
+          LM_PROMEMORIA.locale('Tempo scaduto',
+            quale ? quale.testo : 'Il timer è finito.', '#/oggi');
+        }
         render();
       }
     }, 250);

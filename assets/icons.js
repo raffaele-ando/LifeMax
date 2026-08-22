@@ -103,6 +103,7 @@
     play: '<path d="M8.2 5.4v13.2L18.6 12z"/>',
     pause: '<path d="M8.5 5.5v13M15.5 5.5v13"/>',
     clock: '<circle cx="12" cy="12" r="8.6"/><path d="M12 7v5.2l3.4 2"/>',
+    campana: '<path d="M18 9.4a6 6 0 1 0-12 0c0 4.2-1.6 5.5-1.6 5.5h15.2S18 13.6 18 9.4"/><path d="M13.7 18.6a2 2 0 0 1-3.4 0"/>',
     refresh: '<path d="M20.6 12a8.6 8.6 0 1 1-2.5-6"/><path d="M20.8 3.2v5h-5"/>',
     /* annulla: la freccia che torna indietro. Sta separata da `refresh`
        perché quella nell'app vuol dire «si ripete» (abitudini, «diventa

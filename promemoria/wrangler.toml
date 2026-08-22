@@ -1,0 +1,26 @@
+# Il postino dei promemoria. Sta tutto nel piano gratuito di Cloudflare.
+#   cd promemoria && npx wrangler deploy
+# Le istruzioni per intero, coi comandi da copiare: LEGGIMI.md
+
+name = "lifemax-promemoria"
+main = "worker.js"
+compatibility_date = "2025-01-01"
+
+# Ogni cinque minuti. Basta: i promemoria sono ancorati a orari «umani»
+# (08:30, 13:00), non al minuto, e ogni giro costa una richiesta.
+# 288 giri al giorno contro le 100.000 gratuite.
+[triggers]
+crons = ["*/5 * * * *"]
+
+# Dove stanno i piani. Un record per dispositivo, che scade dopo trenta
+# giorni di silenzio: se il telefono non si fa più vivo, spariscono da soli.
+# L'id va sostituito con quello che stampa `wrangler kv namespace create`.
+[[kv_namespaces]]
+binding = "PROMEMORIA"
+id = "METTI_QUI_L_ID_DEL_KV"
+
+# I segreti NON stanno qui: si mettono con `wrangler secret put`, così non
+# finiscono su GitHub.
+#   VAPID_PRIVATA   la chiave privata (questa non si mostra a nessuno)
+#   VAPID_PUBBLICA  la chiave pubblica (la stessa che sta nell'app)
+#   VAPID_SOGGETTO  mailto:tua@mail — i servizi push vogliono un contatto

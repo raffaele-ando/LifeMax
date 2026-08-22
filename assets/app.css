@@ -1360,6 +1360,10 @@ label.campo {
 .imp-seg { display: flex; width: 100%; }
 .imp-seg button { flex: 1; justify-content: center; }
 .imp-nota { margin-top: var(--s2); }
+/* l'etichetta della sezione ha già il suo distacco sotto: una nota subito
+   dopo non ne aggiunge un secondo, o il titolo si stacca dal suo testo più di
+   quanto la sezione si stacchi dalla prossima */
+.imp-eti + .imp-nota { margin-top: 0; }
 .imp-pericolo { color: var(--critico); border-color: color-mix(in srgb, var(--critico) 35%, var(--bordo-forte)); }
 .imp-pericolo:hover { background: color-mix(in srgb, var(--critico) 10%, transparent); border-color: var(--critico); }
 
