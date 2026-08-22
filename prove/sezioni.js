@@ -95,6 +95,27 @@ for (const v of ['oggi','giornata','inbox','plancia']) {
 console.log('  '+JSON.stringify(forme));
 const altezze=new Set(Object.values(forme).flat().filter(x=>x.startsWith('sezioni')));
 ok('le barre di sezione hanno tutte la stessa altezza', altezze.size===1, [...altezze].join(' '));
+
+console.log('\nOGNI VOCE DELLE BARRE PORTA IL SUO SEGNO');
+/* Un segno si trova prima di una parola. È già capitato di togliere le icone
+   al gradino compatto per distinguerlo da quello sopra: la differenza si fa
+   con la cornice, non levando l'unica cosa che si legge a colpo d'occhio. */
+const nude = [];
+for (const v of ['oggi','giornata','inbox','rituali','plancia','esperimenti']) {
+  await p.evaluate(x=>{location.hash='#/'+x;},v);await p.waitForTimeout(800);
+  (await p.evaluate(()=>{
+    const vis=e=>{const r=e.getBoundingClientRect();return r.width>1&&r.height>1;};
+    const out=[];
+    document.querySelectorAll('#vista .porta-nav, #vista .att-tabs, #vista .sotto-seg, #vista .sez-nav').forEach(riga=>{
+      if(!vis(riga))return;
+      [...riga.children].filter(vis).forEach(c=>{
+        if(!c.querySelector('svg.ico')) out.push(c.textContent.replace(/\s+/g,' ').trim().slice(0,20));
+      });
+    });
+    return [...new Set(out)];
+  })).forEach(x=>nude.push(v+': «'+x+'»'));
+}
+ok('nessuna voce senza icona', nude.length===0, nude.join(' | ')||'nessuna');
 ok('nessun errore JS', err.length===0, [...new Set(err)].join(' | '));
 console.log(fail?'\n>>> '+fail+' PROBLEMI':'\n>>> TUTTO A POSTO');
 await b.close();srv.close();process.exit(fail?1:0);})();

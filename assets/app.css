@@ -1367,12 +1367,37 @@ label.campo {
 .card-testa h2 { margin: 0; }
 .mini-seg { padding: 3px; }
 .mini-seg button { padding: 0 12px; }
-/* la scala del tempo nella «Giornata»: compatta come le altre scelte di
-   valore, e sul telefono a colonne uguali per starci in quattro */
-.orizz-nav { margin: 0 0 14px; }
+/* Il gradino SOTTO la riga delle sezioni: sceglie cosa mostrare dentro la
+   sezione (la scala del tempo nella «Giornata», la vista in «Andamento»).
+
+   Le icone ci sono, tutte: un segno si trova prima di una parola, e togliergliele
+   per distinguere i due gradini era pagare il prezzo sbagliato. E nemmeno la
+   misura può distinguerli, perché sul tocco entrambe le righe hanno il
+   pavimento dei 44px e finivano a due pixel di distanza — che si legge come
+   uno sbaglio. Quindi la differenza è la CORNICE: sopra un gruppo di pastiglie
+   in un riquadro, con la voce attiva rialzata in bianco; qui una fila piatta,
+   senza riquadro, con la voce attiva tinta d'accento. Stessa famiglia, due
+   pesi, e nessuna icona sacrificata. */
+.sotto-seg {
+  margin: 0 0 14px; background: none; border: 0; padding: 0; gap: 4px;
+}
+.sotto-seg .seg-ico { display: inline-flex; }
+.sotto-seg > button { gap: 6px; color: var(--inchiostro-muto); box-shadow: none; }
+.sotto-seg > button:hover { background: color-mix(in srgb, var(--inchiostro-1) 5%, transparent); }
+.sotto-seg > button.attivo {
+  background: color-mix(in srgb, var(--accento) 13%, var(--superficie-1));
+  color: var(--accento-testo); box-shadow: none;
+}
+.sotto-seg > button.attivo .seg-ico { color: var(--accento-testo); }
 @media (max-width: 860px) {
-  .orizz-nav { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); width: 100%; }
-  .orizz-nav button { padding: 0 4px; font-size: 12.5px; }
+  .sotto-seg { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); width: 100%; }
+  .sotto-seg > button {
+    /* 11px è il minimo che l'app si è data (la parità con la barra di iOS):
+       a 10.5 la parola c'era ma sotto misura */
+    flex-direction: column; gap: 2px; padding: 4px 2px;
+    font-size: 11px; line-height: 1.15; font-weight: 700;
+  }
+  .sotto-seg .seg-eti { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 }
 
 /* metriche compatte nelle card area */

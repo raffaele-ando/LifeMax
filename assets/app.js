@@ -2706,16 +2706,17 @@
   function vistaGiornata() {
     if (!giornataAncora) giornataAncora = LM.todayKey();
     function orizz(id, ico, et) {
-      return '<button data-orizz="' + id + '" class="' + (giornataOrizzonte === id ? 'attivo' : '') + '">' + et + '</button>';
+      return '<button data-orizz="' + id + '" class="' + (giornataOrizzonte === id ? 'attivo' : '') + '">' +
+        '<span class="seg-ico">' + ICO(ico, 13) + '</span><span class="seg-eti">' + et + '</span></button>';
     }
     var html = topbar('La giornata', 'Le tue ore, giorno per giorno. Con ‹ › cambi giorno.');
-    /* Due gradini, non due controlli diversi. La riga sopra sceglie la SEZIONE
-       della porta (Adesso, La giornata, Rituali): grande, con l'icona. Questa
-       sceglie un VALORE dentro la sezione — quale scala di tempo guardo — ed è
-       la stessa pastiglia compatta di «14 giorni / 30 giorni» e «Cose
-       importanti / Tutto». Quando erano identiche, due file di pastiglie
-       attaccate si leggevano come un unico comando a due righe. */
-    html += '<div class="segmenti mini-seg orizz-nav" id="orizz-nav">' +
+    /* Due gradini della stessa famiglia. Sopra si scegle la SEZIONE della porta
+       (Adesso, La giornata, Rituali); qui un VALORE dentro la sezione — quale
+       scala di tempo guardo. La differenza è la MISURA, non l'icona: per un
+       primo colpo d'occhio un segno vale più di una parola, e togliere le
+       icone per distinguere i due gradini era pagare il prezzo sbagliato.
+       Segno più piccolo, parola più piccola, riga più bassa. */
+    html += '<div class="segmenti mini-seg sotto-seg" id="orizz-nav">' +
       orizz('giorno', 'clock', 'Giorno') + orizz('settimana', 'calendar', 'Settimana') +
       orizz('mese', 'dashboard', 'Mese') + orizz('anno', 'trendUp', 'Anno') + '</div>' +
       '<div id="orizz-corpo"></div>';
@@ -2844,14 +2845,15 @@
 
     /* schede interne: si vede una sezione per volta */
     function segp(id, ico, et) {
-      return '<button data-sez="' + id + '" class="' + (sezPlancia === id ? 'attivo' : '') + '">' + et + '</button>';
+      return '<button data-sez="' + id + '" class="' + (sezPlancia === id ? 'attivo' : '') + '">' +
+        '<span class="seg-ico">' + ICO(ico, 13) + '</span><span class="seg-eti">' + et + '</span></button>';
     }
     /* Una riga di sezione per schermata. Qui la porta «Andamento» ha già la
-       sua (Panoramica / Esperimenti): questa scegle COSA guardare dentro
-       Panoramica, quindi è la pastiglia compatta come «Giorno/Settimana/
-       Mese/Anno» e «14 giorni / 30 giorni». Prima erano due file di pastiglie
-       identiche impilate, e a due pixel di differenza sembrava un errore. */
-    html += '<div class="segmenti mini-seg orizz-nav" id="sez-plancia">' + segp('riepilogo', 'dashboard', 'Riepilogo') + segp('diario', 'quaderno', 'Diario') + segp('aree', 'sparkles', 'Aree') + segp('andamento', 'trendUp', 'Andamento') + '</div>';
+       sua (Panoramica / Esperimenti): questa sceglie COSA guardare dentro
+       Panoramica, quindi è il gradino compatto — segno e parola più piccoli,
+       riga più bassa. Le icone restano: sono il modo più rapido di trovare la
+       voce giusta, e a rinunciarci si perde più di quanto si guadagni. */
+    html += '<div class="segmenti mini-seg sotto-seg" id="sez-plancia">' + segp('riepilogo', 'dashboard', 'Riepilogo') + segp('diario', 'quaderno', 'Diario') + segp('aree', 'sparkles', 'Aree') + segp('andamento', 'trendUp', 'Andamento') + '</div>';
     html += '<div id="sez-corpo"></div>';
 
     $vista.innerHTML = html;
