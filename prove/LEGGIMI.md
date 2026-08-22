@@ -25,13 +25,24 @@ rompe. Sono nati da problemi veri.
   cinque pannelli che si aprono da dentro «Impostazioni» devono avere un tasto
   che porta scritto il nome del posto da cui vieni e che ti riporta lì — non
   che chiude tutto. Prima non c'era: si chiudeva e si riapriva.
-- **segni.js** — un segno, una cosa. Non guarda i pixel: legge il codice e
-  tiene ferme cinque regole. Nessun disegno esiste sotto due nomi; nessun
-  segno è invocato senza esistere né disegnato senza servire; un'icona
-  delle aree non è mai anche un comando (altrimenti la stessa figura dice
-  «la tua area» e due righe sopra «priorità»); tutte le misure stanno sui
-  cinque gradini della scala; e il tratto arriva sempre alla stessa
-  densità. Nasce da «vedo più icone usate per cose diverse».
+- **segni.js** — un segno, una cosa. Non guarda i pixel: legge il codice.
+  Nessun disegno esiste sotto due nomi; nessun segno è invocato senza
+  esistere né disegnato senza servire; un'icona delle aree non è mai anche
+  un comando (altrimenti la stessa figura dice «la tua area» e due righe
+  sopra «priorità»); tutte le misure stanno sui cinque gradini della scala;
+  il tratto arriva sempre alla stessa densità. Poi la parte che nasce dal
+  problema di partenza — «vedo più icone usate per cose diverse» — e che è
+  arrivata dopo, perché le regole di sopra non bastavano a impedirlo: ogni
+  segno dichiara in `SENSO` che cosa vuol dire, nessun significato è scritto
+  due volte, e la prova conta con quante frasi diverse ogni segno compare
+  nell'app, fermandosi alla sesta. Conta le frasi e non i posti: la prima
+  versione contava anche la classe CSS del contenitore e si fermava su
+  `star` e `clock` — cinque posti diversi, un significato solo. Un conto che
+  scatta su un caso giusto si impara a ignorare.
+  Controlla anche sé stessa: quello che legge dal file deve cominciare con
+  `<`, cioè essere davvero un tracciato. Senza quel controllo un taglio
+  sbagliato le faceva confrontare i *significati* invece dei disegni, e
+  passava dicendo «nessun disegno sotto due nomi» — vero, e senza senso.
 - **doppioni.js** — due comandi che fanno la stessa cosa nella stessa
   schermata. Non guarda i nomi né le classi: clicca. Per ogni comando
   visibile parte da uno stato identico, lo preme, e registra cosa lascia —

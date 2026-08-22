@@ -1,61 +1,50 @@
 /* ============================================================
-   LifeMax — iconografia proprietaria
+   LifeMax — l'iconografia
    Griglia 24px, terminali arrotondati, colore sempre currentColor:
-   l'identità cromatica resta al testo e al contesto, mai all'icona
-   da sola. Lo spessore non è fisso — lo calcola `tratto()` più sotto.
+   l'identità cromatica resta al testo e al contesto, mai all'icona da sola.
+   Lo spessore non è fisso — lo calcola `tratto()` più sotto.
 
    UN SEGNO, UNA COSA
-   Il set è diviso in due famiglie che non si mescolano.
+   Ogni segno dice una cosa, e quella cosa la dice lui e nessun altro. Non è
+   una regola di stile: un segno che vuol dire due cose costringe a leggere
+   l'etichetta accanto per capire quale delle due, e a quel punto il segno non
+   serve più a niente — tanto vale togliersi l'icona. Chi legge male le
+   etichette (occhio che salta, schermo piccolo, fretta) resta senza appoggio.
 
-   · SEGNI DI SISTEMA — dicono un'azione o uno stato, e la dicono in
-     tutta l'app allo stesso modo. Nessuno di questi può essere scelto
-     come icona di un'area.
+   Il significato di ognuno sta scritto in `SENSO`, in fondo al file, e non è
+   un commento: `prove/segni.js` lo legge, controlla che nessun segno sia
+   senza significato e che nessun significato sia scritto due volte, e conta
+   con quante etichette diverse ogni segno compare nell'app. Un segno preciso
+   che si ritrova accanto a cinque frasi diverse ha ricominciato a voler dire
+   più cose: la prova si ferma lì.
 
-       target      Oggi, l'azione più importante
-       lista       le cose da fare
-       inbox       le note da sistemare
-       refresh     ciò che si ripete (le abitudini), e il riprovare
-       dashboard   l'andamento
-       quaderno    il diario           fonte     lo studio citato
-       flask       gli esperimenti
-       atom        perché funziona
-       palette     il design lab
-       ingranaggio le impostazioni
-       aree        le aree di vita
-       sun/moon    il mattino / la sera (e il tema chiaro / scuro)
-       calendar    le date e la settimana
-       clock       gli orari e le durate
-       bed         l'ora di dormire
-       coffee      la colazione       utensils   gli altri pasti
-       polso       il check-in
-       batteria    l'energia          mirino     la concentrazione
-       smile       l'umore
-       star        la priorità e il «tieni in cima»
-       flame       la serie di giorni
-       bolt        la cattura rapida
-       ancora      il gancio dell'intenzione (quando e dove)
-       salta       scavalca oggi
-       check       fatto, scelto, concluso
-       plus        crea            x         chiudi, togli
-       trash       elimina         save      salva
-       arrowRight  vai            chevronGiu  apri, mostra le altre
-       presa       trascina        lente     cerca      imbuto  filtra
-       play/pause  il timer
-       download/upload/copy/share  i dati
-       cloud/cloudCheck/logout/user  l'account
-       aiuto       come si usa     terminale  cosa sta succedendo
-       sparkles    gli extra e i dati di esempio
-       lightbulb   un'idea, e l'area «Altro / Esplorazione»
-       trendUp     la crescita
+   È già capitato, ed è così che si presenta:
+     · `check` diceva insieme «fatto», «scelto fra tanti» e «salvato»;
+     · `star` era la priorità del giorno e anche «tenuta in cima»;
+     · `clock` era un'ora del giorno, una durata e «aspetta, non ci sono
+       abbastanza dati»;
+     · `refresh` era «si ripete», «riprova» e il tema «Auto»;
+     · la pagina Giornata portava l'orologio, che dentro quella stessa pagina
+       compare venti volte con l'altro senso;
+     · la pagina Rituali portava il sole, che nella pagina è il mattino.
 
-   · SEGNI DELLE AREE — nominano un pezzo di vita e servono solo come
-     icona di un'area: book, heart, users, wallet, landmark, rocket,
-     briefcase, lightbulb, casa, musica, globo, pesi, user, shield.
+   DUE FAMIGLIE CHE NON SI MESCOLANO
+   · I SEGNI DI SISTEMA dicono un'azione o uno stato, e la dicono in tutta
+     l'app allo stesso modo. Nessuno di questi può essere scelto come icona
+     di un'area.
+   · I SEGNI DELLE AREE nominano un pezzo di vita e servono solo a quello.
+     Se comparissero altrove, l'icona scelta per «Salute» si ritroverebbe due
+     righe sotto a dire un'altra cosa.
 
-   Se un segno serve per due cose diverse non si riusa: se ne disegna
-   uno. È il motivo per cui esistono polso, batteria, mirino, ancora,
-   salta, presa, quaderno, fonte e aree — ognuno è nato da una figura
-   che diceva già un'altra cosa da un'altra parte.
+   DA DOVE VENGONO
+   Una parte è disegnata qui. Il resto viene da Lucide (ISC, vedi
+   segni/LICENZA-lucide.txt): stessa griglia, stesso tratto, stessa idea di
+   disegno, e accanto a ognuno c'è scritto da quale segno del pacco arriva.
+   Il pacco intero — 1776 segni — sta in segni/, e nel browser non arriva
+   mai: si cerca con `node segni/cerca.mjs <parola>` e si porta dentro con
+   `node segni/prendi.mjs <nome-lucide> <nomeNostro> "che cosa vuol dire"`.
+   Così quando serve un significato nuovo la risposta è prenderne uno nuovo,
+   che costa mezzo minuto, invece di riusare quello che sembra più vicino.
    ============================================================ */
 'use strict';
 
@@ -96,14 +85,13 @@
     check: '<path d="M4.5 12.8 9.6 18 19.5 6.5"/>',
     x: '<path d="M6 6l12 12M18 6 6 18"/>',
     arrowRight: '<path d="M4.5 12h15M13.5 6l6 6-6 6"/>',
-    flame: '<path d="M12 21.4c-3.6 0-6.2-2.5-6.2-6 0-2.6 1.6-4.4 3-6 1.2-1.4 2.3-2.7 2.6-4.6 0-.9-.1-1.5-.1-1.5s4.1 2.1 5.6 6.2c.4-.7.6-1.7.6-1.7 1.4 1.6 2.7 3.7 2.7 7.6 0 3.5-4.6 6-8.2 6z"/>',
+    flame: '<path d="M12 3q1 4 4 6.5t3 5.5a1 1 0 0 1-14 0 5 5 0 0 1 1-3 1 1 0 0 0 5 0c0-2-1.5-3-1.5-5q0-2 2.5-4"/>',  /* lucide:flame — la serie di giorni: quella disegnata a mano si leggeva come una goccia */
     bolt: '<path d="M13.2 2.4 4.8 13.6h6l-1.6 8 8.4-11.2h-6z"/>',
     star: '<path d="m12 3.2 2.7 5.5 6 .9-4.3 4.2 1 6-5.4-2.8-5.4 2.8 1-6L3.3 9.6l6-.9z"/>',
     smile: '<circle cx="12" cy="12" r="8.6"/><path d="M8.4 14.2a4.6 4.6 0 0 0 7.2 0M9.2 9.4h.01M14.8 9.4h.01"/>',
     play: '<path d="M8.2 5.4v13.2L18.6 12z"/>',
     pause: '<path d="M8.5 5.5v13M15.5 5.5v13"/>',
     clock: '<circle cx="12" cy="12" r="8.6"/><path d="M12 7v5.2l3.4 2"/>',
-    campana: '<path d="M18 9.4a6 6 0 1 0-12 0c0 4.2-1.6 5.5-1.6 5.5h15.2S18 13.6 18 9.4"/><path d="M13.7 18.6a2 2 0 0 1-3.4 0"/>',
     refresh: '<path d="M20.6 12a8.6 8.6 0 1 1-2.5-6"/><path d="M20.8 3.2v5h-5"/>',
     /* annulla: la freccia che torna indietro. Sta separata da `refresh`
        perché quella nell'app vuol dire «si ripete» (abitudini, «diventa
@@ -174,8 +162,159 @@
     /* giornata: pasti e sonno */
     utensils: '<path d="M6 3v7a2 2 0 0 0 4 0V3M8 10v11M17.5 3c-1.6 0-2.5 1.8-2.5 4.5S15.9 12 17.5 12V3zM17.5 12v9"/>',
     coffee: '<path d="M4 8h13v6a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4z"/><path d="M17 9.5h1.6a2.4 2.4 0 0 1 0 4.8H17"/><path d="M7.5 3.2c-.4.7-.4 1.3 0 2M11 3.2c-.4.7-.4 1.3 0 2"/>',
-    bed: '<path d="M3 6v13M3 12h18a0 0 0 0 1 0 0v7M21 19v-4a3 3 0 0 0-3-3H3M6.5 12v-2a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/>'
+    bed: '<path d="M3 6v13M3 12h18a0 0 0 0 1 0 0v7M21 19v-4a3 3 0 0 0-3-3H3M6.5 12v-2a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/>',
+    /* ---------- presi dal pacco ---------- */
+    soloQui: '<path d="M10 16h.01"/><path d="M2.212 11.577a2 2 0 0 0-.212.896V18a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-5.527a2 2 0 0 0-.212-.896L18.55 5.11A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/><path d="M21.946 12.013H2.054"/><path d="M6 16h.01"/>',  /* lucide:hard-drive — i dati stanno solo su questo dispositivo */
+    avviso: '<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/>',  /* lucide:triangle-alert — qualcosa non è andato */
+    riepilogo: '<rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/><path d="M14 4h7"/><path d="M14 9h7"/><path d="M14 15h7"/><path d="M14 20h7"/>',  /* lucide:layout-list — il riepilogo, tutto in breve */
+    unAnno: '<path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/>',  /* lucide:chart-column — l’arco di un anno */
+    unMese: '<rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M3 15h18"/><path d="M9 3v18"/><path d="M15 3v18"/>',  /* lucide:grid-3x3 — l’arco di un mese: la griglia 2×2 si confondeva con la plancia */
+    unaSettimana: '<rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/><path d="M15 3v18"/>',  /* lucide:columns-3 — l’arco di una settimana */
+    unGiorno: '<rect width="12" height="20" x="6" y="2" rx="2"/>',  /* lucide:rectangle-vertical — l’arco di un giorno */
+    automatico: '<circle cx="12" cy="12" r="10"/><path d="M12 18a6 6 0 0 0 0-12v12z"/>',  /* lucide:contrast — segue il sistema */
+    dati: '<ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5V19A9 3 0 0 0 21 19V5"/><path d="M3 12A9 3 0 0 0 21 12"/>',  /* lucide:database — i tuoi dati, tutti insieme */
+    rituali: '<circle cx="6" cy="19" r="3"/><path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15"/><circle cx="18" cy="5" r="3"/>',  /* lucide:route — i momenti fissi della giornata */
+    giornata: '<path d="M10 6h8"/><path d="M12 16h6"/><path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M8 11h7"/>',  /* lucide:chart-gantt — la giornata ora per ora */
+    solito: '<path d="m12 14 4-4"/><path d="M3.34 19a10 10 0 1 1 17.32 0"/>',  /* lucide:gauge — il tuo livello di solito */
+    confronto: '<path d="M12 3v18"/><path d="m19 8 3 8a5 5 0 0 1-6 0zV7"/><path d="M3 7h1a17 17 0 0 0 8-2 17 17 0 0 0 8 2h1"/><path d="m5 8 3 8a5 5 0 0 1-6 0zV7"/><path d="M7 21h10"/>',  /* lucide:scale — prima e dopo messi a confronto */
+    rimanda: '<path d="M12 6v6l2 1"/><path d="M13.5 21.885A10 10 0 1 1 22 12"/><path d="M14 18h8"/><path d="m18 22 4-4-4-4"/>',  /* lucide:clock-arrow-right — sposta a più tardi, o a un altro giorno */
+    campana: '<path d="M10.268 21a2 2 0 0 0 3.464 0"/><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/>',  /* lucide:bell — i promemoria */
+    campanaOff: '<path d="M10.268 21a2 2 0 0 0 3.464 0"/><path d="M17 17H4a1 1 0 0 1-.74-1.673C4.59 13.956 6 12.499 6 8a6 6 0 0 1 .258-1.742"/><path d="m2 2 20 20"/><path d="M8.668 3.01A6 6 0 0 1 18 8c0 2.687.77 4.653 1.707 6.05"/>',  /* lucide:bell-off — spegni i promemoria */
+    durata: '<line x1="10" x2="14" y1="2" y2="2"/><line x1="12" x2="15" y1="14" y2="11"/><circle cx="12" cy="14" r="8"/>',  /* lucide:timer — quanto dura */
+    ritmo: '<circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2"/><path d="M5 3 2 6"/><path d="m22 6-3-3"/><path d="M6.38 18.7 4 21"/><path d="M17.64 18.67 20 21"/>',  /* lucide:alarm-clock — il ritmo di base: sonno e pasti */
+    attesa: '<path d="M5 22h14"/><path d="M5 2h14"/><path d="M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22"/><path d="M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2"/>',  /* lucide:hourglass — non ci sono ancora abbastanza dati */
+    tempospeso: '<path d="M21 12c.552 0 1.005-.449.95-.998a10 10 0 0 0-8.953-8.951c-.55-.055-.998.398-.998.95v8a1 1 0 0 0 1 1z"/><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/>',  /* lucide:chart-pie — come è andato il tempo */
+    archivio: '<rect width="20" height="5" x="2" y="3" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/>',  /* lucide:archive — i backup */
+    altro: '<circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/>',  /* lucide:ellipsis — il menu delle altre pagine */
+    riprova: '<path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/>',  /* lucide:rotate-cw — riprova adesso */
+    pin: '<path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/>',  /* lucide:pin — tenuta in cima */
+    concluso: '<path d="M4 22V4a1 1 0 0 1 .4-.8A6 6 0 0 1 8 2c3 0 5 2 7.333 2q2 0 3.067-.8A1 1 0 0 1 20 4v10a1 1 0 0 1-.4.8A6 6 0 0 1 16 16c-3 0-5-2-8-2a6 6 0 0 0-4 1.528"/>',  /* lucide:flag — un esperimento chiuso */
+    scelto: '<circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/>',  /* lucide:circle-check — questo è quello scelto, fra tanti */
+    fineperiodo: '<path d="M8 2v3"/><path d="M16 2v3"/><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="m14 13-4 4"/><path d="m10 13 4 4"/>',  /* lucide:calendar-x — il periodo finisce qui */
+    scadenza: '<path d="M16 14v2.2l1.6 1"/><path d="M16 2v3"/><path d="M21 7.338V5a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 002 2h2.338"/><path d="M3 9h5.859"/><path d="M8 2v3"/><circle cx="16" cy="16" r="6"/>',  /* lucide:calendar-clock — una data con una scadenza */
   };
+
+
+  /* ---------- CHE COSA VUOL DIRE OGNUNO ----------
+     Una riga per segno, e la riga è unica: se due segni finissero per dire la
+     stessa cosa, uno dei due è di troppo. `prove/segni.js` lo verifica.
+
+     `generico` sono le poche figure che per natura compaiono accanto a molte
+     frasi diverse restando una cosa sola: la spunta sta accanto a ogni cosa
+     spuntabile dell'app, il cestino accanto a ogni cosa che si butta. Per
+     tutti gli altri la prova conta le etichette e si ferma alla quinta. */
+  var SENSO = {
+    /* le pagine */
+    target: 'Oggi, e portare una cosa in Oggi',
+    giornata: 'la giornata ora per ora',
+    lista: '«Da fare», e rimettere una cosa lì',
+    inbox: 'le note prese al volo, ancora da sistemare',
+    rituali: 'i momenti fissi della giornata',
+    dashboard: 'l’andamento, tutto insieme',
+    quaderno: 'il diario',
+    flask: 'gli esperimenti',
+    atom: 'perché funziona',
+    palette: 'il laboratorio del design',
+    ingranaggio: 'le impostazioni, di tutto o di una cosa sola',
+    aree: 'le aree di vita',
+    aiuto: 'come si usa',
+    terminale: 'cosa sta succedendo dentro l’app',
+    altro: 'il menu delle pagine che non stanno nella barra',
+    fonte: 'lo studio da cui viene',
+
+    /* il tempo */
+    sun: 'il mattino, e il tema chiaro',
+    moon: 'la sera, e il tema scuro',
+    automatico: 'segue il sistema',
+    clock: 'un’ora del giorno',
+    durata: 'quanto dura',
+    calendar: 'una data precisa',
+    unGiorno: 'l’arco di un giorno',
+    unaSettimana: 'l’arco di una settimana',
+    unMese: 'l’arco di un mese',
+    unAnno: 'l’arco di un anno',
+    riepilogo: 'il riepilogo, tutto in breve',
+    scadenza: 'una data entro cui',
+    fineperiodo: 'il periodo finisce qui',
+    rimanda: 'spostare a più tardi',
+    salta: 'scavalcare oggi',
+    ritmo: 'il ritmo di base: sonno e pasti',
+    bed: 'l’ora di dormire',
+    coffee: 'la colazione',
+    utensils: 'gli altri pasti',
+    ancora: 'il gancio dell’intenzione: quando e dove',
+    play: 'far partire il timer',
+    pause: 'fermare il timer',
+    attesa: 'non ci sono ancora abbastanza dati',
+    tempospeso: 'come è andato il tempo',
+
+    /* le misure */
+    polso: 'il check-in',
+    batteria: 'l’energia',
+    mirino: 'la concentrazione',
+    smile: 'l’umore',
+    trendUp: 'l’andamento nel tempo',
+    solito: 'il tuo livello di solito',
+    confronto: 'prima e dopo messi a confronto',
+    flame: 'la serie di giorni di fila',
+    concluso: 'un esperimento chiuso',
+
+    /* le azioni */
+    plus: 'creare',
+    check: 'fatto',
+    scelto: 'questo è quello scelto, fra tanti',
+    x: 'chiudere, togliere',
+    trash: 'eliminare',
+    save: 'salvare',
+    annulla: 'tornare indietro di un passo',
+    riprova: 'riprovare adesso',
+    refresh: 'una cosa che si ripete: un’abitudine',
+    arrowRight: 'vai, apri',
+    chevronGiu: 'c’è dell’altro in quella direzione',
+    presa: 'trascinare',
+    lente: 'cercare',
+    imbuto: 'filtrare',
+    bolt: 'prendere una nota al volo',
+    star: 'la priorità del giorno',
+    pin: 'tenuta in cima',
+    sparkles: 'i dati di esempio',
+
+    /* i dati e l’account */
+    dati: 'i tuoi dati, tutti insieme',
+    download: 'esportare',
+    upload: 'importare',
+    archivio: 'i backup',
+    copy: 'copiare',
+    share: 'condividere',
+    cloud: 'il cloud',
+    soloQui: 'i dati stanno solo su questo dispositivo',
+    avviso: 'qualcosa non è andato',
+    cloudCheck: 'i dati sono legati al tuo account',
+    logout: 'uscire',
+
+    /* i promemoria */
+    campana: 'i promemoria',
+    campanaOff: 'spegnere i promemoria',
+
+    /* i segni delle aree: nominano un pezzo di vita, e solo quello */
+    book: 'area: studio',
+    heart: 'area: salute',
+    users: 'area: relazioni',
+    wallet: 'area: soldi',
+    landmark: 'area: casa e burocrazia',
+    rocket: 'area: progetti',
+    briefcase: 'area: lavoro',
+    lightbulb: 'area: idee ed esplorazione',
+    casa: 'area: la casa',
+    musica: 'area: musica',
+    globo: 'area: viaggi e mondo',
+    pesi: 'area: allenamento',
+    user: 'area: te stesso',
+    shield: 'area: sicurezza e difese'
+  };
+
+  /* le figure che stanno accanto a molte frasi restando una cosa sola */
+  var GENERICI = ['check', 'plus', 'x', 'trash', 'arrowRight', 'chevronGiu', 'save'];
 
   /* ---------- la scala ----------
      Le icone avevano quattordici misure diverse (da 9 a 28), e nello stesso
@@ -223,6 +362,9 @@
       '" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + d + '</svg>';
   };
   window.ICO.SCALA = SCALA;
+  window.ICO.SENSO = SENSO;
+  window.ICO.GENERICI = GENERICI;
+  window.ICO.NOMI = Object.keys(PATHS);
 
   /* Logo Google ufficiale a 4 colori (fill, non stroke): usato solo
      sul pulsante di accesso, come richiesto dalle linee guida del brand. */

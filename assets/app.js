@@ -155,7 +155,7 @@
       azione: 'Carica l’esempio'
     }, function () {
       LM.seedDemo(); applicaTema(); chiudiSheet(); render();
-      toast('Dati di esempio caricati.', 0, 'refresh');
+      toast('Dati di esempio caricati.', 0, 'sparkles');
     });
   }
   function azzeraTutto() {
@@ -832,9 +832,9 @@
 
   var VISTE = [
     { id: 'oggi',        nome: 'Oggi',        icona: 'target',    gruppo: 'primaria',   livello: 'ancora' },
-    { id: 'giornata',    nome: 'Giornata',    icona: 'clock',     gruppo: 'primaria',   livello: 'quotidiana' },
+    { id: 'giornata',    nome: 'Giornata',    icona: 'giornata',  gruppo: 'primaria',   livello: 'quotidiana' },
     { id: 'inbox',       nome: 'Attività',    icona: 'lista',     gruppo: 'primaria',   livello: 'quotidiana' },
-    { id: 'rituali',     nome: 'Rituali',     icona: 'sun',       gruppo: 'primaria',   livello: 'quotidiana' },
+    { id: 'rituali',     nome: 'Rituali',     icona: 'rituali',   gruppo: 'primaria',   livello: 'quotidiana' },
     { id: 'plancia',     nome: 'Panoramica',  icona: 'dashboard', gruppo: 'primaria',   livello: 'quotidiana' },
     { id: 'esperimenti', nome: 'Esperimenti', icona: 'flask',     gruppo: 'secondaria', livello: 'extra' },
     { id: 'scienza',     nome: 'Perché funziona', breve: 'Scienza', icona: 'atom', gruppo: 'secondaria', livello: 'extra' },
@@ -937,7 +937,7 @@
         return '<button data-vai="' + v.id + '" class="' + (corrente === v.id ? 'attivo' : '') + '">' +
           '<span class="tab-ico">' + ICO(v.icona, 18) + badgeInbox(v, s) + '</span>' + v.nome + '</button>';
       }).join('')) +
-      (tre ? '' : '<button data-menu="1" class="' + (inSecondaria ? 'attivo' : '') + '"><span class="tab-ico">' + ICO('sparkles', 18) + '</span>Altro</button>') +
+      (tre ? '' : '<button data-menu="1" class="' + (inSecondaria ? 'attivo' : '') + '"><span class="tab-ico">' + ICO('altro', 18) + '</span>Altro</button>') +
       /* La cattura sta DENTRO la barra, non su un pulsante che galleggia sopra
          la pagina. Quello tondo, fisso in basso a destra, stava sopra un
          comando in ventun punti diversi fra sei schermate: la riga di «Review
@@ -994,7 +994,7 @@
     } else if (a.available) {
       acct = '<button class="btn btn-mini btn-accedi" id="fondo-accedi">' + GOOGLE_G(15) + ' Accedi con Google</button>';
     } else {
-      acct = '<div class="fondo-locale">' + ICO('cloud', 13) + ' Dati salvati su questo dispositivo</div>';
+      acct = '<div class="fondo-locale">' + ICO('soloQui', 13) + ' Dati salvati su questo dispositivo</div>';
     }
     return acct + '<button class="btn-strumento-largo" id="fondo-impostazioni">' + ICO('ingranaggio', 15) + '<span>Impostazioni</span></button>';
   }
@@ -1028,10 +1028,10 @@
       '<button class="btn btn-mini" id="imp-scienza">' + ICO('atom', 15) + ' Perché funziona</button></div>' +
       '<div class="imp-nota">«Perché funziona» racconta su quali studi è appoggiata ogni scelta dell’app. Si legge una volta, quindi non occupa una linguetta.</div></div>' +
       '<div class="imp-sezione"><div class="imp-eti">La giornata</div>' +
-      '<div class="imp-azioni"><button class="btn btn-mini" id="imp-ritmo">' + ICO('clock', 15) + ' Sonno e pasti</button></div>' +
+      '<div class="imp-azioni"><button class="btn btn-mini" id="imp-ritmo">' + ICO('ritmo', 15) + ' Sonno e pasti</button></div>' +
       '<div class="imp-nota">La barra della giornata è sempre in cima a <b>Oggi</b>; la pagina <b>Giornata</b> mostra anche settimana, mese e anno.</div></div>' +
       '<div class="imp-sezione"><div class="imp-eti">Tema</div>' +
-      '<div class="segmenti imp-seg" id="seg-modo">' + segM('auto', 'refresh', 'Auto') + segM('light', 'sun', 'Chiaro') + segM('dark', 'moon', 'Scuro') + '</div></div>' +
+      '<div class="segmenti imp-seg" id="seg-modo">' + segM('auto', 'automatico', 'Auto') + segM('light', 'sun', 'Chiaro') + segM('dark', 'moon', 'Scuro') + '</div></div>' +
       '<div class="imp-sezione"><div class="imp-eti">Aspetto</div>' +
       '<div class="segmenti imp-seg" id="seg-skin">' + segS('quiete', 'Aurora') + segS('arcade', 'Arcade') + '</div>' +
       '<div class="imp-nota">Aurora è più sobrio, Arcade più acceso. Cambia solo l’aspetto, non i dati.</div>' +
@@ -1062,7 +1062,7 @@
       riga = P.configurato()
         ? 'Accesi. Ti arrivano i momenti della giornata, le abitudini con un’ora e un colpetto sulla priorità se nel pomeriggio è ancora lì.'
         : 'Permesso concesso. Per adesso arriva solo la fine del timer: gli altri promemoria hanno bisogno del server, che non è ancora collegato.';
-      azione = '<button class="btn btn-mini" id="imp-prom-off">' + ICO('x', 15) + ' Spegni</button>';
+      azione = '<button class="btn btn-mini" id="imp-prom-off">' + ICO('campanaOff', 15) + ' Spegni</button>';
     } else if (!P.configurato()) {
       /* senza il postino l'unica cosa che il web sa fare da solo è avvisare a
          pagina aperta: dirlo prima è meglio che promettere le 8:30 e non
@@ -1091,7 +1091,7 @@
       '<div class="imp-azioni">' +
       '<button class="btn btn-mini" id="imp-esporta">' + ICO('download', 15) + ' Esporta (.json)</button> ' +
       '<button class="btn btn-mini" id="imp-importa">' + ICO('upload', 15) + ' Importa da file</button> ' +
-      '<button class="btn btn-mini" id="imp-backup">' + ICO('save', 15) + ' Backup e ripristino' + (nBackup ? ' (' + nBackup + ')' : '') + '</button>' +
+      '<button class="btn btn-mini" id="imp-backup">' + ICO('archivio', 15) + ' Backup e ripristino' + (nBackup ? ' (' + nBackup + ')' : '') + '</button>' +
       '<input type="file" id="imp-file" accept="application/json,.json" hidden></div>' +
       '<div class="imp-nota">Esporta un file con tutti i tuoi dati per conservarlo o spostarlo. Ogni operazione che sostituisce i dati crea prima un backup ripristinabile.</div>' +
       '</div>' +
@@ -1159,7 +1159,7 @@
       window.LM_PROMEMORIA.spegni().then(function () {
         /* il permesso del browser non si può togliere da qui: si toglie
            l'iscrizione, e il pannello lo dice senza far finta d'altro */
-        toast('Non ti manderò più promemoria da fuori.', 0, 'campana');
+        toast('Non ti manderò più promemoria da fuori.', 0, 'campanaOff');
         riscriviImpostazioni();
       });
     });
@@ -1173,7 +1173,7 @@
         reader.onload = function () {
           var r = LM.importJson(String(reader.result));
           if (r.ok) { chiudiSheet(); applicaTema(); render(); toast('Dati importati (' + r.ricchezza + ' elementi).', 0, 'upload'); }
-          else { toast(r.err, 0, 'trash'); }
+          else { toast(r.err, 0, 'avviso'); }
         };
         reader.readAsText(f);
       });
@@ -1190,7 +1190,7 @@
       setTimeout(function () { URL.revokeObjectURL(url); }, 1500);
       LM.registra('dati', 'Dati esportati in un file .json', true); LM.save();
       toast('Dati esportati nel file .json.', 0, 'download');
-    } catch (e) { toast('Esportazione non riuscita.', 0, 'trash'); }
+    } catch (e) { toast('Esportazione non riuscita.', 0, 'avviso'); }
   }
 
   function apriBackups() {
@@ -1223,7 +1223,7 @@
             azione: 'Ripristina'
           }, function () {
             LM.restoreBackup(ts); chiudiSheet(); applicaTema(); render();
-            toast('Backup ripristinato.', 0, 'save');
+            toast('Backup ripristinato.', 0, 'archivio');
           });
         });
       });
@@ -1273,7 +1273,7 @@
       '<div class="diag-barra">' +
       '<button class="btn btn-mini btn-primario" id="diag-copia">' + ICO('copy', 15) + ' Copia tutto</button>' +
       (navigator.share ? '<button class="btn btn-mini" id="diag-condividi">' + ICO('share', 15) + ' Condividi</button>' : '') +
-      '<button class="btn btn-mini" id="diag-riprova">' + ICO('refresh', 15) + ' Riprova ora</button>' +
+      '<button class="btn btn-mini" id="diag-riprova">' + ICO('riprova', 15) + ' Riprova ora</button>' +
       '<button class="btn btn-mini btn-ghost" id="diag-svuota">' + ICO('trash', 15) + ' Svuota</button>' +
       '</div>' +
       /* la nota sta SOPRA il registro: sotto c'è un'area che scorre da sola e
@@ -1317,7 +1317,7 @@
     root.querySelector('#diag-riprova').addEventListener('click', function () {
       LM.save();   // forza un giro di salvataggio: rilancia anche il push sul cloud
       if (window.LMLog) LMLog.info('registro', 'Salvataggio richiesto a mano dall’utente');
-      toast('Salvataggio richiesto: le righe qui sotto dicono com’è andato.', 0, 'refresh');
+      toast('Salvataggio richiesto: le righe qui sotto dicono com’è andato.', 0, 'riprova');
     });
 
     root.querySelector('#diag-svuota').addEventListener('click', function () {
@@ -1434,7 +1434,7 @@
           e.preventDefault();
           var nome = r.querySelector('#area-nuova-nome').value.trim();
           if (!nome) return;
-          LM.aggiungiArea(nome, icoSel); render(); apriAree(); toast('Area creata.', 0, 'sparkles');
+          LM.aggiungiArea(nome, icoSel); render(); apriAree(); toast('Area creata.', 0, 'aree');
         });
       });
   }
@@ -1451,11 +1451,11 @@
       voce('bolt', '1 · Annota', 'Premi <kbd>C</kbd> (o il tasto ＋) e scrivi. La nota finisce in <b>Attività</b>, sezione «Sistemare»: non serve decidere altro adesso.') +
       voce('lista', '2 · Decidi cosa farne', 'In <b>Attività</b>, per ogni nota scegli <b>Oggi</b>, <b>Da fare</b> (più avanti, senza data) o <b>Scarta</b>. Quelle in «Da fare» restano in elenco, con il filtro per area, finché non le porti in Oggi.') +
       voce('target', '3 · Fai una cosa per volta', 'La schermata <b>Oggi</b> mostra una sola azione. Al mattino scegli le tre azioni del giorno in <b>Rituali</b>, la sera chiudi con la review.') +
-      voce('clock', 'La giornata', 'Mostra come sono divise le tue ore: sonno, pasti, abitudini e azioni con un orario. Dove vederla si sceglie dal menù sulla timeline.') +
-      voce('smile', 'Check-in', 'Energia, concentrazione, umore, su una scala da 1 a 5. Conta l’andamento nei giorni, non il numero di oggi.') +
+      voce('giornata', 'La giornata', 'Mostra come sono divise le tue ore: sonno, pasti, abitudini e azioni con un orario. Dove vederla si sceglie dal menù sulla timeline.') +
+      voce('polso', 'Check-in', 'Energia, concentrazione, umore, su una scala da 1 a 5. Conta l’andamento nei giorni, non il numero di oggi.') +
       voce('flask', 'Esperimenti', 'Introduci un cambiamento (per esempio sport al mattino) e l’app confronta i tuoi dati prima e dopo.') +
-      voce('trendUp', 'Panoramica e Diario', 'In <b>Panoramica</b> vedi progressi, costanza e andamento; nel <b>Diario</b> lo storico giorno per giorno.') +
-      voce('save', 'I dati', 'Backup automatici, esportazione e importazione in .json, sincronizzazione sull’account Google fra dispositivi.') +
+      voce('dashboard', 'Panoramica e Diario', 'In <b>Panoramica</b> vedi progressi, costanza e andamento; nel <b>Diario</b> lo storico giorno per giorno.') +
+      voce('dati', 'I dati', 'Backup automatici, esportazione e importazione in .json, sincronizzazione sull’account Google fra dispositivi.') +
       '</div>', null);
   }
 
@@ -1478,7 +1478,7 @@
         '<div class="imp-nota">Accedi per ritrovare i tuoi dati su tutti i dispositivi.</div></div>';
     }
     return '<div class="imp-sezione"><div class="imp-eti">Account</div>' +
-      '<div class="fondo-locale">' + ICO('cloud', 13) + ' Dati salvati su questo dispositivo</div></div>';
+      '<div class="fondo-locale">' + ICO('soloQui', 13) + ' Dati salvati su questo dispositivo</div></div>';
   }
 
   function apriImpostazioni() {
@@ -1512,7 +1512,7 @@
       acct = '<button class="btn btn-accedi" id="menu-accedi" style="width:100%;justify-content:center">' + GOOGLE_G(15) + ' Accedi con Google</button>' +
         '<div class="imp-nota">Accedi per ritrovare i tuoi dati su tutti i dispositivi.</div>';
     } else {
-      acct = '<div class="fondo-locale">' + ICO('cloud', 13) + ' Dati salvati su questo dispositivo</div>';
+      acct = '<div class="fondo-locale">' + ICO('soloQui', 13) + ' Dati salvati su questo dispositivo</div>';
     }
     /* Le impostazioni NON stanno più qui dentro. Prima questo pannello era
        navigazione + account + tema + aspetto + dati + ripartenza + diagnostica
@@ -1748,7 +1748,7 @@
       if (resta <= 0) {
         var quale = LM.load().azioni.find(function (x) { return x.id === timer.azioneId; });
         fermaTimer(true);
-        toast('Timer finito. Minuti registrati.', 0, 'clock');
+        toast('Timer finito. Minuti registrati.', 0, 'durata');
         /* un messaggio dentro l'app lo vedi solo se stai guardando l'app: il
            timer serve proprio per andare a fare la cosa, quindi la fine deve
            poter arrivare anche da fuori. È l'unica notifica che il web sa
@@ -1882,7 +1882,7 @@
            Lepper 2000: più opzioni davanti, meno probabile che si scelga).
            Le altre restano lì, a un tocco, per quando servono davvero. */
         '<button class="lista-eti lista-eti-btn" id="btn-altre" aria-expanded="' + mostraAltre + '">' +
-        ICO('lista', 13) + (mostraAltre ? 'Nascondi le altre' : 'Le altre di oggi') + ' <span>' + altre.length + '</span>' +
+        (mostraAltre ? 'Nascondi le altre' : 'Le altre di oggi') + ' <span>' + altre.length + '</span>' +
         '<span class="lista-chev' + (mostraAltre ? ' aperta' : '') + '">' + ICO('chevronGiu', 15) + '</span></button>' +
         (mostraAltre ? '<div class="lista">' + altre.map(function (a) {
           var ar = areaById(a.areaId);
@@ -1935,7 +1935,7 @@
         ? '<button class="btn btn-mini" id="btn-stop-timer">' + ICO('pause', 15) + ' Ferma e registra</button>'
         : '<button class="btn btn-mini" id="btn-timer" data-min="' + minTimer + '">' +
           ICO('play', 15) + ' Timer ' + minTimer + '′</button>') +
-      '<button class="btn btn-mini btn-ghost" id="btn-nonora">Più tardi ' + ICO('arrowRight', 15) + '</button>' +
+      '<button class="btn btn-mini btn-ghost" id="btn-nonora">Più tardi ' + ICO('rimanda', 15) + '</button>' +
       '</div>' +
       /* Quante ne restano lo dice già il contatore in cima e il tasto delle
          altre. Qui resta solo la cosa che nessuno dei due dice: che questa
@@ -1990,13 +1990,13 @@
       fermaTimer(false);
       if (fuocoScelto === prossima.id) fuocoScelto = null;
       LM.rimandaAzione(prossima.id);
-      toast('Rimandata.', 0, 'arrowRight');
+      toast('Rimandata.', 0, 'rimanda');
       render();
     });
     if (timerAttivo) {
       document.getElementById('btn-stop-timer').addEventListener('click', function () {
         fermaTimer(true);
-        toast('Minuti registrati per ' + area.nome + '.', 0, 'clock');
+        toast('Minuti registrati per ' + area.nome + '.', 0, 'durata');
         render();
       });
     } else {
@@ -2404,7 +2404,7 @@
         : /* un'abitudine si toglie da QUESTO giorno senza cancellarla né
              toccare le altre; il resto si gestisce fra le Abitudini */
           '<button class="btn btn-mini ig-salta">' + ICO('x', 13) + ' Togli solo da ' + esc(etichettaGiorno(k).toLowerCase()) + '</button>' +
-          '<button class="btn btn-mini ig-finequi">' + ICO('calendar', 13) + ' Finisce qui (non più da domani)</button>' +
+          '<button class="btn btn-mini ig-finequi">' + ICO('fineperiodo', 13) + ' Finisce qui (non più da domani)</button>' +
           '<button class="btn btn-mini btn-ghost ig-vairituali">' + ICO('arrowRight', 13) + ' Gestiscila in Attività</button>') +
       '</div>' +
       '</div>';
@@ -2467,7 +2467,7 @@
       if (fq) fq.addEventListener('click', function () {
         var hh = LM.load().abitudini.find(function (x) { return x.id === id; });
         LM.impostaPeriodoAbitudine(id, hh ? hh.da : null, k);
-        toast('Da domani non comparirà più. Lo storico resta.', 0, 'calendar');
+        toast('Da domani non comparirà più. Lo storico resta.', 0, 'fineperiodo');
         chiudiSheet(); ricarica();
       });
       var vai = root.querySelector('.ig-vairituali');
@@ -2564,12 +2564,12 @@
           '<div class="sp-sonno">' +
           '<label class="sp-lab" for="sp-aletto">' + ICO('bed', 13) + ' A letto</label><input type="time" class="tl-time" id="sp-aletto" value="' + d.sonno + '">' +
           '<label class="sp-lab" for="sp-sveglia">' + ICO('sun', 13) + ' Sveglia</label><input type="time" class="tl-time" id="sp-sveglia" value="' + d.sveglia + '">' +
-          '<span class="sp-dorm">' + ICO('clock', 13) + ' dormi <b id="sp-dorm">' + fmtOre(LM.minutiSonno(k)) + '</b></span>' +
+          '<span class="sp-dorm">' + ICO('durata', 13) + ' dormi <b id="sp-dorm">' + fmtOre(LM.minutiSonno(k)) + '</b></span>' +
           '</div>' +
           '<div class="sp-pasti" id="sp-pasti">' + pastiRows + '</div>' +
           '<div class="riga-flex mt-s"><button class="btn btn-mini" id="sp-add">' + ICO('plus', 13) + ' Aggiungi un pasto</button>' +
           (d.dalRegistro ? '<button class="btn btn-mini btn-ghost" id="sp-reset">Torna al ritmo di base</button>' : '') +
-          '<button class="btn btn-mini btn-ghost" id="sp-base">' + ICO('ingranaggio', 13) + ' Cambia il ritmo di base</button></div>' +
+          '<button class="btn btn-mini btn-ghost" id="sp-base">' + ICO('ritmo', 13) + ' Cambia il ritmo di base</button></div>' +
           '<div class="imp-nota" style="margin-top:8px">Vale per <b>questo giorno</b> e resta nel registro. Il ritmo di base (per gli altri giorni) si cambia da «Cambia il ritmo di base».</div>' +
           '</div>') + '</div>';
     }
@@ -2592,7 +2592,7 @@
         var doveVa = etichettaGiorno(LM.addDays(k, 1)).toLowerCase();
         /* la rassicurazione sta DENTRO il tasto, come «+10 XP» sta dentro
            «Fatto»: era una riga a sé sotto un tasto, due elementi per una cosa */
-        footer = '<div class="tl-piede"><button class="btn btn-mini" id="tl-rimanda">' + ICO('arrowRight', 15) +
+        footer = '<div class="tl-piede"><button class="btn btn-mini" id="tl-rimanda">' + ICO('rimanda', 15) +
           ' Sposta le ' + nonFatte.length + ' non fatte a ' + doveVa + ' <small>senza penalità</small></button></div>';
       }
     }
@@ -2759,7 +2759,7 @@
     var rim = container.querySelector('#tl-rimanda');
     if (rim) rim.addEventListener('click', function () {
       var n = LM.rimandaNonFatte(k, LM.addDays(k, 1));
-      toast(n === 1 ? 'Spostata al giorno dopo.' : n + ' cose spostate al giorno dopo.', 0, 'arrowRight');
+      toast(n === 1 ? 'Spostata al giorno dopo.' : n + ' cose spostate al giorno dopo.', 0, 'rimanda');
       montaGiornata(container, opts); aggiornaNav();
     });
     var ap = container.querySelector('#tl-apri-pagina');
@@ -2784,7 +2784,7 @@
       var dk = nodiGiorno(k);
       var scad = LM.snapshot().backlog.filter(function (b) { return b.scadenza === k; });
       var untimed = dk.tray.length ? '<span class="wk-untimed" title="senza orario">+' + dk.tray.length + '</span>' : '';
-      var scadHtml = scad.length ? '<div class="wk-scad" title="scadenze">' + ICO('calendar', 11) + ' ' + scad.length + '</div>' : '';
+      var scadHtml = scad.length ? '<div class="wk-scad" title="scadenze">' + ICO('scadenza', 11) + ' ' + scad.length + '</div>' : '';
       var grid = htmlTimeGrid(dk, { pxh: pxh, rail: false, mini: true, nowMin: k === oggi ? nowMin : null });
       var lab = LM.weekdayShort(k); lab = lab.charAt(0).toUpperCase() + lab.slice(1);
       return '<div class="wk-col' + (k === oggi ? ' oggi' : '') + '" data-tl-giorno="' + k + '">' +
@@ -2838,7 +2838,7 @@
       var heat = xp <= 0 ? 0 : Math.min(3, Math.ceil(xp / maxXp * 3));
       var mattoni = fatti.slice(0, 10).map(function (aid) { return '<i style="background:' + LM.coloreArea(areaById(aid)) + '"></i>'; }).join('') +
         (fatti.length > 10 ? '<span class="me-piu">+' + (fatti.length - 10) + '</span>' : '');
-      var scadBadge = scadG.length ? '<span class="me-scad" title="' + esc(scadG.map(function (b) { return b.testo; }).join(', ')) + '">' + ICO('calendar', 11) + (scadG.length > 1 ? ' ' + scadG.length : '') + '</span>' : '';
+      var scadBadge = scadG.length ? '<span class="me-scad" title="' + esc(scadG.map(function (b) { return b.testo; }).join(', ')) + '">' + ICO('scadenza', 11) + (scadG.length > 1 ? ' ' + scadG.length : '') + '</span>' : '';
       /* le cose ancora da fare diventano pastiglie che si possono prendere e
          portare su un altro giorno (ripianificare guardando tutto il mese) */
       var daFare = LM.azioniDelGiorno(k).filter(function (a) { return !a.done; });
@@ -2859,7 +2859,7 @@
       '<div class="card"><div class="me-dow">' + dowh + '</div><div class="me-grid">' + celle + '</div>' +
       '<div class="me-legenda"><span class="lg"><i class="me-heatkey"></i> più lo sfondo è acceso, più la giornata è stata piena</span>' +
       '<span class="lg"><i class="me-sqkey"></i> ogni quadretto è una cosa fatta, col colore dell’area</span>' +
-      '<span class="lg">' + ICO('calendar', 11) + ' scadenza · tocca un giorno per aprirlo</span></div></div>';
+      '<span class="lg">' + ICO('scadenza', 11) + ' scadenza · tocca un giorno per aprirlo</span></div></div>';
     wireOrizzNav(container, 'mese');
     container.querySelectorAll('[data-tl-giorno]').forEach(function (el) {
       el.addEventListener('click', function () { setOrizzonte('giorno', el.getAttribute('data-tl-giorno')); });
@@ -2900,7 +2900,7 @@
       '<div class="stat"><span class="stat-val">' + xpAnno + '</span><span class="stat-eti">XP</span></div></div>' +
       '<h2 style="font-size:14px">' + ICO('trendUp', 15) + ' La tua attività, giorno per giorno</h2>' +
       '<div class="an-heat-wrap"><div id="an-heat"></div></div></div>' +
-      '<div class="card mt"><h2>' + ICO('calendar', 15) + ' Scadenze del ' + anno + '</h2><div class="an-scad-lista mt-s">' + scadHtml + '</div></div>';
+      '<div class="card mt"><h2>' + ICO('scadenza', 15) + ' Scadenze del ' + anno + '</h2><div class="an-scad-lista mt-s">' + scadHtml + '</div></div>';
     LMCharts.heatmap(document.getElementById('an-heat'), giorni);
     wireOrizzNav(container, 'anno');
   }
@@ -3054,7 +3054,7 @@
       '<div class="imp-nota" style="margin-top:0">È il tuo ritmo di base: disegna lo sfondo della giornata. Un singolo giorno lo puoi registrare a parte dalla pagina <i>Giornata</i>.</div>' +
       '<div class="ritmo-riga2"><label class="campo" for="ritmo-sonno">A letto</label><input type="time" id="ritmo-sonno" value="' + esc(r.sonno) + '">' +
       '<label class="campo" for="ritmo-sveglia">Sveglia</label><input type="time" id="ritmo-sveglia" value="' + esc(r.sveglia) + '"></div>' +
-      '<div class="sp-dorm" style="margin:2px 0 4px">' + ICO('clock', 13) + ' dormi <b id="ritmo-dorm">' + fmtOre(durSonno(r.sonno, r.sveglia)) + '</b></div>' +
+      '<div class="sp-dorm" style="margin:2px 0 4px">' + ICO('durata', 13) + ' dormi <b id="ritmo-dorm">' + fmtOre(durSonno(r.sonno, r.sveglia)) + '</b></div>' +
       '<div class="imp-sezione"><div class="imp-eti">Pasti (nome · ora · durata)</div><div id="ritmo-pasti">' + (r.pasti || []).map(pastoRiga).join('') + '</div>' +
       '<button class="btn btn-mini mt-s" id="ritmo-add">' + ICO('plus', 13) + ' Aggiungi un pasto</button></div>' +
       '<div class="riga-flex mt"><button class="btn btn-primario btn-grande" id="ritmo-salva">' + ICO('save', 15) + ' Salva</button></div>',
@@ -3108,8 +3108,8 @@
        icone per distinguere i due gradini era pagare il prezzo sbagliato.
        Segno più piccolo, parola più piccola, riga più bassa. */
     html += '<div class="segmenti mini-seg sotto-seg" id="orizz-nav">' +
-      orizz('giorno', 'clock', 'Giorno') + orizz('settimana', 'calendar', 'Settimana') +
-      orizz('mese', 'dashboard', 'Mese') + orizz('anno', 'trendUp', 'Anno') + '</div>' +
+      orizz('giorno', 'unGiorno', 'Giorno') + orizz('settimana', 'unaSettimana', 'Settimana') +
+      orizz('mese', 'unMese', 'Mese') + orizz('anno', 'unAnno', 'Anno') + '</div>' +
       '<div id="orizz-corpo"></div>';
     $vista.innerHTML = html;
     document.getElementById('orizz-nav').querySelectorAll('[data-orizz]').forEach(function (b) {
@@ -3207,7 +3207,7 @@
          vogliono dire «extra») e «focus» il quadrante come «giornata» — due
          categorie diverse con la stessa figura. */
       var icoCat = { azione: 'target', abitudine: 'refresh', backlog: 'lista', inbox: 'inbox',
-        area: 'aree', giornata: 'clock', focus: 'mirino', impostazioni: 'ingranaggio', dati: 'save' };
+        area: 'aree', giornata: 'giornata', focus: 'mirino', impostazioni: 'ingranaggio', dati: 'dati' };
       ico = '<span class="diario-ico' + (ev.imp ? '' : ' minore') + '">' + ICO(icoCat[ev.cat] || 'lista', 13) + '</span>';
       testo = '<span class="diario-log">' + esc(ev.testo) + '</span>';
       cls = ev.imp ? '' : ' minore';
@@ -3292,7 +3292,7 @@
        Panoramica, quindi è il gradino compatto — segno e parola più piccoli,
        riga più bassa. Le icone restano: sono il modo più rapido di trovare la
        voce giusta, e a rinunciarci si perde più di quanto si guadagni. */
-    html += '<div class="segmenti mini-seg sotto-seg" id="sez-plancia">' + segp('riepilogo', 'dashboard', 'Riepilogo') + segp('diario', 'quaderno', 'Diario') + segp('aree', 'sparkles', 'Aree') + segp('andamento', 'trendUp', 'Grafici') + '</div>';
+    html += '<div class="segmenti mini-seg sotto-seg" id="sez-plancia">' + segp('riepilogo', 'riepilogo', 'Riepilogo') + segp('diario', 'quaderno', 'Diario') + segp('aree', 'aree', 'Aree') + segp('andamento', 'trendUp', 'Grafici') + '</div>';
     html += '<div id="sez-corpo"></div>';
 
     $vista.innerHTML = html;
@@ -3407,7 +3407,7 @@
         '<button data-g="14" class="' + (periodoTrend === 14 ? 'attivo' : '') + '">14 giorni</button>' +
         '<button data-g="30" class="' + (periodoTrend === 30 ? 'attivo' : '') + '">30 giorni</button></div></div>' +
         '<div class="sotto">Media dei tuoi check-in, su una scala da 1 a 5.</div><div id="trend-checkin"></div></div>' +
-        '<div class="card mt" style="--i:1"><h2>' + ICO('clock', 15) + ' Come hai speso il tempo</h2>' +
+        '<div class="card mt" style="--i:1"><h2>' + ICO('tempospeso', 15) + ' Come hai speso il tempo</h2>' +
         '<div class="sotto">Minuti registrati per ciascuna area negli ultimi 7 giorni.</div><div id="hbar-minuti"></div></div>';
 
       LMCharts.trend(document.getElementById('trend-checkin'), [
@@ -3700,7 +3700,7 @@
          quando il piano c'è già diventa «Aggiorna» e resta qui, perché stai
          correggendo, non partendo — e per andare a Oggi c'è la linguetta
          «Adesso», due centimetri sopra. */
-      '<div class="riga-flex mt"><button class="btn btn-primario btn-grande" id="btn-salva-piano">' + (piano ? ICO('save', 15) + ' Aggiorna' : ICO('arrowRight', 15) + ' Salva e parti') + ' <small>+' + LM.XP_EVENTI.pianoMattina + ' XP</small></button></div>' +
+      '<div class="riga-flex mt"><button class="btn btn-primario btn-grande" id="btn-salva-piano">' + ICO('save', 15) + (piano ? ' Aggiorna' : ' Salva e parti') + ' <small>+' + LM.XP_EVENTI.pianoMattina + ' XP</small></button></div>' +
       '</div>';
 
     var lista = document.getElementById('piano-lista');
@@ -3844,7 +3844,7 @@
     return '<div class="lista-riga ab-riga' + (st.fatta ? ' fatta' : '') + (st.saltata ? ' saltata' : '') +
       '" data-abid="' + h.id + '" style="--c-area:' + LM.coloreArea(ar) + '">' +
       (st.saltata
-        ? '<span class="lista-vuoto" aria-hidden="true">' + ICO('moon', 15) + '</span>'
+        ? '<span class="lista-vuoto" aria-hidden="true">' + ICO('salta', 15) + '</span>'
         : '<button class="lista-azione spunta" data-toggle-ab="' + h.id + '" aria-pressed="' + (st.fatta ? 'true' : 'false') +
           '" aria-label="' + esc(h.testo) + (st.fatta ? ', fatta oggi' : ', segna come fatta') + '">' + ICO('check', 13) + '</button>') +
       '<button class="lista-apri" data-abdett="' + h.id + '" aria-label="Apri ' + esc(h.testo) + '">' +
@@ -3980,7 +3980,7 @@
       return '<div class="abd">' +
         '<div class="abd-oggi">' +
         (st.saltata
-          ? '<button class="btn btn-grande" id="abd-rimetti">' + ICO('refresh', 15) + ' Rimetti oggi</button>' +
+          ? '<button class="btn btn-grande" id="abd-rimetti">' + ICO('annulla', 15) + ' Rimetti oggi</button>' +
             '<p class="abd-nota">Oggi è saltata: non conta come mancata e la serie non si rompe.</p>'
           : '<button class="btn btn-grande ' + (st.fatta ? 'btn-ok' : 'btn-primario') + '" id="abd-fatta">' +
             ICO('check', 15) + (st.fatta ? ' Fatta oggi' : ' Segna come fatta') + '</button>' +
@@ -4143,7 +4143,7 @@
       scala('energia', 'batteria', 'Quanta energia hai?') +
       scala('focus', 'mirino', 'Quanto riesci a concentrarti?') +
       scala('umore', 'smile', 'Come ti senti?') +
-      '<div class="riga-flex mt"><button class="btn btn-primario btn-grande" id="btn-salva-checkin" disabled>' + ICO('check', 15) + ' Registra <small>+' + LM.XP_EVENTI.checkin + ' XP</small></button></div>' +
+      '<div class="riga-flex mt"><button class="btn btn-primario btn-grande" id="btn-salva-checkin" disabled>' + ICO('save', 15) + ' Registra <small>+' + LM.XP_EVENTI.checkin + ' XP</small></button></div>' +
       '</div><div class="card mt"><h2>' + ICO('trendUp', 15) + ' Andamento degli ultimi 14 giorni</h2><div id="mini-trend"></div></div>';
 
     function scala(campo, icona, nome) {
@@ -4155,7 +4155,7 @@
           return '<button data-v="' + v + '" aria-label="' + v + ', ' + anc[v - 1] + '">' + v + '</button>';
         }).join('') + '</div>' +
         '<div class="scala-legenda"><span>1 · ' + anc[0] + '</span><span>3 · ' + anc[2] + '</span><span>5 · ' + anc[4] + '</span></div>' +
-        (base ? '<div class="scala-solito">' + ICO('trendUp', 13) +
+        (base ? '<div class="scala-solito">' + ICO('solito', 13) +
           /* tutto il testo in un solo elemento: il contenitore è inline-flex
              con un gap, e un punto lasciato fuori diventava un pezzo a sé
              staccato di sei pixel («è 4.3 .») */
@@ -4244,7 +4244,7 @@
     var attivi = giorni.filter(function (k) { return LM.giornoAttivo(k); }).length;
 
     corpo.innerHTML = '<div class="card">' +
-      testaRituale('calendar', 'Review della settimana',
+      testaRituale('unaSettimana', 'Review della settimana',
         'Riepilogo della settimana e una cosa da portare in quella dopo. Dieci minuti.') +
       '<div class="eroe-statistiche" style="justify-content:center;margin-bottom:16px">' +
       '<div class="stat"><span class="stat-val">' + xpSett + '</span><span class="stat-eti">XP guadagnati</span></div>' +
@@ -4255,7 +4255,7 @@
       '<label class="campo" for="w-blocchi">Gli ostacoli che si sono ripetuti</label><textarea id="w-blocchi">' + (rev ? esc(rev.blocchi || '') : '') + '</textarea>' +
       '<label class="campo" for="w-imparato">Cosa hai imparato sul tuo metodo</label><textarea id="w-imparato">' + (rev ? esc(rev.imparato || '') : '') + '</textarea>' +
       '<label class="campo" for="w-prossima">L’unica cosa che vuoi cambiare la prossima settimana</label><textarea id="w-prossima">' + (rev ? esc(rev.prossima || '') : '') + '</textarea>' +
-      '<div class="riga-flex mt"><button class="btn btn-primario btn-grande" id="btn-salva-sett">' + (rev ? ICO('save', 15) + ' Aggiorna' : ICO('check', 15) + ' Salva la review') + ' <small>+' + LM.XP_EVENTI.reviewSettimana + ' XP</small></button>' +
+      '<div class="riga-flex mt"><button class="btn btn-primario btn-grande" id="btn-salva-sett">' + ICO('save', 15) + (rev ? ' Aggiorna' : ' Salva la review') + ' <small>+' + LM.XP_EVENTI.reviewSettimana + ' XP</small></button>' +
       '<button class="btn btn-ghost" data-vai="esperimenti">' + ICO('flask', 15) + ' Trasformala in un esperimento</button></div>' +
       '</div>';
 
@@ -4394,7 +4394,7 @@
         '</div>' +
 
         '<button class="btn btn-primario btn-grande sc-primaria" data-fai="azione">' +
-        ICO('arrowRight', 15) + ' Fallo oggi</button>' +
+        ICO('target', 15) + ' Fallo oggi</button>' +
         '<div class="lista">' +
         '<button class="lista-riga sc-riga sc-tocca" data-fai="backlog">' +
         '<span class="sc-eti">' + ICO('lista', 15) + ' Mettila in «Da fare»</span>' +
@@ -4552,7 +4552,7 @@
         function voce(id, ico, eti, n) {
           return '<div class="lista-riga">' +
             '<button class="lista-apri" data-filtro="' + id + '">' +
-            '<span class="lista-vuoto">' + (attArea === id ? ICO('check', 15) : '') + '</span>' +
+            '<span class="lista-vuoto">' + (attArea === id ? ICO('scelto', 15) : '') + '</span>' +
             '<span class="lista-corpo"><span class="lista-tit">' +
             (ico ? '<span class="tit-area"' + (ico === 'area' ? ' style="--c-area:' + LM.coloreArea(areaById(id)) + '"' : '') + '>' +
               ICO(ico === 'area' ? areaById(id).icona : ico, 13) + '</span>' : '') +
@@ -4684,11 +4684,11 @@
       return '<div class="lista-riga att-riga" data-bid="' + b.id + '">' +
         '<button class="lista-azione' + (pieno ? ' piena' : '') + '" data-bkoggi="' + b.id + '"' +
         ' aria-label="' + (isProg ? 'Porta in Oggi il prossimo passo di ' : 'Porta in Oggi ') + esc(b.testo) + '"' +
-        ' title="' + (isProg ? 'Porta in Oggi il prossimo passo' : 'Porta in Oggi') + '">' + ICO('arrowRight', 15) + '</button>' +
+        ' title="' + (isProg ? 'Porta in Oggi il prossimo passo' : 'Porta in Oggi') + '">' + ICO('target', 15) + '</button>' +
         '<button class="lista-apri" data-bkapri="' + b.id + '" aria-label="Apri ' + esc(b.testo) + '">' +
         '<span class="lista-corpo">' +
         '<span class="lista-tit">' +
-        (b.pin ? '<span class="tit-pin" title="Tenuta in cima">' + ICO('star', 11) + '</span>' : '') +
+        (b.pin ? '<span class="tit-pin" title="Tenuta in cima">' + ICO('pin', 11) + '</span>' : '') +
         segnoArea(ar, 13, 'tit-area') +
         esc(b.testo) + '</span>' +
         (sotto.length ? '<span class="lista-sub">' + sotto.join(' · ') + '</span>' : '') +
@@ -4765,7 +4765,7 @@
 
         return '<div class="sc">' +
           /* l'azione: una sola, e la pastiglia «Oggi» non la ripete più */
-          '<button class="btn btn-primario btn-grande sc-primaria" id="sc-oggi">' + ICO('arrowRight', 15) + ' ' +
+          '<button class="btn btn-primario btn-grande sc-primaria" id="sc-oggi">' + ICO('target', 15) + ' ' +
           (isProg ? 'Prossimo passo in Oggi' : 'Portala in Oggi') + '</button>' +
 
           etichetta('Se non oggi', 'calendar') +
@@ -4811,7 +4811,7 @@
               '<input type="date" class="sc-nascosta" id="sc-scad" aria-label="Scadenza">', ' data-apri-scad="1"', 'sc-tocca')) +
           '<button class="lista-riga sc-riga sc-tocca" id="sc-pin">' +
           '<span class="sc-eti">Tieni in cima</span>' +
-          '<span class="sc-val">' + (b.pin ? ICO('star', 15, 'sc-si') + ' sì' : 'no') + '</span></button>' +
+          '<span class="sc-val">' + (b.pin ? ICO('pin', 15, 'sc-si') + ' sì' : 'no') + '</span></button>' +
           '</div>' +
           '<p class="lista-nota">«Se non oggi» la mette tra le cose di quel giorno. La scadenza è solo un conto alla rovescia: non la mette in agenda.</p>' +
 
@@ -5023,15 +5023,15 @@
         var diff = ris.intervento.media - ris.baseline.media;
         var dEff = ris.effetto;
         var forza = dEff === null ? '' : (Math.abs(dEff) < 0.2 ? 'trascurabile' : Math.abs(dEff) < 0.5 ? 'piccola' : Math.abs(dEff) < 0.8 ? 'media' : 'grande');
-        verdetto = '<div class="exp-verdetto">' + ICO('trendUp', 15) +
+        verdetto = '<div class="exp-verdetto">' + ICO('confronto', 15) +
           '<span>Nella fase iniziale la media era <b>' + LMCharts.fmtNum(ris.baseline.media) + '</b> (su ' + ris.baseline.n + ' giorni); dopo la modifica è <b>' + LMCharts.fmtNum(ris.intervento.media) + '</b> (su ' + ris.intervento.n + ' giorni), con una differenza di <b>' + (diff > 0 ? '+' : '') + LMCharts.fmtNum(diff) + '</b>' +
           (dEff !== null ? '. L’entità del cambiamento è <b>' + forza + '</b> (d≈' + LMCharts.fmtNum(dEff) + ')' : '') + '.' +
           '<br><small>È un indizio utile, non una prova definitiva: se il risultato ti interessa, ripeti l’esperimento per confermarlo.</small></span></div>';
       } else {
-        verdetto = '<div class="exp-verdetto">' + ICO('clock', 15) + '<span>Non ci sono ancora abbastanza dati: servono almeno due giorni con una misura in ciascuna fase. Continua a fare i check-in.</span></div>';
+        verdetto = '<div class="exp-verdetto">' + ICO('attesa', 15) + '<span>Non ci sono ancora abbastanza dati: servono almeno due giorni con una misura in ciascuna fase. Continua a fare i check-in.</span></div>';
       }
       card.innerHTML = '<div class="exp-testa"><h2>' + esc(e.nome) + '</h2>' +
-        '<span class="chip">' + (e.stato === 'attivo' ? '<span class="punto-vivo"></span> attivo' : ICO('check', 13) + ' concluso') + '</span>' +
+        '<span class="chip">' + (e.stato === 'attivo' ? '<span class="punto-vivo"></span> attivo' : ICO('concluso', 13) + ' concluso') + '</span>' +
         '<span class="chip">' + esc(m ? m.nome : e.metrica) + (e.areaId ? ' · ' + esc(areaById(e.areaId).nome) : '') + '</span></div>' +
         (e.intervento ? '<div class="sotto" style="margin:0">Intervento: ' + esc(e.intervento) + '</div>' : '') +
         '<div id="exp-chart-' + i + '"></div>' + verdetto;
@@ -5266,7 +5266,7 @@
           '<div class="selettore-aree">' + LM.AREE_DEFAULT.map(function (a) {
             var sel = scelte.aree.indexOf(a.id) >= 0;
             return '<button data-area="' + a.id + '" class="' + (sel ? 'sel' : '') + '" style="--c-area:' + LM.SLOT_COLORI[a.slot][0] + '">' +
-              ICO(a.icona, 18) + esc(a.nome) + '<span class="segno">' + ICO('check', 15) + '</span></button>';
+              ICO(a.icona, 18) + esc(a.nome) + '<span class="segno">' + ICO('scelto', 15) + '</span></button>';
           }).join('') + '</div>' +
           '<div class="riga-flex mt"><button class="btn btn-primario btn-grande" id="ob-avanti">Avanti ' + ICO('arrowRight', 15) + '</button>' +
           '<button class="btn btn-ghost" id="ob-indietro">Indietro</button></div></div>';
@@ -5275,7 +5275,7 @@
           '<div class="selettore-modi">' +
           modo('oggi', 'target', 'Oggi', 'Una sola azione alla volta, per quando hai già tante cose in mente.') +
           modo('plancia', 'dashboard', 'Panoramica', 'Una schermata da tenere aperta, con numeri e grafici sempre a portata.') +
-          modo('rituali', 'sun', 'Rituali', 'Brevi routine al mattino e alla sera che ti danno una struttura fissa.') +
+          modo('rituali', 'rituali', 'Rituali', 'Brevi routine al mattino e alla sera che ti danno una struttura fissa.') +
           '</div>' +
           '<div class="riga-flex mt">' +
           '<button class="btn btn-primario btn-grande" id="ob-fine-demo">' + ICO('sparkles', 15) + ' Parti con 8 settimane di dati demo</button>' +
