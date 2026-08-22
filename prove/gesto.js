@@ -31,7 +31,11 @@ const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  
   });
   await new Promise(r => srv.listen(PORTA, r));
   const b = await chromium.launch({ executablePath: process.env.CHROMIUM || undefined });
-  const p = await b.newPage({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+  /* un contesto, per potergli attaccare una sessione CDP: serve a mandare
+     tocchi VERI (vedi sotto) */
+  const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+  const p = await ctx.newPage();
+  const cdp = await ctx.newCDPSession(p);
   const errs = [];
   p.on('pageerror', e => errs.push('' + e));
   /* l'orologio resta fermo per avere schermate identiche: il gesto NON deve
@@ -51,24 +55,34 @@ const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  
   };
   const cima = () => p.evaluate(() => Math.round(document.querySelector('.sheet').getBoundingClientRect().top));
 
-  /* un gesto col dito: si può interrompere con pointercancel invece del su */
+  /* UN GESTO COL DITO, VERO.
+     Gli eventi sintetici (`new PointerEvent(...)` mandati a un elemento) non
+     passano dal motore dei gesti del browser: non fanno scorrere niente e non
+     vengono mai annullati. Con quelli, questa prova passava mentre il gesto
+     era rotto per davvero — il browser si prendeva lo scorrimento e mandava
+     `pointercancel`, e il foglio non scendeva di un pixel. `Input.dispatch‑
+     TouchEvent` via CDP è invece input vero: passa dallo scorrimento, dal
+     `touch-action`, da `preventDefault`. È la sola misura che vale. */
   const gesto = async (x, y, dy, opz) => {
     opz = opz || {};
-    await p.evaluate(([x, y, dy, cancella, passi]) => {
-      const el = document.elementFromPoint(x, y);
-      if (!el) return null;
-      const ev = (t, cy) => el.dispatchEvent(new PointerEvent(t, {
-        bubbles: true, cancelable: true, pointerId: 1, pointerType: 'touch', isPrimary: true, clientX: x, clientY: cy
-      }));
-      ev('pointerdown', y);
-      return new Promise(res => {
-        let i = 1;
-        const t = setInterval(() => {
-          ev('pointermove', y + dy * i / passi);
-          if (++i > passi) { clearInterval(t); ev(cancella ? 'pointercancel' : 'pointerup', y + dy); res(); }
-        }, 16);
-      });
-    }, [x, y, dy, !!opz.cancella, opz.passi || 10]);
+    const passi = opz.passi || 14;
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: x, y: y, id: 1 }] });
+    /* `raffica`: gli invii tutti in coda senza aspettare la risposta. Serve
+       per il colpo secco — un andata e ritorno CDP costa un decimo di
+       secondo, quindi aspettandolo la velocità massima simulabile è 0.1 px/ms
+       e la regola del colpo secco (0.5) non si potrebbe provare mai. In
+       raffica il browser fonde i movimenti in uno e il tempo è quello vero. */
+    if (opz.raffica) {
+      const inv = [];
+      for (let i = 1; i <= passi; i++) inv.push(cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: x, y: y + dy * i / passi, id: 1 }] }));
+      await Promise.all(inv);
+    } else {
+      for (let i = 1; i <= passi; i++) {
+        await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: x, y: y + dy * i / passi, id: 1 }] });
+        await new Promise(r => setTimeout(r, 16));
+      }
+    }
+    await cdp.send('Input.dispatchTouchEvent', { type: opz.cancella ? 'touchCancel' : 'touchEnd', touchPoints: [] });
     await p.waitForTimeout(480);
   };
 
@@ -176,7 +190,25 @@ const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  
     await gesto(200, y + 220, 40);
     await p.keyboard.press('Escape'); await p.waitForTimeout(500);
   }, false);
-  await caso('tiro veloce e corto (colpo secco)', async y => { await gesto(200, y + 220, 60, { passi: 3 }); }, false);
+  /* settanta pixel non basterebbero (la soglia è cento): a congedare è la
+     velocità, ed è l'unico caso che la prova */
+  await caso('colpo secco corto (70px, veloce)', async y => { await gesto(200, y + 220, 70, { passi: 5, raffica: true }); }, false);
+
+  console.log('\nE IL DITO DEVE POTER ANCORA SCORRERE');
+  await apri();
+  {
+    const y = await cima();
+    await gesto(200, y + 400, -260);
+    const s1 = await p.evaluate(() => { const pan = document.querySelector('.sheet'); return { aperto: !document.getElementById('sheet-overlay').hidden, scroll: Math.round(pan.scrollTop) }; });
+    ok('scorrere in su dal corpo scorre e non congeda', s1.aperto && s1.scroll > 40, JSON.stringify(s1));
+    /* col contenuto già scorso, tirare giù deve scorrere: lì sotto c'è
+       ancora contenuto, e il gesto non deve rubarlo */
+    await gesto(200, y + 400, 150);
+    const s2 = await p.evaluate(() => { const pan = document.querySelector('.sheet'); return { aperto: !document.getElementById('sheet-overlay').hidden, scroll: Math.round(pan ? pan.scrollTop : -1) }; });
+    ok('col contenuto scorso, tirare giù scorre e non congeda', s2.aperto && s2.scroll < s1.scroll, JSON.stringify(s2));
+    await p.evaluate(() => { const c = document.getElementById('sheet-chiudi'); if (c) c.click(); });
+    await p.waitForTimeout(400);
+  }
 
   console.log('\nDENTRO UNA SOTTO-SCHERMATA');
   await apri();

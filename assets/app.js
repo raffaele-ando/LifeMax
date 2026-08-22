@@ -499,36 +499,39 @@
   });
 
   /* TRASCINARE IL FOGLIO PER CONGEDARLO
-     Prima il gesto partiva SOLO dalla maniglia e dalla testata: chi provava a
-     tirare giù da un punto vuoto del foglio non otteneva niente, e toccare la
-     linguetta in cima era obbligatorio. E mentre trascinavi si abbassava
-     l'opacità di TUTTO l'overlay, foglio compreso: il foglio diventava
-     trasparente invece del solo velo dietro di lui.
-     Adesso funziona come su iOS:
+     Su TOUCH, e con gli eventi touch: non è un dettaglio di gusto. Con gli
+     eventi pointer il browser, appena capisce che il dito si muove dentro
+     qualcosa che può scorrere, si prende il gesto e manda `pointercancel` —
+     e da lì il foglio non si trascina più, torna su e basta. L'unico modo per
+     dirgli «questo gesto è mio» è `preventDefault()` su `touchmove`, che
+     funziona solo se l'ascoltatore NON è passivo. Per questo si ascolta
+     `touchstart/touchmove/touchend` e non `pointerdown/pointermove`.
+     Come si comporta, come su iOS:
        · dalla maniglia e dalla testata si trascina sempre;
        · dal corpo si trascina se il contenuto è già in cima e il dito va in
          giù — cioè esattamente quando in quella direzione non c'è niente da
-         scorrere. In tutti gli altri casi scorre, e il gesto non parte;
+         scorrere. In tutti gli altri casi il dito scorre, e non si tocca
+         niente di quello che fa il browser;
        · il foglio resta opaco: si schiarisce solo il velo dietro;
        · si decide dopo sei pixel, così un tocco resta un tocco;
-       · al rilascio: se sei andato oltre cento pixel o stai andando veloce si
-         chiude scivolando giù, altrimenti torna al suo posto con una molla.
-     Il limite è lo stesso del foglio-dal-basso in CSS (860px): prima il gesto
-     si fermava a 560 e fra i due numeri c'era un foglio con la maniglia
-     disegnata che non si poteva trascinare. */
+       · al rilascio: oltre cento pixel o con un colpo secco si congeda
+         scivolando giù, altrimenti torna al suo posto con una molla;
+       · un gesto ANNULLATO torna sempre al suo posto: annullato non è finito.
+     Col mouse il gesto non esiste (c'è la x), e il limite è lo stesso del
+     foglio-dal-basso in CSS: 860px. */
   (function trascinaPerChiudere() {
     var SOGLIA = 6;            /* pixel prima di decidere: sotto, è un tocco */
     var CHIUDE = 100;          /* oltre questo, congeda */
     var VELOCE = 0.5;          /* px/ms: un colpo secco congeda comunque */
-    var giu = null;            /* {y, x, top, presa} al pointerdown */
+    var giu = null;            /* {y, x, top, presa} al touchstart */
     var modo = null;           /* null = non deciso | 'trascina' | 'scorri' */
     var dy = 0, campioni = [];
     /* QUANDO è finito un trascinamento, non SE è finito. Con un interruttore
-       («ho trascinato: sì») il clic da mangiare era il prossimo che arrivava,
-       e dopo un trascinamento il clic non arriva: l'interruttore restava su
-       «sì» e si mangiava il tocco DOPO, quello vero. Se capitava sulla x o
-       sulla maniglia il foglio non si chiudeva più e l'app restava inerte:
-       «si blocca tutto». Adesso è un istante, e vale un decimo di secondo. */
+       («ho trascinato: sì») il clic da non far passare era il prossimo che
+       arrivava, e dopo un trascinamento il clic non arriva: l'interruttore
+       restava armato e si mangiava il tocco DOPO, quello vero. Se capitava
+       sulla x o sulla maniglia il foglio non si chiudeva più e l'app restava
+       inerte. Adesso è un istante, e vale un decimo di secondo. */
     var finitoIl = 0;
     var VALE = 120;            /* ms: solo il clic che nasce da QUEL gesto */
 
@@ -551,37 +554,39 @@
          codice a metà trascinamento) lasciava il foglio spostato e il velo
          schiarito: si riparte sempre da pulito */
       pulisci();
-      if (!dalBasso() || e.pointerType === 'mouse') return;
-      if (!$sheetPanel || $sheet.hidden) return;
+      if (!dalBasso() || !$sheetPanel || $sheet.hidden) return;
+      if (e.touches.length !== 1) return;          /* due dita non sono questo gesto */
+      var t = e.touches[0];
       /* dentro un campo il dito seleziona il testo, non trascina il foglio */
-      if (e.target.closest('input, textarea, select, [contenteditable="true"]')) return;
-      var presa = !!e.target.closest('.sheet-maniglia, .sheet-testa');
-      giu = { y: e.clientY, x: e.clientX, top: $sheetPanel.scrollTop, presa: presa };
-      campioni = [{ t: e.timeStamp, y: e.clientY }];
+      if (e.target.closest && e.target.closest('input, textarea, select, [contenteditable="true"]')) return;
+      var presa = !!(e.target.closest && e.target.closest('.sheet-maniglia, .sheet-testa'));
+      giu = { y: t.clientY, x: t.clientX, top: $sheetPanel.scrollTop, presa: presa };
+      campioni = [{ t: e.timeStamp, y: t.clientY }];
     }
 
     function muovi(e) {
       if (!giu) return;
-      var d = e.clientY - giu.y;
+      if (e.touches.length !== 1) { annullaGesto(); return; }
+      var t = e.touches[0];
+      var d = t.clientY - giu.y;
       if (modo === null) {
-        if (Math.abs(d) < SOGLIA && Math.abs(e.clientX - giu.x) < SOGLIA) return;
+        if (Math.abs(d) < SOGLIA && Math.abs(t.clientX - giu.x) < SOGLIA) return;
         /* in orizzontale non è il nostro gesto */
-        if (Math.abs(e.clientX - giu.x) > Math.abs(d)) { modo = 'scorri'; return; }
-        /* si trascina dalla presa, oppure dal corpo quando il contenuto è
-           già in cima e il dito va in giù: lì sotto non c'è nulla da
-           scorrere, quindi non si ruba niente al browser */
+        if (Math.abs(t.clientX - giu.x) > Math.abs(d)) { modo = 'scorri'; return; }
+        /* si trascina dalla presa, oppure dal corpo quando il contenuto è già
+           in cima e il dito va in giù: lì sotto non c'è nulla da scorrere */
         modo = (giu.presa || (d > 0 && giu.top <= 0)) ? 'trascina' : 'scorri';
-        if (modo === 'trascina') {
-          $sheetPanel.classList.add('sheet-trascina');
-          if ($sheetPanel.setPointerCapture) { try { $sheetPanel.setPointerCapture(e.pointerId); } catch (x) {} }
-        }
+        if (modo === 'trascina') $sheetPanel.classList.add('sheet-trascina');
       }
       if (modo !== 'trascina') return;
+      /* «questo gesto è mio»: senza questo il browser lo prende per uno
+         scorrimento e lo annulla, e il foglio non scende di un pixel */
+      if (e.cancelable) e.preventDefault();
       dy = Math.max(0, d);
       $sheetPanel.style.transform = 'translateY(' + dy.toFixed(1) + 'px)';
       /* il velo si schiarisce, il foglio no */
       scriviVelo(Math.max(0.12, 1 - dy / 420));
-      campioni.push({ t: e.timeStamp, y: e.clientY });
+      campioni.push({ t: e.timeStamp, y: t.clientY });
       if (campioni.length > 6) campioni.shift();
     }
 
@@ -590,11 +595,10 @@
       var eraTrascina = modo === 'trascina';
       giu = null; modo = null;
       if (!eraTrascina) return;
-      /* `performance.now()` e non `Date.now()`: l'orologio di sistema qui non
-         c'entra niente — serve un tempo che scorre sempre in avanti, e che
-         non si possa fermare da fuori (le prove fermano `Date` per avere
-         schermate identiche, e con quello il confronto valeva sempre zero:
-         il clic veniva mangiato per sempre) */
+      /* `performance.now()` e non `Date.now()`: serve un tempo che scorre
+         sempre in avanti e che non si possa fermare da fuori (le prove
+         fermano `Date` per avere schermate identiche, e con quello il
+         confronto valeva sempre zero: il clic veniva mangiato per sempre) */
       if (dy > SOGLIA) finitoIl = performance.now();
       /* velocità sugli ultimi campioni, non su tutto il gesto: chi rallenta
          prima di lasciare non vuole chiudere */
@@ -605,11 +609,28 @@
       }
       $sheetPanel.classList.remove('sheet-trascina');
       if (dy > CHIUDE || v > VELOCE) { congedaScivolando(); return; }
-      /* torna al suo posto */
+      molla();
+    }
+
+    function molla() {
       $sheetPanel.classList.add('sheet-molla');
       $sheetPanel.style.transform = '';
       scriviVelo(1);
       setTimeout(function () { if ($sheetPanel) $sheetPanel.classList.remove('sheet-molla'); }, 320);
+    }
+
+    /* Annullato non è finito. `touchcancel` vuol dire che il sistema si è
+       preso il gesto (una telefonata, il palmo appoggiato): il foglio torna
+       al suo posto, sempre. Trattandolo come un rilascio, un gesto
+       interrotto a novanta pixel veniva letto come un colpo secco e
+       congedava il foglio da sotto le mani. */
+    function annullaGesto() {
+      if (!giu) return;
+      var eraTrascina = modo === 'trascina';
+      giu = null; modo = null; dy = 0; finitoIl = 0;
+      if (!eraTrascina) return;
+      $sheetPanel.classList.remove('sheet-trascina');
+      molla();
     }
 
     function congedaScivolando() {
@@ -629,27 +650,11 @@
       setTimeout(poi, 300);
     }
 
-    $sheet.addEventListener('pointerdown', partenza);
-    $sheet.addEventListener('pointermove', muovi);
-    /* Annullato non è finito. `pointercancel` vuol dire che il sistema si è
-       preso il gesto (una telefonata, il palmo appoggiato, lo scorrimento che
-       parte): il foglio deve tornare al suo posto, sempre. Trattandolo come
-       un rilascio, un gesto interrotto a novanta pixel veniva letto come un
-       colpo secco e congedava il foglio da sotto le mani. */
-    function annullaGesto() {
-      if (!giu) return;
-      var eraTrascina = modo === 'trascina';
-      giu = null; modo = null; dy = 0; finitoIl = 0;
-      if (!eraTrascina) return;
-      $sheetPanel.classList.remove('sheet-trascina');
-      $sheetPanel.classList.add('sheet-molla');
-      $sheetPanel.style.transform = '';
-      scriviVelo(1);
-      setTimeout(function () { if ($sheetPanel) $sheetPanel.classList.remove('sheet-molla'); }, 320);
-    }
-    $sheet.addEventListener('pointerup', fine);
-    $sheet.addEventListener('pointercancel', annullaGesto);
-    $sheet.addEventListener('lostpointercapture', annullaGesto);
+    $sheet.addEventListener('touchstart', partenza, { passive: true });
+    /* NON passivo: è la sola condizione in cui `preventDefault()` conta */
+    $sheet.addEventListener('touchmove', muovi, { passive: false });
+    $sheet.addEventListener('touchend', fine);
+    $sheet.addEventListener('touchcancel', annullaGesto);
     /* un trascinamento che finisce sopra un pulsante non lo preme: si mangia
        solo il clic che arriva subito dopo, non il prossimo che capita */
     $sheet.addEventListener('click', function (e) {

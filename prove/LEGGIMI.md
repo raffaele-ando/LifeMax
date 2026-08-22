@@ -108,8 +108,16 @@ rompe. Sono nati da problemi veri.
   tiro corto, lungo, in su, dalla maniglia, interrotto, due di fila, col
   colpo secco, col mouse — e dopo ognuno pretende che il foglio sia nello
   stato giusto, che l'app sia viva, che niente sia rimasto appeso, e che il
-  tocco SUCCESSIVO funzioni davvero. Nasce da «c'è un bug con questi bottom
-  sheet, si blocca tutto».
+  tocco SUCCESSIVO funzioni davvero. Controlla anche il contrario: che il dito
+  possa ancora SCORRERE il contenuto senza che il gesto glielo rubi.
+  Manda tocchi VERI (`Input.dispatchTouchEvent` via CDP) e non eventi
+  sintetici: quelli non passano dal motore dei gesti, e con quelli la prova
+  passava mentre il gesto era rotto per davvero. Un andata e ritorno CDP costa
+  un decimo di secondo, quindi la velocità massima simulabile aspettando le
+  risposte è 0.1 px/ms: per provare la regola del colpo secco gli invii vanno
+  messi in coda tutti insieme, e il browser li fonde in un movimento solo.
+  Nasce da «c'è un bug con questi bottom sheet, si blocca tutto» e da «non si
+  riesce a portare giù la tendina».
 
 ## Come si lanciano
 
