@@ -31,9 +31,12 @@ rompe. Sono nati da problemi veri.
   stato esatto sono due modi per la stessa cosa; N righe di un elenco
   toccano cose diverse, lasciano salvataggi diversi, e non si confondono
   con i doppioni. In fondo al file c'è la lista dei doppioni tenuti di
-  proposito, con la ragione. Nasce da «verifica se nella stessa schermata
-  non ci sono elementi che fanno le stesse cose». Ci mette qualche
-  minuto: apre una pagina pulita per ogni comando.
+  proposito, con la ragione. Di comandi identici per costruzione — le righe
+  di un elenco, l'«Annulla» su ogni riga del diario — ne prova sei per tipo e
+  stampa quanti ne lascia fuori: un taglio muto si leggerebbe come «provato
+  tutto». Nasce da «verifica se nella stessa schermata non ci sono elementi
+  che fanno le stesse cose». Ci mette qualche minuto: apre una pagina pulita
+  per ogni comando.
 
 - **sezioni.js** — cambiare sezione non è ricaricare la pagina. Dentro la
   stessa porta si anima solo il corpo (titolo e riga di linguette restano
@@ -43,14 +46,20 @@ rompe. Sono nati da problemi veri.
   sezione abbiano tutte la stessa forma. Nasce da «se passo da una schermata
   all'altra deve ricaricare tutto».
 
-- **annulla.js** — annullare dal diario. Ogni cambiamento lascia un punto a
-  cui tornare (gli ultimi dodici, in contenitori loro fuori dai dati
-  sincronizzati) e il diario ha il tasto per disfarlo. Controlla che il tasto
-  compaia solo dove c'è davvero un punto e una volta sola per
-  cambiamento, che una cosa fatta si disfaccia per intero — XP compresi —
-  che l'annulla si possa a sua volta annullare, e che annullare una cosa
-  vecchia avverta di quante altre rientrano. Nasce da «non posso annullare
-  le cose che faccio per ogni cosa».
+- **annulla.js** — annullare dal diario, anche quello di mesi fa. Quasi ogni
+  riga del diario è un dato salvato (una spunta, un check-in, una review, una
+  nota) e si disfa togliendo quel dato: vale a qualunque distanza di tempo e
+  non tocca nient'altro. Le righe di registro raccontano un cambiamento senza
+  esserlo, e per quelle serve il punto di ritorno — gli ultimi dodici, in
+  contenitori loro fuori dai dati sincronizzati. Controlla che una riga
+  vecchia si annulli con la memoria dei punti vuota, che gli XP scendano sul
+  giorno giusto e non su oggi, che ogni tipo di riga abbia il suo inverso e
+  che una chiave inventata non combini niente, che il tasto compaia una volta
+  sola per cambiamento e mai dove non c'è niente da disfare, che l'annulla si
+  possa a sua volta annullare, e che passare dal punto avverta di quante
+  altre cose rientrano. Nasce da «non posso annullare le cose che faccio per
+  ogni cosa» e da «non è retroattivo rispetto a quelli che ho già messo nel
+  passato».
 
 ## Come si lanciano
 

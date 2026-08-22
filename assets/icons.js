@@ -104,6 +104,12 @@
     pause: '<path d="M8.5 5.5v13M15.5 5.5v13"/>',
     clock: '<circle cx="12" cy="12" r="8.6"/><path d="M12 7v5.2l3.4 2"/>',
     refresh: '<path d="M20.6 12a8.6 8.6 0 1 1-2.5-6"/><path d="M20.8 3.2v5h-5"/>',
+    /* annulla: la freccia che torna indietro. Sta separata da `refresh`
+       perché quella nell'app vuol dire «si ripete» (abitudini, «diventa
+       un'abitudine», tema automatico) e la usava anche l'annulla: lo stesso
+       segno per due cose diverse, e da quando il diario ha un annulla su
+       ogni riga era il segno più visto di tutti. */
+    annulla: '<path d="M3.4 8.6h9.6a5.7 5.7 0 0 1 0 11.4H7.2"/><path d="M7.7 4.3 3.4 8.6l4.3 4.3"/>',
     /* impostazioni: l'ingranaggio. Prima qui c'era il sole, che vuol dire
        «tema chiaro» e non «impostazioni»: sei denti, valli ad arco, stessa
        griglia e stesso spessore del resto del set. */

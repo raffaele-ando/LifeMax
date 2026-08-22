@@ -288,7 +288,7 @@
     toast(testo, 0, icona, { eti: 'Annulla', fai: function () {
       LM.ripristinaStato(prima);
       render();
-      toast('Rimesso a posto.', 0, 'refresh');
+      toast('Rimesso a posto.', 0, 'annulla');
     } });
   }
 
@@ -300,7 +300,7 @@
       flyXp(r.left + r.width / 2, r.top, xp);
       toast(doneMsg, xp, icona);
     } else if (xp < 0) {
-      toast('Spunta tolta (' + xp + ' XP)', 0, 'refresh');
+      toast('Spunta tolta (' + xp + ' XP)', 0, 'annulla');
     }
   }
 
@@ -2022,7 +2022,7 @@
       '<input type="text" class="ig-nome" id="ig-nome" value="' + esc(e.testo) + '" aria-label="Testo" placeholder="Cosa devi fare">' +
       /* su un giorno futuro non si spunta: si sta pianificando, non facendo */
       (spuntabile
-        ? '<button class="btn ' + (fatto ? 'btn-ghost' : 'btn-primario') + ' ig-fatto"><span class="ig-fatto-ico">' + ICO(fatto ? 'refresh' : 'check', 15) + '</span>' + (fatto ? 'Fatta — togli la spunta' : 'Segna come fatta') + '</button>'
+        ? '<button class="btn ' + (fatto ? 'btn-ghost' : 'btn-primario') + ' ig-fatto"><span class="ig-fatto-ico">' + ICO(fatto ? 'annulla' : 'check', 15) + '</span>' + (fatto ? 'Fatta — togli la spunta' : 'Segna come fatta') + '</button>'
         : '<div class="ig-nota-futuro">' + ICO('calendar', 13) + ' La spunterai quando arriva il giorno.</div>') +
       '<div class="ig-griglia">' +
       '<label class="campo" for="ig-ora">' + ICO('clock', 13) + ' Orario</label><input type="time" class="tl-time" id="ig-ora" value="' + (e.ora || '') + '">' +
@@ -2376,7 +2376,7 @@
       var spAdd = container.querySelector('#sp-add');
       if (spAdd) spAdd.addEventListener('click', function () { var arr = leggiPasti(); arr.push({ id: 'p' + Date.now().toString(36), nome: 'Pasto', ora: '', durata: 30 }); LM.setRitmoGiorno(k, { pasti: arr }); montaGiornata(container, opts); });
       var spReset = container.querySelector('#sp-reset');
-      if (spReset) spReset.addEventListener('click', function () { LM.azzeraRitmoGiorno(k); toast('Ripristinato il ritmo di base.', 0, 'refresh'); montaGiornata(container, opts); });
+      if (spReset) spReset.addEventListener('click', function () { LM.azzeraRitmoGiorno(k); toast('Ripristinato il ritmo di base.', 0, 'annulla'); montaGiornata(container, opts); });
       var spBase = container.querySelector('#sp-base');
       if (spBase) spBase.addEventListener('click', apriRitmo);
       var gsT = container.querySelector('#gio-sonno-toggle');
@@ -2783,7 +2783,26 @@
   }
 
   /* una riga della timeline del Diario */
-  var annullaMostrati = {};
+  /* Chi porta il tasto «Annulla», fra due righe che raccontano lo stesso
+     cambiamento (per esempio la nota annotata e la riga di registro che la
+     racconta). Vince quella che ha un dato da togliere: disfare il dato
+     tocca solo quella cosa, mentre il punto di ritorno riporta indietro
+     anche tutto quello che è venuto dopo. A pari merito, la più recente. */
+  var annullaPadroni = null;
+  function padroniAnnulla(giorni) {
+    var perPunto = {};
+    giorni.forEach(function (g) {
+      g.eventi.forEach(function (ev) {
+        var pt = LM.puntoDiRitorno(ev.ts);
+        if (!pt) return;
+        var att = perPunto[pt.id];
+        if (!att || (ev.chiave && !att.chiave)) perPunto[pt.id] = ev;
+      });
+    });
+    var set = new Set();
+    Object.keys(perPunto).forEach(function (k) { set.add(perPunto[k]); });
+    return set;
+  }
   function eventoDiarioHtml(ev) {
     var ico, testo, cls = '';
     if (ev.tipo === 'azione') {
@@ -2829,18 +2848,26 @@
     }
     /* Qui si annulla. Il diario è la lista di quello che hai fatto, quindi è
        il posto dove disfarlo: prima si poteva solo nei sette secondi del
-       messaggino, e su due cose in croce. Il tasto compare sulle righe per cui
-       esiste ancora un punto a cui tornare (le ultime dodici cose). */
-    /* Un «Annulla» per cambiamento, non per riga. Una cosa sola può comparire
-       nel diario su due righe (la nota annotata e la riga di registro che la
-       racconta): due tasti che fanno la stessa cosa, a due righe di distanza.
-       Lo mostra la riga più recente delle sue, e basta. */
+       messaggino, e su due cose in croce.
+       Due strade, e si prende la più precisa che c'è:
+         · la riga È un dato salvato (una spunta, un check-in, una review, una
+           nota, l'abitudine di ieri) → si toglie quel dato. Vale a qualunque
+           distanza di tempo, ed è questo che rende l'annulla buono anche per
+           quello che c'era già nel diario prima.
+         · la riga racconta un cambiamento senza esserlo → il punto di ritorno,
+           se c'è ancora (le ultime dodici cose).
+       Un tasto per cambiamento, non per riga: una cosa sola può comparire su
+       due righe (la nota annotata e la riga di registro che la racconta), e
+       due tasti identici a due righe di distanza sono un doppione. Quale delle
+       due lo porta lo decide padroniAnnulla, sopra. */
     var punto = LM.puntoDiRitorno(ev.ts);
     var annulla = '';
-    if (punto && !annullaMostrati[punto.id]) {
-      annullaMostrati[punto.id] = 1;
-      annulla = '<button class="diario-annulla" data-annulla="' + ev.ts + '" title="Torna a com’era prima di questa cosa">' +
-        ICO('refresh', 13) + ' Annulla</button>';
+    var mostra = punto ? (!annullaPadroni || annullaPadroni.has(ev)) : !!ev.chiave;
+    if (mostra) {
+      annulla = '<button class="diario-annulla" data-annulla="' + ev.ts + '"' +
+        (ev.chiave ? ' data-tipo="' + (ev.tipoDisfa || ev.tipo) + '" data-chiave="' + esc(String(ev.chiave)) + '"' : '') +
+        ' aria-label="Annulla" title="' + (ev.chiave ? 'Disfa questa cosa' : 'Torna a com’era prima di questa cosa') + '">' +
+        ICO('annulla', 13) + '<span class="da-eti">Annulla</span></button>';
     }
     return '<div class="diario-evento' + cls + '">' + ico + '<div class="diario-testo">' + testo + '</div>' +
       annulla + '<span class="diario-ora">' + oraDi(ev.ts) + '</span></div>';
@@ -3028,8 +3055,8 @@
 
     /* --- Diario: cronologia di ciò che hai fatto e scritto --- */
     function sezDiario(c) {
-      annullaMostrati = {};
       var giorni = LM.diario(diarioGiorni, diarioTutto);
+      annullaPadroni = padroniAnnulla(giorni);
       var filtro = '<div class="segmenti mini-seg" id="diario-filtro">' +
         '<button data-tutto="0" class="' + (!diarioTutto ? 'attivo' : '') + '">Cose importanti</button>' +
         '<button data-tutto="1" class="' + (diarioTutto ? 'attivo' : '') + '">Tutto</button></div>';
@@ -3062,30 +3089,39 @@
              sta guardando, e finisce nella riga «Annullato: …» */
           var riga = bt.closest('.diario-evento');
           var eti = riga ? (riga.querySelector('.diario-testo') || {}).textContent : '';
-          annullaDalDiario(+bt.getAttribute('data-annulla'), (eti || '').replace(/\s+/g, ' ').trim().slice(0, 60));
+          annullaDalDiario(+bt.getAttribute('data-annulla'), (eti || '').replace(/\s+/g, ' ').trim().slice(0, 60),
+            bt.getAttribute('data-tipo'), bt.getAttribute('data-chiave'));
         });
       });
     }
   }
 
-  /* Annullare dal diario. Tornare a un punto riporta indietro TUTTO quello che
-     è venuto dopo: per l'ultima cosa fatta le due cose coincidono e si fa
-     subito, con l'annulla dell'annulla nel messaggio; per una più vecchia si
-     dice quante altre cose rientrano e si chiede conferma, perché una
-     sorpresa qui costa più di un tocco in più. */
-  function annullaDalDiario(ts, etichetta) {
-    var punto = LM.puntoDiRitorno(ts);
-    if (!punto) { toast('Questa è troppo indietro: non si può più annullare.', 0, 'aiuto'); return; }
-    function fallo() {
+  /* Annullare dal diario, per qualunque riga e a qualunque distanza di tempo.
+     Se la riga ha un dato dietro si toglie quel dato: è un'operazione esatta,
+     non tocca nient'altro e si fa subito, col «Rimetti» nel messaggio.
+     Solo per le righe di registro serve il punto di ritorno, che riporta
+     indietro anche tutto quello che è venuto dopo: per l'ultima cosa fatta le
+     due cose coincidono, per una più vecchia si dice quante altre rientrano e
+     si chiede conferma — una sorpresa qui costa più di un tocco in più. */
+  function annullaDalDiario(ts, etichetta, tipo, chiave) {
+    /* «Rimetti»: lo stato di adesso, messo da parte prima di toccarlo */
+    function conRimetti(fai) {
       var prima = JSON.parse(JSON.stringify(LM.load()));
-      if (!LM.tornaAlPunto(ts, etichetta)) { toast('Non si può più annullare.', 0, 'aiuto'); return; }
+      if (!fai()) { toast('Questa non si può più annullare.', 0, 'aiuto'); return; }
       render();
-      toast('Annullato.', 0, 'refresh', { eti: 'Rimetti', fai: function () {
+      toast('Annullato.', 0, 'annulla', { eti: 'Rimetti', fai: function () {
         LM.ripristinaStato(prima);
         render();
         toast('Rimesso com’era.', 0, 'check');
       } });
     }
+    if (tipo && chiave) {
+      conRimetti(function () { return LM.annullaRecord(tipo, chiave); });
+      return;
+    }
+    var punto = LM.puntoDiRitorno(ts);
+    if (!punto) { toast('Questa è troppo indietro: non si può più annullare.', 0, 'aiuto'); return; }
+    function fallo() { conRimetti(function () { return LM.tornaAlPunto(ts, etichetta); }); }
     /* l'ultima cosa fatta si annulla senza chiedere: annullarla non tocca
        nient'altro, e c'è il «Rimetti» nel messaggio */
     if (!punto.dopo) { fallo(); return; }

@@ -1574,6 +1574,9 @@ label.campo {
      trasformandola in un buco invisibile grande come tutta la scheda. */
   position: relative;
   flex: none; display: inline-flex; align-items: center; gap: 4px;
+  /* in cima come il segno di sinistra e l'ora: su una riga di tre righe di
+     testo, stare in mezzo lo faceva galleggiare */
+  align-self: flex-start;
   font-size: 11px; font-weight: 750; color: var(--inchiostro-2);
   background: var(--superficie-2); border: 1px solid var(--bordo);
   border-radius: var(--r-tondo); padding: 3px 9px; cursor: pointer;
@@ -1583,6 +1586,15 @@ label.campo {
 .diario-annulla .ico { color: var(--inchiostro-muto); }
 .diario-annulla:hover .ico { color: var(--accento-testo); }
 @media (pointer: coarse) { .diario-annulla { min-height: 34px; padding: 3px 11px; } }
+/* Sul telefono resta il solo segno. Con l'annulla su ogni riga la pillola
+   con la parola si prendeva una cinquantina di pixel di colonna del testo, e
+   le righe andavano a capo tre volte: il diario diventava una colonna di
+   tasti con le frasi spezzate intorno. Il nome resta nel titolo e
+   nell'aria-label, dove lo trovano il dito lungo e il lettore di schermo. */
+@media (max-width: 520px) {
+  .diario-annulla { padding: 3px; width: 34px; justify-content: center; }
+  .diario-annulla .da-eti { display: none; }
+}
 
 
 /* ============================================================

@@ -11,7 +11,10 @@
    volta: ogni scheda nuova può riportare due tasti per un gesto.
 
    node prove/doppioni.js        (CHROMIUM=/percorso/di/chrome se serve)
-   Ci mette qualche minuto: apre una pagina pulita per ogni comando.        */
+   Ci mette qualche minuto: apre una pagina pulita per ogni comando. Dei
+   comandi identici per costruzione (le righe di un elenco, l'«Annulla» su
+   ogni riga del diario) ne prova sei per tipo e stampa quanti ne lascia
+   fuori.                                                                   */
 'use strict';
 const http = require('http'), fs = require('fs'), path = require('path');
 const { chromium } = require('playwright');
@@ -72,13 +75,49 @@ const RAGGIO = `(function () {
   return document.querySelector('.sheet-overlay:not([hidden]) .sheet-corpo, .overlay:not([hidden]) .pannello-cattura')
     || document.getElementById('vista');
 })()`;
-const LISTA = `(function () {
+/* Al massimo sei per famiglia. Da quando il diario ha un «Annulla» su ogni
+   riga, una schermata sola porta centotrenta comandi identici per
+   costruzione, e provarli uno per uno (pagina pulita ciascuno) vuol dire
+   mezz'ora per una scheda sola. Sei bastano: quello che questa prova cerca
+   sono due comandi DIVERSI con lo stesso esito, e centotrenta copie dello
+   stesso non aggiungono niente dopo le prime.
+   Famiglia = stesso tag, stesse classi, stesso testo, stesso nome
+   accessibile. Il testo ci sta dentro di proposito: «btn btn-mini» è una
+   classe di stile, e senza leggere il testo «Importa da file», «Carica dati
+   di esempio» e «Azzera tutto» sarebbero la stessa famiglia — tre comandi
+   diversi buttati fuori dalla prova.
+   Quanti se ne lasciano fuori lo dice la riga stampata sotto: un taglio muto
+   si leggerebbe come «provato tutto». */
+const TETTO = 6;
+const FIRMA = `(e => e.tagName + '.' + [...e.classList].sort().join('.')
+  + '\u0001' + (e.getAttribute('aria-label') || '')
+  + '\u0001' + (e.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 40))`;
+const GREZZA = `(function () {
   const r = ${RAGGIO};
   if (!r) return [];
   const l = [...r.querySelectorAll('button, a[href], [role=button]')];
   const sc = document.querySelector('.sheet-overlay:not([hidden]) .sheet');
   if (sc) sc.querySelectorAll(':scope > button, :scope > .sheet-testa button').forEach(e => l.unshift(e));
   return l.filter(e => { const b = e.getBoundingClientRect(); return b.width > 2 && b.height > 2 && !e.closest('.lab-demo'); });
+})()`;
+const LISTA = `(function () {
+  const l = ${GREZZA}; const conta = {}; const tenuti = []; const firmaDi = ${FIRMA};
+  for (const e of l) {
+    const firma = firmaDi(e);
+    conta[firma] = (conta[firma] || 0) + 1;
+    if (conta[firma] <= ${TETTO}) tenuti.push(e);
+  }
+  return tenuti;
+})()`;
+const SCARTATI = `(function () {
+  const l = ${GREZZA}; const conta = {}; const fuori = {}; const firmaDi = ${FIRMA};
+  for (const e of l) {
+    const firma = firmaDi(e);
+    conta[firma] = (conta[firma] || 0) + 1;
+    if (conta[firma] > ${TETTO}) fuori[firma] = (fuori[firma] || 0) + 1;
+  }
+  return Object.keys(fuori).map(k => fuori[k] + '×' + k.split('\u0001')[0]
+    + (k.split('\u0001')[2] ? ' «' + k.split('\u0001')[2] + '»' : ''));
 })()`;
 
 const SCENE = [
@@ -155,7 +194,9 @@ const SCENE = [
   for (const s of SCENE) {
     const p0 = await scena(s);
     const quanti = await p0.evaluate(`${LISTA}.length`);
+    const fuori = await p0.evaluate(SCARTATI);
     await p0.close();
+    if (fuori.length) console.log('  ' + s.nome + ': oltre il tetto di ' + TETTO + ', non provati → ' + fuori.join(', '));
     if (!quanti) { console.log('  ' + s.nome + ': niente da provare'); continue; }
     const effetti = [];
     for (let i = 0; i < quanti; i++) {

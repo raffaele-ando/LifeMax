@@ -323,6 +323,86 @@ var LM = (function () {
     return true;
   }
 
+  /* --- l'inverso esatto di una cosa fatta ---
+     I punti di ritorno esistono solo da quando l'app è aperta: le righe già
+     nel diario da prima non ne hanno una, e restavano lì senza modo di
+     disfarle. Ma quasi ogni riga del diario È un dato salvato — una spunta,
+     un check-in, una review, una nota — e togliere quel dato è un'operazione
+     precisa: funziona a qualunque distanza di tempo, non tocca nient'altro e
+     quindi non c'è niente da avvertire prima.
+     Restano fuori le righe di registro, che raccontano un cambiamento senza
+     esserlo: quelle si annullano col punto di ritorno, quando c'è — a meno
+     che la riga si porti dietro il suo inverso (`disfa`, vedi registra). */
+  function annullaRecord(tipo, chiave) {
+    var s = load();
+    /* la riga «Annullato…» dice anche QUANDO, se non è oggi: annullare la
+       review di una sera di tre settimane fa e leggere solo «Annullata la
+       review della sera» non dice quale */
+    function quando(k) { return k === todayKey() ? '' : ' del ' + fmtShort(k); }
+    if (tipo === 'azione') {
+      var a = s.azioni.find(function (x) { return x.id === chiave; });
+      if (!a || !a.done) return false;
+      completaAzione(chiave);   /* toglie spunta, XP del giorno giusto e passo del progetto */
+      return true;
+    }
+    if (tipo === 'checkin') {
+      var i = s.checkins.findIndex(function (c) {
+        return String(c.ts || parseKey(c.data).getTime()) === String(chiave);
+      });
+      if (i < 0) return false;
+      var c = s.checkins.splice(i, 1)[0];
+      togliXp(XP_EVENTI.checkin, c.data);
+      registra('dati', 'Annullato un check-in' + quando(c.data), true);
+      save();
+      return true;
+    }
+    if (tipo === 'mattina') {
+      if (!s.pianoMattina[chiave]) return false;
+      delete s.pianoMattina[chiave];
+      togliXp(XP_EVENTI.pianoMattina, chiave);
+      registra('dati', 'Annullato il piano del mattino' + quando(chiave), true);
+      save();
+      return true;
+    }
+    if (tipo === 'sera') {
+      if (!s.reviewSera[chiave]) return false;
+      delete s.reviewSera[chiave];
+      togliXp(XP_EVENTI.reviewSera, chiave);
+      registra('dati', 'Annullata la review della sera' + quando(chiave), true);
+      save();
+      return true;
+    }
+    if (tipo === 'settimana') {
+      var r = s.reviewSettimana[chiave];
+      if (!r) return false;
+      delete s.reviewSettimana[chiave];
+      /* gli XP erano finiti sul giorno in cui l'hai compilata, non sul lunedì */
+      togliXp(XP_EVENTI.reviewSettimana, r.ts ? dayKey(new Date(r.ts)) : chiave);
+      registra('dati', 'Annullata la review della settimana del ' + fmtShort(chiave), true);
+      save();
+      return true;
+    }
+    if (tipo === 'abitudine') {
+      var pz = String(chiave).split('|');
+      var h = s.abitudini.find(function (x) { return x.id === pz[0]; });
+      if (!h || !pz[1]) return false;
+      var vuole = pz[2] === '1';
+      if (!!h.fatti[pz[1]] === vuole) return false;   /* già come deve stare */
+      completaAbitudine(pz[0], pz[1]);                /* interruttore: XP e registro compresi */
+      return true;
+    }
+    if (tipo === 'cattura') {
+      var j = s.inbox.findIndex(function (x) { return x.id === chiave; });
+      if (j < 0) return false;
+      var el = s.inbox.splice(j, 1)[0];
+      togliXp(XP_EVENTI.cattura, dayKey(new Date(el.creata)));
+      registra('dati', 'Annullata la nota «' + el.testo + '»', true);
+      save();
+      return true;
+    }
+    return false;
+  }
+
   function save() {
     /* com'era prima: si legge dal salvataggio, che è ancora quello vecchio */
     var prima = null;
@@ -492,10 +572,17 @@ var LM = (function () {
      eliminazioni…). `imp` = importante (mostrato di default nel Diario; il
      resto si vede col flag "mostra tutto"). Non salva da solo: lo fa il
      chiamante col suo save(). Cap per non gonfiare lo stato/il cloud. */
-  function registra(cat, testo, imp) {
+  /* `disfa` è come si torna indietro da questa riga: {t: tipo, k: chiave} per
+     annullaRecord. La portano le righe che raccontano un cambiamento di cui
+     esiste un inverso preciso ma che nel diario non hanno una riga loro — la
+     spunta di un'abitudine, per esempio, che come evento a sé riempirebbe il
+     diario di una riga per abitudine al giorno. */
+  function registra(cat, testo, imp, disfa) {
     var s = load();
     if (!Array.isArray(s.registro)) s.registro = [];
-    s.registro.push({ ts: Date.now(), cat: cat, testo: testo, imp: !!imp });
+    var e = { ts: Date.now(), cat: cat, testo: testo, imp: !!imp };
+    if (disfa) e.disfa = disfa;
+    s.registro.push(e);
     if (s.registro.length > 800) s.registro = s.registro.slice(-800);
   }
 
@@ -1186,13 +1273,18 @@ var LM = (function () {
     if (h.fatti[k]) {
       delete h.fatti[k];
       togliXp(XP_EVENTI.abitudine, k);
-      registra('abitudine', 'Tolta la spunta a «' + h.testo + '»' + (k === todayKey() ? '' : ' del ' + fmtShort(k)) + ' (−' + XP_EVENTI.abitudine + ' XP)', false);
+      /* la chiave dice anche come deve finire (1 = fatta): completaAbitudine
+         è un interruttore, e senza lo stato d'arrivo annullare due volte la
+         stessa riga la spunterebbe e la rispunterebbe */
+      registra('abitudine', 'Tolta la spunta a «' + h.testo + '»' + (k === todayKey() ? '' : ' del ' + fmtShort(k)) + ' (−' + XP_EVENTI.abitudine + ' XP)', false,
+        { t: 'abitudine', k: id + '|' + k + '|1' });
       save();
       return -XP_EVENTI.abitudine;
     }
     h.fatti[k] = true;
     var punti = premiaXp('abitudine', k);
-    registra('abitudine', 'Fatta l’abitudine «' + h.testo + '»' + (k === todayKey() ? '' : ' (del ' + fmtShort(k) + ')'), true);
+    registra('abitudine', 'Fatta l’abitudine «' + h.testo + '»' + (k === todayKey() ? '' : ' (del ' + fmtShort(k) + ')'), true,
+      { t: 'abitudine', k: id + '|' + k + '|0' });
     save();
     return punti;
   }
@@ -1531,35 +1623,41 @@ var LM = (function () {
     var perGiorno = {};
     function agg(k, ev) { (perGiorno[k] = perGiorno[k] || []).push(ev); }
 
+    /* `chiave` è come si ritrova il dato che sta dietro alla riga, per poterlo
+       disfare da lì (vedi annullaRecord). Le righe di registro di norma non ne
+       hanno — raccontano un cambiamento, non sono il cambiamento — tranne
+       quelle che se la portano scritta dietro (`disfa`). */
     /* registro di tutto ciò che è stato fatto: di default solo le cose
        importanti; con `tutto` anche le minori (impostazioni, modifiche…). */
     (s.registro || []).forEach(function (rg) {
       if (!tutto && !rg.imp) return;
-      agg(dayKey(new Date(rg.ts)), { ts: rg.ts, tipo: 'registro', cat: rg.cat, testo: rg.testo, imp: rg.imp });
+      var ev = { ts: rg.ts, tipo: 'registro', cat: rg.cat, testo: rg.testo, imp: rg.imp };
+      if (rg.disfa) { ev.chiave = rg.disfa.k; ev.tipoDisfa = rg.disfa.t; }
+      agg(dayKey(new Date(rg.ts)), ev);
     });
 
     s.azioni.forEach(function (a) {
       if (!a.done) return;
       var k = a.doneAt ? dayKey(new Date(a.doneAt)) : a.data;
-      agg(k, { ts: a.doneAt || parseKey(a.data).getTime() + 12 * 3600000, tipo: 'azione', id: a.id, testo: a.testo, areaId: a.areaId, mit: a.mit });
+      agg(k, { ts: a.doneAt || parseKey(a.data).getTime() + 12 * 3600000, tipo: 'azione', id: a.id, chiave: a.id, testo: a.testo, areaId: a.areaId, mit: a.mit });
     });
     s.checkins.forEach(function (c) {
-      agg(c.data, { ts: c.ts || parseKey(c.data).getTime(), tipo: 'checkin', energia: c.energia, focus: c.focus, umore: c.umore });
+      agg(c.data, { ts: c.ts || parseKey(c.data).getTime(), tipo: 'checkin', chiave: String(c.ts || parseKey(c.data).getTime()), energia: c.energia, focus: c.focus, umore: c.umore });
     });
     Object.keys(s.pianoMattina).forEach(function (k) {
       var p = s.pianoMattina[k];
-      agg(k, { ts: p.ts || parseKey(k).getTime() + 8 * 3600000, tipo: 'mattina', intenzione: p.intenzione });
+      agg(k, { ts: p.ts || parseKey(k).getTime() + 8 * 3600000, tipo: 'mattina', chiave: k, intenzione: p.intenzione });
     });
     Object.keys(s.reviewSera).forEach(function (k) {
       var r = s.reviewSera[k];
-      agg(k, { ts: r.ts || parseKey(k).getTime() + 21 * 3600000, tipo: 'sera', vittoria: r.vittoria, blocco: r.blocco });
+      agg(k, { ts: r.ts || parseKey(k).getTime() + 21 * 3600000, tipo: 'sera', chiave: k, vittoria: r.vittoria, blocco: r.blocco });
     });
     Object.keys(s.reviewSettimana).forEach(function (k) {
       var r = s.reviewSettimana[k];
-      agg(k, { ts: r.ts || parseKey(k).getTime() + 20 * 3600000, tipo: 'settimana', vittorie: r.vittorie, blocchi: r.blocchi, imparato: r.imparato, prossima: r.prossima });
+      agg(k, { ts: r.ts || parseKey(k).getTime() + 20 * 3600000, tipo: 'settimana', chiave: k, vittorie: r.vittorie, blocchi: r.blocchi, imparato: r.imparato, prossima: r.prossima });
     });
     s.inbox.forEach(function (el) {
-      agg(dayKey(new Date(el.creata)), { ts: el.creata, tipo: 'cattura', testo: el.testo });
+      agg(dayKey(new Date(el.creata)), { ts: el.creata, tipo: 'cattura', chiave: el.id, testo: el.testo });
     });
 
     var giorni = Object.keys(perGiorno).sort().reverse();
@@ -1913,7 +2011,7 @@ var LM = (function () {
     backup: backup, listBackups: listBackups, restoreBackup: restoreBackup, ricchezza: ricchezza,
     exportJson: exportJson, importJson: importJson, ripristinaStato: ripristinaStato,
     puntoDiRitorno: puntoDiRitorno, puntiDiRitorno: puntiDiRitorno,
-    tornaAlPunto: tornaAlPunto, scordaPunti: scordaPunti,
+    tornaAlPunto: tornaAlPunto, annullaRecord: annullaRecord, scordaPunti: scordaPunti,
     todayKey: todayKey, dayKey: dayKey, addDays: addDays, lastNDays: lastNDays,
     weekKey: weekKey, weekdayShort: weekdayShort, fmtShort: fmtShort, daysBetween: daysBetween,
     coloreArea: coloreArea, livelloDaXp: livelloDaXp,
