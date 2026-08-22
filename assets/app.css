@@ -61,6 +61,32 @@
        r-2  bottoni e righe (elenchi, note, pannelli interni)
        r-3  contenitori grandi: card e fogli che si aprono
        r-tondo  pastiglie e segmentati */
+  /* SPAZI — una scala sola, base 4, unità 8 (come la griglia di Apple).
+     Misurando ogni distanza fra elementi vicini su venti schermate e otto
+     larghezze sono venuti fuori 38 valori diversi, con 7-8-9-10-11 tutti
+     usati per lo stesso mestiere: differenze che l'occhio non vede ma che
+     impediscono a due componenti di allinearsi fra loro. Peggio: quasi
+     nessuna di quelle distanze era stata scelta — nascevano dal collasso di
+     due margini indipendenti, e cambiavano da sole quando un contenitore
+     diventava flex (fra la testa e la riga delle sezioni: 20px su ogni
+     pagina, 38 su «Oggi», per quel motivo e per nient'altro).
+     Ogni passo ha un mestiere, e il mestiere dice quale usare:
+       s1  dentro un comando            segno ↔ parola
+       s2  fra cose che si appartengono etichetta ↔ campo, nota ↔ blocco
+       s3  fra le righe di un gruppo
+       s4  fra i blocchi di una schermata
+       s5  fra un gruppo e il successivo
+       s6  fra le zone grandi           testa ↔ corpo
+     La regola che conta più dei numeri: lo spazio FRA due gruppi non può
+     essere minore di quello DENTRO un gruppo, o la vicinanza dice il
+     contrario di quello che vuoi dire. */
+  --s1: 4px;
+  --s2: 8px;
+  --s3: 12px;
+  --s4: 16px;
+  --s5: 24px;
+  --s6: 32px;
+
   --r-1: 8px;
   --r-2: 12px;
   --r-3: 18px;
@@ -368,7 +394,7 @@ small { color: var(--inchiostro-2); }
 .diario-testo, .focus-azione { overflow-wrap: anywhere; }
 .nav-item span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-.topbar { display: flex; align-items: flex-end; gap: 14px; margin-bottom: 24px; flex-wrap: wrap; }
+.topbar { display: flex; align-items: flex-end; gap: var(--s4); margin-bottom: var(--s5); flex-wrap: wrap; }
 .topbar h1 { font-size: 29px; letter-spacing: -0.035em; font-weight: 800; line-height: 1.1; }
 .topbar .sottotitolo { margin-top: 3px; font-weight: 500; }
 .topbar .spazio { flex: 1; }
@@ -499,14 +525,14 @@ small { color: var(--inchiostro-2); }
 }
 .card h2 { margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
 .card h2 .ico { color: var(--inchiostro-muto); }
-.card .sotto { font-size: 12.5px; color: var(--inchiostro-2); margin-bottom: 14px; }
+.card .sotto { font-size: 12.5px; color: var(--inchiostro-2); margin-bottom: var(--s3); }
 .sotto, .imp-nota, .riga-inbox .quando, .eroe2-sub, .strip-sotto, .topbar .sottotitolo {
   font-size: 12.5px; color: var(--inchiostro-2);
 }
 
 .card-hover:hover { transform: translateY(-3px); box-shadow: var(--e3); border-color: var(--bordo-forte); }
 
-.griglia { display: grid; gap: 16px; }
+.griglia { display: grid; gap: var(--s4); }
 .griglia-2 { grid-template-columns: repeat(2, 1fr); }
 .griglia-3 { grid-template-columns: repeat(3, 1fr); }
 .griglia-aree { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
@@ -587,11 +613,19 @@ input[type="text"]:focus, textarea:focus, select:focus {
   box-shadow: 0 0 0 3.5px color-mix(in srgb, var(--accento) 18%, transparent);
 }
 textarea { resize: vertical; min-height: 68px; }
-label.campo { display: block; margin: 14px 0 6px; }
+/* l'etichetta sta attaccata al suo campo e staccata da quello di sopra:
+   se i due spazi sono uguali non si capisce a chi appartiene */
+label.campo { display: block; margin: var(--s4) 0 var(--s2); }
 
 /* segmenti */
+/* `flex` con `width: fit-content`, non `inline-flex`: si stringe sul suo
+   contenuto come prima, ma non sta più su una riga di testo. Da inline, sotto
+   la pastiglia restava lo spazio della riga — quattro o sei pixel di discesa
+   del carattere — e ogni distanza dopo una barra a segmenti valeva quattro in
+   più di quello che c'era scritto nel margine: 16 diventava 20, 22, 24. Era la
+   ragione principale per cui i numeri della griglia non tornavano mai. */
 .segmenti {
-  display: inline-flex; background: var(--superficie-2);
+  display: flex; width: fit-content; background: var(--superficie-2);
   border: 1px solid var(--bordo); border-radius: var(--r-tondo); padding: 3px; gap: 2px; flex-wrap: wrap;
 }
 /* i figli possono essere pulsanti o link: le sezioni di una porta sono
@@ -626,7 +660,7 @@ label.campo { display: block; margin: 14px 0 6px; }
 .focus-scena {
   min-height: min(calc(100dvh - 220px), 600px);
   display: flex; flex-direction: column; align-items: center; justify-content: center;
-  text-align: center; gap: 20px; padding: 22px 0;
+  text-align: center; gap: var(--s5); padding: var(--s5) 0;
 }
 /* "Oggi" è una schermata sola: una cosa alla volta, niente da scorrere.
    La scena occupa lo spazio che resta (togliendo topbar, barra della giornata,
@@ -745,7 +779,7 @@ label.campo { display: block; margin: 14px 0 6px; }
      cosa sola, e questa è» */
   flex: 0 0 auto; margin: auto;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
-  gap: 20px; width: 100%; max-width: 620px;
+  gap: var(--s5); width: 100%; max-width: 620px;
   position: relative;
   padding: 32px 26px 28px;
   /* una tinta sola, appena accennata: il colore lo porta il filo in cima, e
@@ -761,10 +795,10 @@ label.campo { display: block; margin: 14px 0 6px; }
   content: ''; position: absolute; inset: 0 0 auto; height: 3px;
   background: var(--c-area, var(--accento));
 }
-@media (max-width: 520px) { .focus-cuore { padding: 26px 16px 24px; gap: 17px; } }
+@media (max-width: 520px) { .focus-cuore { padding: var(--s5) var(--s4); gap: var(--s4); } }
 /* su uno schermo basso il piano si stringe: il respiro serve quando c'è
    spazio, non a costo di far scorrere la schermata che deve starci intera */
-@media (max-height: 700px) { .focus-cuore { padding: 18px 16px 16px; gap: 13px; } }
+@media (max-height: 700px) { .focus-cuore { padding: var(--s4); gap: var(--s3); } }
 .focus-altre { flex: none; width: 100%; max-width: 560px; margin: 2px auto 0; text-align: left; }
 .focus-altre .lista-eti-btn { justify-content: flex-start; }
 
@@ -811,7 +845,7 @@ kbd {
 }
 .card-area .metrica-riga { display: flex; align-items: baseline; gap: 6px; font-size: 12.5px; color: var(--inchiostro-2); }
 .card-area .metrica-riga b { font-size: 17px; color: var(--inchiostro-1); font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
-.card-area .sistema-nota { font-size: 11.5px; color: var(--inchiostro-muto); border-top: 1px solid var(--griglia); padding-top: 9px; margin-top: 2px; }
+.card-area .sistema-nota { font-size: 11.5px; color: var(--inchiostro-muto); border-top: 1px solid var(--griglia); padding-top: var(--s2); margin-top: 0; }
 
 .lista-azioni { display: flex; flex-direction: column; gap: 7px; }
 .riga-azione {
@@ -870,12 +904,6 @@ select.sel-compatto {
 /* col mouse la card è larga più di mille pixel: tre pulsanti tirati per
    tutta quella larghezza sono tre bersagli enormi per tre parole. Restano
    della loro misura, in fila da sinistra. */
-@media (min-width: 861px) {
-}
-@media (max-width: 380px) {
-  /* a 320px tre etichette CON icona vanno a capo: si tiene la parola, che è
-     quella che dice cosa fa, e si lascia l'icona */
-}
 @media (pointer: coarse) { select.sel-compatto { min-height: 44px; } }
 
 /* ---------- overlay cattura ---------- */
@@ -916,9 +944,9 @@ select.sel-compatto {
 }
 .pannello-cattura input[type="text"]:focus { box-shadow: none; border: none; }
 .pannello-cattura .piede {
-  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  display: flex; align-items: center; gap: var(--s2); flex-wrap: wrap;
   border-top: 1px solid var(--griglia);
-  padding: 10px 16px 10px; margin-top: 2px;
+  padding: var(--s3) var(--s4); margin-top: 0;
   font-size: 12px; color: var(--inchiostro-muto);
 }
 @media (max-width: 520px) {
@@ -1186,8 +1214,8 @@ select.sel-compatto {
 .banda-demo b { color: var(--inchiostro-1); }
 
 .separatore { height: 1px; background: var(--griglia); margin: 16px 0; border: none; }
-.mt { margin-top: 16px; }
-.mt-s { margin-top: 9px; }
+.mt { margin-top: var(--s4); }
+.mt-s { margin-top: var(--s2); }
 .mb { margin-bottom: 16px; }
 .riga-flex { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
 .titolo-sezione {
@@ -1240,9 +1268,11 @@ textarea.sheet-titolo-inp:focus { box-shadow: none; outline: 2px solid var(--acc
    prima erano 22, 24, 27, 32, 34 e con tre raggi diversi. */
 .sheet-chiudi { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: var(--r-1); color: var(--inchiostro-2); transition: background var(--t-veloce); }
 .sheet-chiudi:hover { background: var(--superficie-2); }
-.sheet-corpo { display: flex; flex-direction: column; gap: 4px; }
+/* fra un gruppo e l'altro: erano 4px, meno degli 8-10 che separano le cose
+   DENTRO un gruppo — la vicinanza diceva il contrario del vero */
+.sheet-corpo { display: flex; flex-direction: column; gap: var(--s2); }
 
-.imp-sezione { padding: 12px 0; border-top: 1px solid var(--griglia); }
+.imp-sezione { padding: var(--s3) 0; border-top: 1px solid var(--griglia); }
 .imp-sezione:first-child { border-top: none; }
 /* ETICHETTE — due ruoli, ognuno con un aspetto solo.
    1) etichetta di SEZIONE: maiuscoletto spaziato, dice «da qui comincia un
@@ -1255,10 +1285,10 @@ textarea.sheet-titolo-inp:focus { box-shadow: none; outline: 2px solid var(--acc
 label.campo {
   font-size: 12.5px; font-weight: 700; letter-spacing: 0; text-transform: none; color: var(--inchiostro-2);
 }
-.imp-eti { margin-bottom: 10px; }
+.imp-eti { margin-bottom: var(--s2); }
 .imp-seg { display: flex; width: 100%; }
 .imp-seg button { flex: 1; justify-content: center; }
-.imp-nota { margin-top: 9px; }
+.imp-nota { margin-top: var(--s2); }
 .imp-pericolo { color: var(--critico); border-color: color-mix(in srgb, var(--critico) 35%, var(--bordo-forte)); }
 .imp-pericolo:hover { background: color-mix(in srgb, var(--critico) 10%, transparent); border-color: var(--critico); }
 
@@ -1384,7 +1414,19 @@ label.campo {
 }
 
 /* schede-sezione dentro una pagina (progressive disclosure) */
-.sez-nav { margin: 20px 0 16px; }
+/* Il margine sopra lo dà la testa, non questa riga: due margini che si
+   toccano collassano in un contenitore a blocchi (20) e si sommano in uno
+   flex (38), ed è per questo che la riga delle sezioni stava a venti pixel
+   dal titolo su ogni pagina e a trentotto su «Oggi». Uno solo dei due lati
+   mette lo spazio, e allora la distanza è quella che c'è scritta. */
+.sez-nav { margin: 0 0 var(--s4); }
+/* e il blocco che viene dopo non aggiunge il suo: il giunto verso il corpo lo
+   mette solo questa riga. Senza, il primo blocco portava il proprio margine
+   (l'etichetta di gruppo dei Rituali, per esempio, 24px) e il giunto valeva
+   16, 18, 20, 24 o 40 a seconda della pagina e del contenitore. */
+/* con l'id perché deve vincere: `.sez-nav + *` ha la stessa forza di
+   `.rit-eti`, e a pari forza vince la regola scritta più in basso */
+#vista > .sez-nav + * { margin-top: 0; }
 @media (max-width: 860px) {
   .sez-nav { display: flex; width: 100%; overflow-x: auto; scrollbar-width: none; }
   .sez-nav::-webkit-scrollbar { display: none; }
@@ -1392,7 +1434,7 @@ label.campo {
 }
 
 /* testata card con controllo a destra */
-.card-testa { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 4px; }
+.card-testa { display: flex; align-items: center; justify-content: space-between; gap: var(--s2); flex-wrap: wrap; margin-bottom: var(--s1); }
 .card-testa h2 { margin: 0; }
 .mini-seg { padding: 3px; }
 .mini-seg button { padding: 0 12px; }
@@ -1408,7 +1450,9 @@ label.campo {
    senza riquadro, con la voce attiva tinta d'accento. Stessa famiglia, due
    pesi, e nessuna icona sacrificata. */
 .sotto-seg {
-  margin: 0 0 14px; background: none; border: 0; padding: 0; gap: 4px;
+  /* il giunto verso il corpo è lo stesso della riga di sezione sopra: erano
+     16 e 14, cioè due valori per la stessa distanza a due righe di stacco */
+  margin: 0 0 var(--s4); background: none; border: 0; padding: 0; gap: var(--s1);
 }
 .sotto-seg .seg-ico { display: inline-flex; }
 .sotto-seg > button { gap: 6px; color: var(--inchiostro-muto); box-shadow: none; }
@@ -1460,15 +1504,17 @@ label.campo {
   /* eroe: statistiche in griglia 2x2 leggibile */
   .eroe-statistiche { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 8px; width: 100%; }
   .stat { padding: 0; border-left: none; }
-  .topbar { margin-bottom: 18px; }
+  /* sul telefono la testa respira un filo meno, ma resta un passo della
+     scala: 18 non era un valore, era un numero */
+  .topbar { margin-bottom: var(--s4); }
 }
 
 /* ---------- diario / storico ---------- */
 
-.diario-giorno { display: grid; grid-template-columns: 96px 1fr; gap: 16px; padding: 15px 0; border-top: 1px solid var(--griglia); }
-.diario-giorno:first-child { border-top: none; padding-top: 2px; }
+.diario-giorno { display: grid; grid-template-columns: 96px 1fr; gap: var(--s4); padding: var(--s4) 0; border-top: 1px solid var(--griglia); }
+.diario-giorno:first-child { border-top: none; padding-top: 0; }
 .diario-data { font-size: 12.5px; font-weight: 750; color: var(--inchiostro-2); letter-spacing: -0.01em; }
-.diario-eventi { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.diario-eventi { display: flex; flex-direction: column; gap: var(--s2); min-width: 0; }
 .diario-evento { display: flex; align-items: flex-start; gap: 10px; font-size: 13.5px; }
 .diario-ico { flex: none; width: 27px; height: 27px; border-radius: var(--r-1); display: inline-flex; align-items: center; justify-content: center; background: var(--superficie-2); color: var(--inchiostro-2); }
 .diario-ico.ok { background: color-mix(in srgb, var(--ok) 15%, transparent); color: var(--ok-testo); }
@@ -1642,7 +1688,9 @@ label.campo {
 .lista-eti {
   display: flex; align-items: center; gap: 7px; width: 100%;
   font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase;
-  color: var(--inchiostro-2); margin: 18px 2px 7px;
+  /* allineata al blocco che etichetta (i 2px la tenevano fuori squadra da
+     tutto il resto), e più vicina a lui che al gruppo di sopra */
+  color: var(--inchiostro-2); margin: var(--s5) 0 var(--s2);
 }
 /* il segno dell'etichetta sta addosso alla parola e un tono più indietro:
    deve farti trovare il blocco, non farsi leggere prima del nome */
@@ -1652,7 +1700,7 @@ label.campo {
   border-radius: var(--r-tondo); background: var(--superficie-3); color: var(--inchiostro-muto);
   font-variant-numeric: tabular-nums;
 }
-.lista-eti:first-child { margin-top: 4px; }
+.lista-eti:first-child { margin-top: var(--s1); }
 /* quando l'etichetta apre e chiude il suo gruppo */
 .lista-eti-btn { text-align: left; cursor: pointer; min-height: 34px; }
 .lista-eti-btn .lista-chev { margin-left: auto; transform: none; }
@@ -1753,7 +1801,7 @@ button.lista-riga { width: 100%; text-align: left; }
 .abd-orario { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .abd-orario .tl-time { width: auto; flex: none; }
 .abd-orario .tl-dur { width: auto; flex: 0 1 150px; }
-.abd-fondo { margin-top: 18px; padding-top: 12px; border-top: 1px solid var(--griglia); display: flex; }
+.abd-fondo { margin-top: var(--s4); padding-top: var(--s3); border-top: 1px solid var(--griglia); display: flex; }
 
 .ap-campo { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 650; color: var(--inchiostro-2); }
 .ap-campo input[type="date"] { padding: 4px 7px; font-size: 11.5px; border-radius: var(--r-1); }
@@ -1773,7 +1821,7 @@ button.lista-riga { width: 100%; text-align: left; }
 .att-testa { padding-bottom: 12px; }
 /* la barra sopra la lista: cercare e filtrare, due modi di guardare quello
    che c'è già. Il campo per aggiungere sta altrove: è un'azione. */
-.att-barra { display: flex; align-items: center; gap: 8px; margin: 14px 0 0; flex-wrap: wrap; }
+.att-barra { display: flex; align-items: center; gap: var(--s2); margin: var(--s4) 0 0; flex-wrap: wrap; }
 .att-barra .att-cerca { flex: 1 1 160px; max-width: 380px; margin: 0; }
 /* la barra tiene le sue cose a sinistra: un campo di ricerca largo mille
    pixel non è un campo, è un muro */
@@ -1825,8 +1873,10 @@ textarea.sm-titolo:focus { box-shadow: none; outline: 2px solid var(--accento); 
    iOS. Prima erano tre riquadri con dentro altri riquadri (il gruppo, il
    campo, il bordo del campo): trentuno cornici in un solo pannello. */
 .sc { display: flex; flex-direction: column; }
-.sc-primaria { width: 100%; justify-content: center; margin: 2px 0 4px; }
-.sc-quando { margin-bottom: 2px; }
+/* niente margini da due pixel: si sommavano a quello dell'etichetta di
+   gruppo qui sotto e la stessa distanza diventava 26 o 28 invece di 24 */
+.sc-primaria { width: 100%; justify-content: center; margin: 0; }
+.sc-quando { margin-bottom: 0; }
 /* la pastiglia che contiene un campo data: si vede la pastiglia, il campo
    sta dentro e si apre col calendario del sistema */
 .q-chip-data { position: relative; cursor: pointer; gap: 5px; }
@@ -1997,7 +2047,9 @@ select.agg-sel-area { width: auto; max-width: 190px; flex: 0 1 auto; font-size: 
 }
 
 /* attività: tab, ricerca, chip per area, lista piatta */
-.att-tabs { margin-bottom: 14px; }
+/* niente margine suo: quello del giunto lo mette .sez-nav. Con due regole
+   per la stessa distanza vinceva questa, e la riga delle linguette stava a
+   14px dal corpo in «Attività» e a 16 in tutte le altre pagine. */
 /* Il numero dentro la pastiglia si legge, sempre: accento su accento sta a
    3,4:1 e a 10,5px in grassetto è proprio il caso in cui serve il massimo.
    La tinta porta già il colore del marchio, al testo tocca la leggibilità. */
@@ -2086,9 +2138,11 @@ select.agg-sel-area { width: auto; max-width: 190px; flex: 0 1 auto; font-size: 
    ============================================================ */
 .rit-eti {
   font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase;
-  color: var(--inchiostro-2); margin: 22px 2px 8px;
+  /* stessi numeri dell'altra etichetta di gruppo: erano 22/2/8 qui e
+     18/2/7 là, per lo stesso mestiere */
+  color: var(--inchiostro-2); margin: var(--s5) 0 var(--s2);
 }
-.rit-eti:first-of-type { margin-top: 4px; }
+.rit-eti:first-of-type { margin-top: var(--s1); }
 .rit-gruppo {
   border: 1px solid var(--bordo); border-radius: var(--r-3);
   background: var(--superficie-1); box-shadow: var(--e1); overflow: hidden;
@@ -2124,7 +2178,7 @@ select.agg-sel-area { width: auto; max-width: 190px; flex: 0 1 auto; font-size: 
    Le successive sì — il check-in e la review della sera hanno anche il
    grafico dell'andamento, e senza cornice si fondevano in un muro bianco. */
 .rit-corpo > .card:first-child { border: 0; box-shadow: none; border-radius: 0; background: none; margin: 0; }
-.rit-corpo > .card + .card { margin: 0 14px 14px; }
+.rit-corpo > .card + .card { margin: 0 var(--s4) var(--s4); }
 .rit-corpo .card { padding: 18px 20px 20px; }
 .rituale-intro { font-size: 12.5px; color: var(--inchiostro-2); margin: 0 0 14px; line-height: 1.5; }
 @media (max-width: 560px) {
@@ -2180,9 +2234,9 @@ select.agg-sel-area { width: auto; max-width: 190px; flex: 0 1 auto; font-size: 
 .tl-ed-riga.fatta .tl-ed-testo { text-decoration: line-through; color: var(--inchiostro-muto); }
 .tl-dur { flex: none; width: 96px; padding: 4px 6px; font-size: 11.5px; border-radius: var(--r-1); }
 
-.tl-tray { margin-top: 14px; padding: 11px 12px; border-radius: var(--r-2); background: var(--superficie-2); border: 1px solid var(--griglia); }
+.tl-tray { margin-top: var(--s4); padding: 11px 12px; border-radius: var(--r-2); background: var(--superficie-2); border: 1px solid var(--griglia); }
 .tl-tray-eti { font-size: 11.5px; color: var(--inchiostro-muto); margin-bottom: 6px; display: flex; align-items: center; gap: 5px; }
-.tl-piede { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 14px; padding-top: 13px; border-top: 1px solid var(--griglia); }
+.tl-piede { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: var(--s4); padding-top: var(--s3); border-top: 1px solid var(--griglia); }
 /* «senza penalità» dentro il tasto, come «+10 XP» dentro «Fatto» — ma qui su
    una riga sua, centrata: era una frase a sé sotto il tasto, due elementi per
    una cosa, e in fila andava a capo di traverso */
@@ -2268,10 +2322,10 @@ body.sto-trascinando { cursor: grabbing; user-select: none; -webkit-user-select:
 .tl-blk-clic:hover { box-shadow: var(--e2); filter: brightness(1.02); }
 
 /* cose "senza orario": righe che si toccano per dargli un posto nella giornata */
-.gio-so { margin-top: 14px; border-top: 1px solid var(--griglia); padding-top: 11px; }
+.gio-so { margin-top: var(--s4); border-top: 1px solid var(--griglia); padding-top: var(--s3); }
 /* «Senza orario» usa l'etichetta di gruppo condivisa: prima aveva la sua,
    con un numero disegnato a modo suo */
-.gio-so > .lista-eti { margin-top: 14px; }
+.gio-so > .lista-eti { margin-top: var(--s4); }
 .gio-so-riga { display: flex; align-items: center; gap: 9px; padding: 4px 0; }
 .gio-so-corpo { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; padding: 7px 10px; border-radius: var(--r-2); border: 1px solid var(--bordo); background: var(--superficie-1); cursor: pointer; text-align: left; transition: all var(--t-veloce); }
 .gio-so-corpo:hover { border-color: color-mix(in srgb, var(--c-area) 45%, var(--bordo-forte)); background: color-mix(in srgb, var(--c-area) 11%, var(--superficie-1)); }
@@ -2290,7 +2344,7 @@ body.sto-trascinando { cursor: grabbing; user-select: none; -webkit-user-select:
 .ig-griglia .campo { margin: 0; }
 .ig-griglia #ig-ora, .ig-griglia #ig-dur, .ig-griglia #ig-area { width: 100%; }
 .ig-nota-futuro { display: flex; align-items: center; justify-content: center; gap: 7px; font-size: 12.5px; font-weight: 600; color: var(--inchiostro-muto); background: var(--superficie-2); border: 1px solid var(--bordo); border-radius: var(--r-2); padding: 9px 12px; margin-bottom: 6px; }
-.ig-fondo { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; padding-top: 13px; border-top: 1px solid var(--griglia); }
+.ig-fondo { display: flex; flex-wrap: wrap; gap: var(--s2); margin-top: var(--s4); padding-top: var(--s3); border-top: 1px solid var(--griglia); }
 .ig-fondo .btn { justify-content: center; }
 
 /* pop-up "La giornata" (leggero, una colonna, si adatta all'altezza) */
@@ -2370,7 +2424,7 @@ body.sto-trascinando { cursor: grabbing; user-select: none; -webkit-user-select:
 .an-scad .scad-testo { flex: 1; min-width: 0; font-size: 13.5px; overflow-wrap: anywhere; }
 
 /* striscia compatta della giornata (in Oggi) */
-.giornata-strip { display: block; width: 100%; text-align: left; background: var(--superficie-1); border: 1px solid var(--bordo); border-radius: var(--r-2); padding: 10px 14px 8px; margin-bottom: 14px; box-shadow: var(--e1); cursor: pointer; transition: border-color var(--t-veloce), transform var(--t-veloce); }
+.giornata-strip { display: block; width: 100%; text-align: left; background: var(--superficie-1); border: 1px solid var(--bordo); border-radius: var(--r-2); padding: 10px 14px 8px; margin-bottom: var(--s4); box-shadow: var(--e1); cursor: pointer; transition: border-color var(--t-veloce), transform var(--t-veloce); }
 .giornata-strip:hover { border-color: color-mix(in srgb, var(--accento) 40%, var(--bordo-forte)); }
 .strip-testa { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
 .strip-tit { font-size: 13px; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; flex: none; white-space: nowrap; }
@@ -2423,7 +2477,7 @@ body.sto-trascinando { cursor: grabbing; user-select: none; -webkit-user-select:
 .gio-sonno-corpo[hidden] { display: none; }
 
 /* sonno e pasti del giorno (registro) sulla pagina Giornata */
-.tl-sonno-sez { margin-top: 14px; padding-top: 13px; border-top: 1px solid var(--griglia); }
+.tl-sonno-sez { margin-top: var(--s4); padding-top: var(--s3); border-top: 1px solid var(--griglia); }
 .sp-sonno { display: flex; align-items: center; gap: 8px 12px; flex-wrap: wrap; margin: 4px 0 10px; }
 .sp-lab { font-size: 12.5px; font-weight: 650; color: var(--inchiostro-2); display: inline-flex; align-items: center; gap: 5px; }
 .sp-sonno .tl-time { width: 104px; }
@@ -2482,7 +2536,7 @@ body.sto-trascinando { cursor: grabbing; user-select: none; -webkit-user-select:
 
 /* ---------- gestione aree ---------- */
 
-.aree-lista { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+.aree-lista { display: flex; flex-direction: column; gap: var(--s2); margin-top: var(--s2); }
 .area-riga { display: flex; align-items: center; gap: 9px; }
 .area-riga.spenta { opacity: .55; }
 .area-riga .icona-area { width: 28px; height: 28px; border-radius: var(--r-1); flex: none; }
@@ -2513,7 +2567,7 @@ body.sto-trascinando { cursor: grabbing; user-select: none; -webkit-user-select:
 /* il selettore dell'area dentro una riga di aggiunta: stretto quanto basta
    sul telefono, largo abbastanza da leggere il nome intero col mouse */
 
-.vuoto-azione { margin-top: 14px; display: flex; justify-content: center; }
+.vuoto-azione { margin-top: var(--s4); display: flex; justify-content: center; }
 
 /* ============================================================
    AVVISI — le domande che l'app fa prima di fare danni
@@ -2538,7 +2592,7 @@ body.sto-trascinando { cursor: grabbing; user-select: none; -webkit-user-select:
 }
 .avviso h2 { font-size: 17px; font-weight: 800; letter-spacing: -0.01em; margin: 0; }
 .avviso p { margin: 8px 0 0; font-size: 13.5px; line-height: 1.45; color: var(--inchiostro-2); }
-.avviso-azioni { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 18px; }
+.avviso-azioni { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s2); margin-top: var(--s4); }
 .avviso-azioni .btn { width: 100%; justify-content: center; padding: 0 12px; font-size: 15px; }
 /* il rosso pieno: si usa solo qui, per l'azione che non si può annullare */
 .btn-pericolo { background: var(--critico-pieno); color: #fff; border-color: transparent; box-shadow: var(--e1); }

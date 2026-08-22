@@ -74,6 +74,20 @@ rompe. Sono nati da problemi veri.
   `var(--inchiostro-1)` rende invalido il color-mix e il testo torna al grigio
   ereditato, che è un colore plausibile.
 
+- **spazi.js** — gli spazi fra gli elementi, misurati come una griglia. Per
+  ogni schermata e a quattro larghezze prende la distanza fra due elementi
+  incolonnati e pretende che stia sulla scala 0/4/8/12/16/24/32/40; che il
+  giunto della pagina (testa → riga delle sezioni) sia lo stesso su tutte le
+  pagine; che lo spazio FRA due gruppi non sia minore di quello DENTRO un
+  gruppo, riempimenti compresi; e che niente sbordi in orizzontale. Misura con
+  le animazioni spente: le schermate entrano a scaglioni e misurare durante
+  l'ingresso dava 10, 17.9, 27, 37.6 per la stessa coppia a ogni giro — non
+  erano spazi, erano fotogrammi. Nasce da «analizza ogni spazio tra elementi e
+  misura tipo griglia»: la prima misura aveva trovato 38 valori diversi, con
+  7-8-9-10-11 usati per lo stesso mestiere, e quasi nessuno scelto — nascevano
+  dal collasso di due margini indipendenti, e cambiavano da soli quando un
+  contenitore diventava flex.
+
 ## Come si lanciano
 
     npm install playwright
@@ -84,6 +98,7 @@ rompe. Sono nati da problemi veri.
     node prove/sezioni.js
     node prove/annulla.js
     node prove/colori.js
+    node prove/spazi.js
 
 Servono Node e Chromium (segni.js si accontenta di Node). Se Chromium sta in un posto suo:
 

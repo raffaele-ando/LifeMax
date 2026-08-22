@@ -812,7 +812,7 @@
       '<div class="imp-sezione"><div class="imp-eti">Aspetto</div>' +
       '<div class="segmenti imp-seg" id="seg-skin">' + segS('quiete', 'Aurora') + segS('arcade', 'Arcade') + '</div>' +
       '<div class="imp-nota">Aurora è più sobrio, Arcade più acceso. Cambia solo l’aspetto, non i dati.</div>' +
-      '<div class="imp-azioni" style="margin-top:10px"><button class="btn btn-mini" id="imp-lab">' + ICO('palette', 15) + ' Design lab</button></div>' +
+      '<div class="imp-azioni mt-s"><button class="btn btn-mini" id="imp-lab">' + ICO('palette', 15) + ' Design lab</button></div>' +
       '<div class="imp-nota">Dieci interfacce complete per la stessa app, da confrontare per scegliere la base grafica di tutto il sito.</div></div>';
   }
 
