@@ -2147,6 +2147,12 @@ select.agg-sel-area { width: auto; max-width: 190px; flex: 0 1 auto; font-size: 
 .tl-tray { margin-top: 14px; padding: 11px 12px; border-radius: var(--r-2); background: var(--superficie-2); border: 1px solid var(--griglia); }
 .tl-tray-eti { font-size: 11.5px; color: var(--inchiostro-muto); margin-bottom: 6px; display: flex; align-items: center; gap: 5px; }
 .tl-piede { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 14px; padding-top: 13px; border-top: 1px solid var(--griglia); }
+/* «senza penalità» dentro il tasto, come «+10 XP» dentro «Fatto» — ma qui su
+   una riga sua, centrata: era una frase a sé sotto il tasto, due elementi per
+   una cosa, e in fila andava a capo di traverso */
+.tl-piede { flex-direction: column; align-items: stretch; }
+.tl-piede .btn { width: 100%; flex-wrap: wrap; row-gap: 1px; padding: 8px 14px; }
+.tl-piede .btn small { flex-basis: 100%; font-weight: 650; opacity: .7; font-size: 11.5px; }
 
 /* editor completo (pagina Giornata): titolo + aggiunta rapida */
 .tl-ed-riga.senzaora { background: color-mix(in srgb, var(--avviso) 10%, transparent); border-radius: var(--r-1); padding: 6px 7px; }
@@ -2227,8 +2233,9 @@ body.sto-trascinando { cursor: grabbing; user-select: none; -webkit-user-select:
 
 /* cose "senza orario": righe che si toccano per dargli un posto nella giornata */
 .gio-so { margin-top: 14px; border-top: 1px solid var(--griglia); padding-top: 11px; }
-.gio-so-eti { font-size: 11.5px; color: var(--inchiostro-muto); margin-bottom: 8px; display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
-.gio-so-n { font-weight: 800; color: var(--inchiostro-2); background: var(--superficie-3); border-radius: var(--r-tondo); padding: 0 7px; }
+/* «Senza orario» usa l'etichetta di gruppo condivisa: prima aveva la sua,
+   con un numero disegnato a modo suo */
+.gio-so > .lista-eti { margin-top: 14px; }
 .gio-so-riga { display: flex; align-items: center; gap: 9px; padding: 4px 0; }
 .gio-so-corpo { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; padding: 7px 10px; border-radius: var(--r-2); border: 1px solid var(--bordo); background: var(--superficie-1); cursor: pointer; text-align: left; transition: all var(--t-veloce); }
 .gio-so-corpo:hover { border-color: color-mix(in srgb, var(--c-area) 45%, var(--bordo-forte)); background: color-mix(in srgb, var(--c-area) 11%, var(--superficie-1)); }
@@ -2258,6 +2265,12 @@ body.sto-trascinando { cursor: grabbing; user-select: none; -webkit-user-select:
 
 /* navigazione tra gli orizzonti (giorno/settimana/mese/anno) */
 .orizz-barra { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+/* dentro la scheda della giornata il navigatore È l'intestazione: sta in cima,
+   separato dalle ore da un filo, e non ha bisogno di un titolo sopra di sé */
+.giornata > .orizz-barra {
+  margin: -4px -2px 0; padding-bottom: 12px; border-bottom: 1px solid var(--griglia);
+}
+.giornata > .orizz-barra .orizz-eti { font-size: 15px; font-weight: 800; }
 .orizz-eti { flex: 1; min-width: 0; font-size: 16px; font-weight: 800; letter-spacing: -0.015em; text-transform: capitalize; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 /* quanto sei lontano da oggi: rende evidente che la freccia ha fatto effetto */
 .orizz-dist { flex: none; font-size: 11px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; padding: 2px 9px; border-radius: var(--r-tondo); }
@@ -2364,7 +2377,9 @@ body.sto-trascinando { cursor: grabbing; user-select: none; -webkit-user-select:
 
 /* sonno e pasti in cima alla pagina Giornata (un solo posto) */
 .gio-sonno { margin: 6px 0 12px; border: 1px solid var(--bordo); border-radius: var(--r-2); background: var(--superficie-2); overflow: hidden; }
-.gio-sonno-testa { display: flex; align-items: center; gap: 10px; width: 100%; padding: 10px 12px; background: none; border: none; cursor: pointer; text-align: left; }
+/* tornata su una riga sola, scendeva a 40px: è un comando (apre sonno e
+   pasti), quindi il pavimento dei 44 vale anche qui */
+.gio-sonno-testa { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 44px; padding: 10px 12px; background: none; border: none; cursor: pointer; text-align: left; }
 .gs-riass { flex: 1; min-width: 0; font-size: 12.5px; color: var(--inchiostro-2); display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
 .gs-riass b { color: var(--inchiostro-1); font-variant-numeric: tabular-nums; }
 .gs-riass .ico { vertical-align: -2px; color: var(--inchiostro-muto); }

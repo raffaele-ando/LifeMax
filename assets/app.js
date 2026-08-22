@@ -1771,7 +1771,10 @@
     var lines = '';
     for (var h = gs; h <= ge; h += 60) lines += '<div class="tl-hr" style="top:' + y(h) + 'px">' + (opts.rail === false ? '' : '<span class="tl-hr-eti">' + fmtMin(h) + '</span>') + '</div>';
     var shade = '';
-    var sonnoLbl = opts.mini ? '' : '<span class="tl-sleep-lbl">' + ICO('bed', 11) + ' ' + fmtOre(LM.minutiSonno(d.k)) + '</span>';
+    /* Nella pagina la riga in cima alla scheda dice già «23:30→07:30 · 8h»:
+       ripeterlo dentro la fascia tratteggiata era lo stesso dato due volte a
+       quaranta pixel di distanza. Nel pop-up quella riga non c'è, e qui serve. */
+    var sonnoLbl = (opts.mini || opts.senzaEtichettaSonno) ? '' : '<span class="tl-sleep-lbl">' + ICO('bed', 11) + ' ' + fmtOre(LM.minutiSonno(d.k)) + '</span>';
     if (wake > gs) shade += '<div class="tl-sleep" style="top:0;height:' + y(wake) + 'px">' + sonnoLbl + '</div>';
     if (bed < ge) shade += '<div class="tl-sleep" style="top:' + y(bed) + 'px;height:' + (H - y(bed)) + 'px">' + (wake > gs ? '' : sonnoLbl) + '</div>';
     var blocks = disponiBlocchi(d.placed).map(function (it) {
@@ -2140,7 +2143,10 @@
        Le cose CON orario si modificano toccando il loro blocco nel grafico. */
     var senzaOra = '';
     if (!compact && interactive && d.tray.length) {
-      senzaOra = '<div class="gio-so"><div class="gio-so-eti">' + ICO('clock', 13) + ' Senza orario <span class="gio-so-n">' + d.tray.length + '</span> — toccale per dargli un posto nella giornata</div>' +
+      /* l'etichetta di gruppo di tutta l'app, col suo numero. Prima era
+         un'etichetta sua più la frase «— toccale per dargli un posto nella
+         giornata», che ogni riga qui sotto dice già da sé con «dai un orario». */
+      senzaOra = '<div class="gio-so">' + etichetta('Senza orario', 'clock', d.tray.length) +
         d.tray.map(function (e) {
           var ar = areaById(e.areaId), col = LM.coloreArea(ar);
           var fatto = e.tipo === 'azione' ? e.done : e.fatto;
@@ -2175,8 +2181,18 @@
     var sonnoTop = '';
     if (!compact && interactive) {
       var aperto = giornataSonnoAperto;
+      /* i segni dei pasti dicono già quanti sono: la parola «3 pasti» accanto
+         era la stessa cosa detta due volte, e con quattro fatti su una riga la
+         mandava a capo. Il gruppo di segni però deve avere un nome, o con la
+         voce i pasti non esistono. */
+      var nPasti = (d.pasti || []).length;
       var pastiIco = (d.pasti || []).slice(0, 5).map(function (p) { return ICO(/colaz|coffee/i.test((p.id || '') + p.nome) ? 'coffee' : 'utensils', 13); }).join(' ');
-      var riass = ICO('bed', 13) + ' <b>' + d.sonno + '</b>→<b>' + d.sveglia + '</b> · dormi ' + fmtOre(LM.minutiSonno(k)) + ' · ' + (pastiIco || '—') + ' ' + (d.pasti || []).length + ' pasti';
+      var pastiBlocco = nPasti
+        ? '<span role="img" aria-label="' + nPasti + (nPasti === 1 ? ' pasto' : ' pasti') + '">' + pastiIco + '</span>'
+        : '<span>nessun pasto</span>';
+      /* «dormi» era la parola di troppo che a 320px mandava la riga a capo: con
+         il letto davanti e due orari, «8h» è già la durata del sonno */
+      var riass = ICO('bed', 13) + ' <b>' + d.sonno + '</b>→<b>' + d.sveglia + '</b> · ' + fmtOre(LM.minutiSonno(k)) + ' · ' + pastiBlocco;
       var durOpt = function (v) { return DURATE.map(function (o) { return '<option value="' + o.v + '"' + ((v || '') === o.v ? ' selected' : '') + '>' + o.t + '</option>'; }).join(''); };
       var pastiRows = (d.pasti || []).map(function (p, i) {
         return '<div class="sp-riga" data-pi="' + i + '">' +
@@ -2221,8 +2237,10 @@
       var nonFatte = d.placed.concat(d.tray).filter(function (e) { return e.tipo === 'azione' && !e.done; });
       if (nonFatte.length && !isFuturo) {
         var doveVa = etichettaGiorno(LM.addDays(k, 1)).toLowerCase();
-        footer = '<div class="tl-piede"><button class="btn btn-mini" id="tl-rimanda">' + ICO('arrowRight', 15) + ' Sposta a ' + doveVa + ' le ' + nonFatte.length + ' cose non fatte</button>' +
-          '<span class="sotto" style="margin:0">Ripianificare non comporta nessuna penalità.</span></div>';
+        /* la rassicurazione sta DENTRO il tasto, come «+10 XP» sta dentro
+           «Fatto»: era una riga a sé sotto un tasto, due elementi per una cosa */
+        footer = '<div class="tl-piede"><button class="btn btn-mini" id="tl-rimanda">' + ICO('arrowRight', 15) +
+          ' Sposta le ' + nonFatte.length + ' non fatte a ' + doveVa + ' <small>senza penalità</small></button></div>';
       }
     }
     if (compact && opts.controls !== false) {
@@ -2245,26 +2263,40 @@
       var pross = d.placed.filter(function (e) { return e.min + (e.dur || 30) > nowMin && !(e.tipo === 'azione' ? e.done : (e.tipo === 'abitudine' ? e.fatto : false)); })[0];
       sommario = 'Adesso <b>' + fmtMin(nowMin) + '</b>' + (pross ? ' · poi ' + esc(pross.nome || pross.testo) + ' alle ' + pross.ora : ' · niente altro in agenda');
     }
+    /* Nella pagina il titolo diceva «La giornata» per la terza volta in
+       trecento pixel — dopo il titolo della pagina e dopo la linguetta — e
+       sotto c'era il manuale dei gesti («tocca, trascina, spunta»), trentotto
+       pixel di lezione mostrati per sempre. Il titolo se ne va, e la riga
+       sotto resta SOLO quando dice qualcosa che non puoi indovinare: che il
+       giorno è futuro (lo stai preparando) o passato (lo puoi ancora
+       sistemare). Per oggi non serve: i gesti si scoprono facendoli, e il
+       sottotitolo della pagina spiega già le frecce. */
     var sottoHead = compact
       ? (sommario || 'Come è divisa la tua giornata. Spunta ciò che fai; per cambiarla apri Giornata.')
-      : (isFuturo ? 'Prepara questa giornata: aggiungi le cose e dàgli un orario. Le spunterai quando arriva il giorno.'
-         : d.isToday ? 'Tocca un blocco per dargli orario o durata; trascinalo per spostarlo; spunta ciò che fai.'
-         : 'Puoi ancora sistemarla: spunta quello che avevi fatto e non avevi segnato.');
+      : (isFuturo ? 'Stai preparando un giorno che non è arrivato: le cose si spuntano quando ci arrivi.'
+         : d.isToday ? ''
+         : 'Giorno passato: puoi ancora spuntare quello che avevi fatto e non avevi segnato.');
     /* nel pop-up il titolo è già nell'intestazione del pannello: ripeterlo
        "La giornata / La giornata" era solo rumore */
-    var head = opts.header === false ? '' : '<div class="tl-head"><div>' +
-      (compact ? '' : '<h2>' + ICO('clock', 15) + ' ' + (opts.giorno && !d.isToday ? etichettaGiorno(k) : 'La giornata') + '</h2>') +
+    var head = (opts.header === false || (!compact && !sottoHead)) ? '' :
+      '<div class="tl-head"><div>' +
+      (compact ? '' : '') +
       '<div class="sotto">' + sottoHead + '</div></div></div>';
     var gridHtml = vuota
       ? '<div class="vuoto" style="padding:18px 8px"><b>Niente in agenda per questo giorno.</b>' + (isFuturo ? '<br>Puoi già prepararlo: aggiungi qui sotto le cose che vuoi fare.' : interactive ? '<br>Aggiungi una cosa qui sotto, o dai un orario a un’abitudine.' : '') + '</div>'
-      : htmlTimeGrid(d, { interactive: interactive, spuntabile: spuntabile, nowMin: nowMin, pxh: pxh });
+      : htmlTimeGrid(d, { interactive: interactive, spuntabile: spuntabile, nowMin: nowMin, pxh: pxh,
+          senzaEtichettaSonno: !compact && interactive });
 
     if (compact) {
       var popNota = d.tray.length ? '<div class="tl-pop-note">' + ICO('clock', 13) + ' ' + d.tray.length + (d.tray.length === 1 ? ' cosa senza orario' : ' cose senza orario') + ' — dàgli un posto qui sotto.</div>' : '';
       container.innerHTML = '<div class="card giornata giornata-pop">' + head + '<div id="tl-grid-host">' + gridHtml + '</div>' + popNota + footer + '</div>';
     } else {
+      /* Il navigatore del giorno era una riga fuori dalla scheda, e la scheda
+         aveva una sua intestazione: due teste una sopra l'altra. Adesso è la
+         prima riga della scheda — è quello che dice DI CHE GIORNO stai
+         guardando le ore, quindi è la sua intestazione. */
       var navGiorno = orizzNav('giorno', k);
-      container.innerHTML = navGiorno + '<div class="card giornata">' + head + sonnoTop + '<div id="tl-grid-host">' + gridHtml + '</div>' + senzaOra + quickAdd + trayRo + footer + '</div>';
+      container.innerHTML = '<div class="card giornata">' + navGiorno + head + sonnoTop + '<div id="tl-grid-host">' + gridHtml + '</div>' + senzaOra + quickAdd + trayRo + footer + '</div>';
       wireOrizzNav(container, 'giorno');
     }
 
@@ -2742,6 +2774,9 @@
     var t = LM.todayKey();
     if (k === t) return 'Oggi';
     if (k === LM.addDays(t, -1)) return 'Ieri';
+    /* «Domani» mancava: il tasto per rimandare diceva «Sposta a mer 19 ago»
+       quando bastava «a domani», e andava a capo su due righe */
+    if (k === LM.addDays(t, 1)) return 'Domani';
     var g = LM.weekdayShort(k);
     return g.charAt(0).toUpperCase() + g.slice(1) + ' ' + LM.fmtShort(k);
   }
