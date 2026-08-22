@@ -99,6 +99,12 @@ const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  
       tabViva: !!(sotto && (sotto === t || t.contains(sotto))),
       trasf: pan ? getComputedStyle(pan).transform : null,
       classe: pan ? pan.className : null,
+      /* l'animazione d'ingresso NON deve ripartire: stava nella regola del
+         foglio, e `.sheet-trascina` spegnendola e riaccendendola la faceva
+         ricominciare da zero — a ogni gesto, anche tirando in su dove il
+         foglio non si muove, il pannello risaliva da sotto come se si fosse
+         riaperto */
+      ingresso: pan ? pan.getAnimations().filter(function (a) { return /entra|sheetSu/.test(a.animationName || ''); }).length : 0,
       velo: ovl.style.getPropertyValue('--velo') || ''
     };
   });
@@ -135,6 +141,7 @@ const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  
     }
     ok(nome + ' — il tocco dopo funziona', t.ok, t.come);
     ok(nome + ' — niente rimasto appeso sul foglio', !/sheet-trascina|sheet-via/.test(s.classe || ''), s.classe + ' velo=' + s.velo);
+    ok(nome + ' — il foglio non si rianima come se si riaprisse', s.ingresso === 0, s.ingresso + ' animazioni d’ingresso in corso');
     if (bene === false) fail++;
   };
 
@@ -185,6 +192,9 @@ const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  
   await caso('tiro dalla maniglia', async y => { await gesto(195, y + 22, 200); }, false);
   await caso('tiro interrotto a metà', async y => { await gesto(200, y + 220, 90, { cancella: true }); }, true);
   await caso('tiro in su dal corpo', async y => { await gesto(200, y + 300, -200); }, true);
+  /* è il gesto che ha fatto scoprire il difetto: in su il foglio non si muove,
+     quindi l'unica cosa che si vedeva era l'ingresso che ripartiva */
+  await caso('tiro in su dalla maniglia', async y => { await gesto(195, y + 22, -140); }, true);
   await caso('due tiri corti di fila', async y => { await gesto(200, y + 220, 40); await gesto(200, y + 220, 40); }, true);
   await caso('tiro corto, poi Esc', async y => {
     await gesto(200, y + 220, 40);

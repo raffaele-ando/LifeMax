@@ -543,7 +543,9 @@
     /* qualunque cosa sia rimasta di un gesto interrotto */
     function pulisci() {
       if (!$sheetPanel) return;
-      $sheetPanel.classList.remove('sheet-trascina', 'sheet-molla', 'sheet-via');
+      /* `sheet-entra` compresa: se il dito arriva mentre il foglio sta ancora
+         salendo, l'ingresso finisce lì e non riparte dopo */
+      $sheetPanel.classList.remove('sheet-trascina', 'sheet-molla', 'sheet-via', 'sheet-entra');
       $sheetPanel.style.transform = '';
       scriviVelo(1);
     }
@@ -576,9 +578,12 @@
         /* si trascina dalla presa, oppure dal corpo quando il contenuto è già
            in cima e il dito va in giù: lì sotto non c'è nulla da scorrere */
         modo = (giu.presa || (d > 0 && giu.top <= 0)) ? 'trascina' : 'scorri';
-        if (modo === 'trascina') $sheetPanel.classList.add('sheet-trascina');
       }
       if (modo !== 'trascina') return;
+      /* tirando in SU dalla maniglia il foglio non si muove: non c'è niente
+         da spegnere e niente da rimettere a posto dopo */
+      if (d <= 0 && !$sheetPanel.classList.contains('sheet-trascina')) return;
+      $sheetPanel.classList.add('sheet-trascina');
       /* «questo gesto è mio»: senza questo il browser lo prende per uno
          scorrimento e lo annulla, e il foglio non scende di un pixel */
       if (e.cancelable) e.preventDefault();
@@ -695,7 +700,22 @@
     wireSheet = onWire || null;
     if (wireSheet) wireSheet(document.getElementById('sheet-corpo'));
     if (giaAperto) { if ($sheetPanel) { $sheetPanel.scrollTop = 0; $sheetPanel.focus({ preventScroll: true }); } }
-    else entraFuoco($sheetPanel);
+    else { animaIngressoSheet(); entraFuoco($sheetPanel); }
+  }
+
+  /* L'ingresso del foglio: una volta, quando si apre. La classe se ne va da
+     sola appena l'animazione finisce, così nessun'altra classe può farla
+     ricominciare (vedi `.sheet-entra` nel foglio di stile). */
+  function animaIngressoSheet() {
+    if (!$sheetPanel) return;
+    $sheetPanel.classList.remove('sheet-entra');
+    /* si rilegge una proprietà per forzare il ricalcolo: senza, togliere e
+       rimettere la classe nello stesso giro non riparte */
+    void $sheetPanel.offsetWidth;
+    $sheetPanel.classList.add('sheet-entra');
+    var via = function () { $sheetPanel.classList.remove('sheet-entra'); };
+    $sheetPanel.addEventListener('animationend', via, { once: true });
+    setTimeout(via, 500);
   }
 
   /* la testa del pannello: il nome di dove sei, e — se ci sei entrato da un

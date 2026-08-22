@@ -1293,8 +1293,17 @@ body.sfondo-fermo { position: fixed; left: 0; right: 0; width: 100%; overflow: h
   width: 100%; max-width: 460px; max-height: 88vh; max-height: 88dvh; overflow-y: auto; overscroll-behavior: contain;
   background: var(--superficie-1); border: 1px solid var(--bordo);
   border-radius: var(--r-3); box-shadow: var(--e3); padding: 8px 20px 22px;
-  animation: entra .3s var(--ease-spring);
 }
+/* L'ANIMAZIONE D'INGRESSO SI FA UNA VOLTA SOLA, E STA IN UNA CLASSE SUA.
+   Quando stava nella regola del foglio, bastava che una classe la spegnesse e
+   la riaccendesse per farla ripartire da zero: `.sheet-trascina` la spegne
+   (`animation: none`) durante il trascinamento, e togliendola il browser la
+   considerava di nuovo valida e la faceva ricominciare. Risultato: a ogni
+   gesto — anche solo tirando in SU, dove il foglio non si muove nemmeno — il
+   pannello risaliva da sotto come se si fosse riaperto. Adesso la classe la
+   mette chi apre il foglio e se ne va appena finisce: da lì in poi non c'è
+   più niente da riaccendere. */
+.sheet-entra { animation: entra .3s var(--ease-spring); }
 .sheet-maniglia { display: none; }
 /* mentre il dito lo tiene: nessuna transizione, il foglio segue la mano.
    `sheet-molla` è il ritorno al suo posto, `sheet-via` è il congedo. */
@@ -1381,8 +1390,8 @@ label.campo {
   .sheet {
     max-width: 100%; max-height: 90vh; max-height: 90dvh; border-radius: var(--r-3) var(--r-3) 0 0;
     padding: 6px 18px calc(24px + env(safe-area-inset-bottom));
-    animation: sheetSu .32s var(--ease-out);
   }
+  .sheet-entra { animation: sheetSu .32s var(--ease-out); }
   /* la maniglia: unica via d'uscita col dito. Si vede come una barretta di
      4 px, ma il bersaglio è alto 30 e larga come mezzo foglio. */
   .sheet-maniglia {
