@@ -1169,12 +1169,8 @@ select.sel-compatto {
 
 /* suggerimenti giusti per il dispositivo: le scorciatoie da tastiera non
    esistono su un telefono, e il pulsante Salva serve solo dove non c'è Invio */
-.solo-tocco { display: none; }
 .cattura-salva { display: none; }
 @media (pointer: coarse) {
-  .solo-tastiera { display: none; }
-  .solo-tocco { display: inline; }
-  .focus-coda .solo-tocco { display: inline-block; }
   .cattura-salva { display: inline-flex; flex: none; }
 }
 
@@ -1412,13 +1408,6 @@ label.campo {
 .focus-secondarie { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; justify-content: center; margin-top: 6px; }
 .timer-gruppo { display: inline-flex; align-items: center; gap: 7px; font-size: 13px; color: var(--inchiostro-2); font-weight: 600; }
 .timer-gruppo .ico { color: var(--inchiostro-muto); }
-.chip-tempo {
-  padding: 0 12px; border-radius: var(--r-tondo);
-  border: 1px solid var(--bordo-forte); background: var(--superficie-1);
-  font-variant-numeric: tabular-nums;
-  box-shadow: var(--e1); transition: transform var(--t-veloce), border-color var(--t-veloce);
-}
-.chip-tempo:hover { transform: translateY(-1px); border-color: color-mix(in srgb, var(--accento) 45%, var(--bordo-forte)); }
 
 /* Cattura: FAB solo su mobile (su desktop c'è il pulsante in sidebar) */
 
@@ -1878,11 +1867,11 @@ input.sc-nascosta {
 }
 /* "già in agenda": si vede a colpo d'occhio che qualcosa è stato pianificato */
 .q-chips { display: flex; flex-wrap: wrap; gap: 7px; }
-/* PASTIGLIE — .chip, .q-chip, .att-chip, .chip-tempo, .giorno-chip erano
+/* PASTIGLIE — .chip, .q-chip, .att-chip, .giorno-chip erano
    cinque forme diverse (31, 33, 34, 35px di altezza; pesi 600, 620, 650, 700).
    Adesso hanno tutte la stessa misura e lo stesso peso: cambia solo cosa
    dicono. */
-.q-chip, .att-chip, .chip-tempo {
+.q-chip, .att-chip {
   min-height: var(--h-btn-s); display: inline-flex; align-items: center; justify-content: center;
   font-size: 13px; font-weight: 700;
 }
@@ -2085,20 +2074,6 @@ select.agg-sel-area { width: auto; max-width: 190px; flex: 0 1 auto; font-size: 
   .rit-corpo > .card + .card { margin: 0 10px 12px; }
 }
 
-/* la riga del rituale di adesso, dentro «Oggi»: un tocco, e sa già quale */
-.rit-adesso {
-  display: inline-flex; align-items: center; gap: 9px; align-self: center;
-  min-height: 42px; padding: 0 14px; margin-top: 2px;
-  border-radius: var(--r-tondo); border: 1px solid var(--bordo-forte);
-  background: var(--superficie-1); color: var(--inchiostro-1);
-  font-size: 13.5px; box-shadow: var(--e1);
-  transition: border-color var(--t-veloce), transform var(--t-veloce), box-shadow var(--t-media);
-}
-.rit-adesso:hover { transform: translateY(-1px); box-shadow: var(--e2); border-color: color-mix(in srgb, var(--accento) 40%, var(--bordo-forte)); }
-.rit-adesso b { font-weight: 700; }
-.rit-adesso > .ico:first-child { color: var(--inchiostro-2); }
-.rit-adesso > .ico:last-child { color: var(--inchiostro-muto); }
-@media (pointer: coarse) { .rit-adesso { min-height: 44px; } }
 
 /* ---------- la giornata: griglia oraria a blocchi ---------- */
 
@@ -2566,10 +2541,7 @@ body.sto-trascinando { cursor: grabbing; user-select: none; -webkit-user-select:
     width: 44px; height: 44px;
   }
   /* tornate qui dopo essere finite sotto la scure del codice morto */
-  /* le pastiglie del timer («25′») restavano larghe 43.58: il padding non
-     arrivava, e mancava il minimo in larghezza */
-  .att-chip, .q-chip, .chip-tempo { min-height: 44px; }
-  .chip-tempo { min-width: 44px; justify-content: center; }
+  .att-chip, .q-chip { min-height: 44px; }
   /* anche l'etichetta che si apre è un comando: stava a 34px */
   .lista-eti-btn { min-height: 44px; }
   .ap-campo input[type="date"] { min-height: 44px; font-size: 15px; }

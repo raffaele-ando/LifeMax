@@ -1445,21 +1445,6 @@
        tocchi più una scelta fra cinque schede, e il check-in si fa più volte
        al giorno. Compare solo se non è ancora stato fatto: appena lo fai
        sparisce e non chiede più niente. */
-    function rigaRitualeAdesso() {
-      var rid = ritualeDellOra();
-      var st = statoRituale(rid);
-      /* Il mattino e le review si fanno una volta: quando sono fatte la riga
-         sparisce. Il check-in no — si fa più volte al giorno, quindi resta e
-         al posto di «adesso» dice quanti ne hai già fatti. */
-      if (st.fatto && rid !== 'checkin') return '';
-      var r = RITUALI.filter(function (x) { return x.id === rid; })[0];
-      return '<button class="rit-adesso" data-vai="rituali" data-sub="' + rid + '">' +
-        ICO(r.ico, 15) + '<b>' + r.nome + '</b>' +
-        (st.fatto ? '<span class="rit-stato fatto">' + ICO('check', 13) + ' ' + st.testo + '</span>'
-                  : '<span class="rit-ora">adesso</span>') +
-        ICO('arrowRight', 15) + '</button>';
-    }
-    var ritAdesso = rigaRitualeAdesso();
 
     /* il contatore è UNO, e sta qui: prima lo stesso fatto era scritto tre
        volte — il chip in cima, «Dopo questa hai ancora N azioni» in fondo con
@@ -1511,6 +1496,7 @@
     var area = areaById(prossima.areaId);
     var colArea = LM.coloreArea(area);
     var timerAttivo = timer.azioneId === prossima.id && timer.fine;
+    var minTimer = Math.max(1, Math.min(180, +(prossima.durata || 0) || 25));
     var xpPrevisti = prossima.mit ? LM.XP_EVENTI.mit : LM.XP_EVENTI.azione;
 
     /* l'occhiello dice PERCHÉ è questa la cosa adesso, legando Oggi al piano
@@ -1561,21 +1547,28 @@
           '<div class="timer-eti">restano</div></div></div>'
         : '') +
       '<div class="focus-azione">' + esc(prossima.testo) + '</div>' +
+      /* L'area si LEGGE, non si cambia da qui: era una tendina, cioè un
+         comando, su una schermata che ne deve avere il meno possibile — e
+         l'area di una cosa la si sistema già dalla riga in «Da fare», da
+         quella nella «Giornata» e dal diario. Qui serve solo a dire di cosa
+         stiamo parlando. */
       '<div class="focus-area" style="--c-area:' + colArea + '">' +
-      segnoArea(area, 15) +
-      selectAreaAzione(prossima.id, prossima.areaId) + '</div>' +
+      segnoArea(area, 15) + '<span>' + esc(area.nome) + '</span></div>' +
       (prossima.ifThen ? '<div class="focus-ifthen">' + ICO('ancora', 15) + '<span>' + esc(prossima.ifThen) + '</span></div>' : '') +
       /* gerarchia chiara: un'unica azione dominante, il resto recede */
       '<div class="focus-primaria">' +
       '<button class="btn btn-ok btn-grande" id="btn-fatto">' + ICO('check', 18) + ' Fatto <small>+' + xpPrevisti + ' XP</small></button>' +
       '</div>' +
       '<div class="focus-secondarie">' +
+      /* Un tasto, non quattro. «Timer 25′ 10′ 50′» erano tre bersagli su otto
+         di tutta la schermata: il cronometro pesava come l'azione. E la
+         durata era una scelta in più da fare PRIMA di cominciare, quando è
+         già scritta sulla cosa stessa — quella che si dà nella «Giornata»
+         trascinando un blocco. Se non c'è, venticinque minuti. */
       (timerAttivo
         ? '<button class="btn btn-mini" id="btn-stop-timer">' + ICO('pause', 15) + ' Ferma e registra</button>'
-        : '<span class="timer-gruppo">' + ICO('play', 15) + ' Timer' +
-          '<button class="chip-tempo" data-min="25" id="btn-timer">25′</button>' +
-          '<button class="chip-tempo" data-min="10">10′</button>' +
-          '<button class="chip-tempo" data-min="50">50′</button></span>') +
+        : '<button class="btn btn-mini" id="btn-timer" data-min="' + minTimer + '">' +
+          ICO('play', 15) + ' Timer ' + minTimer + '′</button>') +
       '<button class="btn btn-mini btn-ghost" id="btn-nonora">Più tardi ' + ICO('arrowRight', 15) + '</button>' +
       '</div>' +
       /* Quante ne restano lo dice già il contatore in cima e il tasto delle
@@ -1583,14 +1576,8 @@
          chiude la giornata. Il promemoria del tasto per annotare si vede solo
          da tastiera e solo se non c'è un rituale da fare: un rituale vale più
          del ripasso di una scorciatoia. */
-      ((inCoda > 0 && ritAdesso) ? '' :
-        '<div class="focus-coda">' +
-        (inCoda > 0 ? '' : '<span>È l’ultima di oggi.</span>') +
-        (ritAdesso ? '' :
-          (inCoda > 0 ? '' : '<span class="solo-tastiera">·</span>') +
-          '<span class="solo-tastiera">Premi <kbd>C</kbd> per aggiungere una nota.</span>' +
-          '<span class="solo-tocco">Tocca <b>+</b> per aggiungere una nota.</span>') +
-        '</div>') + ritAdesso +
+      (inCoda > 0 ? '' :
+        '<div class="focus-coda"><span>È l’ultima di oggi.</span></div>') +
       altreHtml +
       '</div>';
 
@@ -1646,9 +1633,8 @@
         render();
       });
     } else {
-      $vista.querySelectorAll('.chip-tempo').forEach(function (b) {
-        b.addEventListener('click', function () { avviaTimer(prossima.id, +b.getAttribute('data-min')); });
-      });
+      var bt = document.getElementById('btn-timer');
+      if (bt) bt.addEventListener('click', function () { avviaTimer(prossima.id, minTimer); });
     }
   }
 
@@ -4892,6 +4878,15 @@
      sopra: prima leggi dove sei, poi vedi cos'altro c'è dentro. Se la porta
      ha una schermata sola (Attività) non compare niente — una linguetta che
      non porta da nessuna parte è solo un'altra cosa da guardare. */
+  /* C'è un rituale da fare in questo momento? Il mattino e le review si fanno
+     una volta e poi sono fatte; il check-in si può rifare, quindi conta come
+     «da fare» solo se non l'hai ancora fatto oggi. */
+  function rituliDaFare() {
+    var rid = ritualeDellOra();
+    var st = statoRituale(rid);
+    return !st.fatto;
+  }
+
   function sottoNav(v) {
     /* SOLO la riga che ha creato questa funzione: `.sez-nav` è la classe
        condivisa dello stile e ce l'hanno anche le linguette proprie di
@@ -4929,9 +4924,15 @@
          solo la parola, e la riga di linguette non somigliava a nessuna
          delle altre due navigazioni. */
       var vi = vistaById(x.id);
+      /* Se in «Rituali» c'è qualcosa da fare adesso, lo dice una pastiglia
+         sulla linguetta. Prima lo diceva un pulsante in fondo alla schermata
+         («Check-in — adesso →»), che portava esattamente dove porta questa
+         linguetta: un bersaglio in più e l'ultimo doppione rimasto. Il numero
+         sta dove sta la destinazione, come per «Attività». */
+      var bollo = (x.id === 'rituali' && x.id !== v && rituliDaFare()) ? '<span class="att-badge">1</span>' : '';
       return '<a class="' + (x.id === v ? 'attivo' : '') + '" href="#/' + x.id + '"' +
         (x.id === v ? ' aria-current="page"' : '') + '>' +
-        '<span class="seg-ico">' + ((vi && vi.icona) ? ICO(vi.icona, 15) : '') + '</span>' +
+        '<span class="seg-ico">' + ((vi && vi.icona) ? ICO(vi.icona, 15) : '') + bollo + '</span>' +
         '<span class="seg-eti">' + x.eti + '</span></a>';
     }).join('');
     var tb = $vista.querySelector('.topbar');

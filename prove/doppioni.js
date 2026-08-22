@@ -213,13 +213,11 @@ const SCENE = [
     console.log('  ' + s.nome + ': ' + effetti.length + ' comandi provati');
   }
 
-  /* Un doppione conosciuto e tenuto di proposito: in Oggi la pastiglia che
-     annuncia il rituale di adesso porta dove porta la linguetta «Rituali».
-     È l'unico invito esplicito a fare il rituale, e vale più della regola. */
-  const AMMESSI = [
-    { scena: 'Oggi', chi: ['«Rituali» []', '«Le azioni di oggiadesso» [rit-adesso]'] },
-    { scena: 'Oggi', chi: ['«Rituali» []', '«Check-in adesso» [rit-adesso]'] }
-  ];
+  /* Nessun doppione tenuto di proposito. Ce n'era uno — in Oggi la pastiglia
+     che annunciava il rituale di adesso portava dove porta la linguetta
+     «Rituali» — e alla fine è caduto anche quello: il segnale è passato su
+     una pastiglia numerata sulla linguetta, cioè dove sta la destinazione. */
+  const AMMESSI = [];
   const ammesso = t => AMMESSI.some(a => a.scena === t.scena && a.chi.length === t.chi.length &&
     a.chi.every(c => t.chi.includes(c)));
 
