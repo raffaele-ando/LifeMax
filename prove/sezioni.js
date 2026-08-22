@@ -70,6 +70,20 @@ await p.waitForTimeout(700);
 z=await sopravvissuti();
 ok('spuntando una cosa non si rifà niente fuori', Object.values(z).every(v=>v==='—'||v.split('/')[0]===v.split('/')[1]), JSON.stringify(z));
 
+console.log('\nLA RIGA DELLE SEZIONI NON SPARISCE MAI');
+/* aprendo «le altre» si ridisegnava tutta la vista senza rimettere la riga:
+   restava senza fino al ridisegno successivo */
+await p.evaluate(()=>{localStorage.clear();LM.seedDemo();
+  ['Rispondere alla mail del prof','Prep pasti per domani'].forEach(t=>LM.aggiungiAzione(t,'altro',{}));});
+await p.evaluate(()=>{location.hash='#/oggi';});await p.reload();await p.waitForTimeout(800);
+const rigaCe = () => p.evaluate(()=>{const r=document.querySelector('#vista .porta-nav');
+  return !!r && r.getBoundingClientRect().height>1 && r.querySelectorAll('a').length;});
+ok('c’è prima di aprire le altre', (await rigaCe())===3, String(await rigaCe()));
+await p.evaluate(()=>{const b=document.getElementById('btn-altre');if(b)b.click();});await p.waitForTimeout(700);
+ok('c’è ancora dopo averle aperte', (await rigaCe())===3, String(await rigaCe()));
+await p.evaluate(()=>{const b=document.getElementById('btn-altre');if(b)b.click();});await p.waitForTimeout(700);
+ok('e dopo averle richiuse', (await rigaCe())===3, String(await rigaCe()));
+
 console.log('\nUNA SOLA FORMA PER LE BARRE DI SEZIONE');
 const forme = {};
 for (const v of ['oggi','giornata','inbox','plancia']) {

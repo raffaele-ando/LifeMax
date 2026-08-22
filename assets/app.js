@@ -1605,7 +1605,11 @@
     });
 
     var btnAltre = document.getElementById('btn-altre');
-    if (btnAltre) btnAltre.addEventListener('click', function () { mostraAltre = !mostraAltre; vistaFocus(); });
+    /* passa da render(), non da vistaFocus(): questa funzione riscrive TUTTO
+       $vista, riga delle sezioni compresa, e solo render() la rimette. Aprendo
+       «le altre» la riga spariva fino al ridisegno successivo. Con la pagina
+       che non cambia, render() conserva lo scorrimento e non anima niente. */
+    if (btnAltre) btnAltre.addEventListener('click', function () { mostraAltre = !mostraAltre; render(); });
     var btnTorna = document.getElementById('btn-torna-piano');
     if (btnTorna) btnTorna.addEventListener('click', function () { fuocoScelto = null; render(); });
     $vista.querySelectorAll('[data-fa-fuoco]').forEach(function (b) {
