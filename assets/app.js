@@ -327,6 +327,9 @@
   $sideCatt.querySelector('.cattura-cta-testo').innerHTML = ICO('bolt', 15) + ' Aggiungi una nota';
   $sideCatt.addEventListener('click', apriCattura);
   $ovl.addEventListener('click', function (e) { if (e.target === $ovl) chiudiCattura(); });
+  /* col dito non c'era NESSUNA via d'uscita visibile: toccare fuori funziona
+     ma non si vede, e la nota che parlava di «Esc» era per la tastiera */
+  document.getElementById('cattura-chiudi').addEventListener('click', chiudiCattura);
   function salvaCattura() {
     var t = $inp.value.trim();
     if (!t) return;
@@ -354,6 +357,7 @@
   var $sheet = document.getElementById('sheet-overlay');
   document.getElementById('sheet-chiudi').innerHTML = ICO('x', 18);
   document.getElementById('sheet-chiudi').addEventListener('click', chiudiSheet);
+  document.getElementById('sheet-indietro').addEventListener('click', tornaIndietroSheet);
   /* la maniglia è il comando di chiusura col dito: si trascina giù, e se la
      si tocca chiude. Non è una decorazione accanto a una x. */
   document.getElementById('sheet-maniglia').addEventListener('click', chiudiSheet);
@@ -507,14 +511,26 @@
     $sheet.addEventListener('pointercancel', fine);
   })();
 
-  function apriSheet(titolo, html, onWire, largo) {
+  /* Come si torna da dove si è entrati. Cinque pannelli si aprono da dentro
+     un altro — «Le tue aree», «Sonno e pasti», «Backup», «Come si usa»,
+     «Cosa sta succedendo» tutti da «Impostazioni» — e finora non c'era modo
+     di tornare indietro: chiudevi e riaprivi. Chi apre un pannello dice come
+     si riapre lui, e da lì in poi il ritorno è automatico. */
+  var pilaSheet = [];
+  var riapriCorrente = null;
+  var staTornandoSheet = false;
+
+  function apriSheet(titolo, html, onWire, largo, riapri) {
     /* Un pannello che ne apre un altro (impostazioni → «le tue aree») non è
        un secondo pannello: è lo stesso foglio con dentro un'altra cosa. Se
        si entrasse di nuovo nella modalità, la pila si riempirebbe di un
        livello che nessuno toglie e il resto dell'app resterebbe inerte —
        cioè non cliccabile — per sempre. */
     var giaAperto = !$sheet.hidden;
-    document.getElementById('sheet-titolo').textContent = titolo;
+    if (!giaAperto) pilaSheet = [];
+    else if (!staTornandoSheet && riapriCorrente) pilaSheet.push(riapriCorrente);
+    riapriCorrente = riapri || null;
+    scriviTestaSheet(titolo);
     document.getElementById('sheet-corpo').innerHTML = html;
     if ($sheetPanel) $sheetPanel.classList.toggle('sheet-largo', !!largo);
     $sheet.hidden = false;
@@ -523,6 +539,35 @@
     if (wireSheet) wireSheet(document.getElementById('sheet-corpo'));
     if (giaAperto) { if ($sheetPanel) { $sheetPanel.scrollTop = 0; $sheetPanel.focus({ preventScroll: true }); } }
     else entraFuoco($sheetPanel);
+  }
+
+  /* la testa del pannello: il nome di dove sei, e — se ci sei entrato da un
+     altro pannello — la via per tornare da dove venivi. Il nome del posto di
+     prima sta scritto sul tasto: «‹ Impostazioni» dice dove torni, una
+     freccia sola no. */
+  function scriviTestaSheet(titolo) {
+    var t = document.getElementById('sheet-titolo');
+    var b = document.getElementById('sheet-indietro');
+    t.textContent = titolo;
+    if (!b) return;
+    if (pilaSheet.length) {
+      var dove = pilaSheet[pilaSheet.length - 1];
+      b.hidden = false;
+      b.innerHTML = ICO('chevronGiu', 15) + '<span>' + esc(dove.nome || 'Indietro') + '</span>';
+      b.setAttribute('aria-label', 'Torna a ' + (dove.nome || 'indietro'));
+    } else {
+      b.hidden = true;
+      b.innerHTML = '';
+    }
+  }
+
+  function tornaIndietroSheet() {
+    if (!pilaSheet.length) { chiudiSheet(); return; }
+    var dove = pilaSheet.pop();
+    riapriCorrente = null;
+    staTornandoSheet = true;
+    dove.apri();
+    staTornandoSheet = false;
   }
   /* Il nome di una cosa si cambia dove lo si legge: nel titolo del
      pannello. Prima c'era una riga «Nome» con dentro un campo, cioè lo
@@ -1084,7 +1129,12 @@
         /* il title non basta: col dito non esiste e con la voce l'icona è
            aria-hidden, quindi questi otto tasti non avevano nome — e nemmeno
            dicevano DI QUALE area erano */
-        '<button class="icona-btn' + (attiva ? ' on' : '') + '" data-toggle-area="' + a.id + '"' +
+        /* «acceso», non «fatto»: il verde pieno in tutta l'app vuol dire che
+           una cosa è finita, e otto spunte verdi in colonna facevano sembrare
+           questa una lista di cose completate invece dell'interruttore di
+           ognuna. Cambia il colore, non il segno — provata anche la presa, ma
+           quel puntinato si legge come «trascina per riordinare». */
+        '<button class="icona-btn area-on' + (attiva ? ' on' : '') + '" data-toggle-area="' + a.id + '"' +
         ' aria-pressed="' + (attiva ? 'true' : 'false') + '"' +
         ' aria-label="' + esc(a.nome) + ': ' + (attiva ? 'attiva, tocca per disattivarla' : 'disattivata, tocca per attivarla') + '"' +
         ' title="' + (attiva ? 'Attiva (tocca per disattivare)' : 'Disattivata (tocca per attivare)') + '">' + ICO(attiva ? 'check' : 'x', 15) + '</button>' +
@@ -1095,9 +1145,18 @@
     apriSheet('Le tue aree',
       '<div class="imp-nota" style="margin-top:0">Rinomina, disattiva o rimuovi le aree, oppure creane di tue (es. i tuoi progetti). Rimuovendo un’area, le sue attività passano ad «Altro»: nulla va perso.</div>' +
       '<div class="aree-lista">' + righe + '</div>' +
+      /* Prima il nome, poi il segno — e il segno si vede solo quando hai
+         cominciato a scrivere. Quattordici tasti icona stavano sempre aperti
+         per un'area che non avevi ancora deciso di creare: metà dei comandi
+         della schermata erano per una cosa che non esiste. È lo stesso
+         comportamento della riga d'aggiunta di tutta l'app, che scopre le sue
+         opzioni al primo tasto premuto.
+         E «Aggiungi» scende al tono intermedio: questa è la schermata dove si
+         sistemano le aree che HAI, non dove se ne fanno di nuove, e l'unico
+         tasto pieno diceva il contrario. */
       '<div class="imp-sezione"><div class="imp-eti">Nuova area</div>' +
-      '<div class="ico-picker" id="ico-picker">' + picker + '</div>' +
-      '<form class="riga-flex mt-s" id="area-nuova"><input type="text" id="area-nuova-nome" placeholder="Nome della nuova area…" style="flex:1;min-width:150px"><button class="btn btn-mini btn-primario" type="submit">' + ICO('plus', 13) + ' Aggiungi</button></form></div>',
+      '<form class="riga-flex" id="area-nuova"><input type="text" id="area-nuova-nome" placeholder="Nome della nuova area…" style="flex:1;min-width:150px"><button class="btn btn-mini btn-tinta" type="submit">' + ICO('plus', 13) + ' Aggiungi</button></form>' +
+      '<div class="ico-picker mt-s" id="ico-picker" hidden>' + picker + '</div></div>',
       function (r) {
         var icoSel = ICONE_AREA[0];
         r.querySelectorAll('[data-rin]').forEach(function (inp) {
@@ -1114,6 +1173,11 @@
               azione: 'Rimuovi', pericolo: true
             }, function () { LM.rimuoviArea(b.getAttribute('data-del-area')); render(); apriAree(); });
           });
+        });
+        var campoNuova = r.querySelector('#area-nuova-nome');
+        var pick = r.querySelector('#ico-picker');
+        campoNuova.addEventListener('input', function () {
+          pick.hidden = !campoNuova.value.trim();
         });
         r.querySelectorAll('.ico-pick').forEach(function (b) {
           b.addEventListener('click', function () { r.querySelectorAll('.ico-pick').forEach(function (x) { x.classList.remove('sel'); }); b.classList.add('sel'); icoSel = b.getAttribute('data-ico'); });
@@ -1170,7 +1234,8 @@
   }
 
   function apriImpostazioni() {
-    apriSheet('Impostazioni', htmlAccount() + htmlAspetto() + htmlDati(), wireAspettoDati);
+    apriSheet('Impostazioni', htmlAccount() + htmlAspetto() + htmlDati(), wireAspettoDati, false,
+      { nome: 'Impostazioni', apri: apriImpostazioni });
   }
 
   function apriMenuAltro() {
@@ -3606,6 +3671,9 @@
     function trova() { return LM.load().abitudini.find(function (x) { return x.id === id; }); }
     var h0 = trova();
     if (!h0) return;
+    /* chiusa ogni volta che si apre la scheda: aprirla è una decisione, non
+       una preferenza da ricordare */
+    var abdApertaConfig = false;
 
     function corpoHtml() {
       var h = trova();
@@ -3651,7 +3719,18 @@
         '</div>' +
         catena +
         '<p class="abd-nota">Tocca un giorno passato se te ne sei ricordato dopo.</p>' +
-        '<hr class="separatore">' +
+        /* Come è impostata: chiusa, finché non la si vuole cambiare.
+           Questo pannello faceva tre cose in una sola colonna da quaranta
+           comandi — spuntare l'abitudine di oggi, guardare come sta andando,
+           e cambiarne le regole — mentre la ragione per cui lo si apre è
+           quasi sempre la prima. Le regole si mettono una volta e poi non si
+           toccano più: stanno dietro una riga, come le altre di oggi in
+           «Adesso» e come il selettore dei segni nelle aree. Anche
+           «Elimina» sta qui dentro: è raro e non si torna indietro. */
+        '<button class="lista-eti lista-eti-btn" id="abd-piu" aria-expanded="' + (abdApertaConfig ? 'true' : 'false') + '" aria-controls="abd-config">' +
+        ICO('ingranaggio', 13) + 'Come è impostata' +
+        '<span class="lista-chev' + (abdApertaConfig ? ' aperta' : '') + '">' + ICO('chevronGiu', 15) + '</span></button>' +
+        '<div id="abd-config"' + (abdApertaConfig ? '' : ' hidden') + '>' +
         '<label class="campo" for="abd-nome">Nome</label>' +
         '<input type="text" id="abd-nome" value="' + esc(h.testo) + '">' +
         '<label class="campo">Quando ripeterla</label>' +
@@ -3680,6 +3759,7 @@
         (h.a ? '<button class="btn btn-mini btn-ghost" id="abd-nofine">Senza fine</button>' : '<span class="ap-nota">vuoto = senza fine</span>') +
         '</div>' +
         '<div class="abd-fondo"><button class="btn btn-mini btn-ghost imp-pericolo" id="abd-del">' + ICO('trash', 15) + ' Elimina l’abitudine</button></div>' +
+        '</div>' +
         '</div>';
     }
 
@@ -3694,6 +3774,14 @@
     function collega(root) {
       var h = trova();
       if (!h) { chiudiSheet(); if (dopo) dopo(); return; }
+      var piu = root.querySelector('#abd-piu');
+      if (piu) piu.addEventListener('click', function () {
+        abdApertaConfig = !abdApertaConfig;
+        var box = root.querySelector('#abd-config');
+        box.hidden = !abdApertaConfig;
+        piu.setAttribute('aria-expanded', abdApertaConfig ? 'true' : 'false');
+        piu.querySelector('.lista-chev').classList.toggle('aperta', abdApertaConfig);
+      });
       var f = root.querySelector('#abd-fatta');
       if (f) f.addEventListener('click', function (ev) {
         feedbackSpunta(ev, LM.completaAbitudine(id), 'Fatta. Continua così', 'flame');

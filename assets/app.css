@@ -185,6 +185,12 @@ body {
 
 /* Le immagini e i grafici non superano mai il contenitore */
 img, svg, canvas, video { max-width: 100%; }
+/* `hidden` deve nascondere, sempre. È un attributo che il browser rende con
+   `display: none`, ma qualunque regola d'autore che dà un display lo batte:
+   il selettore delle icone (`display: flex`) restava aperto anche con
+   l'attributo messo, e la via del ritorno (`inline-flex`) restava un
+   bersaglio da 44px vuoto nella testa del pannello. */
+[hidden] { display: none !important; }
 
 /* Il testo va sempre a capo: nessuna parola lunghissima (URL, token)
    può forzare la larghezza della pagina */
@@ -949,10 +955,14 @@ select.sel-compatto {
   padding: var(--s3) var(--s4); margin-top: 0;
   font-size: 12px; color: var(--inchiostro-muto);
 }
-@media (max-width: 520px) {
-  /* sul telefono la nota sulle categorie è superflua: lo spazio serve al campo */
-  .pannello-cattura .piede span[style] { display: none; }
+.pannello-cattura .piede span { min-width: 0; }
+.cattura-chiudi {
+  position: relative;
+  margin-left: auto; flex: none;
+  font-size: 12px; font-weight: 750; color: var(--accento-testo);
+  background: none; border: 0; padding: 0; cursor: pointer;
 }
+.cattura-chiudi:hover { text-decoration: underline; }
 
 
 /* ---------- toast & particelle ---------- */
@@ -1262,7 +1272,22 @@ textarea.sheet-titolo-inp {
   line-height: inherit; display: block;
 }
 textarea.sheet-titolo-inp:focus { box-shadow: none; outline: 2px solid var(--accento); outline-offset: 3px; border-radius: var(--r-1); }
-.sheet-testa { display: flex; align-items: center; justify-content: space-between; padding: 10px 0 6px; position: sticky; top: 0; background: var(--superficie-1); z-index: 1; }
+.sheet-testa { display: flex; align-items: center; justify-content: space-between; gap: var(--s2); padding: 10px 0 6px; position: sticky; top: 0; background: var(--superficie-1); z-index: 1; }
+.sheet-testa-sx { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; min-width: 0; }
+/* La via del ritorno sta SOPRA il nome del posto, non accanto: sopra si legge
+   come «vengo da lì», accanto sembrerebbe un secondo titolo. Porta il nome
+   del posto da cui vieni, perché una freccia sola non dice dove torni. */
+.sheet-indietro {
+  position: relative;
+  display: inline-flex; align-items: center; gap: 3px;
+  font-size: 12px; font-weight: 750; color: var(--accento-testo);
+  background: none; border: 0; padding: 0; cursor: pointer; max-width: 100%;
+}
+.sheet-indietro span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* la freccia del chevron guarda a sinistra: è la stessa figura del resto
+   dell'app, girata di un quarto */
+.sheet-indietro .ico { transform: rotate(90deg); flex: none; }
+.sheet-indietro:hover { text-decoration: underline; }
 
 /* TASTI-ICONA — stessa misura e stesso angolo in tutta l'app (34px, r-1):
    prima erano 22, 24, 27, 32, 34 e con tre raggi diversi. */
@@ -2120,6 +2145,14 @@ select.agg-sel-area { width: auto; max-width: 190px; flex: 0 1 auto; font-size: 
 .icona-btn { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: var(--r-1); color: var(--inchiostro-muto); border: 1px solid var(--bordo); background: var(--superficie-1); transition: all var(--t-veloce); }
 .icona-btn:hover { color: var(--accento); border-color: color-mix(in srgb, var(--accento) 40%, var(--bordo-forte)); }
 .icona-btn.on { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 45%, transparent); background: color-mix(in srgb, var(--ok) 10%, transparent); }
+/* «acceso», non «fatto». Il verde in tutta l'app vuol dire che una cosa è
+   finita: otto spunte verdi in colonna facevano sembrare l'elenco delle aree
+   una lista di cose completate, invece dell'interruttore di ognuna. */
+.icona-btn.area-on.on {
+  color: var(--accento-testo);
+  border-color: color-mix(in srgb, var(--accento) 45%, transparent);
+  background: color-mix(in srgb, var(--accento) 13%, transparent);
+}
 
 /* AREE DI TOCCO: 30x30 con 6px di distanza è meno della punta di un dito
    (~45px): si finiva per premere il pulsante accanto. Col dito (pointer
@@ -2651,7 +2684,7 @@ body.sto-trascinando { cursor: grabbing; user-select: none; -webkit-user-select:
      card e si mangia i clic di tutto quello che ha intorno. È successo
      davvero, per una riga di CSS cancellata insieme a codice morto: da
      allora c'è anche una prova che lo controlla (clic.js). */
-  .riga-azione .spunta::after, .lista-azione::after, .tl-check::after, .diario-annulla::after {
+  .riga-azione .spunta::after, .lista-azione::after, .tl-check::after, .diario-annulla::after, .sheet-indietro::after, .cattura-chiudi::after {
     content: ''; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
     width: 44px; height: 44px;
   }

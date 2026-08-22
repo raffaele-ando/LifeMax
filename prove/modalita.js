@@ -56,6 +56,31 @@ for (const [nome, apri] of PANNELLI) {
     ok(nome+' — chiuso con '+comeC, !fuori.inerte && !fuori.fermo && fuori.tabRaggiungibile && !fuori.aperto, JSON.stringify(fuori));
   }
 }
+/* LA VIA DEL RITORNO
+   Cinque pannelli si aprono da dentro «Impostazioni» e finora non c'era modo
+   di tornare indietro: chiudevi e riaprivi. Il tasto deve esserci, deve dire
+   il nome del posto da cui vieni, e deve riportarti lì (non chiudere tutto). */
+console.log('');
+for (const [nome, apri] of PANNELLI.filter(x=>/→/.test(x[0]))) {
+  await apri(); await p.waitForTimeout(700);
+  const dentro=await p.evaluate(()=>{const b=document.getElementById('sheet-indietro');
+    const r=b?b.getBoundingClientRect():null;
+    return {tit:(document.getElementById('sheet-titolo')||{}).textContent,
+      testo:b?b.textContent.replace(/\s+/g,' ').trim():null,
+      visibile:!!(r&&r.width>2&&r.height>2)};});
+  if (!dentro.visibile) { ok(nome+' — la via del ritorno', false, 'nessun tasto indietro (titolo: '+dentro.tit+')'); continue; }
+  await p.evaluate(()=>document.getElementById('sheet-indietro').click());
+  await p.waitForTimeout(700);
+  const tornato=await p.evaluate(()=>({tit:(document.getElementById('sheet-titolo')||{}).textContent,
+    aperto:!document.getElementById('sheet-overlay').hidden,
+    indietro:!document.getElementById('sheet-indietro') || document.getElementById('sheet-indietro').hidden}));
+  ok(nome+' — «'+dentro.testo+'» riporta al pannello di prima',
+    tornato.aperto && /Impostazioni/.test(tornato.tit||'') && tornato.indietro,
+    JSON.stringify(tornato));
+  await p.evaluate(()=>{const c=document.getElementById('sheet-chiudi');if(c)c.click();});
+  await p.waitForTimeout(400);
+}
+
 /* e l'avviso sopra un pannello */
 await vaiA('oggi');
 await p.evaluate(()=>{const b=[...document.querySelectorAll('button')].find(x=>/impostazioni/i.test(x.getAttribute('aria-label')||x.title||x.textContent));b.click();});

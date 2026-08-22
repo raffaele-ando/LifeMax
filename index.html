@@ -58,7 +58,15 @@
          tocca), col mouse la x. Averle entrambe insieme erano due comandi
          per la stessa cosa nello stesso angolo. -->
     <button class="sheet-maniglia" id="sheet-maniglia" aria-label="Chiudi"></button>
-    <div class="sheet-testa"><h2 id="sheet-titolo"></h2><button class="sheet-chiudi" id="sheet-chiudi" aria-label="Chiudi"></button></div>
+    <!-- se sei entrato qui da un altro pannello, la via del ritorno porta
+         scritto il nome del posto da cui vieni -->
+    <div class="sheet-testa">
+      <div class="sheet-testa-sx">
+        <button class="sheet-indietro" id="sheet-indietro" hidden></button>
+        <h2 id="sheet-titolo"></h2>
+      </div>
+      <button class="sheet-chiudi" id="sheet-chiudi" aria-label="Chiudi"></button>
+    </div>
     <div class="sheet-corpo" id="sheet-corpo"></div>
   </div>
 </div>
@@ -70,10 +78,14 @@
       <!-- col dito non c'è nessun tasto Invio a portata: serve un pulsante -->
       <button class="btn btn-primario cattura-salva" id="cattura-salva" type="button">Salva</button>
     </div>
+    <!-- Una nota sola. Le due classi che sceglievano fra tastiera e dito
+         erano rimaste nel markup dopo una ripulitura del CSS, quindi sul
+         telefono si leggeva «Invio salva nell'inbox · Esc chiude»: le
+         istruzioni per due tasti che lì non esistono. Quello che serve
+         sapere è dove finisce la nota, e vale in tutti i casi. -->
     <div class="piede">
-      <span class="solo-tastiera"><kbd>Invio</kbd> salva nell'inbox &nbsp;·&nbsp; <kbd>Esc</kbd> chiude</span>
-      <span class="solo-tocco">Finisce tra le cose da sistemare.</span>
-      <span style="margin-left:auto">Niente categorie adesso: le sceglierai più tardi.</span>
+      <span>Finisce tra le cose da sistemare.</span>
+      <button type="button" class="cattura-chiudi" id="cattura-chiudi">Chiudi</button>
     </div>
   </div>
 </div>

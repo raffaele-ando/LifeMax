@@ -15,7 +15,10 @@ rompe. Sono nati da problemi veri.
   combinazione controlla che niente sia rimasto `inert`, che lo
   scorrimento sia tornato e che la barra in basso riceva i clic. Un
   livello di modalità rimasto appeso non si vede: si scopre solo che
-  l'app non risponde più a niente.
+  l'app non risponde più a niente. Controlla anche la via del ritorno: i
+  cinque pannelli che si aprono da dentro «Impostazioni» devono avere un tasto
+  che porta scritto il nome del posto da cui vieni e che ti riporta lì — non
+  che chiude tutto. Prima non c'era: si chiudeva e si riapriva.
 - **segni.js** — un segno, una cosa. Non guarda i pixel: legge il codice e
   tiene ferme cinque regole. Nessun disegno esiste sotto due nomi; nessun
   segno è invocato senza esistere né disegnato senza servire; un'icona
