@@ -364,13 +364,43 @@
   /* Anima l'ingresso UNA volta e poi toglie la classe: se restasse attaccata,
      ogni elemento ricreato dopo (una spunta, un filtro) ripartirebbe con la
      stessa animazione e sembrerebbe un refresh continuo. */
-  function animaIngresso(el) {
+  /* Cambiare PAGINA e cambiare SEZIONE non sono la stessa cosa, e non devono
+     avere la stessa animazione. Le tre sezioni di «Oggi» (Adesso, La giornata,
+     Rituali) sono tre indirizzi diversi, quindi ogni passaggio finiva in
+     «cambio pagina»: si rialzava tutto a scaglioni, titolo compreso, e anche
+     la riga di linguette che avevi appena toccato — quella spariva e tornava
+     sotto il dito. Settecentocinquanta millisecondi in cui si muove ogni
+     cosa: da fuori è una ricarica. Nelle altre pagine (Attività, Andamento)
+     si anima solo il corpo e l'intestazione sta ferma. Ora fanno tutte così:
+     `sezione` lascia in pace il titolo e le linguette. */
+  /* Scrive solo se il contenuto è davvero cambiato. La colonna a sinistra, la
+     barra in basso e il fondo della colonna venivano ricostruiti a OGNI
+     ridisegno — cioè anche quando spunti una cosa, e la barra in basso è
+     sempre in vista: la pastiglia col numero si buttava via e si rifaceva per
+     tornare identica. Confrontare due stringhe costa niente rispetto a
+     distruggere e ricreare trenta elementi. */
+  function scriviSe(el, html) {
+    if (!el) return false;
+    /* Il confronto è con la stringa che abbiamo scritto NOI, non con
+       `innerHTML` riletto: il browser aggiunge `xmlns` a ogni <svg> quando
+       serializza, e in quest'app di icone ce n'è in ogni riga. Rileggendo, la
+       barra in basso tornava 66 caratteri più lunga di com'era stata scritta,
+       il confronto non era mai vero e il guard non serviva a niente. */
+    if (el.__ultimoHtml === html) return false;
+    el.innerHTML = html;
+    el.__ultimoHtml = html;
+    return true;
+  }
+
+  function animaIngresso(el, sezione) {
     if (!el) return;
+    var cls = sezione ? 'sez-enter' : 'vista-enter';
     el.classList.remove('vista-enter');
+    el.classList.remove('sez-enter');
     void el.offsetWidth;
-    el.classList.add('vista-enter');
+    el.classList.add(cls);
     if (el.__timerAnim) clearTimeout(el.__timerAnim);
-    el.__timerAnim = setTimeout(function () { el.classList.remove('vista-enter'); }, 900);
+    el.__timerAnim = setTimeout(function () { el.classList.remove(cls); }, 900);
   }
 
   /* ---------- modalità ----------
@@ -658,14 +688,13 @@
       return '<a class="nav-item nav-ancora' + (g.id === gCorr.id ? ' attivo' : '') + '" href="#/' + g.viste[0].id + '">' +
         ICO(g.icona, dim) + '<span>' + g.nome + '</span>' + badgeInbox({ id: g.id }, s) + '</a>';
     }
-    lato.innerHTML = tre
+    scriviSe(lato, tre
       ? GRUPPI.map(function (g) { return voceGruppo(g, 18); }).join('')
       : livello('ancora') + livello('quotidiana') +
-        '<div class="nav-sep"></div>' + livello('extra');
+        '<div class="nav-sep"></div>' + livello('extra'));
 
     /* footer sidebar: account + impostazioni */
-    document.getElementById('sidebar-fondo').innerHTML = footerSidebar();
-    wireFooterSidebar();
+    if (scriviSe(document.getElementById('sidebar-fondo'), footerSidebar())) wireFooterSidebar();
 
     /* tab bar mobile. Con le tre porte i pulsanti sono TRE: «Altro» era una
        quarta destinazione che non è una destinazione — un contenitore di cose
@@ -676,7 +705,7 @@
     var tab = document.getElementById('nav-tab');
     var primNav = TAB_MOBILE.map(vistaById);
     var inSecondaria = !tre && !primNav.some(function (v) { return v.id === corrente; });
-    tab.innerHTML = (tre
+    var htmlTab = (tre
       ? GRUPPI.map(function (g) {
         return '<button data-vai="' + g.viste[0].id + '" class="' + (g.id === gCorr.id ? 'attivo' : '') + '">' +
           '<span class="tab-ico">' + ICO(g.icona, 18) + badgeInbox({ id: g.id }, s) + '</span>' + g.nome + '</button>';
@@ -694,13 +723,16 @@
          resta a un dito di distanza, che è tutto quello che deve fare. */
       '<button class="tab-catt" data-catt="1" aria-label="Cattura un pensiero" title="Cattura un pensiero (tasto C)">' +
       ICO('plus', 18) + '</button>';
-    tab.querySelectorAll('[data-vai]').forEach(function (b) {
-      b.addEventListener('click', function () { location.hash = '#/' + b.getAttribute('data-vai'); });
-    });
-    var bMenu = tab.querySelector('[data-menu]');
-    if (bMenu) bMenu.addEventListener('click', apriMenuAltro);
-    var bCatt = tab.querySelector('[data-catt]');
-    if (bCatt) bCatt.addEventListener('click', apriCattura);
+    /* i fili si riattaccano solo se la barra è stata davvero riscritta */
+    if (scriviSe(tab, htmlTab)) {
+      tab.querySelectorAll('[data-vai]').forEach(function (b) {
+        b.addEventListener('click', function () { location.hash = '#/' + b.getAttribute('data-vai'); });
+      });
+      var bMenu = tab.querySelector('[data-menu]');
+      if (bMenu) bMenu.addEventListener('click', apriMenuAltro);
+      var bCatt = tab.querySelector('[data-catt]');
+      if (bCatt) bCatt.addEventListener('click', apriCattura);
+    }
   }
 
   /* ---------- footer sidebar (account + impostazioni) ---------- */
@@ -1334,14 +1366,16 @@
     function misura() {
       document.documentElement.style.setProperty('--banda-h', (banda.offsetHeight || 0) + 'px');
     }
-    if (!s.demo || s.demoChiusa) { banda.innerHTML = ''; misura(); return; }
+    if (!s.demo || s.demoChiusa) { if (scriviSe(banda, '')) misura(); return; }
     /* sul telefono il testo lungo occupava due righe e mangiava mezzo schermo */
-    banda.innerHTML = '<div class="banda-demo"><span>' + ICO('sparkles', 13) +
+    var htmlBanda = '<div class="banda-demo"><span>' + ICO('sparkles', 13) +
       ' <b>Dati di esempio</b><span class="banda-piu">· modifica pure, tutto resta salvato</span></span>' +
       '<button class="banda-x" id="banda-x" aria-label="Nascondi">' + ICO('x', 15) + '</button></div>';
+    /* la banda non cambia mai finché è aperta: la si riscriveva a ogni spunta */
+    if (!scriviSe(banda, htmlBanda)) return;
     misura();
     document.getElementById('banda-x').addEventListener('click', function () {
-      LM.load().demoChiusa = true; LM.save(); banda.innerHTML = ''; misura();
+      LM.load().demoChiusa = true; LM.save(); scriviSe(banda, ''); misura();
     });
   }
 
@@ -2123,9 +2157,13 @@
     var quickAdd = '';
     if (!compact && interactive) {
       var doveAdd = d.isToday ? 'a oggi' : ('a ' + etichettaGiorno(k).toLowerCase());
-      quickAdd = '<form class="tl-add" id="tl-add"><input type="text" id="tl-add-testo" placeholder="Aggiungi qualcosa ' + esc(doveAdd) + '…" aria-label="Aggiungi">' +
-        '<span class="tl-add-area">' + selectAree('tl-add-area') + '</span>' +
-        '<button class="btn btn-mini btn-primario" type="submit">' + ICO('plus', 15) + ' Aggiungi</button></form>';
+      /* l'ultima riga d'aggiunta rimasta col vecchio schema: campo, tendina
+         dell'area sempre aperta e tasto pieno, tutti in fila. Adesso è quella
+         di tutte le altre — cinque schermate, una riga sola. */
+      quickAdd = '<div class="tl-add">' +
+        rigaAggiunta('agg-gio', 'Aggiungi qualcosa ' + doveAdd + '…',
+          '<label class="agg-area"><span class="agg-eti">in</span>' + selectAree('agg-gio-area') + '</label>') +
+        '</div>';
     }
 
     /* sonno e pasti del giorno: UN solo posto, in cima alla pagina, con un
@@ -2226,12 +2264,9 @@
       wireOrizzNav(container, 'giorno');
     }
 
-    var af = container.querySelector('#tl-add');
-    if (af) af.addEventListener('submit', function (e) {
-      e.preventDefault();
-      var t = container.querySelector('#tl-add-testo').value.trim();
-      if (!t) return;
-      LM.aggiungiAzione(t, container.querySelector('#tl-add-area').value, { data: k, mit: LM.serveMit(k) });
+    wireRigaAggiunta(container, 'agg-gio', function (testo, opz) {
+      var sel = opz && opz.querySelector('select');
+      LM.aggiungiAzione(testo, sel ? sel.value : 'altro', { data: k, mit: LM.serveMit(k) });
       montaGiornata(container, opts); aggiornaNav();
     });
 
@@ -2667,11 +2702,16 @@
   function vistaGiornata() {
     if (!giornataAncora) giornataAncora = LM.todayKey();
     function orizz(id, ico, et) {
-      return '<button data-orizz="' + id + '" class="' + (giornataOrizzonte === id ? 'attivo' : '') + '">' +
-        '<span class="seg-ico">' + ICO(ico, 15) + '</span><span class="seg-eti">' + et + '</span></button>';
+      return '<button data-orizz="' + id + '" class="' + (giornataOrizzonte === id ? 'attivo' : '') + '">' + et + '</button>';
     }
     var html = topbar('La giornata', 'Le tue ore, giorno per giorno. Con ‹ › cambi giorno.');
-    html += '<div class="segmenti sez-nav tabs-fisse" id="orizz-nav">' +
+    /* Due gradini, non due controlli diversi. La riga sopra sceglie la SEZIONE
+       della porta (Adesso, La giornata, Rituali): grande, con l'icona. Questa
+       sceglie un VALORE dentro la sezione — quale scala di tempo guardo — ed è
+       la stessa pastiglia compatta di «14 giorni / 30 giorni» e «Cose
+       importanti / Tutto». Quando erano identiche, due file di pastiglie
+       attaccate si leggevano come un unico comando a due righe. */
+    html += '<div class="segmenti mini-seg orizz-nav" id="orizz-nav">' +
       orizz('giorno', 'clock', 'Giorno') + orizz('settimana', 'calendar', 'Settimana') +
       orizz('mese', 'dashboard', 'Mese') + orizz('anno', 'trendUp', 'Anno') + '</div>' +
       '<div id="orizz-corpo"></div>';
@@ -2800,10 +2840,14 @@
 
     /* schede interne: si vede una sezione per volta */
     function segp(id, ico, et) {
-      return '<button data-sez="' + id + '" class="' + (sezPlancia === id ? 'attivo' : '') + '">' +
-        '<span class="seg-ico">' + ICO(ico, 15) + '</span><span class="seg-eti">' + et + '</span></button>';
+      return '<button data-sez="' + id + '" class="' + (sezPlancia === id ? 'attivo' : '') + '">' + et + '</button>';
     }
-    html += '<div class="segmenti sez-nav tabs-fisse" id="sez-plancia">' + segp('riepilogo', 'dashboard', 'Riepilogo') + segp('diario', 'quaderno', 'Diario') + segp('aree', 'sparkles', 'Aree') + segp('andamento', 'trendUp', 'Andamento') + '</div>';
+    /* Una riga di sezione per schermata. Qui la porta «Andamento» ha già la
+       sua (Panoramica / Esperimenti): questa scegle COSA guardare dentro
+       Panoramica, quindi è la pastiglia compatta come «Giorno/Settimana/
+       Mese/Anno» e «14 giorni / 30 giorni». Prima erano due file di pastiglie
+       identiche impilate, e a due pixel di differenza sembrava un errore. */
+    html += '<div class="segmenti mini-seg orizz-nav" id="sez-plancia">' + segp('riepilogo', 'dashboard', 'Riepilogo') + segp('diario', 'quaderno', 'Diario') + segp('aree', 'sparkles', 'Aree') + segp('andamento', 'trendUp', 'Andamento') + '</div>';
     html += '<div id="sez-corpo"></div>';
 
     $vista.innerHTML = html;
@@ -4808,7 +4852,10 @@
      ha una schermata sola (Attività) non compare niente — una linguetta che
      non porta da nessuna parte è solo un'altra cosa da guardare. */
   function sottoNav(v) {
-    var vecchia = $vista.querySelector('.sottonav');
+    /* SOLO la riga che ha creato questa funzione: `.sez-nav` è la classe
+       condivisa dello stile e ce l'hanno anche le linguette proprie di
+       Attività e Andamento — cercandola qui le si cancellava a ogni ridisegno */
+    var vecchia = $vista.querySelector('.porta-nav');
     if (vecchia) vecchia.remove();
     document.documentElement.style.setProperty('--sottonav-h', '0px');
     if (!navTre()) return;
@@ -4825,25 +4872,31 @@
       lista.push({ id: v, eti: (vi && (vi.breve || vi.nome)) || v });
     }
     if (lista.length < 2) return;
+    /* La riga delle sezioni è LA STESSA di tutte le altre pagine. Prima qui
+       c'erano linguette sottolineate e in Attività e Andamento pastiglie a
+       segmenti: due controlli per lo stesso mestiere («scegli una sezione di
+       questa pagina»), e chi li usa non ha modo di sapere che sotto uno ci
+       sono tre indirizzi e sotto l'altro tre pannelli. Il commento di
+       `.segmenti.tabs-fisse` diceva già «vale per TUTTE le barre di sezione»:
+       mancava solo che questa la usasse. */
     var bar = document.createElement('nav');
-    bar.className = 'sottonav';
-    bar.setAttribute('aria-label', 'Schermate di ' + g.nome);
+    bar.className = 'segmenti sez-nav porta-nav tabs-fisse' + (lista.length === 2 ? ' tabs-due' : '');
+    bar.setAttribute('aria-label', 'Sezioni di ' + g.nome);
     bar.innerHTML = lista.map(function (x) {
       /* la stessa icona della barra in basso e della colonna sul desktop: è
          la stessa destinazione, quindi è lo stesso segno. Prima qui c'era
          solo la parola, e la riga di linguette non somigliava a nessuna
          delle altre due navigazioni. */
       var vi = vistaById(x.id);
-      return '<a class="sottonav-voce' + (x.id === v ? ' attiva' : '') + '" href="#/' + x.id + '"' +
+      return '<a class="' + (x.id === v ? 'attivo' : '') + '" href="#/' + x.id + '"' +
         (x.id === v ? ' aria-current="page"' : '') + '>' +
-        ((vi && vi.icona) ? ICO(vi.icona, 15) : '') + x.eti + '</a>';
+        '<span class="seg-ico">' + ((vi && vi.icona) ? ICO(vi.icona, 15) : '') + '</span>' +
+        '<span class="seg-eti">' + x.eti + '</span></a>';
     }).join('');
     var tb = $vista.querySelector('.topbar');
     if (tb) tb.insertAdjacentElement('afterend', bar); else $vista.prepend(bar);
-    /* se le linguette non ci stanno tutte (schermo stretto, «Andamento» ne ha
-       quattro) l'ultima resta tagliata: una sfumatura sul bordo destro dice
-       che si scorre, invece di far sembrare troncata l'interfaccia */
-    if (bar.scrollWidth > bar.clientWidth + 1) bar.classList.add('scorre');
+    /* niente più sfumatura di scorrimento: a colonne uguali la riga ci sta per
+       costruzione a qualunque larghezza, come nelle altre pagine */
     document.documentElement.style.setProperty('--sottonav-h', (bar.offsetHeight + 14) + 'px');
   }
 
@@ -4860,6 +4913,10 @@
     bandaDemo();
     var v = vistaCorrente();
     var cambioPagina = v !== vistaMostrata;
+    /* dentro la stessa porta si cambia sezione, non pagina: è quello che
+       succede fra Adesso, La giornata e Rituali */
+    var cambioSezione = cambioPagina && vistaMostrata &&
+      gruppoDi(v).id === gruppoDi(vistaMostrata).id;
     var scrollPrima = cambioPagina ? 0 : (window.scrollY || document.documentElement.scrollTop || 0);
     if (v === 'oggi') vistaFocus();
     else if (v === 'giornata') vistaGiornata();
@@ -4872,7 +4929,7 @@
     sottoNav(v);
     $vista.classList.toggle('vista-oggi', v === 'oggi');
     vistaMostrata = v;
-    if (cambioPagina) { animaIngresso($vista); window.scrollTo(0, 0); }
+    if (cambioPagina) { animaIngresso($vista, cambioSezione); window.scrollTo(0, 0); }
     else if (scrollPrima) window.scrollTo(0, scrollPrima);
   }
 
@@ -4921,7 +4978,7 @@
   var ultimoErroreSync = '';
   window.addEventListener('lm:sync', function (e) {
     var fondo = document.getElementById('sidebar-fondo');
-    if (fondo && (window.LM_AUTH || {}).user) { fondo.innerHTML = footerSidebar(); wireFooterSidebar(); }
+    if (fondo && (window.LM_AUTH || {}).user && scriviSe(fondo, footerSidebar())) wireFooterSidebar();
     var y = (e && e.detail) || window.LM_SYNC || {};
     if ((y.state === 'error' || y.state === 'muto') && y.error && y.error !== ultimoErroreSync) {
       ultimoErroreSync = y.error;

@@ -1,6 +1,6 @@
 # Prove
 
-Quattro controlli automatici che guardano una cosa sola ciascuno, ma
+Cinque controlli automatici che guardano una cosa sola ciascuno, ma
 quella cosa fa morire l'app — o la fa diventare illeggibile — quando si
 rompe. Sono nati da problemi veri.
 
@@ -35,6 +35,14 @@ rompe. Sono nati da problemi veri.
   non ci sono elementi che fanno le stesse cose». Ci mette qualche
   minuto: apre una pagina pulita per ogni comando.
 
+- **sezioni.js** — cambiare sezione non è ricaricare la pagina. Dentro la
+  stessa porta si anima solo il corpo (titolo e riga di linguette restano
+  immobili), cambiando porta si anima tutto, e quello che sta FUORI dalla
+  vista — barra in basso, colonna, banda — non viene ricostruito né quando
+  cambi sezione né quando spunti una cosa. Controlla anche che le barre di
+  sezione abbiano tutte la stessa forma. Nasce da «se passo da una schermata
+  all'altra deve ricaricare tutto».
+
 ## Come si lanciano
 
     npm install playwright
@@ -42,6 +50,7 @@ rompe. Sono nati da problemi veri.
     node prove/modalita.js
     node prove/segni.js      # solo Node, niente browser
     node prove/doppioni.js   # qualche minuto
+    node prove/sezioni.js
 
 Servono Node e Chromium (segni.js si accontenta di Node). Se Chromium sta in un posto suo:
 

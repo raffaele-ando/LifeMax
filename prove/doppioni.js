@@ -217,8 +217,8 @@ const SCENE = [
      annuncia il rituale di adesso porta dove porta la linguetta «Rituali».
      È l'unico invito esplicito a fare il rituale, e vale più della regola. */
   const AMMESSI = [
-    { scena: 'Oggi', chi: ['«Rituali» [sottonav-voce]', '«Le azioni di oggiadesso» [rit-adesso]'] },
-    { scena: 'Oggi', chi: ['«Rituali» [sottonav-voce]', '«Check-in adesso» [rit-adesso]'] }
+    { scena: 'Oggi', chi: ['«Rituali» []', '«Le azioni di oggiadesso» [rit-adesso]'] },
+    { scena: 'Oggi', chi: ['«Rituali» []', '«Check-in adesso» [rit-adesso]'] }
   ];
   const ammesso = t => AMMESSI.some(a => a.scena === t.scena && a.chi.length === t.chi.length &&
     a.chi.every(c => t.chi.includes(c)));
