@@ -9,7 +9,13 @@ rompe. Sono nati da problemi veri.
   riceve il clic in ognuno. Controlla due cose opposte: che nessun
   elemento si prenda punti molto oltre il proprio rettangolo (un'area
   invisibile che ruba i clic di quelli intorno) e che ogni comando visibile
-  riceva il clic quando lo si tocca nel mezzo.
+  riceva il clic quando lo si tocca nel mezzo. E una terza: che ogni comando
+  abbia uno stato «premuto». Su un telefono il passaggio del mouse non esiste,
+  quindi tutte le regole `:hover` non fanno niente e un comando senza `:active`
+  non dà nessuna conferma al dito — misurato una volta, 304 comandi su 336
+  erano muti. Non li preme (premerne uno lo attiva e mezza app cambierebbe
+  sotto la prova): guarda se una regola `:active` del foglio lo riguarda,
+  scendendo anche nelle `@media` che valgono adesso e negli pseudo-elementi.
 - **modalita.js** — apre tutti i pannelli da tutte le loro strade e li
   chiude in tutti i modi (la x, Esc, toccando fuori). Dopo ogni
   combinazione controlla che niente sia rimasto `inert`, che lo

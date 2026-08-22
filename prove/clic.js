@@ -99,6 +99,80 @@ for (const [w,h,tocco] of [[390,844,true],[768,1024,true],[1440,1000,false]]) {
   cs.forEach(x=>coperti.push(dove+' scheda-abitudine: '+x));
   await p.close();
 }
+/* LA RISPOSTA AL DITO
+   Su un telefono non esiste il passaggio del mouse: tutte le regole `:hover`
+   non fanno niente, e se un comando non ha uno stato `:active` toccarlo non
+   dà nessuna conferma finché la schermata non cambia. Misurato una volta:
+   304 comandi su 336 erano muti — rispondeva solo `.btn`.
+   Non si preme davvero ogni comando (premerne uno lo attiva, e mezza app
+   cambierebbe sotto la prova): si guarda se una regola `:active` del foglio
+   di stile lo riguarda, pseudo-elementi compresi. */
+const PREMUTO=`(function(){
+  const sel=[];
+  /* Si scende anche dentro le @media, e solo in quelle che valgono ADESSO:
+     una regola :active dietro un \`min-width: 861px\` non dà nessuna risposta
+     su un telefono. Senza scenderci, lo stato premuto della maniglia del
+     foglio — che sta nel blocco del telefono — risultava mancante. */
+  const raccogli=lista=>{ for (const r of lista) {
+    /* una @media che adesso non vale non dà nessuna risposta */
+    if (r.media && !matchMedia(r.media.mediaText).matches) continue;
+    if (r.selectorText && /:active/.test(r.selectorText)) r.selectorText.split(',').forEach(x=>{
+      if(!/:active/.test(x)) return;
+      sel.push(x.replace(/:active/g,'').replace(/::?(after|before|first-line|placeholder)/g,'').trim());
+    });
+    /* \`cssRules\` esiste su OGNI regola da quando il CSS annida, e una lista
+       vuota è comunque un oggetto vero: senza controllare la lunghezza si
+       scendeva in ogni regola e non se ne leggeva nessuna. */
+    if (r.cssRules && r.cssRules.length) raccogli(r.cssRules);
+  } };
+  for (const ss of document.styleSheets) { try { raccogli(ss.cssRules); } catch(e){} }
+  const vis=e=>{const r=e.getBoundingClientRect();const s=getComputedStyle(e);
+    return r.width>4&&r.height>4&&s.visibility!=='hidden';};
+  const zona=document.querySelector('.sheet-overlay:not([hidden]) .sheet, .overlay:not([hidden]) .pannello-cattura')||document.body;
+  const muti=[];
+  [...zona.querySelectorAll('button,a[href],[role=button],summary')].filter(vis)
+    .filter(e=>!e.closest('.lab-demo')).forEach(e=>{
+      const ha=sel.some(x=>{try{return x&&e.matches(x);}catch(z){return false;}});
+      if(!ha) muti.push((e.className||e.tagName).toString().trim().split(/\\s+/).slice(0,2).join('.')||e.tagName.toLowerCase());
+    });
+  return muti;
+})()`;
+const SCENE_PREMUTO=[
+  ['Oggi','oggi',null,null],
+  ['La giornata','giornata',null,null],
+  ['Attività','inbox',1,null],
+  ['Abitudini','inbox',2,null],
+  ['Rituali','rituali',null,null],
+  ['Andamento','plancia',null,null],
+  ['Diario','plancia',1,null],
+  ['Esperimenti','esperimenti',null,null],
+  ['Impostazioni','plancia',null,()=>{const b=[...document.querySelectorAll('#vista button')].find(x=>/Impostazioni/.test(x.textContent));if(b)b.click();}],
+  ['Scheda di un’attività','inbox',1,()=>{const r=document.querySelector('[data-bkapri]');if(r)r.click();}],
+  ['Scheda di un’abitudine','inbox',2,()=>{const r=document.querySelector('[data-abdett]');if(r)r.click();}]
+];
+{
+  const pp=await b.newPage({viewport:{width:390,height:844},hasTouch:true,isMobile:true});
+  await pp.addInitScript(t=>{const D=Date;class F extends D{constructor(...a){if(!a.length)super(t);else super(...a);}static now(){return t;}}window.Date=F;}, new Date('2026-08-18T10:30:00').getTime());
+  await pp.goto('http://localhost:8561/index.html');await pp.waitForTimeout(300);
+  const senza=new Map();
+  for (const [nome,vai,tab,poi] of SCENE_PREMUTO) {
+    await pp.evaluate(()=>{localStorage.clear();LM.seedDemo();});
+    await pp.evaluate(v=>{location.hash='#/'+v;},vai);await pp.reload();await pp.waitForTimeout(620);
+    if(tab!=null){await pp.evaluate(i=>{const t=document.querySelectorAll('#vista .segmenti button')[i];if(t)t.click();},tab);await pp.waitForTimeout(420);}
+    if(poi){await pp.evaluate(poi);await pp.waitForTimeout(600);}
+    (await pp.evaluate(PREMUTO)).forEach(c=>{
+      if(!senza.has(c)) senza.set(c,new Set());
+      senza.get(c).add(nome);
+    });
+  }
+  await pp.close();
+  console.log('\n=== COMANDI CHE NON RISPONDONO AL DITO ===');
+  if(!senza.size) console.log('  nessuno');
+  [...senza.entries()].sort((a,b)=>b[1].size-a[1].size).slice(0,20)
+    .forEach(([c,d])=>console.log('  - .'+c+'  ('+[...d].join(', ').slice(0,60)+')'));
+  ok('ogni comando ha uno stato «premuto»', senza.size===0, senza.size+' famiglie mute');
+}
+
 console.log('\n=== AREE DI TOCCO CHE SBORDANO ===');
 if (!guai.length) console.log('  nessuna');
 guai.slice(0,25).forEach(g=>console.log('  - '+g));

@@ -436,7 +436,7 @@ small { color: var(--inchiostro-2); }
   .sidebar { display: none; }
   .main { padding: 20px calc(16px + env(safe-area-inset-right)) calc(108px + env(safe-area-inset-bottom)) calc(16px + env(safe-area-inset-left)); }
   .topbar h1 { font-size: 25px; }
-  .topbar .segmenti { flex-wrap: nowrap; overflow-x: auto; max-width: 100%; scrollbar-width: none; }
+  .topbar .segmenti { flex-wrap: nowrap; overflow-x: auto; overscroll-behavior-x: contain; max-width: 100%; scrollbar-width: none; }
   .topbar .segmenti::-webkit-scrollbar { display: none; }
   .topbar .segmenti button { white-space: nowrap; }
   .tabbar {
@@ -485,12 +485,17 @@ small { color: var(--inchiostro-2); }
 
 /* ---------- transizioni di vista ---------- */
 
-.vista-enter > * { animation: alzati .5s var(--ease-out) both; }
-.vista-enter > *:nth-child(2) { animation-delay: .05s; }
-.vista-enter > *:nth-child(3) { animation-delay: .1s; }
-.vista-enter > *:nth-child(4) { animation-delay: .15s; }
-.vista-enter > *:nth-child(5) { animation-delay: .2s; }
-.vista-enter > *:nth-child(6) { animation-delay: .25s; }
+/* L'ingresso a scaglioni: mezzo secondo di animazione più un quarto di
+   ritardo sul sesto blocco voleva dire tre quarti di secondo prima che la
+   schermata stesse ferma. Su una pagina che si cambia venti volte al giorno
+   è un'attesa che si sente. Adesso l'ultimo blocco si posa a mezzo secondo,
+   e la scala resta la stessa. */
+.vista-enter > * { animation: alzati .38s var(--ease-out) both; }
+.vista-enter > *:nth-child(2) { animation-delay: .03s; }
+.vista-enter > *:nth-child(3) { animation-delay: .06s; }
+.vista-enter > *:nth-child(4) { animation-delay: .09s; }
+.vista-enter > *:nth-child(5) { animation-delay: .12s; }
+.vista-enter > *:nth-child(6) { animation-delay: .15s; }
 /* cambio di SEZIONE dentro la stessa porta: il titolo e la riga di linguette
    restano immobili — la riga è il comando che hai in mano, e vederla sparire e
    tornare è la cosa che fa sembrare tutto ricaricato. Si muove solo quello che
@@ -1052,7 +1057,10 @@ select.sel-compatto {
 .lm-hbar-val { text-align: right; font-weight: 750; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
 .lm-hbar-val small { color: var(--inchiostro-muto); font-weight: 500; }
 
-.lm-heatmap { display: grid; grid-template-rows: repeat(7, 13px); grid-auto-flow: column; grid-auto-columns: 13px; gap: 2.5px; overflow-x: auto; padding-bottom: 4px; }
+/* `overscroll-behavior-x: contain` su tutto quello che scorre in orizzontale:
+   arrivato in fondo, il gesto non deve diventare il «torna indietro» del
+   browser — succedeva su ognuno di questi. */
+.lm-heatmap { display: grid; grid-template-rows: repeat(7, 13px); grid-auto-flow: column; grid-auto-columns: 13px; gap: 2.5px; overflow-x: auto; overscroll-behavior-x: contain; padding-bottom: 4px; }
 .lm-cell {
   width: 13px; height: 13px; border-radius: var(--r-1);
   background: var(--superficie-2); border: 1px solid var(--bordo);
@@ -1249,12 +1257,20 @@ select.sel-compatto {
    niente taglio netto sullo sfocato, niente clic su ciò che sta sotto */
 body.sfondo-fermo { position: fixed; left: 0; right: 0; width: 100%; overflow: hidden; }
 
+/* Il velo è un pseudo-elemento, non il fondo dell'overlay. Mentre trascini il
+   foglio il velo si schiarisce, e abbassando l'opacità dell'overlay si
+   schiariva anche il foglio, che è suo figlio: si vedeva il contenuto
+   diventare trasparente mentre lo tenevi in mano. */
 .sheet-overlay {
   position: fixed; inset: 0; z-index: 120;
-  background: color-mix(in srgb, rgba(8,8,12,.62) 100%, transparent);
   backdrop-filter: blur(8px) saturate(.9); -webkit-backdrop-filter: blur(8px) saturate(.9);
   display: flex; align-items: center; justify-content: center; padding: 20px;
   animation: sfuma .16s var(--ease-out);
+}
+.sheet-overlay::before {
+  content: ''; position: absolute; inset: 0;
+  background: rgba(8, 8, 12, .62);
+  opacity: var(--velo, 1);
 }
 .sheet-overlay[hidden] { display: none; }
 .sheet {
@@ -1264,6 +1280,11 @@ body.sfondo-fermo { position: fixed; left: 0; right: 0; width: 100%; overflow: h
   animation: entra .3s var(--ease-spring);
 }
 .sheet-maniglia { display: none; }
+/* mentre il dito lo tiene: nessuna transizione, il foglio segue la mano.
+   `sheet-molla` è il ritorno al suo posto, `sheet-via` è il congedo. */
+.sheet-trascina { transition: none !important; animation: none !important; will-change: transform; }
+.sheet-molla { transition: transform .3s var(--ease-spring); }
+.sheet-via { transition: transform .24s var(--ease-out); }
 /* il titolo del pannello, quando si può cambiare: stessa faccia del titolo,
    nessuna cornice, si scrive dentro */
 textarea.sheet-titolo-inp {
@@ -1453,7 +1474,7 @@ label.campo {
    `.rit-eti`, e a pari forza vince la regola scritta più in basso */
 #vista > .sez-nav + * { margin-top: 0; }
 @media (max-width: 860px) {
-  .sez-nav { display: flex; width: 100%; overflow-x: auto; scrollbar-width: none; }
+  .sez-nav { display: flex; width: 100%; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: none; }
   .sez-nav::-webkit-scrollbar { display: none; }
   .sez-nav button, .sez-nav > a { flex: 1; justify-content: center; white-space: nowrap; }
 }
@@ -2111,7 +2132,7 @@ select.agg-sel-area { width: auto; max-width: 190px; flex: 0 1 auto; font-size: 
      vede che esiste. Ora sono quattro colonne uguali con l'icona sopra e la
      parola sotto — la stessa forma della barra in basso — e ci stanno per
      costruzione a qualsiasi larghezza. */
-  .segmenti.sez-nav { flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden; justify-content: flex-start; scrollbar-width: none; }
+  .segmenti.sez-nav { flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; justify-content: flex-start; scrollbar-width: none; }
   .segmenti.sez-nav::-webkit-scrollbar { display: none; }
   .segmenti.sez-nav > button, .segmenti.sez-nav > a { flex: none; }
   /* Vale per TUTTE le barre di sezione: Attività, Panoramica, Giornata,
@@ -2407,7 +2428,7 @@ body.sto-trascinando { cursor: grabbing; user-select: none; -webkit-user-select:
 .wk-wrap { display: flex; gap: 4px; }
 .wk-rail { position: relative; flex: none; width: 34px; margin-top: 44px; }
 .wk-rail-h { position: absolute; left: 0; font-size: 11px; color: var(--inchiostro-muto); font-variant-numeric: tabular-nums; transform: translateY(-6px); }
-.wk-cols { display: flex; gap: 4px; overflow-x: auto; flex: 1; min-width: 0; padding-bottom: 4px; }
+.wk-cols { display: flex; gap: 4px; overflow-x: auto; overscroll-behavior-x: contain; flex: 1; min-width: 0; padding-bottom: 4px; }
 .wk-col { flex: 1 0 116px; min-width: 116px; border-radius: var(--r-2); }
 .wk-col.oggi { background: color-mix(in srgb, var(--accento) 7%, transparent); }
 .wk-col-head { text-align: center; padding: 6px 2px; font-size: 11px; line-height: 1.25; height: 44px; }
@@ -2451,7 +2472,7 @@ body.sto-trascinando { cursor: grabbing; user-select: none; -webkit-user-select:
 }
 
 /* anno */
-.an-heat-wrap { overflow-x: auto; padding-bottom: 6px; margin-top: 8px; }
+.an-heat-wrap { overflow-x: auto; overscroll-behavior-x: contain; padding-bottom: 6px; margin-top: 8px; }
 .an-scad-lista { display: flex; flex-direction: column; gap: 8px; }
 .an-scad { display: flex; align-items: center; gap: 10px; }
 .an-scad .scad-testo { flex: 1; min-width: 0; font-size: 13.5px; overflow-wrap: anywhere; }
@@ -2694,3 +2715,57 @@ body.sto-trascinando { cursor: grabbing; user-select: none; -webkit-user-select:
   .lista-eti-btn { min-height: 44px; }
   .ap-campo input[type="date"] { min-height: 44px; font-size: 15px; }
 }
+
+/* Questo blocco sta in FONDO al foglio di proposito: lo stato premuto deve
+   vincere sulle regole dei componenti, e a pari forza in CSS vince quella
+   scritta più in basso. Messo in mezzo, ogni `:hover` scritto dopo se lo
+   mangiava — misurato: la riga premuta mostrava il 4% del passaggio del
+   mouse invece dell'8% della pressione. */
+/* ============================================================
+   PREMUTO — la risposta al dito
+   Su un telefono non esiste il passaggio del mouse, quindi tutte le regole
+   `:hover` di questo foglio non fanno niente: il dito tocca e non ottiene
+   nessuna conferma finché la schermata non cambia. Misurato: su 336 comandi
+   dell'app, 304 non avevano alcuno stato «premuto» — rispondeva solo `.btn`.
+   Apple chiede l'opposto: una risposta immediata al tocco (Human Interface
+   Guidelines, Feedback), e per chi ha l'ADHD la conferma immediata è la
+   differenza fra «l'ho fatto» e «ho premuto giusto?».
+   Due modi soli, per non inventare un linguaggio nuovo per ogni comando:
+     · una RIGA o una cella si accende sul fondo, come le celle di iOS —
+       stringerla farebbe muovere i bordi di mezza schermata;
+     · un comando PICCOLO si stringe di un soffio, che su venti o trenta
+       pixel si vede subito e non sposta niente intorno.
+   ============================================================ */
+:root { --premuto: color-mix(in srgb, var(--inchiostro-1) 8%, transparent); }
+
+/* le righe e le celle: si accende il fondo */
+.lista-apri:active, .lista-riga:active, .rit-riga:active, .giornata-strip:active,
+.gio-sonno-testa:active, .gio-so-corpo:active, .menu-voce:active, .lista-eti-btn:active,
+.btn-strumento-largo:active, .att-filtro:active, .riga-inbox:active, .att-chip:active,
+.exp-riga:active, .card-area:active, .aiuto-riga:active {
+  background-color: var(--premuto);
+}
+
+/* i comandi piccoli: si stringono di un soffio */
+.icona-btn:active, .lista-azione:active, .spunta:active, .tl-check:active,
+.q-chip:active, .abd-g:active, .diario-annulla:active, .banda-x:active,
+.sheet-chiudi:active, .sheet-indietro:active, .cattura-chiudi:active,
+.ico-pick:active, .giorno-chip:active, .diario-cambia:active,
+.segmenti > button:active, .segmenti > a:active,
+.tabbar button:active, .tabbar a:active, .tab-catt:active,
+.nav-voce:active, .focus-torna:active, .sync-chip:active {
+  transform: scale(.94);
+}
+/* il rilascio non è uno scatto: torna in una frazione di secondo */
+.lista-apri, .lista-riga, .rit-riga, .giornata-strip, .gio-sonno-testa, .gio-so-corpo,
+.menu-voce, .lista-eti-btn, .btn-strumento-largo, .att-filtro, .riga-inbox,
+.icona-btn, .lista-azione, .spunta, .tl-check, .q-chip, .abd-g, .diario-annulla,
+.banda-x, .sheet-chiudi, .sheet-indietro, .cattura-chiudi, .ico-pick, .giorno-chip,
+.segmenti > button, .segmenti > a, .tabbar button, .tabbar a, .tab-catt, .nav-voce {
+  transition: background-color var(--t-veloce), transform var(--t-veloce), border-color var(--t-veloce), color var(--t-veloce);
+}
+/* una riga di elenco che si stringe sposterebbe i bordi di mezza schermata:
+   dentro le righe vince l'accensione del fondo, non la stretta */
+.lista-riga:active .lista-azione:not(:active) { transform: none; }
+/* un link dentro una frase: il browser non dà nessuna risposta al dito */
+a:not(.btn):not(.nav-voce):not(.menu-voce):active { opacity: .55; }

@@ -474,41 +474,123 @@
     else if (!e.shiftKey && document.activeElement === ultimo) { e.preventDefault(); primo.focus(); }
   });
 
-  /* Trascinare il pannello verso il basso per chiuderlo: su iOS è il gesto
-     con cui si congeda un foglio, e la maniglia in cima esiste per dirlo.
-     Il gesto parte solo dalla maniglia e dalla testata: dentro il corpo il
-     dito deve poter scorrere il contenuto. */
+  /* TRASCINARE IL FOGLIO PER CONGEDARLO
+     Prima il gesto partiva SOLO dalla maniglia e dalla testata: chi provava a
+     tirare giù da un punto vuoto del foglio non otteneva niente, e toccare la
+     linguetta in cima era obbligatorio. E mentre trascinavi si abbassava
+     l'opacità di TUTTO l'overlay, foglio compreso: il foglio diventava
+     trasparente invece del solo velo dietro di lui.
+     Adesso funziona come su iOS:
+       · dalla maniglia e dalla testata si trascina sempre;
+       · dal corpo si trascina se il contenuto è già in cima e il dito va in
+         giù — cioè esattamente quando in quella direzione non c'è niente da
+         scorrere. In tutti gli altri casi scorre, e il gesto non parte;
+       · il foglio resta opaco: si schiarisce solo il velo dietro;
+       · si decide dopo sei pixel, così un tocco resta un tocco;
+       · al rilascio: se sei andato oltre cento pixel o stai andando veloce si
+         chiude scivolando giù, altrimenti torna al suo posto con una molla.
+     Il limite è lo stesso del foglio-dal-basso in CSS (860px): prima il gesto
+     si fermava a 560 e fra i due numeri c'era un foglio con la maniglia
+     disegnata che non si poteva trascinare. */
   (function trascinaPerChiudere() {
-    var y0 = null, dy = 0, t0 = 0;
+    var SOGLIA = 6;            /* pixel prima di decidere: sotto, è un tocco */
+    var CHIUDE = 100;          /* oltre questo, congeda */
+    var VELOCE = 0.5;          /* px/ms: un colpo secco congeda comunque */
+    var giu = null;            /* {y, x, top, presa} al pointerdown */
+    var modo = null;           /* null = non deciso | 'trascina' | 'scorri' */
+    var dy = 0, campioni = [];
+    var haTrascinato = false;
+
+    function dalBasso() {
+      return window.matchMedia && window.matchMedia('(max-width: 860px)').matches;
+    }
+    function scriviVelo(k) { $sheet.style.setProperty('--velo', String(k)); }
+
     function partenza(e) {
-      if (window.innerWidth > 560) return;                 /* solo il foglio dal basso */
-      if (!e.target.closest('.sheet-maniglia, .sheet-testa')) return;
-      /* la maniglia è un pulsante ed è anche la presa del gesto; gli altri
-         pulsanti della testata (la x) restano pulsanti */
-      if (e.target.closest('button') && !e.target.closest('.sheet-maniglia')) return;
-      y0 = e.clientY; dy = 0; t0 = e.timeStamp;
-      $sheetPanel.style.transition = 'none';
-      $sheetPanel.setPointerCapture && $sheetPanel.setPointerCapture(e.pointerId);
+      giu = null; modo = null; dy = 0; campioni = [];
+      if (!dalBasso() || e.pointerType === 'mouse') return;
+      if (!$sheetPanel || $sheet.hidden) return;
+      /* dentro un campo il dito seleziona il testo, non trascina il foglio */
+      if (e.target.closest('input, textarea, select, [contenteditable="true"]')) return;
+      var presa = !!e.target.closest('.sheet-maniglia, .sheet-testa');
+      giu = { y: e.clientY, x: e.clientX, top: $sheetPanel.scrollTop, presa: presa };
+      campioni = [{ t: e.timeStamp, y: e.clientY }];
     }
+
     function muovi(e) {
-      if (y0 === null) return;
-      dy = Math.max(0, e.clientY - y0);
-      $sheetPanel.style.transform = 'translateY(' + dy + 'px)';
-      $sheet.style.opacity = String(Math.max(.35, 1 - dy / 420));
+      if (!giu) return;
+      var d = e.clientY - giu.y;
+      if (modo === null) {
+        if (Math.abs(d) < SOGLIA && Math.abs(e.clientX - giu.x) < SOGLIA) return;
+        /* in orizzontale non è il nostro gesto */
+        if (Math.abs(e.clientX - giu.x) > Math.abs(d)) { modo = 'scorri'; return; }
+        /* si trascina dalla presa, oppure dal corpo quando il contenuto è
+           già in cima e il dito va in giù: lì sotto non c'è nulla da
+           scorrere, quindi non si ruba niente al browser */
+        modo = (giu.presa || (d > 0 && giu.top <= 0)) ? 'trascina' : 'scorri';
+        if (modo === 'trascina') {
+          $sheetPanel.classList.add('sheet-trascina');
+          if ($sheetPanel.setPointerCapture) { try { $sheetPanel.setPointerCapture(e.pointerId); } catch (x) {} }
+        }
+      }
+      if (modo !== 'trascina') return;
+      dy = Math.max(0, d);
+      haTrascinato = dy > SOGLIA;
+      $sheetPanel.style.transform = 'translateY(' + dy.toFixed(1) + 'px)';
+      /* il velo si schiarisce, il foglio no */
+      scriviVelo(Math.max(0.12, 1 - dy / 420));
+      campioni.push({ t: e.timeStamp, y: e.clientY });
+      if (campioni.length > 6) campioni.shift();
     }
-    function fine(e) {
-      if (y0 === null) return;
-      var veloce = dy / Math.max(1, e.timeStamp - t0) > 0.5;
-      y0 = null;
-      $sheetPanel.style.transition = '';
+
+    function fine() {
+      if (!giu) return;
+      var eraTrascina = modo === 'trascina';
+      giu = null; modo = null;
+      if (!eraTrascina) return;
+      /* velocità sugli ultimi campioni, non su tutto il gesto: chi rallenta
+         prima di lasciare non vuole chiudere */
+      var v = 0;
+      if (campioni.length > 1) {
+        var a = campioni[0], b = campioni[campioni.length - 1];
+        v = (b.y - a.y) / Math.max(1, b.t - a.t);
+      }
+      $sheetPanel.classList.remove('sheet-trascina');
+      if (dy > CHIUDE || v > VELOCE) { congedaScivolando(); return; }
+      /* torna al suo posto */
+      $sheetPanel.classList.add('sheet-molla');
       $sheetPanel.style.transform = '';
-      $sheet.style.opacity = '';
-      if (dy > 110 || veloce) chiudiSheet();
+      scriviVelo(1);
+      setTimeout(function () { if ($sheetPanel) $sheetPanel.classList.remove('sheet-molla'); }, 320);
     }
+
+    function congedaScivolando() {
+      var pan = $sheetPanel;
+      pan.classList.add('sheet-via');
+      pan.style.transform = 'translateY(100%)';
+      scriviVelo(0);
+      var fatto = false;
+      function poi() {
+        if (fatto) return; fatto = true;
+        pan.classList.remove('sheet-via');
+        pan.style.transform = '';
+        scriviVelo(1);
+        chiudiSheet();
+      }
+      pan.addEventListener('transitionend', poi, { once: true });
+      setTimeout(poi, 300);
+    }
+
     $sheet.addEventListener('pointerdown', partenza);
     $sheet.addEventListener('pointermove', muovi);
     $sheet.addEventListener('pointerup', fine);
     $sheet.addEventListener('pointercancel', fine);
+    /* un trascinamento che finisce sopra un pulsante non lo preme */
+    $sheet.addEventListener('click', function (e) {
+      if (!haTrascinato) return;
+      haTrascinato = false;
+      e.stopPropagation(); e.preventDefault();
+    }, true);
   })();
 
   /* Come si torna da dove si è entrati. Cinque pannelli si aprono da dentro
