@@ -97,6 +97,20 @@ rompe. Sono nati da problemi veri.
   dal collasso di due margini indipendenti, e cambiavano da soli quando un
   contenitore diventava flex.
 
+- **gesto.js** — il foglio dal basso: il gesto, e che dopo si possa ancora
+  toccare. Prima di tutto campiona la SUPERFICIE del foglio aperto e pretende
+  che ogni punto arrivi al foglio: nasce da una regressione in cui il velo
+  dietro era diventato un pseudo-elemento assoluto e il foglio finiva sotto al
+  suo stesso velo — grigio e sordo, con solo la testata (`sticky`, quindi
+  posizionata) bianca e cliccabile. I comandi rispondevano ancora, perché
+  quasi tutti hanno un `position: relative` per l'area del dito: per questo la
+  prova sui comandi coperti non se ne accorgeva. Poi fa ogni gesto possibile —
+  tiro corto, lungo, in su, dalla maniglia, interrotto, due di fila, col
+  colpo secco, col mouse — e dopo ognuno pretende che il foglio sia nello
+  stato giusto, che l'app sia viva, che niente sia rimasto appeso, e che il
+  tocco SUCCESSIVO funzioni davvero. Nasce da «c'è un bug con questi bottom
+  sheet, si blocca tutto».
+
 ## Come si lanciano
 
     npm install playwright
@@ -108,6 +122,7 @@ rompe. Sono nati da problemi veri.
     node prove/annulla.js
     node prove/colori.js
     node prove/spazi.js
+    node prove/gesto.js
 
 Servono Node e Chromium (segni.js si accontenta di Node). Se Chromium sta in un posto suo:
 

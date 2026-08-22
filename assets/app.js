@@ -253,7 +253,12 @@
     ovl.querySelector('.avv-no').addEventListener('click', chiudi);
     ovl.querySelector('.avv-si').addEventListener('click', function () { chiudi(); onSi(); });
     /* fuori dall'avviso e Esc = annulla: la via d'uscita non deve mai mancare */
-    ovl.addEventListener('click', function (e) { if (e.target === ovl) chiudi(); });
+    var giuDentro = false;
+    ovl.addEventListener('pointerdown', function (e) { giuDentro = e.target !== ovl; }, true);
+    ovl.addEventListener('click', function (e) {
+      var d = giuDentro; giuDentro = false;
+      if (e.target === ovl && !d) chiudi();
+    });
     ovl.addEventListener('keydown', function (e) { if (e.key === 'Escape') { e.stopPropagation(); chiudi(); } });
     document.addEventListener('keydown', function esc(e) {
       if (e.key === 'Escape' && avvisoAperto === ovl) { chiudi(); document.removeEventListener('keydown', esc); }
@@ -326,7 +331,12 @@
   var $sideCatt = document.getElementById('side-cattura');
   $sideCatt.querySelector('.cattura-cta-testo').innerHTML = ICO('bolt', 15) + ' Aggiungi una nota';
   $sideCatt.addEventListener('click', apriCattura);
-  $ovl.addEventListener('click', function (e) { if (e.target === $ovl) chiudiCattura(); });
+  var giuDentroCatt = false;
+  $ovl.addEventListener('pointerdown', function (e) { giuDentroCatt = e.target !== $ovl; }, true);
+  $ovl.addEventListener('click', function (e) {
+    var dentro = giuDentroCatt; giuDentroCatt = false;
+    if (e.target === $ovl && !dentro) chiudiCattura();
+  });
   /* col dito non c'era NESSUNA via d'uscita visibile: toccare fuori funziona
      ma non si vede, e la nota che parlava di «Esc» era per la tastiera */
   document.getElementById('cattura-chiudi').addEventListener('click', chiudiCattura);
@@ -361,7 +371,21 @@
   /* la maniglia è il comando di chiusura col dito: si trascina giù, e se la
      si tocca chiude. Non è una decorazione accanto a una x. */
   document.getElementById('sheet-maniglia').addEventListener('click', chiudiSheet);
-  $sheet.addEventListener('click', function (e) { if (e.target === $sheet) chiudiSheet(); });
+  /* Toccare fuori chiude — ma solo se il tocco è NATO fuori. Premendo dentro
+     al foglio e rilasciando oltre il suo bordo (il dito che scivola via da un
+     pulsante, il mouse trascinato) il clic arriva all'antenato comune, cioè
+     all'overlay, e il foglio si chiudeva da solo: hai cambiato idea su un
+     pulsante e ti sei ritrovato senza pannello. */
+  /* Si ricorda solo il caso che va impedito — «il tocco è nato DENTRO» — e in
+     tutti gli altri si chiude. Al contrario (ricordare «è nato fuori») un clic
+     senza un pointerdown davanti, come quello che manda una tecnologia
+     assistiva o una prova automatica, non avrebbe chiuso niente. */
+  var giuDentroSheet = false;
+  $sheet.addEventListener('pointerdown', function (e) { giuDentroSheet = e.target !== $sheet; }, true);
+  $sheet.addEventListener('click', function (e) {
+    var dentro = giuDentroSheet; giuDentroSheet = false;
+    if (e.target === $sheet && !dentro) chiudiSheet();
+  });
 
   var wireSheet = null;
   var $sheetPanel = $sheet.querySelector('.sheet');
@@ -499,15 +523,34 @@
     var giu = null;            /* {y, x, top, presa} al pointerdown */
     var modo = null;           /* null = non deciso | 'trascina' | 'scorri' */
     var dy = 0, campioni = [];
-    var haTrascinato = false;
+    /* QUANDO è finito un trascinamento, non SE è finito. Con un interruttore
+       («ho trascinato: sì») il clic da mangiare era il prossimo che arrivava,
+       e dopo un trascinamento il clic non arriva: l'interruttore restava su
+       «sì» e si mangiava il tocco DOPO, quello vero. Se capitava sulla x o
+       sulla maniglia il foglio non si chiudeva più e l'app restava inerte:
+       «si blocca tutto». Adesso è un istante, e vale un decimo di secondo. */
+    var finitoIl = 0;
+    var VALE = 120;            /* ms: solo il clic che nasce da QUEL gesto */
 
     function dalBasso() {
       return window.matchMedia && window.matchMedia('(max-width: 860px)').matches;
     }
     function scriviVelo(k) { $sheet.style.setProperty('--velo', String(k)); }
 
+    /* qualunque cosa sia rimasta di un gesto interrotto */
+    function pulisci() {
+      if (!$sheetPanel) return;
+      $sheetPanel.classList.remove('sheet-trascina', 'sheet-molla', 'sheet-via');
+      $sheetPanel.style.transform = '';
+      scriviVelo(1);
+    }
+
     function partenza(e) {
       giu = null; modo = null; dy = 0; campioni = [];
+      /* un gesto interrotto (dito uscito dallo schermo, foglio chiuso da
+         codice a metà trascinamento) lasciava il foglio spostato e il velo
+         schiarito: si riparte sempre da pulito */
+      pulisci();
       if (!dalBasso() || e.pointerType === 'mouse') return;
       if (!$sheetPanel || $sheet.hidden) return;
       /* dentro un campo il dito seleziona il testo, non trascina il foglio */
@@ -535,7 +578,6 @@
       }
       if (modo !== 'trascina') return;
       dy = Math.max(0, d);
-      haTrascinato = dy > SOGLIA;
       $sheetPanel.style.transform = 'translateY(' + dy.toFixed(1) + 'px)';
       /* il velo si schiarisce, il foglio no */
       scriviVelo(Math.max(0.12, 1 - dy / 420));
@@ -548,6 +590,12 @@
       var eraTrascina = modo === 'trascina';
       giu = null; modo = null;
       if (!eraTrascina) return;
+      /* `performance.now()` e non `Date.now()`: l'orologio di sistema qui non
+         c'entra niente — serve un tempo che scorre sempre in avanti, e che
+         non si possa fermare da fuori (le prove fermano `Date` per avere
+         schermate identiche, e con quello il confronto valeva sempre zero:
+         il clic veniva mangiato per sempre) */
+      if (dy > SOGLIA) finitoIl = performance.now();
       /* velocità sugli ultimi campioni, non su tutto il gesto: chi rallenta
          prima di lasciare non vuole chiudere */
       var v = 0;
@@ -583,14 +631,36 @@
 
     $sheet.addEventListener('pointerdown', partenza);
     $sheet.addEventListener('pointermove', muovi);
+    /* Annullato non è finito. `pointercancel` vuol dire che il sistema si è
+       preso il gesto (una telefonata, il palmo appoggiato, lo scorrimento che
+       parte): il foglio deve tornare al suo posto, sempre. Trattandolo come
+       un rilascio, un gesto interrotto a novanta pixel veniva letto come un
+       colpo secco e congedava il foglio da sotto le mani. */
+    function annullaGesto() {
+      if (!giu) return;
+      var eraTrascina = modo === 'trascina';
+      giu = null; modo = null; dy = 0; finitoIl = 0;
+      if (!eraTrascina) return;
+      $sheetPanel.classList.remove('sheet-trascina');
+      $sheetPanel.classList.add('sheet-molla');
+      $sheetPanel.style.transform = '';
+      scriviVelo(1);
+      setTimeout(function () { if ($sheetPanel) $sheetPanel.classList.remove('sheet-molla'); }, 320);
+    }
     $sheet.addEventListener('pointerup', fine);
-    $sheet.addEventListener('pointercancel', fine);
-    /* un trascinamento che finisce sopra un pulsante non lo preme */
+    $sheet.addEventListener('pointercancel', annullaGesto);
+    $sheet.addEventListener('lostpointercapture', annullaGesto);
+    /* un trascinamento che finisce sopra un pulsante non lo preme: si mangia
+       solo il clic che arriva subito dopo, non il prossimo che capita */
     $sheet.addEventListener('click', function (e) {
-      if (!haTrascinato) return;
-      haTrascinato = false;
+      if (!finitoIl || performance.now() - finitoIl > VALE) return;
+      finitoIl = 0;
       e.stopPropagation(); e.preventDefault();
     }, true);
+    /* se il foglio si chiude mentre il dito lo teneva, niente resta appeso */
+    document.addEventListener('lm:sheet-chiuso', function () {
+      giu = null; modo = null; dy = 0; finitoIl = 0; pulisci();
+    });
   })();
 
   /* Come si torna da dove si è entrati. Cinque pannelli si aprono da dentro
@@ -682,6 +752,7 @@
 
   function chiudiSheet() {
     $sheet.hidden = true; wireSheet = null;
+    document.dispatchEvent(new CustomEvent('lm:sheet-chiuso'));
     if ($sheetPanel) $sheetPanel.classList.remove('sheet-largo');
     bloccaSfondo(false);
     esceFuoco();

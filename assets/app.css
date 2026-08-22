@@ -1268,12 +1268,19 @@ body.sfondo-fermo { position: fixed; left: 0; right: 0; width: 100%; overflow: h
   animation: sfuma .16s var(--ease-out);
 }
 .sheet-overlay::before {
-  content: ''; position: absolute; inset: 0;
+  content: ''; position: absolute; inset: 0; z-index: 0;
   background: rgba(8, 8, 12, .62);
   opacity: var(--velo, 1);
 }
 .sheet-overlay[hidden] { display: none; }
+/* `position: relative; z-index: 1` non è ornamento: il velo qui sopra è un
+   pseudo-elemento ASSOLUTO, e un elemento posizionato si dipinge sopra il
+   contenuto di flusso normale. Senza questa riga il foglio finiva SOTTO al
+   suo stesso velo — grigio e sordo al tocco, con solo la testata (che è
+   `sticky`, quindi posizionata) che restava bianca e cliccabile. Da fuori si
+   vedeva come «i bottom sheet si bloccano tutti». */
 .sheet {
+  position: relative; z-index: 1;
   width: 100%; max-width: 460px; max-height: 88vh; max-height: 88dvh; overflow-y: auto; overscroll-behavior: contain;
   background: var(--superficie-1); border: 1px solid var(--bordo);
   border-radius: var(--r-3); box-shadow: var(--e3); padding: 8px 20px 22px;
