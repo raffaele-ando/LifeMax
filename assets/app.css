@@ -647,36 +647,29 @@ label.campo { display: block; margin: 14px 0 6px; }
 @media (max-width: 860px) {
   .vista-oggi { min-height: calc(100dvh - 140px - var(--banda-h, 0px) - var(--sottonav-h, 0px)); }
 }
-.focus-eyebrow {
-  display: inline-flex; align-items: center; gap: 8px;
-  font-size: 12px; font-weight: 800; letter-spacing: .16em; text-transform: uppercase;
-  color: var(--inchiostro-muto);
-}
-.focus-eyebrow.mit {
-  color: var(--accento-testo);
-}
-.focus-eyebrow.mit .ico { color: var(--brand-b); animation: brilla 2.4s ease-in-out infinite; }
-.focus-eyebrow.ora { color: var(--accento-testo); }
-.focus-eyebrow.ritardo { color: var(--critico); }
-/* rosso un filo più scuro per il testo piccolo dell'occhiello su sfondo chiaro (AA) */
-:root[data-mode="light"] .focus-eyebrow.ritardo { color: #c62f2f; }
-@keyframes brilla { 0%, 100% { transform: scale(1) rotate(0deg); opacity: 1; } 50% { transform: scale(1.25) rotate(12deg); opacity: .75; } }
-
 .focus-azione {
   font-size: clamp(28px, 4.6vw, 50px); font-weight: 830; letter-spacing: -0.04em;
   max-width: 16em; line-height: 1.08; text-wrap: balance;
 }
-/* L'area è un attributo dell'azione, non un comando. Era una pastiglia con
-   bordo e ombra alta 58px — sei in più del pulsante «Fatto» — messa fra il
-   titolo e l'azione principale: la cosa da guardare per seconda era la meno
-   importante delle due. Adesso è un'etichetta che si può toccare, senza
-   cornice: si vede che si cambia, non chiede di essere premuta. */
-.focus-area {
-  display: inline-flex; align-items: center; gap: 6px;
-  font-size: 13px; color: var(--inchiostro-2); font-weight: 650;
-  background: none; border: 0; border-radius: var(--r-tondo);
-  padding: 2px 6px; box-shadow: none; min-height: 0;
+/* UNA riga sopra al titolo, non due. Prima l'occhiello (12px, maiuscoletto
+   spaziato, colorato) e l'area (13px, tondo, grigia) erano due bande separate
+   sopra un titolo da 28-50px: tre misure e tre colori in verticale per dire
+   una cosa sola. Adesso è una didascalia: il segno dell'area, il suo nome, e
+   dopo il punto il motivo per cui questa cosa è quella di adesso — che è
+   l'unica parte che cambia e quindi l'unica che si colora. */
+.focus-didascalia {
+  display: inline-flex; align-items: center; justify-content: center;
+  flex-wrap: wrap; gap: 7px;
+  font-size: 13px; font-weight: 650; color: var(--inchiostro-2);
+  max-width: 32em;
 }
+.focus-didascalia .fd-area { color: var(--c-area, var(--inchiostro-2)); }
+.focus-didascalia .fd-sep { color: var(--bordo-forte); }
+.focus-didascalia .fd-perche { font-weight: 750; }
+.focus-didascalia.ora .fd-perche { color: var(--accento-testo); }
+.focus-didascalia.ritardo .fd-perche { color: var(--critico); }
+:root[data-mode="light"] .focus-didascalia.ritardo .fd-perche { color: #c62f2f; }
+.focus-didascalia.mit .fd-perche { color: var(--accento-testo); }
 .focus-ifthen {
   display: inline-flex; align-items: center; gap: 9px;
   font-size: 13.5px; color: var(--inchiostro-2);
@@ -732,7 +725,13 @@ label.campo { display: block; margin: 14px 0 6px; }
    l'elenco di tutta l'app — .lista-eti-btn + .lista + .lista-riga. Prima
    avevano un tasto tondo tutto loro e righe a pastiglia con la spunta fuori:
    un quarto disegno di elenco in un'app che ne ha uno. */
-.focus-altre { width: 100%; max-width: 560px; margin: 2px auto 0; text-align: left; }
+/* il cuore prende lo spazio e si centra dentro; la porta resta in fondo */
+.focus-cuore {
+  flex: 1 1 auto; min-height: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 20px; width: 100%;
+}
+.focus-altre { flex: none; width: 100%; max-width: 560px; margin: 2px auto 0; text-align: left; }
 .focus-altre .lista-eti-btn { justify-content: flex-start; }
 
 kbd {
@@ -1560,10 +1559,6 @@ label.campo {
 .sel-area-azione:hover { border-color: color-mix(in srgb, var(--accento) 40%, var(--bordo-forte)); }
 .sel-area-azione.mini { font-size: 11.5px; padding: 2px 21px 2px 8px; }
 
-.focus-area .sel-area-azione {
-  border: none; background-color: transparent; box-shadow: none;
-  padding: 2px 20px 2px 2px; font-size: 13.5px; font-weight: 650; color: var(--inchiostro-2);
-}
 .diario-cambia { display: inline-block; vertical-align: middle; margin-left: 3px; }
 /* «Annulla» su una riga del diario: si vede che c'è, senza gridare. Sta prima
    dell'ora perché è dell'evento, non del momento. */

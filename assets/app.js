@@ -1439,19 +1439,22 @@
     var prossima = adesso.azione;
     ultimoFuocoKey = fuocoScelto ? 'pin:' + fuocoScelto : (prossima ? prossima.id : '') + '|' + adesso.stato;
     var oggi = LM.azioniDiOggi();
-    var fatte = oggi.filter(function (a) { return a.done; }).length;
     var inCoda = oggi.filter(function (a) { return !a.done; }).length - (prossima ? 1 : 0);
-    /* Il rituale di QUESTO momento, a un tocco da Oggi: prima stava a due
-       tocchi più una scelta fra cinque schede, e il check-in si fa più volte
-       al giorno. Compare solo se non è ancora stato fatto: appena lo fai
-       sparisce e non chiede più niente. */
 
-    /* il contatore è UNO, e sta qui: prima lo stesso fatto era scritto tre
-       volte — il chip in cima, «Dopo questa hai ancora N azioni» in fondo con
-       una pila di rettangolini disegnati, e il numero nel tasto delle altre.
-       Con la giornata vuota non compare: «0/0 oggi» è un conto di niente. */
-    var html = topbar('Oggi', 'L’azione da fare adesso.',
-      oggi.length ? '<span class="chip">' + ICO('check', 15) + ' <b>&nbsp;' + fatte + '/' + oggi.length + '</b>&nbsp;oggi</span>' : '');
+    /* In cima non c'è niente da leggere. Prima c'erano tre nomi per la stessa
+       idea a cento pixel l'uno dall'altro — il sottotitolo «L'azione da fare
+       adesso.», la linguetta «Adesso» e l'occhiello «La tua prossima azione» —
+       e un contatore «1/7 oggi» che con «Le altre di oggi 5» chiedeva di fare
+       due conti per capire un mucchio.
+       Il conto se n'è andato di proposito: quanto un compito sembra pesante è
+       fra i predittori più forti del rimandarlo (Steel 2007, meta-analisi sulla
+       procrastinazione), e la dimensione del mucchio letta proprio nel momento
+       in cui devi cominciare è esattamente quello. Il premio arriva quando
+       premi «Fatto» — XP che volano, messaggio, serie — cioè subito, che è
+       l'unico momento in cui funziona per chi ha l'ADHD (Barkley 1997 sulla
+       sensibilità alle conseguenze immediate contro quelle rimandate). Il
+       progresso della giornata resta in «Andamento», dove lo si va a cercare. */
+    var html = topbar('Oggi');
     html += '<div id="oggi-giornata"></div>';
 
     if (!prossima) {
@@ -1460,21 +1463,21 @@
         (oggi.length ? '<b>Per oggi hai finito tutto.</b><br>Puoi chiudere con la review della sera, o aggiungere qualcosa se ti va.'
                      : '<b>Oggi non hai ancora scelto cosa fare.</b><br>Bastano pochi secondi: scegli la prima cosa e parti.') +
         '</div>' +
-        /* Un pieno solo. Prima ce n'erano due — «Scegli le azioni di oggi» e la
-           freccia del campo — cioè due «premi qui» senza sapere quale: e con
-           quattro strade per la stessa cosa (scegli / prendi / review /
-           scrivi) la schermata che dovrebbe far ripartire era la più difficile
-           da leggere di tutte. Il campo è la riga d'aggiunta di tutta l'app. */
-        /* Il pieno è il passo che il testo qui sopra consiglia. A giornata
-           finita il testo diceva «puoi chiudere con la review della sera» e
-           il tasto pieno diceva «scegli le azioni di oggi»: il consiglio e
-           l'evidenza puntavano in due direzioni diverse. */
+        /* UN pieno, ed è il passo che il testo qui sopra consiglia: a giornata
+           finita la review della sera, a giornata vuota scegliere le azioni.
+           Sotto, una via di scorta smorzata, e il campo per scriverla e
+           basta (la riga d'aggiunta di tutta l'app).
+           Erano quattro inviti pari — scegli / prendi / review / scrivi — e
+           la schermata che deve far ripartire era la più difficile da leggere
+           di tutte. A giornata finita «Aggiungi altro a oggi» se n'è andato:
+           il campo qui sotto fa quella cosa in meno passi e senza cambiare
+           schermata. Tre inviti uguali nel momento in cui non hai ancora
+           cominciato sono il momento peggiore per chiedere di scegliere. */
         '<div class="focus-azioni-riga">' +
         (finita
-          ? '<button class="btn btn-primario btn-grande" data-vai="rituali" data-sub="sera">' + ICO('moon', 18) + ' Review della sera</button>' +
-            '<button class="btn" data-vai="rituali" data-sub="mattina">' + ICO('sun', 18) + ' Aggiungi altro a oggi</button>'
+          ? '<button class="btn btn-primario btn-grande" data-vai="rituali" data-sub="sera">' + ICO('moon', 18) + ' Review della sera</button>'
           : '<button class="btn btn-primario btn-grande" data-vai="rituali" data-sub="mattina">' + ICO('sun', 18) + ' Scegli le azioni di oggi</button>' +
-            '<button class="btn" data-vai="inbox">' + ICO('inbox', 18) + ' Prendi dalle attività</button>') +
+            '<button class="btn btn-mini btn-ghost" data-vai="inbox">' + ICO('inbox', 15) + ' Prendi dalle attività</button>') +
         '</div>' +
         '<div class="focus-agg">' + rigaAggiunta('agg-rapida', 'Scrivi una cosa da fare…') + '</div>' +
         '</div>';
@@ -1497,17 +1500,25 @@
     var colArea = LM.coloreArea(area);
     var timerAttivo = timer.azioneId === prossima.id && timer.fine;
     var minTimer = Math.max(1, Math.min(180, +(prossima.durata || 0) || 25));
-    var xpPrevisti = prossima.mit ? LM.XP_EVENTI.mit : LM.XP_EVENTI.azione;
 
-    /* l'occhiello dice PERCHÉ è questa la cosa adesso, legando Oggi al piano
-       de La Giornata: in corso / in ritardo / in programma / (libera → MIT). */
-    var eyebrow, eyebrowCls = '';
-    if (adesso.stato === 'scelta') { eyebrow = ICO('target', 15) + ' Scelta da te' + (adesso.min != null ? ' · in programma alle ' + fmtMin(adesso.min) : '') + ' <button class="focus-torna" id="btn-torna-piano">torna al piano</button>'; eyebrowCls = ' ora'; }
-    else if (adesso.stato === 'corso') { eyebrow = ICO('clock', 15) + ' Adesso nel piano · ' + fmtMin(adesso.min) + '–' + fmtMin(adesso.fine); eyebrowCls = ' ora'; }
-    else if (adesso.stato === 'ritardo') { eyebrow = ICO('clock', 15) + ' Era in programma alle ' + fmtMin(adesso.min) + ' — riprendila'; eyebrowCls = ' ritardo'; }
-    else if (adesso.stato === 'programmata') { eyebrow = ICO('clock', 15) + ' In programma alle ' + fmtMin(adesso.min); eyebrowCls = ' ora'; }
-    else if (prossima.mit) { eyebrow = ICO('star', 15) + ' L’azione più importante di oggi'; eyebrowCls = ' mit'; }
-    else { eyebrow = ICO('target', 15) + ' La tua prossima azione'; }
+    /* Una riga sola sopra al titolo, e dice due cose che il titolo non dice:
+       di che parte della tua vita è questa cosa, e perché è questa adesso.
+       Prima erano due bande — l'occhiello e l'area — con due misure e due
+       colori, sopra un titolo già grande: tre righe centrate per una cosa.
+       E l'occhiello parlava anche quando non aveva niente da dire: «La tua
+       prossima azione» sopra la prossima azione, in una sezione che si chiama
+       «Adesso», sotto un sottotitolo che diceva la stessa cosa. Quando non c'è
+       un motivo da spiegare resta solo l'area. */
+    var perche = '', perCls = '';
+    if (adesso.stato === 'scelta') { perche = 'scelta da te' + (adesso.min != null ? ', in programma alle ' + fmtMin(adesso.min) : '') + ' <button class="focus-torna" id="btn-torna-piano">torna al piano</button>'; perCls = ' ora'; }
+    else if (adesso.stato === 'corso') { perche = 'adesso nel piano, ' + fmtMin(adesso.min) + '–' + fmtMin(adesso.fine); perCls = ' ora'; }
+    else if (adesso.stato === 'ritardo') { perche = 'era alle ' + fmtMin(adesso.min) + ', riprendila'; perCls = ' ritardo'; }
+    else if (adesso.stato === 'programmata') { perche = 'in programma alle ' + fmtMin(adesso.min); perCls = ' ora'; }
+    /* la priorità del giorno tiene il suo segno: è l'unico stato che non ha
+       già un colore o un orario a distinguerlo. Senza lo scintillio che aveva
+       prima: un'animazione che gira in continuo sulla schermata della cosa da
+       fare tira via lo sguardo proprio da quella cosa. */
+    else if (prossima.mit) { perche = ICO('star', 13) + ' la più importante di oggi'; perCls = ' mit'; }
 
     /* Le ALTRE cose di oggi, a portata di mano: se devi fare qualcos'altro la
        vedi e la scegli, senza sentirti obbligato da quella suggerita. */
@@ -1521,8 +1532,14 @@
          quando la tocchi: due comandi per lo stesso gesto, e il titolo si
          troncava per far posto all'etichetta. */
       altreHtml = '<div class="focus-altre">' +
+        /* Un posto, non una domanda. «Devi fare altro?» chiede all'utente di
+           rimettere in discussione la cosa che ha davanti proprio mentre
+           deve cominciarla: è un invito a riaprire una scelta già fatta, e
+           riaprirla è il modo in cui la scelta non si chiude più (Iyengar &
+           Lepper 2000: più opzioni davanti, meno probabile che si scelga).
+           Le altre restano lì, a un tocco, per quando servono davvero. */
         '<button class="lista-eti lista-eti-btn" id="btn-altre" aria-expanded="' + mostraAltre + '">' +
-        (mostraAltre ? 'Nascondi le altre' : 'Devi fare altro?') + ' <span>' + altre.length + '</span>' +
+        ICO('lista', 13) + (mostraAltre ? 'Nascondi le altre' : 'Le altre di oggi') + ' <span>' + altre.length + '</span>' +
         '<span class="lista-chev' + (mostraAltre ? ' aperta' : '') + '">' + ICO('chevronGiu', 15) + '</span></button>' +
         (mostraAltre ? '<div class="lista">' + altre.map(function (a) {
           var ar = areaById(a.areaId);
@@ -1537,8 +1554,17 @@
         }).join('') + '</div>' : '') + '</div>';
     }
 
+    /* Due parti, non una pila. Il cuore sta in mezzo allo spazio che c'è; la
+       porta per le altre cose sta in fondo, appoggiata al bordo. Prima erano
+       tutti figli della stessa colonna centrata, e «Le altre di oggi» finiva
+       incollata sotto ai tasti con duecento pixel di niente sotto di sé: la
+       schermata sembrava interrotta a metà. */
     html += '<div class="focus-scena' + (timerAttivo ? ' timer-attivo' : '') + '">' +
-      '<div class="focus-eyebrow' + eyebrowCls + '">' + eyebrow + '</div>' +
+      '<div class="focus-cuore">' +
+      '<div class="focus-didascalia' + perCls + '" style="--c-area:' + colArea + '">' +
+      segnoArea(area, 15, 'fd-area') + '<span class="fd-nome">' + esc(area.nome) + '</span>' +
+      (perche ? '<span class="fd-sep">·</span><span class="fd-perche">' + perche + '</span>' : '') +
+      '</div>' +
       (timerAttivo
         ? '<div class="timer-anello" id="timer-anello" style="--p:0"><div class="timer-interno">' +
           '<div class="timer-display" id="timer-display">–:––</div>' +
@@ -1547,17 +1573,14 @@
           '<div class="timer-eti">restano</div></div></div>'
         : '') +
       '<div class="focus-azione">' + esc(prossima.testo) + '</div>' +
-      /* L'area si LEGGE, non si cambia da qui: era una tendina, cioè un
-         comando, su una schermata che ne deve avere il meno possibile — e
-         l'area di una cosa la si sistema già dalla riga in «Da fare», da
-         quella nella «Giornata» e dal diario. Qui serve solo a dire di cosa
-         stiamo parlando. */
-      '<div class="focus-area" style="--c-area:' + colArea + '">' +
-      segnoArea(area, 15) + '<span>' + esc(area.nome) + '</span></div>' +
       (prossima.ifThen ? '<div class="focus-ifthen">' + ICO('ancora', 15) + '<span>' + esc(prossima.ifThen) + '</span></div>' : '') +
       /* gerarchia chiara: un'unica azione dominante, il resto recede */
       '<div class="focus-primaria">' +
-      '<button class="btn btn-ok btn-grande" id="btn-fatto">' + ICO('check', 18) + ' Fatto <small>+' + xpPrevisti + ' XP</small></button>' +
+      /* «Fatto», e basta. Il «+10 XP» sul tasto trasformava l'unico comando
+         che deve essere ovvio in due cose da leggere, e prometteva un premio
+         prima di averlo dato: il premio si vede quando lo premi, e lì è
+         immediato per davvero. */
+      '<button class="btn btn-ok btn-grande" id="btn-fatto">' + ICO('check', 18) + ' Fatto</button>' +
       '</div>' +
       '<div class="focus-secondarie">' +
       /* Un tasto, non quattro. «Timer 25′ 10′ 50′» erano tre bersagli su otto
@@ -1578,6 +1601,7 @@
          del ripasso di una scorciatoia. */
       (inCoda > 0 ? '' :
         '<div class="focus-coda"><span>È l’ultima di oggi.</span></div>') +
+      '</div>' +
       altreHtml +
       '</div>';
 
@@ -2635,7 +2659,13 @@
     var nm = now.getHours() * 60 + now.getMinutes();
     var nowEl = (em(nm) >= wake && em(nm) <= bed) ? '<span class="strip-now" style="left:' + pct(nm).toFixed(1) + '%"></span>' : '';
     var pross = d.placed.filter(function (e) { return e.min >= nm && !(e.tipo === 'azione' ? e.done : e.fatto); })[0];
-    var sotto = pross ? 'poi ' + esc(pross.nome || pross.testo) + ' · ' + pross.ora
+    /* Prima ora, poi il nome: «alle 15:00 Confrontare piani telefonici» è un
+       appuntamento, «poi Confrontare piani telefonici · 15:00» è la prossima
+       cosa da fare. E la prossima cosa da fare la dice già la schermata sotto,
+       che quando quella suggerita non ha un orario ne nomina UN'ALTRA: due
+       risposte diverse alla stessa domanda, a cento pixel di distanza. Questa
+       riga risponde a «dove sono nella giornata», non a «cosa faccio». */
+    var sotto = pross ? 'alle ' + pross.ora + ' ' + esc(pross.nome || pross.testo)
       : (d.placed.length ? 'niente altro in agenda oggi' : 'nessun orario per oggi — tocca per aggiungerne');
     /* In cima a «Oggi» questa è la cosa MENO importante della schermata: dice
        dove sei nella giornata, non cosa fare. Prima aveva un titolo suo, una
