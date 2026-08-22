@@ -191,6 +191,13 @@ img, svg, canvas, video { max-width: 100%; }
    l'attributo messo, e la via del ritorno (`inline-flex`) restava un
    bersaglio da 44px vuoto nella testa del pannello. */
 [hidden] { display: none !important; }
+/* Si legge con un lettore di schermo, non con gli occhi: serve per le
+   intestazioni delle schermate, il cui nome è già scritto nella navigazione.
+   Non `display: none` — quello lo toglie anche a chi legge così. */
+.solo-lettori {
+  position: absolute; width: 1px; height: 1px; overflow: hidden;
+  clip-path: inset(50%); white-space: nowrap; margin: -1px; padding: 0; border: 0;
+}
 
 /* Il testo va sempre a capo: nessuna parola lunghissima (URL, token)
    può forzare la larghezza della pagina */
@@ -401,6 +408,8 @@ small { color: var(--inchiostro-2); }
 .nav-item span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .topbar { display: flex; align-items: flex-end; gap: var(--s4); margin-bottom: var(--s5); flex-wrap: wrap; }
+/* senza titolo visibile resta una barra di strumenti: sotto le serve meno */
+.topbar-nuda { margin-bottom: var(--s4); }
 .topbar h1 { font-size: 29px; letter-spacing: -0.035em; font-weight: 800; line-height: 1.1; }
 .topbar .sottotitolo { margin-top: 3px; font-weight: 500; }
 .topbar .spazio { flex: 1; }

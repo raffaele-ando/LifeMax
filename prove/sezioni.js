@@ -1,8 +1,7 @@
 /* Cambiare sezione non è ricaricare la pagina.
    Le tre sezioni di «Oggi» (Adesso, La giornata, Rituali) sono tre indirizzi
    diversi: ogni passaggio finiva in «cambio pagina» e si rialzava tutto a
-   scaglioni, titolo compreso e riga di linguette compresa — quella che hai
-   appena toccato. Questa prova tiene ferme tre cose: che dentro la stessa
+   scaglioni, riga di linguette compresa — quella che hai appena toccato. Questa prova tiene ferme tre cose: che dentro la stessa
    porta si animi solo il corpo, che cambiando porta si animi tutto (perché lì
    è giusto), e che quello che sta FUORI dalla vista — la barra in basso, la
    colonna, la banda — non venga ricostruito né quando cambi sezione né quando
@@ -25,7 +24,11 @@ await p.evaluate(()=>{localStorage.clear();LM.seedDemo();});await p.reload();awa
 
 const animazioni = () => p.evaluate(()=>{
   const q=s=>document.querySelector(s);
-  const attive=e=>e?e.getAnimations({subtree:false}).filter(a=>a.playState==='running').length:-1;
+  /* `null` se quell'elemento non c'è: da quando il nome della schermata è
+     scritto solo nella navigazione, la riga in cima esiste soltanto dove
+     tiene un comando (Andamento, Esperimenti). Dove non c'è, non c'è niente
+     da tenere fermo. */
+  const attive=e=>e?e.getAnimations({subtree:false}).filter(a=>a.playState==='running').length:null;
   const v=document.getElementById('vista');
   const corpo=[...v.children].filter(e=>!e.classList.contains('topbar')&&!e.classList.contains('porta-nav'));
   return {classe:v.className, titolo:attive(q('#vista .topbar')), riga:attive(q('#vista .porta-nav')),
@@ -38,17 +41,20 @@ await p.evaluate(()=>{[...document.querySelectorAll('.porta-nav > a')].find(x=>/
 await p.waitForTimeout(70);
 let a=await animazioni();
 ok('la vista usa l’animazione di sezione', /sez-enter/.test(a.classe), a.classe);
-ok('il titolo non si muove', a.titolo===0, String(a.titolo)+' animazioni');
+ok('la testa non si muove (se c’è)', a.titolo===0 || a.titolo===null,
+  a.titolo===null?'questa pagina non ha una testa':String(a.titolo)+' animazioni');
 ok('la riga delle sezioni non si muove', a.riga===0, String(a.riga)+' animazioni');
 ok('il corpo invece entra', a.corpo>0, String(a.corpo)+' animazioni');
 
 console.log('\nCAMBIO PORTA: entra tutto, come prima');
 await p.evaluate(()=>{location.hash='#/oggi';});await p.waitForTimeout(900);
-await p.evaluate(()=>{document.querySelector('.tabbar [data-vai="inbox"]').click()});
+/* verso «Andamento», che è una delle due pagine con una barra di strumenti in
+   cima: così la verifica «entra anche la testa» ha ancora qualcosa da guardare */
+await p.evaluate(()=>{document.querySelector('.tabbar [data-vai="plancia"]').click()});
 await p.waitForTimeout(70);
 a=await animazioni();
 ok('la vista usa l’animazione di pagina', /vista-enter/.test(a.classe), a.classe);
-ok('anche il titolo entra', a.titolo>0, String(a.titolo)+' animazioni');
+ok('entra anche la testa', a.titolo>0, String(a.titolo)+' animazioni');
 
 console.log('\nQUELLO CHE STA FUORI DALLA VISTA NON SI RIFÀ');
 const marca = () => p.evaluate(()=>{window.__mk=new WeakSet();

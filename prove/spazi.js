@@ -117,14 +117,24 @@ const MISURA = `(function () {
   var giunti = null;
   if (!ovl) {
     var v = document.getElementById('vista');
-    var tb = v.querySelector(':scope > .topbar'), nv = v.querySelector(':scope > .sez-nav');
-    if (tb && nv) {
+    var nv = v.querySelector(':scope > .sez-nav');
+    if (nv) {
+      /* «testa» non è più la distanza da un titolo — le schermate il cui nome
+         è già scritto nella navigazione non ne hanno uno — ma da dove comincia
+         il contenuto della pagina: è quella che si vede, e deve essere la
+         stessa su tutte le pagine. */
+      var st = getComputedStyle(v);
+      var alto = v.getBoundingClientRect().top + parseFloat(st.paddingTop) - v.scrollTop;
+      /* il primo fratello che occupa spazio: l'intestazione per i lettori di
+         schermo è assoluta e alta un pixel, e presa come «blocco dopo» dava
+         distanze negative */
       var dopo = nv.nextElementSibling;
+      while (dopo && dopo.getBoundingClientRect().height < 2) dopo = dopo.nextElementSibling;
       /* su «Oggi» il blocco dopo la riga è la scena a margini automatici:
          lì il giunto non è un numero, è lo spazio che resta */
       var slack = dopo && (dopo.classList.contains('focus-scena') || dopo.querySelector(':scope > .focus-scena'));
       giunti = {
-        testa: Math.round((nv.getBoundingClientRect().top - tb.getBoundingClientRect().bottom) * 10) / 10,
+        testa: Math.round((nv.getBoundingClientRect().top - alto) * 10) / 10,
         corpo: (dopo && !slack) ? Math.round((dopo.getBoundingClientRect().top - nv.getBoundingClientRect().bottom) * 10) / 10 : null
       };
     }
@@ -236,7 +246,7 @@ const sullaScala = g => SCALA.some(v => Math.abs(g - v) <= TOLL);
       if (!teste.has(t)) teste.set(t, new Set());
       v.forEach(x => teste.get(t).add(x));
     });
-    ok(L + 'px: testa → riga delle sezioni è un solo valore', teste.size === 1,
+    ok(L + 'px: dall’alto del contenuto alla riga delle sezioni, un solo valore', teste.size === 1,
       [...teste.entries()].map(([k, v]) => k + 'px (' + v.size + ' pagine)').join('  ·  '));
     console.log('       riga → corpo: ' + [...g.entries()].map(([k, v]) => (k.split('/')[1] || '—') + 'px×' + v.size).join(' '));
   });

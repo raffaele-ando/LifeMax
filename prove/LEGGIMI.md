@@ -86,8 +86,8 @@ rompe. Sono nati da problemi veri.
 - **spazi.js** — gli spazi fra gli elementi, misurati come una griglia. Per
   ogni schermata e a quattro larghezze prende la distanza fra due elementi
   incolonnati e pretende che stia sulla scala 0/4/8/12/16/24/32/40; che il
-  giunto della pagina (testa → riga delle sezioni) sia lo stesso su tutte le
-  pagine; che lo spazio FRA due gruppi non sia minore di quello DENTRO un
+  contenuto cominci alla stessa altezza su tutte le pagine (la riga delle
+  sezioni è il primo blocco, sempre); che lo spazio FRA due gruppi non sia minore di quello DENTRO un
   gruppo, riempimenti compresi; e che niente sbordi in orizzontale. Misura con
   le animazioni spente: le schermate entrano a scaglioni e misurare durante
   l'ingresso dava 10, 17.9, 27, 37.6 per la stessa coppia a ogni giro — non

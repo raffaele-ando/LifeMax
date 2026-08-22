@@ -1557,10 +1557,31 @@
       }).join('') + '</select>';
   }
 
-  function topbar(titolo, sottotitolo, destra, cls) {
-    return '<div class="topbar' + (cls ? ' ' + cls : '') + '"><div><h1>' + titolo + '</h1>' +
-      (sottotitolo ? '<div class="sottotitolo">' + sottotitolo + '</div>' : '') +
-      '</div><div class="spazio"></div>' + (destra || '') + '</div>';
+  /* LA TESTA DI UNA SCHERMATA
+     «Cosa servono i titoli se c'è già scritto nei pulsanti i nomi?» Misurato:
+     su sei schermate, quattro scrivevano lo stesso nome due volte già sul
+     telefono (il titolo e la linguetta attiva), sei su sei su desktop, dove
+     lo scrive anche la colonna. E il titolo non era nemmeno coerente: su
+     «Adesso» diceva la porta («Oggi»), sulle altre due stanze della stessa
+     porta diceva la stanza, e il nome della porta spariva.
+     Adesso il nome sta in un posto solo, e quel posto è la navigazione: la
+     porta la dice la barra in basso (o la colonna), la stanza la dice la
+     linguetta accesa. Il titolo resta come intestazione per chi naviga con
+     un lettore di schermo o per intestazioni — dove il nome è già in vista
+     non si ripete, e la riga in cima si stampa solo se ha davvero qualcosa da
+     tenere (un comando a destra). Su una pagina che si apre dalle
+     impostazioni e non sta in nessuna barra il titolo si vede, e lì anche una
+     riga di spiegazione serve: la leggi una volta e sai dove sei finito.
+
+     `giaNellaNav`: il nome è già scritto nella navigazione. */
+  function topbar(titolo, sottotitolo, destra, cls, giaNellaNav) {
+    var h1 = '<h1' + (giaNellaNav ? ' class="solo-lettori"' : '') + '>' + titolo + '</h1>';
+    if (giaNellaNav && !destra && !sottotitolo) return h1;
+    /* una riga che tiene solo un comando è una barra di strumenti, non una
+       testa: respira meno sotto */
+    return '<div class="topbar' + (giaNellaNav ? ' topbar-nuda' : '') + (cls ? ' ' + cls : '') + '">' +
+      (giaNellaNav ? h1 : '<div>' + h1 + (sottotitolo ? '<div class="sottotitolo">' + sottotitolo + '</div>' : '') + '</div>') +
+      '<div class="spazio"></div>' + (destra || '') + '</div>';
   }
 
   function refreshObAccount() {
@@ -1677,7 +1698,7 @@
        l'unico momento in cui funziona per chi ha l'ADHD (Barkley 1997 sulla
        sensibilità alle conseguenze immediate contro quelle rimandate). Il
        progresso della giornata resta in «Andamento», dove lo si va a cercare. */
-    var html = topbar('Oggi');
+    var html = topbar('Oggi', '', '', '', true);
     html += '<div id="oggi-giornata"></div>';
 
     if (!prossima) {
@@ -2980,7 +3001,7 @@
       return '<button data-orizz="' + id + '" class="' + (giornataOrizzonte === id ? 'attivo' : '') + '">' +
         '<span class="seg-ico">' + ICO(ico, 13) + '</span><span class="seg-eti">' + et + '</span></button>';
     }
-    var html = topbar('La giornata', 'Le tue ore, giorno per giorno. Con ‹ › cambi giorno.');
+    var html = topbar('La giornata', '', '', '', true);
     /* Due gradini della stessa famiglia. Sopra si scegle la SEZIONE della porta
        (Adesso, La giornata, Rituali); qui un VALORE dentro la sezione — quale
        scala di tempo guardo. La differenza è la MISURA, non l'icona: per un
@@ -3140,9 +3161,9 @@
        un angolo di tutte le pagine. Sta in «Andamento» perché è la porta di
        quello che riguarda l'app e non la giornata, e su monitor non compare —
        là c'è il piede della barra laterale, dove ha sempre funzionato. */
-    var html = topbar('Panoramica', 'Dati e progressi.',
+    var html = topbar('Panoramica', '',
       '<button type="button" class="btn btn-mini imp-porta" id="plancia-imp">' + ICO('ingranaggio', 15) + ' Impostazioni</button>',
-      't-plancia');
+      't-plancia', true);
 
     /* eroe essenziale: anello + XP + tre indicatori come chip (niente
        muro di didascalie: le spiegazioni stanno nei tooltip) */
@@ -3172,7 +3193,7 @@
        Panoramica, quindi è il gradino compatto — segno e parola più piccoli,
        riga più bassa. Le icone restano: sono il modo più rapido di trovare la
        voce giusta, e a rinunciarci si perde più di quanto si guadagni. */
-    html += '<div class="segmenti mini-seg sotto-seg" id="sez-plancia">' + segp('riepilogo', 'dashboard', 'Riepilogo') + segp('diario', 'quaderno', 'Diario') + segp('aree', 'sparkles', 'Aree') + segp('andamento', 'trendUp', 'Andamento') + '</div>';
+    html += '<div class="segmenti mini-seg sotto-seg" id="sez-plancia">' + segp('riepilogo', 'dashboard', 'Riepilogo') + segp('diario', 'quaderno', 'Diario') + segp('aree', 'sparkles', 'Aree') + segp('andamento', 'trendUp', 'Grafici') + '</div>';
     html += '<div id="sez-corpo"></div>';
 
     $vista.innerHTML = html;
@@ -3505,7 +3526,7 @@
       return '<div class="rit-eti">' + g.eti + '</div><div class="rit-gruppo">' + righe + '</div>';
     }).join('');
 
-    $vista.innerHTML = topbar('Rituali', 'I momenti della giornata: cosa fare, e com\u2019è andata.') + corpoHtml;
+    $vista.innerHTML = topbar('Rituali', '', '', '', true) + corpoHtml;
 
     /* disegna il contenuto di TUTTE le sezioni aperte */
     var disegna = {
@@ -4191,7 +4212,7 @@
     if (nInbox) ammessi.sistemare = 1;
     if (!attTab || !ammessi[attTab]) attTab = nInbox ? 'sistemare' : 'dafare';
 
-    var html = topbar('Attività', 'Tutto quello che hai da fare, una volta o sempre.');
+    var html = topbar('Attività', '', '', '', true);
     /* Tre linguette, e la prima esiste solo finché c'è una coda da
        svuotare: una destinazione sempre a zero è una parola in più da
        scartare ogni volta.
@@ -4874,8 +4895,8 @@
        che spiega cosa manca: due pulsanti uguali sulla stessa schermata
        sono due volte la stessa domanda */
     var vuota = !s.esperimenti.length;
-    var html = topbar('Esperimenti', 'Confronto prima/dopo sui tuoi dati.',
-      vuota ? '' : '<button class="btn btn-primario" id="btn-nuovo-exp">' + ICO('plus', 15) + ' Nuovo esperimento</button>') +
+    var html = topbar('Esperimenti', '', 
+      vuota ? '' : '<button class="btn btn-primario" id="btn-nuovo-exp">' + ICO('plus', 15) + ' Nuovo esperimento</button>', '', true) +
       '<div class="card"><div class="sotto" style="margin:0">Come funziona: prima misuri una metrica senza cambiare nulla (fase <b>A</b>, la base di partenza), poi introduci una modifica e continui a misurare (fase <b>B</b>). Il confronto tra le due fasi ti dice se la modifica ha avuto effetto. Un avvertimento onesto: senza gruppo di controllo il risultato è un’indicazione, non una prova definitiva; ripetere l’esperimento lo rende più affidabile.</div></div>' +
       '<div id="form-exp-zona"></div><div class="griglia mt" id="lista-exp" style="gap:16px"></div>';
     $vista.innerHTML = html;
@@ -5304,8 +5325,12 @@
         '<span class="seg-ico">' + ((vi && vi.icona) ? ICO(vi.icona, 15) : '') + bollo + '</span>' +
         '<span class="seg-eti">' + x.eti + '</span></a>';
     }).join('');
-    var tb = $vista.querySelector('.topbar');
-    if (tb) tb.insertAdjacentElement('afterend', bar); else $vista.prepend(bar);
+    /* la riga delle sezioni è SEMPRE il primo blocco della pagina. Prima
+       veniva dopo la testa quando c'era una testa, e da quando le teste sono
+       rimaste solo dove tengono un comando il contenuto cominciava sessanta
+       pixel più in basso su tre pagine e in cima sulle altre sette: cambiando
+       porta la pagina saltava. La barra di strumenti, se c'è, viene dopo. */
+    $vista.prepend(bar);
     /* niente più sfumatura di scorrimento: a colonne uguali la riga ci sta per
        costruzione a qualunque larghezza, come nelle altre pagine */
     document.documentElement.style.setProperty('--sottonav-h', (bar.offsetHeight + 14) + 'px');
