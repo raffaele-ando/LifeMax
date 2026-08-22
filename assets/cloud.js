@@ -291,6 +291,9 @@ function applicaRemoto(d, notifica) {
   }
   applyingRemote = true;
   lastWrittenAt = (d && d.updatedAt) || obj.updatedAt || 0;
+  /* arrivano dati da un altro dispositivo: i punti a cui tornare parlavano di
+     una storia diversa e tornarci mescolerebbe due timeline */
+  if (LM.scordaPunti) LM.scordaPunti();
   LM.hydrate(obj);
   applyingRemote = false;
   if (notifica) window.dispatchEvent(new CustomEvent('lm:remote'));

@@ -219,7 +219,116 @@ var LM = (function () {
      per un'app che serve a misurare. Avvisiamo una volta e proviamo a fare
      spazio buttando le voci più vecchie del registro. */
   var salvataggioRotto = false;
+  /* ---------- punti a cui tornare ----------
+     Ogni cosa che finisce nel diario si può annullare da lì. Un gancio solo,
+     invece di scriverne l'inverso in cinquantuno posti: prima di ogni
+     salvataggio che cambia davvero qualcosa si mette da parte lo stato
+     COM'ERA, e dal diario si torna a quel punto.
+
+     Non basta guardare il registro: completare una cosa non ci scrive niente
+     — il diario la ricava dai dati — e proprio quella è la cosa che più
+     spesso si vuole disfare. Quindi il punto si segna quando lo stato
+     cambia, e si lega alla RIGA del diario per tempo: ogni punto copre la
+     finestra fra il salvataggio precedente e il suo, e una riga che cade in
+     quella finestra è roba sua.
+
+     Le copie stanno in contenitori loro, uno per punto, e non dentro lo
+     stato: così non finiscono nel cloud, non gonfiano il file esportato, e
+     ogni azione riscrive solo la copia nuova invece di tutta la pila. Se lo
+     spazio finisce si buttano, senza toccare i dati veri.
+
+     Attenzione a cosa vuol dire: tornare a un punto riporta indietro TUTTO
+     quello che è venuto dopo. Per l'ultima cosa fatta le due cose
+     coincidono; per una più vecchia no, e l'interfaccia lo dice prima. */
+  var PUNTI_KEY = 'lifemax.annulla.v1';
+  var PUNTO_PRE = 'lifemax.annulla.p.';
+  var PUNTI_MAX = 12;
+  var staTornandoIndietro = false;
+  var ultimoPuntoFino = 0;
+
+  function leggiIndice() {
+    try { return JSON.parse(localStorage.getItem(PUNTI_KEY)) || []; } catch (e) { return []; }
+  }
+  function scriviIndice(arr) {
+    try { localStorage.setItem(PUNTI_KEY, JSON.stringify(arr)); } catch (e) { /* quota */ }
+  }
+  function buttaPunto(id) {
+    try { localStorage.removeItem(PUNTO_PRE + id); } catch (e) { /* niente */ }
+  }
+  function scordaPunti() {
+    leggiIndice().forEach(function (p) { buttaPunto(p.id); });
+    try { localStorage.removeItem(PUNTI_KEY); } catch (e) { /* niente */ }
+    ultimoPuntoFino = 0;
+  }
+
+  /* lo stato è cambiato: si tiene com'era. `prima` è ciò che c'era scritto. */
+  function segnaPunto(prima, primaNudo, adessoNudo) {
+    if (!prima || primaNudo === adessoNudo) return;   /* niente è cambiato davvero */
+    var ora = Date.now();
+    var arr = leggiIndice();
+    var id = 'p' + ora.toString(36) + Math.random().toString(36).slice(2, 6);
+    try { localStorage.setItem(PUNTO_PRE + id, prima); }
+    catch (e) {
+      /* spazio finito: si butta il più vecchio e si riprova una volta sola */
+      if (arr.length) { var v = arr.pop(); buttaPunto(v.id); }
+      try { localStorage.setItem(PUNTO_PRE + id, prima); }
+      catch (e2) { scriviIndice(arr); return; }
+    }
+    /* La finestra parte dal salvataggio precedente, ma non più di cinque
+       secondi indietro: senza questo limite il primo punto aveva `da: 0` e si
+       prendeva TUTTO il passato — ogni riga del diario, anche di mesi prima,
+       sembrava annullabile e annullarla riportava a ieri. */
+    arr.unshift({ id: id, da: Math.max(ultimoPuntoFino, ora - 5000), fino: ora });
+    ultimoPuntoFino = ora;
+    while (arr.length > PUNTI_MAX) buttaPunto(arr.pop().id);
+    scriviIndice(arr);
+  }
+
+  /* la riga del diario con questo istante appartiene a quale punto?
+     `dopo` dice quante cose sono state fatte DOPO: se è zero, annullare quel
+     punto annulla esattamente quella cosa e nient'altro. */
+  function puntoDiRitorno(ts) {
+    var arr = leggiIndice();
+    for (var i = 0; i < arr.length; i++) {
+      if (ts > arr[i].da && ts <= arr[i].fino + 1500) return { id: arr[i].id, dopo: i };
+    }
+    return null;
+  }
+  function puntiDiRitorno() {
+    return leggiIndice().map(function (p, i) { return { id: p.id, da: p.da, fino: p.fino, dopo: i }; });
+  }
+
+  /* Torna a com'era. Il registro NON si conserva: se tornasse indietro anche
+     lui il diario mostrerebbe cose che non sono più vere. Al suo posto resta
+     una riga che dice che sei tornato. */
+  function tornaAlPunto(ts, etichetta) {
+    var arr = leggiIndice();
+    var i = -1;
+    for (var j = 0; j < arr.length; j++) { if (ts > arr[j].da && ts <= arr[j].fino + 1500) { i = j; break; } }
+    if (i < 0) return false;
+    var raw;
+    try { raw = localStorage.getItem(PUNTO_PRE + arr[i].id); } catch (e) { raw = null; }
+    var vecchio = raw ? safeParse(raw) : null;
+    if (!vecchio) return false;
+    /* i punti da qui in avanti descrivono uno stato che non esiste più */
+    for (var k = 0; k <= i; k++) buttaPunto(arr[k].id);
+    var resto = arr.slice(i + 1);
+    scriviIndice(resto);
+    ultimoPuntoFino = resto.length ? resto[0].fino : 0;
+    staTornandoIndietro = true;
+    hydrate(vecchio);
+    registra('dati', 'Annullato: «' + (etichetta || 'una cosa fatta') + '»', true);
+    save();
+    staTornandoIndietro = false;
+    return true;
+  }
+
   function save() {
+    /* com'era prima: si legge dal salvataggio, che è ancora quello vecchio */
+    var prima = null;
+    if (!staTornandoIndietro) {
+      try { prima = localStorage.getItem(STORAGE_KEY); } catch (e) { prima = null; }
+    }
     if (state) state.updatedAt = Date.now();
     var ok = true;
     try {
@@ -241,11 +350,23 @@ var LM = (function () {
       document.dispatchEvent(new CustomEvent('lm:errore-salvataggio'));
     }
     if (ok) salvataggioRotto = false;
+    if (!staTornandoIndietro) {
+      var adesso = null;
+      try { adesso = localStorage.getItem(STORAGE_KEY); } catch (e) { adesso = null; }
+      /* `updatedAt` cambia a ogni salvataggio: si toglie da entrambi, altrimenti
+         ogni salvataggio sembrerebbe un cambiamento */
+      segnaPunto(prima, senzaOrologio(prima), senzaOrologio(adesso));
+    }
     document.dispatchEvent(new CustomEvent('lm:change'));
+  }
+  function senzaOrologio(raw) {
+    return raw ? raw.replace(/"updatedAt":\s*\d+,?/, '') : raw;
   }
 
   function reset() {
     backup('prima-azzeramento');
+    /* i punti a cui tornare parlavano di dati che non ci sono più */
+    scordaPunti();
     state = statoVuoto();
     registra('dati', 'Dati azzerati (ripartenza da zero)', true);
     save();
@@ -283,6 +404,7 @@ var LM = (function () {
     var b = leggiBackups().find(function (x) { return x.ts === ts; });
     if (!b) return false;
     backup('prima-del-ripristino');
+    scordaPunti();
     hydrate(safeParse(b.data));
     registra('dati', 'Ripristinato un backup', true);
     save();
@@ -324,6 +446,7 @@ var LM = (function () {
       return { ok: false, err: 'Il file non contiene dati LifeMax.' };
     }
     backup('prima-import');
+    scordaPunti();
     st.updatedAt = Date.now();
     hydrate(st);
     registra('dati', 'Dati importati da file (' + ricchezza(st) + ' elementi)', true);
@@ -1789,6 +1912,8 @@ var LM = (function () {
     load: load, save: save, reset: reset, seedDemo: seedDemo, hydrate: hydrate, snapshot: snapshot,
     backup: backup, listBackups: listBackups, restoreBackup: restoreBackup, ricchezza: ricchezza,
     exportJson: exportJson, importJson: importJson, ripristinaStato: ripristinaStato,
+    puntoDiRitorno: puntoDiRitorno, puntiDiRitorno: puntiDiRitorno,
+    tornaAlPunto: tornaAlPunto, scordaPunti: scordaPunti,
     todayKey: todayKey, dayKey: dayKey, addDays: addDays, lastNDays: lastNDays,
     weekKey: weekKey, weekdayShort: weekdayShort, fmtShort: fmtShort, daysBetween: daysBetween,
     coloreArea: coloreArea, livelloDaXp: livelloDaXp,

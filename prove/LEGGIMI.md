@@ -1,6 +1,6 @@
 # Prove
 
-Cinque controlli automatici che guardano una cosa sola ciascuno, ma
+Sei controlli automatici che guardano una cosa sola ciascuno, ma
 quella cosa fa morire l'app — o la fa diventare illeggibile — quando si
 rompe. Sono nati da problemi veri.
 
@@ -43,6 +43,15 @@ rompe. Sono nati da problemi veri.
   sezione abbiano tutte la stessa forma. Nasce da «se passo da una schermata
   all'altra deve ricaricare tutto».
 
+- **annulla.js** — annullare dal diario. Ogni cambiamento lascia un punto a
+  cui tornare (gli ultimi dodici, in contenitori loro fuori dai dati
+  sincronizzati) e il diario ha il tasto per disfarlo. Controlla che il tasto
+  compaia solo dove c'è davvero un punto e una volta sola per
+  cambiamento, che una cosa fatta si disfaccia per intero — XP compresi —
+  che l'annulla si possa a sua volta annullare, e che annullare una cosa
+  vecchia avverta di quante altre rientrano. Nasce da «non posso annullare
+  le cose che faccio per ogni cosa».
+
 ## Come si lanciano
 
     npm install playwright
@@ -51,6 +60,7 @@ rompe. Sono nati da problemi veri.
     node prove/segni.js      # solo Node, niente browser
     node prove/doppioni.js   # qualche minuto
     node prove/sezioni.js
+    node prove/annulla.js
 
 Servono Node e Chromium (segni.js si accontenta di Node). Se Chromium sta in un posto suo:
 

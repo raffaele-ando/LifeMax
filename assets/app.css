@@ -1565,6 +1565,24 @@ label.campo {
   padding: 2px 20px 2px 2px; font-size: 13.5px; font-weight: 650; color: var(--inchiostro-2);
 }
 .diario-cambia { display: inline-block; vertical-align: middle; margin-left: 3px; }
+/* «Annulla» su una riga del diario: si vede che c'è, senza gridare. Sta prima
+   dell'ora perché è dell'evento, non del momento. */
+.diario-annulla {
+  /* `position: relative` sta QUI dentro e non altrove: l'area del dito qui
+     sotto è una percentuale del primo antenato posizionato, e due volte in
+     questo progetto una ripulitura di CSS morto se l'ha portata via
+     trasformandola in un buco invisibile grande come tutta la scheda. */
+  position: relative;
+  flex: none; display: inline-flex; align-items: center; gap: 4px;
+  font-size: 11px; font-weight: 750; color: var(--inchiostro-2);
+  background: var(--superficie-2); border: 1px solid var(--bordo);
+  border-radius: var(--r-tondo); padding: 3px 9px; cursor: pointer;
+  transition: color var(--t-veloce), border-color var(--t-veloce);
+}
+.diario-annulla:hover { color: var(--accento-testo); border-color: color-mix(in srgb, var(--accento) 45%, var(--bordo-forte)); }
+.diario-annulla .ico { color: var(--inchiostro-muto); }
+.diario-annulla:hover .ico { color: var(--accento-testo); }
+@media (pointer: coarse) { .diario-annulla { min-height: 34px; padding: 3px 11px; } }
 
 
 /* ============================================================
@@ -2536,7 +2554,7 @@ body.sto-trascinando { cursor: grabbing; user-select: none; -webkit-user-select:
      card e si mangia i clic di tutto quello che ha intorno. È successo
      davvero, per una riga di CSS cancellata insieme a codice morto: da
      allora c'è anche una prova che lo controlla (clic.js). */
-  .riga-azione .spunta::after, .lista-azione::after, .tl-check::after {
+  .riga-azione .spunta::after, .lista-azione::after, .tl-check::after, .diario-annulla::after {
     content: ''; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
     width: 44px; height: 44px;
   }

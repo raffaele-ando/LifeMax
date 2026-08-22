@@ -2783,6 +2783,7 @@
   }
 
   /* una riga della timeline del Diario */
+  var annullaMostrati = {};
   function eventoDiarioHtml(ev) {
     var ico, testo, cls = '';
     if (ev.tipo === 'azione') {
@@ -2792,7 +2793,9 @@
         ' ' + segnoArea(ar, 13, 'diario-area') +
         (ev.mit ? ' <span class="tag-mit">' + ICO('star', 11) + 'Priorità</span>' : '');
     } else if (ev.tipo === 'checkin') {
-      ico = '<span class="diario-ico">' + ICO('bolt', 15) + '</span>';
+      /* il check-in ha il suo segno (il battito): il fulmine è la cattura
+         rapida, e qui era rimasto da prima che li separassi */
+      ico = '<span class="diario-ico">' + ICO('polso', 15) + '</span>';
       testo = 'Check-in · energia <b>' + ev.energia + '</b> · focus <b>' + ev.focus + '</b> · umore <b>' + ev.umore + '</b>';
     } else if (ev.tipo === 'mattina') {
       ico = '<span class="diario-ico">' + ICO('sun', 15) + '</span>';
@@ -2824,8 +2827,23 @@
     if (ev.tipo === 'azione' && ev.id) {
       testo += ' <span class="diario-cambia">' + selectAreaAzione(ev.id, ev.areaId, 'mini') + '</span>';
     }
+    /* Qui si annulla. Il diario è la lista di quello che hai fatto, quindi è
+       il posto dove disfarlo: prima si poteva solo nei sette secondi del
+       messaggino, e su due cose in croce. Il tasto compare sulle righe per cui
+       esiste ancora un punto a cui tornare (le ultime dodici cose). */
+    /* Un «Annulla» per cambiamento, non per riga. Una cosa sola può comparire
+       nel diario su due righe (la nota annotata e la riga di registro che la
+       racconta): due tasti che fanno la stessa cosa, a due righe di distanza.
+       Lo mostra la riga più recente delle sue, e basta. */
+    var punto = LM.puntoDiRitorno(ev.ts);
+    var annulla = '';
+    if (punto && !annullaMostrati[punto.id]) {
+      annullaMostrati[punto.id] = 1;
+      annulla = '<button class="diario-annulla" data-annulla="' + ev.ts + '" title="Torna a com’era prima di questa cosa">' +
+        ICO('refresh', 13) + ' Annulla</button>';
+    }
     return '<div class="diario-evento' + cls + '">' + ico + '<div class="diario-testo">' + testo + '</div>' +
-      '<span class="diario-ora">' + oraDi(ev.ts) + '</span></div>';
+      annulla + '<span class="diario-ora">' + oraDi(ev.ts) + '</span></div>';
   }
 
   function vistaPlancia() {
@@ -2859,7 +2877,7 @@
       '<div class="eroe2-chips">' +
       chip('flame', '<b>' + st.corrente + '</b> giorni di fila', 'fiamma', 'Un giorno saltato non azzera la serie.') +
       chip('check', '<b>' + fatte + '/' + oggi.length + '</b> azioni oggi') +
-      chip('bolt', '<b>' + checkinOggi + '</b> check-in oggi') +
+      chip('polso', '<b>' + checkinOggi + '</b> check-in oggi') +
       '</div></div>' +
       '<button class="btn btn-primario eroe2-cta" data-vai="oggi">' + ICO('target', 15) + ' Vai a Oggi</button>' +
       '</div>';
@@ -3010,6 +3028,7 @@
 
     /* --- Diario: cronologia di ciò che hai fatto e scritto --- */
     function sezDiario(c) {
+      annullaMostrati = {};
       var giorni = LM.diario(diarioGiorni, diarioTutto);
       var filtro = '<div class="segmenti mini-seg" id="diario-filtro">' +
         '<button data-tutto="0" class="' + (!diarioTutto ? 'attivo' : '') + '">Cose importanti</button>' +
@@ -3037,7 +3056,45 @@
       document.getElementById('diario-filtro').querySelectorAll('[data-tutto]').forEach(function (bt) {
         bt.addEventListener('click', function () { diarioTutto = bt.getAttribute('data-tutto') === '1'; disegnaSezione(); });
       });
+      c.querySelectorAll('[data-annulla]').forEach(function (bt) {
+        bt.addEventListener('click', function () {
+          /* l'etichetta è il testo della riga stessa: è quello che l'utente
+             sta guardando, e finisce nella riga «Annullato: …» */
+          var riga = bt.closest('.diario-evento');
+          var eti = riga ? (riga.querySelector('.diario-testo') || {}).textContent : '';
+          annullaDalDiario(+bt.getAttribute('data-annulla'), (eti || '').replace(/\s+/g, ' ').trim().slice(0, 60));
+        });
+      });
     }
+  }
+
+  /* Annullare dal diario. Tornare a un punto riporta indietro TUTTO quello che
+     è venuto dopo: per l'ultima cosa fatta le due cose coincidono e si fa
+     subito, con l'annulla dell'annulla nel messaggio; per una più vecchia si
+     dice quante altre cose rientrano e si chiede conferma, perché una
+     sorpresa qui costa più di un tocco in più. */
+  function annullaDalDiario(ts, etichetta) {
+    var punto = LM.puntoDiRitorno(ts);
+    if (!punto) { toast('Questa è troppo indietro: non si può più annullare.', 0, 'aiuto'); return; }
+    function fallo() {
+      var prima = JSON.parse(JSON.stringify(LM.load()));
+      if (!LM.tornaAlPunto(ts, etichetta)) { toast('Non si può più annullare.', 0, 'aiuto'); return; }
+      render();
+      toast('Annullato.', 0, 'refresh', { eti: 'Rimetti', fai: function () {
+        LM.ripristinaStato(prima);
+        render();
+        toast('Rimesso com’era.', 0, 'check');
+      } });
+    }
+    /* l'ultima cosa fatta si annulla senza chiedere: annullarla non tocca
+       nient'altro, e c'è il «Rimetti» nel messaggio */
+    if (!punto.dopo) { fallo(); return; }
+    avviso({
+      titolo: 'Torniamo indietro fin qui?',
+      testo: 'Annullare questa riporta indietro anche quello che hai fatto dopo: ' +
+        punto.dopo + (punto.dopo === 1 ? ' cosa.' : ' cose.') + ' Si può rimettere subito dopo.',
+      azione: 'Torna indietro', annulla: 'Lascia stare'
+    }, fallo);
   }
 
   /* ============================================================
@@ -3687,7 +3744,7 @@
       var xp = LM.registraCheckin(voti.energia, voti.focus, voti.umore);
       var r = ev.currentTarget.getBoundingClientRect();
       flyXp(r.left + r.width / 2, r.top, xp);
-      toast('Salvato.', xp, 'bolt');
+      toast('Salvato.', xp, 'polso');
       render();
     });
 
