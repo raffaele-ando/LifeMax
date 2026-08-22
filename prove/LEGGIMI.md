@@ -1,8 +1,8 @@
 # Prove
 
-Tre controlli automatici che guardano una cosa sola ciascuno, ma quella
-cosa fa morire l'app — o la fa diventare illeggibile — quando si rompe.
-Sono nati da problemi veri.
+Quattro controlli automatici che guardano una cosa sola ciascuno, ma
+quella cosa fa morire l'app — o la fa diventare illeggibile — quando si
+rompe. Sono nati da problemi veri.
 
 - **clic.js** — dove finisce davvero il dito. Campiona una griglia di punti
   su tutta la pagina, scorrendola per intero, e chiede al browser chi
@@ -23,6 +23,17 @@ Sono nati da problemi veri.
   «la tua area» e due righe sopra «priorità»); tutte le misure stanno sui
   cinque gradini della scala; e il tratto arriva sempre alla stessa
   densità. Nasce da «vedo più icone usate per cose diverse».
+- **doppioni.js** — due comandi che fanno la stessa cosa nella stessa
+  schermata. Non guarda i nomi né le classi: clicca. Per ogni comando
+  visibile parte da uno stato identico, lo preme, e registra cosa lascia —
+  dove sei finito, com'è cambiato il salvataggio, che pannello si è
+  aperto, che messaggio è comparso. Due comandi che lasciano lo stesso
+  stato esatto sono due modi per la stessa cosa; N righe di un elenco
+  toccano cose diverse, lasciano salvataggi diversi, e non si confondono
+  con i doppioni. In fondo al file c'è la lista dei doppioni tenuti di
+  proposito, con la ragione. Nasce da «verifica se nella stessa schermata
+  non ci sono elementi che fanno le stesse cose». Ci mette qualche
+  minuto: apre una pagina pulita per ogni comando.
 
 ## Come si lanciano
 
@@ -30,6 +41,7 @@ Sono nati da problemi veri.
     node prove/clic.js
     node prove/modalita.js
     node prove/segni.js      # solo Node, niente browser
+    node prove/doppioni.js   # qualche minuto
 
 Servono Node e Chromium (segni.js si accontenta di Node). Se Chromium sta in un posto suo:
 

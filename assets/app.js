@@ -1049,7 +1049,13 @@
       return '<div class="area-riga' + (attiva ? '' : ' spenta') + '" style="--c-area:' + LM.coloreArea(a) + '">' +
         '<span class="icona-area">' + ICO(a.icona, 15) + '</span>' +
         '<input type="text" class="area-nome-input" data-rin="' + a.id + '" value="' + esc(a.nome) + '" aria-label="Nome dell’area">' +
-        '<button class="icona-btn' + (attiva ? ' on' : '') + '" data-toggle-area="' + a.id + '" title="' + (attiva ? 'Attiva (tocca per disattivare)' : 'Disattivata (tocca per attivare)') + '">' + ICO(attiva ? 'check' : 'x', 15) + '</button>' +
+        /* il title non basta: col dito non esiste e con la voce l'icona è
+           aria-hidden, quindi questi otto tasti non avevano nome — e nemmeno
+           dicevano DI QUALE area erano */
+        '<button class="icona-btn' + (attiva ? ' on' : '') + '" data-toggle-area="' + a.id + '"' +
+        ' aria-pressed="' + (attiva ? 'true' : 'false') + '"' +
+        ' aria-label="' + esc(a.nome) + ': ' + (attiva ? 'attiva, tocca per disattivarla' : 'disattivata, tocca per attivarla') + '"' +
+        ' title="' + (attiva ? 'Attiva (tocca per disattivare)' : 'Disattivata (tocca per attivare)') + '">' + ICO(attiva ? 'check' : 'x', 15) + '</button>' +
         '<button class="icona-btn" data-del-area="' + a.id + '" title="Rimuovi">' + ICO('trash', 15) + '</button>' +
         '</div>';
     }).join('');
@@ -2838,7 +2844,11 @@
     function sezRiepilogo(c) {
       c.innerHTML = '<div class="griglia griglia-2">' +
         '<div class="card" style="--i:0"><h2>' + ICO('target', 15) + ' Le azioni di oggi</h2>' +
-        '<div class="sotto">Scelte in <a href="#/rituali">Rituali</a>, fatte una per volta in <a href="#/oggi">Oggi</a>. Qui sono tutte insieme.</div>' +
+        /* «Oggi» non è più un link: il pulsante pieno «Vai a Oggi» sta due
+           riquadri sopra, nella stessa schermata, e portava esattamente allo
+           stesso posto. «Rituali» resta, da questa scheda non si raggiunge
+           altrimenti. */
+        '<div class="sotto">Scelte in <a href="#/rituali">Rituali</a>, fatte una per volta in <i>Oggi</i>. Qui sono tutte insieme.</div>' +
         '<div class="lista-azioni" id="lista-oggi"></div>' +
         /* la stessa riga d'aggiunta di tutte le altre: era la terza variante
            in tre schermate — qui campo, tendina e tasto in fila; in Rituali
@@ -3144,8 +3154,16 @@
       (oggi.length >= 3 ? '<div class="sotto" style="margin:8px 0 0">Hai <b>' + oggi.length + '</b> azioni per oggi. Oltre tre diventa difficile finirle: le altre si possono spostare a domani da <i>La giornata</i>.</div>' : '') +
       '<label class="campo" for="piano-ifthen">Quando e dove inizi la prima?</label>' +
       '<input type="text" id="piano-ifthen" placeholder="Es. alle 9:00, appena mi siedo alla scrivania, apro solo il file su cui devo lavorare" value="' + (piano ? esc(piano.intenzione) : '') + '">' +
-      '<div class="riga-flex mt"><button class="btn btn-primario btn-grande" id="btn-salva-piano">' + (piano ? ICO('save', 15) + ' Aggiorna' : ICO('arrowRight', 15) + ' Salva e parti') + ' <small>+' + LM.XP_EVENTI.pianoMattina + ' XP</small></button>' +
-      '<button class="btn btn-ghost" id="btn-vai-focus">Inizia ora ' + ICO('arrowRight', 15) + '</button></div>' +
+      /* Un pulsante, non due. C'erano «Salva e parti» (pieno, con la freccia,
+         +5 XP) e «Inizia ora» accanto: il primo salvava e NON si muoveva,
+         nonostante la freccia e la parola «parti»; il secondo andava a Oggi
+         senza salvare, quindi l'intenzione appena scritta qui sopra veniva
+         buttata. Due tasti per un gesto, divisi a metà così che nessuno dei
+         due lo facesse per intero. Ora «Salva e parti» salva e parte davvero;
+         quando il piano c'è già diventa «Aggiorna» e resta qui, perché stai
+         correggendo, non partendo — e per andare a Oggi c'è la linguetta
+         «Adesso», due centimetri sopra. */
+      '<div class="riga-flex mt"><button class="btn btn-primario btn-grande" id="btn-salva-piano">' + (piano ? ICO('save', 15) + ' Aggiorna' : ICO('arrowRight', 15) + ' Salva e parti') + ' <small>+' + LM.XP_EVENTI.pianoMattina + ' XP</small></button></div>' +
       '</div>';
 
     var lista = document.getElementById('piano-lista');
@@ -3164,6 +3182,7 @@
       render();
     });
     document.getElementById('btn-salva-piano').addEventListener('click', function () {
+      var eraSalvato = !!piano;
       var xp = LM.salvaPianoMattina(document.getElementById('piano-ifthen').value.trim());
       var mit = LM.azioniDiOggi().find(function (a) { return a.mit; });
       if (mit) {
@@ -3171,9 +3190,11 @@
         LM.save();
       }
       toast(xp ? 'Fatto. Ora pensa solo alla prima cosa.' : 'Aggiornato.', xp, 'sun');
+      /* la prima volta del giorno il piano è appena nato: si va a farlo. Se lo
+         stai solo aggiornando resti dove sei. */
+      if (!eraSalvato) { location.hash = '#/oggi'; return; }
       render();
     });
-    document.getElementById('btn-vai-focus').addEventListener('click', function () { location.hash = '#/oggi'; });
   }
 
   /* ---------- Attività → Abitudini ---------- */
