@@ -61,6 +61,19 @@ rompe. Sono nati da problemi veri.
   ogni cosa» e da «non è retroattivo rispetto a quelli che ho già messo nel
   passato».
 
+- **colori.js** — il contrasto del testo, su tutta l'app e nei due temi. Per
+  ogni schermata legge il colore calcolato di ogni testo visibile e il fondo
+  davvero dipinto sotto di lui — alfa composte e sfumature comprese, prendendo
+  la fermata peggiore — e pretende il minimo di WCAG AA: 4.5:1, o 3:1 per il
+  testo grande. I colori si fanno risolvere al browser dipingendoli due volte,
+  su bianco e su nero: `getComputedStyle` restituisce i color-mix come
+  `color(srgb …)` e leggerli con una regex dà zero, dipingerli una volta sola
+  perde l'alfa. In fondo stampa quello che sta sotto il minimo di proposito (il
+  bianco sul pieno di marca) con la misura, invece di nasconderlo. Nasce da un
+  errore che l'occhio non vede: `var(--inchiostro)` invece di
+  `var(--inchiostro-1)` rende invalido il color-mix e il testo torna al grigio
+  ereditato, che è un colore plausibile.
+
 ## Come si lanciano
 
     npm install playwright
@@ -70,6 +83,7 @@ rompe. Sono nati da problemi veri.
     node prove/doppioni.js   # qualche minuto
     node prove/sezioni.js
     node prove/annulla.js
+    node prove/colori.js
 
 Servono Node e Chromium (segni.js si accontenta di Node). Se Chromium sta in un posto suo:
 

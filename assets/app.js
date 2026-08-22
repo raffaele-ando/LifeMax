@@ -1560,7 +1560,7 @@
        incollata sotto ai tasti con duecento pixel di niente sotto di sé: la
        schermata sembrava interrotta a metà. */
     html += '<div class="focus-scena' + (timerAttivo ? ' timer-attivo' : '') + '">' +
-      '<div class="focus-cuore">' +
+      '<div class="focus-cuore" style="--c-area:' + colArea + '">' +
       '<div class="focus-didascalia' + perCls + '" style="--c-area:' + colArea + '">' +
       segnoArea(area, 15, 'fd-area') + '<span class="fd-nome">' + esc(area.nome) + '</span>' +
       (perche ? '<span class="fd-sep">·</span><span class="fd-perche">' + perche + '</span>' : '') +

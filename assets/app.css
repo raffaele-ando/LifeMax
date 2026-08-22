@@ -641,10 +641,6 @@ label.campo { display: block; margin: 14px 0 6px; }
 .vista-oggi .focus-scena { flex: 1 1 auto; min-height: 0; padding: 10px 0; }
 @media (max-width: 860px) { .vista-oggi .focus-scena { padding: 4px 0; } }
 @media (max-width: 860px) {
-  /* spazio a destra per non finire sotto al pulsante + flottante */
-  .vista-oggi .focus-coda { padding-right: 76px; }
-}
-@media (max-width: 860px) {
   .vista-oggi { min-height: calc(100dvh - 140px - var(--banda-h, 0px) - var(--sottonav-h, 0px)); }
 }
 .focus-azione {
@@ -664,7 +660,16 @@ label.campo { display: block; margin: 14px 0 6px; }
   max-width: 32em;
 }
 .focus-didascalia .fd-area { color: var(--c-area, var(--inchiostro-2)); }
-.focus-didascalia .fd-sep { color: var(--bordo-forte); }
+/* il nome dell'area col colore dell'area: era grigio come tutto il resto, e
+   allora il glifo colorato accanto sembrava una decorazione invece del segno
+   di qualcosa */
+/* il token è `--inchiostro-1`: scritto `--inchiostro` il color-mix è invalido
+   e il nome tornava grigio ereditato — si vedeva solo misurando il contrasto,
+   perché grigio su bianco è un colore plausibile */
+.focus-didascalia .fd-nome { color: color-mix(in srgb, var(--c-area, var(--inchiostro-2)) 55%, var(--inchiostro-1)); font-weight: 750; }
+/* il punto in mezzo si deve vedere: a `--bordo-forte` stava a 1.36:1, cioè
+   era un carattere invisibile fra due pezzi di frase */
+.focus-didascalia .fd-sep { color: var(--inchiostro-muto); }
 .focus-didascalia .fd-perche { font-weight: 750; }
 .focus-didascalia.ora .fd-perche { color: var(--accento-testo); }
 .focus-didascalia.ritardo .fd-perche { color: var(--critico); }
@@ -725,12 +730,41 @@ label.campo { display: block; margin: 14px 0 6px; }
    l'elenco di tutta l'app — .lista-eti-btn + .lista + .lista-riga. Prima
    avevano un tasto tondo tutto loro e righe a pastiglia con la spunta fuori:
    un quarto disegno di elenco in un'app che ne ha uno. */
-/* il cuore prende lo spazio e si centra dentro; la porta resta in fondo */
+/* Il cuore prende lo spazio e si centra dentro; la porta resta in fondo.
+   E il cuore è un OGGETTO, non del testo appoggiato allo sfondo. Prima la
+   cosa da fare stava sul grigio della pagina come tutto il resto: pulita e
+   senza peso, «un compito nel vuoto». Un piano suo, con un'ombra e un filo
+   di colore in cima, la fa diventare la cosa che c'è in questa schermata —
+   e non costa una parola in più da leggere. Il colore è quello dell'area:
+   così a colpo d'occhio sai anche di che pezzo della tua vita si tratta,
+   senza doverlo leggere. */
 .focus-cuore {
-  flex: 1 1 auto; min-height: 0;
+  /* si prende quello che gli serve e sta in mezzo allo spazio che resta: con
+     `flex: 1` il piano si allungava fino in fondo alla scena e restavano
+     centoventi pixel di bianco sotto ai tasti, che è il contrario di «una
+     cosa sola, e questa è» */
+  flex: 0 0 auto; margin: auto;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
-  gap: 20px; width: 100%;
+  gap: 20px; width: 100%; max-width: 620px;
+  position: relative;
+  padding: 32px 26px 28px;
+  /* una tinta sola, appena accennata: il colore lo porta il filo in cima, e
+     una sfumatura che finisce a metà si vede finire */
+  background: color-mix(in srgb, var(--c-area, var(--accento)) 4%, var(--superficie-1));
+  border: 1px solid color-mix(in srgb, var(--c-area, var(--accento)) 16%, var(--bordo));
+  border-radius: var(--r-3);
+  box-shadow: var(--e2);
+  overflow: hidden;
 }
+/* il filo in cima: l'area, larga quanto la cosa che le appartiene */
+.focus-cuore::before {
+  content: ''; position: absolute; inset: 0 0 auto; height: 3px;
+  background: var(--c-area, var(--accento));
+}
+@media (max-width: 520px) { .focus-cuore { padding: 26px 16px 24px; gap: 17px; } }
+/* su uno schermo basso il piano si stringe: il respiro serve quando c'è
+   spazio, non a costo di far scorrere la schermata che deve starci intera */
+@media (max-height: 700px) { .focus-cuore { padding: 18px 16px 16px; gap: 13px; } }
 .focus-altre { flex: none; width: 100%; max-width: 560px; margin: 2px auto 0; text-align: left; }
 .focus-altre .lista-eti-btn { justify-content: flex-start; }
 
@@ -1402,8 +1436,10 @@ label.campo {
 .area-metriche span { font-size: 11px; color: var(--inchiostro-muto); }
 
 /* Focus: gerarchia dei comandi (una azione dominante, resto recessivo) */
-.focus-primaria { margin-top: 6px; }
-.focus-primaria .btn-grande { min-width: 230px; }
+.focus-primaria { margin-top: 6px; width: 100%; display: flex; justify-content: center; }
+/* larga quanto basta a non essere un tasto fra i tasti: sul piano del cuore
+   è l'unica cosa piena, e si vede da lontano che è quella da premere */
+.focus-primaria .btn-grande { width: 100%; max-width: 320px; }
 .focus-secondarie { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; justify-content: center; margin-top: 6px; }
 .timer-gruppo { display: inline-flex; align-items: center; gap: 7px; font-size: 13px; color: var(--inchiostro-2); font-weight: 600; }
 .timer-gruppo .ico { color: var(--inchiostro-muto); }
