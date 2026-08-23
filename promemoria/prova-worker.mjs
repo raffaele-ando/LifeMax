@@ -3,8 +3,14 @@
    si vede davvero il giro intero — l'app deposita il piano, passa il tempo,
    partono le notifiche, e non partono due volte.
      node promemoria/prova-worker.mjs   */
-import worker from './worker.js';
-import { base64url as B } from './push.js';
+/* Si prova il Worker vero E il file unico da incollare in Cloudflare: quello
+   è generato dai tre moduli, e senza girarci sopra le prove potrebbe restare
+   verde mentre il file che finisce davvero online dice un'altra cosa.
+     node promemoria/prova-worker.mjs            i moduli
+     node promemoria/prova-worker.mjs --unico    il file da incollare */
+const UNICO = process.argv.includes('--unico');
+const worker = (await import(UNICO ? './worker-unico.js' : './worker.js')).default;
+const { base64url: B } = await import('./push.js');
 
 let fail = 0;
 const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  ') + n + (d ? '  → ' + d : '')); };
@@ -57,11 +63,51 @@ const fetchVero = globalThis.fetch;
 globalThis.fetch = async (url, opz) => {
   const u = String(url && url.url ? url.url : url);
   if (u.startsWith('https://web.push.apple.com/')) {
-    spedite.push({ url: u, testa: opz.headers, byte: opz.body.length });
+    spedite.push({ url: u, testa: opz.headers, byte: opz.body.length, corpo: opz.body });
     return new Response('', { status: rispostaPush });
   }
   return fetchVero(url, opz);
 };
+
+/* IL LATO CHE RICEVE (RFC 8291), per guardare dentro il pacchetto.
+   Serve a una cosa sola: sapere che quello che l'app ha messo nel piano è
+   arrivato fino in fondo. Guardare solo «è partita una richiesta» lascia
+   passare un Worker che spedisce un pacchetto vuoto — o che perde per strada
+   un campo aggiunto ieri. E di sponda è un giro completo: cifrato da noi,
+   decifrato da noi, senza che le due metà si siano mai parlate. */
+async function apri(corpoCifrato) {
+  const b = new Uint8Array(corpoCifrato);
+  const salt = b.slice(0, 16);
+  const idlen = b[20];
+  const asPub = b.slice(21, 21 + idlen);
+  const cifrato = b.slice(21 + idlen);
+
+  const asChiave = await crypto.subtle.importKey('raw', asPub, { name: 'ECDH', namedCurve: 'P-256' }, false, []);
+  const segreto = new Uint8Array(await crypto.subtle.deriveBits(
+    { name: 'ECDH', public: asChiave }, tel.privateKey, 256));
+
+  const T = (x) => new TextEncoder().encode(x);
+  const unisci = (a) => { const n = a.reduce((t, x) => t + x.length, 0), o = new Uint8Array(n);
+    let i = 0; for (const x of a) { o.set(x, i); i += x.length; } return o; };
+  const hkdf = async (sale, ikm, info, len) => {
+    const k = await crypto.subtle.importKey('raw', ikm, 'HKDF', false, ['deriveBits']);
+    return new Uint8Array(await crypto.subtle.deriveBits(
+      { name: 'HKDF', hash: 'SHA-256', salt: sale, info: info }, k, len * 8));
+  };
+  const uaPub = B.da(iscrizione.keys.p256dh);
+  const ikm = await hkdf(B.da(iscrizione.keys.auth), segreto,
+    unisci([T('WebPush: info'), new Uint8Array([0]), uaPub, asPub]), 32);
+  const cek = await hkdf(salt, ikm, unisci([T('Content-Encoding: aes128gcm'), new Uint8Array([0])]), 16);
+  const nonce = await hkdf(salt, ikm, unisci([T('Content-Encoding: nonce'), new Uint8Array([0])]), 12);
+
+  const kAes = await crypto.subtle.importKey('raw', cek, 'AES-GCM', false, ['decrypt']);
+  const chiaro = new Uint8Array(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: nonce }, kAes, cifrato));
+  /* in coda c'è il delimitatore del record (0x02): si taglia */
+  let fine = chiaro.length;
+  while (fine > 0 && chiaro[fine - 1] === 0) fine--;
+  if (fine > 0 && chiaro[fine - 1] === 2) fine--;
+  return JSON.parse(new TextDecoder().decode(chiaro.slice(0, fine)));
+}
 
 const POST = (corpo) => new Request('https://x/piano', {
   method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(corpo)
@@ -179,6 +225,40 @@ spedite = [];
 await cron(e, T('2026-08-22T06:30:00Z'));
 ok('nessuna notifica e nessun errore', spedite.length === 0);
 
+console.log('\nLA NOTA FISSA E IL NUMERO SULL’ICONA');
+e = env();
+await worker.fetch(POST(piano({
+  numero: 4,
+  voci: [{ id: 'stato', ora: '07:30', ripete: true, giorni: [], tipo: 'stato',
+    titolo: '3 cose aperte', corpo: 'Leggere · 1 abitudine', vai: '#/oggi' }]
+})), e);
+rec = JSON.parse(e.PROMEMORIA.m.get('d:dprova123'));
+ok('il tipo «stato» arriva intero', rec.voci[0].tipo === 'stato', rec.voci[0].tipo);
+ok('e il numero anche', rec.numero === 4, String(rec.numero));
+spedite = [];
+await cron(e, T('2026-08-22T05:30:00Z'));
+ok('parte alle 07:30', spedite.length === 1, String(spedite.length));
+
+/* il carico è cifrato, quindi per guardarci dentro si decifra: è l'unico modo
+   di sapere che «tipo» e «numero» sono arrivati fino in fondo e non si sono
+   persi a metà strada */
+{
+  const dentro = await apri(spedite[0].corpo);
+  console.log('  dentro il pacchetto: ' + JSON.stringify(dentro));
+  ok('il tipo è arrivato', dentro.tipo === 'stato', String(dentro.tipo));
+  ok('il numero è arrivato', dentro.numero === 4, String(dentro.numero));
+  ok('e il testo giusto', dentro.titolo === '3 cose aperte' && dentro.corpo === 'Leggere · 1 abitudine',
+    dentro.titolo + ' / ' + dentro.corpo);
+  ok('con dove andare', dentro.vai === '#/oggi', String(dentro.vai));
+}
+
+e = env();
+await worker.fetch(POST(piano({ numero: 'tanti' })), e);
+ok('un numero scritto male non passa', JSON.parse(e.PROMEMORIA.m.get('d:dprova123')).numero === null);
+await worker.fetch(POST(piano({ voci: [{ id: 'x', ora: '09:00', titolo: 'x', tipo: 'inventato' }] })), e);
+ok('un tipo inventato diventa un promemoria normale',
+  JSON.parse(e.PROMEMORIA.m.get('d:dprova123')).voci[0].tipo === 'promemoria');
+
 console.log('\nPIÙ DI UN DISPOSITIVO');
 e = env();
 for (const id of ['dtel1', 'dtel2', 'dtel3']) await worker.fetch(POST(piano({ id })), e);
@@ -186,5 +266,20 @@ spedite = [];
 await cron(e, T('2026-08-22T06:30:00Z'));
 ok('a tutti e tre', spedite.length === 3, String(spedite.length));
 
-console.log(fail ? '\n>>> ' + fail + ' PROBLEMI' : '\n>>> TUTTO A POSTO');
+/* Il file da incollare è generato: se qualcuno modifica un modulo e si
+   dimentica di rifarlo, online resta la versione di prima e nessuno se ne
+   accorge — le prove sui moduli restano verdi. */
+if (!UNICO) {
+  console.log('\nIL FILE DA INCOLLARE È AGGIORNATO');
+  const fs = await import('node:fs');
+  const url = new URL('./worker-unico.js', import.meta.url);
+  const prima = fs.readFileSync(url, 'utf8');
+  const { execFileSync } = await import('node:child_process');
+  execFileSync(process.execPath, [new URL('./impacchetta.mjs', import.meta.url).pathname], { stdio: 'ignore' });
+  const dopo = fs.readFileSync(url, 'utf8');
+  ok('rifacendolo viene identico', prima === dopo,
+    prima === dopo ? '' : 'lancia: node promemoria/impacchetta.mjs');
+}
+
+console.log(fail ? '\n>>> ' + fail + ' PROBLEMI' : '\n>>> TUTTO A POSTO' + (UNICO ? ' (file unico)' : ' (moduli)'));
 process.exit(fail ? 1 : 0);

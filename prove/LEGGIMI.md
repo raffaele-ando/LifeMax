@@ -1,8 +1,15 @@
 # Prove
 
-Sei controlli automatici che guardano una cosa sola ciascuno, ma
+Dieci controlli automatici che guardano una cosa sola ciascuno, ma
 quella cosa fa morire l'app — o la fa diventare illeggibile — quando si
 rompe. Sono nati da problemi veri.
+
+Le prove dei promemoria stanno di là, in `promemoria/`, perché lì c'è anche
+la parte che gira sul server: `prova.mjs` (la cifratura, byte per byte contro
+`http_ece`), `prova-piano.mjs` (chi tocca adesso: fusi e ora legale),
+`prova-worker.mjs` (il giro intero con un KV finto, e il pacchetto decifrato
+per vedere che cosa è arrivato davvero) e `prova-chiavi.mjs` (la pagina che
+genera le chiavi, in un browser vero).
 
 - **clic.js** — dove finisce davvero il dito. Campiona una griglia di punti
   su tutta la pagina, scorrendola per intero, e chiede al browser chi
@@ -108,6 +115,19 @@ rompe. Sono nati da problemi veri.
   dal collasso di due margini indipendenti, e cambiavano da soli quando un
   contenitore diventava flex.
 
+- **promemoria.js** — le notifiche, dal lato app. Il service worker si
+  registra da sé; il permesso NON si chiede all'apertura (chiederlo appena
+  apri è il modo più sicuro di farselo negare, e negato è senza appello); il
+  piano di oggi perde le cose appena le fai e non contiene le abitudini senza
+  orario né quelle di un altro giorno della settimana. Poi il numero sul
+  pallino dell'icona — che deve scendere quando spunti e sparire a zero — e la
+  nota fissa, che deve avere le quattro cose che la rendono fissa invece di una
+  notifica qualsiasi: un tag sempre uguale, nessun rumore, nessun ri-suono,
+  e non sparire da sé sul computer.
+  Dentro c'è anche la prova di un bug preciso: `restano()` chiedeva i rituali
+  aperti a `piano()` mentre `piano()` chiedeva a `restano()` il testo della
+  nota. Con la nota spenta non si vedeva; accendendola l'app si fermava con lo
+  stack pieno e la schermata restava a metà.
 - **gesto.js** — il foglio dal basso: il gesto, e che dopo si possa ancora
   toccare. Prima di tutto campiona la SUPERFICIE del foglio aperto e pretende
   che ogni punto arrivi al foglio: nasce da una regressione in cui il velo
@@ -136,6 +156,7 @@ rompe. Sono nati da problemi veri.
     node prove/clic.js
     node prove/modalita.js
     node prove/segni.js      # solo Node, niente browser
+    node prove/promemoria.js
     node prove/doppioni.js   # qualche minuto
     node prove/sezioni.js
     node prove/annulla.js

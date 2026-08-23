@@ -1,0 +1,148 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>LifeMax — le due chiavi dei promemoria</title>
+<!--
+  LE DUE CHIAVI (VAPID), SENZA TERMINALE.
+  Servono ai servizi push (Apple, Google) per sapere che quelle notifiche le
+  manda sempre lo stesso mittente. Sono una coppia: la pubblica va nell'app e
+  la vedono tutti, la privata resta un segreto del Worker.
+
+  Questa pagina non manda niente da nessuna parte: usa la crittografia che il
+  browser ha già dentro (WebCrypto) e le chiavi nascono e restano qui. Non c'è
+  una riga di rete in tutto il file — si può anche staccare il wi-fi prima di
+  premere il pulsante, e funziona uguale.
+-->
+<style>
+  :root {
+    color-scheme: light dark;
+    --fondo: #f6f6f8; --carta: #fff; --testo: #16161a; --tenue: #6a6a75;
+    --bordo: #e3e3e9; --tinta: #4f46e5; --male: #b42318; --maleFondo: #fef3f2;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --fondo: #101014; --carta: #1a1a20; --testo: #f2f2f5; --tenue: #a0a0ac;
+            --bordo: #2a2a33; --tinta: #8b85f5; --male: #ff9c92; --maleFondo: #2a1614; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 24px 18px 60px; background: var(--fondo); color: var(--testo);
+    font: 16px/1.5 -apple-system, BlinkMacSystemFont, system-ui, sans-serif; }
+  main { max-width: 640px; margin: 0 auto; }
+  h1 { font-size: 24px; letter-spacing: -.02em; margin: 0 0 6px; }
+  p.sotto { color: var(--tenue); margin: 0 0 24px; }
+  .carta { background: var(--carta); border: 1px solid var(--bordo); border-radius: 14px;
+    padding: 16px; margin-bottom: 14px; }
+  h2 { font-size: 14px; text-transform: uppercase; letter-spacing: .06em; color: var(--tenue);
+    margin: 0 0 10px; }
+  button { font: inherit; font-weight: 600; border: 1px solid var(--bordo); border-radius: 11px;
+    background: var(--carta); color: var(--testo); padding: 11px 16px; cursor: pointer;
+    min-height: 44px; }
+  button:active { transform: scale(.97); }
+  #vai { background: var(--tinta); border-color: transparent; color: #fff; width: 100%;
+    font-size: 17px; }
+  .chiave { display: block; width: 100%; font: 13px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
+    word-break: break-all; background: var(--fondo); border: 1px solid var(--bordo);
+    border-radius: 10px; padding: 11px; margin: 0 0 10px; color: var(--testo); resize: none; }
+  .avvertenza { background: var(--maleFondo); border: 1px solid var(--male); color: var(--male);
+    border-radius: 12px; padding: 13px 15px; margin: 0 0 14px; }
+  .avvertenza b { display: block; margin-bottom: 3px; }
+  code { background: var(--fondo); border: 1px solid var(--bordo); border-radius: 6px;
+    padding: 1px 5px; font-size: .88em; }
+  ol { padding-left: 22px; } li { margin-bottom: 7px; }
+  [hidden] { display: none !important; }
+</style>
+
+<main>
+  <h1>Le due chiavi dei promemoria</h1>
+  <p class="sotto">Nascono qui dentro e non escono da questa pagina: non c'è
+    nessuna richiesta di rete in tutto il file. Puoi anche staccare la
+    connessione prima di premere il pulsante.</p>
+
+  <div class="carta">
+    <button id="vai">Genera le due chiavi</button>
+    <p class="sotto" style="margin:12px 0 0;font-size:14px" id="stato"></p>
+  </div>
+
+  <div id="esito" hidden>
+    <div class="carta">
+      <h2>1 · Chiave pubblica</h2>
+      <textarea class="chiave" id="pub" rows="3" readonly spellcheck="false"></textarea>
+      <button data-copia="pub">Copia la pubblica</button>
+      <p class="sotto" style="margin:10px 0 0;font-size:14px">Questa si può
+        mostrare a chiunque. Va in due posti: nel segreto
+        <code>VAPID_PUBBLICA</code> del Worker, e dentro l'app.</p>
+    </div>
+
+    <div class="avvertenza">
+      <b>La privata non si manda a nessuno.</b>
+      Non in chat, non per mail, e non dentro un file del progetto. Chi ce l'ha
+      può mandare notifiche a nome tuo. Va solo incollata nel segreto
+      <code>VAPID_PRIVATA</code> del Worker, che la tiene e non la mostra più.
+    </div>
+
+    <div class="carta">
+      <h2>2 · Chiave privata</h2>
+      <textarea class="chiave" id="priv" rows="2" readonly spellcheck="false"></textarea>
+      <button data-copia="priv">Copia la privata</button>
+    </div>
+
+    <div class="carta">
+      <h2>E poi</h2>
+      <ol>
+        <li>Tieni aperta questa pagina fino alla fine: se la chiudi, le chiavi
+          spariscono e bisogna rifarle da capo (e rifare anche i segreti).</li>
+        <li>Nel pannello di Cloudflare, nel Worker: <b>Settings</b> →
+          <b>Variables and Secrets</b> → <b>Add</b>, tipo <b>Secret</b>.</li>
+        <li>Tre segreti: <code>VAPID_PUBBLICA</code>,
+          <code>VAPID_PRIVATA</code>, <code>VAPID_SOGGETTO</code> (quest'ultimo
+          è <code>mailto:</code> più la tua mail).</li>
+      </ol>
+    </div>
+  </div>
+</main>
+
+<script>
+  var b64 = function (buf) {
+    var u = new Uint8Array(buf), s = '';
+    for (var i = 0; i < u.length; i++) s += String.fromCharCode(u[i]);
+    return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  };
+
+  document.getElementById('vai').addEventListener('click', function () {
+    var stato = document.getElementById('stato');
+    if (!window.crypto || !crypto.subtle) {
+      stato.textContent = 'Questo browser non ha la crittografia che serve. ' +
+        'Da una pagina aperta con http:// invece di https:// non funziona: apri il file direttamente, o usa https.';
+      return;
+    }
+    stato.textContent = 'Un attimo…';
+    /* la stessa curva che vogliono i servizi push: P-256, firma ES256 */
+    crypto.subtle.generateKey({ name: 'ECDSA', namedCurve: 'P-256' }, true, ['sign', 'verify'])
+      .then(function (coppia) {
+        return Promise.all([
+          crypto.subtle.exportKey('raw', coppia.publicKey),
+          crypto.subtle.exportKey('jwk', coppia.privateKey)
+        ]);
+      })
+      .then(function (r) {
+        document.getElementById('pub').value = b64(r[0]);
+        document.getElementById('priv').value = r[1].d;
+        document.getElementById('esito').hidden = false;
+        stato.textContent = 'Fatte. Restano solo in questa pagina.';
+        document.getElementById('esito').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      })
+      .catch(function (e) { stato.textContent = 'Non ci sono riuscito: ' + e.message; });
+  });
+
+  document.querySelectorAll('[data-copia]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var campo = document.getElementById(b.getAttribute('data-copia'));
+      var detto = b.textContent;
+      function fatto() { b.textContent = 'Copiata'; setTimeout(function () { b.textContent = detto; }, 1600); }
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(campo.value).then(fatto, function () {
+          campo.select(); b.textContent = 'Selezionata: copiala a mano';
+        });
+      } else { campo.select(); b.textContent = 'Selezionata: copiala a mano'; }
+    });
+  });
+</script>

@@ -57,6 +57,7 @@ ok('nessun disegno esiste sotto due nomi', gemelli.length === 0,
 const usati = new Set();
 const agg = re => { let m; while ((m = re.exec(sorgenti))) { for (let i = 1; i < m.length; i++) if (m[i]) usati.add(m[i]); } };
 agg(/ICO\('([A-Za-z0-9]+)'/g);
+agg(/\bI\('([A-Za-z0-9]+)',\s*\d+\)/g);
 agg(/\bicona:\s*'([A-Za-z0-9]+)'/g);
 agg(/\bico:\s*'([A-Za-z0-9]+)'/g);
 /* i segni scelti al volo: ICO(condizione ? 'a' : 'b', …). La condizione può
@@ -109,7 +110,10 @@ ok('nessun segno disegnato e mai citato', inutili.length === 0, inutili.join(', 
 /* 3. le due famiglie non si mescolano: un segno delle aree non può essere
       anche un segno di sistema, altrimenti la stessa figura compare come
       «la tua area» e due righe sopra come «priorità» o «cattura» */
-const sistema = new Set((sorgenti.match(/ICO\('([A-Za-z0-9]+)'/g) || []).map(x => x.slice(5, -1)));
+const sistema = new Set([
+  ...(sorgenti.match(/ICO\('([A-Za-z0-9]+)'/g) || []).map(x => x.slice(5, -1)),
+  ...[...sorgenti.matchAll(/\bI\('([A-Za-z0-9]+)',\s*\d+\)/g)].map(m => m[1])
+]);
 const doppi = aree.filter(n => sistema.has(n));
 ok('nessun segno è sia area sia comando', doppi.length === 0, doppi.join(', ') || 'nessuno');
 ok('la scelta delle aree ha almeno dieci segni', aree.length >= 10, aree.length + ' segni');
@@ -119,6 +123,9 @@ const SCALA = (/var SCALA = \[([^\]]*)\]/.exec(ico) || [, ''])[1].split(',').map
 const fuoriScala = new Set();
 let m; const reSize = /ICO\((?:[^()]|\([^()]*\))*?,\s*(\d+)\s*[,)]/g;
 while ((m = reSize.exec(sorgenti))) { const n = +m[1]; if (!SCALA.includes(n)) fuoriScala.add(n); }
+/* anche il laboratorio, che scrive `I('check', 15)` */
+const reSizeLab = /\bI\('[A-Za-z0-9]+',\s*(\d+)\)/g;
+while ((m = reSizeLab.exec(sorgenti))) { const n = +m[1]; if (!SCALA.includes(n)) fuoriScala.add(n); }
 ok('nessuna misura fuori dalla scala ' + SCALA.join('/'), fuoriScala.size === 0,
   [...fuoriScala].sort((a, b) => a - b).join(', ') || 'nessuna');
 

@@ -1073,7 +1073,37 @@
       riga = 'Spenti. Servono per i momenti della giornata e per le abitudini con un’ora.';
       azione = '<button class="btn btn-mini btn-tinta" id="imp-prom-on">' + ICO('campana', 15) + ' Accendi i promemoria</button>';
     }
-    var n = P.piano().length;
+    var n = P.piano().filter(function (v) { return v.id !== 'stato'; }).length;
+
+    /* LA NOTA FISSA — e cosa si può davvero fare.
+       Si può: una notifica sola, che si riscrive al posto di quella di prima e
+       non fa rumore quando lo fa, e resta nell'elenco delle notifiche finché
+       non la scarti tu. Più il numero sul pallino dell'icona.
+       Non si può: una notifica che non si possa scartare, come quella di un
+       navigatore. Su Android serve un servizio in primo piano, sull'iPhone una
+       Live Activity: le può avere solo un'app installata dallo store. Meglio
+       dirlo che far cercare un interruttore che non esiste. */
+    var fissa = '';
+    if (st === 'granted') {
+      var accesa = P.fissaAccesa();
+      var t = P.testoFissa();
+      fissa = '<div class="imp-sotto-sez">' +
+        '<div class="imp-riga-int">' +
+          '<div class="imp-riga-testo"><b>' + ICO('notaFissa', 13) + ' Tienimi una nota fissa</b>' +
+          '<span class="imp-nota">Una notifica sola, sempre la stessa, con quello che ti resta oggi. ' +
+          'Si riscrive in silenzio e resta lì finché non la scarti tu. ' +
+          'Sull’icona compare il numero delle cose aperte.</span></div>' +
+          '<button class="btn btn-mini' + (accesa ? '' : ' btn-tinta') + '" id="imp-prom-fissa">' +
+            ICO(accesa ? 'x' : 'notaFissa', 15) + (accesa ? ' Togli' : ' Accendi') + '</button>' +
+        '</div>' +
+        (accesa ? '<div class="imp-anteprima">' + ICO('campana', 13) +
+          '<span><b>' + esc(t.titolo) + '</b><br>' + esc(t.corpo) + '</span></div>' : '') +
+        '<div class="imp-nota">Una notifica che non si può scartare — come quella di un ' +
+        'navigatore — sul web non esiste: la può avere solo un’app scaricata dallo store. ' +
+        'Questa si scarta, ma torna da sé il giorno dopo.</div>' +
+      '</div>';
+    }
+
     return '<div class="imp-sezione"><div class="imp-eti">Promemoria</div>' +
       '<div class="imp-nota">' + esc(riga) + '</div>' +
       (azione ? '<div class="imp-azioni mt-s">' + azione + '</div>' : '') +
@@ -1081,7 +1111,9 @@
          col permesso concesso ma senza il postino sarebbe una promessa */
       (st === 'granted' && P.configurato() && n
         ? '<div class="imp-nota">Oggi ne restano <b>' + n + '</b>: ' +
-          esc(P.piano().map(function (v) { return v.ora + ' ' + v.titolo; }).join(' · ')) + '</div>' : '') +
+          esc(P.piano().filter(function (v) { return v.id !== 'stato'; })
+            .map(function (v) { return v.ora + ' ' + v.titolo; }).join(' · ')) + '</div>' : '') +
+      fissa +
       '</div>';
   }
 
@@ -1152,6 +1184,14 @@
         else toast('Promemoria accesi.', 0, 'campana');
         riscriviImpostazioni();
       });
+    });
+    var pf = root.querySelector('#imp-prom-fissa');
+    if (pf) pf.addEventListener('click', function () {
+      var era = window.LM_PROMEMORIA.fissaAccesa();
+      window.LM_PROMEMORIA.fissa(!era);
+      window.LM_PROMEMORIA.mandaPiano(true);
+      toast(era ? 'Nota fissa via.' : 'Nota fissa accesa: la trovi fra le notifiche.', 0, era ? 'x' : 'notaFissa');
+      riscriviImpostazioni();
     });
     var poff = root.querySelector('#imp-prom-off');
     if (poff) poff.addEventListener('click', function () {

@@ -164,6 +164,10 @@
     coffee: '<path d="M4 8h13v6a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4z"/><path d="M17 9.5h1.6a2.4 2.4 0 0 1 0 4.8H17"/><path d="M7.5 3.2c-.4.7-.4 1.3 0 2M11 3.2c-.4.7-.4 1.3 0 2"/>',
     bed: '<path d="M3 6v13M3 12h18a0 0 0 0 1 0 0v7M21 19v-4a3 3 0 0 0-3-3H3M6.5 12v-2a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/>',
     /* ---------- presi dal pacco ---------- */
+    notaFissa: '<path d="M21 9a2.4 2.4 0 0 0-.706-1.706l-3.588-3.588A2.4 2.4 0 0 0 15 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2z"/><path d="M15 3v5a1 1 0 0 0 1 1h5"/>',  /* lucide:sticky-note — la nota che resta fra le notifiche */
+    altreOpzioni: '<circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/>',  /* lucide:ellipsis-vertical — le altre cose che puoi fare su questa riga */
+    schermoPiccolo: '<rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/>',  /* lucide:smartphone — la larghezza di un telefono */
+    schermoGrande: '<rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/>',  /* lucide:monitor — la larghezza di un monitor */
     soloQui: '<path d="M10 16h.01"/><path d="M2.212 11.577a2 2 0 0 0-.212.896V18a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-5.527a2 2 0 0 0-.212-.896L18.55 5.11A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/><path d="M21.946 12.013H2.054"/><path d="M6 16h.01"/>',  /* lucide:hard-drive — i dati stanno solo su questo dispositivo */
     avviso: '<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/>',  /* lucide:triangle-alert — qualcosa non è andato */
     riepilogo: '<rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/><path d="M14 4h7"/><path d="M14 9h7"/><path d="M14 15h7"/><path d="M14 20h7"/>',  /* lucide:layout-list — il riepilogo, tutto in breve */
@@ -220,6 +224,8 @@
     aiuto: 'come si usa',
     terminale: 'cosa sta succedendo dentro l’app',
     altro: 'il menu delle pagine che non stanno nella barra',
+    altreOpzioni: 'le altre cose che puoi fare su questa riga',
+    notaFissa: 'la nota che resta fra le notifiche',
     fonte: 'lo studio da cui viene',
 
     /* il tempo */
@@ -234,6 +240,8 @@
     unMese: 'l’arco di un mese',
     unAnno: 'l’arco di un anno',
     riepilogo: 'il riepilogo, tutto in breve',
+    schermoGrande: 'la larghezza di un monitor',
+    schermoPiccolo: 'la larghezza di un telefono',
     scadenza: 'una data entro cui',
     fineperiodo: 'il periodo finisce qui',
     rimanda: 'spostare a più tardi',

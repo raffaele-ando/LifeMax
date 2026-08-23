@@ -1364,6 +1364,41 @@ label.campo {
    dopo non ne aggiunge un secondo, o il titolo si stacca dal suo testo più di
    quanto la sezione si stacchi dalla prossima */
 .imp-eti + .imp-nota { margin-top: 0; }
+
+/* UNA SCELTA DENTRO UNA SEZIONE — la nota fissa dei promemoria.
+   Non è una sezione a sé: sta dentro «Promemoria», perché accenderla ha senso
+   solo se i promemoria sono accesi. Quindi non prende un'altra etichetta in
+   maiuscoletto (sarebbe un secondo livello dove non ce n'è uno) ma un filetto
+   e un rientro: si vede che dipende da sopra. */
+.imp-sotto-sez {
+  margin-top: var(--s4);
+  padding-left: var(--s3);
+  border-left: 2px solid var(--griglia);
+}
+.imp-riga-int {
+  display: flex; align-items: flex-start; gap: var(--s3);
+  /* il testo si prende quello che c'è, il pulsante resta della sua misura:
+     a 320px il pulsante scende sotto invece di schiacciarsi */
+  flex-wrap: wrap;
+}
+.imp-riga-testo { flex: 1 1 190px; min-width: 0; }
+.imp-riga-testo b { display: flex; align-items: center; gap: 6px; font-size: 14px; }
+.imp-riga-int .btn { flex: none; }
+
+/* L'ANTEPRIMA — com'è fatta la notifica che arriverà.
+   Una promessa scritta a parole («ti arriva una notifica») si capisce a metà.
+   Farla vedere costa quattro righe e toglie il dubbio. */
+.imp-anteprima {
+  display: flex; align-items: flex-start; gap: var(--s2);
+  margin-top: var(--s3);
+  padding: var(--s3);
+  background: var(--superficie-2);
+  border: 1px solid var(--griglia);
+  border-radius: var(--r-2);
+  font-size: 13px; line-height: 1.4;
+}
+.imp-anteprima .ico { flex: none; margin-top: 2px; color: var(--inchiostro-muto); }
+.imp-anteprima b { font-size: 13.5px; }
 .imp-pericolo { color: var(--critico); border-color: color-mix(in srgb, var(--critico) 35%, var(--bordo-forte)); }
 .imp-pericolo:hover { background: color-mix(in srgb, var(--critico) 10%, transparent); border-color: var(--critico); }
 

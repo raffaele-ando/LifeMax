@@ -96,6 +96,47 @@
      diventerebbero invisibili. Qui ci sono: i momenti del giorno che l'app
      già conosce, e un solo colpetto sulla priorità se nel pomeriggio è
      ancora intatta. */
+  /* I TRE MOMENTI ANCORA APERTI.
+     Sta qui, da solo, per un motivo preciso: lo vogliono in due posti — il
+     piano da mandare al server e il conto delle cose che ti restano — e
+     quando il conto lo chiedeva al piano e il piano lo chiedeva al conto,
+     l'app si fermava con lo stack pieno appena si accendeva la nota fissa.
+     Un pezzo condiviso non ha versi. */
+  var ORE = { mattina: '08:30', checkin: '13:00', sera: '21:30' };
+  function ritualiAperti() {
+    if (!window.LM) return [];
+    var s = LM.load();
+    var oggi = LM.todayKey();
+    var out = [];
+    if (!(s.pianoMattina || {})[oggi]) {
+      out.push({ id: 'mattina', ora: ORE.mattina,
+        titolo: 'Cosa fai oggi', corpo: 'Scegli le azioni di oggi, e la prima cosa.', vai: '#/rituali' });
+    }
+    if (!(s.checkins || []).some(function (c) { return c.data === oggi; })) {
+      out.push({ id: 'checkin', ora: ORE.checkin,
+        titolo: 'Check-in', corpo: 'Come stai adesso? Trenta secondi.', vai: '#/rituali' });
+    }
+    if (!(s.reviewSera || {})[oggi]) {
+      out.push({ id: 'sera', ora: ORE.sera,
+        titolo: 'Com’è andata oggi', corpo: 'Una vittoria e un ostacolo. Due righe.', vai: '#/rituali' });
+    }
+    return out;
+  }
+
+  /* LE ABITUDINI CON UN ORARIO, ancora aperte oggi. Quelle senza orario non
+     entrano nel piano (una notifica per ognuna sarebbe rumore) ma entrano nel
+     conto: restano comunque cose aperte. */
+  function abitudiniAperte(soloConOra) {
+    if (!window.LM) return [];
+    var s = LM.load();
+    var oggi = LM.todayKey();
+    return (s.abitudini || []).filter(function (h) {
+      if (soloConOra && !h.ora) return false;
+      if (!LM.abitudinePrevista(h, oggi)) return false;
+      return !(h.fatti && h.fatti[oggi]);
+    });
+  }
+
   function piano() {
     if (!window.LM) return [];
     var s = LM.load();
@@ -106,20 +147,10 @@
        li ricava dall'ora (mattina prima di mezzogiorno, sera dalle 19). Qui
        servono precisi, quindi stanno scritti una volta sola e dentro quei
        confini. Il giorno in cui diventeranno modificabili, si leggono da lì. */
-    var rit = { mattina: '08:30', checkin: '13:00', sera: '21:30' };
-    if (!(s.pianoMattina || {})[oggi]) {
-      voci.push({ id: 'mattina', ora: rit.mattina, ripete: true, giorni: [],
-        titolo: 'Cosa fai oggi', corpo: 'Scegli le azioni di oggi, e la prima cosa.', vai: '#/rituali' });
-    }
-    var fattoCheckin = (s.checkins || []).some(function (c) { return c.data === oggi; });
-    if (!fattoCheckin) {
-      voci.push({ id: 'checkin', ora: rit.checkin, ripete: true, giorni: [],
-        titolo: 'Check-in', corpo: 'Come stai adesso? Trenta secondi.', vai: '#/rituali' });
-    }
-    if (!(s.reviewSera || {})[oggi]) {
-      voci.push({ id: 'sera', ora: rit.sera, ripete: true, giorni: [],
-        titolo: 'Com’è andata oggi', corpo: 'Una vittoria e un ostacolo. Due righe.', vai: '#/rituali' });
-    }
+    ritualiAperti().forEach(function (r) {
+      voci.push({ id: r.id, ora: r.ora, ripete: true, giorni: [],
+        titolo: r.titolo, corpo: r.corpo, vai: r.vai });
+    });
 
     /* `ripete` distingue le voci che valgono anche domani da quelle che valgono
        solo oggi. Serve perché il piano lo manda l'app, e l'app la apri tu: se
@@ -139,15 +170,101 @@
        momento, quindi sono quelle che vuoi sentirti ricordare. Le altre no:
        una notifica per ognuna sarebbe rumore da ignorare entro tre giorni, e
        allora anche quelle che contano diventerebbero invisibili. */
-    (s.abitudini || []).forEach(function (h) {
-      if (!h.ora) return;
-      if (!LM.abitudinePrevista(h, oggi)) return;   /* giorni, periodo, salti */
-      if (h.fatti && h.fatti[oggi]) return;
+    abitudiniAperte(true).forEach(function (h) {
       voci.push({ id: 'ab-' + h.id, ora: h.ora, ripete: true, giorni: (h.giorni || []).slice(),
         titolo: h.testo, corpo: 'È l’ora.', vai: '#/rituali' });
     });
 
+    /* La nota fissa, se accesa: una sola voce al giorno, di prima mattina.
+       Dentro l'app si riscrive da sé a ogni cambiamento e non costa niente;
+       questa serve per i giorni in cui l'app non la apri, che sono quelli in
+       cui serve di più. */
+    if (fissaAccesa()) {
+      var t = testoFissa();
+      voci.push({ id: 'stato', ora: '07:30', ripete: true, giorni: [], tipo: 'stato',
+        titolo: t.titolo, corpo: t.corpo, vai: '#/oggi' });
+    }
+
     return voci.sort(function (a, b) { return a.ora < b.ora ? -1 : (a.ora > b.ora ? 1 : 0); });
+  }
+
+  /* ---------- quante cose restano oggi ----------
+     Serve a due cose che sono la stessa cosa vista da due lati: il numero sul
+     pallino dell'icona e la riga della nota fissa. Si conta quello che è
+     ancora aperto oggi — non quello che hai fatto, perché un contatore che
+     sale premia il tenere aperte le cose. */
+  function restano() {
+    if (!window.LM) return { n: 0, righe: [] };
+    var s = LM.load();
+    var oggi = LM.todayKey();
+    var righe = [];
+
+    var az = (s.azioni || []).filter(function (a) { return a.data === oggi && !a.done; });
+    var mit = az.filter(function (a) { return a.mit; })[0];
+    if (mit) righe.push(mit.testo);
+    else if (az.length) righe.push(az[0].testo);
+
+    var ab = abitudiniAperte(false);
+    var rit = ritualiAperti();
+
+    var n = az.length + ab.length + rit.length;
+    if (az.length > 1) righe.push('e altre ' + (az.length - 1));
+    if (ab.length) righe.push(ab.length === 1 ? '1 abitudine' : ab.length + ' abitudini');
+    if (rit.length) righe.push(rit.length === 1 ? '1 rituale' : rit.length + ' rituali');
+    return { n: n, righe: righe };
+  }
+
+  /* Il pallino col numero sull'icona: l'unica cosa che resta a vista senza
+     essere una notifica. Non si scarta e non fa rumore. Zero si toglie del
+     tutto — un'icona pulita vuol dire «per oggi ci sei». */
+  function segnaNumero() {
+    var n = restano().n;
+    try {
+      if (!n && navigator.clearAppBadge) navigator.clearAppBadge();
+      else if (navigator.setAppBadge) navigator.setAppBadge(n);
+    } catch (e) {}
+    return n;
+  }
+
+  /* ---------- la nota fissa ----------
+     Una notifica sola, che si riscrive al posto di quella di prima e non fa
+     rumore quando lo fa. Resta nell'elenco delle notifiche finché non la
+     scarti tu. Si aggiorna da sola ogni volta che apri l'app o cambi
+     qualcosa: quello non costa niente a nessuno, perché la pagina è aperta.
+     Chi la vuole la accende: una notifica che resta lì è esattamente il tipo
+     di cosa che non si mette senza chiedere. */
+  var CHIAVE_FISSA = 'lifemax.promemoria.fissa';
+  function fissaAccesa() {
+    try { return localStorage.getItem(CHIAVE_FISSA) === '1'; } catch (e) { return false; }
+  }
+  function fissa(acceso) {
+    try { localStorage.setItem(CHIAVE_FISSA, acceso ? '1' : '0'); } catch (e) {}
+    if (acceso) scriviFissa();
+    else togliFissa();
+  }
+  function testoFissa() {
+    var r = restano();
+    if (!r.n) return { titolo: 'Per oggi ci sei', corpo: 'Niente di aperto.' };
+    return {
+      titolo: r.righe[0] || (r.n + (r.n === 1 ? ' cosa aperta' : ' cose aperte')),
+      corpo: r.righe.slice(1).join(' · ') || 'Tocca per aprire.'
+    };
+  }
+  function scriviFissa() {
+    if (!fissaAccesa() || stato() !== 'granted' || !reg || !reg.showNotification) return false;
+    var t = testoFissa();
+    reg.showNotification(t.titolo, {
+      body: t.corpo, icon: 'assets/icone/icona-192.png', badge: 'assets/icone/badge-96.png',
+      lang: 'it', tag: 'lifemax-stato', renotify: false, silent: true, requireInteraction: true,
+      data: { vai: '#/oggi', tipo: 'stato' }
+    });
+    return true;
+  }
+  function togliFissa() {
+    if (!reg || !reg.getNotifications) return;
+    reg.getNotifications({ tag: 'lifemax-stato' }).then(function (l) {
+      l.forEach(function (n) { n.close(); });
+    }).catch(function () {});
   }
 
   /* ---------- iscrizione e invio del piano ---------- */
@@ -189,6 +306,7 @@
           iscrizione: sub.toJSON ? sub.toJSON() : sub,
           fuso: (Intl.DateTimeFormat().resolvedOptions() || {}).timeZone || 'Europe/Rome',
           giorno: LM.todayKey(),
+          numero: restano().n,
           voci: p
         })
       }).then(function (r) {
@@ -210,6 +328,10 @@
   }
 
   function spegni() {
+    /* spento vuol dire spento: via anche la nota fissa e il numero
+       sull'icona, o resterebbe lì un pallino che nessuno aggiorna più */
+    togliFissa();
+    try { if (navigator.clearAppBadge) navigator.clearAppBadge(); } catch (e) {}
     if (!reg) return Promise.resolve(true);
     return reg.pushManager.getSubscription().then(function (s) {
       var via = s ? s.unsubscribe() : Promise.resolve();
@@ -226,7 +348,7 @@
     if (stato() !== 'granted') return false;
     if (reg && reg.showNotification) {
       reg.showNotification(titolo, {
-        body: corpo || '', icon: 'assets/icone/icona-192.png', lang: 'it',
+        body: corpo || '', icon: 'assets/icone/icona-192.png', badge: 'assets/icone/badge-96.png', lang: 'it',
         tag: 'lifemax-locale', data: { vai: vai || '#/oggi' }
       });
       return true;
@@ -238,6 +360,8 @@
     stato: stato, accendi: accendi, spegni: spegni, locale: locale,
     piano: piano, mandaPiano: mandaPiano, registra: registra,
     serveInstallare: serveInstallare, installata: installata,
+    restano: restano, segnaNumero: segnaNumero,
+    fissa: fissa, fissaAccesa: fissaAccesa, testoFissa: testoFissa,
     configurato: function () { return !!(CONFIG.server && CONFIG.chiave); },
     CONFIG: CONFIG
   };
@@ -246,9 +370,18 @@
      piano: aprendo l'app di prima mattina il server ha ancora quello di ieri,
      e le cose che hai fatto stanotte non le sa nessuno.
      Il permesso, invece, NON si chiede qui. */
-  function avvia() { registra().then(function () { mandaPiano(false); }); }
+  function avvia() {
+    segnaNumero();
+    registra().then(function () { scriviFissa(); mandaPiano(false); });
+  }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', avvia);
   else avvia();
   /* quando i dati cambiano, il piano di oggi può essere cambiato */
-  document.addEventListener('lm:change', function () { mandaPiano(false); });
+  document.addEventListener('lm:change', function () {
+    /* il numero e la nota fissa si aggiornano subito e senza server: la
+       pagina è aperta, e l'unica cosa che costa è un giro di conto */
+    segnaNumero();
+    scriviFissa();
+    mandaPiano(false);
+  });
 })();

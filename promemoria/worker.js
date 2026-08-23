@@ -61,8 +61,14 @@ async function riceviPiano(req, env) {
     iscrizione: { endpoint: isc.endpoint, keys: { p256dh: isc.keys.p256dh, auth: isc.keys.auth } },
     fuso: String(b.fuso || 'Europe/Rome').slice(0, 64),
     giorno: giorno,
+    /* il numero da mettere sull'icona: lo conta l'app, che sa che cosa hai
+       ancora aperto oggi. Qui viaggia solo per essere rispedito. */
+    numero: Number.isFinite(b.numero) && b.numero >= 0 && b.numero < 1000 ? Math.floor(b.numero) : null,
     voci: b.voci.slice(0, 40).map((v) => ({
       id: taglia(v.id, 48), ora: taglia(v.ora, 5), ripete: !!v.ripete,
+      /* «stato» è la nota fissa: arriva zitta e si riscrive al posto della
+         precedente. Qualsiasi altra cosa è un promemoria normale. */
+      tipo: v.tipo === 'stato' ? 'stato' : 'promemoria',
       giorni: Array.isArray(v.giorni) ? v.giorni.filter((n) => n >= 0 && n <= 6).slice(0, 7) : [],
       titolo: taglia(v.titolo, 80), corpo: taglia(v.corpo, 160), vai: taglia(v.vai, 40)
     })).filter((v) => v.id && v.titolo),
@@ -102,7 +108,8 @@ async function giro(env, adesso) {
         let stato = 0;
         try {
           stato = await manda(rec.iscrizione, {
-            titolo: v.titolo, corpo: v.corpo, vai: v.vai, tag: 'lm-' + v.id
+            titolo: v.titolo, corpo: v.corpo, vai: v.vai, tag: 'lm-' + v.id,
+            tipo: v.tipo, numero: rec.numero
           }, vapid, { ttl: 3600 });
         } catch (e) { console.log('errore invio', k.name, '' + e); }
         /* 404 e 410 vogliono dire «questa iscrizione non esiste più»: il

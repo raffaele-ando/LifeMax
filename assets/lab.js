@@ -34,7 +34,15 @@
 
   var CHIAVE = 'lifemax.lab3';
 
+  /* Le misure sono i cinque gradini della scala (11/13/15/18/26) come in tutto
+     il resto: `ICO` ci tira comunque il numero più vicino, quindi qui c'erano
+     dei 12, 14, 16, 20 e 22 che il file diceva e nessuno disegnava. */
   function I(n, s) { return window.ICO ? ICO(n, s) : ''; }
+  /* Il marchio, non un'icona. Prima qui stava la freccia in salita, che in
+     tutta l'app vuol dire «l'andamento nel tempo»: nei mock faceva da logo, e
+     un mock che mostra un marchio che non esiste non serve a confrontare
+     niente. */
+  function L(s) { return window.LOGO ? LOGO(s) : ''; }
   function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
 
   /* ============================================================
@@ -76,9 +84,9 @@
     aree: ['Studio', 'Salute', 'Founder', 'Lavoro', 'Finanze', 'Altro'],
     pagine: [
       { id: 'oggi', nome: 'Oggi', ico: 'target' },
-      { id: 'giornata', nome: 'Giornata', ico: 'clock' },
+      { id: 'giornata', nome: 'Giornata', ico: 'giornata' },
       { id: 'attivita', nome: 'Attività', ico: 'lista', badge: 9 },
-      { id: 'rituali', nome: 'Rituali', ico: 'sun' },
+      { id: 'rituali', nome: 'Rituali', ico: 'rituali' },
       { id: 'panoramica', nome: 'Panoramica', ico: 'dashboard' }
     ]
   };
@@ -101,7 +109,7 @@
     oggi: function () {
       return '<div class="s1">' +
         '<aside class="s1-nav">' +
-          '<div class="s1-marchio">' + I('trendUp', 18) + '<b>LifeMax</b></div>' +
+          '<div class="s1-marchio">' + L(18) + '<b>LifeMax</b></div>' +
           '<nav>' + C.pagine.map(function (p) {
             return '<a class="s1-voce' + (p.id === 'oggi' ? ' qui' : '') + '">' + I(p.ico, 18) + '<span>' + p.nome + '</span>' +
               (p.badge ? '<em>' + p.badge + '</em>' : '') + '</a>';
@@ -117,7 +125,7 @@
             '<h2>' + esc(C.mit) + '</h2>' +
             '<p class="s1-sotto">' + C.mitOra + ' · ' + C.mitArea + '</p>' +
             '<div class="s1-azioni">' +
-              '<button class="s1-btn s1-pieno">' + I('check', 16) + 'Fatto</button>' +
+              '<button class="s1-btn s1-pieno">' + I('check', 15) + 'Fatto</button>' +
               '<button class="s1-btn">Rinvia</button>' +
             '</div>' +
           '</section>' +
@@ -144,7 +152,7 @@
               C.abitudini.map(function (a) {
                 return '<label class="s1-riga"><input type="checkbox"' + (a.fatta ? ' checked' : '') + '>' +
                   '<span class="s1-nome">' + esc(a.t) + '</span>' +
-                  (a.serie ? '<span class="s1-serie">' + I('flame', 12) + a.serie + '</span>' : '') + '</label>';
+                  (a.serie ? '<span class="s1-serie">' + I('flame', 13) + a.serie + '</span>' : '') + '</label>';
               }).join('') +
             '</section>' +
           '</div>' +
@@ -154,7 +162,7 @@
     attivita: function () {
       return '<div class="s1">' +
         '<aside class="s1-nav">' +
-          '<div class="s1-marchio">' + I('trendUp', 18) + '<b>LifeMax</b></div>' +
+          '<div class="s1-marchio">' + L(18) + '<b>LifeMax</b></div>' +
           '<nav>' + C.pagine.map(function (p) {
             return '<a class="s1-voce' + (p.id === 'attivita' ? ' qui' : '') + '">' + I(p.ico, 18) + '<span>' + p.nome + '</span>' +
               (p.badge ? '<em>' + p.badge + '</em>' : '') + '</a>';
@@ -178,7 +186,7 @@
                   '<span class="s1-meta"><i class="s1-tag">' + b.area + '</i>' +
                   (b.quando ? '<i class="s1-quando' + (b.urgente ? ' rosso' : '') + '">' + b.quando + '</i>' : '') + '</span></div>' +
                 '<button class="s1-btn s1-mini">Fai oggi</button>' +
-                '<button class="s1-icona" aria-label="Altre opzioni">' + I('dots', 16) + '</button>' +
+                '<button class="s1-icona" aria-label="Altre opzioni">' + I('altreOpzioni', 15) + '</button>' +
               '</div>';
             }).join('') +
           '</section>' +
@@ -190,10 +198,10 @@
                 '<div class="s1-cosatesto"><b>' + esc(b.t) + '</b>' +
                   '<span class="s1-meta"><i class="s1-tag">' + b.area + '</i>' +
                   (b.quando ? '<i class="s1-quando">' + b.quando + '</i>' : '') + '</span></div>' +
-                '<button class="s1-icona" aria-label="Altre opzioni">' + I('dots', 16) + '</button>' +
+                '<button class="s1-icona" aria-label="Altre opzioni">' + I('altreOpzioni', 15) + '</button>' +
               '</div>';
             }).join('') +
-            '<button class="s1-altre">' + I('chevronGiu', 14) + 'Mostra le altre ' + C.altre + '</button>' +
+            '<button class="s1-altre">' + I('chevronGiu', 15) + 'Mostra le altre ' + C.altre + '</button>' +
           '</section>' +
           '<p class="s1-piede">' + C.ferme + ' inattive da tre settimane. <button class="s1-link">Rivedile</button></p>' +
         '</div>' +
@@ -218,13 +226,13 @@
           '<header class="c2-testa"><h2 class="lab-h">Oggi</h2>' +
             '<span class="c2-data">' + C.giorno + '</span>' +
             '<span class="c2-avanz">' + C.fatte + '/' + C.totali + '<i><b style="width:' + perc() + '%"></b></i></span>' +
-            '<button class="c2-btn c2-pieno">' + I('plus', 14) + 'Aggiungi</button>' +
+            '<button class="c2-btn c2-pieno">' + I('plus', 15) + 'Aggiungi</button>' +
           '</header>' +
           '<div class="c2-adesso">' +
             '<span class="c2-tacca">Adesso</span>' +
             '<b>' + esc(C.mit) + '</b>' +
             '<span class="c2-min">' + C.mitOra + ' · ' + C.mitArea + ' · ' + C.mitTra + '</span>' +
-            '<button class="c2-btn c2-pieno">' + I('check', 14) + 'Fatto</button>' +
+            '<button class="c2-btn c2-pieno">' + I('check', 15) + 'Fatto</button>' +
             '<button class="c2-btn">Rinvia</button>' +
           '</div>' +
           '<h2 class="c2-sez">La giornata<span>5</span></h2>' +
@@ -234,11 +242,11 @@
               '<span class="c2-ora">' + b.da + '–' + b.a + '</span>' +
               '<span class="c2-nome">' + esc(b.t) + '</span></label>' +
               '<span class="c2-tag">' + b.area + '</span>' +
-              '<button class="c2-ico" aria-label="Altre opzioni">' + I('dots', 15) + '</button></li>';
+              '<button class="c2-ico" aria-label="Altre opzioni">' + I('altreOpzioni', 15) + '</button></li>';
           }).join('') + C.senzaOra.map(function (b) {
             return '<li><label class="c2-sp"><input type="checkbox"><span class="c2-ora c2-sen">senza ora</span>' +
               '<span class="c2-nome">' + esc(b.t) + '</span></label><span class="c2-tag">' + b.area + '</span>' +
-              '<button class="c2-ico" aria-label="Altre opzioni">' + I('dots', 15) + '</button></li>';
+              '<button class="c2-ico" aria-label="Altre opzioni">' + I('altreOpzioni', 15) + '</button></li>';
           }).join('') + '</ul>' +
           '<h2 class="c2-sez">Abitudini di oggi<span>3</span></h2>' +
           '<ul class="c2-lista">' + C.abitudini.map(function (a) {
@@ -257,7 +265,7 @@
           '<span class="c2-tag">' + b.area + '</span>' +
           (b.quando ? '<span class="c2-tag' + (b.urgente ? ' rosso' : '') + '">' + b.quando + '</span>' : '') +
           (primo ? '<button class="c2-btn c2-mini">Fai oggi</button>' : '') +
-          '<button class="c2-ico" aria-label="Altre opzioni">' + I('dots', 15) + '</button></li>';
+          '<button class="c2-ico" aria-label="Altre opzioni">' + I('altreOpzioni', 15) + '</button></li>';
       };
       return '<div class="c2">' +
         '<aside class="c2-nav">' + C.pagine.map(function (p) {
@@ -267,7 +275,7 @@
         '<div class="c2-corpo">' +
           '<header class="c2-testa"><h2 class="lab-h">Attività</h2><span class="c2-data">' + C.totaleDaFare + ' da fare</span></header>' +
           '<form class="c2-agg"><input type="text" placeholder="Aggiungi una cosa da fare">' +
-            '<button class="c2-btn c2-pieno" type="submit">' + I('plus', 14) + 'Aggiungi</button></form>' +
+            '<button class="c2-btn c2-pieno" type="submit">' + I('plus', 15) + 'Aggiungi</button></form>' +
           '<div class="c2-chip">' + ['Tutte'].concat(C.aree).map(function (a, i) {
             return '<button class="' + (i === 0 ? 'on' : '') + '">' + a + '</button>';
           }).join('') + '</div>' +
@@ -276,7 +284,7 @@
           '<h2 class="c2-sez">Altre<span>3</span></h2>' +
           '<ul class="c2-lista c2-tenue">' + C.poi.map(function (b) { return riga(b, false); }).join('') + '</ul>' +
           '<div class="c2-piede">' +
-            '<button class="c2-btn">' + I('chevronGiu', 14) + 'Mostra le altre ' + C.altre + '</button>' +
+            '<button class="c2-btn">' + I('chevronGiu', 15) + 'Mostra le altre ' + C.altre + '</button>' +
             '<span>' + C.ferme + ' inattive da tre settimane</span>' +
           '</div>' +
         '</div>' +
@@ -330,7 +338,7 @@
         '<div class="m3-scorri">' +
           '<header class="m3-testa"><p>' + C.totaleDaFare + ' cose da fare</p><h2 class="lab-h">Attività</h2></header>' +
           '<form class="m3-agg"><input type="text" placeholder="Aggiungi una cosa da fare">' +
-            '<button class="m3-tondo" type="submit" aria-label="Aggiungi">' + I('plus', 20) + '</button></form>' +
+            '<button class="m3-tondo" type="submit" aria-label="Aggiungi">' + I('plus', 18) + '</button></form>' +
           '<div class="m3-chip">' + ['Tutte'].concat(C.aree).map(function (a, i) {
             return '<button class="' + (i === 0 ? 'on' : '') + '">' + a + '</button>';
           }).join('') + '</div>' +
@@ -349,7 +357,7 @@
               '<span class="m3-testo"><b>' + esc(b.t) + '</b>' +
               '<i>' + b.area + (b.quando ? ' · ' + b.quando : '') + '</i></span></label>';
           }).join('') + '</section>' +
-          '<button class="m3-largo">' + I('chevronGiu', 16) + 'Mostra le altre ' + C.altre + '</button>' +
+          '<button class="m3-largo">' + I('chevronGiu', 15) + 'Mostra le altre ' + C.altre + '</button>' +
           '<p class="m3-piede">' + C.ferme + ' inattive da tre settimane</p>' +
         '</div>' +
         '<nav class="m3-barrabasso">' + C.pagine.map(function (p) {
@@ -368,11 +376,11 @@
     stanza: 'Bordi invece di ombre, angoli quasi quadri, contrasto alto, navigazione in alto a schede. Ogni confine è visibile: niente si confonde con lo sfondo.',
     oggi: function () {
       return '<div class="n4">' +
-        '<div class="n4-cima"><b>' + I('trendUp', 16) + 'LifeMax</b>' +
+        '<div class="n4-cima"><b>' + L(16) + 'LifeMax</b>' +
           '<nav>' + C.pagine.map(function (p) {
             return '<a class="' + (p.id === 'oggi' ? 'qui' : '') + '">' + p.nome + (p.badge ? ' <em>' + p.badge + '</em>' : '') + '</a>';
           }).join('') + '</nav>' +
-          '<button class="n4-btn n4-pieno">' + I('plus', 14) + 'Aggiungi</button>' +
+          '<button class="n4-btn n4-pieno">' + I('plus', 15) + 'Aggiungi</button>' +
         '</div>' +
         '<div class="n4-corpo">' +
           '<div class="n4-testa"><h2 class="lab-h">Oggi</h2><span>' + C.giorno + ' · ' + C.ora + '</span></div>' +
@@ -418,11 +426,11 @@
             '<span><i class="n4-tag">' + b.area + '</i>' +
             (b.quando ? '<i class="n4-tag' + (b.urgente ? ' rosso' : '') + '">' + b.quando + '</i>' : '') + '</span></div>' +
           (primo ? '<button class="n4-btn n4-pieno n4-mini">Fai oggi</button>' : '<button class="n4-btn n4-mini">Pianifica</button>') +
-          '<button class="n4-ico" aria-label="Altre opzioni">' + I('dots', 15) + '</button>' +
+          '<button class="n4-ico" aria-label="Altre opzioni">' + I('altreOpzioni', 15) + '</button>' +
         '</div>';
       };
       return '<div class="n4">' +
-        '<div class="n4-cima"><b>' + I('trendUp', 16) + 'LifeMax</b>' +
+        '<div class="n4-cima"><b>' + L(16) + 'LifeMax</b>' +
           '<nav>' + C.pagine.map(function (p) {
             return '<a class="' + (p.id === 'attivita' ? 'qui' : '') + '">' + p.nome + (p.badge ? ' <em>' + p.badge + '</em>' : '') + '</a>';
           }).join('') + '</nav>' +
@@ -430,7 +438,7 @@
         '<div class="n4-corpo">' +
           '<div class="n4-testa"><h2 class="lab-h">Attività</h2><span>' + C.totaleDaFare + ' cose da fare</span></div>' +
           '<form class="n4-agg"><input type="text" placeholder="Aggiungi una cosa da fare">' +
-            '<button class="n4-btn n4-pieno" type="submit">' + I('plus', 14) + 'Aggiungi</button></form>' +
+            '<button class="n4-btn n4-pieno" type="submit">' + I('plus', 15) + 'Aggiungi</button></form>' +
           '<div class="n4-chip">' + ['Tutte'].concat(C.aree).map(function (a, i) {
             return '<button class="' + (i === 0 ? 'on' : '') + '">' + a + '</button>';
           }).join('') + '</div>' +
@@ -439,7 +447,7 @@
           '</section>' +
           '<section class="n4-box">' +
             '<h3>Altre <b>3</b></h3>' + C.poi.map(function (b) { return riga(b, false); }).join('') +
-            '<button class="n4-largo">' + I('chevronGiu', 14) + 'Mostra le altre ' + C.altre + '</button>' +
+            '<button class="n4-largo">' + I('chevronGiu', 15) + 'Mostra le altre ' + C.altre + '</button>' +
           '</section>' +
           '<p class="n4-piede">' + C.ferme + ' inattive da tre settimane. <button class="n4-link">Rivedile</button></p>' +
         '</div>' +
@@ -456,11 +464,11 @@
     stanza: 'A sinistra cosa fare adesso e la giornata, a destra le cose da fare: le due domande stanno nella stessa schermata, senza cambiare pagina. Sul telefono le colonne si impilano.',
     oggi: function () {
       return '<div class="d5">' +
-        '<div class="d5-cima"><b>' + I('trendUp', 16) + 'LifeMax</b>' +
+        '<div class="d5-cima"><b>' + L(16) + 'LifeMax</b>' +
           '<nav>' + C.pagine.map(function (p) {
             return '<a class="' + (p.id === 'oggi' ? 'qui' : '') + '">' + I(p.ico, 15) + p.nome + '</a>';
           }).join('') + '</nav>' +
-          '<button class="d5-btn d5-pieno">' + I('plus', 14) + 'Aggiungi</button>' +
+          '<button class="d5-btn d5-pieno">' + I('plus', 15) + 'Aggiungi</button>' +
         '</div>' +
         '<div class="d5-due">' +
           '<section class="d5-col">' +
@@ -482,7 +490,7 @@
           '</section>' +
           '<section class="d5-col d5-lato">' +
             '<h2 class="d5-h2">Da fare <span>' + C.totaleDaFare + '</span></h2>' +
-            '<form class="d5-agg"><input type="text" placeholder="Aggiungi"><button class="d5-btn" type="submit" aria-label="Aggiungi">' + I('plus', 14) + '</button></form>' +
+            '<form class="d5-agg"><input type="text" placeholder="Aggiungi"><button class="d5-btn" type="submit" aria-label="Aggiungi">' + I('plus', 15) + '</button></form>' +
             '<p class="d5-eti2">Importanti</p>' +
             C.prima.map(function (b) {
               return '<div class="d5-cosa"><input type="checkbox" aria-label="Segna fatta">' +
@@ -502,7 +510,7 @@
     },
     attivita: function () {
       return '<div class="d5">' +
-        '<div class="d5-cima"><b>' + I('trendUp', 16) + 'LifeMax</b>' +
+        '<div class="d5-cima"><b>' + L(16) + 'LifeMax</b>' +
           '<nav>' + C.pagine.map(function (p) {
             return '<a class="' + (p.id === 'attivita' ? 'qui' : '') + '">' + I(p.ico, 15) + p.nome + '</a>';
           }).join('') + '</nav>' +
@@ -511,7 +519,7 @@
           '<section class="d5-col">' +
             '<h2 class="lab-h d5-h">Attività <span>' + C.totaleDaFare + ' da fare</span></h2>' +
             '<form class="d5-agg d5-aggl"><input type="text" placeholder="Aggiungi una cosa da fare">' +
-              '<button class="d5-btn d5-pieno" type="submit">' + I('plus', 14) + 'Aggiungi</button></form>' +
+              '<button class="d5-btn d5-pieno" type="submit">' + I('plus', 15) + 'Aggiungi</button></form>' +
             '<div class="d5-chip">' + ['Tutte'].concat(C.aree).map(function (a, i) {
               return '<button class="' + (i === 0 ? 'on' : '') + '">' + a + '</button>';
             }).join('') + '</div>' +
@@ -521,7 +529,7 @@
                 '<div><b>' + esc(b.t) + '</b><span><i class="d5-tag">' + b.area + '</i>' +
                 (b.quando ? '<i class="d5-quando' + (b.urgente ? ' rosso' : '') + '">' + b.quando + '</i>' : '') + '</span></div>' +
                 '<button class="d5-btn d5-pieno d5-mini">Fai oggi</button>' +
-                '<button class="d5-ico" aria-label="Altre opzioni">' + I('dots', 15) + '</button></div>';
+                '<button class="d5-ico" aria-label="Altre opzioni">' + I('altreOpzioni', 15) + '</button></div>';
             }).join('') +
             '<p class="d5-eti2">Altre <b>3</b></p>' +
             C.poi.map(function (b) {
@@ -529,7 +537,7 @@
                 '<div><b>' + esc(b.t) + '</b><span><i class="d5-tag">' + b.area + '</i>' +
                 (b.quando ? '<i class="d5-quando">' + b.quando + '</i>' : '') + '</span></div>' +
                 '<button class="d5-btn d5-mini">Pianifica</button>' +
-                '<button class="d5-ico" aria-label="Altre opzioni">' + I('dots', 15) + '</button></div>';
+                '<button class="d5-ico" aria-label="Altre opzioni">' + I('altreOpzioni', 15) + '</button></div>';
             }).join('') +
             '<button class="d5-largo">Mostra le altre ' + C.altre + '</button>' +
           '</section>' +
@@ -538,7 +546,7 @@
             '<div class="d5-ades d5-piccolo">' +
               '<span class="d5-eti">Adesso</span><b>' + esc(C.mit) + '</b>' +
               '<p>' + C.mitOra + '</p>' +
-              '<button class="d5-btn d5-pieno">' + I('check', 14) + 'Fatto</button>' +
+              '<button class="d5-btn d5-pieno">' + I('check', 15) + 'Fatto</button>' +
             '</div>' +
             '<p class="d5-eti2">Dopo</p>' +
             C.blocchi.slice(3).concat(C.senzaOra).map(function (b) {
@@ -568,13 +576,13 @@
       return '<div class="t6">' +
         '<header class="t6-fascia">' +
           '<div class="t6-riga1"><span>' + C.giorno + '</span>' +
-            '<button class="t6-ico" aria-label="Impostazioni">' + I('dots', 18) + '</button></div>' +
+            '<button class="t6-ico" aria-label="Impostazioni">' + I('ingranaggio', 18) + '</button></div>' +
           '<h2 class="lab-h">Oggi</h2>' +
           '<div class="t6-ades">' +
             '<span class="t6-eti">Adesso · ' + C.mitTra + '</span>' +
             '<b>' + esc(C.mit) + '</b>' +
             '<span class="t6-min">' + C.mitOra + ' · ' + C.mitArea + '</span>' +
-            '<div class="t6-azioni"><button class="t6-btn t6-chiaro">' + I('check', 16) + 'Fatto</button>' +
+            '<div class="t6-azioni"><button class="t6-btn t6-chiaro">' + I('check', 15) + 'Fatto</button>' +
               '<button class="t6-btn t6-vuoto">Rinvia</button></div>' +
           '</div>' +
           '<div class="t6-avanz"><i><b style="width:' + perc() + '%"></b></i><span>' + C.fatte + ' di ' + C.totali + ' fatte</span></div>' +
@@ -584,7 +592,7 @@
           C.blocchi.concat(C.senzaOra).map(function (b) {
             return '<label class="t6-riga"><input type="checkbox"' + (b.fatto ? ' checked' : '') + '>' +
               '<span class="t6-testo"><b>' + esc(b.t) + '</b><i>' + (b.da ? b.da + ' – ' + b.a : 'senza ora') + ' · ' + b.area + '</i></span>' +
-              '<button class="t6-ico2" aria-label="Altre opzioni">' + I('dots', 16) + '</button></label>';
+              '<button class="t6-ico2" aria-label="Altre opzioni">' + I('altreOpzioni', 15) + '</button></label>';
           }).join('') +
           '<h2 class="t6-sez">Abitudini<span>1 di 3</span></h2>' +
           C.abitudini.map(function (a) {
@@ -601,7 +609,7 @@
       return '<div class="t6">' +
         '<header class="t6-fascia t6-corta">' +
           '<div class="t6-riga1"><span>' + C.totaleDaFare + ' cose da fare</span>' +
-            '<button class="t6-ico" aria-label="Impostazioni">' + I('dots', 18) + '</button></div>' +
+            '<button class="t6-ico" aria-label="Impostazioni">' + I('ingranaggio', 18) + '</button></div>' +
           '<h2 class="lab-h">Attività</h2>' +
           '<form class="t6-agg"><input type="text" placeholder="Aggiungi una cosa da fare">' +
             '<button class="t6-btn t6-chiaro" type="submit">' + I('plus', 15) + 'Aggiungi</button></form>' +
@@ -621,7 +629,7 @@
           C.poi.map(function (b) {
             return '<div class="t6-cosa"><input type="checkbox" aria-label="Segna fatta">' +
               '<div class="t6-testo"><b>' + esc(b.t) + '</b><i>' + b.area + (b.quando ? ' · ' + b.quando : '') + '</i></div>' +
-              '<button class="t6-ico2" aria-label="Altre opzioni">' + I('dots', 16) + '</button></div>';
+              '<button class="t6-ico2" aria-label="Altre opzioni">' + I('altreOpzioni', 15) + '</button></div>';
           }).join('') +
           '<button class="t6-largo">' + I('chevronGiu', 15) + 'Mostra le altre ' + C.altre + '</button>' +
           '<p class="t6-piede">' + C.ferme + ' inattive da tre settimane</p>' +
@@ -643,7 +651,7 @@
     oggi: function () {
       return '<div class="k7">' +
         '<aside class="k7-nav">' +
-          '<div class="k7-marchio">' + I('trendUp', 17) + '<b>LifeMax</b></div>' +
+          '<div class="k7-marchio">' + L(17) + '<b>LifeMax</b></div>' +
           C.pagine.map(function (p) {
             return '<a class="' + (p.id === 'oggi' ? 'qui' : '') + '">' + I(p.ico, 17) + '<span>' + p.nome + '</span>' +
               (p.badge ? '<em>' + p.badge + '</em>' : '') + '</a>';
@@ -658,7 +666,7 @@
             '<p>' + C.mitOra + ' · ' + C.mitArea + '</p>' +
             '<div class="k7-azioni"><button class="k7-btn k7-pieno">' + I('check', 15) + 'Fatto</button>' +
               '<button class="k7-btn">Rinvia</button>' +
-              '<button class="k7-ico" aria-label="Altre opzioni">' + I('dots', 16) + '</button></div>' +
+              '<button class="k7-ico" aria-label="Altre opzioni">' + I('altreOpzioni', 15) + '</button></div>' +
           '</section>' +
           '<div class="k7-griglia">' +
             '<section class="k7-box"><div class="k7-boxtesta"><h3>La giornata</h3>' +
@@ -689,11 +697,11 @@
             '<span><i class="k7-tag">' + b.area + '</i>' +
             (b.quando ? '<i class="k7-tag' + (b.urgente ? ' rosso' : '') + '">' + b.quando + '</i>' : '') + '</span></div>' +
           (primo ? '<button class="k7-btn k7-pieno k7-mini">Fai oggi</button>' : '<button class="k7-btn k7-mini">Pianifica</button>') +
-          '<button class="k7-ico" aria-label="Altre opzioni">' + I('dots', 15) + '</button></div>';
+          '<button class="k7-ico" aria-label="Altre opzioni">' + I('altreOpzioni', 15) + '</button></div>';
       };
       return '<div class="k7">' +
         '<aside class="k7-nav">' +
-          '<div class="k7-marchio">' + I('trendUp', 17) + '<b>LifeMax</b></div>' +
+          '<div class="k7-marchio">' + L(17) + '<b>LifeMax</b></div>' +
           C.pagine.map(function (p) {
             return '<a class="' + (p.id === 'attivita' ? 'qui' : '') + '">' + I(p.ico, 17) + '<span>' + p.nome + '</span>' +
               (p.badge ? '<em>' + p.badge + '</em>' : '') + '</a>';
@@ -710,7 +718,7 @@
             C.prima.map(function (b) { return riga(b, true); }).join('') + '</section>' +
           '<section class="k7-box"><div class="k7-boxtesta"><h3>Altre</h3><span>3</span></div>' +
             C.poi.map(function (b) { return riga(b, false); }).join('') +
-            '<button class="k7-largo">' + I('chevronGiu', 14) + 'Mostra le altre ' + C.altre + '</button></section>' +
+            '<button class="k7-largo">' + I('chevronGiu', 15) + 'Mostra le altre ' + C.altre + '</button></section>' +
           '<p class="k7-piede">' + C.ferme + ' inattive da tre settimane. <button class="k7-link">Rivedile</button></p>' +
         '</div>' +
       '</div>';
@@ -734,7 +742,7 @@
             '<span class="g8-eti">Adesso</span>' +
             '<h2>' + esc(C.mit) + '</h2>' +
             '<p>' + C.mitOra + ' · ' + C.mitArea + '</p>' +
-            '<button class="g8-mega">' + I('check', 22) + 'Fatto</button>' +
+            '<button class="g8-mega">' + I('check', 26) + 'Fatto</button>' +
             '<button class="g8-btn">Rinvia di un’ora</button>' +
           '</section>' +
           '<h2 class="g8-sez">Altre oggi</h2>' +
@@ -759,7 +767,7 @@
         '<div class="g8-scorri">' +
           '<header class="g8-testa"><span>' + C.totaleDaFare + ' cose da fare</span><h2 class="lab-h">Attività</h2></header>' +
           '<form class="g8-agg"><input type="text" placeholder="Cosa devi fare?">' +
-            '<button class="g8-mega g8-corto" type="submit">' + I('plus', 20) + 'Aggiungi</button></form>' +
+            '<button class="g8-mega g8-corto" type="submit">' + I('plus', 18) + 'Aggiungi</button></form>' +
           '<h2 class="g8-sez">Importanti</h2>' +
           C.prima.map(function (b) {
             return '<div class="g8-cosa">' +
@@ -796,17 +804,17 @@
       var H = 540; /* altezza della pista in pixel: 16 ore in 540 px */
       var px = function (hhmm) { return Math.round(pc(hhmm) * H / 100); };
       return '<div class="a9">' +
-        '<div class="a9-cima"><b>' + I('trendUp', 15) + 'LifeMax</b>' +
+        '<div class="a9-cima"><b>' + L(15) + 'LifeMax</b>' +
           '<nav>' + C.pagine.map(function (p) {
             return '<a class="' + (p.id === 'oggi' ? 'qui' : '') + '">' + p.nome + '</a>';
           }).join('') + '</nav>' +
-          '<button class="a9-btn a9-pieno">' + I('plus', 14) + 'Aggiungi</button></div>' +
+          '<button class="a9-btn a9-pieno">' + I('plus', 15) + 'Aggiungi</button></div>' +
         '<div class="a9-testa"><h2 class="lab-h">Oggi</h2><span>' + C.giorno + ' · ' + C.ora + '</span>' +
           '<span class="a9-conta">' + C.fatte + ' di ' + C.totali + ' fatte</span></div>' +
         '<div class="a9-ades">' +
           '<span class="a9-eti">Adesso · ' + C.mitTra + '</span>' +
           '<b>' + esc(C.mit) + '</b><span class="a9-min">' + C.mitOra + ' · ' + C.mitArea + '</span>' +
-          '<button class="a9-btn a9-pieno">' + I('check', 14) + 'Fatto</button>' +
+          '<button class="a9-btn a9-pieno">' + I('check', 15) + 'Fatto</button>' +
           '<button class="a9-btn">Rinvia</button>' +
         '</div>' +
         '<div class="a9-tela">' +
@@ -841,17 +849,17 @@
           '<span class="a9-tag">' + b.area + '</span>' +
           (b.quando ? '<span class="a9-tag' + (b.urgente ? ' rosso' : '') + '">' + b.quando + '</span>' : '') +
           '<button class="a9-btn a9-mini' + (primo ? ' a9-pieno' : '') + '">' + (primo ? 'Fai oggi' : 'Pianifica') + '</button>' +
-          '<button class="a9-ico" aria-label="Altre opzioni">' + I('dots', 15) + '</button></label>';
+          '<button class="a9-ico" aria-label="Altre opzioni">' + I('altreOpzioni', 15) + '</button></label>';
       };
       return '<div class="a9">' +
-        '<div class="a9-cima"><b>' + I('trendUp', 15) + 'LifeMax</b>' +
+        '<div class="a9-cima"><b>' + L(15) + 'LifeMax</b>' +
           '<nav>' + C.pagine.map(function (p) {
             return '<a class="' + (p.id === 'attivita' ? 'qui' : '') + '">' + p.nome + '</a>';
           }).join('') + '</nav></div>' +
         '<div class="a9-testa"><h2 class="lab-h">Attività</h2><span>' + C.totaleDaFare + ' cose da fare</span></div>' +
         '<div class="a9-senza a9-pieno-largo">' +
           '<form class="a9-agg"><input type="text" placeholder="Aggiungi una cosa da fare">' +
-            '<button class="a9-btn a9-pieno" type="submit">' + I('plus', 14) + 'Aggiungi</button></form>' +
+            '<button class="a9-btn a9-pieno" type="submit">' + I('plus', 15) + 'Aggiungi</button></form>' +
           '<div class="a9-chip">' + ['Tutte'].concat(C.aree).map(function (a, i) {
             return '<button class="' + (i === 0 ? 'on' : '') + '">' + a + '</button>';
           }).join('') + '</div>' +
@@ -859,7 +867,7 @@
           C.prima.map(function (b) { return riga(b, true); }).join('') +
           '<h2>Altre<span>3</span></h2>' +
           C.poi.map(function (b) { return riga(b, false); }).join('') +
-          '<div class="a9-coda"><button class="a9-btn">' + I('chevronGiu', 14) + 'Mostra le altre ' + C.altre + '</button>' +
+          '<div class="a9-coda"><button class="a9-btn">' + I('chevronGiu', 15) + 'Mostra le altre ' + C.altre + '</button>' +
             '<span>' + C.ferme + ' inattive da tre settimane</span></div>' +
         '</div>' +
       '</div>';
@@ -878,7 +886,7 @@
         '<div class="p10-scorri">' +
           '<header class="p10-testa">' +
             '<div class="p10-riga1"><span>Oggi · ' + C.giorno + '</span>' +
-              '<button class="p10-ico" aria-label="Impostazioni">' + I('dots', 17) + '</button></div>' +
+              '<button class="p10-ico" aria-label="Impostazioni">' + I('ingranaggio', 18) + '</button></div>' +
             '<div class="p10-passi"><i class="on"></i><i></i><span>' + C.fatte + ' di ' + C.totali + ' fatte</span></div>' +
           '</header>' +
           '<section class="p10-carta">' +
@@ -912,7 +920,7 @@
         '<div class="p10-scorri">' +
           '<header class="p10-testa">' +
             '<div class="p10-riga1"><span>Attività · ' + C.totaleDaFare + ' da fare</span>' +
-              '<button class="p10-ico" aria-label="Impostazioni">' + I('dots', 17) + '</button></div>' +
+              '<button class="p10-ico" aria-label="Impostazioni">' + I('ingranaggio', 18) + '</button></div>' +
             '<form class="p10-agg"><input type="text" placeholder="Aggiungi una cosa da fare">' +
               '<button class="p10-tondo" type="submit" aria-label="Aggiungi">' + I('plus', 18) + '</button></form>' +
           '</header>' +
@@ -982,8 +990,8 @@
               '<button data-s="attivita" class="' + (schermo === 'attivita' ? 'on' : '') + '">Attività</button>' +
             '</div>' +
             '<div class="lab-seg" id="lab-largo" role="group" aria-label="Larghezza dello schermo">' +
-              '<button data-w="si" class="' + (largo ? 'on' : '') + '" title="Larghezza da monitor">' + I('dashboard', 14) + '</button>' +
-              '<button data-w="no" class="' + (largo ? '' : 'on') + '" title="Larghezza da telefono">' + I('user', 14) + '</button>' +
+              '<button data-w="si" class="' + (largo ? 'on' : '') + '" title="Larghezza da monitor">' + I('schermoGrande', 15) + '</button>' +
+              '<button data-w="no" class="' + (largo ? '' : 'on') + '" title="Larghezza da telefono">' + I('schermoPiccolo', 15) + '</button>' +
             '</div>' +
           '</div>' +
         '</div>' +

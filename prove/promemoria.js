@@ -30,8 +30,21 @@ const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  
   /* le notifiche mostrate finiscono in una lista invece di apparire */
   await ctx.addInitScript(() => {
     window.__notifiche = [];
+    window.__badge = null;
     const p = window.ServiceWorkerRegistration && ServiceWorkerRegistration.prototype;
-    if (p) { p.showNotification = function (t, o) { window.__notifiche.push({ titolo: t, opz: o }); return Promise.resolve(); }; }
+    if (p) {
+      p.showNotification = function (t, o) { window.__notifiche.push({ titolo: t, opz: o }); return Promise.resolve(); };
+      /* le notifiche già a schermo: serve per «togliere la nota fissa» */
+      p.getNotifications = function (f) {
+        window.__chiuse = window.__chiuse || [];
+        const tag = f && f.tag;
+        return Promise.resolve(window.__notifiche
+          .filter(function (n) { return !tag || (n.opz && n.opz.tag) === tag; })
+          .map(function (n) { return { close: function () { window.__chiuse.push(n.opz.tag); } }; }));
+      };
+    }
+    navigator.setAppBadge = function (n) { window.__badge = n; return Promise.resolve(); };
+    navigator.clearAppBadge = function () { window.__badge = 0; return Promise.resolve(); };
     if (window.Notification) {
       const N = window.Notification;
       window.Notification = function (t, o) { window.__notifiche.push({ titolo: t, opz: o }); };
@@ -164,6 +177,92 @@ const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  
   ok('col testo', n && n.opz && n.opz.body === 'Venti minuti su «prova».');
   ok('e con dove andare', n && n.opz && n.opz.data && n.opz.data.vai === '#/oggi');
   ok('in italiano, per la lettura ad alta voce', n && n.opz && n.opz.lang === 'it');
+
+  console.log('\nIL PIANO E IL CONTO NON SI CHIAMANO A VICENDA');
+  /* Questa è la prova di un bug vero, trovato accendendo l'interruttore:
+     `restano()` chiedeva i rituali aperti a `piano()`, e `piano()` chiedeva a
+     `restano()` il testo della nota fissa. Con la nota spenta non si notava —
+     con la nota accesa l'app si fermava con lo stack pieno, e la schermata
+     restava a metà. Adesso il pezzo condiviso sta da solo e non ha versi. */
+  const senzaEsplodere = () => p.evaluate(() => {
+    try {
+      LM_PROMEMORIA.fissa(true);
+      const a = LM_PROMEMORIA.piano().length;
+      const b = LM_PROMEMORIA.restano().n;
+      const c = LM_PROMEMORIA.testoFissa();
+      LM_PROMEMORIA.fissa(false);
+      return { ok: true, piano: a, restano: b, titolo: c.titolo };
+    } catch (e) { return { ok: false, err: '' + e }; }
+  });
+  let ric = await senzaEsplodere();
+  ok('col piano acceso non va in ricorsione', ric.ok === true, ric.ok ? JSON.stringify(ric) : ric.err);
+  ok('e il piano contiene la voce «stato»',
+    await p.evaluate(() => { LM_PROMEMORIA.fissa(true); const v = LM_PROMEMORIA.piano().some(x => x.id === 'stato'); LM_PROMEMORIA.fissa(false); return v; }));
+  ok('che è del tipo giusto e ripete ogni giorno',
+    await p.evaluate(() => { LM_PROMEMORIA.fissa(true);
+      const v = LM_PROMEMORIA.piano().find(x => x.id === 'stato') || {}; LM_PROMEMORIA.fissa(false);
+      return v.tipo === 'stato' && v.ripete === true; }));
+
+  console.log('\nIL NUMERO SULL’ICONA');
+  await p.evaluate(() => { localStorage.clear(); LM.seedDemo(); });
+  await p.reload(); await p.waitForTimeout(900);
+  const badge = () => p.evaluate(() => window.__badge);
+  const conto = () => p.evaluate(() => LM_PROMEMORIA.restano());
+  let b1 = await badge(), r1 = await conto();
+  console.log('  ' + JSON.stringify(r1));
+  ok('è messo appena si apre l’app', typeof b1 === 'number' && b1 > 0, String(b1));
+  ok('ed è il numero delle cose aperte', b1 === r1.n, b1 + ' vs ' + r1.n);
+  /* spuntando una cosa il numero scende: se non scendesse, il pallino
+     diventerebbe un numero fisso che non dice più niente */
+  await p.evaluate(() => { const s = LM.load(); const a = s.azioni.find(x => x.data === LM.todayKey() && !x.done); if (a) LM.completaAzione(a.id); });
+  await p.waitForTimeout(400);
+  ok('spuntando una cosa scende', (await badge()) === b1 - 1, (await badge()) + ' (era ' + b1 + ')');
+  /* e a zero si toglie: un'icona pulita è la ricompensa */
+  await p.evaluate(() => {
+    const s = LM.load(), k = LM.todayKey();
+    s.azioni.filter(a => a.data === k && !a.done).forEach(a => LM.completaAzione(a.id));
+    s.abitudini.filter(h => LM.abitudinePrevista(h, k) && !(h.fatti && h.fatti[k])).forEach(h => LM.completaAbitudine(h.id));
+    LM.salvaPianoMattina('x'); LM.registraCheckin(3, 3, 3, ''); LM.salvaReviewSera({ vittoria: 'a', blocco: 'b' });
+  });
+  await p.waitForTimeout(500);
+  ok('finito tutto, il numero va a zero', (await conto()).n === 0, JSON.stringify(await conto()));
+  ok('e il pallino si toglie', (await badge()) === 0, String(await badge()));
+
+  console.log('\nLA NOTA FISSA');
+  await p.evaluate(() => { localStorage.clear(); LM.seedDemo(); });
+  await p.reload(); await p.waitForTimeout(900);
+  ok('parte spenta: una notifica che resta lì non si mette senza chiedere',
+    (await p.evaluate(() => LM_PROMEMORIA.fissaAccesa())) === false);
+  await p.evaluate(() => { window.__notifiche.length = 0; LM_PROMEMORIA.fissa(true); });
+  await p.waitForTimeout(300);
+  const nf = await p.evaluate(() => window.__notifiche[window.__notifiche.length - 1] || null);
+  ok('accendendola compare', !!nf, nf ? nf.titolo : 'nessuna');
+  if (nf) {
+    console.log('  «' + nf.titolo + '» — ' + nf.opz.body);
+    /* le quattro cose che la rendono «fissa» invece di una notifica qualsiasi */
+    ok('ha un tag fisso, così si riscrive invece di accumularsi', nf.opz.tag === 'lifemax-stato', nf.opz.tag);
+    ok('non fa rumore quando si aggiorna', nf.opz.silent === true);
+    ok('e non rifà il suono di una nuova', nf.opz.renotify === false);
+    ok('sul computer non sparisce dopo venti secondi', nf.opz.requireInteraction === true);
+    ok('porta a Oggi', nf.opz.data && nf.opz.data.vai === '#/oggi');
+  }
+  /* si aggiorna da sé quando cambia qualcosa, senza server */
+  const quante = () => p.evaluate(() => window.__notifiche.filter(n => n.opz.tag === 'lifemax-stato').length);
+  const prima = await quante();
+  await p.evaluate(() => LM.aggiungiAzione('Una cosa nuova di oggi', 'altro', {}));
+  await p.waitForTimeout(400);
+  ok('si riscrive quando cambiano i dati', (await quante()) > prima, (await quante()) + ' vs ' + prima);
+  const ultima = await p.evaluate(() => { const l = window.__notifiche.filter(n => n.opz.tag === 'lifemax-stato'); return l[l.length - 1]; });
+  ok('e tutte le volte con lo stesso tag: una sola notifica, non una pila',
+    ultima.opz.tag === 'lifemax-stato');
+  await p.evaluate(() => { window.__chiuse = []; LM_PROMEMORIA.fissa(false); });
+  await p.waitForTimeout(300);
+  ok('spegnendola la notifica viene chiusa',
+    (await p.evaluate(() => (window.__chiuse || []).indexOf('lifemax-stato') >= 0)) === true);
+  ok('e non ne compaiono di nuove', (await p.evaluate(() => LM_PROMEMORIA.fissaAccesa())) === false);
+  await p.evaluate(() => { window.__badge = null; LM_PROMEMORIA.spegni(); });
+  await p.waitForTimeout(300);
+  ok('spegnendo tutto il pallino si toglie', (await badge()) === 0, String(await badge()));
 
   console.log('\nTOCCANDOLA, L’APP CI PORTA');
   await p.evaluate(() => { location.hash = '#/andamento'; }); await p.waitForTimeout(400);
