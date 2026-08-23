@@ -90,6 +90,16 @@ parte.**
 
 ### 4 · Le due chiavi
 
+> **UNA COPPIA SOLA, PER SEMPRE, PER TUTTI I DISPOSITIVI.**
+> Non una per telefono, non una per iPhone e una per Android. Le chiavi VAPID
+> dicono *chi manda*, non *a chi*: sono l'identità del mittente, e il mittente
+> è uno — il tuo Worker. Le fai una volta e non ci torni più.
+>
+> Quello che è diverso da dispositivo a dispositivo è l'**iscrizione**, e quella
+> la fabbrica il browser da sé quando accendi i promemoria su quel dispositivo:
+> non la vedi, non la incolli, non la gestisci. iPhone, Android, computer —
+> ognuno si registra col suo indirizzo, tutti con la stessa chiave pubblica.
+
 Servono ai servizi push (Apple, Google) per sapere che quelle notifiche le
 manda sempre lo stesso mittente. Sono una coppia.
 
@@ -169,6 +179,41 @@ nell'esportazione insieme a tutto il resto.
 
 **La chiave privata non va in nessuno dei due campi.** Se un campo te la
 chiede, è il campo sbagliato.
+
+---
+
+## Più di un dispositivo
+
+Non c'è niente da rifare. La coppia di chiavi è una e vale per tutti; su ogni
+dispositivo nuovo servono solo due gesti:
+
+1. aprire LifeMax su quel dispositivo (sull'iPhone: aggiunto alla schermata
+   Home, altrimenti il permesso non si può nemmeno chiedere);
+2. **Impostazioni → Promemoria → Accendi i promemoria.**
+
+L'indirizzo del Worker e la chiave pubblica **non** si reincollano, se hai
+fatto l'accesso con Google: stanno nei tuoi dati e si sincronizzano insieme a
+tutto il resto. Senza accesso, li incolli anche là — sono le stesse due righe,
+copiate identiche.
+
+Il permesso invece va dato su ogni dispositivo, sempre: quello non si
+sincronizza per definizione, perché è un permesso che dai a *quel* browser su
+*quel* telefono.
+
+Poi ogni dispositivo si prende la sua riga sul server, e riceve le sue
+notifiche. Sul Worker li vedi contati: `giro: 3 dispositivi, 2 notifiche`.
+
+**Se un dispositivo smette di ricevere** (l'hai reinstallata, hai revocato le
+notifiche, hai cambiato indirizzo del sito): spegni e riaccendi i promemoria
+lì. L'iscrizione vecchia scade da sé e il server la butta al primo rifiuto —
+non serve toccare né le chiavi né Cloudflare.
+
+**Quando invece SÌ bisogna rifare le chiavi:** solo se la privata è finita
+dove non doveva (mandata per sbaglio, incollata in un file pubblico). In quel
+caso: rigeneri la coppia, rimetti tutti e due i segreti su Cloudflare, cambi
+la pubblica nell'app, e su ogni dispositivo spegni e riaccendi. L'app se ne
+accorge da sé che la chiave è cambiata e rifà l'iscrizione — ma il permesso
+resta, quindi è un tocco.
 
 ---
 

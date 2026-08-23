@@ -132,18 +132,53 @@ genera le chiavi, in un browser vero).
   Non guarda il CSS: guarda i pixel. La curva di un angolo è una superellisse
   |u|^n + |v|^n = 1, e l'arco di cerchio del `border-radius` è il caso n = 2;
   il supercerchio è n = 4. La prova disegna, fotografa, trova dove passa il
-  bordo e ricava n risolvendo l'equazione punto per punto — sui cinque raggi
-  dell'app (fotografati a otto volte, perché su un raggio da 8px non si misura
-  niente), su un pulsante vero dipinto com'è, sul tracciato SVG del logo e
-  sull'icona dell'app. Poi controlla che tutti gli angoli di nove schermate lo
-  chiedano, che le pastiglie siano restate cerchi, e che le icone che iOS e
-  Android mascherano da sé siano piene fino al bordo.
-  Tre cose le ha corrette di sé stessa: che `superellipse(2)` dà n = 4 e
+  bordo e ricava n risolvendo l'equazione punto per punto.
+  In ordine: che le due forme siano davvero diverse (n = 2.00 col solo raggio,
+  n = 4.03 con `corner-shape: squircle`, che è il riferimento perché lo disegna
+  il browser); che il nostro poligono dia la stessa curva del riferimento a
+  8, 12, 18 e 60px, e che su un elemento più basso del raggio non si
+  autointersechi; che un pulsante vero, dipinto com'è, misuri n ≈ 4; che tutti
+  gli angoli di nove schermate abbiano il ritaglio e nessuno sia restato un
+  rettangolo arrotondato; che il blocco generato venga identico rigenerandolo;
+  che il tracciato SVG del logo e l'icona dell'app siano superellissi, e che
+  le icone che iOS e Android mascherano da sé siano piene fino al bordo.
+  Poi le tre prove che dicono se è davvero una curva di Lamé e non un
+  arrotondamento qualsiasi: la **curvatura** (l'arco di cerchio la tiene
+  costante a 1/R fino all'attacco col lato e là salta a zero — è quello lo
+  scalino che si vede; la curva di Lamé la cambia da 0.43·R a 1.5·R e si
+  appiattisce verso il lato, così l'attacco non c'è); la **distanza** fra il
+  nostro poligono e la curva vera del browser, misurata come area fra le due
+  divisa per la lunghezza dell'arco (0.06–0.08px a 12, 26 e 60px di raggio); e
+  le **proporzioni**, perché una maschera SVG che si stira farebbe un'ellisse
+  mentre l'angolo dev'essere lo stesso su 280×60, su 60×280 e su 160×160.
+  E lo **spessore dell'anello**: un bordo da 2px con un anello da 1px si
+  assottiglia proprio nell'angolo, quindi il generatore lo legge dal foglio di
+  stile e qui si controlla che nel blocco ci siano più spessori.
+  Alla fine la cosa che il ritaglio da solo rompe: il **bordo sulla curva**.
+  Ritagliando un box a spigoli il suo bordo viene tagliato proprio negli
+  angoli e resta una scheda col bordo sui fianchi e niente agli angoli; qui si
+  cerca il colore del bordo lungo ventidue direzioni dell'angolo, e la
+  controprova (la stessa forma senza l'anello) deve fallire, altrimenti la
+  prova non sta misurando niente.
+  Cinque cose le ha corrette di sé stessa: che `superellipse(2)` dà n = 4 e
   `superellipse(3)` dà n = 8 (il numero è il logaritmo dell'esponente, non
   l'esponente); che chi resta tondo va chiesto al foglio di stile e non
   indovinato dalla geometria, perché indovinandolo si fermava su due casi
-  giusti; e che misurare con il raggio CHIESTO invece di quello USATO — dove
-  viene tagliato alla metà del lato — dà un n falso.
+  giusti; che misurare con il raggio CHIESTO invece di quello USATO — dove
+  viene tagliato alla metà del lato — dà un n falso, ed è per questo che
+  l'elemento di prova è largo il doppio del raggio; che a un pixel per pixel
+  CSS il riferimento stesso usciva 5.19 dove doveva uscire 4.03, e serve
+  fotografare a sei volte la risoluzione; e che il raggio di un elemento vero
+  non si deduce da «dove il lato diventa dritto», perché la superellisse
+  arriva al lato appiattendosi e l'ultimo terzo della curva sta dentro il
+  mezzo pixel — si leggeva n = 3.15 su una forma giusta.
+  E una cosa l'ha trovata sull'app, non su sé stessa: il ritaglio taglia anche
+  quello che SPORGE dal riquadro — figli, pseudo-elementi, e con loro l'area
+  del tocco, perché `clip-path` conta anche per il dito. Erano andati via il
+  pallino in cima al segno dell'ora, il filo che stacca la cattura dalle
+  linguette, e i 44px invisibili che facevano grandi le caselle da spuntare e
+  l'interruttore dei promemoria. Adesso c'è una prova per ognuna delle tre
+  cose, su nove schermate.
 - **gesto.js** — il foglio dal basso: il gesto, e che dopo si possa ancora
   toccare. Prima di tutto campiona la SUPERFICIE del foglio aperto e pretende
   che ogni punto arrivi al foglio: nasce da una regressione in cui il velo

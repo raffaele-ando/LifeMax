@@ -1143,6 +1143,11 @@
         '</div>' +
         '<div class="imp-nota" id="prom-esito"></div>' +
         '<div class="imp-nota">La chiave <b>privata</b> non va qui e non va da nessuna parte: resta sul server. Se un campo te la chiede, è il campo sbagliato.</div>' +
+        /* La domanda che viene naturale: «e sull\'altro telefono?». Meglio
+           risponderla qui che farla nascere. */
+        '<div class="imp-nota">È <b>una coppia sola per tutti i dispositivi</b>: le chiavi dicono chi manda, non a chi. ' +
+        'Su un telefono nuovo basta accendere i promemoria — l’iscrizione la fa il browser da sé' +
+        (window.LMCloud && window.LMCloud.available ? ', e con l’accesso Google queste due righe ti arrivano già scritte' : '') + '.</div>' +
       '</div>' +
 
       /* COSA TI ARRIVA */
@@ -1223,6 +1228,19 @@
         var patch = { voci: {} }; patch.voci[id] = { on: !era };
         salva(patch);
         ridisegna();
+      });
+    });
+    /* Tutta la riga accende e spegne, come farebbe un'etichetta. L'interruttore
+       da solo è ventisei pixel, e il pollice ne vuole quaranta: prima quei
+       quaranta li dava uno pseudo-elemento che sporgeva dal riquadro, ma la
+       forma adesso è un ritaglio e un ritaglio taglia anche il tocco. La riga
+       è alta più che a sufficienza, e toccare il nome per accendere una cosa è
+       quello che si aspetta chiunque. Il campo dell'ora no: là si scrive. */
+    root.querySelectorAll('.prom-riga[data-voce]').forEach(function (r) {
+      r.addEventListener('click', function (e) {
+        if (e.target.closest('input, select, textarea, button')) return;
+        var b = r.querySelector('[data-int]');
+        if (b) b.click();
       });
     });
     /* gli orari: si salvano quando il campo si chiude, non a ogni tasto */
@@ -3282,7 +3300,10 @@
        qui. Qui resta quello che si guarda in mezzo secondo: quanto è passato,
        e cosa viene dopo. Da 131px a settanta. */
     return '<button class="giornata-strip" id="giornata-strip-btn" aria-label="Apri la giornata">' +
-      '<div class="strip-barra">' + marks + nowEl + '</div>' +
+      /* il segno dell'ORA ADESSO sta FUORI dalla barra: sporge di tre pixel
+         sopra e sotto, e la barra adesso è ritagliata a supercerchio — dentro
+         gli si taglierebbero via le punte e il pallino. */
+      '<div class="strip-pista"><div class="strip-barra">' + marks + '</div>' + nowEl + '</div>' +
       '<div class="strip-estremi"><span>' + d.sveglia + '</span>' +
       '<span class="strip-sotto">' + sotto + ' ' + ICO('arrowRight', 11) + '</span>' +
       '<span>' + d.sonnoRoutine + '</span></div>' +
