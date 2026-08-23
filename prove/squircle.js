@@ -296,12 +296,14 @@ const CONTORNO = `(function (b64, R, dritto) {
         .map(function (k) { return parseFloat(s[k]) || 0; });
       var rmax = Math.max.apply(null, raggi);
       var clip = s.clipPath;
-      /* Le CAPSULE sono l'unica forma che resta col raggio, e non è
-         un'eccezione: nel sistema di Apple una pastiglia è una Capsule, con le
-         estremità a semicerchio. Si riconoscono dal raggio ≥ metà del lato. */
+      /* NESSUNA eccezione, pastiglie comprese. Erano rimaste archi di cerchio
+         perché un ritaglio non sa dire «metà del lato corto»: adesso le loro
+         altezze si MISURANO in pagina (segni/altezze.mjs) e il raggio si ricava
+         da là. Se una resta indietro, va rilanciata quella misura. */
       var capsula = rmax >= Math.min(r.width, r.height) / 2 - 0.6;
-      if (rmax >= 1 && !capsula && (!clip || clip === 'none'))
-        { out.senza.push(nome(e) + ' (raggio ' + rmax + 'px)'); return; }
+      if (rmax >= 1 && (!clip || clip === 'none'))
+        { out.senza.push(nome(e) + ' (raggio ' + rmax + 'px' +
+          (capsula ? ', pastiglia: lancia node segni/altezze.mjs' : '') + ')'); return; }
       if (!clip || clip === 'none') return;
       out.conRitaglio++;
       if (!/^polygon/.test(clip)) out.nonPoligono.push(nome(e) + ': ' + clip.slice(0, 30));

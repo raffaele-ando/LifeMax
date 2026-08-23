@@ -73,6 +73,15 @@ const TROPPO_PICCOLI = {
   '.tl-blk-pasto': 7
 };
 
+/* Le altezze delle pastiglie, MISURATE in pagina da segni/altezze.mjs. Servono
+   perché il ritaglio non sa dire «metà del lato corto»: per dare anche a loro
+   l'angolo continuo bisogna sapere quanto sono alte. Senza il file, restano
+   capsule e il generatore lo dice. */
+const ALTEZZE = (() => {
+  try { return JSON.parse(fs.readFileSync(path.join(RADICE, 'segni/altezze.json'), 'utf8')); }
+  catch (e) { return {}; }
+})();
+
 /* --- lettura grezza: selettore + corpo, in ordine, @media compresi --- */
 function regole(file) {
   /* Il blocco generato si taglia PRIMA di leggere. Senza questo il generatore
@@ -100,6 +109,22 @@ function regole(file) {
 const raggioPastiglia = (v) => /--r-tondo|(^|\s)50%|9{2,}px/.test(v);
 const selettori = (testa) => testa.split(',').map((t) => t.trim())
   .filter((t) => /^[.#a-z:[*]/i.test(t) && !/::(before|after|first-line|marker|placeholder|selection)/.test(t));
+
+/* l'elenco dei selettori che hanno un raggio da pastiglia: lo usa
+   segni/altezze.mjs per sapere cosa misurare */
+export function capsule() {
+  const R = [...regole('assets/app.css'), ...regole('assets/lab.css')];
+  const fuori = [];
+  R.forEach(({ testa, corpo }) => {
+    const sel = selettori(testa);
+    if (!sel.length) return;
+    [...corpo.matchAll(/border-radius\s*:\s*([^;}]+)/g)].forEach((m) => {
+      if (!raggioPastiglia(m[1].trim())) return;
+      sel.forEach((x) => { if (!fuori.includes(x)) fuori.push(x); });
+    });
+  });
+  return fuori;
+}
 
 export function genera() {
   const R = [...regole('assets/app.css'), ...regole('assets/lab.css')];
@@ -180,11 +205,29 @@ export function genera() {
      potrebbe fare comunque: in un poligono le percentuali si risolvono per
      asse, quindi non si può dire «metà del lato corto», e su una pastiglia da
      300×40 il ritaglio darebbe una foglia con la punta da 99px. */
-  const capsula = (v) => {
+  const eraPastiglia = (v) => {
     const q = quattro(v).map(numero);
     return q.every((x) => x !== null && isFinite(x)) && Math.max.apply(null, q) >= 50;
   };
-  const conAngolo = new Set(raggi.filter(([, v]) => !capsula(v)).map(([s]) => s));
+  /* IL RAGGIO DI UNA PASTIGLIA. `border-radius: 99px` vuol dire «tondo quanto
+     basta» e il browser lo taglia da sé a metà del lato corto. Il ritaglio no,
+     quindi il raggio glielo diamo noi: lato corto MISURATO diviso 3.057, che è
+     il raggio il cui angolo si mangia esattamente mezzo lato. Viene l'angolo
+     pieno, lo stesso caso dell'icona di iOS — una pastiglia con le estremità a
+     supercerchio invece che a semicerchio.
+     Se quel selettore non è mai stato visto in pagina resta capsula: meglio un
+     arco di cerchio che una foglia. */
+  const senzaMisuraPastiglia = [];
+  const raggioPastigliaVero = (s2) => {
+    const corto = ALTEZZE[s2];
+    /* anche le barrette da cinque pixel: là l'angolo è un pixel e mezzo e non
+       si vede, ma lasciarle indietro vuol dire lasciare in giro archi di
+       cerchio, e la richiesta era «ogni cosa» */
+    if (!(corto >= 4)) { if (!senzaMisuraPastiglia.includes(s2)) senzaMisuraPastiglia.push(s2); return null; }
+    return Math.floor((corto / (2 * A.INIZIO)) * 10) / 10;
+  };
+  const capsula = (s2, v) => eraPastiglia(v) && raggioPastigliaVero(s2) === null;
+  const conAngolo = new Set(raggi.filter(([s2, v]) => !capsula(s2, v)).map(([s]) => s));
 
   /* il raggio da usare davvero: quello dichiarato, o quello ridotto perché
      l'elemento è troppo corto per contenere l'angolo */
@@ -212,7 +255,7 @@ export function genera() {
   /* --- i tracciati, in un posto solo su :root --- */
   const nomi = new Map();          /* chiave → { pieno, anello, nome } */
   const senzaMisura = [];
-  const capsule = [];
+  const restateCapsule = [];
   const perGruppo = [];            /* [selettori, nome, spessore] */
 
   const spessore = new Map();
@@ -221,8 +264,14 @@ export function genera() {
   /* si raggruppa per (raggio effettivo + spessore), tenendo l'ordine */
   const gruppi = new Map();
   raggi.forEach(([s, v]) => {
-    if (capsula(v)) { capsule.push(s); return; }
-    const q0 = quattro(v).map(numero);
+    let q0;
+    if (eraPastiglia(v)) {
+      const r = raggioPastigliaVero(s);
+      if (r === null) { restateCapsule.push(s); return; }
+      q0 = [r, r, r, r];
+    } else {
+      q0 = quattro(v).map(numero);
+    }
     if (q0.some((x) => x === null || !isFinite(x))) { senzaMisura.push(v); return; }
     const q = raggioVero(s, q0);
     const sp = spessore.get(s) || 1;
@@ -336,8 +385,16 @@ export function genera() {
      chiari, con uno stacco netto nel punto in cui la curva comincia. Adesso il
      colore lo mette solo l'anello, uguale tutt'intorno. Lo SPESSORE resta,
      perché serve al calcolo dello spazio. */
+  /* SOLO a chi ha davvero il ritaglio e l'anello. Spegnendolo a tutti si
+     spegneva anche a chi non ha nessuno che glielo ridisegni — le capsule, e
+     gli elementi con un bordo e nessun raggio: quaranta elementi dell'app
+     avevano perso il bordo del tutto (il filo bianco intorno al badge, i chip,
+     il pulsante dei filtri). Misurato su ventuno schermate. */
   const daSpegnere = [];
-  bordi.forEach(([s2]) => { if (!daSpegnere.includes(s2)) daSpegnere.push(s2); });
+  bordi.forEach(([s2]) => {
+    if (!conAngolo.has(s2)) return;
+    if (!daSpegnere.includes(s2)) daSpegnere.push(s2);
+  });
   if (daSpegnere.length) {
     css += "\n  /* --- il colore del bordo del box si spegne: lo dipinge l'anello,\n" +
       '         una volta sola e uguale su tutto il contorno --- */\n';
@@ -346,7 +403,8 @@ export function genera() {
   css += '}\n';
 
   if (senzaMisura.length) console.log('  raggi non misurabili, lasciati come sono: ' + senzaMisura.join(' | '));
-  console.log('  capsule lasciate col raggio (è la forma giusta): ' + new Set(capsule).size + ' selettori');
+  if (restateCapsule.length) console.log('  capsule lasciate col raggio (mai viste in pagina): ' +
+    new Set(restateCapsule).size + ' selettori — lancia node segni/altezze.mjs');
 
   return { css, gruppi: gruppi.size, selettori: conAngolo.size, bordi: colori };
 }

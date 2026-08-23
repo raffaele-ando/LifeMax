@@ -133,13 +133,24 @@ perché non contengono nessuna `var()`: una proprietà personalizzata sostituisc
 le `var()` DOVE È DICHIARATA, e su `:root` i raggi dell'app non esistono. Con i
 numeri dentro invece si tengono in un posto solo.
 
-**Le pastiglie restano capsule.** Non è un'eccezione: nel sistema di Apple una
-pastiglia è una `Capsule`, con le estremità a semicerchio. E in CSS non si
-potrebbe fare altrimenti — in un poligono le percentuali si risolvono per asse,
-quindi non si può dire «metà del lato corto», e su una pastiglia da 300×40 il
-ritaglio darebbe una foglia con la punta da 99px.
+**Anche le pastiglie hanno l'angolo continuo, e per averlo si MISURANO.**
+`border-radius: 99px` vuol dire «tondo quanto basta» e il browser lo taglia da
+sé a metà del lato corto. Un `clip-path` no: in un poligono le percentuali si
+risolvono per asse, quindi non si può dire «metà del lato CORTO», e su una
+pastiglia da 300×54 il ritaglio darebbe una foglia con la punta da 151px invece
+di un angolo da 27. L'unico modo di dare anche a loro la curva è sapere quanto
+sono alte, e l'unico modo onesto di saperlo è aprire l'app e misurarle:
+`node segni/altezze.mjs` gira ventuno schermate su due larghezze e scrive
+`segni/altezze.json` col lato corto più piccolo che ogni selettore assume. Il
+raggio è quel lato diviso 3.057 — l'angolo si mangia esattamente mezzo lato,
+cioè lo stesso caso limite dell'icona di iOS, una pastiglia con le estremità a
+supercerchio invece che a semicerchio.
+Si prende il lato più PICCOLO fra tutte le comparse: se lo stesso chip a volte
+è alto 24 e a volte 32, l'angolo tarato su 24 sta dentro entrambi; al contrario
+si strozzerebbe. Chi non è mai stato visto in pagina resta capsula, e il
+generatore lo dice.
 
-**Il bordo si ridisegna, e quello del box si SPEGNE.** Un ritaglio taglia anche
+**Il bordo si ridisegna, e quello del box si spegne SOLO a chi ha l'anello.** Un ritaglio taglia anche
 il bordo del box, e proprio negli angoli: resterebbe una scheda col bordo sui
 fianchi e niente sulla curva. L'anello lo ridisegna come contorno vuoto su uno
 pseudo-elemento, con riempimento `evenodd`, spesso quanto il bordo che
@@ -148,6 +159,10 @@ lo spessore resta perché serve allo spazio): lasciandolo accendere, sui lati
 dritti veniva dipinto DUE volte — una il box, una l'anello sopra — e i bordi di
 quest'app sono traslucidi, quindi i fianchi uscivano scuri e gli angoli chiari,
 con uno stacco netto dove comincia la curva.
+Spegnerlo a TUTTI però è un altro difetto: quaranta elementi hanno un bordo e
+nessuno che glielo ridisegni, e l'avevano perso del tutto — il filo bianco
+intorno al badge, i chip, il pulsante dei filtri. Si spegne solo a chi ha
+davvero il ritaglio e l'anello.
 
 **Il contorno esterno dell'anello è un rettangolo, non la curva.** L'anello sta
 dentro l'elemento ritagliato, quindi il ritaglio del padre lo taglia già lui.
@@ -189,7 +204,10 @@ bisogna prima fare più alti gli elementi.
    lato e si esce dall'altro. Sbagliarla non dà una forma un po' storta: dà
    bandiere strappate, con un morso in un angolo e una punta in quello di
    fronte.
-4. Il bordo dipinto due volte sui lati dritti e una sola sulla curva: fianchi
+4. `border-color: transparent` dato a tutti i selettori con un bordo, non solo
+   a quelli con l'anello: quaranta elementi hanno perso il bordo del tutto.
+   Trovato con un censimento su ventuno schermate, non su nove.
+5. Il bordo dipinto due volte sui lati dritti e una sola sulla curva: fianchi
    scuri, angoli chiari. Si vedeva a occhio prima che una prova lo misurasse —
    adesso `prove/squircle.js` confronta quanto è scuro il bordo sul fianco e
    sulla curva e pretende che combacino entro 12 valori su 255.
