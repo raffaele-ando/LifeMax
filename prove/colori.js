@@ -34,7 +34,21 @@ const SCENE = [
   { nome: 'Attività', vai: 'inbox' },
   { nome: 'Rituali', vai: 'rituali' },
   { nome: 'Andamento', vai: 'plancia' },
-  { nome: 'Esperimenti', vai: 'esperimenti' }
+  { nome: 'Esperimenti', vai: 'esperimenti' },
+  /* i pannelli, che prima restavano fuori: là i grigi piccoli sono più
+     frequenti che nelle pagine (righe di spiegazione sotto un titolo, note
+     sotto un campo) ed è proprio quella la combinazione che scivola sotto il
+     minimo senza che si veda */
+  { nome: 'Impostazioni', vai: 'plancia', apri: p => p.evaluate(() => {
+      const b = [...document.querySelectorAll('#vista button')].find(x => /Impostazioni/.test(x.textContent));
+      if (b) b.click();
+    }) },
+  { nome: 'Come ti avviso', vai: 'plancia', apri: p => p.evaluate(() => {
+      const b = [...document.querySelectorAll('#vista button')].find(x => /Impostazioni/.test(x.textContent));
+      if (b) b.click();
+      const c = document.getElementById('imp-prom-come');
+      if (c) c.click();
+    }) }
 ];
 
 /* dentro la pagina: ogni testo visibile, il suo contrasto col fondo dipinto */
@@ -188,6 +202,7 @@ const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  
       if (s.prep) await p.evaluate(s.prep);
       await p.evaluate(v => { location.hash = '#/' + v; }, s.vai);
       await p.reload(); await p.waitForTimeout(700);
+      if (s.apri) { await s.apri(p); await p.waitForTimeout(500); }
       const r = await p.evaluate(CONTRASTI);
       totale += r.visti;
       const dillo = x => '«' + x.testo + '» ' + x.rap + ' < ' + x.minimo + ' (' + x.px + 'px/' + x.peso + (x.cls ? ' .' + x.cls : '') + ')';

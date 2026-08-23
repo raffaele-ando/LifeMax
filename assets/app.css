@@ -2878,7 +2878,7 @@ body.sto-trascinando { cursor: grabbing; user-select: none; -webkit-user-select:
 .ico-pick:active, .giorno-chip:active, .diario-cambia:active,
 .segmenti > button:active, .segmenti > a:active,
 .tabbar button:active, .tabbar a:active, .tab-catt:active,
-.nav-voce:active, .focus-torna:active, .sync-chip:active {
+.nav-voce:active, .focus-torna:active, .sync-chip:active, .prom-int:active {
   transform: scale(.94);
 }
 /* il rilascio non è uno scatto: torna in una frazione di secondo */
@@ -2886,7 +2886,7 @@ body.sto-trascinando { cursor: grabbing; user-select: none; -webkit-user-select:
 .menu-voce, .lista-eti-btn, .btn-strumento-largo, .att-filtro, .riga-inbox,
 .icona-btn, .lista-azione, .spunta, .tl-check, .q-chip, .abd-g, .diario-annulla,
 .banda-x, .sheet-chiudi, .sheet-indietro, .cattura-chiudi, .ico-pick, .giorno-chip,
-.segmenti > button, .segmenti > a, .tabbar button, .tabbar a, .tab-catt, .nav-voce {
+.segmenti > button, .segmenti > a, .tabbar button, .tabbar a, .tab-catt, .nav-voce, .prom-int {
   transition: background-color var(--t-veloce), transform var(--t-veloce), border-color var(--t-veloce), color var(--t-veloce);
 }
 /* una riga di elenco che si stringe sposterebbe i bordi di mezza schermata:
