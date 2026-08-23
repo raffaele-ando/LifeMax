@@ -1,6 +1,6 @@
 # Prove
 
-Dieci controlli automatici che guardano una cosa sola ciascuno, ma
+Undici controlli automatici che guardano una cosa sola ciascuno, ma
 quella cosa fa morire l'app — o la fa diventare illeggibile — quando si
 rompe. Sono nati da problemi veri.
 
@@ -128,6 +128,22 @@ genera le chiavi, in un browser vero).
   aperti a `piano()` mentre `piano()` chiedeva a `restano()` il testo della
   nota. Con la nota spenta non si vedeva; accendendola l'app si fermava con lo
   stack pieno e la schermata restava a metà.
+- **squircle.js** — gli angoli sono supercerchi, non rettangoli arrotondati.
+  Non guarda il CSS: guarda i pixel. La curva di un angolo è una superellisse
+  |u|^n + |v|^n = 1, e l'arco di cerchio del `border-radius` è il caso n = 2;
+  il supercerchio è n = 4. La prova disegna, fotografa, trova dove passa il
+  bordo e ricava n risolvendo l'equazione punto per punto — sui cinque raggi
+  dell'app (fotografati a otto volte, perché su un raggio da 8px non si misura
+  niente), su un pulsante vero dipinto com'è, sul tracciato SVG del logo e
+  sull'icona dell'app. Poi controlla che tutti gli angoli di nove schermate lo
+  chiedano, che le pastiglie siano restate cerchi, e che le icone che iOS e
+  Android mascherano da sé siano piene fino al bordo.
+  Tre cose le ha corrette di sé stessa: che `superellipse(2)` dà n = 4 e
+  `superellipse(3)` dà n = 8 (il numero è il logaritmo dell'esponente, non
+  l'esponente); che chi resta tondo va chiesto al foglio di stile e non
+  indovinato dalla geometria, perché indovinandolo si fermava su due casi
+  giusti; e che misurare con il raggio CHIESTO invece di quello USATO — dove
+  viene tagliato alla metà del lato — dà un n falso.
 - **gesto.js** — il foglio dal basso: il gesto, e che dopo si possa ancora
   toccare. Prima di tutto campiona la SUPERFICIE del foglio aperto e pretende
   che ogni punto arrivi al foglio: nasce da una regressione in cui il velo
@@ -156,6 +172,7 @@ genera le chiavi, in un browser vero).
     node prove/clic.js
     node prove/modalita.js
     node prove/segni.js      # solo Node, niente browser
+    node prove/squircle.js
     node prove/promemoria.js
     node prove/doppioni.js   # qualche minuto
     node prove/sezioni.js

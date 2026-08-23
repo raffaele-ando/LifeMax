@@ -360,6 +360,29 @@ const MISURA = `(function (b64, R, lato) {
       /rx=/.test(src) ? 'ha un rx' : 'quadra');
   }
 
+  /* le PNG: chi ha l'angolo tagliato e chi no, letto dall'alfa del pixel (0,0).
+     Non è un dettaglio da lasciare al ricordo — è il tipo di cosa che si
+     rompe rigenerando le icone dal file sbagliato, e si scopre guardando la
+     schermata Home del telefono. */
+  const angoloPng = async (file) => {
+    const d64 = fs.readFileSync(path.join(RADICE, file)).toString('base64');
+    return pi.evaluate(async (b64) => {
+      const img = new Image(); img.src = 'data:image/png;base64,' + b64; await img.decode();
+      const c = document.createElement('canvas'); c.width = img.width; c.height = img.height;
+      const x = c.getContext('2d', { willReadFrequently: true }); x.drawImage(img, 0, 0);
+      return x.getImageData(0, 0, 1, 1).data[3];
+    }, d64);
+  };
+  for (const f of ['icona-180.png', 'icona-167.png', 'icona-152.png', 'icona-maskable-192.png']) {
+    const a = await angoloPng('assets/icone/' + f);
+    ok(f + ' è piena fino al bordo', a > 200,
+      a > 200 ? 'alfa ' + a : 'ha l’angolo tagliato: dentro la maschera del sistema resterebbe un anello di niente');
+  }
+  for (const f of ['icona-192.png', 'icona-512.png', 'favicon-32.png']) {
+    const a = await angoloPng('assets/icone/' + f);
+    ok(f + ' ha l’angolo a supercerchio', a < 40, 'alfa ' + a);
+  }
+
   /* ============ 7. senza corner-shape non si rompe niente ============ */
   console.log('\nDOVE corner-shape NON C’È (Safari, oggi)');
   ok('ogni regola col supercerchio ha ancora il suo border-radius',
