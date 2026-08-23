@@ -185,6 +185,41 @@ più evidente, e trenta elementi dell'app non ci stavano più — un pulsante al
 sono già il massimo che le altezze attuali consentono: per angoli più generosi
 bisogna prima fare più alti gli elementi.
 
+### L'unica cosa che resta con l'arco di cerchio: i campi
+
+`input`, `select` e `textarea` **non generano pseudo-elementi**. Non è una
+questione di CSS scritto male: il browser non crea la scatola di
+`::before`/`::after` su di loro (provato — su un `div` il colore di prova si
+vede, su tutti e tre no). Quindi il bordo di un campo lo può dipingere solo il
+box, e ritagliandolo verrebbe tagliato sulla curva senza nessuno che possa
+ridisegnarlo: il campo resta **senza bordo del tutto**. È esattamente quello
+che era successo a ogni campo di testo dell'app.
+
+Restano quindi col loro `border-radius`. Per dargli la curva vera servirebbe un
+`border-image` con un SVG a nove fette (gli angoli di un 9-slice non si
+stirano) — funziona anche sui campi e non ha bisogno di pseudo-elementi, ma il
+colore va cotto dentro l'SVG, quindi una copia per ogni colore di bordo e per
+ogni tema. È fattibile e non è fatto.
+
+### Chi taglia si mangia l'anello
+
+Un `overflow` non visibile taglia al riquadro **interno**, e l'anello del bordo
+sta nell'area del bordo, cioè fuori. Veniva via tutto e quegli elementi
+restavano senza bordo: si vedeva sulla scheda di «Adesso» (restava solo il filo
+colorato dell'area, tagliato di netto) e sulla lista delle attività, dove il
+bordo del contenitore spariva e restavano quelli delle righe, di un altro
+colore. Da qui i «bordi tagliati o con due colori».
+
+Chi ha `overflow: hidden` e un ritaglio non ne ha più bisogno — il ritaglio
+arrotonda i figli meglio di lui — e allora si spegne. Chi SCORRE
+(`overflow: auto`) non si può toccare: per quei pochi l'anello si disegna
+dentro il riquadro interno, cioè il bordo appare rientrato di un pixel. Su un
+pannello con un filo da 1px non si distingue, e l'alternativa era non avere
+bordo.
+
+`overflow-clip-margin` sembrava la via pulita e non lo è: funziona solo con
+`overflow: clip`, non con `hidden` né con `auto` (provato).
+
 ### Errori che è costato caro trovare
 
 1. `*, *::before, *::after { --sq-b: transparent }`. L'asterisco sugli
@@ -208,6 +243,16 @@ bisogna prima fare più alti gli elementi.
    a quelli con l'anello: quaranta elementi hanno perso il bordo del tutto.
    Trovato con un censimento su ventuno schermate, non su nove.
 5. Il bordo dipinto due volte sui lati dritti e una sola sulla curva: fianchi
-   scuri, angoli chiari. Si vedeva a occhio prima che una prova lo misurasse —
+   scuri, angoli chiari.
+6. `border-color: transparent` dato al selettore base ma non alle sue VARIANTI
+   di stato: `.btn` era nella lista, `.btn:hover` no, quindi al passaggio del
+   mouse il bordo del box si riaccendeva sopra l'anello. Il bordo si illuminava
+   in modo diverso a metà.
+7. Il contorno interno dell'anello costruito spostando ogni punto lungo la
+   propria normale: su una spezzata non dà una fascia uniforme (nei vertici la
+   distanza cresce di 1/cos(θ/2)), e lo spessore ballava di quasi mezzo pixel —
+   il filo sembrava disegnato a mano. Adesso i due contorni sono la stessa
+   curva a raggi diversi, campionata NEGLI STESSI PUNTI: sbagliano nella stessa
+   direzione e la fascia resta fra 0.98 e 1.00. Si vedeva a occhio prima che una prova lo misurasse —
    adesso `prove/squircle.js` confronta quanto è scuro il bordo sul fianco e
    sulla curva e pretende che combacino entro 12 valori su 255.

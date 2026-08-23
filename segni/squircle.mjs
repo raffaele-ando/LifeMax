@@ -50,10 +50,15 @@ const INIZIO = '/* ==== SUPERCERCHI: GENERATO da segni/squircle.mjs — non a ma
    arrotondato, come prima. Senza questa rete un motore che rifiuta il ritaglio
    si teneva il `border-radius: 0` e mostrava SPIGOLI VIVI — peggio di non aver
    fatto niente. */
-/* Quanto può scostarsi la spezzata dalla curva vera. Un quinto di pixel non
-   si vede nemmeno a schermo triplo, e i punti in meno si sentono sul peso del
-   foglio di stile. */
-const TOLLERANZA = 0.2;
+/* Quanto può scostarsi la spezzata dalla curva vera. Un quinto di pixel
+   sembrava invisibile, e su un BORDO da un pixel non lo è: lo scarto del
+   contorno esterno e quello dell'interno si sommano sullo spessore, e il filo
+   veniva fuori ondulato, come disegnato a mano. Un ventesimo di pixel non si
+   vede nemmeno guardando l'angolo ingrandito dieci volte.
+   Adesso i due contorni sono campionati NEGLI STESSI PUNTI, quindi lo spessore
+   resta uniforme (0.98–1.00) a qualunque tolleranza: questo numero decide solo
+   quanto è liscio il contorno in sé, e un decimo di pixel basta. */
+const TOLLERANZA = 0.1;
 const SUPPORTO = '@supports (clip-path: polygon(min(1px, 50%) 0px, ' +
   'calc(100% - min(1px, 50%)) 0px, 100% 100%))';
 
@@ -106,6 +111,19 @@ function regole(file) {
   return out;
 }
 
+/* I CONTROLLI DI FORM NON POSSONO AVERE L'ANELLO.
+   `input`, `select` e `textarea` non generano pseudo-elementi: il browser non
+   crea la scatola di `::before`/`::after` su di loro. Provato — su un `div` il
+   colore di prova si vede, su tutti e tre no. Quindi il bordo lì lo può
+   dipingere solo il box, e se glielo spegniamo per ridisegnarlo con l'anello
+   il campo resta senza bordo del tutto: è quello che era successo a ogni campo
+   di testo dell'app.
+   Restano col loro `border-radius`, cioè un arco di cerchio. È l'unica forma
+   che il CSS sa dare a un campo senza togliergli il bordo: un ritaglio
+   taglierebbe il bordo del box proprio sulla curva, e non c'è nessuno che
+   possa ridisegnarlo là dentro. */
+const formControl = (s2) => /(^|[\s>+~])(input|select|textarea|progress|meter)\b/.test(s2);
+
 const raggioPastiglia = (v) => /--r-tondo|(^|\s)50%|9{2,}px/.test(v);
 const selettori = (testa) => testa.split(',').map((t) => t.trim())
   .filter((t) => /^[.#a-z:[*]/i.test(t) && !/::(before|after|first-line|marker|placeholder|selection)/.test(t));
@@ -134,11 +152,19 @@ export function genera() {
   const posiziona = new Set();
   /* chi usa già ::before: l'anello gli va su ::after */
   const beforeOccupato = new Set();
+  /* selettore → hidden | auto | scroll | clip */
+  const taglia = new Map();
   R.forEach(({ testa, corpo }) => {
     testa.split(',').map((t) => t.trim()).forEach((t) => {
       if (/::before/.test(t)) beforeOccupato.add(t.replace(/::before.*/, '').trim());
     });
     if (/(^|[;\s])position\s*:/.test(corpo)) selettori(testa).forEach((s) => posiziona.add(s));
+    /* CHI TAGLIA. `overflow` non visibile taglia al riquadro INTERNO, e
+       l'anello del bordo sta nell'area del bordo, cioè fuori: veniva via tutto
+       e quegli elementi restavano senza bordo. Si vedeva sulla scheda di
+       «Adesso», dove restava solo il filo colorato dell'area, tagliato. */
+    const ov = /(^|[;\s])overflow(-x|-y)?\s*:\s*(hidden|auto|scroll|clip)/.exec(corpo);
+    if (ov) selettori(testa).forEach((s) => taglia.set(s, ov[3]));
   });
 
   /* --- raggi d'angolo, colori e spessori di bordo, in ordine di sorgente --- */
@@ -227,7 +253,8 @@ export function genera() {
     return Math.floor((corto / (2 * A.INIZIO)) * 10) / 10;
   };
   const capsula = (s2, v) => eraPastiglia(v) && raggioPastigliaVero(s2) === null;
-  const conAngolo = new Set(raggi.filter(([s2, v]) => !capsula(s2, v)).map(([s]) => s));
+  const conAngolo = new Set(raggi
+    .filter(([s2, v]) => !capsula(s2, v) && !formControl(s2)).map(([s]) => s));
 
   /* il raggio da usare davvero: quello dichiarato, o quello ridotto perché
      l'elemento è troppo corto per contenere l'angolo */
@@ -263,7 +290,9 @@ export function genera() {
 
   /* si raggruppa per (raggio effettivo + spessore), tenendo l'ordine */
   const gruppi = new Map();
+  const campi = [];
   raggi.forEach(([s, v]) => {
+    if (formControl(s)) { if (!campi.includes(s)) campi.push(s); return; }
     let q0;
     if (eraPastiglia(v)) {
       const r = raggioPastigliaVero(s);
@@ -294,7 +323,14 @@ export function genera() {
        trasparente — il caso normale — l'anello non dipinge niente, quindi
        darlo a tutti non costa nulla a schermo. */
     const serve = true;
-    nomi.set(nome, { pieno: A.poligono(q, TOLLERANZA), anello: serve ? A.anello(q, sp, TOLLERANZA) : null });
+    /* se in questo gruppo c'è qualcuno che SCORRE, gli serve l'anello
+       rientrato: quello normale glielo taglierebbe l'overflow */
+    const scorre = sel.some((x) => /auto|scroll|clip/.test(taglia.get(x) || ''));
+    nomi.set(nome, {
+      pieno: A.poligono(q, TOLLERANZA),
+      anello: A.anello(q, sp, TOLLERANZA),
+      dentro: scorre ? A.anelloDentro(q, sp, TOLLERANZA) : null
+    });
     perGruppo.push([sel, nome, sp, serve]);
   }
 
@@ -326,6 +362,7 @@ export function genera() {
   for (const [nome, t] of nomi) {
     css += '  ' + nome + '-p: ' + t.pieno + ';\n';
     if (t.anello) css += '  ' + nome + '-a: ' + t.anello + ';\n';
+    if (t.dentro) css += '  ' + nome + '-d: ' + t.dentro + ';\n';
   }
   css += '}\n';
 
@@ -336,10 +373,37 @@ export function genera() {
     if (!serve) continue;
     const beforeQui = sel.filter((x) => !beforeOccupato.has(x));
     const afterQui = sel.filter((x) => beforeOccupato.has(x));
-    const pseudo = [...beforeQui.map((x) => x + '::before'), ...afterQui.map((x) => x + '::after')];
-    css += righe(pseudo, 2) + ' {\n' +
-      "    content: ''; position: absolute; inset: " + (-sp) + 'px; pointer-events: none;\n' +
-      '    background: var(--sq-b); clip-path: var(' + nome + '-a);\n  }\n';
+    const scorre = (x) => /auto|scroll|clip/.test(taglia.get(x) || '');
+    const fuori = sel.filter((x) => !scorre(x)), dentro = sel.filter(scorre);
+    const psDi = (lista) => [...lista.filter((x) => !beforeOccupato.has(x)).map((x) => x + '::before'),
+      ...lista.filter((x) => beforeOccupato.has(x)).map((x) => x + '::after')];
+    if (fuori.length) {
+      css += righe(psDi(fuori), 2) + ' {\n' +
+        "    content: ''; position: absolute; inset: " + (-sp) + 'px; pointer-events: none;\n' +
+        '    background: var(--sq-b); clip-path: var(' + nome + '-a);\n  }\n';
+    }
+    if (dentro.length) {
+      css += righe(psDi(dentro), 2) + ' {\n' +
+        "    content: ''; position: absolute; inset: 0; pointer-events: none;\n" +
+        '    background: var(--sq-b); clip-path: var(' + nome + '-d);\n  }\n';
+    }
+    void beforeQui; void afterQui;
+  }
+
+  /* `overflow: hidden` su un elemento ritagliato è ormai inutile: il ritaglio
+     arrotonda i figli meglio di lui, e per di più gli mangia l'anello del
+     bordo. Si spegne. A chi SCORRE non si tocca: là l'anello va dentro. */
+  const senzaOverflow = [...conAngolo].filter((s) => taglia.get(s) === 'hidden');
+  if (senzaOverflow.length) {
+    css += "\n  /* --- `overflow: hidden` si spegne dove il ritaglio fa già il suo\n" +
+      "         lavoro: teneva dentro i figli, e adesso li tiene dentro la forma.\n" +
+      "         Lasciandolo, tagliava anche l'anello del bordo — che sta nell'area\n" +
+      '         del bordo, cioè fuori dal riquadro interno. --- */\n';
+    /* `!important` a ragion veduta: il blocco sta in fondo ad app.css, ma
+       lab.css si carica DOPO, e là dentro c'è un `overflow: hidden` con la
+       stessa specificità che quindi vincerebbe. L'alternativa era scrivere un
+       secondo blocco generato anche in lab.css. */
+    css += righe(senzaOverflow, 2) + ' {\n    overflow: visible !important;\n  }\n';
   }
 
   const daPosizionare = [...conAngolo].filter((s) => !posiziona.has(s));
@@ -390,9 +454,23 @@ export function genera() {
      gli elementi con un bordo e nessun raggio: quaranta elementi dell'app
      avevano perso il bordo del tutto (il filo bianco intorno al badge, i chip,
      il pulsante dei filtri). Misurato su ventuno schermate. */
+  /* Anche alle VARIANTI DI STATO. `.btn` dichiara il raggio e il bordo, e
+     `.btn:hover` dichiara solo un altro colore di bordo: quello non era nella
+     lista, quindi al passaggio del mouse il bordo del box si riaccendeva SOPRA
+     l'anello — doppio sui fianchi, singolo sulla curva, cioè il bordo che si
+     illumina in modo diverso a metà. Vale per `:hover`, `:focus`, `.attivo`,
+     `[aria-checked]` e compagnia: tutto quello che è lo STESSO elemento con
+     qualcosa attaccato dietro. */
+  const variante = (s2) => {
+    if (conAngolo.has(s2)) return true;
+    for (const k of conAngolo) {
+      if (s2.length > k.length && s2.startsWith(k) && /^[:.[]/.test(s2.slice(k.length))) return true;
+    }
+    return false;
+  };
   const daSpegnere = [];
   bordi.forEach(([s2]) => {
-    if (!conAngolo.has(s2)) return;
+    if (!variante(s2)) return;
     if (!daSpegnere.includes(s2)) daSpegnere.push(s2);
   });
   if (daSpegnere.length) {
@@ -405,6 +483,8 @@ export function genera() {
   if (senzaMisura.length) console.log('  raggi non misurabili, lasciati come sono: ' + senzaMisura.join(' | '));
   if (restateCapsule.length) console.log('  capsule lasciate col raggio (mai viste in pagina): ' +
     new Set(restateCapsule).size + ' selettori — lancia node segni/altezze.mjs');
+  if (campi.length) console.log('  campi di form lasciati col raggio (non hanno pseudo-elementi): ' +
+    campi.length + ' selettori');
 
   return { css, gruppi: gruppi.size, selettori: conAngolo.size, bordi: colori };
 }

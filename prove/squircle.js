@@ -286,7 +286,7 @@ const CONTORNO = `(function (b64, R, dritto) {
   /* ============ 5. l'app: ogni angolo, e il bordo che c'è davvero ======== */
   console.log('\nL’APP: OGNI ANGOLO RITAGLIATO, E IL BORDO SULLA CURVA');
   const GUARDA = `(function () {
-    var out = { conRitaglio: 0, senza: [], nonPoligono: [], anelloSpento: [], mangiati: [] };
+    var out = { conRitaglio: 0, senza: [], nonPoligono: [], anelloSpento: [], mangiati: [], overflow: [] };
     var nome = function (e) { return e.tagName.toLowerCase() +
       (e.className && e.className.toString ? '.' + e.className.toString().trim().split(/\\s+/).slice(0, 2).join('.') : ''); };
     document.querySelectorAll('body *').forEach(function (e) {
@@ -301,9 +301,22 @@ const CONTORNO = `(function (b64, R, dritto) {
          altezze si MISURANO in pagina (segni/altezze.mjs) e il raggio si ricava
          da là. Se una resta indietro, va rilanciata quella misura. */
       var capsula = rmax >= Math.min(r.width, r.height) / 2 - 0.6;
-      if (rmax >= 1 && (!clip || clip === 'none'))
+      /* I CAMPI DI FORM sono l'unica eccezione, e non è una scelta: un input,
+         un select e una textarea non generano pseudo-elementi, quindi il bordo
+         lì lo può dipingere solo il box. Ritagliandoli, il bordo verrebbe tagliato
+         sulla curva e non ci sarebbe nessuno a ridisegnarlo: il campo resta
+         senza bordo del tutto. È già successo a ogni campo di testo dell'app. */
+      var campo = /^(input|select|textarea|progress|meter)$/.test(e.tagName.toLowerCase());
+      if (rmax >= 1 && !campo && (!clip || clip === 'none'))
         { out.senza.push(nome(e) + ' (raggio ' + rmax + 'px' +
           (capsula ? ', pastiglia: lancia node segni/altezze.mjs' : '') + ')'); return; }
+      if (campo && (!clip || clip === 'none')) {
+        /* e il bordo devono averlo: se qualcuno glielo spegne, sparisce */
+        var bwc = parseFloat(s.borderTopWidth) || 0;
+        if (bwc > 0 && /^(transparent|rgba\(0, 0, 0, 0\))$/.test(s.borderTopColor))
+          out.senza.push(nome(e) + ' — CAMPO SENZA BORDO: colore spento e nessuno pseudo-elemento');
+        return;
+      }
       if (!clip || clip === 'none') return;
       out.conRitaglio++;
       if (!/^polygon/.test(clip)) out.nonPoligono.push(nome(e) + ': ' + clip.slice(0, 30));
@@ -329,6 +342,22 @@ const CONTORNO = `(function (b64, R, dritto) {
         else if (/rgba\\(0, 0, 0, 0\\)|transparent/.test(quale.backgroundColor))
           out.anelloSpento.push(nome(e) + ' — anello trasparente, bordo ' + bc);
       }
+      /* L'OVERFLOW SI MANGIA L'ANELLO. Un overflow non visibile taglia al
+         riquadro INTERNO, e l'anello del bordo sta nell'area del bordo, cioè
+         fuori: veniva via tutto e quegli elementi restavano senza bordo. Si
+         vedeva sulla scheda di «Adesso» (restava solo il filo colorato
+         dell'area, tagliato) e sulla lista delle attività, dove il bordo del
+         contenitore spariva e restavano quelli delle righe, di un altro
+         colore. */
+      if (opaco && !/^visible/.test(s.overflow) && quale) {
+        /* conta solo se l'anello sta NELL'AREA DEL BORDO (inset negativo): là
+           l'overflow, che taglia al riquadro interno, se lo mangia. Per chi
+           scorre l'anello si disegna dentro, a inset 0, e allora va bene. */
+        var ins = parseFloat(quale.top);
+        if (!isNaN(ins) && ins < -0.01)
+          out.overflow.push(nome(e) + ' — overflow ' + s.overflow +
+            ' si mangia l’anello (inset ' + quale.top + ')');
+      }
       /* e il ritaglio non deve mangiare quello che sporge */
       if (/^visible/.test(s.overflow) && /^visible/.test(s.overflowY) && /^visible/.test(s.overflowX)) {
         for (var i = 0; i < e.children.length; i++) {
@@ -349,6 +378,12 @@ const CONTORNO = `(function (b64, R, dritto) {
           var anello = /^polygon\\(/.test(q3.clipPath || '') &&
             lati.every(function (x) { return Math.abs(x - lati[0]) < 0.01; }) && lati[0] < 0;
           if (anello) return;
+          /* arrivare al bordo ESTERNO non è essere mangiato: là passa la forma,
+             e quello che esce dalla forma è giusto che esca. Il filo dell'area
+             in cima alla scheda di «Adesso» sta così di proposito — partendo dal
+             riquadro interno restava sopra una striscia del colore del bordo, e
+             si leggeva come un bordo di due colori tagliato. */
+          if (Math.min.apply(null, lati) >= -(parseFloat(s.borderTopWidth) || 0) - 0.01) return;
           out.mangiati.push(nome(e) + ps + ' sporge (' + q3.top + ' ' + q3.left + ')');
         });
       }
@@ -366,7 +401,7 @@ const CONTORNO = `(function (b64, R, dritto) {
   await ps.goto('http://localhost:' + PORTA + '/index.html'); await ps.waitForTimeout(400);
   await ps.evaluate(() => { localStorage.clear(); LM.seedDemo(); });
   let totClip = 0;
-  const senza = new Set(), nonPoly = new Set(), spenti = new Set(), mangiati = new Set();
+  const senza = new Set(), nonPoly = new Set(), spenti = new Set(), mangiati = new Set(), overf = new Set();
   for (const [nome, vai, poi] of SCENE) {
     await ps.evaluate(v => { location.hash = '#/' + v; }, vai);
     await ps.reload(); await ps.waitForTimeout(vai === 'lab' ? 1600 : 800);
@@ -377,6 +412,7 @@ const CONTORNO = `(function (b64, R, dritto) {
     r.nonPoligono.forEach(x => nonPoly.add(x));
     r.anelloSpento.forEach(x => spenti.add(nome + ' — ' + x));
     r.mangiati.forEach(x => mangiati.add(nome + ' — ' + x));
+    r.overflow.forEach(x => overf.add(x));
     console.log('      ' + nome.padEnd(16) + String(r.conRitaglio).padStart(4) + ' ritagliati' +
       (r.senza.length ? '   ' + r.senza.length + ' RIMASTI INDIETRO' : '') +
       (r.anelloSpento.length ? '   ' + r.anelloSpento.length + ' SENZA BORDO' : ''));
@@ -389,6 +425,52 @@ const CONTORNO = `(function (b64, R, dritto) {
     [...spenti].slice(0, 5).join(' | ') || 'nessuno spento');
   ok('e il ritaglio non si mangia niente che sporge', mangiati.size === 0,
     [...mangiati].slice(0, 5).join(' | ') || 'nessun figlio, nessuno pseudo-elemento');
+  ok('e nessun overflow si mangia l’anello del bordo', overf.size === 0,
+    [...overf].slice(0, 5).join(' | ') || 'nessuno');
+
+  /* ============ 5b. col mouse sopra il bordo non raddoppia ============ */
+  console.log('\nCOL MOUSE SOPRA, IL BORDO NON CAMBIA PESO');
+  /* `.btn` dichiara il raggio e il bordo, `.btn:hover` dichiara solo un altro
+     colore di bordo: quella variante non era nella lista di quelli da spegnere,
+     quindi al passaggio del mouse il bordo del box si riaccendeva SOPRA
+     l'anello — doppio sui fianchi, singolo sulla curva. Si vedeva come un
+     bordo che si illumina in modo diverso a metà. */
+  {
+    const p2 = await b.newPage({ viewport: { width: 1280, height: 900 } });
+    await p2.goto('http://localhost:' + PORTA + '/index.html'); await p2.waitForTimeout(400);
+    await p2.evaluate(() => { localStorage.clear(); LM.seedDemo(); });
+    await p2.reload(); await p2.waitForTimeout(900);
+    const casi = [];
+    for (const sel of ['.btn', '.card-hover', '.cattura-cta', 'input[type="text"]']) {
+      const c = await p2.evaluate((sel) => {
+        const e = [...document.querySelectorAll(sel)].find((x) => {
+          const r = x.getBoundingClientRect(), s = getComputedStyle(x);
+          return r.width > 30 && r.height > 20 && /^polygon\(/.test(s.clipPath || '');
+        });
+        if (!e) return null;
+        e.setAttribute('data-sq-hover', '1');
+        return { prima: getComputedStyle(e).borderTopColor };
+      }, sel);
+      if (!c) continue;
+      await p2.hover('[data-sq-hover="1"]').catch(() => {});
+      await p2.waitForTimeout(200);
+      const d = await p2.evaluate(() => {
+        const e = document.querySelector('[data-sq-hover="1"]');
+        const s = getComputedStyle(e);
+        e.removeAttribute('data-sq-hover');
+        return { dopo: s.borderTopColor, sqb: (s.getPropertyValue('--sq-b') || '').trim() };
+      });
+      casi.push({ sel, prima: c.prima, dopo: d.dopo, sqb: d.sqb });
+    }
+    const cattivi = casi.filter((x) => !/rgba\(0, 0, 0, 0\)|transparent/.test(x.dopo));
+    ok('il bordo del box resta spento anche col mouse sopra', casi.length >= 2 && cattivi.length === 0,
+      cattivi.length ? cattivi.map((x) => x.sel + ' → ' + x.dopo).join(' | ')
+        : casi.length + ' comandi provati, tutti col bordo dipinto solo dall’anello');
+    const cambia = casi.filter((x) => x.sqb && !/^(transparent|rgba\(0, 0, 0, 0\))$/.test(x.sqb));
+    ok('e l’anello prende il colore dello stato', cambia.length > 0,
+      cambia.length + ' su ' + casi.length + ' cambiano colore col mouse sopra');
+    await p2.close();
+  }
 
   /* ============ 6. il bordo, sui pixel di un elemento vero ============ */
   console.log('\nIL BORDO, SUI PIXEL');

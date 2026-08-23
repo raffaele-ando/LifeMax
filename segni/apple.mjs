@@ -38,12 +38,13 @@ const bez = (p0, c1, c2, p3, t) => {
    finché lo scarto dalla curva vera sta sotto la tolleranza. Non a occhio —
    lo scarto si misura, campionando la curva fra due punti e guardando quanto
    si allontana dalla corda. */
-export function puntiAngolo(r, tolleranza = 0.1) {
+/* quanti segmenti per ognuna delle tre Bézier, dato il raggio e la tolleranza */
+function passi(r, tolleranza) {
   const fuori = [];
   let p0 = [INIZIO, 0];
   for (const { c1, c2, p } of CURVE) {
     let n = 2;
-    while (n < 256) {
+    while (n < 512) {
       let peggio = 0;
       for (let i = 0; i < n; i++) {
         const a = bez(p0, c1, c2, p, i / n), b = bez(p0, c1, c2, p, (i + 1) / n);
@@ -58,28 +59,44 @@ export function puntiAngolo(r, tolleranza = 0.1) {
       if (peggio * r <= tolleranza) break;
       n *= 2;
     }
-    for (let i = 1; i <= n; i++) fuori.push(bez(p0, c1, c2, p, i / n));
+    fuori.push(n);
     p0 = p;
   }
-  return [[INIZIO, 0], ...fuori].map(([x, y]) => [x * r, y * r]);
+  return fuori;
 }
 
-/* Il tracciato rientrato di «s» pixel: serve al bordo, che va ridisegnato
-   perché il ritaglio se lo mangia proprio sulla curva. Non si rimpicciolisce
-   il raggio — si sposta ogni punto lungo la sua normale, che è l'unico modo di
-   avere una fascia dello stesso spessore tutt'intorno. */
+/* la spezzata, con un numero di segmenti dato (o calcolato dalla tolleranza) */
+function spezzata(r, tolleranza, quanti) {
+  const n3 = quanti || passi(r, tolleranza);
+  const fuori = [];
+  let p0 = [INIZIO, 0];
+  CURVE.forEach(({ c1, c2, p }, k) => {
+    for (let i = 1; i <= n3[k]; i++) fuori.push(bez(p0, c1, c2, p, i / n3[k]));
+    p0 = p;
+  });
+  return { punti: [[INIZIO, 0], ...fuori].map(([x, y]) => [x * r, y * r]), n3: n3 };
+}
+
+export function puntiAngolo(r, tolleranza = 0.1) {
+  return spezzata(r, tolleranza).punti;
+}
+
+/* IL TRACCIATO RIENTRATO di «s» pixel, per l'anello del bordo.
+   È la STESSA curva col raggio r−s, spostata di s: così il contorno interno è
+   liscio per costruzione, e campionandolo negli stessi punti di quello esterno
+   i due sbagliano nella stessa direzione — la fascia resta dello stesso
+   spessore tutt'intorno.
+   Prima spostavo ogni punto lungo la propria normale. Su una spezzata quello
+   non dà una fascia uniforme: nei vertici la distanza cresce di 1/cos(θ/2), e
+   sommato allo scarto delle corde faceva ballare lo spessore di quasi mezzo
+   pixel. Su un filo da un pixel si vedeva a occhio: il bordo sembrava
+   disegnato a mano. */
 export function puntiAngoloDentro(r, s, tolleranza = 0.1) {
-  const p = puntiAngolo(r, tolleranza / 2);
-  const out = [];
-  for (let i = 0; i < p.length; i++) {
-    const a = p[Math.max(0, i - 1)], b = p[Math.min(p.length - 1, i + 1)];
-    let tx = b[0] - a[0], ty = b[1] - a[1];
-    const L = Math.hypot(tx, ty) || 1; tx /= L; ty /= L;
-    /* la normale che punta DENTRO: la tangente va verso (-1, +1), quindi
-       ruotandola di -90° si ottiene (+1, +1), cioè verso il centro del box */
-    out.push([p[i][0] + ty * s, p[i][1] - tx * s]);
-  }
-  /* i due capi devono stare esattamente sul lato rientrato, non un pelo fuori */
+  const dentro = Math.max(r - s, 0.01);
+  const n3 = passi(r, tolleranza);
+  const p = spezzata(dentro, tolleranza, n3).punti;
+  const out = p.map(([x, y]) => [x + s, y + s]);
+  /* i due capi devono stare esattamente sul lato rientrato */
   out[0][1] = s;
   out[out.length - 1][0] = s;
   return out;
@@ -177,6 +194,18 @@ export function anello(r4, s, tolleranza = 0.1) {
      fessura bianca in mezzo al fianco. */
   const est = ['0 50%', '0 0', '100% 0', '100% 100%', '0 100%', '0 50%'];
   const int = contorno(r4, (r) => puntiAngoloDentro(r, s, tolleranza), s);
+  return 'polygon(evenodd,' + est.join(',') + ',' + int.join(',') + ')';
+}
+
+/* L'ANELLO PER CHI SCORRE. `overflow: auto` taglia al riquadro interno (il
+   padding box), quindi un anello messo nell'area del bordo viene via tutto e
+   l'elemento resta senza bordo. Per quei pochi l'anello si disegna DENTRO: la
+   fascia sta fra s e 2s dal contorno, cioè il bordo appare rientrato di un
+   pixel. Su un pannello con un filo da 1px non si distingue, e l'alternativa
+   era non avere bordo. */
+export function anelloDentro(r4, s, tolleranza = 0.1) {
+  const est = contorno(r4, (r) => puntiAngoloDentro(r, s, tolleranza), s);
+  const int = contorno(r4, (r) => puntiAngoloDentro(r, 2 * s, tolleranza), 2 * s);
   return 'polygon(evenodd,' + est.join(',') + ',' + int.join(',') + ')';
 }
 
