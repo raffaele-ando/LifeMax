@@ -69,34 +69,100 @@ quel momento in poi — e se un segno che stiamo usando sparisce dal pacco,
 
 ## La forma degli angoli
 
-In questa cartella ci sono anche i quattro pezzi che fanno il supercerchio, che
-non c'entra con i segni ma vive di formule come loro.
+In questa cartella ci sono anche i pezzi che fanno l'angolo continuo di Apple,
+che non c'entra con i segni ma vive di formule come loro.
 
-- **`prova-tracciato.mjs`** — il generatore, e solo lui: dati i quattro raggi
-  restituisce il poligono pieno e l'anello del bordo. Sta a parte perché una
-  prova deve poterlo chiamare senza che nessuno scriva un file.
+- **`apple.mjs`** — la geometria, e solo lei. Le costanti dell'angolo continuo
+  di Apple in unità di raggio, la spezzata che le approssima (si infittisce da
+  sé finché lo scarto dalla curva vera sta sotto la tolleranza), il contorno
+  rientrato per il bordo, e il tracciato SVG per il logo e le icone.
 - **`squircle.mjs`** — riscrive il blocco alla fine di `assets/app.css`: legge
-  chi ha un angolo, raggruppa per raggio, azzera il `border-radius` e mette la
-  curva nel `clip-path`. Si rilancia con `node segni/squircle.mjs` ogni volta
-  che si cambia un raggio o si aggiunge un elemento con l'angolo tondo.
-- **`superellisse.mjs`** e **`poligono.mjs`** — la stessa curva come tracciato
-  SVG e come poligono singolo, per il logo e per le icone.
-- **`anello.mjs`** — il bordo. Un ritaglio taglia anche il bordo del box, e
-  proprio negli angoli: l'anello lo ridisegna come contorno vuoto su uno
-  pseudo-elemento, con riempimento `evenodd`.
+  chi ha un angolo, raggruppa per raggio e spessore di bordo, azzera il
+  `border-radius` e mette la curva nel `clip-path`. Si rilancia con
+  `node segni/squircle.mjs` ogni volta che si cambia un raggio o si aggiunge un
+  elemento con l'angolo tondo.
+- **`icone.mjs`** — rifà l'icona dell'app, il logo dentro `icons.js` e tutte le
+  PNG. `node segni/icone.mjs`.
 
-Le **pastiglie** restano col loro raggio, e non è una resa: in un poligono le
-percentuali si risolvono per asse — `50%` in una x è metà della larghezza, in
-una y metà dell'altezza — mentre `border-radius`, quando il raggio non ci sta,
-lo taglia con lo STESSO fattore su tutti e due. Su una pastiglia da 300×40 il
-nostro `min(99px, 50%)` darebbe 99px in orizzontale e 20 in verticale: non un
-supercerchio, una foglia. E una pastiglia non è un rettangolo con gli angoli
-arrotondati — i suoi fianchi sono tangenti a due semicerchi interi, è una forma
-sua. Dove `corner-shape` c'è, il generatore glielo chiede e il browser fa il
-supercerchio da sé, che il raggio lo sa tagliare come si deve.
+### Che cos'è, esattamente
 
-Perché un poligono e non `corner-shape: squircle`, che sarebbe una riga sola:
-`corner-shape` esiste solo su Chromium 139 e oltre. Su Safari e Firefox non
-c'è, e restavano rettangoli arrotondati. Il poligono va su tutto.
-Quello che si perde è l'ombra ESTERNA: qualsiasi ritaglio la cancella. Qui
-costa poco, la separazione la fanno i bordi da 1px.
+Tre forme diverse si chiamano tutte «squircle»:
+
+| | l'angolo | curvatura | area tolta (misurata) |
+|---|---|---|---|
+| `border-radius` | arco di **cerchio** | costante 1/R, e all'attacco col lato **salta** a zero | 0.2148 · r² |
+| `corner-shape: squircle` | **superellisse** \|x\|ⁿ+\|y\|ⁿ=1, n≈4 | cambia in continuo | 0.0726 · r² |
+| **Apple** (questa) | **tre Bézier** per angolo | cambia, e verso il lato si appiattisce fino a zero | 0.2254 · r² |
+
+La colonna che conta è l'ultima. La superellisse a parità di raggio toglie
+all'angolo il **66% in meno** di un arco: per questo la prima versione di
+questo codice, che usava n = 4, aveva reso TUTTA l'app più spigolosa di prima.
+L'angolo di Apple ne toglie l'1.05, quindi si legge arrotondato come sempre —
+solo senza lo scalino di curvatura, che è la cosa che l'occhio vede senza saper
+dire cosa.
+
+E non è una superellisse travestita: chi ha provato a sostituirla con la
+migliore (n = 5.2) ha misurato **1365 pixel di errore** dove le Bézier ne
+sbagliano zero.
+
+Fonti: [Desperately seeking squircles (Figma)](https://www.figma.com/blog/desperately-seeking-squircles/)
+· [My Quest for the Apple Icon Shape](https://liamrosenfeld.com/posts/apple_icon_quest/)
+· [Squircles, Apple design, and curvature (John D. Cook)](https://www.johndcook.com/blog/2018/02/13/squircle-curvature/)
+
+### Le scelte, e perché
+
+**Un `clip-path: polygon()` e non `corner-shape`.** `corner-shape` sarebbe una
+riga, ma esiste solo su Chromium 139 e oltre — su Safari no, e resterebbero
+rettangoli arrotondati. E comunque darebbe la superellisse, non Apple.
+
+**Solo pixel e `min(px, %)`, niente moltiplicazioni.** L'angolo di Apple si
+definisce in pixel dal vertice, quindi non serve nessuna percentuale per la
+forma: resta identico su ogni proporzione, che è esattamente ciò che una
+maschera SVG stirata non sa fare. Il `min(px, %)` c'è solo come limite: sotto
+tre raggi di lato i due angoli si scontrerebbero, e il limite li rimpicciolisce
+in proporzione invece di lasciarli strozzare.
+
+**Tutto dentro un `@supports`.** Se il motore non sa fare quel ritaglio, il
+blocco non si applica e resta il `border-radius`: un rettangolo arrotondato,
+come prima. Senza quella rete un motore che rifiuta la sintassi si teneva il
+`border-radius: 0` e mostrava **spigoli vivi** — peggio di non aver fatto
+niente.
+
+**I tracciati stanno su `:root`, non dentro ogni regola.** Si può fare solo
+perché non contengono nessuna `var()`: una proprietà personalizzata sostituisce
+le `var()` DOVE È DICHIARATA, e su `:root` i raggi dell'app non esistono. Con i
+numeri dentro invece si tengono in un posto solo.
+
+**Le pastiglie restano capsule.** Non è un'eccezione: nel sistema di Apple una
+pastiglia è una `Capsule`, con le estremità a semicerchio. E in CSS non si
+potrebbe fare altrimenti — in un poligono le percentuali si risolvono per asse,
+quindi non si può dire «metà del lato corto», e su una pastiglia da 300×40 il
+ritaglio darebbe una foglia con la punta da 99px.
+
+**Il bordo si ridisegna.** Un ritaglio taglia anche il bordo del box, e proprio
+negli angoli: resterebbe una scheda col bordo sui fianchi e niente sulla curva.
+L'anello lo ridisegna come contorno vuoto su uno pseudo-elemento, con
+riempimento `evenodd`, spesso quanto il bordo che sostituisce.
+
+**Quello che si perde è l'ombra ESTERNA:** qualsiasi ritaglio la cancella, e
+anche `filter: drop-shadow` (misurato — il ritaglio si applica dopo il filtro).
+
+### Tre errori che è costato caro trovare
+
+1. `*, *::before, *::after { --sq-b: transparent }`. L'asterisco sugli
+   pseudo-elementi colpisce DIRETTAMENTE l'anello, e una regola che colpisce
+   direttamente batte l'eredità: il bordo non veniva ridisegnato **su nessun
+   elemento dell'app**, e restava rotto in ogni angolo. Adesso l'asterisco è
+   solo sugli elementi.
+2. `calc(100% - 0)` non è CSS valido — da una percentuale non si può sottrarre
+   uno zero senza unità — e il browser butta l'INTERA dichiarazione: il
+   ritaglio diventa `none`, l'elemento resta a spigoli e l'anello, senza più
+   ritaglio, dipinge un rettangolo pieno di colore sopra tutta la scheda. Il
+   controllo va fatto sul valore ARROTONDATO: 0.02px non è zero, ma stampato
+   diventa «0». Adesso `prove/squircle.js` passa ogni tracciato generato a
+   `CSS.supports`.
+3. La corrispondenza fra la lista di punti dell'angolo e gli assi del box
+   cambia da angolo a angolo, perché girando in senso orario si entra da un
+   lato e si esce dall'altro. Sbagliarla non dà una forma un po' storta: dà
+   bandiere strappate, con un morso in un angolo e una punta in quello di
+   fronte.

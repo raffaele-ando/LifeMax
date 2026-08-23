@@ -128,57 +128,49 @@ genera le chiavi, in un browser vero).
   aperti a `piano()` mentre `piano()` chiedeva a `restano()` il testo della
   nota. Con la nota spenta non si vedeva; accendendola l'app si fermava con lo
   stack pieno e la schermata restava a metà.
-- **squircle.js** — gli angoli sono supercerchi, non rettangoli arrotondati.
-  Non guarda il CSS: guarda i pixel. La curva di un angolo è una superellisse
-  |u|^n + |v|^n = 1, e l'arco di cerchio del `border-radius` è il caso n = 2;
-  il supercerchio è n = 4. La prova disegna, fotografa, trova dove passa il
-  bordo e ricava n risolvendo l'equazione punto per punto.
-  In ordine: che le due forme siano davvero diverse (n = 2.00 col solo raggio,
-  n = 4.03 con `corner-shape: squircle`, che è il riferimento perché lo disegna
-  il browser); che il nostro poligono dia la stessa curva del riferimento a
-  8, 12, 18 e 60px, e che su un elemento più basso del raggio non si
-  autointersechi; che un pulsante vero, dipinto com'è, misuri n ≈ 4; che tutti
-  gli angoli di nove schermate abbiano il ritaglio e nessuno sia restato un
-  rettangolo arrotondato; che il blocco generato venga identico rigenerandolo;
-  che il tracciato SVG del logo e l'icona dell'app siano superellissi, e che
-  le icone che iOS e Android mascherano da sé siano piene fino al bordo.
-  Poi le tre prove che dicono se è davvero una curva di Lamé e non un
-  arrotondamento qualsiasi: la **curvatura** (l'arco di cerchio la tiene
-  costante a 1/R fino all'attacco col lato e là salta a zero — è quello lo
-  scalino che si vede; la curva di Lamé la cambia da 0.43·R a 1.5·R e si
-  appiattisce verso il lato, così l'attacco non c'è); la **distanza** fra il
-  nostro poligono e la curva vera del browser, misurata come area fra le due
-  divisa per la lunghezza dell'arco (0.06–0.08px a 12, 26 e 60px di raggio); e
-  le **proporzioni**, perché una maschera SVG che si stira farebbe un'ellisse
-  mentre l'angolo dev'essere lo stesso su 280×60, su 60×280 e su 160×160.
-  E lo **spessore dell'anello**: un bordo da 2px con un anello da 1px si
-  assottiglia proprio nell'angolo, quindi il generatore lo legge dal foglio di
-  stile e qui si controlla che nel blocco ci siano più spessori.
-  Alla fine la cosa che il ritaglio da solo rompe: il **bordo sulla curva**.
-  Ritagliando un box a spigoli il suo bordo viene tagliato proprio negli
-  angoli e resta una scheda col bordo sui fianchi e niente agli angoli; qui si
-  cerca il colore del bordo lungo ventidue direzioni dell'angolo, e la
-  controprova (la stessa forma senza l'anello) deve fallire, altrimenti la
-  prova non sta misurando niente.
-  Cinque cose le ha corrette di sé stessa: che `superellipse(2)` dà n = 4 e
-  `superellipse(3)` dà n = 8 (il numero è il logaritmo dell'esponente, non
-  l'esponente); che chi resta tondo va chiesto al foglio di stile e non
-  indovinato dalla geometria, perché indovinandolo si fermava su due casi
-  giusti; che misurare con il raggio CHIESTO invece di quello USATO — dove
-  viene tagliato alla metà del lato — dà un n falso, ed è per questo che
-  l'elemento di prova è largo il doppio del raggio; che a un pixel per pixel
-  CSS il riferimento stesso usciva 5.19 dove doveva uscire 4.03, e serve
-  fotografare a sei volte la risoluzione; e che il raggio di un elemento vero
-  non si deduce da «dove il lato diventa dritto», perché la superellisse
-  arriva al lato appiattendosi e l'ultimo terzo della curva sta dentro il
-  mezzo pixel — si leggeva n = 3.15 su una forma giusta.
-  E una cosa l'ha trovata sull'app, non su sé stessa: il ritaglio taglia anche
-  quello che SPORGE dal riquadro — figli, pseudo-elementi, e con loro l'area
-  del tocco, perché `clip-path` conta anche per il dito. Erano andati via il
-  pallino in cima al segno dell'ora, il filo che stacca la cattura dalle
-  linguette, e i 44px invisibili che facevano grandi le caselle da spuntare e
-  l'interruttore dei promemoria. Adesso c'è una prova per ognuna delle tre
-  cose, su nove schermate.
+- **squircle.js** — gli angoli sono quelli **continui di Apple**, non archi di
+  cerchio e nemmeno superellissi. Non guarda il CSS: guarda i pixel.
+  La misura che separa le tre forme senza ambiguità è l'**area che l'angolo
+  toglie** al quadrato, in unità di r² — non dipende da come si campiona e i
+  numeri sono lontanissimi: arco di cerchio 0.2148 (teoria 1-π/4), superellisse
+  n=4 **0.0726** (il 66% in meno: è la ragione per cui la prima versione aveva
+  reso tutta l'app più spigolosa), angolo di Apple **0.2254** (1.05 volte
+  l'arco, quindi arrotondato come sempre).
+  Poi la **curvatura**, che è la cosa che l'occhio vede: il cerchio la tiene
+  costante e all'attacco col lato salta a zero; quella di Apple, campionata sul
+  proprio angolo (lungo 1.53 raggi, non uno), va da 0.88·R a 3.13·R e si
+  appiattisce verso il lato, così l'attacco non esiste.
+  Poi la **distanza** fra la spezzata del `clip-path` e le Bézier vere, misurata
+  come area fra le due divisa per la lunghezza dell'arco: 0.03–0.05px a 8, 12,
+  18 e 26px di raggio.
+  Poi la cosa che mancava e che è costata caro: **ogni tracciato generato passa
+  per `CSS.supports`**. Un `calc(100% - 0)` — non valido, perché da una
+  percentuale non si può sottrarre uno zero senza unità — faceva buttare al
+  browser l'intera dichiarazione: il ritaglio diventava `none`, l'elemento
+  restava a spigoli e l'anello dipingeva un rettangolo pieno sopra tutta la
+  scheda. Nel foglio di stile il testo sembrava giusto. C'è anche la
+  controprova, che quel valore venga davvero rifiutato.
+  Poi l'app, su nove schermate: che ogni angolo abbia il ritaglio, che nessuno
+  sia rimasto un rettangolo arrotondato, che **ogni elemento col bordo abbia
+  l'anello ACCESO** (una riga `*::before { --sq-b: transparent }` lo aveva
+  spento su tutta l'app, lasciando il bordo rotto in ogni angolo), e che il
+  ritaglio non si mangi niente che sporge — figli o pseudo-elementi, e con loro
+  l'area del tocco, perché `clip-path` conta anche per il dito.
+  Poi il **bordo sui pixel** di un elemento vero, cercando il colore del bordo
+  lungo venti direzioni dell'angolo. Poi le **proporzioni**, perché una maschera
+  SVG stirata farebbe un'ellisse: l'angolo misura 27.5×27.3px identico su
+  300×90, su 90×300 e su 160×160. Poi che il blocco sia generato e stia dentro
+  un `@supports`. Poi l'**icona**, che deve avere esattamente il tracciato di
+  `segni/apple.mjs`, e le PNG che iOS e Android mascherano da sé, che devono
+  restare piene fino al bordo.
+  Le trappole che ha corretto su sé stessa: il riquadro di prova troppo piccolo
+  (con un raggio da 120 in un box da 280 scatta il limite proporzionale e la
+  curva di Apple usciva come una superellisse con n = 2.8); il lato «dritto»
+  misurato da un raggio in poi invece che dopo la lunghezza dell'angolo; un
+  `background:#000` che copriva la maschera di riferimento; le virgolette
+  doppie di un `url("data:...")` dentro un attributo `style`, che chiudevano
+  l'attributo; e il giro delle schermate che lasciava la pagina sull'ultima,
+  dove l'elemento da misurare non c'è.
 - **gesto.js** — il foglio dal basso: il gesto, e che dopo si possa ancora
   toccare. Prima di tutto campiona la SUPERFICIE del foglio aperto e pretende
   che ogni punto arrivi al foglio: nasce da una regressione in cui il velo
