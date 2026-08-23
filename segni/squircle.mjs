@@ -327,6 +327,22 @@ export function genera() {
     colori++;
     css += righe(sel, 2) + ' {\n    --sq-b: ' + c + ';\n  }\n';
   }
+
+  /* IL BORDO DEL BOX SI SPEGNE, e non è un dettaglio.
+     Il bordo di quest'app è quasi sempre traslucido — `rgba(16,17,22,0.08)` e
+     compagni. Lasciandolo accendere, sui lati dritti veniva dipinto DUE volte
+     (una il box, una l'anello sopra) e sulla curva una sola, perché là il
+     ritaglio quello del box se lo mangia. Risultato: fianchi scuri e angoli
+     chiari, con uno stacco netto nel punto in cui la curva comincia. Adesso il
+     colore lo mette solo l'anello, uguale tutt'intorno. Lo SPESSORE resta,
+     perché serve al calcolo dello spazio. */
+  const daSpegnere = [];
+  bordi.forEach(([s2]) => { if (!daSpegnere.includes(s2)) daSpegnere.push(s2); });
+  if (daSpegnere.length) {
+    css += "\n  /* --- il colore del bordo del box si spegne: lo dipinge l'anello,\n" +
+      '         una volta sola e uguale su tutto il contorno --- */\n';
+    css += righe(daSpegnere, 2) + ' {\n    border-color: transparent;\n  }\n';
+  }
   css += '}\n';
 
   if (senzaMisura.length) console.log('  raggi non misurabili, lasciati come sono: ' + senzaMisura.join(' | '));

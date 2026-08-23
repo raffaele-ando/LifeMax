@@ -161,8 +161,21 @@ export function poligono(r4, tolleranza = 0.1) {
   return 'polygon(' + est.join(',') + ')';
 }
 
+/* L'ANELLO, e perché il contorno esterno è un RETTANGOLO e non la curva.
+   L'anello sta su uno pseudo-elemento dentro l'elemento ritagliato, quindi il
+   ritaglio del padre lo taglia già lui. Dandogli anche la curva come contorno
+   esterno, quel bordo veniva sfumato DUE volte — una dal proprio ritaglio e
+   una da quello del padre — e sulla curva usciva più chiaro che sui lati
+   dritti. Si vedeva a occhio: bordo scuro sui fianchi e un velo chiaro
+   sull'angolo. Col rettangolo la curva la disegna il padre, una volta sola, e
+   l'anello si occupa solo del contorno INTERNO. */
 export function anello(r4, s, tolleranza = 0.1) {
-  const est = contorno(r4, (r) => puntiAngolo(r, tolleranza), 0);
+  /* Il rettangolo parte da metà del lato sinistro come il contorno interno: un
+     `polygon()` è UN contorno chiuso, quindi i due si collegano con un ponte, e
+     il ponte deve avere area zero o si vede. Partendo da `0 0` il ponte
+     diventava una scheggia diagonale che tagliava via un pezzo di anello — una
+     fessura bianca in mezzo al fianco. */
+  const est = ['0 50%', '0 0', '100% 0', '100% 100%', '0 100%', '0 50%'];
   const int = contorno(r4, (r) => puntiAngoloDentro(r, s, tolleranza), s);
   return 'polygon(evenodd,' + est.join(',') + ',' + int.join(',') + ')';
 }

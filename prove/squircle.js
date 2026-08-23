@@ -311,8 +311,12 @@ const CONTORNO = `(function (b64, R, dritto) {
          una regola sull'asterisco degli pseudo-elementi aveva prodotto su
          tutta l'app. */
       var bw = parseFloat(s.borderTopWidth) || 0;
-      var bc = s.borderTopColor;
-      var opaco = bw > 0 && !/rgba\\(0, 0, 0, 0\\)|transparent/.test(bc);
+      /* il colore del bordo sta in --sq-b: sull'elemento è trasparente di
+         proposito, perché a dipingerlo è l'anello — dipingendolo entrambi, sui
+         lati dritti veniva doppio e sulla curva singolo, cioè fianchi scuri e
+         angoli chiari */
+      var bc = (s.getPropertyValue('--sq-b') || '').trim();
+      var opaco = bw > 0 && bc && !/^(transparent|rgba\\(0, 0, 0, 0\\))$/.test(bc);
       if (opaco) {
         var quale = null;
         ['::before', '::after'].forEach(function (ps) {
@@ -397,9 +401,14 @@ const CONTORNO = `(function (b64, R, dritto) {
         '.btn-mini', '.cattura-cta', '.rit-gruppo']) {
         e = [...document.querySelectorAll(sel)].find((x) => {
           const r = x.getBoundingClientRect(), s = getComputedStyle(x);
+          /* il colore del bordo NON si chiede più all'elemento: là è
+             trasparente di proposito, perché a dipingerlo è l'anello. Si
+             guarda `--sq-b`, che è dove il colore sta adesso. */
+          const q = getComputedStyle(x, '::before');
           return r.width > 120 && r.height > 40 && /^polygon\(/.test(s.clipPath || '') &&
             (parseFloat(s.borderTopWidth) || 0) > 0 &&
-            !/rgba\(0, 0, 0, 0\)/.test(s.borderTopColor);
+            /^polygon\(evenodd/.test(q.clipPath || '') &&
+            !/rgba\(0, 0, 0, 0\)|transparent/.test(q.backgroundColor);
         });
         if (e) break;
       }
@@ -407,7 +416,8 @@ const CONTORNO = `(function (b64, R, dritto) {
       e.id = 'sq-bordo';
       const cp = getComputedStyle(e).clipPath;
       const q = cp.match(/min\(([0-9.]+)px/);
-      return { cls: (e.className || '').toString(), raggio: q ? +q[1] / 1.528665 : null };
+      return { cls: (e.className || '').toString(), dpr: window.devicePixelRatio || 1,
+        raggio: q ? +q[1] / 1.528665 : null };
     });
     if (!info || !info.raggio) ok('c’è un elemento col bordo da misurare', false, 'non trovato');
     else {
@@ -426,6 +436,7 @@ const CONTORNO = `(function (b64, R, dritto) {
           const luce = (i, j) => { const k = (j * c.width + i) * 4; return (d[k] + d[k+1] + d[k+2]) / 3; };
           const fondo = luce(Math.round(c.width / 2), Math.round(c.height / 2));
           let conBordo = 0, tot = 0;
+          const scuri = [];
           for (let g = 6; g <= 84; g += 4) {
             const a2 = g * Math.PI / 180;
             const dove = (t) => [Math.round(R - Math.cos(a2) * t), Math.round(R - Math.sin(a2) * t)];
@@ -436,14 +447,34 @@ const CONTORNO = `(function (b64, R, dritto) {
               buio = Math.min(buio, luce(i, j));
             }
             tot++;
+            scuri.push(buio);
             if (buio < fondo - 8) conBordo++;
           }
-          return { conBordo, tot, fondo: Math.round(fondo) };
+          /* E QUANTO È SCURO, direzione per direzione. È il difetto che si
+             vedeva a occhio — «bordo scuro e poi un taglio chiaro» — e ha due
+             cause, entrambe misurabili qui: il bordo del box dipinto INSIEME
+             all'anello (sui lati dritti veniva doppio, e i bordi di quest'app
+             sono traslucidi) e il contorno esterno dell'anello sfumato due
+             volte, dal proprio ritaglio e da quello del padre. Le direzioni
+             quasi parallele ai lati sono «il fianco», quelle in mezzo «la
+             curva». */
+          const meta2 = scuri.length >> 1;
+          const vicinoAiLati = Math.min(scuri[0], scuri[scuri.length - 1]);
+          const inMezzo = scuri[meta2];
+          return { conBordo, tot, fondo: Math.round(fondo),
+            fianco: Math.round(vicinoAiLati), curva: Math.round(inMezzo) };
         })();
-      }, [png.toString('base64'), Math.round(info.raggio * 1.528665 * 3)]);
+      /* R è la LUNGHEZZA DELL'ANGOLO in pixel d'immagine, non il raggio e non un
+         suo multiplo a caso: i raggi partono dal punto (R,R) e con un R tre
+         volte troppo grande partivano da dentro la scheda, sul testo, e
+         misuravano quanto è scuro il testo invece del bordo. */
+      }, [png.toString('base64'), Math.round(info.raggio * A.INIZIO * info.dpr)]);
       ok('«' + info.cls.split(' ')[0] + '»: il bordo c’è su tutta la curva',
         m.tot > 15 && m.conBordo === m.tot,
         m.conBordo + ' direzioni su ' + m.tot + ' hanno il bordo');
+      ok('ed è scuro uguale sul fianco e sulla curva',
+        Math.abs(m.fianco - m.curva) <= 12,
+        'fianco ' + m.fianco + ' · curva ' + m.curva + ' (su 255; fondo ' + m.fondo + ')');
     }
   }
 

@@ -139,15 +139,38 @@ potrebbe fare altrimenti — in un poligono le percentuali si risolvono per asse
 quindi non si può dire «metà del lato corto», e su una pastiglia da 300×40 il
 ritaglio darebbe una foglia con la punta da 99px.
 
-**Il bordo si ridisegna.** Un ritaglio taglia anche il bordo del box, e proprio
-negli angoli: resterebbe una scheda col bordo sui fianchi e niente sulla curva.
-L'anello lo ridisegna come contorno vuoto su uno pseudo-elemento, con
-riempimento `evenodd`, spesso quanto il bordo che sostituisce.
+**Il bordo si ridisegna, e quello del box si SPEGNE.** Un ritaglio taglia anche
+il bordo del box, e proprio negli angoli: resterebbe una scheda col bordo sui
+fianchi e niente sulla curva. L'anello lo ridisegna come contorno vuoto su uno
+pseudo-elemento, con riempimento `evenodd`, spesso quanto il bordo che
+sostituisce. Ma il bordo del box va anche spento (`border-color: transparent`,
+lo spessore resta perché serve allo spazio): lasciandolo accendere, sui lati
+dritti veniva dipinto DUE volte — una il box, una l'anello sopra — e i bordi di
+quest'app sono traslucidi, quindi i fianchi uscivano scuri e gli angoli chiari,
+con uno stacco netto dove comincia la curva.
+
+**Il contorno esterno dell'anello è un rettangolo, non la curva.** L'anello sta
+dentro l'elemento ritagliato, quindi il ritaglio del padre lo taglia già lui.
+Dandogli anche la curva, quel contorno veniva sfumato due volte e sulla curva
+usciva più chiaro. Col rettangolo la curva la disegna il padre, una volta sola.
+E il rettangolo parte da metà del lato sinistro come il contorno interno,
+perché un `polygon()` è UN contorno chiuso: i due si collegano con un ponte, e
+il ponte deve avere area zero o si vede — partendo da `0 0` diventava una
+scheggia diagonale che apriva una fessura bianca in mezzo al fianco.
 
 **Quello che si perde è l'ombra ESTERNA:** qualsiasi ritaglio la cancella, e
 anche `filter: drop-shadow` (misurato — il ritaglio si applica dopo il filtro).
 
-### Tre errori che è costato caro trovare
+### I raggi
+
+Sono 8, 12 e 18px (6, 10, 14 nella variante compatta) e non possono crescere:
+l'angolo vuole **3.06 raggi di lato**. Provati a 11/16/24 per rendere la curva
+più evidente, e trenta elementi dell'app non ci stavano più — un pulsante alto
+44px non regge un raggio da 16, che ne vorrebbe 49 di lato. Questi tre numeri
+sono già il massimo che le altezze attuali consentono: per angoli più generosi
+bisogna prima fare più alti gli elementi.
+
+### Errori che è costato caro trovare
 
 1. `*, *::before, *::after { --sq-b: transparent }`. L'asterisco sugli
    pseudo-elementi colpisce DIRETTAMENTE l'anello, e una regola che colpisce
@@ -166,3 +189,7 @@ anche `filter: drop-shadow` (misurato — il ritaglio si applica dopo il filtro)
    lato e si esce dall'altro. Sbagliarla non dà una forma un po' storta: dà
    bandiere strappate, con un morso in un angolo e una punta in quello di
    fronte.
+4. Il bordo dipinto due volte sui lati dritti e una sola sulla curva: fianchi
+   scuri, angoli chiari. Si vedeva a occhio prima che una prova lo misurasse —
+   adesso `prove/squircle.js` confronta quanto è scuro il bordo sul fianco e
+   sulla curva e pretende che combacino entro 12 valori su 255.
