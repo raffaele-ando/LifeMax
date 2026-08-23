@@ -1,7 +1,7 @@
 /* La prova della sola decisione che prende il server: chi tocca adesso.
    Non serve rete né Cloudflare — è tutta aritmetica su dati finti.
      node promemoria/prova-piano.mjs   */
-import { dovute, potaSegni, oraLocale, minutiDaOra, endpointValido, RITARDO_MAX, MAX_PER_VOLTA } from './piano.js';
+import { dovute, potaSegni, oraLocale, minutiDaOra, endpointValido, inSilenzio, RITARDO_MAX, MAX_PER_VOLTA } from './piano.js';
 
 let fail = 0;
 const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  ') + n + (d ? '  → ' + d : '')); };
@@ -84,6 +84,39 @@ console.log('\nROBA SCRITTA MALE NON FA CADERE NIENTE');
 ok('senza record', dovute(null, T('2026-08-22T06:30:00Z')).dovute.length === 0);
 ok('senza voci', dovute({ fuso: 'Europe/Rome', giorno: '2026-08-22' }, T('2026-08-22T06:30:00Z')).dovute.length === 0);
 ok('voci sporche', dovute(rec({ voci: [null, {}, { id: 'x', ora: 'boh', titolo: 'x' }] }), T('2026-08-22T06:30:00Z')).dovute.length === 0);
+
+console.log('\nLA FASCIA DI SILENZIO');
+/* Quasi sempre scavalca la mezzanotte (23:00→07:00), e quello è il caso in
+   cui un confronto scritto in fretta sbaglia: «fra 23:00 e 07:00» non è
+   «maggiore di 23:00 e minore di 07:00», che non è vero mai. */
+const notte = { on: true, da: '23:00', a: '07:00' };
+ok('a mezzanotte è silenzio', inSilenzio(notte, 0));
+ok('alle 23:00 comincia', inSilenzio(notte, 23 * 60));
+ok('alle 22:59 no', !inSilenzio(notte, 22 * 60 + 59));
+ok('alle 06:59 ancora sì', inSilenzio(notte, 6 * 60 + 59));
+ok('alle 07:00 è finita', !inSilenzio(notte, 7 * 60));
+ok('a mezzogiorno no', !inSilenzio(notte, 12 * 60));
+/* e una fascia che NON scavalca */
+const pome = { on: true, da: '14:00', a: '16:00' };
+ok('una fascia dentro il giorno: alle 15:00 sì', inSilenzio(pome, 15 * 60));
+ok('e alle 13:59 no', !inSilenzio(pome, 13 * 60 + 59));
+ok('spenta non è mai silenzio', !inSilenzio({ on: false, da: '23:00', a: '07:00' }, 0));
+ok('senza fascia non è mai silenzio', !inSilenzio(null, 0));
+ok('una fascia scritta male non zittisce tutto', !inSilenzio({ on: true, da: 'boh', a: '07:00' }, 3 * 60));
+ok('e una fascia lunga zero nemmeno', !inSilenzio({ on: true, da: '07:00', a: '07:00' }, 7 * 60));
+
+/* dentro il giro: una voce che cadrebbe nella fascia non parte */
+ok('nella fascia non parte niente',
+  dovute(rec({ silenzio: notte, voci: [{ id: 'x', ora: '23:30', ripete: true, giorni: [], titolo: 'x' }] }),
+    T('2026-08-22T21:35:00Z')).dovute.length === 0);
+ok('fuori dalla fascia parte',
+  dovute(rec({ silenzio: notte, voci: [{ id: 'x', ora: '22:00', ripete: true, giorni: [], titolo: 'x' }] }),
+    T('2026-08-22T20:05:00Z')).dovute.length === 1);
+/* il caso che conta: una voce delle 21:30 che, per la regola del ritardo,
+   arriverebbe alle 23:00 — dentro la fascia */
+ok('un ritardo non entra in punta di piedi nella fascia',
+  dovute(rec({ silenzio: notte, voci: [{ id: 'sera', ora: '21:30', ripete: true, giorni: [], titolo: 'sera' }] }),
+    T('2026-08-22T21:00:00Z')).dovute.length === 0);
 
 console.log('\nSOLO I SERVIZI PUSH VERI');
 ok('Apple', endpointValido('https://web.push.apple.com/abc'));

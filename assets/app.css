@@ -620,15 +620,15 @@ small { color: var(--inchiostro-2); }
 .chip b { color: var(--inchiostro-1); font-variant-numeric: tabular-nums; }
 
 /* input */
-input[type="text"], textarea, select {
+input[type="text"], input[type="url"], textarea, select {
   width: 100%; padding: 11px 14px;
   border: 1px solid var(--bordo-forte); border-radius: var(--r-2);
   background: var(--superficie-1);
   transition: border-color var(--t-veloce), box-shadow var(--t-veloce);
   box-shadow: var(--e1);
 }
-input[type="text"]:hover, textarea:hover, select:hover { border-color: var(--baseline); }
-input[type="text"]:focus, textarea:focus, select:focus {
+input[type="text"]:hover, input[type="url"]:hover, textarea:hover, select:hover { border-color: var(--baseline); }
+input[type="text"]:focus, input[type="url"]:focus, textarea:focus, select:focus {
   outline: none; border-color: var(--accento);
   box-shadow: 0 0 0 3.5px color-mix(in srgb, var(--accento) 18%, transparent);
 }
@@ -1399,6 +1399,67 @@ label.campo {
 }
 .imp-anteprima .ico { flex: none; margin-top: 2px; color: var(--inchiostro-muto); }
 .imp-anteprima b { font-size: 13.5px; }
+
+/* UNA RIGA CON UN INTERRUTTORE — «Come ti avviso».
+   Tre pezzi: il segno acceso/spento, il testo, e l'ora. A schermi stretti
+   l'ora scende sotto invece di schiacciare il testo, perché un campo orario
+   sotto i 44px non si centra col dito. */
+.prom-riga {
+  display: flex; align-items: flex-start; gap: var(--s3);
+  padding: var(--s3) 0;
+  border-top: 1px solid var(--griglia);
+  flex-wrap: wrap;
+}
+.prom-riga:first-of-type { border-top: none; padding-top: var(--s2); }
+.prom-testo { flex: 1 1 150px; min-width: 0; }
+.prom-testo b { display: flex; align-items: center; gap: 6px; font-size: 14px; }
+.prom-testo span { display: block; color: var(--inchiostro-2); font-size: 12.5px; line-height: 1.35; margin-top: 2px; }
+/* spento non è nascosto: il testo resta leggibile, cambia il peso */
+.prom-riga.spenta .prom-testo b { color: var(--inchiostro-2); }
+.prom-riga.spenta .prom-ora { opacity: .45; }
+
+/* L'INTERRUTTORE — un tondo che si riempie.
+   Non una levetta: una levetta disegnata a mano si confonde con un pulsante,
+   e su iOS quella vera non si può usare dentro una riga così. Il segno dentro
+   dice quale dei due stati è, senza dover ricordare da che parte è «acceso». */
+.prom-int {
+  flex: none; width: 26px; height: 26px; margin-top: 1px;
+  display: grid; place-items: center;
+  border-radius: var(--r-tondo);
+  border: 1px solid var(--bordo-forte);
+  background: var(--superficie-2);
+  color: var(--inchiostro-2);
+  /* il tocco arriva a 44px senza che il tondo cresca */
+  position: relative;
+}
+.prom-int::before { content: ''; position: absolute; inset: -9px; }
+.prom-int[aria-checked="true"] {
+  background: var(--accento-pieno); border-color: transparent; color: var(--accento-testo);
+}
+/* I CAMPI ORA di questa schermata non sono quelli della striscia della
+   giornata: là stanno dentro una riga alta ventotto pixel e devono essere
+   minuscoli, qui sono un comando che si tocca col dito. E devono starci
+   dentro anche scritti in dodici ore con AM/PM, che è come li scrive un
+   telefono in inglese: a 92px «08:30 AM» finiva tagliato. */
+input.prom-ora, input.prom-t {
+  flex: none; width: auto; min-width: 118px;
+  padding: 9px 10px; font-size: 14px;
+  border: 1px solid var(--bordo-forte); border-radius: var(--r-2);
+  background: var(--superficie-1); box-shadow: var(--e1);
+  transition: border-color var(--t-veloce), box-shadow var(--t-veloce);
+}
+input.prom-ora:focus, input.prom-t:focus {
+  outline: none; border-color: var(--accento);
+  box-shadow: 0 0 0 3.5px color-mix(in srgb, var(--accento) 18%, transparent);
+}
+input.prom-ora:disabled, input.prom-t:disabled { background: var(--superficie-2); }
+/* «l'ora di ognuna»: sta in cima e non in mezzo, perché quando il titolo va
+   a capo un testo centrato verticalmente finisce a metà di due righe */
+.prom-ora-no { flex: none; color: var(--inchiostro-muto); font-size: 12px; align-self: flex-start; margin-top: 3px; }
+
+/* la fascia: due orari in fila, con le etichette attaccate al loro campo */
+.prom-fascia { display: flex; align-items: center; gap: var(--s2); flex-wrap: wrap; }
+.prom-fascia .campo { margin: 0; }
 .imp-pericolo { color: var(--critico); border-color: color-mix(in srgb, var(--critico) 35%, var(--bordo-forte)); }
 .imp-pericolo:hover { background: color-mix(in srgb, var(--critico) 10%, transparent); border-color: var(--critico); }
 

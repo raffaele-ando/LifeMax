@@ -259,6 +259,48 @@ await worker.fetch(POST(piano({ voci: [{ id: 'x', ora: '09:00', titolo: 'x', tip
 ok('un tipo inventato diventa un promemoria normale',
   JSON.parse(e.PROMEMORIA.m.get('d:dprova123')).voci[0].tipo === 'promemoria');
 
+console.log('\n«MANDAMENE UNA ADESSO»');
+/* La porta che serve a chi installa da solo: senza, l'unico modo di sapere se
+   la catena funziona è aspettare le 08:30 di domani. */
+e = env();
+const prova = (corpo) => worker.fetch(new Request('https://x/prova', {
+  method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(corpo)
+}), e);
+r = await prova({ id: 'dprova123' });
+ok('senza un piano non c’è nulla a cui mandarla', r.status === 404, String(r.status));
+await worker.fetch(POST(piano({ numero: 2 })), e);
+spedite = [];
+r = await prova({ id: 'dprova123' });
+ok('col piano, parte', r.status === 200 && spedite.length === 1, r.status + ' / ' + spedite.length);
+{
+  const dentro = await apri(spedite[0].corpo);
+  ok('dice che è una prova', /prova/i.test(dentro.titolo), dentro.titolo);
+  ok('e porta il numero da mettere sull’icona', dentro.numero === 2, String(dentro.numero));
+}
+ok('non lascia segni: non consuma il promemoria di domani',
+  JSON.parse(e.PROMEMORIA.m.get('d:dprova123')).inviate.length === 0);
+r = await prova({ id: 'ma/../altro' });
+ok('un id storto no', r.status === 400, String(r.status));
+/* il caso in cui «non arriva niente»: l'iscrizione non vale più */
+rispostaPush = 410; spedite = [];
+r = await prova({ id: 'dprova123' });
+ok('se l’iscrizione è scaduta lo dice', r.status === 410, String(r.status));
+ok('e butta il record, così riaccendendo se ne fa una nuova', !e.PROMEMORIA.m.has('d:dprova123'));
+rispostaPush = 201;
+e = env(); e.VAPID_PRIVATA = '';
+await worker.fetch(POST(piano()), e);
+r = await prova({ id: 'dprova123' });
+ok('senza la coppia VAPID lo dice invece di fingere', r.status === 500, String(r.status));
+
+console.log('\nLA FASCIA DI SILENZIO ARRIVA AL SERVER');
+e = env();
+await worker.fetch(POST(piano({ silenzio: { on: true, da: '23:00', a: '07:00' } })), e);
+rec = JSON.parse(e.PROMEMORIA.m.get('d:dprova123'));
+ok('la fascia è nel record', rec.silenzio && rec.silenzio.da === '23:00', JSON.stringify(rec.silenzio));
+await worker.fetch(POST(piano({ silenzio: { on: true, da: 'boh', a: '07:00' } })), e);
+ok('una fascia scritta male non passa',
+  JSON.parse(e.PROMEMORIA.m.get('d:dprova123')).silenzio === null);
+
 console.log('\nPIÙ DI UN DISPOSITIVO');
 e = env();
 for (const id of ['dtel1', 'dtel2', 'dtel3']) await worker.fetch(POST(piano({ id })), e);

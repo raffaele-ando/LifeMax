@@ -1075,35 +1075,6 @@
     }
     var n = P.piano().filter(function (v) { return v.id !== 'stato'; }).length;
 
-    /* LA NOTA FISSA — e cosa si può davvero fare.
-       Si può: una notifica sola, che si riscrive al posto di quella di prima e
-       non fa rumore quando lo fa, e resta nell'elenco delle notifiche finché
-       non la scarti tu. Più il numero sul pallino dell'icona.
-       Non si può: una notifica che non si possa scartare, come quella di un
-       navigatore. Su Android serve un servizio in primo piano, sull'iPhone una
-       Live Activity: le può avere solo un'app installata dallo store. Meglio
-       dirlo che far cercare un interruttore che non esiste. */
-    var fissa = '';
-    if (st === 'granted') {
-      var accesa = P.fissaAccesa();
-      var t = P.testoFissa();
-      fissa = '<div class="imp-sotto-sez">' +
-        '<div class="imp-riga-int">' +
-          '<div class="imp-riga-testo"><b>' + ICO('notaFissa', 13) + ' Tienimi una nota fissa</b>' +
-          '<span class="imp-nota">Una notifica sola, sempre la stessa, con quello che ti resta oggi. ' +
-          'Si riscrive in silenzio e resta lì finché non la scarti tu. ' +
-          'Sull’icona compare il numero delle cose aperte.</span></div>' +
-          '<button class="btn btn-mini' + (accesa ? '' : ' btn-tinta') + '" id="imp-prom-fissa">' +
-            ICO(accesa ? 'x' : 'notaFissa', 15) + (accesa ? ' Togli' : ' Accendi') + '</button>' +
-        '</div>' +
-        (accesa ? '<div class="imp-anteprima">' + ICO('campana', 13) +
-          '<span><b>' + esc(t.titolo) + '</b><br>' + esc(t.corpo) + '</span></div>' : '') +
-        '<div class="imp-nota">Una notifica che non si può scartare — come quella di un ' +
-        'navigatore — sul web non esiste: la può avere solo un’app scaricata dallo store. ' +
-        'Questa si scarta, ma torna da sé il giorno dopo.</div>' +
-      '</div>';
-    }
-
     return '<div class="imp-sezione"><div class="imp-eti">Promemoria</div>' +
       '<div class="imp-nota">' + esc(riga) + '</div>' +
       (azione ? '<div class="imp-azioni mt-s">' + azione + '</div>' : '') +
@@ -1113,8 +1084,257 @@
         ? '<div class="imp-nota">Oggi ne restano <b>' + n + '</b>: ' +
           esc(P.piano().filter(function (v) { return v.id !== 'stato'; })
             .map(function (v) { return v.ora + ' ' + v.titolo; }).join(' · ')) + '</div>' : '') +
-      fissa +
+      /* Tutto il resto sta in una schermata sua: qui dentro sarebbero venti
+         righe di interruttori in mezzo al tema e ai backup, e la sezione
+         «Promemoria» diventerebbe più lunga di tutte le altre insieme. */
+      (st === 'granted' || st === 'default'
+        ? '<div class="imp-azioni mt-s"><button class="btn btn-mini" id="imp-prom-come">' +
+          ICO('ingranaggio', 15) + ' Come ti avviso' + ICO('arrowRight', 13) + '</button></div>' : '') +
       '</div>';
+  }
+
+  /* COME TI AVVISO — la schermata dove si sceglie tutto.
+     Sta a parte per un motivo che non è di spazio: qui si decide quando una
+     macchina ha il permesso di interromperti, e quella decisione merita una
+     schermata sola invece di essere infilata fra il tema e i backup. */
+  function apriPromemoria() {
+    var P = window.LM_PROMEMORIA;
+    var c = LM.promemoria();
+    var conf = P && P.configurato();
+
+    function riga(id, nome, spiega) {
+      var v = c.voci[id] || {};
+      return '<div class="prom-riga' + (v.on ? '' : ' spenta') + '" data-voce="' + id + '">' +
+        '<button class="prom-int" data-int="' + id + '" role="switch" aria-checked="' + !!v.on + '" ' +
+          'aria-label="' + esc(nome) + (v.on ? ', acceso' : ', spento') + '">' +
+          ICO(v.on ? 'check' : 'x', 13) + '</button>' +
+        '<div class="prom-testo"><b>' + esc(nome) + '</b><span>' + spiega + '</span></div>' +
+        (v.ora != null
+          ? '<input type="time" class="prom-ora" data-ora="' + id + '" value="' + esc(v.ora) + '" ' +
+            'aria-label="A che ora, ' + esc(nome) + '"' + (v.on ? '' : ' disabled') + '>'
+          : '<span class="prom-ora-no">l’ora di ognuna</span>') +
+        '</div>';
+    }
+
+    apriSheet('Come ti avviso',
+      /* IL POSTINO — prima cosa, perché senza questo il resto non parte */
+      '<div class="imp-sezione" style="padding-top:0"><div class="imp-eti">Il postino</div>' +
+        '<div class="imp-nota" style="margin-top:0">' +
+          (conf ? 'Collegato. Da qui si cambia, se serve.'
+                : 'Le notifiche a orario hanno bisogno di un piccolo servizio che stia sveglio: una pagina chiusa non si sveglia da sé. Si fa una volta, è gratis, e le istruzioni sono nel file <code>promemoria/LEGGIMI.md</code>.') +
+        '</div>' +
+        '<label class="campo mt-s" for="prom-server">Indirizzo</label>' +
+        '<input type="url" id="prom-server" inputmode="url" autocapitalize="off" spellcheck="false" ' +
+          'placeholder="https://lifemax-promemoria.tuonome.workers.dev" value="' + esc(c.server) + '">' +
+        '<label class="campo mt-s" for="prom-chiave">Chiave pubblica</label>' +
+        '<input type="text" id="prom-chiave" autocapitalize="off" spellcheck="false" ' +
+          'placeholder="B…" value="' + esc(c.chiave) + '">' +
+        '<div class="imp-azioni mt-s">' +
+          '<button class="btn btn-mini btn-tinta" id="prom-collega">' + ICO('cloudCheck', 15) + ' Collega</button>' +
+          (conf ? '<button class="btn btn-mini" id="prom-prova">' + ICO('campana', 15) + ' Mandamene una adesso</button>' : '') +
+        '</div>' +
+        '<div class="imp-nota" id="prom-esito"></div>' +
+        '<div class="imp-nota">La chiave <b>privata</b> non va qui e non va da nessuna parte: resta sul server. Se un campo te la chiede, è il campo sbagliato.</div>' +
+      '</div>' +
+
+      /* COSA TI ARRIVA */
+      '<div class="imp-sezione"><div class="imp-eti">Cosa ti arriva</div>' +
+        riga('mattina', 'Il piano del mattino', 'Solo se non l’hai già fatto.') +
+        riga('checkin', 'Il check-in', 'Solo se non ne hai ancora fatto uno.') +
+        riga('mit', 'La priorità del giorno', 'Un colpetto, se è ancora lì intatta.') +
+        riga('sera', 'La chiusura della giornata', 'Solo se non hai ancora chiuso.') +
+        riga('abitudini', 'Le abitudini con un’ora', 'Quelle senza orario non suonano mai.') +
+        '<div class="imp-nota">Spegnere un promemoria non cancella la cosa: la review della sera resta da fare, semplicemente non te lo dico io.</div>' +
+      '</div>' +
+
+      /* SILENZIO */
+      '<div class="imp-sezione"><div class="imp-eti">Silenzio</div>' +
+        '<div class="prom-riga' + (c.silenzio.on ? '' : ' spenta') + '">' +
+          '<button class="prom-int" id="prom-sil-int" role="switch" aria-checked="' + !!c.silenzio.on + '" ' +
+            'aria-label="Fascia di silenzio, ' + (c.silenzio.on ? 'accesa' : 'spenta') + '">' +
+            ICO(c.silenzio.on ? 'check' : 'x', 13) + '</button>' +
+          '<div class="prom-testo"><b>Non disturbarmi</b><span>Dentro questa fascia non arriva niente.</span></div>' +
+        '</div>' +
+        '<div class="prom-fascia mt-s">' +
+          '<label class="campo" for="prom-sil-da">Da</label>' +
+          '<input type="time" class="prom-t" id="prom-sil-da" value="' + esc(c.silenzio.da) + '"' + (c.silenzio.on ? '' : ' disabled') + '>' +
+          '<label class="campo" for="prom-sil-a">A</label>' +
+          '<input type="time" class="prom-t" id="prom-sil-a" value="' + esc(c.silenzio.a) + '"' + (c.silenzio.on ? '' : ' disabled') + '>' +
+        '</div>' +
+        '<div class="imp-nota">Un promemoria alle due di notte non si legge: sveglia, e insegna a spegnere tutto.</div>' +
+      '</div>' +
+
+      /* LA NOTA FISSA */
+      htmlNotaFissa(),
+      wirePromemoria, false, { nome: 'Come ti avviso', apri: apriPromemoria });
+  }
+
+  /* LA NOTA FISSA — e cosa si può davvero fare.
+     Si può: una notifica sola, che si riscrive al posto di quella di prima e
+     non fa rumore quando lo fa, e resta nell'elenco delle notifiche finché
+     non la scarti tu. Più il numero sul pallino dell'icona.
+     Non si può: una notifica che non si possa scartare, come quella di un
+     navigatore. Su Android serve un servizio in primo piano, sull'iPhone una
+     Live Activity: le può avere solo un'app installata dallo store. Meglio
+     dirlo che far cercare un interruttore che non esiste. */
+  function htmlNotaFissa() {
+    var P = window.LM_PROMEMORIA;
+    if (!P || P.stato() !== 'granted') return '';
+    var accesa = P.fissaAccesa();
+    var t = P.testoFissa();
+    return '<div class="imp-sezione"><div class="imp-eti">La nota che resta</div>' +
+      '<div class="prom-riga' + (accesa ? '' : ' spenta') + '">' +
+        '<button class="prom-int" id="imp-prom-fissa" role="switch" aria-checked="' + accesa + '" ' +
+          'aria-label="Nota fissa, ' + (accesa ? 'accesa' : 'spenta') + '">' +
+          ICO(accesa ? 'check' : 'x', 13) + '</button>' +
+        '<div class="prom-testo"><b>' + ICO('notaFissa', 13) + ' Tienimi una nota fissa</b>' +
+        '<span>Una notifica sola, sempre la stessa, con quello che ti resta oggi. ' +
+        'Si riscrive in silenzio e resta lì finché non la scarti tu. ' +
+        'Sull’icona compare il numero delle cose aperte.</span></div>' +
+      '</div>' +
+      (accesa ? '<div class="imp-anteprima">' + ICO('campana', 13) +
+        '<span><b>' + esc(t.titolo) + '</b><br>' + esc(t.corpo) + '</span></div>' : '') +
+      '<div class="imp-nota">Una notifica che non si può scartare — come quella di un ' +
+      'navigatore — sul web non esiste: la può avere solo un’app scaricata dallo store. ' +
+      'Questa si scarta, ma torna da sé il giorno dopo.</div>' +
+      '</div>';
+  }
+
+  function wirePromemoria(root) {
+    var P = window.LM_PROMEMORIA;
+    function ridisegna() { staTornandoSheet = true; apriPromemoria(); staTornandoSheet = false; }
+    /* dopo ogni cambiamento il piano va rimandato subito: aspettare il
+       prossimo salvataggio vorrebbe dire che l'orario nuovo vale da domani */
+    function salva(patch) { LM.impostaPromemoria(patch); if (P) P.mandaPiano(true); }
+
+    /* gli interruttori delle voci */
+    root.querySelectorAll('[data-int]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var id = b.getAttribute('data-int');
+        var era = LM.promemoria().voci[id].on;
+        var patch = { voci: {} }; patch.voci[id] = { on: !era };
+        salva(patch);
+        ridisegna();
+      });
+    });
+    /* gli orari: si salvano quando il campo si chiude, non a ogni tasto */
+    root.querySelectorAll('[data-ora]').forEach(function (i) {
+      i.addEventListener('change', function () {
+        var id = i.getAttribute('data-ora');
+        if (!/^([01][0-9]|2[0-3]):[0-5][0-9]$/.test(i.value)) {
+          /* un campo ora svuotato rimette quello di prima invece di lasciare
+             una voce senza orario, che non partirebbe mai */
+          i.value = LM.promemoria().voci[id].ora;
+          toast('L’ora deve essere scritta per intero.', 0, 'avviso');
+          return;
+        }
+        var patch = { voci: {} }; patch.voci[id] = { ora: i.value };
+        salva(patch);
+        toast('Da domani alle ' + i.value + '.', 0, 'clock');
+      });
+    });
+
+    /* il silenzio */
+    var si = root.querySelector('#prom-sil-int');
+    if (si) si.addEventListener('click', function () {
+      salva({ silenzio: { on: !LM.promemoria().silenzio.on } });
+      ridisegna();
+    });
+    ['da', 'a'].forEach(function (q) {
+      var i = root.querySelector('#prom-sil-' + q);
+      if (!i) return;
+      i.addEventListener('change', function () {
+        var patch = { silenzio: {} }; patch.silenzio[q] = i.value;
+        salva(patch);
+        var c = LM.promemoria().silenzio;
+        i.value = q === 'da' ? c.da : c.a;
+      });
+    });
+
+    /* la nota fissa */
+    var pf = root.querySelector('#imp-prom-fissa');
+    if (pf) pf.addEventListener('click', function () {
+      var era = P.fissaAccesa();
+      P.fissa(!era);
+      P.mandaPiano(true);
+      ridisegna();
+    });
+
+    /* IL POSTINO */
+    var esito = root.querySelector('#prom-esito');
+    function dillo(testo, cls) {
+      if (!esito) return;
+      esito.className = 'imp-nota' + (cls ? ' ' + cls : '');
+      esito.innerHTML = testo;
+    }
+    var coll = root.querySelector('#prom-collega');
+    if (coll) coll.addEventListener('click', function () {
+      var srv = (root.querySelector('#prom-server').value || '').trim().replace(/\/+$/, '');
+      var kk = (root.querySelector('#prom-chiave').value || '').trim();
+      /* si controlla PRIMA di salvare: due campi sbagliati salvati zitti
+         danno «non arriva niente» e nessun indizio su quale dei due */
+      if (!/^https:\/\/[^\s/]+\.[^\s/]+/.test(srv)) {
+        dillo('L’indirizzo deve cominciare con <code>https://</code> — è quello che stampa Cloudflare alla fine, e finisce per <code>.workers.dev</code> se non hai messo un dominio tuo.', 'sync-errore');
+        return;
+      }
+      if (!/^[A-Za-z0-9_-]{80,90}$/.test(kk)) {
+        dillo('La chiave pubblica è una riga di 87 caratteri senza spazi. Questa ne ha ' + kk.length + ': forse è quella privata (più corta), o c’è dentro un pezzo di testo.', 'sync-errore');
+        return;
+      }
+      coll.disabled = true;
+      dillo('Sto provando a parlargli…');
+      /* prima si chiede al server se è vivo: così l'errore è «il server non
+         risponde» invece di «le notifiche non arrivano», che è la stessa cosa
+         detta in un modo che non aiuta */
+      fetch(srv + '/salute').then(function (r) { return r.json(); }).then(function (j) {
+        if (!j || !j.ok) throw new Error('risposta strana');
+        LM.impostaPromemoria({ server: srv, chiave: kk });
+        if (!j.vapid) {
+          dillo('Il server risponde, ma non ha le sue chiavi: sul pannello di Cloudflare mancano i tre segreti <code>VAPID_*</code>. Il resto è a posto.', 'sync-errore');
+        } else {
+          dillo('Collegato.', 'sync-ok');
+        }
+        return P.accendi();
+      }).then(function (esito) {
+        if (esito === 'chiave') {
+          dillo('Il server c’è, ma quella chiave il browser non la accetta: è della lunghezza giusta ma non è una chiave vera. Rigenera la coppia con <code>promemoria/chiavi.html</code> e ricorda di rimettere <b>tutti e due</b> i segreti su Cloudflare — devono essere la stessa coppia.', 'sync-errore');
+          return;
+        }
+        if (esito === 'negato') {
+          dillo('Il server è collegato, ma il permesso alle notifiche è negato: va riattivato dalle impostazioni del browser, alla voce di questo indirizzo.', 'sync-errore');
+          return;
+        }
+        ridisegna();
+      }).catch(function (e) {
+        coll.disabled = false;
+        dillo('Non risponde. Controlla l’indirizzo, e prova ad aprirlo nel browser aggiungendo <code>/salute</code> alla fine: deve rispondere <code>{"ok":true}</code>.', 'sync-errore');
+      });
+    });
+
+    var pv = root.querySelector('#prom-prova');
+    if (pv) pv.addEventListener('click', function () {
+      pv.disabled = true;
+      dillo('Sto mandando…');
+      /* mandare il piano prima serve: se l'iscrizione è nuova, sul server non
+         c'è ancora niente a cui mandare la prova */
+      P.mandaPiano(true).then(function () {
+        return fetch(P.cfg().server + '/prova', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: P.idDispositivo() })
+        });
+      }).then(function (r) {
+        return r.json().then(function (j) { return { r: r, j: j }; });
+      }).then(function (x) {
+        pv.disabled = false;
+        if (x.r.ok) dillo('Partita. Se non la vedi entro qualche secondo, il permesso c’è ma il sistema la sta nascondendo: controlla le notifiche di LifeMax nelle impostazioni del telefono.', 'sync-ok');
+        else if (x.r.status === 404) dillo('Il server non ha ancora un piano per questo dispositivo: spegni e riaccendi i promemoria qui sopra.', 'sync-errore');
+        else if (x.r.status === 410) dillo('L’iscrizione non vale più (di solito: notifiche revocate, o app reinstallata). Spegni e riaccendi i promemoria.', 'sync-errore');
+        else dillo('Il server ha risposto: ' + esc(String((x.j && x.j.errore) || x.r.status)), 'sync-errore');
+      }).catch(function () {
+        pv.disabled = false;
+        dillo('Non ci sono riuscito: il server non risponde.', 'sync-errore');
+      });
+    });
   }
 
   function htmlDati() {
@@ -1179,20 +1399,16 @@
     if (pon) pon.addEventListener('click', function () {
       pon.disabled = true;
       window.LM_PROMEMORIA.accendi().then(function (esito) {
-        if (esito === 'negato') toast('Il permesso è stato negato: senza quello non arrivano notifiche.', 0, 'campana');
+        if (esito === 'negato') toast('Il permesso è stato negato: senza quello non arrivano notifiche.', 0, 'avviso');
+        else if (esito === 'chiave') toast('La chiave pubblica non va bene: guarda in «Come ti avviso».', 0, 'avviso');
+        else if (esito === 'server') toast('Il permesso c’è, ma il server non risponde: guarda in «Come ti avviso».', 0, 'avviso');
         else if (!window.LM_PROMEMORIA.configurato()) toast('Fatto. Per adesso arriva la fine del timer.', 0, 'campana');
         else toast('Promemoria accesi.', 0, 'campana');
         riscriviImpostazioni();
       });
     });
-    var pf = root.querySelector('#imp-prom-fissa');
-    if (pf) pf.addEventListener('click', function () {
-      var era = window.LM_PROMEMORIA.fissaAccesa();
-      window.LM_PROMEMORIA.fissa(!era);
-      window.LM_PROMEMORIA.mandaPiano(true);
-      toast(era ? 'Nota fissa via.' : 'Nota fissa accesa: la trovi fra le notifiche.', 0, era ? 'x' : 'notaFissa');
-      riscriviImpostazioni();
-    });
+    var pc = root.querySelector('#imp-prom-come');
+    if (pc) pc.addEventListener('click', apriPromemoria);
     var poff = root.querySelector('#imp-prom-off');
     if (poff) poff.addEventListener('click', function () {
       poff.disabled = true;

@@ -2,7 +2,17 @@
 
 **Se non vuoi leggere niente:** [le istruzioni cliccabili sono qui sotto, dal
 punto 1](#cosa-devi-fare). Non serve il terminale, non serve installare nulla,
-non serve capire il codice. Sono cinque cose da fare col mouse.
+non serve capire il codice. Sono sei cose da fare col mouse.
+
+Tre risposte veloci, prima:
+
+- **Il sito resta su GitHub Pages.** Il Worker non lo ospita: è solo una
+  sveglia che sta da un'altra parte. Non serve Cloudflare Pages.
+- **Con un dominio tuo funziona**, ma prima esporta i dati: per il browser un
+  indirizzo nuovo è un sito nuovo. [Dettagli qui sotto](#il-sito-resta-dovè).
+- **Cambiare idea sui promemoria non richiede di rifare niente su Cloudflare.**
+  Orari, interruttori e silenzio si cambiano dall'app; un tipo nuovo si
+  aggiunge nel codice del sito. [Perché](#se-cambio-idea).
 
 ---
 
@@ -132,36 +142,100 @@ Se `vapid` è `false`, i tre segreti del passo 4 non sono arrivati.
 
 ---
 
-## Cosa mandarmi
+### 6 · Dillo all'app
 
-Due righe, e sono entrambe pubbliche:
+Non serve mandarmi niente e non serve toccare il codice.
 
-1. l'**indirizzo del Worker** (`https://….workers.dev`)
-2. la **chiave pubblica** VAPID
+> **Impostazioni → Promemoria → Come ti avviso**
 
-Le metto in `assets/promemoria.js` e i promemoria si accendono da
-**Impostazioni → Promemoria**.
+In cima ci sono due campi: **Indirizzo** (quello del punto 2) e **Chiave
+pubblica** (quella del punto 4). Premi **Collega**.
 
-**La chiave privata no.** Se te la chiedo, ho sbagliato: non serve e non deve
-passare da qui.
+L'app prima chiede al server se è vivo, e poi dice cosa non torna: se
+l'indirizzo è scritto male, se la chiave non è una chiave, se il server
+risponde ma non ha i suoi segreti. Un campo sbagliato non viene salvato in
+silenzio.
 
-### Se vuoi provare senza aspettarmi
+Poi premi **Mandamene una adesso**: arriva una notifica di prova, subito. È
+il modo di sapere che funziona senza aspettare le 08:30 di domani.
 
-Nell'app, apri la console del browser e incolla:
+Le due cose che scrivi lì stanno nei tuoi dati, non nel telefono: se accedi
+con Google le ritrovi anche sull'altro dispositivo, e finiscono
+nell'esportazione insieme a tutto il resto.
 
-```js
-localStorage.setItem('lifemax.promemoria.cfg', JSON.stringify({
-  server: 'https://lifemax-promemoria.tuonome.workers.dev',
-  chiave: 'LA-TUA-CHIAVE-PUBBLICA'
-}));
-location.reload();
-```
+**La chiave privata non va in nessuno dei due campi.** Se un campo te la
+chiede, è il campo sbagliato.
 
-Poi **Impostazioni → Promemoria → Accendi i promemoria**.
+---
+
+## Il sito resta dov'è
+
+**GitHub Pages va benissimo, e non cambia niente.** Il Worker non ospita il
+sito: è solo una sveglia che sta da un'altra parte. Il sito continua a stare su
+GitHub Pages, il Worker su Cloudflare, e si parlano quando serve.
+
+Non serve Cloudflare Pages. Non serve spostare niente.
+
+### Con un dominio tuo
+
+Funziona, ma c'è una cosa da sapere prima di farlo, perché non è ovvia.
+
+Il permesso alle notifiche, l'iscrizione al servizio push e **tutti i tuoi
+dati** sono legati all'**indirizzo** del sito. Per il browser
+`raffaele-ando.github.io/lifemax/` e `lifemax.tuodominio.it` sono due siti
+diversi, anche se il contenuto è identico. Quindi, cambiando indirizzo:
+
+- il permesso va dato di nuovo;
+- l'iscrizione si rifà da sola alla prima accensione (quella vecchia sul server
+  scade e viene buttata: è previsto);
+- sull'iPhone va **ri-aggiunto alla schermata Home**;
+- e soprattutto: **i dati non si spostano da soli.** Sono nel browser, sotto il
+  vecchio indirizzo.
+
+Quindi, prima di cambiare: **Impostazioni → I tuoi dati → Esporta**, e dal
+nuovo indirizzo **Importa**. Oppure accedi con Google prima e dopo, e li
+ritrovi.
+
+L'indirizzo del **Worker** invece non c'entra: quello resta uguale, e non va
+ritoccato.
+
+---
+
+## Se cambio idea
+
+**Aggiungere, togliere o cambiare un promemoria non richiede di rifare niente
+su Cloudflare.** È il motivo per cui è fatto così.
+
+Il Worker non sa cosa sono un check-in o un'abitudine. Riceve una lista di
+«alle 08:30 dì questo, e porta a quella schermata» e la spedisce all'ora
+giusta. Chi decide *cosa* c'è in quella lista è l'app, e l'app viaggia col
+sito: la aggiorni pubblicando su GitHub Pages, come qualsiasi altra modifica.
+
+Quindi:
+
+| se vuoi | dove si cambia | Cloudflare |
+|---|---|---|
+| accendere o spegnere un promemoria | Impostazioni → Come ti avviso | — |
+| cambiare l'ora di uno | Impostazioni → Come ti avviso | — |
+| la fascia di silenzio | Impostazioni → Come ti avviso | — |
+| la nota fissa | Impostazioni → Come ti avviso | — |
+| **un tipo di promemoria nuovo** | `piano()` in `assets/promemoria.js` | — |
+| **cambiare il testo di uno** | `assets/promemoria.js` | — |
+| un pulsante *dentro* la notifica | `assets/promemoria.js` + `sw.js` | — |
+
+L'unico caso che tocca il Worker è aggiungere un **campo nuovo** al pacchetto
+(oggi passano: titolo, corpo, dove andare, tag, tipo, il numero per l'icona).
+Il Worker controlla i campi uno per uno di proposito — così quello che arriva
+da fuori non può inventarsi cose — quindi un campo nuovo va aggiunto anche là,
+si rifà `impacchetta.mjs` e si reincolla. È l'unico caso, e non capita
+cambiando idea su *quando* essere avvisati.
 
 ---
 
 ## Cosa ti arriva
+
+Gli orari qui sotto sono quelli di partenza: **si cambiano dall'app**, in
+Impostazioni → Come ti avviso, e ognuno si può anche spegnere.
 
 | quando | cosa |
 |---|---|
@@ -171,6 +245,13 @@ Poi **Impostazioni → Promemoria → Accendi i promemoria**.
 | 16:30 | la priorità del giorno, se è ancora lì intatta |
 | 21:30 | «Com'è andata oggi» — se non hai chiuso la giornata |
 | l'ora che hai messo tu | le abitudini a cui hai dato un orario |
+
+Più una **fascia di silenzio** (di partenza 23:00 → 07:00): dentro quella non
+arriva niente, nemmeno un promemoria in ritardo che ci finirebbe dentro in
+punta di piedi.
+
+Spegnere un promemoria **non cancella la cosa**: la review della sera resta da
+fare, semplicemente non te lo dice nessuno.
 
 Le abitudini senza orario non suonano mai, di proposito. Una notifica per
 ognuna diventa rumore che si impara a ignorare in tre giorni, e da quel momento
@@ -247,6 +328,9 @@ senza che nessuno se ne ricordi.
 
 - `https://…workers.dev/salute` → deve dire `{"ok":true,"vapid":true}`. Se
   `vapid` è `false`, rifai il passo 4.
+- **Impostazioni → Come ti avviso → Mandamene una adesso.** È la prima cosa
+  da provare: dice se il problema è il server, l'iscrizione o il permesso,
+  invece di lasciarti indovinare.
 - Su Cloudflare, in `lifemax-promemoria`: scheda **Logs** → **Begin log
   stream**, e aspetta. Ogni giro stampa `giro: N dispositivi, M notifiche`. Se
   N è 0, il piano non è mai arrivato: controlla che in **Impostazioni →

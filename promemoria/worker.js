@@ -20,7 +20,7 @@
    a due ordini di grandezza sotto.  Istruzioni: promemoria/LEGGIMI.md */
 
 import { manda } from './push.js';
-import { dovute, potaSegni, endpointValido } from './piano.js';
+import { dovute, potaSegni, endpointValido, minutiDaOra } from './piano.js';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -61,6 +61,11 @@ async function riceviPiano(req, env) {
     iscrizione: { endpoint: isc.endpoint, keys: { p256dh: isc.keys.p256dh, auth: isc.keys.auth } },
     fuso: String(b.fuso || 'Europe/Rome').slice(0, 64),
     giorno: giorno,
+    /* la fascia in cui non arriva niente. Passa solo se sono due orari veri:
+       una fascia scritta male vorrebbe dire o silenzio sempre o mai, e in
+       entrambi i casi senza che si capisca perché. */
+    silenzio: (b.silenzio && minutiDaOra(b.silenzio.da) !== null && minutiDaOra(b.silenzio.a) !== null)
+      ? { on: !!b.silenzio.on, da: String(b.silenzio.da), a: String(b.silenzio.a) } : null,
     /* il numero da mettere sull'icona: lo conta l'app, che sa che cosa hai
        ancora aperto oggi. Qui viaggia solo per essere rispedito. */
     numero: Number.isFinite(b.numero) && b.numero >= 0 && b.numero < 1000 ? Math.floor(b.numero) : null,
@@ -144,6 +149,39 @@ export default {
       await env.PROMEMORIA.delete('d:' + id);
       return risposta({ ok: true });
     }
+    /* MANDAMENE UNA ADESSO.
+       È lo strumento che serve a chi installa da solo: senza, l'unico modo di
+       sapere se la catena funziona è aspettare le 08:30 di domani e vedere se
+       succede qualcosa. Non decide niente e non scrive niente — prende
+       l'iscrizione che c'è già in KV e ci manda una notifica sola. Se non c'è
+       un piano per quell'id, non c'è nulla a cui mandarla. */
+    if (req.method === 'POST' && u.pathname === '/prova') {
+      let b;
+      try { b = await req.json(); } catch (e) { return risposta({ errore: 'json' }, 400); }
+      const id = idPulito(b && b.id);
+      if (!id) return risposta({ errore: 'id' }, 400);
+      const rec = await leggi(env, id);
+      if (!rec || !rec.iscrizione) return risposta({ errore: 'nessun piano per questo dispositivo' }, 404);
+      if (!env.VAPID_PUBBLICA || !env.VAPID_PRIVATA) return risposta({ errore: 'manca la coppia VAPID' }, 500);
+      let stato = 0;
+      try {
+        stato = await manda(rec.iscrizione, {
+          titolo: 'Prova riuscita', corpo: 'I promemoria arrivano. Questa è l’unica di prova.',
+          vai: '#/oggi', tag: 'lm-prova', numero: rec.numero
+        }, {
+          pubblica: env.VAPID_PUBBLICA, privata: env.VAPID_PRIVATA,
+          soggetto: env.VAPID_SOGGETTO || 'mailto:promemoria@lifemax.invalid'
+        }, { ttl: 60, urgenza: 'high' });
+      } catch (e) { return risposta({ errore: 'invio: ' + e.message }, 502); }
+      /* 404 e 410 vogliono dire che l'iscrizione non vale più: dirlo qui
+         serve, perché è esattamente il caso in cui «non arriva niente» */
+      if (stato === 404 || stato === 410) {
+        await env.PROMEMORIA.delete('d:' + id);
+        return risposta({ errore: 'iscrizione scaduta: riaccendi i promemoria', stato: stato }, 410);
+      }
+      return risposta({ ok: stato >= 200 && stato < 300, stato: stato }, stato >= 200 && stato < 300 ? 200 : 502);
+    }
+
     /* una porta per capire se è vivo, senza dire niente di privato */
     if (u.pathname === '/salute') return risposta({ ok: true, vapid: !!env.VAPID_PUBBLICA });
     return risposta({ errore: 'niente qui' }, 404);

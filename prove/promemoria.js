@@ -45,6 +45,41 @@ const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  
     }
     navigator.setAppBadge = function (n) { window.__badge = n; return Promise.resolve(); };
     navigator.clearAppBadge = function () { window.__badge = 0; return Promise.resolve(); };
+
+    /* UN FINTO PUSHMANAGER.
+       Un'iscrizione vera non si può fare qui: il browser di prova gira in un
+       contesto incognito, dove Chrome non ha il Push API, e anche se l'avesse
+       `subscribe()` andrebbe a chiedere un indirizzo al servizio push di
+       Google — cioè servirebbe la rete e un progetto Firebase per provare del
+       codice nostro. Quindi si finge il pezzo del browser e si prova il pezzo
+       nostro: quando si iscrive, quando butta l'iscrizione di prima, e cosa
+       dice quando la chiave non va.
+       La finzione è fedele in un punto che conta: rifiuta una chiave che non è
+       un punto sulla curva, esattamente come fa quello vero. È il caso in cui
+       la chiave ha la lunghezza giusta e sembra buona. */
+    if (window.PushManager) {
+      window.__push = { iscrizioni: [], disiscritte: 0 };
+      let corrente = null;
+      const b64 = (u) => { let s = ''; new Uint8Array(u).forEach(x => { s += String.fromCharCode(x); });
+        return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); };
+      PushManager.prototype.getSubscription = function () { return Promise.resolve(corrente); };
+      PushManager.prototype.subscribe = async function (o) {
+        const k = new Uint8Array(o.applicationServerKey);
+        try {
+          await crypto.subtle.importKey('raw', k, { name: 'ECDH', namedCurve: 'P-256' }, false, []);
+        } catch (e) {
+          throw new DOMException('The provided applicationServerKey is not valid.', 'InvalidAccessError');
+        }
+        const chiave = b64(k);
+        window.__push.iscrizioni.push(chiave);
+        corrente = {
+          endpoint: 'https://fcm.googleapis.com/fcm/send/finta-' + window.__push.iscrizioni.length,
+          toJSON: () => ({ endpoint: corrente.endpoint, keys: { p256dh: 'B'.repeat(87), auth: 'A'.repeat(22) } }),
+          unsubscribe: () => { window.__push.disiscritte++; corrente = null; return Promise.resolve(true); }
+        };
+        return corrente;
+      };
+    }
     if (window.Notification) {
       const N = window.Notification;
       window.Notification = function (t, o) { window.__notifiche.push({ titolo: t, opz: o }); };
@@ -263,6 +298,160 @@ const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  
   await p.evaluate(() => { window.__badge = null; LM_PROMEMORIA.spegni(); });
   await p.waitForTimeout(300);
   ok('spegnendo tutto il pallino si toglie', (await badge()) === 0, String(await badge()));
+
+  console.log('\nLE SCELTE SONO TUE, E STANNO COI TUOI DATI');
+  await p.evaluate(() => { localStorage.clear(); LM.seedDemo(); });
+  await p.reload(); await p.waitForTimeout(900);
+  const cfg = () => p.evaluate(() => LM.promemoria());
+  let c = await cfg();
+  ok('la configurazione esiste già alla prima apertura', !!c && !!c.voci, JSON.stringify(c && c.voci && Object.keys(c.voci)));
+  ok('tutte le voci partono accese', Object.keys(c.voci).every(k => c.voci[k].on === true));
+  ok('la nota fissa parte spenta', c.fissa === false);
+  ok('il silenzio parte acceso di notte', c.silenzio.on === true && c.silenzio.da === '23:00', JSON.stringify(c.silenzio));
+  /* stanno nei dati, quindi finiscono nell'esportazione e nel cloud: un
+     backup che non contiene com'era configurato non è un backup */
+  ok('e stanno dentro i dati, non nel dispositivo',
+    await p.evaluate(() => { const j = JSON.parse(LM.esportaJSON ? LM.esportaJSON() : JSON.stringify(LM.load()));
+      return !!(j.profilo && j.profilo.promemoria); }));
+
+  console.log('\nSPEGNERE UNA VOCE');
+  const idPiano = () => p.evaluate(() => LM_PROMEMORIA.piano().map(v => v.id));
+  ok('prima c’è la sera', (await idPiano()).includes('sera'), JSON.stringify(await idPiano()));
+  const apertePrima = (await conto()).n;
+  await p.evaluate(() => LM.impostaPromemoria({ voci: { sera: { on: false } } }));
+  await p.waitForTimeout(300);
+  ok('spenta, esce dal piano', !(await idPiano()).includes('sera'), JSON.stringify(await idPiano()));
+  /* la distinzione che conta: spegnere il promemoria non cancella la cosa */
+  ok('ma resta fra le cose aperte: non te l’ho cancellata', (await conto()).n === apertePrima, (await conto()).n + ' vs ' + apertePrima);
+  await p.evaluate(() => LM.impostaPromemoria({ voci: { sera: { on: true } } }));
+
+  console.log('\nCAMBIARE UN’ORA');
+  await p.evaluate(() => LM.impostaPromemoria({ voci: { mattina: { ora: '06:45' } } }));
+  await p.waitForTimeout(200);
+  ok('il piano usa l’ora nuova',
+    (await p.evaluate(() => (LM_PROMEMORIA.piano().find(v => v.id === 'mattina') || {}).ora)) === '06:45');
+  await p.evaluate(() => LM.impostaPromemoria({ voci: { mattina: { ora: '25:99' } } }));
+  ok('un’ora impossibile non passa', (await cfg()).voci.mattina.ora === '06:45', (await cfg()).voci.mattina.ora);
+  await p.evaluate(() => LM.impostaPromemoria({ voci: { mattina: { ora: '' } } }));
+  ok('e nemmeno una vuota', (await cfg()).voci.mattina.ora === '06:45');
+  await p.evaluate(() => LM.impostaPromemoria({ voci: { abitudini: { ora: '09:00' } } }));
+  ok('le abitudini non prendono un’ora comune: ognuna ha la sua',
+    (await cfg()).voci.abitudini.ora === undefined);
+  await p.evaluate(() => LM.impostaPromemoria({ voci: { inventata: { on: true } } }));
+  ok('una voce inventata non entra', (await cfg()).voci.inventata === undefined);
+
+  console.log('\nIL SILENZIO VIAGGIA COL PIANO');
+  await p.evaluate(() => LM.impostaPromemoria({ silenzio: { on: true, da: '22:30', a: '08:15' } }));
+  c = await cfg();
+  ok('si salva', c.silenzio.da === '22:30' && c.silenzio.a === '08:15', JSON.stringify(c.silenzio));
+  await p.evaluate(() => LM.impostaPromemoria({ silenzio: { da: 'boh' } }));
+  ok('scritto male non passa', (await cfg()).silenzio.da === '22:30');
+
+  console.log('\nIL POSTINO SI SCRIVE DALL’APP');
+  /* una chiave vera, generata qui: `'B'.repeat(87)` ha la lunghezza giusta ma
+     non è un punto sulla curva, e il browser la rifiuta — cioè proverebbe la
+     strada sbagliata credendo di provare quella buona */
+  const chiaveVera = await p.evaluate(async () => {
+    const c = await crypto.subtle.generateKey({ name: 'ECDSA', namedCurve: 'P-256' }, true, ['sign', 'verify']);
+    const u = new Uint8Array(await crypto.subtle.exportKey('raw', c.publicKey));
+    let s = ''; u.forEach(b => { s += String.fromCharCode(b); });
+    return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  });
+  await p.evaluate(k => LM.impostaPromemoria({ server: 'https://prova.workers.dev/', chiave: k }), chiaveVera);
+  c = await cfg();
+  ok('l’indirizzo perde la barra finale', c.server === 'https://prova.workers.dev', c.server);
+  ok('e da lì lo legge il modulo', (await p.evaluate(() => LM_PROMEMORIA.cfg().server)) === 'https://prova.workers.dev');
+  ok('ora si dice configurato', (await p.evaluate(() => LM_PROMEMORIA.configurato())) === true);
+  await p.evaluate(() => LM.impostaPromemoria({ server: '', chiave: '' }));
+
+  console.log('\nCAMBIANDO LA CHIAVE, L’ISCRIZIONE SI RIFÀ');
+  /* Un'iscrizione vale per una chiave sola. Rigenerare le chiavi è la prima
+     cosa che si fa quando qualcosa non torna: se l'iscrizione di prima
+     restasse, il server firmerebbe con la nuova, il servizio push
+     risponderebbe 403 e sul telefono non arriverebbe niente — senza che
+     nessuno dica perché. */
+  /* si riparte da una configurazione buona: la sezione qui sopra la azzera
+     alla fine, e senza indirizzo `iscrivi()` non prova nemmeno */
+  await p.evaluate(k => LM.impostaPromemoria({ server: 'https://prova.workers.dev', chiave: k }), chiaveVera);
+  /* l'iscrizione si fa quando il piano parte, non quando si scrive la chiave */
+  await p.evaluate(() => LM_PROMEMORIA.mandaPiano(true));
+  await p.waitForTimeout(600);
+  ok('si è iscritta con la chiave che le hai dato',
+    (await p.evaluate(() => window.__push.iscrizioni[0])) === chiaveVera,
+    (await p.evaluate(() => (window.__push.iscrizioni[0] || '').slice(0, 12))) + '…');
+  ok('e si ricorda con quale',
+    (await p.evaluate(() => LM_PROMEMORIA.chiaveIscritta())) === chiaveVera);
+  const chiaveDue = await p.evaluate(async () => {
+    const c = await crypto.subtle.generateKey({ name: 'ECDSA', namedCurve: 'P-256' }, true, ['sign', 'verify']);
+    const u = new Uint8Array(await crypto.subtle.exportKey('raw', c.publicKey));
+    let s = ''; u.forEach(b => { s += String.fromCharCode(b); });
+    return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  });
+  await p.evaluate(k => LM.impostaPromemoria({ chiave: k }), chiaveDue);
+  await p.evaluate(() => LM_PROMEMORIA.mandaPiano(true));
+  await p.waitForTimeout(500);
+  ok('la vecchia iscrizione viene buttata',
+    (await p.evaluate(() => window.__push.disiscritte)) === 1, String(await p.evaluate(() => window.__push.disiscritte)));
+  ok('e se ne fa una nuova con la chiave nuova',
+    (await p.evaluate(() => window.__push.iscrizioni[1])) === chiaveDue,
+    (await p.evaluate(() => (window.__push.iscrizioni[1] || '').slice(0, 12))) + '…');
+  ok('l’app si ricorda quella nuova',
+    (await p.evaluate(() => LM_PROMEMORIA.chiaveIscritta())) === chiaveDue);
+
+  console.log('\nUNA CHIAVE CHE SEMBRA GIUSTA MA NON LO È');
+  /* Il caso peggiore: la lunghezza è quella, quindi passa il controllo del
+     campo, ma non è un punto sulla curva. Il browser rifiuta l'iscrizione, e
+     senza catturarlo l'errore finiva in console mentre l'app diceva «accesi».
+     Chi configura da solo non ha nessun modo di scoprirlo. */
+  await p.evaluate(() => LM.impostaPromemoria({ server: 'https://prova.workers.dev', chiave: 'B'.repeat(87) }));
+  const esitoFinto = await p.evaluate(() => LM_PROMEMORIA.accendi());
+  ok('l’app dice che è la chiave, invece di dire «accesi»', esitoFinto === 'chiave', String(esitoFinto));
+  ok('e non lascia un errore per terra', err.filter(e => /applicationServerKey/.test(e)).length === 0,
+    err.join(' | ') || 'nessuno');
+  await p.evaluate(() => LM.impostaPromemoria({ server: '', chiave: '' }));
+
+  console.log('\nCHI AVEVA GIÀ CONFIGURATO NON RIFÀ NIENTE');
+  /* le due chiavi stavano in localStorage: si travasano una volta e la vecchia
+     riga si cancella, o il travaso si rifarebbe a ogni avvio sovrascrivendo */
+  await p.evaluate(() => {
+    localStorage.setItem('lifemax.promemoria.cfg', JSON.stringify({ server: 'https://vecchio.workers.dev', chiave: 'K'.repeat(87) }));
+    localStorage.setItem('lifemax.promemoria.fissa', '1');
+  });
+  await p.reload(); await p.waitForTimeout(900);
+  c = await cfg();
+  ok('l’indirizzo di prima è arrivato nelle impostazioni', c.server === 'https://vecchio.workers.dev', c.server);
+  ok('e la nota fissa era accesa, e resta accesa', c.fissa === true);
+  ok('la vecchia riga è stata cancellata',
+    (await p.evaluate(() => localStorage.getItem('lifemax.promemoria.cfg'))) === null);
+  await p.evaluate(() => LM.impostaPromemoria({ server: 'https://nuovo.workers.dev' }));
+  await p.reload(); await p.waitForTimeout(900);
+  ok('e il travaso non si ripete sovrascrivendo quello nuovo',
+    (await cfg()).server === 'https://nuovo.workers.dev', (await cfg()).server);
+
+  console.log('\nDUE CAMPI SBAGLIATI NON SI SALVANO ZITTI');
+  await p.evaluate(() => { localStorage.clear(); LM.seedDemo(); });
+  await p.reload(); await p.waitForTimeout(900);
+  await p.evaluate(() => { location.hash = '#/oggi'; }); await p.waitForTimeout(500);
+  await p.evaluate(() => { document.querySelectorAll('button').forEach(b => { if (/Impostazioni/i.test(b.textContent)) b.click(); }); });
+  await p.waitForTimeout(400);
+  await p.evaluate(() => { const b = document.getElementById('imp-prom-come'); if (b) b.click(); });
+  await p.waitForTimeout(500);
+  ok('la schermata «Come ti avviso» si apre', await p.evaluate(() => !!document.getElementById('prom-collega')));
+  const collega = async (srv, kk) => {
+    await p.evaluate(x => {
+      document.getElementById('prom-server').value = x.s;
+      document.getElementById('prom-chiave').value = x.k;
+      document.getElementById('prom-collega').click();
+    }, { s: srv, k: kk });
+    await p.waitForTimeout(300);
+    return p.evaluate(() => (document.getElementById('prom-esito') || {}).textContent || '');
+  };
+  let m = await collega('lifemax.workers.dev', 'B'.repeat(87));
+  ok('un indirizzo senza https viene rifiutato', /https/.test(m), m.slice(0, 70));
+  ok('e non viene salvato', (await cfg()).server === '', (await cfg()).server);
+  m = await collega('https://x.workers.dev', 'troppocorta');
+  ok('una chiave corta viene rifiutata, e lo dice', /caratteri|privata/i.test(m), m.slice(0, 90));
+  ok('e nemmeno quella viene salvata', (await cfg()).chiave === '');
 
   console.log('\nTOCCANDOLA, L’APP CI PORTA');
   await p.evaluate(() => { location.hash = '#/andamento'; }); await p.waitForTimeout(400);

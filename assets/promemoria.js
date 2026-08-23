@@ -22,17 +22,51 @@
     chiave: ''       /* la chiave pubblica VAPID, base64url */
   };
 
-  /* Si può anche riempire da fuori senza toccare il file, utile per provare
-     prima di scriverlo qui dentro:
-       localStorage.setItem('lifemax.promemoria.cfg',
-         JSON.stringify({server:'https://…workers.dev', chiave:'B…'})) */
-  try {
-    var salvata = JSON.parse(localStorage.getItem('lifemax.promemoria.cfg') || 'null');
-    if (salvata && salvata.server && salvata.chiave) {
-      CONFIG.server = String(salvata.server).replace(/\/+$/, '');
-      CONFIG.chiave = String(salvata.chiave);
-    }
-  } catch (e) {}
+  /* Dove sta scritto davvero: nelle impostazioni, dentro i tuoi dati
+     (`LM.promemoria()`), così si cambia dall'app e si porta dietro sui tuoi
+     dispositivi. I valori qui sopra sono solo il ripiego per quando lo stato
+     non c'è ancora. Ordine: quello che hai scritto tu vince. */
+  function cfg() {
+    var c = (window.LM && LM.promemoria) ? LM.promemoria() : null;
+    if (!c) return { server: CONFIG.server, chiave: CONFIG.chiave, voci: null, silenzio: null, fissa: false };
+    return {
+      server: c.server || CONFIG.server,
+      chiave: c.chiave || CONFIG.chiave,
+      voci: c.voci, silenzio: c.silenzio, fissa: !!c.fissa
+    };
+  }
+
+  /* CHI ARRIVA DA PRIMA.
+     Le due chiavi stavano in localStorage (`lifemax.promemoria.cfg`) e la nota
+     fissa in un'altra riga ancora. Ora stanno nelle impostazioni, coi tuoi
+     dati. Chi aveva già configurato non deve rifarlo: si travasa una volta e
+     si cancella la vecchia riga, così il travaso non si ripete ogni avvio. */
+  function travasaVecchio() {
+    if (!window.LM || !LM.impostaPromemoria) return;
+    try {
+      var v = JSON.parse(localStorage.getItem('lifemax.promemoria.cfg') || 'null');
+      if (v && v.server && v.chiave && !LM.promemoria().server) {
+        LM.impostaPromemoria({ server: v.server, chiave: v.chiave });
+      }
+      if (v) localStorage.removeItem('lifemax.promemoria.cfg');
+      var f = localStorage.getItem('lifemax.promemoria.fissa');
+      if (f !== null) {
+        if (f === '1' && !LM.promemoria().fissa) LM.impostaPromemoria({ fissa: true });
+        localStorage.removeItem('lifemax.promemoria.fissa');
+      }
+    } catch (e) {}
+  }
+
+  /* Con che chiave è fatta l'iscrizione che sta su QUESTO dispositivo. Sta nel
+     dispositivo e non nei dati sincronizzati, perché l'iscrizione è di questo
+     telefono: un altro telefono ha la sua. */
+  var CHIAVE_ISCRIZIONE = 'lifemax.promemoria.chiaveIscritta';
+  function chiaveIscritta() {
+    try { return localStorage.getItem(CHIAVE_ISCRIZIONE) || ''; } catch (e) { return ''; }
+  }
+  function ricordaChiave(k) {
+    try { localStorage.setItem(CHIAVE_ISCRIZIONE, k || ''); } catch (e) {}
+  }
 
   var CHIAVE_ID = 'lifemax.promemoria.id';
   var CHIAVE_ULTIMO = 'lifemax.promemoria.ultimo';
@@ -102,22 +136,35 @@
      quando il conto lo chiedeva al piano e il piano lo chiedeva al conto,
      l'app si fermava con lo stack pieno appena si accendeva la nota fissa.
      Un pezzo condiviso non ha versi. */
-  var ORE = { mattina: '08:30', checkin: '13:00', sera: '21:30' };
+  /* L'ora la scegli tu, in Impostazioni. Questi sono i valori di partenza, e
+     stanno in `LM.PROMEMORIA_DEFAULT` — qui si leggono da lì per non averli
+     scritti due volte in due file che poi si dimenticano l'uno dell'altro. */
+  function ora(id) {
+    var c = cfg();
+    if (c.voci && c.voci[id] && c.voci[id].ora) return c.voci[id].ora;
+    var d = window.LM && LM.PROMEMORIA_DEFAULT;
+    return (d && d.voci[id] && d.voci[id].ora) || '09:00';
+  }
+  function acceso(id) {
+    var c = cfg();
+    return !(c.voci && c.voci[id] && c.voci[id].on === false);
+  }
+
   function ritualiAperti() {
     if (!window.LM) return [];
     var s = LM.load();
     var oggi = LM.todayKey();
     var out = [];
     if (!(s.pianoMattina || {})[oggi]) {
-      out.push({ id: 'mattina', ora: ORE.mattina,
+      out.push({ id: 'mattina', ora: ora('mattina'),
         titolo: 'Cosa fai oggi', corpo: 'Scegli le azioni di oggi, e la prima cosa.', vai: '#/rituali' });
     }
     if (!(s.checkins || []).some(function (c) { return c.data === oggi; })) {
-      out.push({ id: 'checkin', ora: ORE.checkin,
+      out.push({ id: 'checkin', ora: ora('checkin'),
         titolo: 'Check-in', corpo: 'Come stai adesso? Trenta secondi.', vai: '#/rituali' });
     }
     if (!(s.reviewSera || {})[oggi]) {
-      out.push({ id: 'sera', ora: ORE.sera,
+      out.push({ id: 'sera', ora: ora('sera'),
         titolo: 'Com’è andata oggi', corpo: 'Una vittoria e un ostacolo. Due righe.', vai: '#/rituali' });
     }
     return out;
@@ -147,7 +194,10 @@
        li ricava dall'ora (mattina prima di mezzogiorno, sera dalle 19). Qui
        servono precisi, quindi stanno scritti una volta sola e dentro quei
        confini. Il giorno in cui diventeranno modificabili, si leggono da lì. */
-    ritualiAperti().forEach(function (r) {
+    /* Il CONTO delle cose aperte non guarda gli interruttori: se spegni il
+       promemoria della sera, la review resta comunque una cosa che ti manca.
+       Il PIANO sì: quello è la lista di quando disturbarti. */
+    ritualiAperti().filter(function (r) { return acceso(r.id); }).forEach(function (r) {
       voci.push({ id: r.id, ora: r.ora, ripete: true, giorni: [],
         titolo: r.titolo, corpo: r.corpo, vai: r.vai });
     });
@@ -161,8 +211,8 @@
 
     /* la priorità del giorno, se a metà pomeriggio è ancora lì */
     var mit = (s.azioni || []).filter(function (a) { return a.data === oggi && a.mit && !a.done; })[0];
-    if (mit) {
-      voci.push({ id: 'mit', ora: '16:30', ripete: false, giorni: [],
+    if (mit && acceso('mit')) {
+      voci.push({ id: 'mit', ora: ora('mit'), ripete: false, giorni: [],
         titolo: 'La cosa più importante di oggi', corpo: mit.testo, vai: '#/oggi' });
     }
 
@@ -170,7 +220,7 @@
        momento, quindi sono quelle che vuoi sentirti ricordare. Le altre no:
        una notifica per ognuna sarebbe rumore da ignorare entro tre giorni, e
        allora anche quelle che contano diventerebbero invisibili. */
-    abitudiniAperte(true).forEach(function (h) {
+    (acceso('abitudini') ? abitudiniAperte(true) : []).forEach(function (h) {
       voci.push({ id: 'ab-' + h.id, ora: h.ora, ripete: true, giorni: (h.giorni || []).slice(),
         titolo: h.testo, corpo: 'È l’ora.', vai: '#/rituali' });
     });
@@ -233,13 +283,10 @@
      qualcosa: quello non costa niente a nessuno, perché la pagina è aperta.
      Chi la vuole la accende: una notifica che resta lì è esattamente il tipo
      di cosa che non si mette senza chiedere. */
-  var CHIAVE_FISSA = 'lifemax.promemoria.fissa';
-  function fissaAccesa() {
-    try { return localStorage.getItem(CHIAVE_FISSA) === '1'; } catch (e) { return false; }
-  }
-  function fissa(acceso) {
-    try { localStorage.setItem(CHIAVE_FISSA, acceso ? '1' : '0'); } catch (e) {}
-    if (acceso) scriviFissa();
+  function fissaAccesa() { return cfg().fissa; }
+  function fissa(vero) {
+    if (window.LM && LM.impostaPromemoria) LM.impostaPromemoria({ fissa: !!vero });
+    if (vero) scriviFissa();
     else togliFissa();
   }
   function testoFissa() {
@@ -269,19 +316,46 @@
 
   /* ---------- iscrizione e invio del piano ---------- */
   function iscrivi() {
-    if (!CONFIG.server || !CONFIG.chiave || !reg) return Promise.resolve(null);
+    var c = cfg();
+    if (!c.server || !c.chiave || !reg) return Promise.resolve(null);
     return reg.pushManager.getSubscription().then(function (s) {
-      if (s) return s;
-      return reg.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: daBase64Url(CONFIG.chiave)
-      });
-    });
+      /* UN'ISCRIZIONE VALE PER UNA CHIAVE SOLA.
+         Se le chiavi vengono rigenerate — cosa che succede, perché è la prima
+         cosa da fare quando qualcosa non torna — l'iscrizione di prima resta
+         valida ma è legata alla vecchia. Il server firma con la nuova, il
+         servizio push la rifiuta con un 403, e sul telefono non arriva niente
+         senza che nessuno dica perché. Quindi: cambiata la chiave, via la
+         vecchia iscrizione e se ne fa una nuova. */
+      if (s && chiaveIscritta() && chiaveIscritta() !== c.chiave) {
+        return s.unsubscribe().catch(function () {}).then(function () { return null; });
+      }
+      return s;
+    }).then(function (s) {
+      if (s) { ricordaChiave(c.chiave); return s; }
+      var k;
+      /* la chiave si converte PRIMA di chiedere l'iscrizione: se non è
+         base64url valido, `atob` lancia, e un'eccezione qui non dice niente a
+         nessuno */
+      try { k = daBase64Url(c.chiave); } catch (e) { ultimoErrore = 'chiave'; return null; }
+      return reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: k })
+        .then(function (nuova) { ricordaChiave(c.chiave); return nuova; })
+        .catch(function (e) {
+          /* Il caso vero: una chiave della lunghezza giusta ma che non è un
+             punto sulla curva. Il browser rifiuta l'iscrizione e senza questo
+             `catch` l'errore finiva in console e l'app restava a dire
+             «accesi» senza esserlo. */
+          ultimoErrore = /applicationServerKey|InvalidAccess|InvalidCharacter/i.test('' + e) ? 'chiave' : 'iscrizione';
+          return null;
+        });
+    }).catch(function () { ultimoErrore = 'iscrizione'; return null; });
   }
 
+  /* perché l'ultimo tentativo non è andato: serve al pannello per dire quale
+     dei due campi è sbagliato invece di «non funziona» */
+  var ultimoErrore = '';
   var ultimoInvio = 0;
   function mandaPiano(forza) {
-    if (!CONFIG.server || stato() !== 'granted') return Promise.resolve(false);
+    if (!cfg().server || stato() !== 'granted') return Promise.resolve(false);
     var p = piano();
     /* il giorno sta dentro l'impronta: un piano identico a quello di ieri
        (perché ieri non hai aperto l'app) va comunque rimandato, altrimenti il
@@ -298,7 +372,7 @@
     return iscrivi().then(function (sub) {
       if (!sub) return false;
       ultimoInvio = Date.now();
-      return fetch(CONFIG.server + '/piano', {
+      return fetch(cfg().server + '/piano', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -307,6 +381,7 @@
           fuso: (Intl.DateTimeFormat().resolvedOptions() || {}).timeZone || 'Europe/Rome',
           giorno: LM.todayKey(),
           numero: restano().n,
+          silenzio: cfg().silenzio,
           voci: p
         })
       }).then(function (r) {
@@ -318,11 +393,19 @@
 
   /* ---------- accendere e spegnere ---------- */
   function accendi() {
+    ultimoErrore = '';
     return registra().then(function () {
       if (stato() === 'denied') return 'negato';
       return Notification.requestPermission().then(function (p) {
         if (p !== 'granted') return 'negato';
-        return mandaPiano(true).then(function () { return 'accesi'; });
+        return mandaPiano(true).then(function (ok) {
+          /* «acceso» non vuol dire «funziona»: il permesso può esserci e
+             l'iscrizione essere stata rifiutata perché la chiave è sbagliata.
+             Dirlo qui è l'unico modo di farlo sapere a chi configura da solo. */
+          if (ultimoErrore === 'chiave') return 'chiave';
+          if (!ok && cfg().server) return 'server';
+          return 'accesi';
+        });
       });
     });
   }
@@ -335,8 +418,8 @@
     if (!reg) return Promise.resolve(true);
     return reg.pushManager.getSubscription().then(function (s) {
       var via = s ? s.unsubscribe() : Promise.resolve();
-      var avvisa = (CONFIG.server && s) ? fetch(CONFIG.server + '/piano/' + idDispositivo(), { method: 'DELETE' }).catch(function () {}) : Promise.resolve();
-      try { localStorage.removeItem(CHIAVE_ULTIMO); } catch (e) {}
+      var avvisa = (cfg().server && s) ? fetch(cfg().server + '/piano/' + idDispositivo(), { method: 'DELETE' }).catch(function () {}) : Promise.resolve();
+      try { localStorage.removeItem(CHIAVE_ULTIMO); localStorage.removeItem(CHIAVE_ISCRIZIONE); } catch (e) {}
       return Promise.all([via, avvisa]).then(function () { return true; });
     });
   }
@@ -362,7 +445,9 @@
     serveInstallare: serveInstallare, installata: installata,
     restano: restano, segnaNumero: segnaNumero,
     fissa: fissa, fissaAccesa: fissaAccesa, testoFissa: testoFissa,
-    configurato: function () { return !!(CONFIG.server && CONFIG.chiave); },
+    configurato: function () { var c = cfg(); return !!(c.server && c.chiave); },
+    cfg: cfg, idDispositivo: idDispositivo, chiaveIscritta: chiaveIscritta,
+    ultimoErrore: function () { return ultimoErrore; },
     CONFIG: CONFIG
   };
 
@@ -371,6 +456,7 @@
      e le cose che hai fatto stanotte non le sa nessuno.
      Il permesso, invece, NON si chiede qui. */
   function avvia() {
+    travasaVecchio();
     segnaNumero();
     registra().then(function () { scriviFissa(); mandaPiano(false); });
   }

@@ -61,13 +61,28 @@ export function minutiDaOra(hhmm) {
    azzerare niente a mezzanotte. */
 export const segno = (giorno, id) => giorno + '|' + id;
 
-/* rec = { fuso, giorno, voci, inviate: [] } — quello che sta in KV.
+/* LA FASCIA DI SILENZIO.
+   Un promemoria alle due di notte non si legge, sveglia, e insegna a spegnere
+   tutto. Va guardata sull'ora di ADESSO e non su quella scritta nella voce:
+   una voce delle 21:30 può arrivare fino alle 23:00 per la regola del
+   ritardo, e senza questo controllo entrerebbe in punta di piedi dentro la
+   fascia. La fascia scavalca la mezzanotte quasi sempre (23:00→07:00), quindi
+   i due casi sono diversi e vanno scritti entrambi. */
+export function inSilenzio(silenzio, minuti) {
+  if (!silenzio || !silenzio.on) return false;
+  const da = minutiDaOra(silenzio.da), a = minutiDaOra(silenzio.a);
+  if (da === null || a === null || da === a) return false;
+  return da < a ? (minuti >= da && minuti < a) : (minuti >= da || minuti < a);
+}
+
+/* rec = { fuso, giorno, voci, inviate: [], silenzio } — quello che sta in KV.
    Restituisce { dovute, segni, giornoLocale }: le voci da mandare adesso e i
    segni da aggiungere a `inviate`. */
 export function dovute(rec, adesso) {
   const l = oraLocale(adesso, rec && rec.fuso);
   const fuori = { dovute: [], segni: [], giornoLocale: l.giorno, locale: l };
   if (!rec || !Array.isArray(rec.voci)) return fuori;
+  if (inSilenzio(rec.silenzio, l.minuti)) return fuori;
 
   const vecchio = rec.giorno !== l.giorno;      /* il piano è di un altro giorno */
   const fatte = new Set(rec.inviate || []);

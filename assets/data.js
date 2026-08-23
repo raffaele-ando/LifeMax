@@ -187,6 +187,28 @@ var LM = (function () {
     if (!s.profilo || typeof s.profilo !== 'object') s.profilo = vuoto.profilo;
     if (!s.profilo.giornataPos) s.profilo.giornataPos = 'oggi-strip';
     if (!s.profilo.ritmo || typeof s.profilo.ritmo !== 'object') s.profilo.ritmo = JSON.parse(JSON.stringify(RITMO_DEFAULT));
+    /* i promemoria: uno stato salvato prima che esistessero non ce li ha, e
+       uno che arriva da un dispositivo aggiornato potrebbe averne solo una
+       parte. Si riempie quello che manca senza toccare quello che c'è. */
+    if (!s.profilo.promemoria || typeof s.profilo.promemoria !== 'object') {
+      s.profilo.promemoria = JSON.parse(JSON.stringify(PROMEMORIA_DEFAULT));
+    }
+    (function (c) {
+      if (typeof c.server !== 'string') c.server = '';
+      if (typeof c.chiave !== 'string') c.chiave = '';
+      c.fissa = !!c.fissa;
+      if (!c.voci || typeof c.voci !== 'object') c.voci = {};
+      Object.keys(PROMEMORIA_DEFAULT.voci).forEach(function (k) {
+        var d = PROMEMORIA_DEFAULT.voci[k];
+        if (!c.voci[k] || typeof c.voci[k] !== 'object') c.voci[k] = JSON.parse(JSON.stringify(d));
+        if (typeof c.voci[k].on !== 'boolean') c.voci[k].on = d.on;
+        if (d.ora != null && !ORA_VALIDA.test(c.voci[k].ora || '')) c.voci[k].ora = d.ora;
+      });
+      if (!c.silenzio || typeof c.silenzio !== 'object') c.silenzio = JSON.parse(JSON.stringify(PROMEMORIA_DEFAULT.silenzio));
+      if (typeof c.silenzio.on !== 'boolean') c.silenzio.on = PROMEMORIA_DEFAULT.silenzio.on;
+      if (!ORA_VALIDA.test(c.silenzio.da || '')) c.silenzio.da = PROMEMORIA_DEFAULT.silenzio.da;
+      if (!ORA_VALIDA.test(c.silenzio.a || '')) c.silenzio.a = PROMEMORIA_DEFAULT.silenzio.a;
+    })(s.profilo.promemoria);
     if (!s.profilo.ritmo.sveglia) s.profilo.ritmo.sveglia = RITMO_DEFAULT.sveglia;
     if (!s.profilo.ritmo.sonno) s.profilo.ritmo.sonno = RITMO_DEFAULT.sonno;
     if (!Array.isArray(s.profilo.ritmo.pasti)) s.profilo.ritmo.pasti = JSON.parse(JSON.stringify(RITMO_DEFAULT.pasti));
@@ -806,6 +828,64 @@ var LM = (function () {
   /* azioni di un giorno qualsiasi (per le viste settimana/mese) */
   function azioniDelGiorno(k) {
     return load().azioni.filter(function (a) { return a.data === k; });
+  }
+
+  /* ---------- i promemoria ----------
+     Le scelte stanno QUI e non in localStorage perché sono tue, non del
+     dispositivo: cambiando telefono, o accedendo con Google, gli orari e gli
+     interruttori si portano dietro insieme a tutto il resto. E finiscono
+     nell'esportazione, così un backup contiene anche com'era configurato.
+
+     `server` e `chiave` sono l'indirizzo del postino e la sua chiave
+     pubblica: si scrivono da Impostazioni, senza toccare il codice. La
+     privata non passa mai da qui — sta su Cloudflare e basta. */
+  var PROMEMORIA_DEFAULT = {
+    server: '', chiave: '',
+    fissa: false,
+    voci: {
+      mattina:   { on: true, ora: '08:30' },
+      checkin:   { on: true, ora: '13:00' },
+      mit:       { on: true, ora: '16:30' },
+      sera:      { on: true, ora: '21:30' },
+      /* le abitudini non hanno un'ora qui: ognuna ha la sua */
+      abitudini: { on: true }
+    },
+    /* la fascia in cui non arriva niente. Non è un dettaglio: un promemoria
+       alle due di notte non si legge, sveglia, e insegna a spegnere tutto. */
+    silenzio: { on: true, da: '23:00', a: '07:00' }
+  };
+  var ORA_VALIDA = /^([01][0-9]|2[0-3]):[0-5][0-9]$/;
+
+  function promemoria() {
+    var s = load();
+    if (!s.profilo.promemoria) s.profilo.promemoria = JSON.parse(JSON.stringify(PROMEMORIA_DEFAULT));
+    return s.profilo.promemoria;
+  }
+
+  /* Una toppa per volta, e ogni pezzo controllato: questi valori arrivano da
+     due campi di testo, e un orario scritto male qui vorrebbe dire un
+     promemoria che non parte mai senza che nessuno capisca perché. */
+  function impostaPromemoria(patch) {
+    var c = promemoria();
+    if (patch.server != null) c.server = String(patch.server).trim().replace(/\/+$/, '');
+    if (patch.chiave != null) c.chiave = String(patch.chiave).trim();
+    if (patch.fissa != null) c.fissa = !!patch.fissa;
+    if (patch.voci) {
+      Object.keys(patch.voci).forEach(function (k) {
+        if (!c.voci[k]) return;                       /* niente voci inventate */
+        var v = patch.voci[k];
+        if (v.on != null) c.voci[k].on = !!v.on;
+        if (v.ora != null && ORA_VALIDA.test(v.ora) && c.voci[k].ora != null) c.voci[k].ora = v.ora;
+      });
+    }
+    if (patch.silenzio) {
+      if (patch.silenzio.on != null) c.silenzio.on = !!patch.silenzio.on;
+      if (ORA_VALIDA.test(patch.silenzio.da || '')) c.silenzio.da = patch.silenzio.da;
+      if (ORA_VALIDA.test(patch.silenzio.a || '')) c.silenzio.a = patch.silenzio.a;
+    }
+    registra('impostazioni', 'Cambiate le impostazioni dei promemoria', false);
+    save();
+    return c;
   }
 
   /* ---------- ritmo della giornata e preferenza di visualizzazione ---------- */
@@ -2021,6 +2101,7 @@ var LM = (function () {
     spostaAzione: spostaAzione, rimandaNonFatte: rimandaNonFatte, azioneInBacklog: azioneInBacklog,
     setOraAzione: setOraAzione, setDurataAzione: setDurataAzione, azioniDelGiorno: azioniDelGiorno,
     impostaRitmo: impostaRitmo, impostaGiornataPos: impostaGiornataPos, RITMO_DEFAULT: RITMO_DEFAULT,
+    promemoria: promemoria, impostaPromemoria: impostaPromemoria, PROMEMORIA_DEFAULT: PROMEMORIA_DEFAULT,
     ritmoDi: ritmoDi, setRitmoGiorno: setRitmoGiorno, azzeraRitmoGiorno: azzeraRitmoGiorno, minutiSonno: minutiSonno,
     aggiungiBacklog: aggiungiBacklog, modificaBacklog: modificaBacklog, cambiaAreaBacklog: cambiaAreaBacklog,
     rimuoviBacklog: rimuoviBacklog, backlogInOggi: backlogInOggi, backlogPerArea: backlogPerArea,
