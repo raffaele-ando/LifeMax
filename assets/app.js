@@ -1316,12 +1316,24 @@
         if (!j || !j.ok) throw new Error('risposta strana');
         LM.impostaPromemoria({ server: srv, chiave: kk });
         if (!j.vapid) {
-          dillo('Il server risponde, ma non ha le sue chiavi: sul pannello di Cloudflare mancano i tre segreti <code>VAPID_*</code>. Il resto è a posto.', 'sync-errore');
-        } else {
-          dillo('Collegato.', 'sync-ok');
+          dillo('Il server risponde, ma non ha le sue chiavi: sul pannello di Cloudflare mancano i segreti <code>VAPID_PUBBLICA</code> e <code>VAPID_PRIVATA</code>. Il resto è a posto.', 'sync-errore');
+          coll.disabled = false;
+          return null;
         }
+        /* IL CONFRONTO. È l'errore numero uno di chi installa da sé: si
+           genera la coppia due volte, e nell'app finisce la pubblica di una
+           coppia mentre sul Worker c'è l'altra. Il servizio push allora
+           risponde 403 e non spiega niente. Confrontarle qui costa una riga e
+           toglie di mezzo mezz'ora di tentativi. */
+        if (j.pubblica && j.pubblica !== kk) {
+          dillo('Il server c’è, ma <b>le due chiavi non sono la stessa coppia</b>. Qui hai scritto una chiave che comincia per <code>' + esc(kk.slice(0, 12)) + '…</code>, mentre sul Worker c’è <code>' + esc(String(j.pubblica).slice(0, 12)) + '…</code>. Copia quella del Worker in questo campo, oppure rigenera la coppia e rimetti <b>tutti e due</b> i segreti su Cloudflare.', 'sync-errore');
+          coll.disabled = false;
+          return null;
+        }
+        dillo('Collegato.', 'sync-ok');
         return P.accendi();
       }).then(function (esito) {
+        if (esito === null) return;
         if (esito === 'chiave') {
           dillo('Il server c’è, ma quella chiave il browser non la accetta: è della lunghezza giusta ma non è una chiave vera. Rigenera la coppia con <code>promemoria/chiavi.html</code> e ricorda di rimettere <b>tutti e due</b> i segreti su Cloudflare — devono essere la stessa coppia.', 'sync-errore');
           return;
@@ -1336,6 +1348,36 @@
         dillo('Non risponde. Controlla l’indirizzo, e prova ad aprirlo nel browser aggiungendo <code>/salute</code> alla fine: deve rispondere <code>{"ok":true}</code>.', 'sync-errore');
       });
     });
+
+    /* DA UN NUMERO A UNA COSA DA FARE.
+       «Il server ha risposto: 502» è vero e inutile: il 502 è il nostro, e
+       dentro c'è il codice del servizio push — che è quello che sa perché ha
+       detto no. Ogni codice ha una causa sola in pratica, e ognuna ha un
+       gesto: qui si scrive quel gesto invece del numero. */
+    function spiegaProva(j, stato) {
+      j = j || {};
+      var s = j.stato || 0;
+      var chiave = (P.cfg().chiave || '');
+      var coppiaDiversa = j.pubblica && chiave && j.pubblica !== chiave;
+      if (coppiaDiversa) {
+        return 'Il servizio push ha detto no (<code>' + esc(String(s || stato)) + '</code>) e si vede perché: <b>le due chiavi non sono la stessa coppia</b>. Nell’app c’è <code>' + esc(chiave.slice(0, 12)) + '…</code>, sul Worker <code>' + esc(String(j.pubblica).slice(0, 12)) + '…</code>. Copia quella del Worker qui sopra e premi Collega.';
+      }
+      if (j.dove === 'firma') {
+        return 'Non è nemmeno arrivato a parlare col servizio push: la <b>chiave privata</b> sul Worker non è una chiave valida. Di solito ci è finito dentro uno spazio o un ritorno a capo quando l’hai incollata nel segreto <code>VAPID_PRIVATA</code>. Rifallo copiandola tutta di fila. (<code>' + esc(String(j.errore || '')) + '</code>)';
+      }
+      var detto = j.detto ? ' Ha scritto: <code>' + esc(String(j.detto).slice(0, 160)) + '</code>' : '';
+      if (s === 401 || s === 403) {
+        return 'Il servizio push ha rifiutato la firma (<code>' + esc(String(s)) + '</code>). Vuol dire che la coppia VAPID sul Worker non è quella con cui questo telefono si è iscritto: rigenera la coppia con <code>promemoria/chiavi.html</code>, rimetti <b>tutti e due</b> i segreti su Cloudflare, incolla la pubblica qui sopra, premi Collega, poi spegni e riaccendi i promemoria.' + detto;
+      }
+      if (s === 400) {
+        return 'Il servizio push ha detto che la richiesta non va (<code>400</code>). Il sospetto quasi sempre giusto: il segreto <code>VAPID_SOGGETTO</code>. Deve essere <code>mailto:</code> seguito da un tuo indirizzo email vero — Apple non accetta indirizzi finti.' + detto;
+      }
+      if (s === 413) return 'La notifica era troppo grande per il servizio push (<code>413</code>). Questo è un problema mio, non tuo: scrivimelo.' + detto;
+      if (s === 429) return 'Il servizio push ha detto «troppe» (<code>429</code>). Aspetta un minuto e riprova.' + detto;
+      if (s >= 500) return 'Il servizio push (Apple o Google) sta avendo problemi suoi (<code>' + esc(String(s)) + '</code>). Non c’è niente da sistemare: riprova fra qualche minuto.' + detto;
+      if (j.errore) return 'Il server ha detto: <code>' + esc(String(j.errore)) + '</code>';
+      return 'Il servizio push ha risposto <code>' + esc(String(s || stato)) + '</code> e non ha spiegato.' + detto;
+    }
 
     var pv = root.querySelector('#prom-prova');
     if (pv) pv.addEventListener('click', function () {
@@ -1355,7 +1397,7 @@
         if (x.r.ok) dillo('Partita. Se non la vedi entro qualche secondo, il permesso c’è ma il sistema la sta nascondendo: controlla le notifiche di LifeMax nelle impostazioni del telefono.', 'sync-ok');
         else if (x.r.status === 404) dillo('Il server non ha ancora un piano per questo dispositivo: spegni e riaccendi i promemoria qui sopra.', 'sync-errore');
         else if (x.r.status === 410) dillo('L’iscrizione non vale più (di solito: notifiche revocate, o app reinstallata). Spegni e riaccendi i promemoria.', 'sync-errore');
-        else dillo('Il server ha risposto: ' + esc(String((x.j && x.j.errore) || x.r.status)), 'sync-errore');
+        else dillo(spiegaProva(x.j, x.r.status), 'sync-errore');
       }).catch(function () {
         pv.disabled = false;
         dillo('Non ci sono riuscito: il server non risponde.', 'sync-errore');

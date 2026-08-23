@@ -466,6 +466,76 @@ const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  
   ok('una chiave corta viene rifiutata, e lo dice', /caratteri|privata/i.test(m), m.slice(0, 90));
   ok('e nemmeno quella viene salvata', (await cfg()).chiave === '');
 
+  /* ============ QUANDO IL SERVIZIO PUSH DICE NO ============
+     Il difetto vero era questo: il pannello scriveva «Il server ha risposto:
+     502» e si fermava là. Il 502 è nostro — il Worker lo mette quando il
+     servizio push ha rifiutato — e dentro c'è il codice di Apple o di Google,
+     che è quello che sa perché. Qui si finge ogni risposta e si pretende che
+     il pannello dica una cosa da FARE, non un numero. */
+  console.log('\nUN RIFIUTO DEL SERVIZIO PUSH DIVENTA UNA COSA DA FARE');
+  {
+    const chiaveApp = 'B' + 'a'.repeat(86);
+    /* si collega per finta: il finto server risponde a /salute e a /prova */
+    const prova = async (risposta) => p.evaluate(async (x) => {
+      const vero = window.fetch;
+      window.fetch = async (u, o) => {
+        const s = String(u);
+        if (/\/salute$/.test(s)) return new Response(JSON.stringify({ ok: true, vapid: true, pubblica: x.pubblicaServer }), { status: 200 });
+        if (/\/piano$/.test(s)) return new Response('{"ok":true}', { status: 200 });
+        if (/\/prova$/.test(s)) return new Response(JSON.stringify(x.corpo), { status: x.stato, headers: { 'Content-Type': 'application/json' } });
+        return vero(u, o);
+      };
+      LM.impostaPromemoria({ server: 'https://finto.workers.dev', chiave: x.chiave });
+      document.getElementById('imp-prom-come') && 0;
+      const b = document.getElementById('prom-prova');
+      if (!b) { window.fetch = vero; return 'niente pulsante'; }
+      b.click();
+      await new Promise((r) => setTimeout(r, 500));
+      window.fetch = vero;
+      return (document.getElementById('prom-esito') || {}).textContent || '';
+    }, risposta);
+    /* il pulsante c'è solo se la configurazione è a posto: si riapre il
+       pannello dopo aver messo indirizzo e chiave */
+    await p.evaluate((k) => { LM.impostaPromemoria({ server: 'https://finto.workers.dev', chiave: k }); }, chiaveApp);
+    await p.evaluate(() => { const b = document.getElementById('sheet-chiudi'); if (b) b.click(); });
+    await p.waitForTimeout(300);
+    await p.evaluate(() => { location.hash = '#/andamento'; }); await p.waitForTimeout(400);
+    await p.evaluate(() => { document.querySelectorAll('button').forEach(b => { if (/Impostazioni/i.test(b.textContent)) b.click(); }); });
+    await p.waitForTimeout(400);
+    await p.evaluate(() => { const b = document.getElementById('imp-prom-come'); if (b) b.click(); });
+    await p.waitForTimeout(500);
+    ok('col server configurato compare «Mandamene una adesso»',
+      await p.evaluate(() => !!document.getElementById('prom-prova')));
+
+    let m = await prova({ stato: 502, chiave: chiaveApp, pubblicaServer: 'B' + 'z'.repeat(86),
+      corpo: { ok: false, stato: 403, detto: 'the key in the token pairs with a different application server key', pubblica: 'B' + 'z'.repeat(86) } });
+    ok('due chiavi di due coppie diverse: lo dice, e dice quale', /stessa coppia/i.test(m), m.slice(0, 120));
+    ok('e non si limita al numero', !/^Il server ha risposto/.test(m), m.slice(0, 40));
+
+    m = await prova({ stato: 502, chiave: chiaveApp, pubblicaServer: chiaveApp,
+      corpo: { ok: false, stato: 403, detto: 'Unauthorized', pubblica: chiaveApp } });
+    ok('chiavi uguali ma firma rifiutata: manda a rigenerare la coppia',
+      /rigenera/i.test(m) && /403/.test(m), m.slice(0, 120));
+
+    m = await prova({ stato: 502, chiave: chiaveApp, pubblicaServer: chiaveApp,
+      corpo: { ok: false, stato: 400, detto: 'BadJwtToken', pubblica: chiaveApp } });
+    ok('un 400 punta al soggetto, che è la causa quasi sempre',
+      /VAPID_SOGGETTO/.test(m), m.slice(0, 120));
+
+    m = await prova({ stato: 502, chiave: chiaveApp, pubblicaServer: chiaveApp,
+      corpo: { errore: 'invio: Invalid keyData', dove: 'firma', } });
+    ok('la privata incollata male si riconosce', /privata/i.test(m), m.slice(0, 120));
+
+    m = await prova({ stato: 502, chiave: chiaveApp, pubblicaServer: chiaveApp,
+      corpo: { ok: false, stato: 503, detto: '', pubblica: chiaveApp } });
+    ok('un guaio loro si dice che è loro, e non si fa fare niente',
+      /riprova/i.test(m) && /Apple|Google/.test(m), m.slice(0, 120));
+
+    m = await prova({ stato: 200, chiave: chiaveApp, pubblicaServer: chiaveApp,
+      corpo: { ok: true, stato: 201 } });
+    ok('e quando va, lo dice senza spaventare', /Partita/.test(m), m.slice(0, 80));
+  }
+
   console.log('\nTOCCANDOLA, L’APP CI PORTA');
   await p.evaluate(() => { location.hash = '#/andamento'; }); await p.waitForTimeout(400);
   await p.evaluate(() => new Promise(r => {

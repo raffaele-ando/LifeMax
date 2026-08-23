@@ -149,10 +149,17 @@ Fatto. Per controllare che sia vivo, apri nel browser
 `https://…workers.dev/salute`: deve rispondere
 
 ```json
-{"ok":true,"vapid":true}
+{"ok":true,"vapid":true,"pubblica":"BB…","soggetto":"mailto:…"}
 ```
 
 Se `vapid` è `false`, i tre segreti del passo 4 non sono arrivati.
+
+La chiave che vedi lì è quella **pubblica**, e va bene che si veda: è pubblica
+per definizione — finisce nel browser di chiunque apra l'app e nelle mani del
+servizio push. Serve a confrontarla con quella scritta nell'app, che è
+l'errore numero uno di chi installa da sé: due chiavi di due coppie diverse, e
+il servizio push risponde `403` senza spiegare niente. La **privata** non
+compare da nessuna parte.
 
 ---
 
@@ -375,17 +382,36 @@ senza che nessuno se ne ricordi.
 
 ## Se non arriva niente
 
-- `https://…workers.dev/salute` → deve dire `{"ok":true,"vapid":true}`. Se
-  `vapid` è `false`, rifai il passo 4.
-- **Impostazioni → Come ti avviso → Mandamene una adesso.** È la prima cosa
-  da provare: dice se il problema è il server, l'iscrizione o il permesso,
-  invece di lasciarti indovinare.
+- **Impostazioni → Come ti avviso → Mandamene una adesso.** È la prima cosa da
+  provare, e adesso non ti dà un numero: ti dice cosa fare. Se il servizio push
+  rifiuta, il messaggio riporta il suo codice, la riga che ha scritto Apple o
+  Google, e — quando è quello il problema — le due chiavi messe a confronto.
+- `https://…workers.dev/salute` → deve dire `{"ok":true,"vapid":true,...}` e
+  stampa anche la chiave **pubblica** che ha il Worker: confrontala con quella
+  scritta nell'app, devono essere identiche. Se `vapid` è `false`, manca uno
+  dei due segreti: rifai il passo 4.
+
+### Cosa vuol dire il codice del servizio push
+
+| dice | è quasi sempre | si sistema così |
+|---|---|---|
+| **403** o **401** | la chiave pubblica nell'app e quella nei segreti non sono la stessa coppia | il pannello te le mette a confronto: copia quella del Worker nel campo e premi Collega. Se sono già uguali, rigenera la coppia e rimetti **tutti e due** i segreti |
+| **400** (`BadJwtToken`) | il segreto `VAPID_SOGGETTO` | deve essere `mailto:` più un tuo indirizzo email vero. Apple non accetta indirizzi finti |
+| **404** o **410** | l'iscrizione non vale più: permesso revocato, o app reinstallata | spegni e riaccendi i promemoria |
+| **429** | troppe richieste di fila | aspetta un minuto |
+| **500**–**503** | un guaio di Apple o Google | niente da sistemare, riprova fra qualche minuto |
+| `invio: …` prima del codice | la chiave **privata** nel segreto ha dentro uno spazio o un ritorno a capo | reincollala tutta di fila, senza andare a capo |
+
+Il **502** che vedi nel pannello è nostro, non del servizio push: vuol dire
+«ho provato a mandarla e mi hanno detto no». Il perché è il codice qui sopra,
+ed è quello che il pannello adesso ti scrive.
 - Su Cloudflare, in `lifemax-promemoria`: scheda **Logs** → **Begin log
   stream**, e aspetta. Ogni giro stampa `giro: N dispositivi, M notifiche`. Se
   N è 0, il piano non è mai arrivato: controlla che in **Impostazioni →
   Promemoria** risultino accesi.
 - Se stampa `rifiutata … 401` o `403`: la chiave pubblica nell'app e quella nei
-  segreti non sono la stessa coppia.
+  segreti non sono la stessa coppia. Nel log, accanto al codice, c'è anche la
+  riga che ha scritto il servizio push.
 - Se stampa `manca la coppia VAPID`: i segreti non ci sono, o hanno un nome
   diverso da `VAPID_PUBBLICA` / `VAPID_PRIVATA`.
 - Sull'iPhone, se il pannello dice «aggiungi alla schermata Home», l'app è

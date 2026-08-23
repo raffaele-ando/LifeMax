@@ -110,12 +110,13 @@ async function giro(env, adesso) {
 
       const riusciti = [];
       for (const v of g.dovute) {
-        let stato = 0;
+        let stato = 0, detto = '';
         try {
-          stato = await manda(rec.iscrizione, {
+          const esito = await manda(rec.iscrizione, {
             titolo: v.titolo, corpo: v.corpo, vai: v.vai, tag: 'lm-' + v.id,
             tipo: v.tipo, numero: rec.numero
           }, vapid, { ttl: 3600 });
+          stato = esito.stato; detto = esito.detto;
         } catch (e) { console.log('errore invio', k.name, '' + e); }
         /* 404 e 410 vogliono dire «questa iscrizione non esiste più»: il
            telefono ha disinstallato, o il permesso è stato revocato. Tenere il
@@ -123,7 +124,7 @@ async function giro(env, adesso) {
            murata, e il piano gratuito è fatto di richieste. */
         if (stato === 404 || stato === 410) { await env.PROMEMORIA.delete(k.name); riusciti.length = 0; break; }
         if (stato >= 200 && stato < 300) { riusciti.push(segnoDi(g, v)); mandate++; }
-        else console.log('rifiutata', k.name, v.id, stato);
+        else console.log('rifiutata', k.name, v.id, stato, detto);
       }
       if (riusciti.length) {
         /* il segno si mette DOPO la consegna: se il servizio push è giù, la
@@ -163,27 +164,49 @@ export default {
       const rec = await leggi(env, id);
       if (!rec || !rec.iscrizione) return risposta({ errore: 'nessun piano per questo dispositivo' }, 404);
       if (!env.VAPID_PUBBLICA || !env.VAPID_PRIVATA) return risposta({ errore: 'manca la coppia VAPID' }, 500);
-      let stato = 0;
+      let stato = 0, detto = '';
       try {
-        stato = await manda(rec.iscrizione, {
+        const esito = await manda(rec.iscrizione, {
           titolo: 'Prova riuscita', corpo: 'I promemoria arrivano. Questa è l’unica di prova.',
           vai: '#/oggi', tag: 'lm-prova', numero: rec.numero
         }, {
           pubblica: env.VAPID_PUBBLICA, privata: env.VAPID_PRIVATA,
           soggetto: env.VAPID_SOGGETTO || 'mailto:promemoria@lifemax.invalid'
         }, { ttl: 60, urgenza: 'high' });
-      } catch (e) { return risposta({ errore: 'invio: ' + e.message }, 502); }
+        stato = esito.stato; detto = esito.detto;
+      } catch (e) {
+        /* qui non si è nemmeno arrivati a parlare col servizio push: o la
+           chiave privata non è una chiave (spazio, ritorno a capo, pezzo di
+           testo incollato dentro), o l'iscrizione salvata è malformata */
+        return risposta({ errore: 'invio: ' + e.message, dove: 'firma' }, 502);
+      }
       /* 404 e 410 vogliono dire che l'iscrizione non vale più: dirlo qui
          serve, perché è esattamente il caso in cui «non arriva niente» */
       if (stato === 404 || stato === 410) {
         await env.PROMEMORIA.delete('d:' + id);
         return risposta({ errore: 'iscrizione scaduta: riaccendi i promemoria', stato: stato }, 410);
       }
-      return risposta({ ok: stato >= 200 && stato < 300, stato: stato }, stato >= 200 && stato < 300 ? 200 : 502);
+      /* Il numero da solo non basta a nessuno. Si passa su anche quello che ha
+         detto il servizio push, e quale delle due chiavi il Worker ha in mano:
+         il caso di gran lunga più comune è che la pubblica scritta nell'app e
+         quella messa nei segreti non siano la stessa coppia, e da qui si vede
+         confrontandole invece di indovinare. */
+      return risposta({
+        ok: stato >= 200 && stato < 300, stato: stato, detto: detto,
+        pubblica: env.VAPID_PUBBLICA, soggetto: env.VAPID_SOGGETTO || ''
+      }, stato >= 200 && stato < 300 ? 200 : 502);
     }
 
     /* una porta per capire se è vivo, senza dire niente di privato */
-    if (u.pathname === '/salute') return risposta({ ok: true, vapid: !!env.VAPID_PUBBLICA });
+    /* La chiave PUBBLICA la si dice: è pubblica per definizione — finisce nel
+       browser di chiunque e nelle mani del servizio push. Dirla qui serve a
+       confrontarla con quella scritta nell'app, che è l'errore numero uno di
+       chi installa da sé: due chiavi di due coppie diverse, e il servizio push
+       risponde 403 senza spiegare niente. */
+    if (u.pathname === '/salute') return risposta({
+      ok: true, vapid: !!(env.VAPID_PUBBLICA && env.VAPID_PRIVATA),
+      pubblica: env.VAPID_PUBBLICA || '', soggetto: env.VAPID_SOGGETTO || ''
+    });
     return risposta({ errore: 'niente qui' }, 404);
   },
   async scheduled(evento, env, ctx) {

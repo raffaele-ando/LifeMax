@@ -130,7 +130,14 @@ export async function manda(iscrizione, dati, vapid, opz = {}) {
     },
     body: corpo
   });
-  return r.status;
+  /* Non basta il numero. Quando Apple o Google rifiutano, il perché lo
+     scrivono nel corpo — «BadJwtToken», «UnauthorizedRegistration», «the key
+     in the token pairs with a different application server key» — e senza
+     quella riga un 401 e un 403 si somigliano troppo per sapere quale delle
+     due chiavi rimettere. Si tronca perché è per un pannello, non per un log. */
+  let detto = '';
+  try { detto = (await r.text()).trim().slice(0, 300); } catch (e) { detto = ''; }
+  return { stato: r.status, detto: detto };
 }
 
 export const base64url = B;

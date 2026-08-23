@@ -59,12 +59,13 @@ const env = () => ({
 /* ---- il servizio push finto ---- */
 let spedite = [];
 let rispostaPush = 201;
+let dettoPush = '';
 const fetchVero = globalThis.fetch;
 globalThis.fetch = async (url, opz) => {
   const u = String(url && url.url ? url.url : url);
   if (u.startsWith('https://web.push.apple.com/')) {
     spedite.push({ url: u, testa: opz.headers, byte: opz.body.length, corpo: opz.body });
-    return new Response('', { status: rispostaPush });
+    return new Response(dettoPush, { status: rispostaPush });
   }
   return fetchVero(url, opz);
 };
@@ -213,8 +214,59 @@ rec = JSON.parse(e.PROMEMORIA.m.get('d:dprova123'));
 ok('titolo tagliato', rec.voci[0].titolo.length === 80, String(rec.voci[0].titolo.length));
 ok('corpo tagliato', rec.voci[0].corpo.length === 160, String(rec.voci[0].corpo.length));
 
+/* ============ MANDAMENE UNA ADESSO, E COSA DICE QUANDO VA MALE ============
+   «Il server ha risposto: 502» è vero e inutile: il 502 è nostro, e quello che
+   sa il perché è il servizio push. Queste prove guardano che il perché arrivi
+   fino al pannello — il codice, la riga che ha scritto il servizio, e la
+   chiave pubblica del Worker, che serve a confrontarla con quella dell'app
+   perché due chiavi di due coppie diverse sono l'errore numero uno. */
+console.log('\nLA PROVA A MANO, E IL PERCHÉ QUANDO DICE NO');
+const PROVA = (id) => new Request('https://x/prova', {
+  method: 'POST', headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ id: id })
+});
+e = env(); await worker.fetch(POST(piano()), e);
+spedite = []; rispostaPush = 201; dettoPush = '';
+r = await worker.fetch(PROVA('dprova123'), e);
+let jj = await r.json();
+ok('quando va, va', r.status === 200 && jj.ok === true && spedite.length === 1,
+  r.status + ' ' + JSON.stringify(jj));
+
+rispostaPush = 403; dettoPush = 'the key in the token pairs with a different application server key';
+r = await worker.fetch(PROVA('dprova123'), e);
+jj = await r.json();
+ok('un rifiuto porta su il codice del servizio push', jj.stato === 403, JSON.stringify(jj.stato));
+ok('e la riga che ha scritto', /different application server key/.test(jj.detto || ''), jj.detto);
+ok('e la chiave pubblica del Worker, da confrontare con quella dell’app',
+  jj.pubblica === e.VAPID_PUBBLICA, String(jj.pubblica).slice(0, 12) + '…');
+
+rispostaPush = 400; dettoPush = 'BadJwtToken';
+jj = await (await worker.fetch(PROVA('dprova123'), e)).json();
+ok('un 400 arriva intero', jj.stato === 400 && jj.detto === 'BadJwtToken', JSON.stringify(jj));
+
+/* la privata rotta: non si arriva nemmeno a parlare col servizio push */
+const eRotta = env(); await worker.fetch(POST(piano()), eRotta);
+eRotta.VAPID_PRIVATA = 'questa-non-è-una-chiave';
+spedite = [];
+jj = await (await worker.fetch(PROVA('dprova123'), eRotta)).json();
+ok('la privata rotta si vede prima di mandare', jj.dove === 'firma' && spedite.length === 0,
+  JSON.stringify(jj).slice(0, 90));
+
+rispostaPush = 410; dettoPush = '';
+jj = await (await worker.fetch(PROVA('dprova123'), e)).json();
+ok('un’iscrizione scaduta resta un caso a parte', /scaduta/.test(jj.errore || ''), jj.errore);
+rispostaPush = 201; dettoPush = '';
+
 console.log('\nLE ALTRE PORTE');
 ok('/salute dice che è vivo', (await worker.fetch(new Request('https://x/salute'), e)).status === 200);
+{
+  const j = await (await worker.fetch(new Request('https://x/salute'), env())).json();
+  ok('/salute dice la chiave PUBBLICA, che è pubblica', j.pubblica === env().VAPID_PUBBLICA,
+    String(j.pubblica).slice(0, 12) + '…');
+  const senza = env(); senza.VAPID_PRIVATA = '';
+  const j2 = await (await worker.fetch(new Request('https://x/salute'), senza)).json();
+  ok('e dice «no» se manca una delle due', j2.vapid === false, JSON.stringify(j2.vapid));
+}
 ok('una porta che non c’è dà 404', (await worker.fetch(new Request('https://x/altro'), e)).status === 404);
 ok('OPTIONS passa (serve al browser)', (await worker.fetch(new Request('https://x/piano', { method: 'OPTIONS' }), e)).status === 204);
 
