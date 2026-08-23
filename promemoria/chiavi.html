@@ -52,6 +52,7 @@
 </style>
 
 <main>
+  <p style="margin:0 0 14px"><a href="../index.html#/oggi" style="color:var(--tinta);text-decoration:none;font-weight:600">‹ Torna a LifeMax</a></p>
   <h1>Le due chiavi dei promemoria</h1>
   <p class="sotto">Nascono qui dentro e non escono da questa pagina: non c'è
     nessuna richiesta di rete in tutto il file. Puoi anche staccare la
@@ -92,6 +93,9 @@
           spariscono e bisogna rifarle da capo (e rifare anche i segreti).</li>
         <li>Nel pannello di Cloudflare, nel Worker: <b>Settings</b> →
           <b>Variables and Secrets</b> → <b>Add</b>, tipo <b>Secret</b>.</li>
+        <li>La <b>pubblica</b> serve anche all'app: torna su LifeMax,
+          <b>Impostazioni → Promemoria → Come ti avviso</b>, e incollala nel
+          campo <b>Chiave pubblica</b>.</li>
         <li>Tre segreti: <code>VAPID_PUBBLICA</code>,
           <code>VAPID_PRIVATA</code>, <code>VAPID_SOGGETTO</code> (quest'ultimo
           è <code>mailto:</code> più la tua mail).</li>

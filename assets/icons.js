@@ -164,6 +164,7 @@
     coffee: '<path d="M4 8h13v6a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4z"/><path d="M17 9.5h1.6a2.4 2.4 0 0 1 0 4.8H17"/><path d="M7.5 3.2c-.4.7-.4 1.3 0 2M11 3.2c-.4.7-.4 1.3 0 2"/>',
     bed: '<path d="M3 6v13M3 12h18a0 0 0 0 1 0 0v7M21 19v-4a3 3 0 0 0-3-3H3M6.5 12v-2a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/>',
     /* ---------- presi dal pacco ---------- */
+    chiavi: '<path d="m15.5 7.5 2.3 2.3a1 1 0 0 0 1.4 0l2.1-2.1a1 1 0 0 0 0-1.4L19 4"/><path d="m21 2-9.6 9.6"/><circle cx="7.5" cy="15.5" r="5.5"/>',  /* lucide:key — le due chiavi dei promemoria */
     notaFissa: '<path d="M21 9a2.4 2.4 0 0 0-.706-1.706l-3.588-3.588A2.4 2.4 0 0 0 15 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2z"/><path d="M15 3v5a1 1 0 0 0 1 1h5"/>',  /* lucide:sticky-note — la nota che resta fra le notifiche */
     altreOpzioni: '<circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/>',  /* lucide:ellipsis-vertical — le altre cose che puoi fare su questa riga */
     schermoPiccolo: '<rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/>',  /* lucide:smartphone — la larghezza di un telefono */
@@ -303,6 +304,7 @@
     /* i promemoria */
     campana: 'i promemoria',
     campanaOff: 'spegnere i promemoria',
+    chiavi: 'le due chiavi dei promemoria',
 
     /* i segni delle aree: nominano un pezzo di vita, e solo quello */
     book: 'area: studio',
@@ -396,7 +398,13 @@
       '<defs><linearGradient id="' + id + '" x1="0" y1="1" x2="1" y2="0">' +
       '<stop offset="0" stop-color="var(--brand-a)"/><stop offset=".55" stop-color="var(--brand-b)"/><stop offset="1" stop-color="var(--brand-c)"/>' +
       '</linearGradient></defs>' +
-      '<rect x="2" y="2" width="44" height="44" rx="13" fill="url(#' + id + ')"/>' +
+      /* Non un `rect` con `rx`: quello è un rettangolo con quattro archi di
+         CERCHIO. Questo è il tracciato di una superellisse con lo stesso
+         esponente di `corner-shape: squircle` (n = 4, misurato in
+         prove/squircle.js) — e siccome è un tracciato, è un supercerchio vero
+         su qualunque browser, anche dove `corner-shape` non c'è.
+         Generato con: node segni/superellisse.mjs 44 44 13 */
+      '<path transform="translate(2 2)" d="M0 13C0.009 12.037 0.018 9.406 0.056 8.303C0.093 7.201 0.149 6.944 0.223 6.386C0.298 5.829 0.391 5.388 0.505 4.958C0.618 4.528 0.749 4.158 0.902 3.808C1.055 3.457 1.226 3.147 1.421 2.857C1.615 2.567 1.829 2.308 2.068 2.068C2.308 1.829 2.567 1.615 2.857 1.421C3.147 1.226 3.457 1.055 3.808 0.902C4.158 0.749 4.528 0.618 4.958 0.505C5.388 0.391 5.829 0.298 6.386 0.223C6.944 0.149 7.201 0.093 8.303 0.056C9.406 0.018 12.037 0.009 13 0L31 0C31.602 0.009 34.594 0.018 35.697 0.056C36.799 0.093 37.056 0.149 37.614 0.223C38.171 0.298 38.612 0.391 39.042 0.505C39.472 0.618 39.842 0.749 40.192 0.902C40.543 1.055 40.853 1.226 41.143 1.421C41.433 1.615 41.692 1.829 41.932 2.068C42.171 2.308 42.385 2.567 42.579 2.857C42.774 3.147 42.945 3.457 43.098 3.808C43.251 4.158 43.382 4.528 43.495 4.958C43.609 5.388 43.702 5.829 43.777 6.386C43.851 6.944 43.907 7.201 43.944 8.303C43.982 9.406 43.991 12.037 44 13L44 31C43.991 31.963 43.982 34.594 43.944 35.697C43.907 36.799 43.851 37.056 43.777 37.614C43.702 38.171 43.609 38.612 43.495 39.042C43.382 39.472 43.251 39.842 43.098 40.192C42.945 40.543 42.774 40.853 42.579 41.143C42.385 41.433 42.171 41.692 41.932 41.932C41.692 42.171 41.433 42.385 41.143 42.579C40.853 42.774 40.543 42.945 40.192 43.098C39.842 43.251 39.472 43.382 39.042 43.495C38.612 43.609 38.171 43.702 37.614 43.777C37.056 43.851 36.799 43.907 35.697 43.944C34.594 43.982 31.963 43.991 31 44L13 44C12.398 43.991 9.406 43.982 8.303 43.944C7.201 43.907 6.944 43.851 6.386 43.777C5.829 43.702 5.388 43.609 4.958 43.495C4.528 43.382 4.158 43.251 3.808 43.098C3.457 42.945 3.147 42.774 2.857 42.579C2.567 42.385 2.308 42.171 2.068 41.932C1.829 41.692 1.615 41.433 1.421 41.143C1.226 40.853 1.055 40.543 0.902 40.192C0.749 39.842 0.618 39.472 0.505 39.042C0.391 38.612 0.298 38.171 0.223 37.614C0.149 37.056 0.093 36.799 0.056 35.697C0.018 34.594 0.009 31.963 0 31L0 13Z" fill="url(#' + id + ')"/>' +
       '<path d="M12 30.5l7-7 5 5L34.5 18" fill="none" stroke="#fff" stroke-width="4.4" stroke-linecap="round" stroke-linejoin="round"/>' +
       '<path d="M27.5 17h7.5v7.5" fill="none" stroke="#fff" stroke-width="4.4" stroke-linecap="round" stroke-linejoin="round"/>' +
       '</svg>';

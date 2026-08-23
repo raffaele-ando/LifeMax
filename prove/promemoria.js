@@ -437,6 +437,19 @@ const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  
   await p.evaluate(() => { const b = document.getElementById('imp-prom-come'); if (b) b.click(); });
   await p.waitForTimeout(500);
   ok('la schermata «Come ti avviso» si apre', await p.evaluate(() => !!document.getElementById('prom-collega')));
+  /* la pagina che fa le chiavi deve essere raggiungibile DALL'APP: un file
+     dentro il progetto non lo apre chi non ha il progetto, e senza le chiavi
+     non si va avanti */
+  const link = await p.evaluate(() => {
+    const a = document.getElementById('prom-fai-chiavi');
+    return a ? { href: a.getAttribute('href'), fuori: a.target === '_blank', testo: a.textContent.trim() } : null;
+  });
+  ok('c’è il link per farsi le chiavi', !!link, link ? link.testo : 'manca');
+  ok('e punta alla pagina giusta', link && link.href === 'promemoria/chiavi.html', link && link.href);
+  ok('che si apre a parte', link && link.fuori);
+  /* e la pagina esiste davvero all'indirizzo a cui il link manda */
+  const rr = await p.evaluate(() => fetch('promemoria/chiavi.html').then(r => r.status).catch(() => 0));
+  ok('la pagina risponde a quell’indirizzo', rr === 200, String(rr));
   const collega = async (srv, kk) => {
     await p.evaluate(x => {
       document.getElementById('prom-server').value = x.s;

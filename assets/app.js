@@ -1129,6 +1129,14 @@
         '<label class="campo mt-s" for="prom-chiave">Chiave pubblica</label>' +
         '<input type="text" id="prom-chiave" autocapitalize="off" spellcheck="false" ' +
           'placeholder="B…" value="' + esc(c.chiave) + '">' +
+        /* La pagina che fa le chiavi sta nel sito, non sul computer: un file
+           dentro il progetto non si apre se non hai il progetto, e senza le
+           chiavi non si va avanti. Da qui è a un tocco. Si apre a parte
+           perché la sua unica regola è non mandare niente da nessuna parte:
+           dentro l'app perderebbe quella garanzia. */
+        '<div class="imp-azioni mt-s">' +
+          '<a class="btn btn-mini" id="prom-fai-chiavi" href="promemoria/chiavi.html" target="_blank" rel="noopener">' +
+          ICO('chiavi', 15) + ' Non le hai? Fattele qui' + ICO('share', 13) + '</a></div>' +
         '<div class="imp-azioni mt-s">' +
           '<button class="btn btn-mini btn-tinta" id="prom-collega">' + ICO('cloudCheck', 15) + ' Collega</button>' +
           (conf ? '<button class="btn btn-mini" id="prom-prova">' + ICO('campana', 15) + ' Mandamene una adesso</button>' : '') +

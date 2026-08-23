@@ -93,8 +93,12 @@ parte.**
 Servono ai servizi push (Apple, Google) per sapere che quelle notifiche le
 manda sempre lo stesso mittente. Sono una coppia.
 
-Apri nel browser il file **`promemoria/chiavi.html`** di questo progetto
-(basta fare doppio clic) e premi **Genera le due chiavi**.
+**Dall'app**, in *Impostazioni → Promemoria → Come ti avviso*, sotto il campo
+della chiave: **«Non le hai? Fattele qui»**. Si apre una pagina che genera la
+coppia. (Se preferisci: è il file `promemoria/chiavi.html`, e sul sito sta
+all'indirizzo del sito più `/promemoria/chiavi.html`.)
+
+Premi **Genera le due chiavi**.
 
 > Quella pagina non manda niente da nessuna parte: usa la crittografia che il
 > browser ha già dentro, e non c'è una riga di rete in tutto il file. Puoi
@@ -357,7 +361,7 @@ senza che nessuno se ne ricordi.
 | `promemoria/worker.js` | il Worker: due porte e una sveglia |
 | `promemoria/worker-unico.js` | **generato** — i tre di sopra in un file, per il pannello di Cloudflare |
 | `promemoria/impacchetta.mjs` | lo rifà: `node promemoria/impacchetta.mjs` |
-| `promemoria/chiavi.html` | genera la coppia VAPID nel browser, senza rete |
+| `promemoria/chiavi.html` | genera la coppia VAPID nel browser, senza rete — si apre dall'app, in «Come ti avviso» |
 | `promemoria/wrangler.toml` | per chi preferisce il terminale a mano (`npx wrangler deploy`) |
 
 Le prove, senza installare niente e senza toccare Cloudflare:

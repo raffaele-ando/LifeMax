@@ -2894,3 +2894,77 @@ body.sto-trascinando { cursor: grabbing; user-select: none; -webkit-user-select:
 .lista-riga:active .lista-azione:not(:active) { transform: none; }
 /* un link dentro una frase: il browser non dà nessuna risposta al dito */
 a:not(.btn):not(.nav-voce):not(.menu-voce):active { opacity: .55; }
+
+/* ============================================================
+   SQUIRCLE — gli angoli, per davvero
+   `border-radius` non fa un supercerchio: fa un rettangolo con quattro archi
+   di CERCHIO. È una differenza che si misura, non un'opinione: la curva di un
+   angolo è una superellisse |u|^n + |v|^n = 1, e un arco di cerchio è il caso
+   n = 2. Misurato sui pixel (prove/squircle.js), il solo `border-radius` dà
+   n = 2.0 — appunto un cerchio.
+   Il difetto che si vede senza saperlo nominare: la curvatura salta da zero
+   (il lato è dritto) a 1/r di colpo, nel punto in cui l'arco comincia. Su un
+   angolo grande quel salto si legge come due tacche sui fianchi. Una
+   superellisse invece parte piatta e si incurva piano: è la forma delle icone
+   di iOS, e la ragione per cui una scheda con l'angolo giusto sembra
+   «disegnata» e una con l'arco di cerchio sembra «impostata».
+
+   `corner-shape: squircle` cambia la forma del BOX, non è un ritaglio:
+   quindi bordo, sfondo e ombra seguono la curva. Le altre strade — clip-path,
+   maschere a nove fette — ritagliano l'elemento e con lui la sua ombra.
+   Misurato: `squircle` dà n = 4.0. E il parametro di `superellipse()` è su
+   scala logaritmica, non lineare: `superellipse(2)` dà anche lui n = 4,
+   `superellipse(3)` dà n = 8. Il numero è log2 dell'esponente vero — cosa che
+   il nome non dice, e che è il motivo per cui qui si usa la parola `squircle`
+   invece di un numero copiato da un articolo.
+
+   DOVE NON SI APPLICA. Le pastiglie e i pallini restano cerchi. Una capsula
+   con le estremità a superellisse non è una capsula più bella: è un'altra
+   forma, un rettangolo dagli spigoli tirati. E un pallino da otto pixel
+   diventa un quadratino. L'elenco qui sotto è GENERATO dai due fogli di
+   stile — sono i selettori che chiedono un raggio da pastiglia — e
+   prove/squircle.js lo rigenera e si ferma se qualcuno ne aggiunge uno senza
+   metterlo qui.
+
+   SU SAFARI, OGGI, NON C'È. `corner-shape` è solo su Chromium: su iPhone e su
+   Mac gli angoli restano archi di cerchio, cioè esattamente quello che c'era
+   prima — la richiesta è già scritta e il giorno che Safari la implementa
+   diventano supercerchi da soli, senza toccare niente. Il logo invece è un
+   tracciato SVG: quello è una superellisse vera su qualsiasi browser.
+   ============================================================ */
+@supports (corner-shape: squircle) {
+  /* su tutto, e sugli pseudo-elementi: `corner-shape` non si eredita, e dove
+     il raggio è zero non fa niente. Così vale anche per il codice di domani
+     senza doverselo ricordare. */
+  *, *::before, *::after { corner-shape: squircle; }
+
+  /* --- GENERATO: chi resta un cerchio vero --- */
+  #lab-demo .a9-adessolinea span, #lab-demo .a9-senza h2 span,
+  #lab-demo .c2-avanz i, #lab-demo .c2-sez span, #lab-demo .d5-avanz i,
+  #lab-demo .d5-chip button, #lab-demo .d5-cima nav a, #lab-demo .d5-h2 span,
+  #lab-demo .d5-quando, #lab-demo .d5-tag, #lab-demo .g8-avanz b,
+  #lab-demo .g8-avanz i, #lab-demo .k7-barra, #lab-demo .k7-barra i,
+  #lab-demo .k7-chip button, #lab-demo .k7-nav em, #lab-demo .k7-tag,
+  #lab-demo .m3-barra, #lab-demo .m3-barra i, #lab-demo .m3-chip button,
+  #lab-demo .m3-eti, #lab-demo .p10-aree button, #lab-demo .p10-eti,
+  #lab-demo .p10-ico, #lab-demo .p10-passi i, #lab-demo .p10-tag,
+  #lab-demo .s1-barra, #lab-demo .s1-barra i, #lab-demo .s1-chip button,
+  #lab-demo .s1-quando, #lab-demo .s1-serie, #lab-demo .s1-tag,
+  #lab-demo .s1-voce em, #lab-demo .t6-avanz b, #lab-demo .t6-avanz i,
+  #lab-demo .t6-chip button, #lab-demo .t6-ico, #lab-scelta .lab-seg,
+  #lab-scelta .lab-seg button, #lab-scelta .lab-tab, #lab-scelta .lab-tab em,
+  .ab-prog-barra, .ab-prog-barra span, .att-badge, .att-chip, .att-chip span,
+  .att-filtro, .aurora i, .avatar, .chip, .chip .pallino, .conta,
+  .diario-annulla, .evidenza, .ico-pallino, .lg-dot, .lg-none,
+  .lista-eti span, .logo .logo-tag, .me-scad, .nav-item .nav-badge,
+  .ob-account-in, .orizz-dist, .passi-punti span, .prom-int, .punto-vivo,
+  .q-chip, .riga-azione .tag-mit, .rit-ora, .scad-badge, .segmenti,
+  .segmenti > a, .segmenti button, .segmenti.tabs-fisse > a,
+  .segmenti.tabs-fisse > button, .sheet-maniglia::after, .strip-barra,
+  .strip-mark, .strip-now::after, .tabbar button .tab-ico .nav-badge,
+  .timer-anello, .timer-anello .timer-interno, .tl-ed-badge,
+  .tl-now-line span, .tl-sleep-lbl, .toast-azione, .trasc-guida span,
+  select.sel-compatto {
+    corner-shape: round;
+  }
+}
