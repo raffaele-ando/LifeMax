@@ -1,0 +1,756 @@
+{
+ "#lab-demo .a9-ades": {
+  "corto": 56,
+  "angolo": true
+ },
+ "#lab-demo .a9-adessolinea span": {
+  "corto": 16.3
+ },
+ "#lab-demo .a9-blocco": {
+  "corto": 38,
+  "angolo": true
+ },
+ "#lab-demo .a9-blocco.ades": {
+  "angolo": true
+ },
+ "#lab-demo .a9-blocco.fatto": {
+  "angolo": true
+ },
+ "#lab-demo .a9-btn": {
+  "corto": 28,
+  "angolo": true
+ },
+ "#lab-demo .a9-cima nav a": {
+  "corto": 30
+ },
+ "#lab-demo .a9-pieno": {
+  "angolo": true
+ },
+ "#lab-demo .a9-senza h2 span": {
+  "corto": 17.8
+ },
+ "#lab-demo .a9-tag": {
+  "corto": 19.8
+ },
+ "#lab-demo .c2-avanz i": {
+  "corto": 4
+ },
+ "#lab-demo .c2-btn": {
+  "corto": 28,
+  "angolo": true
+ },
+ "#lab-demo .c2-ico": {
+  "corto": 26,
+  "angolo": true
+ },
+ "#lab-demo .c2-nav a": {
+  "corto": 30
+ },
+ "#lab-demo .c2-pieno": {
+  "angolo": true
+ },
+ "#lab-demo .c2-sez span": {
+  "corto": 17.8
+ },
+ "#lab-demo .c2-tag": {
+  "corto": 19.8
+ },
+ "#lab-demo .d5-ades": {
+  "corto": 146.8,
+  "angolo": true
+ },
+ "#lab-demo .d5-avanz i": {
+  "corto": 6
+ },
+ "#lab-demo .d5-btn": {
+  "corto": 30,
+  "angolo": true
+ },
+ "#lab-demo .d5-chip button": {
+  "corto": 30,
+  "angolo": true
+ },
+ "#lab-demo .d5-chip button.on": {
+  "angolo": true
+ },
+ "#lab-demo .d5-cima nav a": {
+  "corto": 32
+ },
+ "#lab-demo .d5-h2 span": {
+  "corto": 20.2
+ },
+ "#lab-demo .d5-ico": {
+  "corto": 30,
+  "angolo": true
+ },
+ "#lab-demo .d5-largo": {
+  "corto": 36,
+  "angolo": true
+ },
+ "#lab-demo .d5-pieno": {
+  "angolo": true
+ },
+ "#lab-demo .d5-quando": {
+  "corto": 19.8
+ },
+ "#lab-demo .d5-tag": {
+  "corto": 19.8
+ },
+ "#lab-demo .g8-ades": {
+  "corto": 260,
+  "angolo": true
+ },
+ "#lab-demo .g8-avanz b": {
+  "corto": 10
+ },
+ "#lab-demo .g8-avanz i": {
+  "corto": 10
+ },
+ "#lab-demo .g8-basso a": {
+  "corto": 50
+ },
+ "#lab-demo .g8-btn": {
+  "corto": 54,
+  "angolo": true
+ },
+ "#lab-demo .g8-mega": {
+  "corto": 60,
+  "angolo": true
+ },
+ "#lab-demo .g8-riga": {
+  "corto": 75.5,
+  "angolo": true
+ },
+ "#lab-demo .k7-ades": {
+  "corto": 164.8,
+  "angolo": true
+ },
+ "#lab-demo .k7-barra": {
+  "corto": 5
+ },
+ "#lab-demo .k7-barra i": {
+  "corto": 5
+ },
+ "#lab-demo .k7-box": {
+  "corto": 165.3,
+  "angolo": true
+ },
+ "#lab-demo .k7-btn": {
+  "corto": 30,
+  "angolo": true
+ },
+ "#lab-demo .k7-chip button": {
+  "corto": 30,
+  "angolo": true
+ },
+ "#lab-demo .k7-chip button.on": {
+  "angolo": true
+ },
+ "#lab-demo .k7-ico": {
+  "corto": 30,
+  "angolo": true
+ },
+ "#lab-demo .k7-largo": {
+  "corto": 36,
+  "angolo": true
+ },
+ "#lab-demo .k7-nav a": {
+  "corto": 36
+ },
+ "#lab-demo .k7-nav em": {
+  "corto": 19
+ },
+ "#lab-demo .k7-pieno": {
+  "angolo": true
+ },
+ "#lab-demo .k7-tag": {
+  "corto": 21.8
+ },
+ "#lab-demo .lab-telaio": {
+  "corto": 288,
+  "angolo": true
+ },
+ "#lab-demo .m3-ades": {
+  "corto": 250,
+  "angolo": true
+ },
+ "#lab-demo .m3-barra": {
+  "corto": 7
+ },
+ "#lab-demo .m3-barra i": {
+  "corto": 7
+ },
+ "#lab-demo .m3-barrabasso a": {
+  "corto": 44
+ },
+ "#lab-demo .m3-box": {
+  "corto": 213.5,
+  "angolo": true
+ },
+ "#lab-demo .m3-btn": {
+  "corto": 44,
+  "angolo": true
+ },
+ "#lab-demo .m3-chip button": {
+  "corto": 36,
+  "angolo": true
+ },
+ "#lab-demo .m3-chip button.on": {
+  "angolo": true
+ },
+ "#lab-demo .m3-cosa": {
+  "corto": 139.5,
+  "angolo": true
+ },
+ "#lab-demo .m3-eti": {
+  "corto": 25.3
+ },
+ "#lab-demo .m3-forte": {
+  "angolo": true
+ },
+ "#lab-demo .m3-grosso": {
+  "corto": 52,
+  "angolo": true
+ },
+ "#lab-demo .m3-largo": {
+  "corto": 46,
+  "angolo": true
+ },
+ "#lab-demo .m3-tondo": {
+  "corto": 50,
+  "angolo": true
+ },
+ "#lab-demo .n4-ades": {
+  "corto": 115.8,
+  "angolo": true
+ },
+ "#lab-demo .n4-box": {
+  "corto": 161,
+  "angolo": true
+ },
+ "#lab-demo .n4-btn": {
+  "corto": 34,
+  "angolo": true
+ },
+ "#lab-demo .p10-abit": {
+  "corto": 108,
+  "angolo": true
+ },
+ "#lab-demo .p10-apri": {
+  "corto": 42,
+  "angolo": true
+ },
+ "#lab-demo .p10-aree button": {
+  "corto": 36,
+  "angolo": true
+ },
+ "#lab-demo .p10-basso a": {
+  "corto": 36.8
+ },
+ "#lab-demo .p10-btn": {
+  "corto": 34,
+  "angolo": true
+ },
+ "#lab-demo .p10-carta": {
+  "corto": 253.3,
+  "angolo": true
+ },
+ "#lab-demo .p10-dopo": {
+  "corto": 145.3,
+  "angolo": true
+ },
+ "#lab-demo .p10-eti": {
+  "corto": 25.3
+ },
+ "#lab-demo .p10-ico": {
+  "corto": 34,
+  "angolo": true
+ },
+ "#lab-demo .p10-mini": {
+  "corto": 34
+ },
+ "#lab-demo .p10-passi i": {
+  "corto": 5
+ },
+ "#lab-demo .p10-primo": {
+  "corto": 54,
+  "angolo": true
+ },
+ "#lab-demo .p10-tag": {
+  "corto": 22.5
+ },
+ "#lab-demo .p10-tondo": {
+  "corto": 44,
+  "angolo": true
+ },
+ "#lab-demo .s1-adesso": {
+  "corto": 158.8,
+  "angolo": true
+ },
+ "#lab-demo .s1-altre": {
+  "corto": 36,
+  "angolo": true
+ },
+ "#lab-demo .s1-barra": {
+  "corto": 5
+ },
+ "#lab-demo .s1-barra i": {
+  "corto": 5
+ },
+ "#lab-demo .s1-btn": {
+  "corto": 32,
+  "angolo": true
+ },
+ "#lab-demo .s1-card": {
+  "corto": 169,
+  "angolo": true
+ },
+ "#lab-demo .s1-chip button": {
+  "corto": 30,
+  "angolo": true
+ },
+ "#lab-demo .s1-chip button.on": {
+  "angolo": true
+ },
+ "#lab-demo .s1-icona": {
+  "corto": 32,
+  "angolo": true
+ },
+ "#lab-demo .s1-pieno": {
+  "angolo": true
+ },
+ "#lab-demo .s1-quando": {
+  "corto": 22.5
+ },
+ "#lab-demo .s1-serie": {
+  "corto": 22.5
+ },
+ "#lab-demo .s1-tag": {
+  "corto": 22.5
+ },
+ "#lab-demo .s1-voce": {
+  "corto": 38
+ },
+ "#lab-demo .s1-voce em": {
+  "corto": 19
+ },
+ "#lab-demo .t6-ades": {
+  "corto": 155.3,
+  "angolo": true
+ },
+ "#lab-demo .t6-avanz b": {
+  "corto": 6
+ },
+ "#lab-demo .t6-avanz i": {
+  "corto": 6
+ },
+ "#lab-demo .t6-basso a": {
+  "corto": 34.8
+ },
+ "#lab-demo .t6-btn": {
+  "corto": 34,
+  "angolo": true
+ },
+ "#lab-demo .t6-chip button": {
+  "corto": 32,
+  "angolo": true
+ },
+ "#lab-demo .t6-chip button.on": {
+  "angolo": true
+ },
+ "#lab-demo .t6-foglio": {
+  "corto": 286
+ },
+ "#lab-demo .t6-forte": {
+  "corto": 34
+ },
+ "#lab-demo .t6-ico": {
+  "corto": 34,
+  "angolo": true
+ },
+ "#lab-demo .t6-ico2": {
+  "corto": 30,
+  "angolo": true
+ },
+ "#lab-demo .t6-largo": {
+  "corto": 40,
+  "angolo": true
+ },
+ "#lab-demo .t6-vuoto": {
+  "angolo": true
+ },
+ "#lab-scelta .lab-seg": {
+  "corto": 38.8,
+  "angolo": true
+ },
+ "#lab-scelta .lab-seg button": {
+  "corto": 30.8,
+  "angolo": true
+ },
+ "#lab-scelta .lab-tab": {
+  "corto": 36,
+  "angolo": true
+ },
+ "#lab-scelta .lab-tab em": {
+  "corto": 20
+ },
+ "#lab-scelta .lab-tab.on": {
+  "angolo": true
+ },
+ ".ab-prog-barra": {
+  "corto": 6
+ },
+ ".abd-g": {
+  "corto": 36.8,
+  "angolo": true
+ },
+ ".abd-g.fatto": {
+  "angolo": true
+ },
+ ".abd-g.futuro": {
+  "angolo": true
+ },
+ ".agg-riga": {
+  "corto": 46.6,
+  "angolo": true
+ },
+ ".area-riga .icona-area": {
+  "corto": 28
+ },
+ ".att-badge": {
+  "corto": 17
+ },
+ ".att-filtro": {
+  "corto": 34,
+  "angolo": true
+ },
+ ".aurora i": {
+  "corto": 128
+ },
+ ".backup-riga": {
+  "corto": 63.8,
+  "angolo": true
+ },
+ ".banda-x": {
+  "corto": 28
+ },
+ ".btn": {
+  "corto": 33.7,
+  "angolo": true
+ },
+ ".btn-ghost": {
+  "angolo": true
+ },
+ ".btn-ok": {
+  "angolo": true
+ },
+ ".btn-primario": {
+  "angolo": true
+ },
+ ".btn-strumento-largo": {
+  "corto": 42
+ },
+ ".btn-tinta": {
+  "angolo": true
+ },
+ ".card": {
+  "corto": 97.5,
+  "angolo": true
+ },
+ ".card-area .testata .icona-area": {
+  "corto": 25.8
+ },
+ ".cattura-cta": {
+  "corto": 42,
+  "angolo": true
+ },
+ ".chip": {
+  "corto": 31.5,
+  "angolo": true
+ },
+ ".diag-console": {
+  "corto": 65.5,
+  "angolo": true
+ },
+ ".diag-riga": {
+  "corto": 27.3
+ },
+ ".diag-stato": {
+  "corto": 86.3,
+  "angolo": true
+ },
+ ".diario-annulla": {
+  "corto": 24.3,
+  "angolo": true
+ },
+ ".diario-ico": {
+  "corto": 26.8
+ },
+ ".evidenza": {
+  "corto": 17.9
+ },
+ ".evidenza-euristica": {
+  "angolo": true
+ },
+ ".exp-verdetto": {
+  "corto": 46.2,
+  "angolo": true
+ },
+ ".focus-cuore": {
+  "corto": 288,
+  "angolo": true
+ },
+ ".gio-so-corpo": {
+  "corto": 35.5,
+  "angolo": true
+ },
+ ".gio-sonno": {
+  "corto": 46,
+  "angolo": true
+ },
+ ".giornata-strip": {
+  "corto": 57.8,
+  "angolo": true
+ },
+ ".guida-ico": {
+  "corto": 32
+ },
+ ".icona-btn": {
+  "corto": 34,
+  "angolo": true
+ },
+ ".icona-btn.area-on.on": {
+  "angolo": true
+ },
+ ".icona-btn.on": {
+  "angolo": true
+ },
+ ".imp-pericolo": {
+  "angolo": true
+ },
+ ".lista": {
+  "corto": 58,
+  "angolo": true
+ },
+ ".lista-azione": {
+  "corto": 25.8,
+  "angolo": true
+ },
+ ".lista-azione.piena": {
+  "angolo": true
+ },
+ ".lista-eti span": {
+  "corto": 15
+ },
+ ".lista-riga.fatta .lista-azione.spunta": {
+  "angolo": true
+ },
+ ".lm-cell": {
+  "corto": 6.5,
+  "angolo": true
+ },
+ ".lm-cell-vuota": {
+  "angolo": true
+ },
+ ".lm-hbar-fill": {
+  "corto": 5.9
+ },
+ ".lm-hbar-row": {
+  "corto": 19.3
+ },
+ ".lm-hbar-track": {
+  "corto": 14.9
+ },
+ ".lm-swatch": {
+  "corto": 9.9
+ },
+ ".logo .logo-tag": {
+  "corto": 22.5,
+  "angolo": true
+ },
+ ".manico": {
+  "corto": 22
+ },
+ ".nav-item": {
+  "corto": 46.5
+ },
+ ".nav-item .nav-badge": {
+  "corto": 18.5
+ },
+ ".pannello-cattura": {
+  "corto": 121.3
+ },
+ ".pannello-cattura input[type=\"text\"]": {
+  "angolo": true
+ },
+ ".pannello-cattura input[type=\"text\"]:focus": {
+  "angolo": true
+ },
+ ".prom-int": {
+  "corto": 26,
+  "angolo": true
+ },
+ ".prom-int[aria-checked=\"true\"]": {
+  "angolo": true
+ },
+ ".punto-vivo": {
+  "corto": 8
+ },
+ ".q-chip": {
+  "corto": 34,
+  "angolo": true
+ },
+ ".riga-azione": {
+  "corto": 45,
+  "angolo": true
+ },
+ ".riga-azione .spunta": {
+  "corto": 26,
+  "angolo": true
+ },
+ ".riga-azione .tag-mit": {
+  "corto": 22.5
+ },
+ ".riga-azione.fatta .spunta": {
+  "angolo": true
+ },
+ ".rit-corpo > .card:first-child": {
+  "angolo": true
+ },
+ ".rit-gruppo": {
+  "corto": 56,
+  "angolo": true
+ },
+ ".rit-ico": {
+  "corto": 28
+ },
+ ".rit-ora": {
+  "corto": 22.5
+ },
+ ".scienza-card .uso": {
+  "corto": 56.1
+ },
+ ".segmenti": {
+  "corto": 34,
+  "angolo": true
+ },
+ ".segmenti > a": {
+  "corto": 34
+ },
+ ".segmenti button": {
+  "corto": 33.7
+ },
+ ".segmenti.tabs-fisse": {
+  "corto": 42
+ },
+ ".segmenti.tabs-fisse > a": {
+  "corto": 34
+ },
+ ".segmenti.tabs-fisse > button": {
+  "corto": 34
+ },
+ ".sel-area-azione": {
+  "corto": 19.6,
+  "angolo": true
+ },
+ ".sheet": {
+  "corto": 233.5,
+  "angolo": true
+ },
+ ".sheet-chiudi": {
+  "corto": 34
+ },
+ ".sotto-seg": {
+  "angolo": true
+ },
+ ".strip-barra": {
+  "corto": 13
+ },
+ ".strip-seg": {
+  "corto": 8
+ },
+ ".tabbar": {
+  "corto": 64,
+  "angolo": true
+ },
+ ".tabbar .tab-catt": {
+  "corto": 46
+ },
+ ".tabbar button": {
+  "corto": 46
+ },
+ ".tabbar button .tab-ico .nav-badge": {
+  "corto": 17,
+  "angolo": true
+ },
+ ".timer-anello": {
+  "corto": 116
+ },
+ ".timer-anello .timer-interno": {
+  "corto": 102
+ },
+ ".tl-blk": {
+  "corto": 24
+ },
+ ".tl-blk-att": {
+  "angolo": true
+ },
+ ".tl-blk-att.fatta": {
+  "angolo": true
+ },
+ ".tl-blk-att.fatta .tl-blk-check": {
+  "angolo": true
+ },
+ ".tl-blk-check": {
+  "corto": 22,
+  "angolo": true
+ },
+ ".tl-blk-pasto": {
+  "angolo": true
+ },
+ ".tl-check": {
+  "corto": 26,
+  "angolo": true
+ },
+ ".tl-dur": {
+  "corto": 24
+ },
+ ".tl-now-line span": {
+  "corto": 18.5
+ },
+ ".tl-sleep": {
+  "corto": 28
+ },
+ ".toast": {
+  "corto": 56
+ },
+ ".toast-azione": {
+  "corto": 32
+ },
+ ".voto-area .stelline button": {
+  "corto": 44,
+  "angolo": true
+ },
+ ":focus-visible": {
+  "corto": 50.3
+ },
+ ":root[data-mode=\"dark\"] .toast": {
+  "angolo": true
+ },
+ "button": {
+  "angolo": true
+ },
+ "input[type=\"text\"]": {
+  "angolo": true
+ },
+ "input[type=\"text\"]:focus": {
+  "angolo": true
+ },
+ "kbd": {
+  "corto": 18,
+  "angolo": true
+ },
+ "select": {
+  "angolo": true
+ }
+}

@@ -66,7 +66,19 @@ const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  
   const gesto = async (x, y, dy, opz) => {
     opz = opz || {};
     const passi = opz.passi || 14;
-    await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: x, y: y, id: 1 }] });
+    /* IL TEMPO GLIELO DIAMO NOI. La regola del colpo secco guarda i px/ms fra
+       il primo e l'ultimo campione, e senza `timestamp` quel tempo è la
+       LATENZA della macchina fra un evento e l'altro: in raffica il browser
+       fonde i movimenti in uno, quindi restano due campioni e la velocità
+       diventa 70px diviso quanto ha messo la coda CDP ad arrivare. Misurato:
+       fra 90 e 180 ms, cioè da 0.39 a 0.78 px/ms, con la soglia in mezzo — la
+       prova passava o non passava a caso, e per un po' è sembrata colpa del
+       foglio di stile. Con `timestamp` esplicito il tempo è quello che diciamo
+       noi e la velocità è sempre la stessa: si prova la REGOLA, non la
+       macchina. */
+    const passo = opz.raffica ? 0.01 : 0.016;
+    const t0 = Date.now() / 1000;
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: x, y: y, id: 1 }], timestamp: t0 });
     /* `raffica`: gli invii tutti in coda senza aspettare la risposta. Serve
        per il colpo secco — un andata e ritorno CDP costa un decimo di
        secondo, quindi aspettandolo la velocità massima simulabile è 0.1 px/ms
@@ -74,15 +86,15 @@ const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  
        raffica il browser fonde i movimenti in uno e il tempo è quello vero. */
     if (opz.raffica) {
       const inv = [];
-      for (let i = 1; i <= passi; i++) inv.push(cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: x, y: y + dy * i / passi, id: 1 }] }));
+      for (let i = 1; i <= passi; i++) inv.push(cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: x, y: y + dy * i / passi, id: 1 }], timestamp: t0 + passo * i }));
       await Promise.all(inv);
     } else {
       for (let i = 1; i <= passi; i++) {
-        await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: x, y: y + dy * i / passi, id: 1 }] });
+        await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: x, y: y + dy * i / passi, id: 1 }], timestamp: t0 + passo * i });
         await new Promise(r => setTimeout(r, 16));
       }
     }
-    await cdp.send('Input.dispatchTouchEvent', { type: opz.cancella ? 'touchCancel' : 'touchEnd', touchPoints: [] });
+    await cdp.send('Input.dispatchTouchEvent', { type: opz.cancella ? 'touchCancel' : 'touchEnd', touchPoints: [], timestamp: t0 + passo * (passi + 1) });
     await p.waitForTimeout(480);
   };
 

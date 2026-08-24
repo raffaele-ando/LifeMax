@@ -1,0 +1,254 @@
+[
+ {
+  "nome": "Oggi",
+  "via": "oggi",
+  "tab": null,
+  "poi": null
+ },
+ {
+  "nome": "Oggi · le altre aperte",
+  "via": "oggi",
+  "tab": null,
+  "poi": "document.getElementById('btn-altre') && document.getElementById('btn-altre').click()"
+ },
+ {
+  "nome": "Oggi · cattura",
+  "via": "oggi",
+  "tab": null,
+  "poi": "document.querySelector('.tabbar [data-catt]') && document.querySelector('.tabbar [data-catt]').click()"
+ },
+ {
+  "nome": "La giornata",
+  "via": "giornata",
+  "tab": null,
+  "poi": null
+ },
+ {
+  "nome": "Attività · sistemare",
+  "via": "inbox",
+  "tab": 0,
+  "poi": null
+ },
+ {
+  "nome": "Attività · da fare",
+  "via": "inbox",
+  "tab": 1,
+  "poi": null
+ },
+ {
+  "nome": "Attività · abitudini",
+  "via": "inbox",
+  "tab": 2,
+  "poi": null
+ },
+ {
+  "nome": "Attività · scheda",
+  "via": "inbox",
+  "tab": 1,
+  "poi": "document.querySelector('[data-bkapri]') && document.querySelector('[data-bkapri]').click()"
+ },
+ {
+  "nome": "Attività · abitudine",
+  "via": "inbox",
+  "tab": 2,
+  "poi": "document.querySelector('[data-abdett]') && document.querySelector('[data-abdett]').click()"
+ },
+ {
+  "nome": "Attività · filtri",
+  "via": "inbox",
+  "tab": 1,
+  "poi": "document.querySelector('.att-filtro') && document.querySelector('.att-filtro').click()"
+ },
+ {
+  "nome": "Rituali",
+  "via": "rituali",
+  "tab": null,
+  "poi": null
+ },
+ {
+  "nome": "Andamento · riepilogo",
+  "via": "plancia",
+  "tab": 0,
+  "poi": null
+ },
+ {
+  "nome": "Andamento · diario",
+  "via": "plancia",
+  "tab": 1,
+  "poi": null
+ },
+ {
+  "nome": "Andamento · aree",
+  "via": "plancia",
+  "tab": 2,
+  "poi": null
+ },
+ {
+  "nome": "Andamento · grafici",
+  "via": "plancia",
+  "tab": 3,
+  "poi": null
+ },
+ {
+  "nome": "Esperimenti",
+  "via": "esperimenti",
+  "tab": null,
+  "poi": null
+ },
+ {
+  "nome": "Impostazioni",
+  "via": "plancia",
+  "tab": null,
+  "poi": "(async () => {\n  const b = [...document.querySelectorAll('#vista button')].find((x) => /Impostazioni/.test(x.textContent));\n  if (b) b.click();\n  await new Promise((r) => setTimeout(r, 500));\n  const c = document.getElementById('nessuno');\n  if (c) c.click();\n})()"
+ },
+ {
+  "nome": "Come ti avviso",
+  "via": "plancia",
+  "tab": null,
+  "poi": "(async () => {\n  const b = [...document.querySelectorAll('#vista button')].find((x) => /Impostazioni/.test(x.textContent));\n  if (b) b.click();\n  await new Promise((r) => setTimeout(r, 500));\n  const c = document.getElementById('imp-prom-come');\n  if (c) c.click();\n})()"
+ },
+ {
+  "nome": "Sonno e pasti",
+  "via": "plancia",
+  "tab": null,
+  "poi": "(async () => {\n  const b = [...document.querySelectorAll('#vista button')].find((x) => /Impostazioni/.test(x.textContent));\n  if (b) b.click();\n  await new Promise((r) => setTimeout(r, 500));\n  const c = document.getElementById('imp-ritmo');\n  if (c) c.click();\n})()"
+ },
+ {
+  "nome": "Le tue aree",
+  "via": "plancia",
+  "tab": null,
+  "poi": "(async () => {\n  const b = [...document.querySelectorAll('#vista button')].find((x) => /Impostazioni/.test(x.textContent));\n  if (b) b.click();\n  await new Promise((r) => setTimeout(r, 500));\n  const c = document.getElementById('imp-aree');\n  if (c) c.click();\n})()"
+ },
+ {
+  "nome": "Backup",
+  "via": "plancia",
+  "tab": null,
+  "poi": "(async () => {\n  const b = [...document.querySelectorAll('#vista button')].find((x) => /Impostazioni/.test(x.textContent));\n  if (b) b.click();\n  await new Promise((r) => setTimeout(r, 500));\n  const c = document.getElementById('imp-backup');\n  if (c) c.click();\n})()"
+ },
+ {
+  "nome": "Come si usa",
+  "via": "plancia",
+  "tab": null,
+  "poi": "(async () => {\n  const b = [...document.querySelectorAll('#vista button')].find((x) => /Impostazioni/.test(x.textContent));\n  if (b) b.click();\n  await new Promise((r) => setTimeout(r, 500));\n  const c = document.getElementById('imp-guida');\n  if (c) c.click();\n})()"
+ },
+ {
+  "nome": "Cosa sta succedendo",
+  "via": "plancia",
+  "tab": null,
+  "poi": "(async () => {\n  const b = [...document.querySelectorAll('#vista button')].find((x) => /Impostazioni/.test(x.textContent));\n  if (b) b.click();\n  await new Promise((r) => setTimeout(r, 500));\n  const c = document.getElementById('imp-diag');\n  if (c) c.click();\n})()"
+ },
+ {
+  "nome": "La scienza",
+  "via": "plancia",
+  "tab": null,
+  "poi": "(async () => {\n  const b = [...document.querySelectorAll('#vista button')].find((x) => /Impostazioni/.test(x.textContent));\n  if (b) b.click();\n  await new Promise((r) => setTimeout(r, 500));\n  const c = document.getElementById('imp-scienza');\n  if (c) c.click();\n})()"
+ },
+ {
+  "nome": "Oggi · timer avviato",
+  "via": "oggi",
+  "tab": null,
+  "poi": "(function(){var b=document.getElementById('btn-timer');if(b)b.click();})()"
+ },
+ {
+  "nome": "Attività · scartata, col toast",
+  "via": "inbox",
+  "tab": 0,
+  "poi": "(async () => {\n  const b = document.querySelector('[data-fai=\"scarta\"]');\n  if (b) b.click();\n  await new Promise((r) => setTimeout(r, 400));\n})()"
+ },
+ {
+  "nome": "Design lab · 1",
+  "via": "lab",
+  "tab": null,
+  "poi": "(function(){var t=document.querySelector('.lab-tab[data-d=\"1\"]');if(t)t.click();})()"
+ },
+ {
+  "nome": "Design lab · 2",
+  "via": "lab",
+  "tab": null,
+  "poi": "(function(){var t=document.querySelector('.lab-tab[data-d=\"2\"]');if(t)t.click();})()"
+ },
+ {
+  "nome": "Design lab · 3",
+  "via": "lab",
+  "tab": null,
+  "poi": "(function(){var t=document.querySelector('.lab-tab[data-d=\"3\"]');if(t)t.click();})()"
+ },
+ {
+  "nome": "Design lab · 4",
+  "via": "lab",
+  "tab": null,
+  "poi": "(function(){var t=document.querySelector('.lab-tab[data-d=\"4\"]');if(t)t.click();})()"
+ },
+ {
+  "nome": "Design lab · 5",
+  "via": "lab",
+  "tab": null,
+  "poi": "(function(){var t=document.querySelector('.lab-tab[data-d=\"5\"]');if(t)t.click();})()"
+ },
+ {
+  "nome": "Design lab · 6",
+  "via": "lab",
+  "tab": null,
+  "poi": "(function(){var t=document.querySelector('.lab-tab[data-d=\"6\"]');if(t)t.click();})()"
+ },
+ {
+  "nome": "Design lab · 7",
+  "via": "lab",
+  "tab": null,
+  "poi": "(function(){var t=document.querySelector('.lab-tab[data-d=\"7\"]');if(t)t.click();})()"
+ },
+ {
+  "nome": "Design lab · 8",
+  "via": "lab",
+  "tab": null,
+  "poi": "(function(){var t=document.querySelector('.lab-tab[data-d=\"8\"]');if(t)t.click();})()"
+ },
+ {
+  "nome": "Design lab · 9",
+  "via": "lab",
+  "tab": null,
+  "poi": "(function(){var t=document.querySelector('.lab-tab[data-d=\"9\"]');if(t)t.click();})()"
+ },
+ {
+  "nome": "Design lab · 10",
+  "via": "lab",
+  "tab": null,
+  "poi": "(function(){var t=document.querySelector('.lab-tab[data-d=\"10\"]');if(t)t.click();})()"
+ },
+ {
+  "nome": "Design lab · 1 · attività",
+  "via": "lab",
+  "tab": null,
+  "poi": "(async () => {\n  const t = document.querySelector('.lab-tab[data-d=\"1\"]');\n  if (t) t.click();\n  await new Promise((r) => setTimeout(r, 500));\n  const a = document.querySelector('#lab-schermo button[data-s=\"attivita\"]');\n  if (a) a.click();\n})()"
+ },
+ {
+  "nome": "Design lab · 3 · attività",
+  "via": "lab",
+  "tab": null,
+  "poi": "(async () => {\n  const t = document.querySelector('.lab-tab[data-d=\"3\"]');\n  if (t) t.click();\n  await new Promise((r) => setTimeout(r, 500));\n  const a = document.querySelector('#lab-schermo button[data-s=\"attivita\"]');\n  if (a) a.click();\n})()"
+ },
+ {
+  "nome": "Design lab · 5 · attività",
+  "via": "lab",
+  "tab": null,
+  "poi": "(async () => {\n  const t = document.querySelector('.lab-tab[data-d=\"5\"]');\n  if (t) t.click();\n  await new Promise((r) => setTimeout(r, 500));\n  const a = document.querySelector('#lab-schermo button[data-s=\"attivita\"]');\n  if (a) a.click();\n})()"
+ },
+ {
+  "nome": "Design lab · 6 · attività",
+  "via": "lab",
+  "tab": null,
+  "poi": "(async () => {\n  const t = document.querySelector('.lab-tab[data-d=\"6\"]');\n  if (t) t.click();\n  await new Promise((r) => setTimeout(r, 500));\n  const a = document.querySelector('#lab-schermo button[data-s=\"attivita\"]');\n  if (a) a.click();\n})()"
+ },
+ {
+  "nome": "Design lab · 7 · attività",
+  "via": "lab",
+  "tab": null,
+  "poi": "(async () => {\n  const t = document.querySelector('.lab-tab[data-d=\"7\"]');\n  if (t) t.click();\n  await new Promise((r) => setTimeout(r, 500));\n  const a = document.querySelector('#lab-schermo button[data-s=\"attivita\"]');\n  if (a) a.click();\n})()"
+ },
+ {
+  "nome": "Design lab · 10 · attività",
+  "via": "lab",
+  "tab": null,
+  "poi": "(async () => {\n  const t = document.querySelector('.lab-tab[data-d=\"10\"]');\n  if (t) t.click();\n  await new Promise((r) => setTimeout(r, 500));\n  const a = document.querySelector('#lab-schermo button[data-s=\"attivita\"]');\n  if (a) a.click();\n})()"
+ }
+]

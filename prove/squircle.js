@@ -298,7 +298,7 @@ const CONTORNO = `(function (b64, R, dritto) {
       var clip = s.clipPath;
       /* NESSUNA eccezione, pastiglie comprese. Erano rimaste archi di cerchio
          perché un ritaglio non sa dire «metà del lato corto»: adesso le loro
-         altezze si MISURANO in pagina (segni/altezze.mjs) e il raggio si ricava
+         altezze si MISURANO in pagina (segni/misure.mjs) e il raggio si ricava
          da là. Se una resta indietro, va rilanciata quella misura. */
       var capsula = rmax >= Math.min(r.width, r.height) / 2 - 0.6;
       /* I CAMPI DI FORM sono l'unica eccezione, e non è una scelta: un input,
@@ -309,7 +309,7 @@ const CONTORNO = `(function (b64, R, dritto) {
       var campo = /^(input|select|textarea|progress|meter)$/.test(e.tagName.toLowerCase());
       if (rmax >= 1 && !campo && (!clip || clip === 'none'))
         { out.senza.push(nome(e) + ' (raggio ' + rmax + 'px' +
-          (capsula ? ', pastiglia: lancia node segni/altezze.mjs' : '') + ')'); return; }
+          (capsula ? ', pastiglia: lancia node segni/misure.mjs' : '') + ')'); return; }
       if (campo && (!clip || clip === 'none')) {
         /* e il bordo devono averlo: se qualcuno glielo spegne, sparisce */
         var bwc = parseFloat(s.borderTopWidth) || 0;
@@ -352,11 +352,18 @@ const CONTORNO = `(function (b64, R, dritto) {
       if (opaco && !/^visible/.test(s.overflow) && quale) {
         /* conta solo se l'anello sta NELL'AREA DEL BORDO (inset negativo): là
            l'overflow, che taglia al riquadro interno, se lo mangia. Per chi
-           scorre l'anello si disegna dentro, a inset 0, e allora va bene. */
+           scorre l'anello si disegna dentro, a inset 0, e allora va bene.
+           E non conta se chi taglia è un overflow «clip» con un margine di
+           ritaglio grande almeno quanto l'inset: quello sposta il taglio
+           esattamente dove sta l'anello, e i figli restano dentro come voleva
+           chi ha scritto il foglio. (Con «hidden» il margine non ha nessun
+           effetto: misurato. E i pixel dicono che così il bordo c'è tutto —
+           ventiquattro direzioni su ventiquattro, luminanza uguale.) */
         var ins = parseFloat(quale.top);
-        if (!isNaN(ins) && ins < -0.01)
-          out.overflow.push(nome(e) + ' — overflow ' + s.overflow +
-            ' si mangia l’anello (inset ' + quale.top + ')');
+        var margine = /clip/.test(s.overflow) ? (parseFloat(s.overflowClipMargin) || 0) : 0;
+        if (!isNaN(ins) && ins < -0.01 && margine < -ins - 0.01)
+          out.overflow.push(nome(e) + ' — overflow ' + s.overflow + ' (margine ' +
+            margine + ') si mangia l’anello (inset ' + quale.top + ')');
       }
       /* e il ritaglio non deve mangiare quello che sporge */
       if (/^visible/.test(s.overflow) && /^visible/.test(s.overflowY) && /^visible/.test(s.overflowX)) {

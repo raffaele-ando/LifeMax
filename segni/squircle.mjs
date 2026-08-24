@@ -62,30 +62,61 @@ const TOLLERANZA = 0.1;
 const SUPPORTO = '@supports (clip-path: polygon(min(1px, 50%) 0px, ' +
   'calc(100% - min(1px, 50%)) 0px, 100% 100%))';
 
-/* MISURATI IN PAGINA, non indovinati: l'angolo di Apple si mangia 1.528665
-   raggi lungo ogni lato, quindi vuole un lato di almeno 3.06 raggi. Questi
-   elementi sono più corti di così e i due angoli si scontrerebbero, con una
-   strozzatura in mezzo al lato. Il raggio è quello più grande che ci sta.
-   Per rifare la misura: prove/squircle.js, sezione «ci sta l'angolo». */
-const TROPPO_PICCOLI = {
-  'select.sc-inline': 10,
-  '.btn-mini': 11,
-  '.gio-so-corpo': 11,
-  '.segmenti.sez-nav': 17,
-  '.tl-blk-check': 7,
-  '.manico': 7,
-  'kbd': 7,
-  '.tl-blk-pasto': 7
-};
+/* QUANTO È GRANDE UNA COSA non si vede dal foglio di stile: quasi tutto prende
+   l'altezza dal contenuto. E bisogna saperlo, perché l'angolo di Apple si
+   mangia 1.528665 raggi lungo ogni lato e quindi vuole un lato di almeno 3.057
+   raggi. Sotto quella misura il ritaglio non fa un angolo più piccolo: le
+   percentuali di un poligono si risolvono PER ASSE, quindi su una barretta
+   alta nove pixel con un raggio da otto la curva si schiaccia solo in
+   verticale e l'estremità viene a punta, come una foglia.
 
-/* Le altezze delle pastiglie, MISURATE in pagina da segni/altezze.mjs. Servono
-   perché il ritaglio non sa dire «metà del lato corto»: per dare anche a loro
-   l'angolo continuo bisogna sapere quanto sono alte. Senza il file, restano
-   capsule e il generatore lo dice. */
-const ALTEZZE = (() => {
-  try { return JSON.parse(fs.readFileSync(path.join(RADICE, 'segni/altezze.json'), 'utf8')); }
+   Qui c'era una tabella di otto selettori «troppo piccoli», scritta a mano.
+   Ne mancavano trentanove e tre numeri erano sbagliati — `.segmenti.sez-nav`
+   aveva 17 dove ci stava 13.7. Adesso le misure le prende segni/misure.mjs
+   aprendo l'app, e questo file le legge. Chi non c'è resta come l'ha scritto
+   il foglio di stile, e il generatore lo dice.
+
+   Nello stesso file c'è anche «angolo»: se quel selettore colpisce mai un
+   elemento che ha ANCHE la forma. Serve per spegnere il colore del bordo del
+   box, e dal nome non si può sapere: `.tl-blk` dichiara l'angolo e
+   `.tl-blk-pasto`, un'altra classe sullo stesso elemento, dichiara il bordo. */
+const MISURE = (() => {
+  try { return JSON.parse(fs.readFileSync(path.join(RADICE, 'segni/misure.json'), 'utf8')); }
   catch (e) { return {}; }
 })();
+const latoCorto = (s2) => {
+  const m = MISURE[s2];
+  return m && m.corto >= 1 ? m.corto : null;
+};
+/* il raggio più grande che ci sta in quel lato: quello il cui angolo si mangia
+   esattamente mezzo lato, cioè il caso limite dell'icona di iOS */
+const raggioMax = (s2) => {
+  const c = latoCorto(s2);
+  /* a scalini di mezzo pixel, sempre per difetto. Un raggio esatto per ogni
+     selettore vuol dire un tracciato per ogni selettore, e i tracciati sono la
+     roba grossa del foglio di stile: con gli scalini i gruppi si rimettono
+     insieme e il foglio pesa un terzo in meno. Mezzo pixel di raggio in meno
+     sposta il contorno di mezzo pixel, sempre verso l'interno: ci sta. */
+  if (c === null) return null;
+  const r = c / (2 * A.INIZIO);
+  /* sotto i quattro pixel a scalini di un decimo: là mezzo pixel di raggio è
+     un quarto dell'angolo, e su una barretta alta sei pixel si vede che le
+     estremità sono meno tonde di quanto potrebbero. I tracciati piccoli sono
+     anche i più corti da scrivere, quindi i gruppi in più non costano. */
+  const scalino = r < 4 ? 10 : 2;
+  return Math.floor(r * scalino) / scalino;
+};
+
+/* UN CAMPO DI FORM NON PUÒ AVERE LA FORMA, e non basta accorgersene dal nome
+   del selettore: `.sel-area-azione` e `.tl-dur` sono `select` e non lo dicono.
+   A uno era sparito il bordo (glielo abbiamo spento aspettandoci un anello che
+   lì non può esistere) e all'altro il ritaglio lo tagliava proprio
+   sull'angolo. Questa coda lo chiede all'ELEMENTO.
+   Vale anche un punto di specificità, e serve: il blocco generato sta in fondo
+   ad app.css, ma lab.css si carica DOPO e i suoi `border: 1px solid` a pari
+   specificità vincevano, riaccendendo il bordo del box sopra l'anello — sei
+   elementi del Design lab col bordo doppio sui fianchi. */
+const NON_CAMPO = ':not(input,select,textarea,progress,meter)';
 
 /* --- lettura grezza: selettore + corpo, in ordine, @media compresi --- */
 function regole(file) {
@@ -128,23 +159,13 @@ const raggioPastiglia = (v) => /--r-tondo|(^|\s)50%|9{2,}px/.test(v);
 const selettori = (testa) => testa.split(',').map((t) => t.trim())
   .filter((t) => /^[.#a-z:[*]/i.test(t) && !/::(before|after|first-line|marker|placeholder|selection)/.test(t));
 
-/* l'elenco dei selettori che hanno un raggio da pastiglia: lo usa
-   segni/altezze.mjs per sapere cosa misurare */
-export function capsule() {
-  const R = [...regole('assets/app.css'), ...regole('assets/lab.css')];
-  const fuori = [];
-  R.forEach(({ testa, corpo }) => {
-    const sel = selettori(testa);
-    if (!sel.length) return;
-    [...corpo.matchAll(/border-radius\s*:\s*([^;}]+)/g)].forEach((m) => {
-      if (!raggioPastiglia(m[1].trim())) return;
-      sel.forEach((x) => { if (!fuori.includes(x)) fuori.push(x); });
-    });
-  });
-  return fuori;
-}
-
-export function genera() {
+/* LO SCANDAGLIO dei due fogli di stile: chi ha un angolo, chi ha un bordo,
+   chi taglia, chi si posiziona. Sta in una funzione a sé perché lo usa anche
+   segni/misure.mjs: la lista di cosa misurare e la lista di cosa disegnare
+   devono venire dalla stessa lettura, se no si misura una cosa e si disegna
+   un'altra. (È già successo: le misure ferme a ventuno schermate e il
+   generatore a venticinque.) */
+function scandaglia() {
   const R = [...regole('assets/app.css'), ...regole('assets/lab.css')];
 
   /* chi tocca `position`: a quelli non si aggiunge `position: relative`,
@@ -171,6 +192,7 @@ export function genera() {
   const raggi = [];      /* [selettore, valore] */
   const bordi = [];      /* [selettore, colore] */
   const spessori = [];   /* [selettore, px] */
+  const lati = [];       /* [selettore, lato, colore]: le fascette d'accento */
   R.forEach(({ testa, corpo }) => {
     const sel = selettori(testa);
     if (!sel.length) return;
@@ -200,7 +222,31 @@ export function genera() {
     });
     [...corpo.matchAll(/(?:^|[;\s])border-width\s*:\s*([0-9.]+)px/g)]
       .forEach((m) => sel.forEach((s) => spessori.push([s, parseFloat(m[1])])));
+    /* LE FASCETTE D'ACCENTO, un lato solo. `.tl-blk-att` ha un filo da 1px su
+       tutti i lati e una fascia da 3px a sinistra col colore dell'area;
+       `.diag-stato` la stessa cosa col colore dello stato. Spegnendo
+       `border-color` per far dipingere l'anello si spegneva anche quella, e
+       l'accento spariva: va rimesso lato per lato, dopo. */
+    [...corpo.matchAll(/(?:^|[;\s])border-(left|right|top|bottom)\s*:\s*[0-9.]+px\s+(?:solid|dashed|dotted)\s+([^;}]+)/g)]
+      .forEach((m) => sel.forEach((s) => lati.push([s, m[1], m[2].trim()])));
+    [...corpo.matchAll(/(?:^|[;\s])border-(left|right|top|bottom)-color\s*:\s*([^;}]+)/g)]
+      .forEach((m) => sel.forEach((s) => lati.push([s, m[1], m[2].trim()])));
   });
+
+  return { R, posiziona, beforeOccupato, taglia, raggi, bordi, spessori, lati };
+}
+
+/* quello che segni/misure.mjs deve andare a misurare in pagina */
+export function daMisurare() {
+  const { raggi, bordi } = scandaglia();
+  /* i selettori che avranno la forma: i campi di form no, quelli restano col
+     loro raggio */
+  const forma = [...new Set(raggi.filter(([s]) => !formControl(s)).map(([s]) => s))];
+  return { raggi: forma, forma, bordi: [...new Set(bordi.map(([s]) => s))] };
+}
+
+export function genera() {
+  const { R, posiziona, beforeOccupato, taglia, raggi, bordi, spessori, lati } = scandaglia();
 
   /* --- un raggio può avere fino a quattro valori --- */
   function quattro(v) {
@@ -243,24 +289,22 @@ export function genera() {
      supercerchio invece che a semicerchio.
      Se quel selettore non è mai stato visto in pagina resta capsula: meglio un
      arco di cerchio che una foglia. */
-  const senzaMisuraPastiglia = [];
-  const raggioPastigliaVero = (s2) => {
-    const corto = ALTEZZE[s2];
-    /* anche le barrette da cinque pixel: là l'angolo è un pixel e mezzo e non
-       si vede, ma lasciarle indietro vuol dire lasciare in giro archi di
-       cerchio, e la richiesta era «ogni cosa» */
-    if (!(corto >= 4)) { if (!senzaMisuraPastiglia.includes(s2)) senzaMisuraPastiglia.push(s2); return null; }
-    return Math.floor((corto / (2 * A.INIZIO)) * 10) / 10;
-  };
-  const capsula = (s2, v) => eraPastiglia(v) && raggioPastigliaVero(s2) === null;
+  const capsula = (s2, v) => eraPastiglia(v) && raggioMax(s2) === null;
   const conAngolo = new Set(raggi
     .filter(([s2, v]) => !capsula(s2, v) && !formControl(s2)).map(([s]) => s));
 
-  /* il raggio da usare davvero: quello dichiarato, o quello ridotto perché
-     l'elemento è troppo corto per contenere l'angolo */
-  const raggioVero = (s, q) => {
-    const lim = TROPPO_PICCOLI[s];
-    return lim === undefined ? q : q.map((x) => Math.min(x, lim));
+  /* IL RAGGIO DA USARE DAVVERO: quello dichiarato, tagliato a quello che ci
+     sta nel lato corto misurato. Senza questo taglio l'app aveva trentanove
+     elementi con l'angolo più lungo di mezzo lato — le barrette dei grafici,
+     le celle del calendario, i pulsanti piccoli, le barre di sezione — e là il
+     ritaglio non fa un angolo più piccolo: schiaccia la curva su un asse solo
+     e l'estremità viene a punta. */
+  const stretti = [];
+  const raggioVero = (s2, q) => {
+    const max = raggioMax(s2);
+    if (max === null) return q;
+    if (Math.max.apply(null, q) > max + 0.05) stretti.push(s2 + ' ' + Math.max.apply(null, q) + '→' + max);
+    return q.map((x) => Math.min(x, max));
   };
 
   /* chi ha davvero un bordo su tutti e quattro i lati: solo a loro serve
@@ -273,7 +317,10 @@ export function genera() {
     const out = []; let r = '';
     lista.forEach((x, i) => {
       const pezzo = x + (i < lista.length - 1 ? ',' : '');
-      if ((r + ' ' + pezzo).length > 78) { out.push(r); r = pezzo; } else r = (r ? r + ' ' : '') + pezzo;
+      /* `r &&`: un selettore che da solo passa i 78 caratteri — con la coda
+         `:not(...)` capita spesso — mandava a capo una riga ancora vuota, e nel
+         foglio restavano righe di due spazi */
+      if (r && (r + ' ' + pezzo).length > 78) { out.push(r); r = pezzo; } else r = (r ? r + ' ' : '') + pezzo;
     });
     if (r) out.push(r);
     return out.map((x) => sp + x).join('\n');
@@ -295,7 +342,7 @@ export function genera() {
     if (formControl(s)) { if (!campi.includes(s)) campi.push(s); return; }
     let q0;
     if (eraPastiglia(v)) {
-      const r = raggioPastigliaVero(s);
+      const r = raggioMax(s);
       if (r === null) { restateCapsule.push(s); return; }
       q0 = [r, r, r, r];
     } else {
@@ -368,15 +415,18 @@ export function genera() {
 
   css += '\n' + SUPPORTO + ' {\n';
   css += '\n  /* --- LA FORMA, e il bordo ridisegnato --- */\n';
+  /* la coda `:not(campo)` su ogni selettore della forma: tiene i campi di form
+     fuori dal ritaglio (là il bordo lo può dipingere solo il box) e vale un
+     punto di specificità, che serve a stare sopra lab.css */
+  const coda = (x) => x + NON_CAMPO;
+  const perOverflow = new Map();      /* spessore → selettori che tagliavano */
   for (const [sel, nome, sp, serve] of perGruppo) {
-    css += righe(sel, 2) + ' {\n    border-radius: 0;\n    clip-path: var(' + nome + '-p);\n  }\n';
+    css += righe(sel.map(coda), 2) + ' {\n    border-radius: 0;\n    clip-path: var(' + nome + '-p);\n  }\n';
     if (!serve) continue;
-    const beforeQui = sel.filter((x) => !beforeOccupato.has(x));
-    const afterQui = sel.filter((x) => beforeOccupato.has(x));
     const scorre = (x) => /auto|scroll|clip/.test(taglia.get(x) || '');
     const fuori = sel.filter((x) => !scorre(x)), dentro = sel.filter(scorre);
-    const psDi = (lista) => [...lista.filter((x) => !beforeOccupato.has(x)).map((x) => x + '::before'),
-      ...lista.filter((x) => beforeOccupato.has(x)).map((x) => x + '::after')];
+    const psDi = (lista) => [...lista.filter((x) => !beforeOccupato.has(x)).map((x) => coda(x) + '::before'),
+      ...lista.filter((x) => beforeOccupato.has(x)).map((x) => coda(x) + '::after')];
     if (fuori.length) {
       css += righe(psDi(fuori), 2) + ' {\n' +
         "    content: ''; position: absolute; inset: " + (-sp) + 'px; pointer-events: none;\n' +
@@ -387,30 +437,37 @@ export function genera() {
         "    content: ''; position: absolute; inset: 0; pointer-events: none;\n" +
         '    background: var(--sq-b); clip-path: var(' + nome + '-d);\n  }\n';
     }
-    void beforeQui; void afterQui;
+    /* chi tagliava con `hidden` va trattato per spessore: il margine di
+       ritaglio deve valere esattamente quanto il bordo */
+    sel.filter((x) => taglia.get(x) === 'hidden').forEach((x) => {
+      if (!perOverflow.has(sp)) perOverflow.set(sp, []);
+      if (!perOverflow.get(sp).includes(x)) perOverflow.get(sp).push(x);
+    });
   }
 
-  /* `overflow: hidden` su un elemento ritagliato è ormai inutile: il ritaglio
-     arrotonda i figli meglio di lui, e per di più gli mangia l'anello del
-     bordo. Si spegne. A chi SCORRE non si tocca: là l'anello va dentro. */
-  const senzaOverflow = [...conAngolo].filter((s) => taglia.get(s) === 'hidden');
-  if (senzaOverflow.length) {
-    css += "\n  /* --- `overflow: hidden` si spegne dove il ritaglio fa già il suo\n" +
-      "         lavoro: teneva dentro i figli, e adesso li tiene dentro la forma.\n" +
-      "         Lasciandolo, tagliava anche l'anello del bordo — che sta nell'area\n" +
-      '         del bordo, cioè fuori dal riquadro interno. --- */\n';
-    /* `!important` a ragion veduta: il blocco sta in fondo ad app.css, ma
-       lab.css si carica DOPO, e là dentro c'è un `overflow: hidden` con la
-       stessa specificità che quindi vincerebbe. L'alternativa era scrivere un
-       secondo blocco generato anche in lab.css. */
-    css += righe(senzaOverflow, 2) + ' {\n    overflow: visible !important;\n  }\n';
+  if (perOverflow.size) {
+    css += "\n  /* --- CHI TAGLIAVA CON `overflow: hidden` passa a `clip`.\n" +
+      "         `hidden` taglia al riquadro INTERNO, e l'anello del bordo sta\n" +
+      "         nell'area del bordo, cioè fuori: veniva via tutto e quegli\n" +
+      '         elementi restavano senza bordo — si vedeva sulla scheda di\n' +
+      "         «Adesso», dov'era rimasto solo il filo colorato dell'area.\n" +
+      '         Spegnere del tutto l’overflow però ridava ai figli il diritto di\n' +
+      '         sporgere, e il ritaglio glielo tagliava comunque: la spunta\n' +
+      "         nell'angolo di un blocco corto ne perdeva un pixel. `clip` fa\n" +
+      '         quello che faceva `hidden` e in più accetta\n' +
+      '         `overflow-clip-margin`: taglia un pixel più in fuori, cioè\n' +
+      "         esattamente dove sta l'anello. (Con `hidden` il margine non ha\n" +
+      '         nessun effetto: misurato.) --- */\n';
+    for (const [sp, lista] of perOverflow) {
+      css += righe(lista.map(coda), 2) + ' {\n    overflow: clip; overflow-clip-margin: ' + sp + 'px;\n  }\n';
+    }
   }
 
   const daPosizionare = [...conAngolo].filter((s) => !posiziona.has(s));
   css += "\n  /* --- l'anello ha bisogno di un riquadro di riferimento. Non si\n" +
     '         tocca chi già dichiara `position`: là sovrascriverebbe un\n' +
     '         `absolute` dichiarato da un\'altra parte. --- */\n';
-  css += righe(daPosizionare, 2) + ' {\n    position: relative;\n  }\n';
+  css += righe(daPosizionare.map(coda), 2) + ' {\n    position: relative;\n  }\n';
 
   css += "\n  /* --- il colore dell'anello, dov'era il colore del bordo.\n" +
     "         L'asterisco è solo sugli ELEMENTI: `*::before` colpirebbe\n" +
@@ -461,9 +518,20 @@ export function genera() {
      illumina in modo diverso a metà. Vale per `:hover`, `:focus`, `.attivo`,
      `[aria-checked]` e compagnia: tutto quello che è lo STESSO elemento con
      qualcosa attaccato dietro. */
+  /* Chi ha l'angolo non si capisce sempre dal NOME del selettore: `.tl-blk`
+     dichiara l'angolo e `.tl-blk-pasto`, un'altra classe sullo stesso
+     elemento, dichiara il bordo — nessuna regola scritta sui nomi lo vede, e
+     quei blocchi avevano il bordo doppio sui fianchi. Quelli li segna
+     segni/misure.json, che l'ha chiesto all'elemento in pagina.
+     La regola sui nomi resta e serve ancora: uno STATO come `.btn:hover` in
+     pagina non si vede mai, quindi misurarlo non si può. Le due liste si
+     sommano. */
+  const misurati = new Set(bordi.map(([s2]) => s2)
+    .filter((s2) => MISURE[s2] && MISURE[s2].angolo));
+  const conForma = new Set([...conAngolo, ...misurati]);
   const variante = (s2) => {
-    if (conAngolo.has(s2)) return true;
-    for (const k of conAngolo) {
+    if (conForma.has(s2)) return true;
+    for (const k of conForma) {
       if (s2.length > k.length && s2.startsWith(k) && /^[:.[]/.test(s2.slice(k.length))) return true;
     }
     return false;
@@ -476,13 +544,39 @@ export function genera() {
   if (daSpegnere.length) {
     css += "\n  /* --- il colore del bordo del box si spegne: lo dipinge l'anello,\n" +
       '         una volta sola e uguale su tutto il contorno --- */\n';
-    css += righe(daSpegnere, 2) + ' {\n    border-color: transparent;\n  }\n';
+    css += righe(daSpegnere.map(coda), 2) + ' {\n    border-color: transparent;\n  }\n';
+    /* E SUBITO DOPO, LE FASCETTE D'ACCENTO. Un `border-left: 3px solid` non è
+       un bordo: è una fascetta, e l'anello non la sa disegnare (disegnerebbe
+       una cornice intera dove ce n'era una striscia sola). Spegnendo
+       `border-color` si spegneva anche lei, e la striscia colorata dell'area
+       sui blocchi della giornata e quella dello stato in «Cosa sta
+       succedendo» erano sparite. Il colore glielo rimettiamo lato per lato:
+       il ritaglio le smussa negli angoli, che è giusto. */
+    const rimessi = [];
+    lati.forEach(([s2, lato, c]) => {
+      if (!daSpegnere.includes(s2)) return;
+      if (/^(transparent|none|0)$/.test(c)) return;
+      const ultimo = rimessi[rimessi.length - 1];
+      if (ultimo && ultimo.s === s2) { if (!ultimo.lati.some((x) => x[0] === lato)) ultimo.lati.push([lato, c]); }
+      else rimessi.push({ s: s2, lati: [[lato, c]] });
+    });
+    if (rimessi.length) {
+      css += "\n  /* --- e le FASCETTE d'accento tornano: un lato solo, che\n" +
+        "         l'anello non sa disegnare e lo spegnimento si portava via --- */\n";
+      rimessi.forEach(({ s: s2, lati: L }) => {
+        css += '  ' + coda(s2) + ' {\n' +
+          L.map(([lato, c]) => '    border-' + lato + '-color: ' + c + ';').join('\n') + '\n  }\n';
+      });
+    }
   }
   css += '}\n';
 
   if (senzaMisura.length) console.log('  raggi non misurabili, lasciati come sono: ' + senzaMisura.join(' | '));
   if (restateCapsule.length) console.log('  capsule lasciate col raggio (mai viste in pagina): ' +
-    new Set(restateCapsule).size + ' selettori — lancia node segni/altezze.mjs');
+    new Set(restateCapsule).size + ' selettori — lancia node segni/misure.mjs');
+  if (process.env.ELENCO) console.log('   ' + [...new Set(restateCapsule)].join('\n   '));
+  if (stretti.length) console.log('  raggi tagliati al lato corto misurato: ' + stretti.length +
+    ' — ' + stretti.slice(0, 8).join(', ') + (stretti.length > 8 ? ', …' : ''));
   if (campi.length) console.log('  campi di form lasciati col raggio (non hanno pseudo-elementi): ' +
     campi.length + ' selettori');
 

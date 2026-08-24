@@ -171,6 +171,28 @@ genera le chiavi, in un browser vero).
   doppie di un `url("data:...")` dentro un attributo `style`, che chiudevano
   l'attributo; e il giro delle schermate che lasciava la pagina sull'ultima,
   dove l'elemento da misurare non c'è.
+- **bordi.js** — la stessa cosa, ma DAPPERTUTTO. La forma degli angoli la
+  misura `squircle.js` su nove schermate; questa guarda una cosa sola — che il
+  bordo sia dove deve essere, di un colore solo, dipinto una volta sola — e la
+  guarda su quarantadue schermate, pannelli e stati (`segni/scene.json`) per
+  cinque combinazioni di larghezza e tema: 210 schermate, più di diecimila
+  angoli ritagliati.
+  Nasce da «quelli sono solo alcuni, ce ne sono in varie sezioni e pagine»: i
+  difetti li aveva trovati l'occhio, tre o quattro per volta, e ogni volta la
+  causa era un'altra con lo stesso aspetto — «il bordo sembra tagliato». Le
+  sette cause, tutte in una prova:
+  1. un angolo tondo senza ritaglio (è rimasto un arco di cerchio);
+  2. un bordo con lo spessore e nessuno che lo dipinge (bordo sparito);
+  3. un bordo dipinto DUE volte, box e anello (fianchi scuri, angoli chiari);
+  4. un anello che dipinge senza forma (un rettangolo pieno di colore);
+  5. un `overflow` che si mangia l'anello;
+  6. un ritaglio che mangia quello che sporge — figli, pseudo-elementi, e con
+     loro l'area del dito;
+  7. un angolo più grande di mezzo lato, che si strozza in una punta.
+  Alla prima passata: settanta casi, in pagine che a occhio non erano mai state
+  guardate — «La scienza», «Backup», «Come si usa», il Design lab. Stampa
+  TUTTI i casi, uno per riga, e non i primi sei: con l'elenco tagliato si
+  lavorava tre volte sugli stessi e mai sugli altri.
 - **gesto.js** — il foglio dal basso: il gesto, e che dopo si possa ancora
   toccare. Prima di tutto campiona la SUPERFICIE del foglio aperto e pretende
   che ogni punto arrivi al foglio: nasce da una regressione in cui il velo
@@ -190,6 +212,12 @@ genera le chiavi, in un browser vero).
   un decimo di secondo, quindi la velocità massima simulabile aspettando le
   risposte è 0.1 px/ms: per provare la regola del colpo secco gli invii vanno
   messi in coda tutti insieme, e il browser li fonde in un movimento solo.
+  E il TEMPO glielo diamo noi, col `timestamp` di ogni evento. Senza, il tempo
+  fra i due campioni che restano dopo la fusione è la latenza della macchina:
+  misurata fra 90 e 180 ms, cioè da 0.39 a 0.78 px/ms con la soglia (0.5) in
+  mezzo. La prova passava o non passava a caso — e per un po' è sembrata colpa
+  di un foglio di stile che era stato appena toccato. Col tempo dichiarato la
+  velocità è sempre 1.40 px/ms: si prova la regola, non la macchina.
   Nasce da «c'è un bug con questi bottom sheet, si blocca tutto» e da «non si
   riesce a portare giù la tendina».
 
@@ -200,6 +228,7 @@ genera le chiavi, in un browser vero).
     node prove/modalita.js
     node prove/segni.js      # solo Node, niente browser
     node prove/squircle.js
+    node prove/bordi.js      # 210 schermate, una decina di minuti
     node prove/promemoria.js
     node prove/doppioni.js   # qualche minuto
     node prove/sezioni.js

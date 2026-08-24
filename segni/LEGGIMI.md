@@ -81,8 +81,23 @@ che non c'entra con i segni ma vive di formule come loro.
   `border-radius` e mette la curva nel `clip-path`. Si rilancia con
   `node segni/squircle.mjs` ogni volta che si cambia un raggio o si aggiunge un
   elemento con l'angolo tondo.
+- **`misure.mjs`** — apre l'app e misura le due cose che dal foglio di stile non
+  si vedono: quanto è grande ogni elemento (il raggio non può superare un terzo
+  del lato corto) e se un selettore di bordo colpisce un elemento che ha anche
+  l'angolo. Scrive `misure.json`. Va lanciato PRIMA di `squircle.mjs`, e
+  rilanciato quando si cambia l'altezza di qualcosa.
+- **`scene.json`** — le quarantadue schermate, pannelli e stati su cui girano
+  `misure.mjs` e `prove/bordi.js`: le pagine, i pannelli delle impostazioni, il
+  timer avviato, il toast con l'annulla, e le dieci interfacce del Design lab
+  (sei anche nella loro seconda schermata, dove stanno i chip). Una lista sola
+  per tutti e due: quando erano due, quella delle misure era rimasta indietro
+  di quattro pannelli, ed è esattamente là che si sono trovate le pastiglie mai
+  misurate. Per coprire uno stato in più si aggiunge una scena qui.
 - **`icone.mjs`** — rifà l'icona dell'app, il logo dentro `icons.js` e tutte le
   PNG. `node segni/icone.mjs`.
+
+L'ordine è: `node segni/misure.mjs` → `node segni/squircle.mjs` →
+`node prove/bordi.js` e `node prove/squircle.js`.
 
 ### Che cos'è, esattamente
 
@@ -140,15 +155,36 @@ risolvono per asse, quindi non si può dire «metà del lato CORTO», e su una
 pastiglia da 300×54 il ritaglio darebbe una foglia con la punta da 151px invece
 di un angolo da 27. L'unico modo di dare anche a loro la curva è sapere quanto
 sono alte, e l'unico modo onesto di saperlo è aprire l'app e misurarle:
-`node segni/altezze.mjs` gira ventuno schermate su due larghezze e scrive
-`segni/altezze.json` col lato corto più piccolo che ogni selettore assume. Il
-raggio è quel lato diviso 3.057 — l'angolo si mangia esattamente mezzo lato,
-cioè lo stesso caso limite dell'icona di iOS, una pastiglia con le estremità a
-supercerchio invece che a semicerchio.
+`node segni/misure.mjs` gira le quarantadue scene di `segni/scene.json` su tre
+combinazioni di larghezza e tema e scrive `segni/misure.json` col lato corto più
+piccolo che ogni selettore assume. Il raggio è quel lato diviso 3.057 —
+l'angolo si mangia esattamente mezzo lato, cioè lo stesso caso limite
+dell'icona di iOS, una pastiglia con le estremità a supercerchio invece che a
+semicerchio.
 Si prende il lato più PICCOLO fra tutte le comparse: se lo stesso chip a volte
 è alto 24 e a volte 32, l'angolo tarato su 24 sta dentro entrambi; al contrario
 si strozzerebbe. Chi non è mai stato visto in pagina resta capsula, e il
-generatore lo dice.
+generatore stampa l'elenco: adesso sono diciotto pastiglie che vivono in stati
+dove il giro non passa — l'accoglienza al primo avvio, la guida che compare
+mentre si trascina, il segnino della scadenza nel mese, la legenda della
+striscia. Per farle entrare basta una scena in più in `segni/scene.json`.
+
+**E la stessa misura taglia TUTTI i raggi, non solo quelli delle pastiglie.**
+Il limite `min(px, %)` dentro il tracciato non basta: le percentuali di un
+poligono si risolvono per ASSE, quindi su una barretta lunga e alta nove pixel
+si stringe solo la parte verticale della curva e l'estremità viene a punta,
+come una foglia. Il raggio va tagliato prima, a `lato corto / 3.057`. Prima
+qui c'era una tabella scritta a mano di otto selettori «troppo piccoli»: ne
+mancavano trentanove — le barrette dei grafici, le celle del calendario, i
+pulsanti piccoli, le barre di sezione — e tre degli otto numeri erano
+sbagliati (`.segmenti.sez-nav` aveva 17 dove ci stava 13.7). Adesso il taglio
+lo fa la misura, a scalini di mezzo pixel: gli scalini rimettono insieme i
+gruppi, e senza di loro un tracciato per selettore faceva crescere il foglio di
+stile di un terzo.
+Il taglio si applica al selettore che dichiara il raggio, e questo copre anche
+le sue varianti: `.btn-mini` non dichiara nessun raggio — lo prende da `.btn` —
+ma è un `.btn` anche lui, quindi entra nella misura di `.btn` e la fa
+scendere.
 
 **Il bordo si ridisegna, e quello del box si spegne SOLO a chi ha l'anello.** Un ritaglio taglia anche
 il bordo del box, e proprio negli angoli: resterebbe una scheda col bordo sui
@@ -185,6 +221,11 @@ più evidente, e trenta elementi dell'app non ci stavano più — un pulsante al
 sono già il massimo che le altezze attuali consentono: per angoli più generosi
 bisogna prima fare più alti gli elementi.
 
+Su chi è più piccolo di così il raggio scende da sé, alla misura presa in
+pagina (`segni/misure.json`): il generatore stampa l'elenco di chi è stato
+tagliato e di quanto, e sono diciotto — da `.btn` (12 → 11) a `.lm-hbar-fill`
+(8 → 1.5, una barretta alta sei pixel).
+
 ### L'unica cosa che resta con l'arco di cerchio: i campi
 
 `input`, `select` e `textarea` **non generano pseudo-elementi**. Non è una
@@ -210,15 +251,24 @@ colorato dell'area, tagliato di netto) e sulla lista delle attività, dove il
 bordo del contenitore spariva e restavano quelli delle righe, di un altro
 colore. Da qui i «bordi tagliati o con due colori».
 
-Chi ha `overflow: hidden` e un ritaglio non ne ha più bisogno — il ritaglio
-arrotonda i figli meglio di lui — e allora si spegne. Chi SCORRE
-(`overflow: auto`) non si può toccare: per quei pochi l'anello si disegna
-dentro il riquadro interno, cioè il bordo appare rientrato di un pixel. Su un
-pannello con un filo da 1px non si distingue, e l'alternativa era non avere
-bordo.
+Chi ha `overflow: hidden` passa a **`overflow: clip` con
+`overflow-clip-margin` pari allo spessore del bordo**: taglia come prima, ma un
+pixel più in fuori, cioè esattamente dove sta l'anello. (Il margine funziona
+solo con `clip`: con `hidden` non ha nessun effetto, misurato.)
 
-`overflow-clip-margin` sembrava la via pulita e non lo è: funziona solo con
-`overflow: clip`, non con `hidden` né con `auto` (provato).
+La prima versione invece spegneva l'overflow del tutto, e non era la stessa
+cosa: ridava ai figli il diritto di sporgere, e il ritaglio glielo tagliava
+comunque — la spunta nell'angolo di un blocco corto della giornata ne perdeva
+un pixel, e prima quel pixel lo teneva dentro `hidden`, di proposito. Con
+`clip` chi ha scritto il foglio continua a decidere cosa resta dentro.
+
+Chi SCORRE (`overflow: auto`) non si può toccare, perché `clip` non fa un
+contenitore scorrevole: per quei tre l'anello si disegna dentro il riquadro
+interno, cioè il bordo appare rientrato di un pixel. Su un pannello con un filo
+da 1px non si distingue, e l'alternativa era non avere bordo.
+
+I pixel dicono che funziona: su `.focus-cuore`, `.tl-blk-att` e `.lista` il
+bordo c'è in tutte e ventiquattro le direzioni, con la stessa luminanza.
 
 ### Errori che è costato caro trovare
 
@@ -256,3 +306,35 @@ bordo.
    direzione e la fascia resta fra 0.98 e 1.00. Si vedeva a occhio prima che una prova lo misurasse —
    adesso `prove/squircle.js` confronta quanto è scuro il bordo sul fianco e
    sulla curva e pretende che combacino entro 12 valori su 255.
+
+Gli ultimi quattro li ha trovati una prova sola, `prove/bordi.js`, che guarda
+OGNI bordo in venticinque schermate per cinque combinazioni di larghezza e
+tema. A occhio se ne erano visti tre o quattro; lei ne ha contati settanta.
+
+8. **Chi ha l'angolo si capiva dal NOME del selettore**, e dal nome non si può:
+   `.tl-blk` dichiara l'angolo e `.tl-blk-pasto`, un'altra classe sullo STESSO
+   elemento, dichiara il bordo. Nessuna regola scritta sui nomi lo vede, e quei
+   blocchi avevano il bordo dipinto due volte. Adesso la domanda «questo
+   elemento ha l'angolo?» si fa all'elemento, in pagina
+   (`segni/misure.json`, campo `angolo`), e la regola sui nomi resta solo per
+   gli STATI — `.btn:hover` in pagina non si vede mai, quindi misurarlo non si
+   può.
+9. **Un `select` che nel selettore non dice di essere un `select`.**
+   `.sel-area-azione` e `.tl-dur` sono campi, e il generatore li trattava come
+   div: a uno ha spento il bordo aspettandosi un anello che lì non può
+   esistere, all'altro ha dato il ritaglio, che gli tagliava il bordo proprio
+   sull'angolo. Adesso ogni regola della forma finisce con
+   `:not(input,select,textarea,progress,meter)`: la domanda la risolve
+   l'elemento, non il nome.
+10. **lab.css si carica DOPO app.css.** Il blocco generato sta in fondo ad
+    app.css, quindi a pari specificità i `border: 1px solid` di lab.css
+    vincevano e riaccendevano il bordo del box sopra l'anello: sei elementi del
+    Design lab col bordo doppio sui fianchi. La coda `:not(...)` del punto 9
+    vale anche un punto di specificità, e li rimette in ordine senza nessun
+    `!important`.
+11. **L'area del dito non può venire da uno pseudo-elemento che sporge**, se
+    l'elemento è ritagliato: un ritaglio taglia anche il tocco. Due comandi su
+    sei si erano salvati alla prima passata; gli altri li ha trovati la prova
+    che misura quello che sporge — `.lista-azione` perdeva undici pixel per
+    lato, `.diario-annulla` sedici. Adesso quei due sono grandi 40px per
+    davvero, col dito.
