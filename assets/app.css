@@ -2051,10 +2051,15 @@ button.lista-riga { width: 100%; text-align: left; }
 .abd-numeri b { color: var(--inchiostro-1); font-weight: 830; font-variant-numeric: tabular-nums; }
 .abd-numeri .ico { color: #eb6834; vertical-align: -2px; }
 /* la catena: quattro settimane incolonnate per giorno della settimana */
-.abd-testa { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; margin-top: 12px; }
+.abd-testa { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; margin-top: 2px; }
 .abd-testa span { text-align: center; font-size: 11px; font-weight: 800; color: var(--inchiostro-muto); }
 .abd-catena { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; margin-top: 5px; }
-.abd-g.futuro { background: none; border-color: transparent; }
+/* un giorno che non è ancora arrivato NON è una casella: tiene il posto nella
+   griglia e non ha né fondo, né bordo, né uno stato «sopra col mouse». Da
+   `.abd-g.futuro` lo prendeva comunque, perché `.abd-g:hover` sta più in basso
+   nel foglio e a pari forza vince chi è scritto dopo: le due caselle in fondo
+   alla griglia sembravano vuote e si accendevano appena ci passavi sopra. */
+.abd-vuoto { display: block; }
 .abd-g {
   min-height: 40px; border-radius: var(--r-1); border: 1px solid var(--bordo);
   background: var(--superficie-2); color: var(--inchiostro-muto);
@@ -4476,9 +4481,6 @@ a:not(.btn):not(.nav-voce):not(.menu-voce):active { opacity: .55; }
   .lista-altre:hover {
     --sq-b: var(--inchiostro-muto);
   }
-  .abd-g.futuro {
-    --sq-b: transparent;
-  }
   .abd-g {
     --sq-b: var(--bordo);
   }
@@ -5065,7 +5067,6 @@ a:not(.btn):not(.nav-voce):not(.menu-voce):active { opacity: .55; }
   .lista-riga.fatta .lista-azione.spunta:not(input,select,textarea,progress,meter),
   .lista-altre:not(input,select,textarea,progress,meter),
   .lista-altre:hover:not(input,select,textarea,progress,meter),
-  .abd-g.futuro:not(input,select,textarea,progress,meter),
   .abd-g:not(input,select,textarea,progress,meter),
   .abd-g:hover:not(input,select,textarea,progress,meter),
   .abd-g.fatto:not(input,select,textarea,progress,meter),

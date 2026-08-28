@@ -4836,12 +4836,25 @@
       var giorni = giorniAbitudine(h, 4);
       var prevista = LM.abitudinePrevista(h, LM.todayKey());
 
-      var catena = '<div class="abd-testa">' + GIORNI_ORD.map(function (d) {
+      /* LA GRIGLIA DICE QUAL È, E I GIORNI CHE NON SONO ARRIVATI NON CI SONO.
+         Sette colonne con L M M G V S D sopra e i numeri dei giorni dentro
+         sono un calendario del mese, a guardarli: e allora ad agosto uno vede
+         una griglia che comincia il 3 e finisce il 28 e si chiede dove siano
+         gli altri tre giorni. Sono le ultime quattro settimane, e adesso c'è
+         scritto.
+         I giorni che devono ancora arrivare erano `.abd-g.futuro`: senza fondo
+         e senza bordo, ma pur sempre caselle — con l'altezza di una casella e
+         con `.abd-g:hover`, scritto più in basso nel foglio, che gliene
+         riaccendeva il bordo appena ci passavi sopra. Sembravano vuote e si
+         accendevano al tocco. Adesso non sono caselle: tengono il posto nella
+         griglia e basta. */
+      var catena = etichetta('Ultime 4 settimane', 'unaSettimana') +
+        '<div class="abd-testa">' + GIORNI_ORD.map(function (d) {
           return '<span>' + GIORNI_LAB[d] + '</span>';
         }).join('') + '</div>' +
         '<div class="abd-catena" role="group" aria-label="Le ultime quattro settimane">' +
         giorni.map(function (g) {
-          if (g.futuro) return '<span class="abd-g futuro" aria-hidden="true"></span>';
+          if (g.futuro) return '<span class="abd-vuoto" aria-hidden="true"></span>';
           var cls = 'abd-g' + (g.fatto ? ' fatto' : '') + (g.saltato ? ' saltato' : '') +
             (!g.prevista && !g.fatto && !g.saltato ? ' fuori' : '') + (g.oggi ? ' oggi' : '');
           var che = g.fatto ? 'fatta' : g.saltato ? 'saltata' : g.prevista ? 'non fatta' : 'non prevista';
@@ -6796,7 +6809,22 @@
        porta la pagina saltava. La barra di strumenti, se c'è, viene dopo. */
     var conNav = navTre() && lista.length >= 2;
     if (conNav) riga.appendChild(bar);
-    else riga.className += ' testa-porta-sola';
+    else {
+      /* NIENTE RIGA VUOTA CON UN INGRANAGGIO IN FONDO.
+         «Attività» è una porta con una stanza sola, quindi di linguette di
+         porta non ne ha: l'ingranaggio si ritrovava da solo su una riga sua,
+         sopra le linguette della pagina — più in alto che su ogni altra
+         schermata, e attaccato a niente. Qui la riga se la prende in prestito:
+         la fila di sezioni che la pagina ha già disegnato (Da sistemare · Da
+         fare · Abitudini) sale accanto all'ingranaggio, e l'angolo in alto a
+         destra torna a essere lo stesso posto dappertutto.
+         Funziona perché `sottoNav` gira DOPO che la pagina si è disegnata: la
+         fila esiste già, e si sposta senza rifarla — i suoi fili restano
+         attaccati. */
+      var sua = $vista.querySelector(':scope > .segmenti.sez-nav');
+      if (sua) riga.appendChild(sua);
+      else riga.className += ' testa-porta-sola';
+    }
     riga.insertAdjacentHTML('beforeend', bottoneImpostazioni());
     riga.querySelector('[data-imp]').addEventListener('click', apriImpostazioni);
     /* la riga delle sezioni è SEMPRE il primo blocco della pagina */

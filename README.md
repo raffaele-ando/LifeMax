@@ -140,6 +140,10 @@ chiaro/scuro/auto. Desktop-first con sidebar; sotto 860px layout mobile con tab 
 Le **impostazioni** stanno in fondo alla colonna su desktop e in alto a destra su
 telefono, con lo stesso ragionamento: una porta che si apre una volta al mese non può
 occupare un quarto della barra che il pollice raggiunge senza spostare la mano.
+L'ingranaggio divide la riga con le linguette della schermata — quelle della porta se
+ci sono, quelle della pagina se no — così l'angolo in alto a destra è lo stesso posto
+su ogni schermata invece di essere una riga vuota su quelle che di linguette di porta
+non ne hanno.
 
 Gli angoli sono **supercerchi di Apple** — tre Bézier per angolo, non un arco di
 cerchio e non una superellisse — e la forma la fa un `clip-path` generato
