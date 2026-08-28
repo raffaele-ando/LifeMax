@@ -153,7 +153,7 @@ disegna l'ombra e il contorno di messa a fuoco, e un ritaglio pieno li portava v
 tutti e due — l'app non aveva più nemmeno un'ombra in centoventi punti che ne
 dichiaravano una, e il fuoco da tastiera si spostava senza lasciare traccia. Il
 dettaglio sta in `segni/LEGGIMI.md`; le prove che lo tengono in piedi sono
-`prove/squircle.js` (i pixel), `prove/bordi.js` (210 schermate) e `prove/stati.js`
+`prove/squircle.js` (i pixel), `prove/bordi.js` (250 schermate) e `prove/stati.js`
 (l'app mentre reagisce).
 
 ## Perché è fatto così (sintesi — la vista Scienza cita tutto)

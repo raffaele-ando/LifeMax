@@ -1,6 +1,6 @@
 # Prove
 
-Undici controlli automatici che guardano una cosa sola ciascuno, ma
+Diciassette controlli automatici che guardano una cosa sola ciascuno, ma
 quella cosa fa morire l'app — o la fa diventare illeggibile — quando si
 rompe. Sono nati da problemi veri.
 
@@ -210,6 +210,24 @@ genera le chiavi, in un browser vero).
   una cosa scritta dopo nasce già fatta, con gli XP e col segno `dopo`.
   E il pop-up chiuso vale «non adesso»: ricaricando non torna, ma la domanda
   si trova ancora nei Rituali — la promessa scritta nella nota è verificata.
+- **campi.js** — i campi che si aprono col tocco: l'ora di un pasto, la
+  scadenza di un'attività. Nasce da «non funziona il pulsante "a un'altra ora"
+  quando indico i pasti della giornata in Rituali». Il tasto c'era e si
+  premeva; sotto ci stava un `input[type=time]` largo un pixel, trasparente,
+  ritagliato via e con `pointer-events: none`. Il dito non poteva raggiungerlo
+  in nessun modo, e l'unica strada era chiedere al browser di aprire l'orologio
+  di sistema su un elemento che non si vede: una richiesta che a volte non fa
+  niente, non solleva un errore e non lascia traccia. Da fuori il tasto sembra
+  rotto — e per un anno, in due punti dell'app, lo era. In più il campo nasceva
+  già pieno dell'ora solita, quindi anche a orologio aperto riscegliere quella
+  stessa ora non faceva scattare nessun evento.
+  La prova chiede al browser CHI RICEVE il tocco nel mezzo del campo: è la
+  domanda che il tasto rotto sbagliava, e l'unica che conta. Poi che il tocco
+  lasci un segno (la pastiglia si accende, il campo compare), che il campo
+  dell'ora parta VUOTO, che quello che si sceglie si salvi come ora precisa,
+  che si possa cambiare idea, e che «sì» resti l'ora solita più o meno. Sulla
+  scadenza controlla anche che la ✕ resti sopra al campo steso sulla riga:
+  sotto, togliere la scadenza avrebbe aperto il calendario.
 - **lezioni.js** — «cosa funziona per me»: le righe che si scrivono senza fare un
   esperimento. Il pericolo di una funzione così è che diventi un cimitero — si
   scrivono dieci righe, non le rivede nessuno, e fra un mese non sono né dati né
@@ -329,6 +347,7 @@ genera le chiavi, in un browser vero).
     node prove/modalita.js
     node prove/segni.js      # solo Node, niente browser
     node prove/lezioni.js
+    node prove/campi.js
     node prove/giornata.js
     node prove/adesso.js
     node prove/squircle.js

@@ -4356,6 +4356,9 @@
   }
 
   /* --- i pasti e le cose fatte senza scriverle --- */
+  /* quali righe hanno il campo dell’ora aperto. Sta fuori dalla funzione
+     perché il blocco si ridisegna tutto da capo a ogni risposta. */
+  var pastoOraAperta = {};
   function bloccoRecupero() {
     var t = LM.todayKey();
     var r = LM.ritmoDi(t);
@@ -4367,20 +4370,27 @@
 
     var righePasti = pasti.map(function (pa) {
       var risp = pa.fatto;
+      /* «a un’altra ora» può essere già la risposta data: allora è quella
+         pastiglia a essere accesa, non «sì» */
+      var altraOra = risp === true && pa.prec === 'preciso';
+      var campoAperto = !!pastoOraAperta[pa.id];
       /* la risposta si legge SOTTO il nome, non dentro il tasto: mettendola
          nel tasto, «sì» diventava «sì, verso le 08:00» e i tre tasti andavano
          a capo appena si rispondeva — la riga si muoveva sotto il dito */
       var sotto = risp === true
         ? (pa.prec === 'preciso' ? 'alle ' : 'verso le ') + esc(pa.ora)
         : (risp === false ? 'saltato' : 'di solito alle ' + esc(pa.ora));
-      return '<div class="lista-riga sc-riga sc-riga-alta" data-pasto="' + pa.id + '">' +
+      return '<div class="lista-riga sc-riga sc-riga-alta" data-pasto="' + pa.id + '" data-psolito="' + esc(pa.ora || '') + '">' +
         '<span class="sc-eti">' + ICO('utensils', 15) + ' ' + esc(pa.nome) +
         '<small class="rec-solito">' + sotto + '</small></span>' +
         '<span class="sc-val q-chips">' +
-        '<button class="q-chip' + (risp === true ? ' on' : '') + '" data-pfatto="si">sì</button>' +
-        '<button class="q-chip" data-pora="1">' + ICO('clock', 13) + ' a un’altra ora</button>' +
+        '<button class="q-chip' + (risp === true && !altraOra ? ' on' : '') + '" data-pfatto="si">sì</button>' +
+        '<button class="q-chip' + (campoAperto || altraOra ? ' on' : '') + '" data-pora="1" aria-expanded="' + (campoAperto ? 'true' : 'false') + '">' + ICO('clock', 13) + ' a un’altra ora</button>' +
         '<button class="q-chip' + (risp === false ? ' on' : '') + '" data-pfatto="no">no</button>' +
-        '<input type="time" class="sc-nascosta" data-poraval="1" value="' + esc(pa.ora) + '" aria-label="A che ora">' +
+        /* il campo si vede solo quando l’hai chiesto, e parte vuoto: se ci
+           trovasse dentro l’ora solita, riscegliere quella stessa ora non
+           farebbe scattare nulla e il tocco andrebbe perso */
+        (campoAperto ? '<span class="rec-acapo"></span><input type="time" class="rec-ora" data-poraval="1" value="" aria-label="' + esc(pa.nome) + ': a che ora">' : '') +
         '</span></div>';
     }).join('');
 
@@ -4429,26 +4439,38 @@
     }
     scope.querySelectorAll('[data-pasto]').forEach(function (riga) {
       var id = riga.getAttribute('data-pasto');
+      var solito = riga.getAttribute('data-psolito') || null;
       var campoOra = riga.querySelector('[data-poraval]');
       riga.querySelectorAll('[data-pfatto]').forEach(function (b) {
         b.addEventListener('click', function () {
           var si = b.getAttribute('data-pfatto') === 'si';
-          LM.registraPasto(t, id, { fatto: si, ora: si ? campoOra.value : null, prec: 'circa' });
+          delete pastoOraAperta[id];
+          LM.registraPasto(t, id, { fatto: si, ora: si ? solito : null, prec: 'circa' });
           rifai();
         });
       });
-      /* «a un'altra ora» apre l'orologio: la risposta si salva quando l'ora è
-         scelta, non prima — un pasto registrato all'ora sbagliata e poi
-         corretto lascia due righe nel diario */
+      /* «a un’altra ora» fa comparire il campo dell’ora, dentro la riga e in
+         chiaro. Prima non faceva niente di visibile: il campo era largo un
+         pixel, trasparente e con «pointer-events: none», quindi il dito non
+         poteva raggiungerlo, e l’unica strada era aprire l’orologio a mano su
+         un elemento che non si vede — cosa che il browser fa volentieri
+         quando gli pare. Adesso il campo c’è: si tocca da sé, e l’orologio
+         proviamo comunque ad aprirlo per chi arriva col dito.
+         La risposta si salva quando l’ora è scelta, non prima: un pasto
+         registrato all’ora sbagliata e poi corretto lascia due righe nel
+         diario. */
       riga.querySelector('[data-pora]').addEventListener('click', function () {
-        /* lo stesso modo con cui si apre il calendario di una scadenza: il
-           campo sta nascosto e si apre l'orologio del sistema, che sul telefono
-           è la ruota a cui il pollice è abituato */
-        if (campoOra.showPicker) { try { campoOra.showPicker(); return; } catch (e) { void e; } }
-        campoOra.focus();
+        if (pastoOraAperta[id]) delete pastoOraAperta[id];
+        else pastoOraAperta[id] = true;
+        rifai();
+        var nuovo = document.querySelector('[data-pasto="' + id + '"] [data-poraval]');
+        if (!nuovo) return;
+        nuovo.focus();
+        if (nuovo.showPicker) { try { nuovo.showPicker(); } catch (e) { void e; } }
       });
-      campoOra.addEventListener('change', function () {
+      if (campoOra) campoOra.addEventListener('change', function () {
         if (!campoOra.value) return;
+        delete pastoOraAperta[id];
         LM.registraPasto(t, id, { fatto: true, ora: campoOra.value, prec: 'preciso' });
         rifai();
       });
@@ -5818,13 +5840,10 @@
         scad.addEventListener('change', function () {
           LM.impostaScadenzaBacklog(b.id, this.value || null); ridisegnaScheda();
         });
-        /* la riga è il bersaglio: tocca e si apre il calendario del sistema */
-        var rigaScad = root.querySelector('[data-apri-scad]');
-        if (rigaScad) rigaScad.addEventListener('click', function (ev) {
-          if (ev.target.closest('#sc-scad-x')) return;
-          if (scad.showPicker) { try { scad.showPicker(); return; } catch (e) { void e; } }
-          scad.focus();
-        });
+        /* la riga è il bersaglio: il campo VERO ci sta steso sopra,
+           trasparente e grande quanto lei, così il tocco arriva al calendario
+           del sistema senza passare da noi. Aprirlo a mano su un campo alto
+           un pixel e senza eventi del puntatore non apriva niente. */
         /* «spalma» sta in una riga di attributo, non più in un cassetto */
         var sx = root.querySelector('#sc-scad-x');
         if (sx) sx.addEventListener('click', function () { LM.impostaScadenzaBacklog(b.id, null); ridisegnaScheda(); });

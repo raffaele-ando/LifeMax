@@ -407,9 +407,6 @@
  ".abd-g.fatto": {
   "angolo": true
  },
- ".abd-g.futuro": {
-  "angolo": true
- },
  ".agg-riga": {
   "corto": 46.6,
   "angolo": true
@@ -565,7 +562,7 @@
   "angolo": true
  },
  ".lm-hbar-fill": {
-  "corto": 6
+  "corto": 5.9
  },
  ".lm-hbar-row": {
   "corto": 19.3

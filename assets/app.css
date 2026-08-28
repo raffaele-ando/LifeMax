@@ -2177,16 +2177,19 @@ input.sc-inline:focus, select.sc-inline:focus, input[type="date"].sc-inline:focu
 }
 select.sc-inline { background-image: none; padding-right: 2px; }
 .sc-si { color: var(--ok-pieno); }
-/* il campo data che sta dietro la riga: si apre col tocco sulla riga.
-   Deve sparire davvero, tag e classe insieme: con la sola classe le regole
-   dei campi (44px di altezza col dito) lo rimettevano in mezzo alla riga
-   come una lineetta di due pixel. */
+/* il campo data della riga: invisibile ma steso su tutta la riga, così il
+   tocco ci finisce dentro e apre il calendario del sistema da solo. Era alto
+   un pixel e con «pointer-events: none»: irraggiungibile, e l'unico modo di
+   arrivarci era chiedere al browser di aprire il calendario su un elemento
+   che non si vede — cosa che il browser fa quando gli pare. */
 input.sc-nascosta {
-  position: absolute; width: 1px; height: 1px; min-height: 0;
-  padding: 0; border: 0; box-shadow: none; opacity: 0; pointer-events: none;
-  clip-path: inset(50%);
+  position: absolute; inset: 0; width: 100%; height: 100%; min-height: 0;
+  padding: 0; border: 0; box-shadow: none; opacity: 0; cursor: pointer;
 }
-.sc-tocca { cursor: pointer; transition: background var(--t-veloce); }
+/* il tasto che toglie la scadenza sta SOPRA quel campo, altrimenti sparisce
+   sotto di lui e togliere la scadenza aprirebbe il calendario */
+#sc-scad-x { position: relative; z-index: 1; }
+.sc-tocca { position: relative; cursor: pointer; transition: background var(--t-veloce); }
 .sc-tocca:hover { background: color-mix(in srgb, var(--inchiostro-1) 4%, transparent); }
 .sc-pericolo .sc-eti { color: var(--critico-testo); }
 .sc-pericolo .sc-eti .ico { color: var(--critico-testo); }
@@ -3115,6 +3118,24 @@ a:not(.btn):not(.nav-voce):not(.menu-voce):active { opacity: .55; }
 /* «di solito alle 08:00» sotto il nome del pasto: è un promemoria, non una
    risposta, e non deve pesare come il nome */
 .rec-solito { display: block; font-weight: 600; font-size: 11.5px; color: var(--inchiostro-muto); }
+/* il campo dell'ora che compare quando chiedi «a un'altra ora»: sta in fila
+   con le pastiglie e ne ha la forma, perché lì dentro è una risposta come le
+   altre due. Prima il campo c'era ma era invisibile e senza eventi del
+   puntatore: il tasto sembrava rotto perché non poteva succedere niente. */
+input.rec-ora {
+  flex: none; width: auto; min-width: 118px; min-height: 0;
+  padding: 8px 12px; font-size: 14px; text-align: left;
+  border: 1px solid var(--accento); border-radius: var(--r-tondo);
+  background: var(--superficie-1); color: var(--inchiostro-1); box-shadow: var(--e1);
+}
+input.rec-ora:focus {
+  outline: none; border-color: var(--accento);
+  box-shadow: 0 0 0 3.5px color-mix(in srgb, var(--accento) 18%, transparent);
+}
+@media (pointer: coarse) { input.rec-ora { min-height: 44px; } }
+/* il campo va sempre a capo: in fila col «no», su uno schermo stretto,
+   sembrava una quarta risposta invece del seguito della seconda */
+.rec-acapo { flex-basis: 100%; height: 0; }
 /* un pasto SALTATO resta al suo posto nella giornata, sbiadito e barrato:
    «non ho pranzato» è un dato, e un buco nel grafico non lo racconta */
 .tl-blk-pasto.saltato { opacity: .5; }
@@ -4650,6 +4671,9 @@ a:not(.btn):not(.nav-voce):not(.menu-voce):active { opacity: .55; }
   }
   .btn-pericolo {
     --sq-b: transparent;
+  }
+  input.rec-ora, input.rec-ora:focus {
+    --sq-b: var(--accento);
   }
   #lab-scelta .lab-tab {
     --sq-b: var(--bordo-forte);
