@@ -437,15 +437,9 @@ small { color: var(--inchiostro-2); }
   .porta-nav { margin: 4px 0 12px; }
 }
 
-/* La porta delle impostazioni su telefono: sta nella riga del titolo di
-   «Panoramica», l'unica schermata che la ospita. Su monitor non serve — c'è
-   il piede della barra laterale — e sparisce del tutto. */
-.btn.imp-porta { display: none; }
 @media (max-width: 860px) {
-  .btn.imp-porta { display: inline-flex; }
   /* su telefono il sottotitolo di «Panoramica» ripete quello che la pagina
-     dice già da sé, e occupava la riga che serve al pulsante: così la riga è
-     una sola e la schermata è più corta di prima, non più lunga */
+     dice già da sé: così la riga è una sola e la schermata è più corta */
   .topbar.t-plancia .sottotitolo { display: none; }
 }
 
@@ -2978,6 +2972,17 @@ a:not(.btn):not(.nav-voce):not(.menu-voce):active { opacity: .55; }
 .lez-scelta-verso { flex: none; }
 @media (max-width: 380px) {
   .lez-scelta-verso { width: 100%; }
+}
+
+
+/* --- LA BARRA IN BASSO SUI TELEFONI STRETTISSIMI ---
+   Con quattro porte più la cattura, a 320px «Andamento» e «Impostazioni»
+   arrivavano a due pixel una dall'altra. Mezzo punto di corpo in meno e un
+   filo di lettere più strette bastano: le parole restano intere, che è
+   l'unica cosa che conta — una parola tagliata in una barra di navigazione
+   si legge peggio di una parola piccola. */
+@media (max-width: 360px) {
+  .tabbar button { font-size: 9.5px; letter-spacing: -0.01em; padding: 5px 1px; }
 }
 
 /* ==== SUPERCERCHI: GENERATO da segni/squircle.mjs — non a mano ==== */

@@ -48,13 +48,19 @@ ok('il corpo invece entra', a.corpo>0, String(a.corpo)+' animazioni');
 
 console.log('\nCAMBIO PORTA: entra tutto, come prima');
 await p.evaluate(()=>{location.hash='#/oggi';});await p.waitForTimeout(900);
-/* verso «Andamento», che è una delle due pagine con una barra di strumenti in
-   cima: così la verifica «entra anche la testa» ha ancora qualcosa da guardare */
 await p.evaluate(()=>{document.querySelector('.tabbar [data-vai="plancia"]').click()});
 await p.waitForTimeout(70);
 a=await animazioni();
 ok('la vista usa l’animazione di pagina', /vista-enter/.test(a.classe), a.classe);
-ok('entra anche la testa', a.titolo>0, String(a.titolo)+' animazioni');
+/* La testa in cima ce l'hanno solo le due pagine che si LEGGONO («Perché
+   funziona», «Design lab»), perché hanno un sottotitolo: le altre hanno il
+   nome nella navigazione e in cima non tengono più niente — da quando la
+   porta delle impostazioni è nella barra in basso, nemmeno «Andamento». Per
+   controllare che la testa entri bisogna quindi andare su una di quelle. */
+await p.evaluate(()=>{location.hash='#/oggi';});await p.waitForTimeout(900);
+await p.evaluate(()=>{location.hash='#/scienza';});await p.waitForTimeout(70);
+const aTesta=await animazioni();
+ok('entra anche la testa, dove una testa c’è', aTesta.titolo>0, String(aTesta.titolo)+' animazioni');
 
 console.log('\nQUELLO CHE STA FUORI DALLA VISTA NON SI RIFÀ');
 const marca = () => p.evaluate(()=>{window.__mk=new WeakSet();

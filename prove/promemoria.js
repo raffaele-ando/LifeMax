@@ -177,14 +177,29 @@ const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  
   ok('e non prova a mandare niente', await p.evaluate(() => LM_PROMEMORIA.mandaPiano(true)) === false);
 
   console.log('\nIL PANNELLO IN IMPOSTAZIONI');
+  /* Nelle impostazioni rifatte i promemoria sono una RIGA dentro «Le tue
+     cose» — con lo stato scritto a destra — più la nota e il tasto sotto al
+     gruppo. Si guarda quel pezzo: la riga, la nota, il tasto. */
   const pannello = () => p.evaluate(() => {
-    const s = [...document.querySelectorAll('#sheet-corpo .imp-sezione')]
-      .find(e => /Promemoria/.test((e.querySelector('.imp-eti') || {}).textContent || ''));
-    if (!s) return null;
+    const corpo = document.getElementById('sheet-corpo');
+    if (!corpo) return null;
+    const riga = [...corpo.querySelectorAll('.lista-riga')]
+      .find(e => /Promemoria/.test(e.textContent || ''));
+    if (!riga) return null;
+    const gruppo = riga.closest('.lista');
+    /* la nota e il tasto stanno subito dopo il gruppo */
+    let testo = riga.textContent.replace(/\s+/g, ' ').trim();
+    let n = gruppo ? gruppo.nextElementSibling : null;
+    for (let i = 0; i < 3 && n; i++) {
+      if (n.classList.contains('lista-nota') || n.classList.contains('imp-azioni')) {
+        testo += ' ' + n.textContent.replace(/\s+/g, ' ').trim();
+      }
+      n = n.nextElementSibling;
+    }
     return {
-      testo: s.textContent.replace(/\s+/g, ' ').trim(),
-      on: !!s.querySelector('#imp-prom-on'), off: !!s.querySelector('#imp-prom-off'),
-      icona: !!s.querySelector('svg.ico')
+      testo: testo,
+      on: !!corpo.querySelector('#imp-prom-on'), off: !!corpo.querySelector('#imp-prom-off'),
+      icona: !!riga.querySelector('svg.ico')
     };
   });
   await p.evaluate(() => { location.hash = '#/oggi'; }); await p.waitForTimeout(600);

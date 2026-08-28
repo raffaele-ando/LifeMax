@@ -689,8 +689,13 @@
        livello che nessuno toglie e il resto dell'app resterebbe inerte —
        cioè non cliccabile — per sempre. */
     var giaAperto = !$sheet.hidden;
+    /* Riaprire IL PANNELLO CHE È GIÀ APERTO non è entrare in un altro: se si
+       impilasse, la via del ritorno porterebbe a se stessa e il tasto
+       «Indietro» resterebbe acceso per sempre. Capita davvero adesso che la
+       porta delle impostazioni sta nella barra in basso: si tocca due volte. */
+    var stessoDiPrima = !!(riapri && riapriCorrente && riapri.nome === riapriCorrente.nome);
     if (!giaAperto) pilaSheet = [];
-    else if (!staTornandoSheet && riapriCorrente) pilaSheet.push(riapriCorrente);
+    else if (!staTornandoSheet && !stessoDiPrima && riapriCorrente) pilaSheet.push(riapriCorrente);
     riapriCorrente = riapri || null;
     scriviTestaSheet(titolo);
     document.getElementById('sheet-corpo').innerHTML = html;
@@ -943,7 +948,16 @@
         return '<button data-vai="' + v.id + '" class="' + (corrente === v.id ? 'attivo' : '') + '">' +
           '<span class="tab-ico">' + ICO(v.icona, 18) + badgeInbox(v, s) + '</span>' + v.nome + '</button>';
       }).join('')) +
-      (tre ? '' : '<button data-menu="1" class="' + (inSecondaria ? 'attivo' : '') + '"><span class="tab-ico">' + ICO('altro', 18) + '</span>Altro</button>') +
+      /* LA PORTA DELLE IMPOSTAZIONI, su telefono. Prima era un pulsante nella
+         testa di «Panoramica»: l'unica porta di tutta l'app stava nell'angolo
+         di UNA schermata, e per arrivarci bisognava sapere che era là. Adesso
+         sta dove stanno le altre porte, sempre nello stesso posto, con
+         l'ingranaggio che è il segno che tutti cercano. Con «Tutte le pagine»
+         resta «Altro», che è un menu di pagine e le impostazioni ce le ha
+         dentro. */
+      (tre
+        ? '<button data-imp="1" class="' + (inSecondaria ? 'attivo' : '') + '"><span class="tab-ico">' + ICO('ingranaggio', 18) + '</span>Impostazioni</button>'
+        : '<button data-menu="1" class="' + (inSecondaria ? 'attivo' : '') + '"><span class="tab-ico">' + ICO('altro', 18) + '</span>Altro</button>') +
       /* La cattura sta DENTRO la barra, non su un pulsante che galleggia sopra
          la pagina. Quello tondo, fisso in basso a destra, stava sopra un
          comando in ventun punti diversi fra sei schermate: la riga di «Review
@@ -959,6 +973,8 @@
       });
       var bMenu = tab.querySelector('[data-menu]');
       if (bMenu) bMenu.addEventListener('click', apriMenuAltro);
+      var bImp = tab.querySelector('[data-imp]');
+      if (bImp) bImp.addEventListener('click', apriImpostazioni);
       var bCatt = tab.querySelector('[data-catt]');
       if (bCatt) bCatt.addEventListener('click', apriCattura);
     }
@@ -1016,33 +1032,167 @@
 
   /* ---------- impostazioni & menu "Altro" ---------- */
 
-  function htmlAspetto() {
+  /* ============================================================
+     IMPOSTAZIONI
+     ============================================================
+
+     Com'era: dieci sezioni in fila, ognuna col suo titolino maiuscolo e la sua
+     riga di pastiglie, e dentro quelle pastiglie due cose diverse vestite
+     uguali — «Gestisci le aree», che APRE una schermata, e «Azzera tutto», che
+     CANCELLA i dati. La navigazione stava in mezzo fra il tema e i backup;
+     «Tema» e «Aspetto» erano due sezioni per la stessa domanda; e per sapere
+     quante aree si hanno o a che ora si va a letto bisognava aprire il
+     pannello e poi tornare indietro.
+
+     Com'è adesso, e le tre regole che tengono la schermata in piedi:
+
+     1. UNA FORMA PER OGNI TIPO DI COSA. Una riga con la freccetta APRE una
+        schermata; una riga senza freccetta FA una cosa adesso; un segmento
+        cambia subito quello che si vede. Sono le stesse tre forme del resto
+        dell'app (la scheda di un'attività è fatta così), quindi non c'è niente
+        da imparare qui dentro.
+     2. IL VALORE SI VEDE DA FUORI. «Aree · 8 attive», «Sonno e pasti ·
+        23:30–07:30, 3 pasti», «Backup · 4»: alla maggior parte delle domande
+        si risponde senza aprire niente. È la differenza fra un elenco di porte
+        e un pannello di strumenti.
+     3. SEI FAMIGLIE IN ORDINE DI QUANTO SERVONO, e quello che cancella sta in
+        fondo, staccato, con la sua faccia rossa: prima era una pastiglia in
+        fila con «Carica dati di esempio». */
+
+  /* una riga che APRE una schermata: freccetta a destra, e il valore di adesso
+     accanto — così la risposta si legge senza entrare */
+  function rigaPorta(id, ico, eti, val) {
+    return '<button class="lista-riga sc-riga sc-tocca" id="' + id + '">' +
+      '<span class="sc-eti">' + ICO(ico, 15) + ' ' + eti + '</span>' +
+      (val ? '<span class="sc-val">' + val + '</span>' : '') +
+      '<span class="lista-chev">' + ICO('chevronGiu', 15) + '</span></button>';
+  }
+  /* una riga che FA una cosa adesso: nessuna freccetta, perché non si va da
+     nessuna parte. La differenza fra le due forme è tutta qui, e prima non
+     c'era: «Esporta» e «Gestisci le aree» erano la stessa pastiglia. */
+  function rigaFa(id, ico, eti, cls) {
+    return '<button class="lista-riga sc-riga sc-tocca' + (cls ? ' ' + cls : '') + '" id="' + id + '">' +
+      '<span class="sc-eti">' + ICO(ico, 15) + ' ' + eti + '</span></button>';
+  }
+  /* una riga con una scelta che vale subito: l'etichetta sopra, i segmenti
+     larghi quanto la riga sotto (su un telefono un segmento da tre voci e
+     un'etichetta sulla stessa riga non ci stanno) */
+  function rigaScelta(eti, dentro) {
+    return '<div class="lista-riga sc-riga sc-riga-alta">' +
+      '<span class="sc-eti">' + eti + '</span>' +
+      '<span class="sc-val">' + dentro + '</span></div>';
+  }
+
+  function statoPromemoria() {
+    var P = window.LM_PROMEMORIA;
+    if (!P) return { val: 'non disponibili', porta: false, nota: '', azione: '' };
+    var st = P.stato();
+    if (st === 'niente') {
+      return { val: 'non disponibili', porta: false,
+        nota: 'Questo browser non sa dare notifiche.', azione: '' };
+    }
+    if (P.serveInstallare()) {
+      return { val: 'da installare', porta: false,
+        nota: 'Sull’iPhone i promemoria arrivano solo se aggiungi LifeMax alla schermata Home: tasto Condividi → «Aggiungi a schermata Home». Poi torna qui.',
+        azione: '' };
+    }
+    if (st === 'denied') {
+      return { val: 'bloccati', porta: false,
+        nota: 'Le notifiche sono bloccate per questo sito. Si riattivano dalle impostazioni del browser, alla voce di questo indirizzo.',
+        azione: '' };
+    }
+    if (st === 'granted') {
+      var n = P.piano().filter(function (v) { return v.id !== 'stato'; }).length;
+      return { val: 'accesi', porta: true,
+        nota: P.configurato()
+          ? (n ? 'Oggi ne restano <b>' + n + '</b>.' : '')
+          : 'Permesso concesso. Per adesso arriva solo la fine del timer: gli altri promemoria hanno bisogno del server.',
+        azione: '<button class="btn btn-mini" id="imp-prom-off">' + ICO('campanaOff', 15) + ' Spegni</button>' };
+    }
+    return { val: 'spenti', porta: true,
+      nota: P.configurato()
+        ? 'Servono per i momenti della giornata e per le abitudini con un’ora.'
+        : 'Accendendoli ti avviso quando finisce un timer. Per i promemoria a orario serve il server, che non è ancora collegato.',
+      azione: '<button class="btn btn-mini btn-tinta" id="imp-prom-on">' + ICO('campana', 15) + ' Accendi i promemoria</button>' };
+  }
+
+  function htmlImpostazioni() {
     var s = LM.load();
     var modo = s.profilo.modo || 'auto';
     var skin = s.profilo.skin || 'quiete';
+    var nav = s.profilo.nav || 'tre';
     function segM(v, ico, et) { return '<button data-modo="' + v + '" class="' + (modo === v ? 'attivo' : '') + '">' + ICO(ico, 15) + et + '</button>'; }
     function segS(v, et) { return '<button data-skin="' + v + '" class="' + (skin === v ? 'attivo' : '') + '">' + et + '</button>'; }
-    var nav = s.profilo.nav || 'tre';
     function segN(v, et) { return '<button data-nav="' + v + '" class="' + (nav === v ? 'attivo' : '') + '">' + et + '</button>'; }
-    return '<div class="imp-sezione"><div class="imp-eti">Navigazione</div>' +
-      '<div class="segmenti imp-seg" id="seg-nav">' + segN('tre', 'Tre porte') + segN('tutte', 'Tutte le pagine') + '</div>' +
-      '<div class="imp-nota">Con <b>Tre porte</b> nella barra restano <b>Oggi</b>, <b>Attività</b> e <b>Andamento</b>, e le altre schermate stanno dentro, in una riga di linguette sotto al titolo. Con <b>Tutte le pagine</b> torna la barra lunga di prima. In tutti e due i casi non sparisce niente: cambia solo da dove ci si arriva.</div></div>' +
-      '<div class="imp-sezione"><div class="imp-eti">Personalizza</div>' +
-      '<div class="imp-azioni">' +
-      '<button class="btn btn-mini" id="imp-aree">' + ICO('aree', 15) + ' Gestisci le aree</button> ' +
-      '<button class="btn btn-mini" id="imp-guida">' + ICO('aiuto', 15) + ' Come si usa</button> ' +
-      '<button class="btn btn-mini" id="imp-scienza">' + ICO('atom', 15) + ' Perché funziona</button></div>' +
-      '<div class="imp-nota">«Perché funziona» racconta su quali studi è appoggiata ogni scelta dell’app. Si legge una volta, quindi non occupa una linguetta.</div></div>' +
-      '<div class="imp-sezione"><div class="imp-eti">La giornata</div>' +
-      '<div class="imp-azioni"><button class="btn btn-mini" id="imp-ritmo">' + ICO('ritmo', 15) + ' Sonno e pasti</button></div>' +
-      '<div class="imp-nota">La barra della giornata è sempre in cima a <b>Oggi</b>; la pagina <b>Giornata</b> mostra anche settimana, mese e anno.</div></div>' +
-      '<div class="imp-sezione"><div class="imp-eti">Tema</div>' +
-      '<div class="segmenti imp-seg" id="seg-modo">' + segM('auto', 'automatico', 'Auto') + segM('light', 'sun', 'Chiaro') + segM('dark', 'moon', 'Scuro') + '</div></div>' +
-      '<div class="imp-sezione"><div class="imp-eti">Aspetto</div>' +
-      '<div class="segmenti imp-seg" id="seg-skin">' + segS('quiete', 'Aurora') + segS('arcade', 'Arcade') + '</div>' +
-      '<div class="imp-nota">Aurora è più sobrio, Arcade più acceso. Cambia solo l’aspetto, non i dati.</div>' +
-      '<div class="imp-azioni mt-s"><button class="btn btn-mini" id="imp-lab">' + ICO('palette', 15) + ' Design lab</button></div>' +
-      '<div class="imp-nota">Dieci interfacce complete per la stessa app, da confrontare per scegliere la base grafica di tutto il sito.</div></div>';
+
+    var r = s.profilo.ritmo || {};
+    var pasti = (r.pasti || []).length;
+    var valRitmo = (r.sonno || '—') + '–' + (r.sveglia || '—') + (pasti ? ' · ' + pasti + ' pasti' : '');
+    var nAree = (s.areeAttive || []).length;
+    var nBackup = LM.listBackups().length;
+    var pr = statoPromemoria();
+
+    return '<div class="sc">' +
+      /* --- TU: chi sei e dove stanno i dati --- */
+      etichetta('Tu', 'user') +
+      htmlAccount() +
+
+      /* --- LE TUE COSE: quello che l'app sa di te --- */
+      etichetta('Le tue cose', 'aree') +
+      '<div class="lista">' +
+      rigaPorta('imp-aree', 'aree', 'Aree', nAree + ' attive') +
+      rigaPorta('imp-ritmo', 'ritmo', 'Sonno e pasti', valRitmo) +
+      (pr.porta
+        ? rigaPorta('imp-prom-come', 'campana', 'Promemoria', pr.val)
+        : '<div class="lista-riga sc-riga"><span class="sc-eti">' + ICO('campana', 15) + ' Promemoria</span>' +
+          '<span class="sc-val">' + pr.val + '</span></div>') +
+      '</div>' +
+      (pr.nota ? '<p class="lista-nota">' + pr.nota + '</p>' : '') +
+      (pr.azione ? '<div class="imp-azioni">' + pr.azione + '</div>' : '') +
+
+      /* --- COME SI VEDE: tre scelte che valgono subito, tutte insieme.
+             Prima «Tema» e «Aspetto» erano due sezioni diverse per la stessa
+             domanda, e «Navigazione» stava in mezzo ai backup. --- */
+      etichetta('Come si vede', 'palette') +
+      '<div class="lista">' +
+      rigaScelta('Tema', '<span class="segmenti imp-seg" id="seg-modo">' +
+        segM('auto', 'automatico', 'Auto') + segM('light', 'sun', 'Chiaro') + segM('dark', 'moon', 'Scuro') + '</span>') +
+      rigaScelta('Aspetto', '<span class="segmenti imp-seg" id="seg-skin">' +
+        segS('quiete', 'Aurora') + segS('arcade', 'Arcade') + '</span>') +
+      rigaScelta('Barra di navigazione', '<span class="segmenti imp-seg" id="seg-nav">' +
+        segN('tre', 'Tre porte') + segN('tutte', 'Tutte le pagine') + '</span>') +
+      '</div>' +
+      '<p class="lista-nota">Aurora è più sobrio, Arcade più acceso: cambia l’aspetto, non i dati. La barra a <b>tre porte</b> tiene le altre schermate dentro, in una riga di linguette sotto al titolo; con <b>tutte le pagine</b> torna la barra lunga. Non sparisce niente in nessuno dei due casi: cambia da dove ci si arriva.</p>' +
+
+      /* --- I TUOI DATI: due cose che si fanno e una porta --- */
+      etichetta('I tuoi dati', 'dati') +
+      '<div class="lista">' +
+      rigaFa('imp-esporta', 'download', 'Esporta tutto in un file (.json)') +
+      rigaFa('imp-importa', 'upload', 'Importa da un file') +
+      rigaPorta('imp-backup', 'archivio', 'Backup e ripristino', nBackup ? String(nBackup) : 'nessuno') +
+      '</div>' +
+      '<input type="file" id="imp-file" accept="application/json,.json" hidden>' +
+      '<p class="lista-nota">Ogni operazione che sostituisce i dati crea prima un backup ripristinabile.</p>' +
+
+      /* --- CAPIRE L'APP: le pagine che si leggono, non si usano --- */
+      etichetta('Capire l’app', 'aiuto') +
+      '<div class="lista">' +
+      rigaPorta('imp-guida', 'aiuto', 'Come si usa') +
+      rigaPorta('imp-scienza', 'atom', 'Perché funziona') +
+      rigaPorta('imp-diag', 'terminale', 'Cosa sta succedendo') +
+      rigaPorta('imp-lab', 'palette', 'Design lab') +
+      '</div>' +
+      '<p class="lista-nota">«Perché funziona» racconta su quali studi è appoggiata ogni scelta dell’app. «Cosa sta succedendo» mostra se i dati sono davvero salvati, da copiare e inviare se qualcosa non torna.</p>' +
+
+      /* --- RIPARTIRE: staccato, e in fondo. Quello che cancella non può
+             stare in fila con quello che salva. --- */
+      etichetta('Ripartire da zero', 'riprova') +
+      '<div class="lista">' +
+      rigaFa('imp-demo', 'sparkles', 'Carica dati di esempio') +
+      rigaFa('imp-azzera', 'trash', 'Azzera tutto', 'sc-pericolo') +
+      '</div>' +
+      '<p class="lista-nota">L’azzeramento crea comunque un backup: potrai recuperare i dati da «Backup e ripristino».</p>' +
+      '</div>';
   }
 
   /* PROMEMORIA — il pannello per accenderli.
@@ -1050,55 +1200,6 @@
      cosa in due schermate sarebbero due modi di accendere la stessa luce.
      Il permesso si chiede QUI, quando lo chiedi tu: chiederlo all'apertura è
      il modo più sicuro di farselo negare per sempre. */
-  function htmlPromemoria() {
-    var P = window.LM_PROMEMORIA;
-    if (!P) return '';
-    var st = P.stato();
-    var riga, azione = '';
-    if (st === 'niente') {
-      riga = 'Questo browser non sa dare notifiche.';
-    } else if (P.serveInstallare()) {
-      /* su iPhone non è un dettaglio: da Safari il permesso non si può
-         nemmeno chiedere, e un pulsante che non fa niente è peggio di una
-         frase che spiega */
-      riga = 'Sull’iPhone i promemoria arrivano solo se aggiungi LifeMax alla schermata Home: tasto Condividi → «Aggiungi a schermata Home». Poi torna qui.';
-    } else if (st === 'denied') {
-      riga = 'Le notifiche sono bloccate per questo sito. Si riattivano dalle impostazioni del browser, alla voce di questo indirizzo.';
-    } else if (st === 'granted') {
-      riga = P.configurato()
-        ? 'Accesi. Ti arrivano i momenti della giornata, le abitudini con un’ora e un colpetto sulla priorità se nel pomeriggio è ancora lì.'
-        : 'Permesso concesso. Per adesso arriva solo la fine del timer: gli altri promemoria hanno bisogno del server, che non è ancora collegato.';
-      azione = '<button class="btn btn-mini" id="imp-prom-off">' + ICO('campanaOff', 15) + ' Spegni</button>';
-    } else if (!P.configurato()) {
-      /* senza il postino l'unica cosa che il web sa fare da solo è avvisare a
-         pagina aperta: dirlo prima è meglio che promettere le 8:30 e non
-         arrivare */
-      riga = 'Spenti. Accendendoli ti avviso quando finisce un timer. Per i promemoria a orario serve il server, che non è ancora collegato.';
-      azione = '<button class="btn btn-mini btn-tinta" id="imp-prom-on">' + ICO('campana', 15) + ' Accendi i promemoria</button>';
-    } else {
-      riga = 'Spenti. Servono per i momenti della giornata e per le abitudini con un’ora.';
-      azione = '<button class="btn btn-mini btn-tinta" id="imp-prom-on">' + ICO('campana', 15) + ' Accendi i promemoria</button>';
-    }
-    var n = P.piano().filter(function (v) { return v.id !== 'stato'; }).length;
-
-    return '<div class="imp-sezione"><div class="imp-eti">Promemoria</div>' +
-      '<div class="imp-nota">' + esc(riga) + '</div>' +
-      (azione ? '<div class="imp-azioni mt-s">' + azione + '</div>' : '') +
-      /* l'elenco di quello che arriva si mostra solo se arriverà davvero:
-         col permesso concesso ma senza il postino sarebbe una promessa */
-      (st === 'granted' && P.configurato() && n
-        ? '<div class="imp-nota">Oggi ne restano <b>' + n + '</b>: ' +
-          esc(P.piano().filter(function (v) { return v.id !== 'stato'; })
-            .map(function (v) { return v.ora + ' ' + v.titolo; }).join(' · ')) + '</div>' : '') +
-      /* Tutto il resto sta in una schermata sua: qui dentro sarebbero venti
-         righe di interruttori in mezzo al tema e ai backup, e la sezione
-         «Promemoria» diventerebbe più lunga di tutte le altre insieme. */
-      (st === 'granted' || st === 'default'
-        ? '<div class="imp-azioni mt-s"><button class="btn btn-mini" id="imp-prom-come">' +
-          ICO('ingranaggio', 15) + ' Come ti avviso' + ICO('arrowRight', 13) + '</button></div>' : '') +
-      '</div>';
-  }
-
   /* COME TI AVVISO — la schermata dove si sceglie tutto.
      Sta a parte per un motivo che non è di spazio: qui si decide quando una
      macchina ha il permesso di interromperti, e quella decisione merita una
@@ -1409,26 +1510,6 @@
         dillo('Non ci sono riuscito: il server non risponde.', 'sync-errore');
       });
     });
-  }
-
-  function htmlDati() {
-    var nBackup = LM.listBackups().length;
-    return '<div class="imp-sezione"><div class="imp-eti">I tuoi dati</div>' +
-      '<div class="imp-azioni">' +
-      '<button class="btn btn-mini" id="imp-esporta">' + ICO('download', 15) + ' Esporta (.json)</button> ' +
-      '<button class="btn btn-mini" id="imp-importa">' + ICO('upload', 15) + ' Importa da file</button> ' +
-      '<button class="btn btn-mini" id="imp-backup">' + ICO('archivio', 15) + ' Backup e ripristino' + (nBackup ? ' (' + nBackup + ')' : '') + '</button>' +
-      '<input type="file" id="imp-file" accept="application/json,.json" hidden></div>' +
-      '<div class="imp-nota">Esporta un file con tutti i tuoi dati per conservarlo o spostarlo. Ogni operazione che sostituisce i dati crea prima un backup ripristinabile.</div>' +
-      '</div>' +
-      '<div class="imp-sezione"><div class="imp-eti">Ripartenza</div>' +
-      '<div class="imp-azioni">' +
-      '<button class="btn btn-mini" id="imp-demo">' + ICO('sparkles', 15) + ' Carica dati di esempio</button> ' +
-      '<button class="btn btn-mini imp-pericolo" id="imp-azzera">' + ICO('trash', 15) + ' Azzera tutto</button></div>' +
-      '<div class="imp-nota">L’azzeramento crea comunque un backup: potrai recuperare i dati da «Backup e ripristino».</div></div>' +
-      '<div class="imp-sezione"><div class="imp-eti">Se qualcosa non torna</div>' +
-      '<div class="imp-azioni"><button class="btn btn-mini" id="imp-diag">' + ICO('terminale', 15) + ' Cosa sta succedendo</button></div>' +
-      '<div class="imp-nota">Mostra se i dati sono davvero salvati e il registro di tutto quello che l’app sta facendo, da copiare e inviare.</div></div>';
   }
 
   function wireAspettoDati(root) {
@@ -1793,27 +1874,34 @@
   /* Lo stesso blocco che stava nel menu «Altro»: chi è connesso, com'è andato
      il salvataggio, entra ed esci. Toccava sparire con «Altro», e invece è la
      cosa che si va a cercare quando si dubita che i dati siano al sicuro. */
+  /* IL BLOCCO DELL'ACCOUNT dentro le impostazioni. Non porta la sua etichetta:
+     ce l'ha già sopra («Tu»), e due titoli per lo stesso blocco erano uno di
+     troppo. Lo stato del salvataggio resta CLICCABILE: chi legge
+     «Salvataggio…» vuole sapere subito perché, e la spiegazione deve stare
+     dietro quella parola. */
   function htmlAccount() {
     var a = window.LM_AUTH || { available: false, user: null };
     if (a.user) {
       var y = statoSync();
-      return '<div class="imp-sezione"><div class="imp-eti">Account</div>' +
-        '<div class="menu-account">' + ICO('cloudCheck', 15) + ' Connesso come <b>' + esc(a.user.name || a.user.email) + '</b>' +
-        '<button class="btn btn-mini btn-ghost" id="imp-esci">' + ICO('logout', 15) + ' Esci</button></div>' +
+      return '<div class="lista">' +
+        '<div class="lista-riga sc-riga"><span class="sc-eti">' + ICO('cloudCheck', 15) + ' Connesso come</span>' +
+        '<span class="sc-val">' + esc(a.user.name || a.user.email) + '</span></div>' +
+        rigaFa('imp-esci', 'logout', 'Esci dall’account') +
+        '</div>' +
         '<button type="button" class="sync-chip sync-chip-largo ' + y.cls + '" data-diag="1" title="' + esc(y.title || 'Mostra cosa sta succedendo') + '">' +
-        ICO(y.ico, 13) + ' ' + y.testo + ICO('arrowRight', 13) + '</button></div>';
+        ICO(y.ico, 13) + ' ' + y.testo + ICO('arrowRight', 13) + '</button>';
     }
     if (a.available) {
-      return '<div class="imp-sezione"><div class="imp-eti">Account</div>' +
-        '<button class="btn btn-accedi" id="imp-accedi" style="width:100%;justify-content:center">' + GOOGLE_G(15) + ' Accedi con Google</button>' +
-        '<div class="imp-nota">Accedi per ritrovare i tuoi dati su tutti i dispositivi.</div></div>';
+      return '<button class="btn btn-accedi" id="imp-accedi" style="width:100%;justify-content:center">' + GOOGLE_G(15) + ' Accedi con Google</button>' +
+        '<p class="lista-nota">I dati stanno su questo dispositivo. Accedi per ritrovarli su tutti.</p>';
     }
-    return '<div class="imp-sezione"><div class="imp-eti">Account</div>' +
-      '<div class="fondo-locale">' + ICO('soloQui', 13) + ' Dati salvati su questo dispositivo</div></div>';
+    return '<div class="lista"><div class="lista-riga sc-riga">' +
+      '<span class="sc-eti">' + ICO('soloQui', 15) + ' Dove stanno i dati</span>' +
+      '<span class="sc-val">su questo dispositivo</span></div></div>';
   }
 
   function apriImpostazioni() {
-    apriSheet('Impostazioni', htmlAccount() + htmlPromemoria() + htmlAspetto() + htmlDati(), wireAspettoDati, false,
+    apriSheet('Impostazioni', htmlImpostazioni(), wireAspettoDati, false,
       { nome: 'Impostazioni', apri: apriImpostazioni });
   }
 
@@ -3592,14 +3680,12 @@
     var t = LM.todayKey();
     var checkinOggi = s.checkins.filter(function (c) { return c.data === t; }).length;
 
-    /* L'unica porta per le impostazioni su telefono. Sta QUI e non in cima a
-       ogni schermata: un pulsante che si usa una volta al mese non può occupare
-       un angolo di tutte le pagine. Sta in «Andamento» perché è la porta di
-       quello che riguarda l'app e non la giornata, e su monitor non compare —
-       là c'è il piede della barra laterale, dove ha sempre funzionato. */
-    var html = topbar('Panoramica', '',
-      '<button type="button" class="btn btn-mini imp-porta" id="plancia-imp">' + ICO('ingranaggio', 15) + ' Impostazioni</button>',
-      't-plancia', true);
+    /* La porta delle impostazioni stava QUI, nella testa di questa schermata:
+       su telefono era l'unica di tutta l'app, e per arrivarci bisognava sapere
+       che era nell'angolo di «Panoramica». Adesso sta nella barra in basso, che
+       è dove uno cerca le porte, e su monitor nel piede della barra laterale —
+       due posti fissi, uguali su ogni schermata. */
+    var html = topbar('Panoramica', '', '', 't-plancia', true);
 
     /* eroe essenziale: anello + XP + tre indicatori come chip (niente
        muro di didascalie: le spiegazioni stanno nei tooltip) */
@@ -3633,9 +3719,6 @@
     html += '<div id="sez-corpo"></div>';
 
     $vista.innerHTML = html;
-
-    var bImp = document.getElementById('plancia-imp');
-    if (bImp) bImp.addEventListener('click', apriImpostazioni);
 
     countUp(document.getElementById('xp-contatore'), s.xp);
     LMCharts.ring(document.getElementById('anello-livello'), lvl.pct, { size: 96, centro: 'L' + lvl.livello, label: 'Livello ' + lvl.livello + ', ' + Math.round(lvl.pct * 100) + '% verso il prossimo' });
