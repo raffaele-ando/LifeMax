@@ -292,5 +292,61 @@
   "tab": null,
   "poi": "(async () => {\n  const t = document.querySelector('.lab-tab[data-d=\"10\"]');\n  if (t) t.click();\n  await new Promise((r) => setTimeout(r, 500));\n  const a = document.querySelector('#lab-schermo button[data-s=\"attivita\"]');\n  if (a) a.click();\n})()",
   "prova": "#lab-schermo"
+ },
+ {
+  "nome": "La giornata · settimana",
+  "via": "giornata",
+  "tab": null,
+  "poi": "(async () => {\n  const b = document.querySelector('#orizz-nav [data-orizz=\"settimana\"]');\n  if (!b) throw new Error('manca la linguetta settimana');\n  b.click();\n  await new Promise((r) => setTimeout(r, 600));\n})()",
+  "prova": ".wk-col, .orizz-barra, #orizz-corpo > *"
+ },
+ {
+  "nome": "La giornata · mese",
+  "via": "giornata",
+  "tab": null,
+  "poi": "(async () => {\n  const b = document.querySelector('#orizz-nav [data-orizz=\"mese\"]');\n  if (!b) throw new Error('manca la linguetta mese');\n  b.click();\n  await new Promise((r) => setTimeout(r, 600));\n})()",
+  "prova": ".me-cella, #orizz-corpo > *"
+ },
+ {
+  "nome": "La giornata · anno",
+  "via": "giornata",
+  "tab": null,
+  "poi": "(async () => {\n  const b = document.querySelector('#orizz-nav [data-orizz=\"anno\"]');\n  if (!b) throw new Error('manca la linguetta anno');\n  b.click();\n  await new Promise((r) => setTimeout(r, 600));\n})()",
+  "prova": "#orizz-corpo > *"
+ },
+ {
+  "nome": "Scoperte · esperimenti",
+  "via": "esperimenti",
+  "tab": null,
+  "poi": "(async () => {\n  const b = document.querySelector('#sez-scoperte [data-scop=\"esperimenti\"]');\n  if (!b) throw new Error('manca la linguetta degli esperimenti');\n  b.click();\n  await new Promise((r) => setTimeout(r, 700));\n})()",
+  "prova": ".exp-card, #lista-exp"
+ },
+ {
+  "nome": "Rituali · review della sera",
+  "via": "rituali",
+  "tab": null,
+  "poi": "(async () => {\n  const b = [...document.querySelectorAll('#vista .rit-riga')].find((x) => /sera/i.test(x.textContent || ''));\n  if (!b) throw new Error('manca la riga della sera');\n  b.click();\n  await new Promise((r) => setTimeout(r, 700));\n})()",
+  "prova": ".voto-area, .stelline"
+ },
+ {
+  "nome": "Attività · ricerca",
+  "via": "inbox",
+  "tab": 1,
+  "poi": "(async () => {\n  /* la barra della ricerca compare da dieci cose in su, e la demo ne ha\n     nove: due in più e c'è */\n  LM.aggiungiBacklog('Prova per la ricerca uno', 'altro', true);\n  LM.aggiungiBacklog('Prova per la ricerca due', 'altro', true);\n  location.hash = '#/oggi';\n  await new Promise((r) => setTimeout(r, 400));\n  location.hash = '#/inbox';\n  await new Promise((r) => setTimeout(r, 700));\n  const t = document.querySelectorAll('#att-tabs button')[1];\n  if (t) t.click();\n  await new Promise((r) => setTimeout(r, 500));\n  const i = document.getElementById('att-q');\n  if (!i) throw new Error('manca il campo della ricerca');\n  i.focus(); i.value = 'prova';\n  i.dispatchEvent(new Event('input', { bubbles: true }));\n  await new Promise((r) => setTimeout(r, 600));\n})()",
+  "prova": ".att-cerca"
+ },
+ {
+  "nome": "Un avviso",
+  "via": "plancia",
+  "tab": null,
+  "poi": "(async () => {\n  const g = document.getElementById('fondo-impostazioni') || document.querySelector('[data-imp]');\n  if (!g) throw new Error('la porta delle impostazioni non c\\u2019\\u00e8');\n  g.click();\n  await new Promise((r) => setTimeout(r, 500));\n  const z = document.getElementById('imp-azzera');\n  if (!z) throw new Error('manca #imp-azzera');\n  z.click();\n  await new Promise((r) => setTimeout(r, 500));\n})()",
+  "prova": ".avviso"
+ },
+ {
+  "nome": "Menu Altro",
+  "via": "oggi",
+  "tab": null,
+  "poi": "(async () => {\n  const s = LM.load(); s.profilo.nav = 'tutte'; LM.save();\n  /* la barra si rifà al cambio di pagina: senza questo salto la tab bar\n     resta quella a tre porte e il tasto «Altro» non c'è */\n  location.hash = '#/plancia';\n  await new Promise((r) => setTimeout(r, 700));\n  const b = document.querySelector('.tabbar [data-menu]');\n  if (!b) throw new Error('manca il tasto Altro');\n  b.click();\n  await new Promise((r) => setTimeout(r, 700));\n})()",
+  "prova": ".menu-lista, .sheet-corpo .imp-sezione"
  }
 ]

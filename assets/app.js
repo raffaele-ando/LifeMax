@@ -2404,7 +2404,7 @@
          subito, e chi la leggeva alle dieci restava a chiedersi se doveva
          cominciarla. */
       (adesso.stato === 'programmata'
-        ? '<div class="focus-nota-dopo">Adesso non hai niente in programma. Se vuoi, portati avanti.</div>'
+        ? '<div class="focus-nota-dopo">Adesso non hai niente in programma.</div>'
         : '') +
       (prossima.ifThen ? '<div class="focus-ifthen">' + ICO('ancora', 15) + '<span>' + esc(prossima.ifThen) + '</span></div>' : '') +
       /* gerarchia chiara: un'unica azione dominante, il resto recede */
@@ -3151,8 +3151,8 @@
        sistemare). Per oggi non serve: i gesti si scoprono facendoli, e il
        sottotitolo della pagina spiega già le frecce. */
     var sottoHead = compact
-      ? (sommario || 'Come è divisa la tua giornata. Spunta ciò che fai; per cambiarla apri Giornata.')
-      : (isFuturo ? 'Stai preparando un giorno che non è arrivato: le cose si spuntano quando ci arrivi.'
+      ? (sommario || 'Spunta quello che fai; per cambiare gli orari apri La giornata.')
+      : (isFuturo ? 'Giorno futuro: le spunte si mettono quando ci arrivi.'
          : d.isToday ? ''
          : 'Giorno passato: le spunte si mettono ancora, se qualcosa era rimasto fuori.');
     /* nel pop-up il titolo è già nell'intestazione del pannello: ripeterlo
@@ -3167,7 +3167,7 @@
           senzaEtichettaSonno: !compact && interactive });
 
     if (compact) {
-      var popNota = d.tray.length ? '<div class="tl-pop-note">' + ICO('clock', 13) + ' ' + d.tray.length + (d.tray.length === 1 ? ' cosa senza orario' : ' cose senza orario') + ' — dàgli un posto qui sotto.</div>' : '';
+      var popNota = d.tray.length ? '<div class="tl-pop-note">' + ICO('clock', 13) + ' ' + d.tray.length + (d.tray.length === 1 ? ' cosa senza orario' : ' cose senza orario') + ', qui sotto.</div>' : '';
       container.innerHTML = '<div class="card giornata giornata-pop">' + head + '<div id="tl-grid-host">' + gridHtml + '</div>' + popNota + footer + '</div>';
     } else {
       /* Il navigatore del giorno era una riga fuori dalla scheda, e la scheda
@@ -3382,7 +3382,16 @@
     }
     var dowh = ['L', 'M', 'M', 'G', 'V', 'S', 'D'].map(function (x) { return '<span>' + x + '</span>'; }).join('');
     container.innerHTML = orizzNav('mese', giornataAncora, null, mesi[mese] + ' ' + anno) +
-      '<div class="card"><div class="me-dow">' + dowh + '</div><div class="me-grid">' + celle + '</div>' +
+      /* le sette colonne stanno dentro un contenitore che SCORRE di lato: su un
+         telefono da 320px, sette colonne in duecentottanta pixel fanno celle da
+         trentun pixel, dove non ci sta né una pastiglia né un numero. Meglio
+         celle vere e un trascinamento laterale — che è quello che fa qualunque
+         calendario su un telefono — che sette colonne illeggibili.
+         Il giorno della settimana scorre insieme alla griglia: sono la stessa
+         tabella, e se scorresse solo una delle due le lettere finirebbero sopra
+         la colonna sbagliata. */
+      '<div class="card"><div class="me-scorri"><div class="me-tabella">' +
+      '<div class="me-dow">' + dowh + '</div><div class="me-grid">' + celle + '</div></div></div>' +
       '<div class="me-legenda"><span class="lg"><i class="me-heatkey"></i> più lo sfondo è acceso, più la giornata è stata piena</span>' +
       '<span class="lg"><i class="me-sqkey"></i> ogni quadretto è una cosa fatta, col colore dell’area</span>' +
       '<span class="lg">' + ICO('scadenza', 11) + ' scadenza · tocca un giorno per aprirlo</span></div></div>';
@@ -4279,7 +4288,7 @@
       '<button class="q-chip' + (prec === 'preciso' ? ' on' : '') + '" data-prec="preciso">precisi</button>' +
       '</span></div>' +
       '</div>' +
-      '<div class="riga-flex mt"><button class="btn btn-primario" id="notte-salva">' + ICO('save', 15) + ' Salva la notte</button>' +
+      '<div class="riga-flex mt"><button class="btn btn-primario" id="notte-salva">' + ICO('save', 15) + ' Salva</button>' +
       '<button class="btn btn-ghost" id="notte-boh">Non me lo ricordo</button></div>' +
       '<p class="lista-nota">Gli orari «più o meno» restano segnati come tali e non fanno da misura. Se chiudi senza rispondere la domanda non torna oggi: resta nei <b>Rituali</b>.</p>' +
       '</div>';
@@ -6297,7 +6306,10 @@
       card.innerHTML = '<div class="exp-testa"><h2>' + esc(e.nome) + '</h2>' +
         '<span class="chip">' + (e.stato === 'attivo' ? '<span class="punto-vivo"></span> attivo' : ICO('concluso', 13) + ' concluso') + '</span>' +
         '<span class="chip">' + esc(m ? m.nome : e.metrica) + (e.areaId ? ' · ' + esc(areaById(e.areaId).nome) : '') + '</span></div>' +
-        (e.intervento ? '<div class="sotto" style="margin:0">Intervento: ' + esc(e.intervento) + '</div>' : '') +
+        /* «Intervento» era la parola del metodo, non quella del modulo: nel
+           modulo il campo si chiama «La modifica che vuoi testare», e la
+           scheda lo chiamava con un altro nome. */
+        (e.intervento ? '<div class="sotto" style="margin:0">La modifica: ' + esc(e.intervento) + '</div>' : '') +
         '<div id="exp-chart-' + i + '"></div>' + verdetto;
       lista.appendChild(card);
       var bSalva = card.querySelector('[data-expsalva]');

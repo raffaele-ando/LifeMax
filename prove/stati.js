@@ -44,7 +44,15 @@ const SCENE = JSON.parse(fs.readFileSync(path.join(RADICE, 'segni/scene.json'), 
 const CONTROLLA = `(function (stato) {
   var nome = function (e) { return e.tagName.toLowerCase() +
     (e.className && e.className.toString ? '.' + e.className.toString().trim().split(/\\s+/).slice(0, 3).join('.') : ''); };
-  var vuoto = function (c) { return !c || /^(transparent|rgba\\(0, 0, 0, 0\\))$/.test(c); };
+  /* «vuoto» vuol dire anche ALFA ZERO, in qualunque notazione. Un fondo che
+     viene da un color-mix esce come oklab(0 0 0 / 0): trasparente, ma non
+     una delle due scritture che si cercavano — e trentasei righe di elenco si
+     sono presentate come evidenziazioni quadrate quando non erano nemmeno
+     dipinte. */
+  var vuoto = function (c) {
+    if (!c || c === 'transparent' || c === 'none') return true;
+    return /\\/\\s*0(\\.0+)?\\s*\\)/.test(c) || /,\\s*0(\\.0+)?\\s*\\)/.test(c);
+  };
   /* un ritaglio che ARRIVA FUORI dal riquadro: è quello a quattro morsi, e
      lascia vivere l'ombra e il contorno. Un ritaglio che sta tutto dentro se
      li mangia. */
@@ -79,11 +87,19 @@ const CONTROLLA = `(function (stato) {
       .map(function (k) { return parseFloat(s[k]) || 0; });
     var tondo = Math.max.apply(null, raggi) >= 1 || !!clip;
     if (stato !== 'riposo' && !vuoto(s.backgroundColor) && !tondo) {
+      /* Il padre conta solo se è TONDO E NON TAGLIA. Un padre col ritaglio
+         smussa da sé gli angoli di quello che ha dentro: la riga in cima a un
+         elenco può avere il fondo quadrato quanto vuole, sull'angolo lo taglia
+         il contenitore. Cercando anche i padri che tagliano venivano fuori
+         quindici righe che a schermo sono giuste. Il caso vero è l'altro: un
+         padre con l'angolo tondo che lascia passare tutto, e allora il fondo
+         acceso della prima riga esce dallo spigolo. */
       var p = e.parentElement, pt = null;
       for (var i = 0; i < 2 && p; i++, p = p.parentElement) {
         var q = getComputedStyle(p);
         var pr = ['borderTopLeftRadius','borderBottomLeftRadius'].map(function (k) { return parseFloat(q[k]) || 0; });
-        if (Math.max.apply(null, pr) >= 6 || (q.clipPath && q.clipPath !== 'none')) { pt = p; break; }
+        var taglia = (q.clipPath && q.clipPath !== 'none') || !/^visible/.test(q.overflow);
+        if (Math.max.apply(null, pr) >= 6 && !taglia) { pt = p; break; }
       }
       /* conta solo se l'elemento TOCCA il bordo del padre: in mezzo alla lista
          un rettangolo è giusto che sia un rettangolo */
@@ -148,7 +164,11 @@ const CONTROLLA = `(function (stato) {
               try { await cdp.send('CSS.forcePseudoState', { nodeId, forcedPseudoClasses: classi }); } catch (e) { /* nodo andato via */ }
             }
           }
-          const r = await p.evaluate(CONTROLLA, eti);
+          /* la stringa si CHIAMA con l'argomento: `evaluate` con un testo lo
+             valuta come espressione e non lo invoca, quindi passargli una
+             funzione e un parametro a fianco restituiva la funzione stessa —
+             e la prova, senza un solo elemento guardato, passava. */
+          const r = await p.evaluate(CONTROLLA + '(' + JSON.stringify(eti) + ')');
           visti += r.visti; schermate++;
           const dove = largh + 'px/' + tema + ' · ' + nome + ' · ' + eti;
           Object.keys(tot).forEach((k) => (r[k] || []).forEach((x) => { if (!tot[k].has(x)) tot[k].set(x, dove); }));
@@ -175,6 +195,10 @@ const CONTROLLA = `(function (stato) {
   mostra('nessuna ombra viene tagliata', tot.ombre);
   mostra('nessuna evidenziazione quadrata in un contenitore tondo', tot.rettangoli);
   mostra('nessuna scena ha sbagliato strada', rotte);
+  /* LA RETE SULLA RETE. Con `evaluate` chiamato male la funzione di controllo
+     non veniva invocata: zero elementi guardati e tre controlli verdi. Una
+     prova che non guarda niente non dice niente, e deve dirlo. */
+  ok('e qualcosa ha davvero guardato', visti > 500, visti + ' elementi');
 
   console.log(guai ? '\n>>> ' + guai + ' PROBLEMI' : '\n>>> TUTTO A POSTO');
   await b.close(); srv.close(); process.exit(guai ? 1 : 0);

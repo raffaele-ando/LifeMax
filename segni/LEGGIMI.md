@@ -86,13 +86,20 @@ che non c'entra con i segni ma vive di formule come loro.
   del lato corto) e se un selettore di bordo colpisce un elemento che ha anche
   l'angolo. Scrive `misure.json`. Va lanciato PRIMA di `squircle.mjs`, e
   rilanciato quando si cambia l'altezza di qualcosa.
-- **`scene.json`** — le quarantadue schermate, pannelli e stati su cui girano
-  `misure.mjs` e `prove/bordi.js`: le pagine, i pannelli delle impostazioni, il
-  timer avviato, il toast con l'annulla, e le dieci interfacce del Design lab
-  (sei anche nella loro seconda schermata, dove stanno i chip). Una lista sola
-  per tutti e due: quando erano due, quella delle misure era rimasta indietro
-  di quattro pannelli, ed è esattamente là che si sono trovate le pastiglie mai
-  misurate. Per coprire uno stato in più si aggiunge una scena qui.
+- **`scene.json`** — le cinquanta schermate, pannelli e stati su cui girano
+  `misure.mjs`, `prove/bordi.js` e `prove/stati.js`: le pagine, i pannelli delle
+  impostazioni, la *Giornata* nei suoi quattro orizzonti, le due sezioni di
+  *Scoperte*, la review della sera, la barra della ricerca, un avviso di
+  conferma, il menu «Altro», il timer avviato, il toast con l'annulla, e le
+  dieci interfacce del Design lab (sei anche nella loro seconda schermata, dove
+  stanno i chip). Una lista sola per tutte: quando erano due, quella delle
+  misure era rimasta indietro di quattro pannelli, ed è esattamente là che si
+  sono trovate le pastiglie mai misurate.
+  Ogni voce porta un **`prova`**: un selettore che DEVE esserci quando la scena
+  è pronta. Senza, una scena che sbaglia strada mostra un'altra schermata e la
+  corsa la promuove — è così che otto scene sono rimaste per settimane a
+  misurare la pagina sbagliata. Per coprire uno stato in più si aggiunge una
+  scena qui, col suo `prova`.
 - **`icone.mjs`** — rifà l'icona dell'app, il logo dentro `icons.js` e tutte le
   PNG. `node segni/icone.mjs`.
 
@@ -155,7 +162,7 @@ risolvono per asse, quindi non si può dire «metà del lato CORTO», e su una
 pastiglia da 300×54 il ritaglio darebbe una foglia con la punta da 151px invece
 di un angolo da 27. L'unico modo di dare anche a loro la curva è sapere quanto
 sono alte, e l'unico modo onesto di saperlo è aprire l'app e misurarle:
-`node segni/misure.mjs` gira le quarantadue scene di `segni/scene.json` su tre
+`node segni/misure.mjs` gira le cinquanta scene di `segni/scene.json` su tre
 combinazioni di larghezza e tema e scrive `segni/misure.json` col lato corto più
 piccolo che ogni selettore assume. Il raggio è quel lato diviso 3.057 —
 l'angolo si mangia esattamente mezzo lato, cioè lo stesso caso limite
@@ -352,7 +359,7 @@ bordo c'è in tutte e ventiquattro le direzioni, con la stessa luminanza.
    sulla curva e pretende che combacino entro 12 valori su 255.
 
 Gli ultimi quattro li ha trovati una prova sola, `prove/bordi.js`, che guarda
-OGNI bordo in venticinque schermate per cinque combinazioni di larghezza e
+OGNI bordo in cinquanta schermate per cinque combinazioni di larghezza e
 tema. A occhio se ne erano visti tre o quattro; lei ne ha contati settanta.
 
 8. **Chi ha l'angolo si capiva dal NOME del selettore**, e dal nome non si può:

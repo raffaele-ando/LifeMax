@@ -23,6 +23,14 @@ genera le chiavi, in un browser vero).
   erano muti. Non li preme (premerne uno lo attiva e mezza app cambierebbe
   sotto la prova): guarda se una regola `:active` del foglio lo riguarda,
   scendendo anche nelle `@media` che valgono adesso e negli pseudo-elementi.
+  E una quarta: che **la scelta toccata si accenda**. Un segmento dice due cose
+  insieme — fa una cosa, e dice quale delle sue scelte è quella in vigore — e la
+  seconda si scriveva a mano in ogni punto dell'app che disegna un segmento.
+  Dove non era scritta non succedeva: su «Tema» (Auto · Chiaro · Scuro) e su
+  «Stile» il sito cambiava davvero e la pastiglia accesa restava su quella di
+  prima. Chi guarda non pensa «manca un aggiornamento»: pensa di aver toccato
+  male, e tocca di nuovo. La prova tocca ogni voce di ogni segmento di ogni
+  pannello e pretende che l'accesa sia quella toccata.
 - **modalita.js** — apre tutti i pannelli da tutte le loro strade e li
   chiude in tutti i modi (la x, Esc, toccando fuori). Dopo ogni
   combinazione controlla che niente sia rimasto `inert`, che lo
@@ -222,13 +230,13 @@ genera le chiavi, in un browser vero).
 - **bordi.js** — la stessa cosa, ma DAPPERTUTTO. La forma degli angoli la
   misura `squircle.js` su nove schermate; questa guarda una cosa sola — che il
   bordo sia dove deve essere, di un colore solo, dipinto una volta sola — e la
-  guarda su quarantadue schermate, pannelli e stati (`segni/scene.json`) per
-  cinque combinazioni di larghezza e tema: 210 schermate, più di diecimila
+  guarda su cinquanta schermate, pannelli e stati (`segni/scene.json`) per
+  cinque combinazioni di larghezza e tema: 250 schermate, più di quattordicimila
   angoli ritagliati.
   Nasce da «quelli sono solo alcuni, ce ne sono in varie sezioni e pagine»: i
   difetti li aveva trovati l'occhio, tre o quattro per volta, e ogni volta la
   causa era un'altra con lo stesso aspetto — «il bordo sembra tagliato». Le
-  otto cause, tutte in una prova:
+  nove cause, tutte in una prova:
   1. un angolo tondo senza ritaglio (è rimasto un arco di cerchio);
   2. un bordo con lo spessore e nessuno che lo dipinge (bordo sparito);
   3. un bordo dipinto DUE volte, box e anello (fianchi scuri, angoli chiari);
@@ -243,7 +251,13 @@ genera le chiavi, in un browser vero).
      addosso il ritaglio dell'anello. È successo alla barretta dell'accento
      nella colonna di sinistra (`.nav-item.attivo::before`), che ne usciva a
      trattini. Il generatore ora sa che `.nav-item` e `.nav-item.attivo` sono
-     lo stesso elemento in due momenti; la prova controlla il risultato.
+     lo stesso elemento in due momenti; la prova controlla il risultato;
+  9. un blocco più largo della pagina. Finché il ritaglio portava via tutto
+     quello che stava fuori dal riquadro, un blocco troppo largo non si vedeva
+     uscire: si vedeva TAGLIATO, e sembrava un difetto del bordo. Il calendario
+     del mese era larghissimo per davvero — 1561 pixel in un riquadro da 955,
+     perché `repeat(7, 1fr)` non fa scendere una colonna sotto il titolo più
+     lungo che ha dentro — e due colonne su sette stavano fuori dalla pagina.
   Alla prima passata: settanta casi, in pagine che a occhio non erano mai state
   guardate — «La scienza», «Backup», «Come si usa», il Design lab. Stampa
   TUTTI i casi, uno per riga, e non i primi sei: con l'elenco tagliato si
@@ -318,8 +332,8 @@ genera le chiavi, in un browser vero).
     node prove/giornata.js
     node prove/adesso.js
     node prove/squircle.js
-    node prove/bordi.js      # 210 schermate, una decina di minuti
-    node prove/stati.js      # 42 schermate × 4 stati × 2 vie
+    node prove/bordi.js      # 250 schermate, una decina di minuti
+    node prove/stati.js      # 50 schermate × 4 stati × 2 vie
     node prove/promemoria.js
     node prove/doppioni.js   # qualche minuto
     node prove/sezioni.js

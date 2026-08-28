@@ -12,7 +12,7 @@
    Li ha trovati l'occhio, uno per volta, su schermate diverse. Questa prova li
    cerca tutti insieme.
 
-   LE OTTO COSE CHE CERCA
+   LE NOVE COSE CHE CERCA
    1. angolo tondo senza ritaglio      → è rimasto un arco di cerchio
    2. bordo con lo spessore e nessuno che lo dipinge → bordo sparito
    3. bordo dipinto DUE volte           → fianchi scuri e angoli chiari
@@ -21,6 +21,7 @@
    6. ritaglio che mangia quello che sporge → pezzi tagliati di netto
    7. angolo più grande di quanto ci sta  → forma strozzata
    8. anello sullo pseudo-elemento di qualcun altro → quel disegno esce a pezzi
+   9. un blocco più largo della pagina → prima si vedeva «tagliato»
 
    node prove/bordi.js        (CHROMIUM=/percorso/di/chrome se serve)  */
 'use strict';
@@ -61,7 +62,7 @@ const CONTROLLA = `(function () {
     cache[v] = getComputedStyle(provino).color;
     return cache[v];
   };
-  var out = { ritagliati: 0, tondi: [], spariti: [], doppi: [], senzaForma: [], overflow: [], mangiati: [], strozzati: [], dueP: [] };
+  var out = { ritagliati: 0, tondi: [], spariti: [], doppi: [], senzaForma: [], overflow: [], mangiati: [], strozzati: [], dueP: [], fuoriPagina: [] };
   document.querySelectorAll('body *').forEach(function (e) {
     var s = getComputedStyle(e), r = e.getBoundingClientRect();
     if (r.width < 4 || r.height < 4 || s.visibility === 'hidden' || s.display === 'none' || s.opacity === '0') return;
@@ -93,6 +94,30 @@ const CONTROLLA = `(function () {
       }
     });
     if (clip) out.ritagliati++;
+
+    /* 9. QUALCOSA CHE ESCE DALLA PAGINA. Finché il ritaglio portava via tutto
+          quello che stava fuori dal riquadro, un blocco troppo largo non si
+          vedeva uscire: si vedeva TAGLIATO, e sembrava un difetto del bordo.
+          Il calendario del mese era larghissimo per davvero — 1561 pixel in un
+          riquadro da 955, perché repeat(7, 1fr) non fa scendere una colonna
+          sotto il titolo più lungo che ha dentro — e le ultime due colonne
+          stavano fuori dalla pagina. Adesso che il ritaglio non copre più
+          niente, tanto vale cercarli tutti.
+          Non conta chi ha un antenato che scorre (una fila di linguette che si
+          trascina di lato è fatta per essere più larga). */
+    if (r.right > innerWidth + 2 || r.left < -2) {
+      var scorrevole = false, decoro = s.pointerEvents === 'none';
+      for (var a = e.parentElement; a; a = a.parentElement) {
+        var as = getComputedStyle(a);
+        if (/auto|scroll|hidden|clip/.test(as.overflowX)) { scorrevole = true; break; }
+        /* le macchie sfocate dello sfondo escono dallo schermo per mestiere: si
+           riconoscono perché non si possono nemmeno toccare */
+        if (as.pointerEvents === 'none') { decoro = true; break; }
+      }
+      if (!scorrevole && !decoro && s.position !== 'fixed')
+        out.fuoriPagina.push(nome(e) + ' da ' + Math.round(r.left) + ' a ' +
+          Math.round(r.right) + ' (pagina larga ' + innerWidth + ')');
+    }
 
     /* 1. un angolo tondo senza ritaglio. I campi non possono averlo. */
     if (rmax >= 1 && !clip && !campo) out.tondi.push(nome(e) + ' r=' + Math.round(rmax));
@@ -180,7 +205,7 @@ const CONTROLLA = `(function () {
   const b = await chromium.launch({ executablePath: process.env.CHROMIUM || undefined });
 
   const tot = { tondi: new Map(), spariti: new Map(), doppi: new Map(), senzaForma: new Map(),
-    overflow: new Map(), mangiati: new Map(), strozzati: new Map(), dueP: new Map() };
+    overflow: new Map(), mangiati: new Map(), strozzati: new Map(), dueP: new Map(), fuoriPagina: new Map() };
   let ritagliati = 0, viste = 0;
   const rotte = new Map();
   const VIE = [[320, true, 'light'], [390, true, 'light'], [390, true, 'dark'], [1280, false, 'light'], [1280, false, 'dark']];
@@ -235,6 +260,7 @@ const CONTROLLA = `(function () {
   mostra('il ritaglio non mangia niente che sporge', tot.mangiati);
   mostra('nessun angolo è più grande di quanto ci sta', tot.strozzati);
   mostra('nessuno pseudo-elemento serve a due cose insieme', tot.dueP);
+  mostra('niente esce dai lati della pagina', tot.fuoriPagina);
   mostra('nessuna scena ha sbagliato strada', rotte);
 
   console.log(guai ? '\n>>> ' + guai + ' PROBLEMI' : '\n>>> TUTTO A POSTO');

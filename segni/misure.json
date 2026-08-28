@@ -420,12 +420,20 @@
  ".att-badge": {
   "corto": 17
  },
+ ".att-cerca": {
+  "corto": 40.3,
+  "angolo": true
+ },
  ".att-filtro": {
   "corto": 33.7,
   "angolo": true
  },
  ".aurora i": {
-  "corto": 128
+  "corto": 127.9
+ },
+ ".avviso": {
+  "corto": 182.6,
+  "angolo": true
  },
  ".backup-riga": {
   "corto": 63.8,
@@ -444,6 +452,9 @@
  ".btn-ok": {
   "angolo": true
  },
+ ".btn-pericolo": {
+  "angolo": true
+ },
  ".btn-primario": {
   "angolo": true
  },
@@ -458,7 +469,7 @@
   "angolo": true
  },
  ".card": {
-  "corto": 79.5,
+  "corto": 78.9,
   "angolo": true
  },
  ".card-area .testata .icona-area": {
@@ -491,9 +502,13 @@
   "corto": 26.8
  },
  ".evidenza": {
-  "corto": 18
+  "corto": 17.9
  },
  ".evidenza-euristica": {
+  "angolo": true
+ },
+ ".exp-verdetto": {
+  "corto": 46.3,
   "angolo": true
  },
  ".focus-cuore": {
@@ -550,7 +565,7 @@
   "angolo": true
  },
  ".lm-hbar-fill": {
-  "corto": 6.1
+  "corto": 6
  },
  ".lm-hbar-row": {
   "corto": 19.3
@@ -568,8 +583,34 @@
  ".manico": {
   "corto": 22
  },
+ ".me-cella": {
+  "corto": 52,
+  "angolo": true
+ },
+ ".me-cella.oggi": {
+  "angolo": true
+ },
+ ".me-heatkey": {
+  "corto": 11
+ },
+ ".me-mattoni i": {
+  "corto": 7
+ },
+ ".me-pill": {
+  "corto": 15.8
+ },
+ ".me-sqkey": {
+  "corto": 8.4
+ },
+ ".menu-extra": {
+  "angolo": true
+ },
+ ".menu-voce": {
+  "corto": 42.3,
+  "angolo": true
+ },
  ".nav-item": {
-  "corto": 46.5
+  "corto": 33.5
  },
  ".nav-item .nav-badge": {
   "corto": 18.5
@@ -583,6 +624,9 @@
  },
  ".prom-int[aria-checked=\"true\"]": {
   "angolo": true
+ },
+ ".punto-vivo": {
+  "corto": 8
  },
  ".q-chip": {
   "corto": 34,
@@ -615,12 +659,15 @@
  ".rit-ora": {
   "corto": 22.5
  },
+ ".scad-badge": {
+  "corto": 20.5
+ },
  ".scala button": {
   "corto": 45.2,
   "angolo": true
  },
  ".scienza-card .uso": {
-  "corto": 57
+  "corto": 56.1
  },
  ".seg-n": {
   "corto": 12.6
@@ -672,7 +719,7 @@
   "corto": 45.3
  },
  ".tabbar button": {
-  "corto": 45.3
+  "corto": 43.8
  },
  ".tabbar button .tab-ico .nav-badge": {
   "corto": 17,
@@ -685,7 +732,7 @@
   "corto": 102
  },
  ".tl-blk": {
-  "corto": 24
+  "corto": 15
  },
  ".tl-blk-att": {
   "angolo": true
@@ -717,13 +764,20 @@
   "corto": 18.5
  },
  ".tl-sleep": {
-  "corto": 28
+  "corto": 21
  },
  ".toast": {
   "corto": 56
  },
  ".toast-azione": {
   "corto": 32
+ },
+ ".voto-area .stelline button": {
+  "corto": 35,
+  "angolo": true
+ },
+ ".wk-col": {
+  "corto": 116
  },
  ":root[data-mode=\"dark\"] .toast": {
   "angolo": true
