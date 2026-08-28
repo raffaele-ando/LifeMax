@@ -86,7 +86,7 @@ che non c'entra con i segni ma vive di formule come loro.
   del lato corto) e se un selettore di bordo colpisce un elemento che ha anche
   l'angolo. Scrive `misure.json`. Va lanciato PRIMA di `squircle.mjs`, e
   rilanciato quando si cambia l'altezza di qualcosa.
-- **`scene.json`** — le cinquanta schermate, pannelli e stati su cui girano
+- **`scene.json`** — le cinquantuno schermate, pannelli e stati su cui girano
   `misure.mjs`, `prove/bordi.js` e `prove/stati.js`: le pagine, i pannelli delle
   impostazioni, la *Giornata* nei suoi quattro orizzonti, le due sezioni di
   *Scoperte*, la review della sera, la barra della ricerca, un avviso di
@@ -162,7 +162,7 @@ risolvono per asse, quindi non si può dire «metà del lato CORTO», e su una
 pastiglia da 300×54 il ritaglio darebbe una foglia con la punta da 151px invece
 di un angolo da 27. L'unico modo di dare anche a loro la curva è sapere quanto
 sono alte, e l'unico modo onesto di saperlo è aprire l'app e misurarle:
-`node segni/misure.mjs` gira le cinquanta scene di `segni/scene.json` su tre
+`node segni/misure.mjs` gira le cinquantuno scene di `segni/scene.json` su tre
 combinazioni di larghezza e tema e scrive `segni/misure.json` col lato corto più
 piccolo che ogni selettore assume. Il raggio è quel lato diviso 3.057 —
 l'angolo si mangia esattamente mezzo lato, cioè lo stesso caso limite
@@ -414,3 +414,16 @@ tema. A occhio se ne erano visti tre o quattro; lei ne ha contati settanta.
     comparso il giorno in cui il ritaglio ha smesso di farlo. Adesso due
     selettori si considerano lo stesso elemento se uno è l'altro più un pezzo
     attaccato senza spazi.
+14. **Una scena che misurava a seconda dell'ora del giorno.** La scena della
+    review della sera apriva la sezione cliccandoci sopra. Ma nei Rituali la
+    sezione dell'ORA è già aperta da sé — quella del mattino la mattina, il
+    check-in nel pomeriggio, la review dalle 19 in poi — e su una sezione già
+    aperta quel clic la CHIUDE. Lanciata di giorno la corsa misurava la review;
+    lanciata di sera trovava la riga chiusa, e la rete del `prova` la fermava.
+    Il rovescio era peggio, perché non fermava niente: alle 20 il check-in è
+    chiuso e nessuna scena lo apriva, quindi i cinque tasti della scala da 1 a 5
+    sparivano dall'elenco dei misurati e si ritrovavano un arco di cerchio al
+    posto dell'angolo — un difetto che compare solo se rigeneri dopo cena.
+    Adesso le scene dei rituali aprono la loro sezione SOLO se è chiusa, e il
+    check-in ha una scena sua: quello che si misura non dipende più da che ora
+    è quando lanci il comando.

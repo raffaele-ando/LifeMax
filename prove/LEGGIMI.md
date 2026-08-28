@@ -212,31 +212,35 @@ genera le chiavi, in un browser vero).
   si trova ancora nei Rituali — la promessa scritta nella nota è verificata.
 - **campi.js** — i campi che si aprono col tocco: l'ora di un pasto, la
   scadenza di un'attività. Nasce da «non funziona il pulsante "a un'altra ora"
-  quando indico i pasti della giornata in Rituali». Il tasto c'era e si
-  premeva; sotto ci stava un `input[type=time]` largo un pixel, trasparente,
-  ritagliato via e con `pointer-events: none`. Il dito non poteva raggiungerlo
-  in nessun modo, e l'unica strada era chiedere al browser di aprire l'orologio
-  di sistema su un elemento che non si vede: una richiesta che a volte non fa
-  niente, non solleva un errore e non lascia traccia. Da fuori il tasto sembra
-  rotto — e per un anno, in due punti dell'app, lo era. In più il campo nasceva
-  già pieno dell'ora solita, quindi anche a orologio aperto riscegliere quella
-  stessa ora non faceva scattare nessun evento.
-  La prova chiede al browser CHI RICEVE il tocco nel mezzo del campo: è la
-  domanda che il tasto rotto sbagliava, e l'unica che conta. Poi che il tocco
-  lasci un segno (la pastiglia si accende, il campo compare), che il campo
-  dell'ora parta VUOTO, che quello che si sceglie si salvi come ora precisa,
-  che si possa cambiare idea, e che «sì» resti l'ora solita più o meno. Sulla
-  scadenza controlla anche che la ✕ resti sopra al campo steso sulla riga:
-  sotto, togliere la scadenza avrebbe aperto il calendario.
-  C'è stata una seconda puntata: col campo in chiaro l'orologio si apriva —
-  e si richiudeva subito. Erano due richieste in fila, il fuoco e poi
-  `showPicker()`, e sulla maggior parte dei telefoni il fuoco su un campo
-  dell'ora apre già la ruota: la seconda richiesta la richiudeva un istante
-  dopo. Due modi di dire la stessa cosa non sono meglio di uno. Un pop-up di
-  sistema da fuori non si vede — nessun browser guidato lo disegna, quindi
-  guardarlo non serve a niente — e allora quella parte la prova la legge nel
-  codice: chiedere l'orologio A MANO è la strada che si è rotta due volte, e
-  l'app non la prende più.
+  quando indico i pasti della giornata in Rituali», ed è finita in tre puntate,
+  che raccontano tutte la stessa cosa.
+  UNO. Il tasto c'era e si premeva; sotto ci stava un `input[type=time]` largo
+  un pixel, trasparente, ritagliato via e con `pointer-events: none`. Il dito
+  non poteva raggiungerlo, e l'unica strada era chiedere al browser di aprire
+  l'orologio di sistema su un elemento che non si vede: una richiesta che a
+  volte non fa niente, non solleva un errore e non lascia traccia.
+  DUE. Il campo diventa visibile, e il tasto chiede il fuoco e poi l'orologio.
+  Due richieste in fila: sulla maggior parte dei telefoni il fuoco su un campo
+  dell'ora apre già la ruota, quindi la seconda richiudeva quello che aveva
+  aperto la prima. L'orologio compariva e spariva.
+  TRE, quella buona: **la terza risposta È il campo dell'ora**. Sta dentro la
+  pastiglia, dentro un `<label>`, e fra il dito e l'orologio non c'è più niente
+  di nostro — nessun ridisegno, nessuna richiesta di fuoco, nessuna richiesta
+  di aprire niente. Si tocca un campo dell'ora come su qualunque altro sito, e
+  ad aprirlo è il browser. Quello che sta in mezzo è la cosa che si rompe.
+  La prova chiede al browser CHI RICEVE il tocco nel mezzo del campo — la
+  domanda che tutte e tre le versioni hanno risposto diversamente — e poi che
+  il campo parta VUOTO (con dentro l'ora solita, riscegliere quella stessa ora
+  non fa scattare nessun evento e il tocco va perso), che toccare la pastiglia
+  NON rifaccia il campo da capo (un orologio appeso a un elemento che viene
+  buttato via si chiude da solo: è la puntata due), che l'ora scelta si salvi
+  come precisa, e che «sì» resti l'ora solita più o meno. Sulla scadenza
+  controlla anche che la ✕ resti sopra al campo steso sulla riga: sotto,
+  togliere la scadenza avrebbe aperto il calendario.
+  Un pop-up di sistema da fuori non si vede — nessun browser guidato lo
+  disegna, nemmeno con uno schermo vero sotto: provato — e allora quella parte
+  la prova la legge nel codice: chiedere l'orologio A MANO è la strada che si è
+  rotta due volte, e l'app non la prende più da nessuna parte.
 - **lezioni.js** — «cosa funziona per me»: le righe che si scrivono senza fare un
   esperimento. Il pericolo di una funzione così è che diventi un cimitero — si
   scrivono dieci righe, non le rivede nessuno, e fra un mese non sono né dati né
@@ -257,7 +261,7 @@ genera le chiavi, in un browser vero).
 - **bordi.js** — la stessa cosa, ma DAPPERTUTTO. La forma degli angoli la
   misura `squircle.js` su nove schermate; questa guarda una cosa sola — che il
   bordo sia dove deve essere, di un colore solo, dipinto una volta sola — e la
-  guarda su cinquanta schermate, pannelli e stati (`segni/scene.json`) per
+  guarda su cinquantuno schermate, pannelli e stati (`segni/scene.json`) per
   cinque combinazioni di larghezza e tema: 250 schermate, più di quattordicimila
   angoli ritagliati.
   Nasce da «quelli sono solo alcuni, ce ne sono in varie sezioni e pagine»: i

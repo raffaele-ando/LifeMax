@@ -322,10 +322,17 @@
   "prova": ".exp-card, #lista-exp"
  },
  {
+  "nome": "Rituali · check-in",
+  "via": "rituali",
+  "tab": null,
+  "poi": "(async () => {\n  /* La sezione dell'ORA è già aperta da sé: cliccarla la CHIUDE. Apriamola\n     solo se è chiusa, altrimenti la scena finisce su una riga chiusa — e\n     misurava a seconda dell'ora del giorno in cui si lancia. */\n  const sez = document.querySelector('#vista .rit-blocco[data-rit=\"checkin\"]');\n  if (!sez) throw new Error('manca la riga: checkin');\n  if (!sez.classList.contains('aperto')) {\n    sez.querySelector('.rit-riga').click();\n    await new Promise((r) => setTimeout(r, 700));\n  }\n})()",
+  "prova": ".scala button"
+ },
+ {
   "nome": "Rituali · review della sera",
   "via": "rituali",
   "tab": null,
-  "poi": "(async () => {\n  const b = [...document.querySelectorAll('#vista .rit-riga')].find((x) => /sera/i.test(x.textContent || ''));\n  if (!b) throw new Error('manca la riga della sera');\n  b.click();\n  await new Promise((r) => setTimeout(r, 700));\n})()",
+  "poi": "(async () => {\n  /* La sezione dell'ORA è già aperta da sé: cliccarla la CHIUDE. Apriamola\n     solo se è chiusa, altrimenti la scena finisce su una riga chiusa — e\n     misurava a seconda dell'ora del giorno in cui si lancia. */\n  const sez = document.querySelector('#vista .rit-blocco[data-rit=\"sera\"]');\n  if (!sez) throw new Error('manca la riga: sera');\n  if (!sez.classList.contains('aperto')) {\n    sez.querySelector('.rit-riga').click();\n    await new Promise((r) => setTimeout(r, 700));\n  }\n})()",
   "prova": ".voto-area, .stelline"
  },
  {

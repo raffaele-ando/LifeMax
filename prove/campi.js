@@ -82,28 +82,43 @@ const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  
     await p.waitForTimeout(600);
     console.log('  — ' + W + 'px —');
     ok('ci sono le righe dei pasti', await p.evaluate(() => document.querySelectorAll('[data-pasto]').length) === 3);
-    ok('il campo dell’ora non c’è finché non lo chiedi', await p.evaluate(() => !document.querySelector('[data-poraval]')));
 
-    await p.locator('[data-pasto] [data-pora]').first().click();
-    await p.waitForTimeout(400);
+    /* il campo c'è SEMPRE: la terza risposta è lui, non un tasto che lo apre */
     const c = await chiRiceve(p, '[data-pasto] [data-poraval]');
-    ok('il tocco fa comparire il campo, e il campo riceve il tocco', !!c && c.suo && c.largo > 60, JSON.stringify(c));
+    ok('il campo dell’ora è già lì, e riceve il tocco', !!c && c.suo && c.largo > 60, JSON.stringify(c));
     const st = await p.evaluate(() => {
       const i = document.querySelector('[data-pasto] [data-poraval]');
       const cs = getComputedStyle(i), r = i.getBoundingClientRect();
+      const pill = i.closest('label');
       return {
-        opacita: cs.opacity, puntatore: cs.pointerEvents, valore: i.value, fuoco: document.activeElement === i,
-        accesa: document.querySelector('[data-pasto] [data-pora]').classList.contains('on'),
-        dentro: r.right <= innerWidth + 1 && r.left >= -1
+        opacita: cs.opacity, puntatore: cs.pointerEvents, valore: i.value,
+        dentroUnaEtichetta: !!pill, pastiglia: pill ? pill.className : null,
+        dentro: r.right <= innerWidth + 1 && r.left >= -1,
+        /* niente tasti che «aprono» il campo: la strada che si è rotta due volte */
+        tastiCheAprono: document.querySelectorAll('[data-pasto] [data-pora]').length
       };
     });
     ok('si vede e si tocca', st.opacita === '1' && st.puntatore !== 'none', JSON.stringify(st));
-    /* pieno dell'ora solita, riscegliere quella stessa ora non fa scattare
-       nessun evento: il tocco andrebbe perso */
+    ok('sta dentro una pastiglia che lo attiva tutta', st.dentroUnaEtichetta && /q-chip-ora/.test(st.pastiglia || ''), st.pastiglia);
+    /* pieno dell'ora solita, riscegliere quella stessa ora non farebbe
+       scattare nessun evento: il tocco andrebbe perso */
     ok('parte vuoto', st.valore === '');
-    ok('prende il fuoco da solo', st.fuoco === true);
-    ok('e la pastiglia si accende: il tocco ha lasciato un segno', st.accesa === true);
     ok('sta dentro lo schermo', st.dentro === true);
+    ok('nessun tasto in mezzo fra il dito e l’orologio', st.tastiCheAprono === 0, '' + st.tastiCheAprono);
+
+    /* IL PUNTO. Toccare la pastiglia non deve rifare niente: se il campo
+       viene ributtato via e rifatto, l'orologio che il browser ha appena
+       aperto resta appeso a un elemento che non c'è più, e si chiude da solo
+       un istante dopo. È esattamente quello che succedeva. */
+    await p.evaluate(() => { window.__stesso = document.querySelector('[data-pasto] [data-poraval]'); });
+    await p.locator('[data-pasto] .q-chip-ora span').first().click();
+    await p.waitForTimeout(500);
+    const sopravvive = await p.evaluate(() => {
+      const ora = document.querySelector('[data-pasto] [data-poraval]');
+      return { stesso: window.__stesso === ora, fuoco: document.activeElement === ora };
+    });
+    ok('toccarla non rifà il campo da capo', sopravvive.stesso === true, JSON.stringify(sopravvive));
+    ok('e il tocco arriva al campo', sopravvive.fuoco === true, JSON.stringify(sopravvive));
 
     await p.evaluate(() => {
       const i = document.querySelector('[data-pasto] [data-poraval]');
@@ -115,23 +130,18 @@ const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  
       return {
         fatto: pa.fatto, ora: pa.ora, prec: pa.prec,
         sotto: riga.querySelector('.rec-solito').textContent,
-        campo: !!riga.querySelector('[data-poraval]'),
-        altra: riga.querySelector('[data-pora]').classList.contains('on'),
+        vuoto: riga.querySelector('[data-poraval]').value === '',
+        altra: riga.querySelector('.q-chip-ora').classList.contains('on'),
         si: riga.querySelector('[data-pfatto="si"]').classList.contains('on')
       };
     });
     ok('l’ora scelta si salva, e come ora precisa', s.fatto === true && s.ora === '08:45' && s.prec === 'preciso', JSON.stringify(s));
     ok('la riga lo dice', /alle 08:45/.test(s.sotto), s.sotto);
-    ok('il campo si richiude', s.campo === false);
-    ok('e resta accesa «a un’altra ora», non «sì»', s.altra === true && s.si === false);
-
-    await p.locator('[data-pasto] [data-pora]').first().click(); await p.waitForTimeout(300);
-    ok('un altro tocco riapre il campo', await p.evaluate(() => !!document.querySelector('[data-pasto] [data-poraval]')));
-    await p.locator('[data-pasto] [data-pora]').first().click(); await p.waitForTimeout(300);
-    ok('e uno ancora lo richiude: si può cambiare idea', await p.evaluate(() => !document.querySelector('[data-pasto] [data-poraval]')));
+    ok('la pastiglia dell’ora si accende, non «sì»', s.altra === true && s.si === false);
+    ok('e il campo torna vuoto, pronto per un’altra correzione', s.vuoto === true);
 
     /* «sì» vuol dire all'ora solita, più o meno: non deve pretendere un'ora
-       dal campo che non c'è */
+       dal campo, che è vuoto */
     await p.locator('[data-pasto] [data-pfatto="si"]').first().click(); await p.waitForTimeout(400);
     const si = await p.evaluate(() => ({
       prec: (LM.ritmoDi(LM.todayKey()).pasti || [])[0].prec,
@@ -150,8 +160,8 @@ const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  
      richiesta la richiudeva. Due modi di dire la stessa cosa non sono meglio
      di uno. Qui si legge il codice, perché un pop-up di sistema non si vede
      da fuori: nessun browser guidato lo disegna, quindi guardarlo non serve.
-     Chiedere l'orologio A MANO è la strada che si è già rotta due volte:
-     l'app non la prende più. */
+     Chiedere l'orologio A MANO è la strada che si è rotta due volte:
+     l'app non la prende più, da nessuna parte. */
   console.log('UNA SOLA RICHIESTA, NON DUE');
   {
     const sorgente = fs.readFileSync(path.join(RADICE, 'assets', 'app.js'), 'utf8');

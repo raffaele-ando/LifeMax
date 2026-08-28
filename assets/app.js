@@ -4356,9 +4356,6 @@
   }
 
   /* --- i pasti e le cose fatte senza scriverle --- */
-  /* quali righe hanno il campo dell’ora aperto. Sta fuori dalla funzione
-     perché il blocco si ridisegna tutto da capo a ogni risposta. */
-  var pastoOraAperta = {};
   function bloccoRecupero() {
     var t = LM.todayKey();
     var r = LM.ritmoDi(t);
@@ -4373,7 +4370,6 @@
       /* «a un’altra ora» può essere già la risposta data: allora è quella
          pastiglia a essere accesa, non «sì» */
       var altraOra = risp === true && pa.prec === 'preciso';
-      var campoAperto = !!pastoOraAperta[pa.id];
       /* la risposta si legge SOTTO il nome, non dentro il tasto: mettendola
          nel tasto, «sì» diventava «sì, verso le 08:00» e i tre tasti andavano
          a capo appena si rispondeva — la riga si muoveva sotto il dito */
@@ -4385,12 +4381,22 @@
         '<small class="rec-solito">' + sotto + '</small></span>' +
         '<span class="sc-val q-chips">' +
         '<button class="q-chip' + (risp === true && !altraOra ? ' on' : '') + '" data-pfatto="si">sì</button>' +
-        '<button class="q-chip' + (campoAperto || altraOra ? ' on' : '') + '" data-pora="1" aria-expanded="' + (campoAperto ? 'true' : 'false') + '">' + ICO('clock', 13) + ' a un’altra ora</button>' +
         '<button class="q-chip' + (risp === false ? ' on' : '') + '" data-pfatto="no">no</button>' +
-        /* il campo si vede solo quando l’hai chiesto, e parte vuoto: se ci
-           trovasse dentro l’ora solita, riscegliere quella stessa ora non
-           farebbe scattare nulla e il tocco andrebbe perso */
-        (campoAperto ? '<span class="rec-acapo"></span><input type="time" class="rec-ora" data-poraval="1" value="" aria-label="' + esc(pa.nome) + ': a che ora">' : '') +
+        /* LA TERZA RISPOSTA È IL CAMPO DELL’ORA, non un tasto che apre un
+           campo dell’ora. Fra il dito e l’orologio del sistema non c’è più
+           niente di nostro: nessun ridisegno, nessuna richiesta di fuoco,
+           nessuna richiesta di aprire l’orologio. Tocchi un campo dell’ora
+           come su qualunque altro sito, e lo apre il browser.
+           Le due versioni con qualcosa in mezzo si sono rotte tutte e due:
+           la prima non apriva niente (il campo era irraggiungibile), la
+           seconda lo apriva e lo richiudeva un istante dopo. Quello che sta
+           in mezzo è la cosa che si rompe, quindi non c’è più niente in
+           mezzo.
+           Parte vuoto apposta: se ci trovasse dentro l’ora solita,
+           riscegliere quella stessa ora non farebbe scattare nulla. */
+        '<label class="q-chip q-chip-ora' + (altraOra ? ' on' : '') + '">' +
+        '<span>a un’altra ora</span>' +
+        '<input type="time" data-poraval="1" value="" aria-label="' + esc(pa.nome) + ' a un’altra ora"></label>' +
         '</span></div>';
     }).join('');
 
@@ -4444,43 +4450,16 @@
       riga.querySelectorAll('[data-pfatto]').forEach(function (b) {
         b.addEventListener('click', function () {
           var si = b.getAttribute('data-pfatto') === 'si';
-          delete pastoOraAperta[id];
           LM.registraPasto(t, id, { fatto: si, ora: si ? solito : null, prec: 'circa' });
           rifai();
         });
       });
-      /* «a un’altra ora» fa comparire il campo dell’ora, dentro la riga e in
-         chiaro. Prima non faceva niente di visibile: il campo era largo un
-         pixel, trasparente e con «pointer-events: none», quindi il dito non
-         poteva raggiungerlo, e l’unica strada era aprire l’orologio a mano su
-         un elemento che non si vede — cosa che il browser fa quando gli pare.
-
-         L’orologio lo chiediamo UNA VOLTA SOLA, e chiedendo il fuoco. Prima
-         qui c’erano due richieste in fila, il fuoco e poi `showPicker()`:
-         sulla maggior parte dei telefoni il fuoco su un campo dell’ora apre
-         già la ruota, e la seconda richiesta la richiudeva un istante dopo —
-         l’orologio si apriva e spariva. Due modi di dire la stessa cosa non
-         sono meglio di uno: sono un interruttore premuto due volte.
-         Il campo esiste già nel documento (leggerne la larghezza obbliga il
-         browser a dargli un posto prima di andare avanti), così la ruota si
-         appende a qualcosa che sta già dove deve stare.
-         Se il fuoco non basta ad aprirla, il campo è lì, si vede e si tocca.
-
-         La risposta si salva quando l’ora è scelta, non prima: un pasto
-         registrato all’ora sbagliata e poi corretto lascia due righe nel
-         diario. */
-      riga.querySelector('[data-pora]').addEventListener('click', function () {
-        if (pastoOraAperta[id]) delete pastoOraAperta[id];
-        else pastoOraAperta[id] = true;
-        rifai();
-        var nuovo = document.querySelector('[data-pasto="' + id + '"] [data-poraval]');
-        if (!nuovo) return;
-        void nuovo.offsetWidth;
-        nuovo.focus();
-      });
+      /* sul campo dell’ora non c’è nessun tocco da ascoltare: aprirlo è
+         affare del browser. Qui si ascolta solo l’ora SCELTA — e si salva
+         quando è scelta, non prima: un pasto registrato all’ora sbagliata e
+         poi corretto lascia due righe nel diario. */
       if (campoOra) campoOra.addEventListener('change', function () {
         if (!campoOra.value) return;
-        delete pastoOraAperta[id];
         LM.registraPasto(t, id, { fatto: true, ora: campoOra.value, prec: 'preciso' });
         rifai();
       });

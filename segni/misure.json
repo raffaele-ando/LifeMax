@@ -408,7 +408,7 @@
   "angolo": true
  },
  ".agg-riga": {
-  "corto": 46.6,
+  "corto": 47,
   "angolo": true
  },
  ".area-riga .icona-area": {
@@ -422,7 +422,7 @@
   "angolo": true
  },
  ".att-filtro": {
-  "corto": 33.7,
+  "corto": 34,
   "angolo": true
  },
  ".aurora i": {
@@ -440,7 +440,7 @@
   "corto": 28
  },
  ".btn": {
-  "corto": 33.7,
+  "corto": 34,
   "angolo": true
  },
  ".btn-ghost": {
@@ -466,7 +466,7 @@
   "angolo": true
  },
  ".card": {
-  "corto": 78.9,
+  "corto": 79.5,
   "angolo": true
  },
  ".card-area .testata .icona-area": {
@@ -492,14 +492,14 @@
   "angolo": true
  },
  ".diario-annulla": {
-  "corto": 24.3,
+  "corto": 24.5,
   "angolo": true
  },
  ".diario-ico": {
-  "corto": 26.8
+  "corto": 27
  },
  ".evidenza": {
-  "corto": 17.9
+  "corto": 18
  },
  ".evidenza-euristica": {
   "angolo": true
@@ -542,7 +542,7 @@
   "angolo": true
  },
  ".lista-azione": {
-  "corto": 25.8,
+  "corto": 26,
   "angolo": true
  },
  ".lista-azione.piena": {
@@ -562,7 +562,7 @@
   "angolo": true
  },
  ".lm-hbar-fill": {
-  "corto": 5.9
+  "corto": 6.1
  },
  ".lm-hbar-row": {
   "corto": 19.3
@@ -664,7 +664,7 @@
   "angolo": true
  },
  ".scienza-card .uso": {
-  "corto": 56.1
+  "corto": 57
  },
  ".seg-n": {
   "corto": 12.6
@@ -689,7 +689,7 @@
   "corto": 34
  },
  ".sel-area-azione": {
-  "corto": 19.6,
+  "corto": 19.8,
   "angolo": true
  },
  ".sheet": {
