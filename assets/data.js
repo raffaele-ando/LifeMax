@@ -1586,11 +1586,41 @@ var LM = (function () {
                         cosa senza orario (lavoro flessibile nei vuoti del piano)
        - 'programmata': niente di flessibile, la prossima cosa in agenda
      Così "Oggi" mostra quello che La Giornata dice di fare in questo momento. */
+  /* LE COSE FRA CUI SCEGLIERE «ADESSO». Sono di due specie e la domanda è una
+     sola: cosa dovrei fare in questo momento. Le abitudini prima non entravano
+     nel conto, e chi apriva la schermata alle sette non vedeva la corsa delle
+     sette — l'unica cosa che aveva in programma. Ognuna porta con sé di che
+     specie è, perché a schermo si vedono diverse e i comandi cambiano: una
+     cosa di oggi si «rimanda», un'abitudine si «salta per oggi». */
+  function voceAzione(a) {
+    return { tipo: 'azione', id: a.id, testo: a.testo, areaId: a.areaId, ora: a.ora,
+      durata: a.durata, mit: !!a.mit, ifThen: a.ifThen || '' };
+  }
+  function voceAbitudine(h) {
+    return { tipo: 'abitudine', id: h.id, testo: h.testo, areaId: h.areaId, ora: h.ora,
+      durata: h.durata, mit: false, ifThen: '', serie: streakAbitudine(h) };
+  }
+  function vociDiAdesso(k) {
+    var s = load();
+    k = k || todayKey();
+    var out = azioniDiOggi().filter(function (a) { return !a.done; }).map(voceAzione);
+    s.abitudini.forEach(function (h) {
+      if (!abitudinePrevista(h, k) || h.fatti[k]) return;
+      out.push(voceAbitudine(h));
+    });
+    return out;
+  }
+
   function azioneAdesso(nowMin) {
     if (nowMin == null) { var dd = new Date(); nowMin = dd.getHours() * 60 + dd.getMinutes(); }
     function mm(hhmm) { var p = String(hhmm).split(':'); return (+p[0]) * 60 + (+p[1]); }
-    var oggi = azioniDiOggi().filter(function (a) { return !a.done; });
-    var confini = azioniDiOggi().filter(function (a) { return a.ora; }).map(function (a) { return mm(a.ora); }).sort(function (x, y) { return x - y; });
+    var k0 = todayKey();
+    var oggi = vociDiAdesso(k0);
+    /* i confini servono a sapere dove finisce un blocco senza durata: sono
+       tutte le ore piantate nella giornata, anche quelle già fatte */
+    var confini = azioniDiOggi().filter(function (a) { return a.ora; }).map(function (a) { return mm(a.ora); })
+      .concat(load().abitudini.filter(function (h) { return h.ora && abitudinePrevista(h, k0); }).map(function (h) { return mm(h.ora); }))
+      .sort(function (x, y) { return x - y; });
     var timed = oggi.filter(function (a) { return a.ora; }).map(function (a) { return { a: a, min: mm(a.ora) }; }).sort(function (x, y) { return x.min - y.min; });
     function fineSlot(min, durata) {
       if (durata) return min + durata;
@@ -1603,11 +1633,15 @@ var LM = (function () {
     /* 2. blocco già passato e non fatto → riprendilo (in ordine) */
     var ritardo = timed.filter(function (t) { return nowMin >= fineSlot(t.min, t.a.durata); });
     if (ritardo.length) { var r = ritardo[0]; return { azione: r.a, stato: 'ritardo', min: r.min, fine: fineSlot(r.min, r.a.durata) }; }
-    /* 3. vuoto nel piano → lavoro flessibile: la priorità, poi le altre senza orario */
+    /* 3. vuoto nel piano → lavoro flessibile: la priorità, poi le altre cose
+          di oggi senza orario, e per ultime le abitudini senza orario — una
+          cosa che hai scelto stamattina viene prima di una che fai sempre */
     var mit = oggi.find(function (a) { return a.mit && !a.ora; });
     if (mit) return { azione: mit, stato: 'libera', min: null, fine: null };
-    var libera = oggi.find(function (a) { return !a.ora; });
+    var libera = oggi.find(function (a) { return !a.ora && a.tipo === 'azione'; });
     if (libera) return { azione: libera, stato: 'libera', min: null, fine: null };
+    var abit = oggi.find(function (a) { return !a.ora; });
+    if (abit) return { azione: abit, stato: 'libera', min: null, fine: null };
     /* 4. tutto in agenda più tardi → la prossima in programma */
     if (timed.length) { var u = timed[0]; return { azione: u.a, stato: 'programmata', min: u.min, fine: fineSlot(u.min, u.a.durata) }; }
     return { azione: null, stato: null, min: null, fine: null };
@@ -2436,6 +2470,7 @@ var LM = (function () {
     valutaArea: valutaArea, registraMinuti: registraMinuti,
     salvaReviewSera: salvaReviewSera, salvaReviewSettimana: salvaReviewSettimana,
     azioniDiOggi: azioniDiOggi, prossimaAzione: prossimaAzione, azioneAdesso: azioneAdesso,
+    vociDiAdesso: vociDiAdesso,
     giornoAttivo: giornoAttivo, streak: streak,
     serieValutazioni: serieValutazioni, serieMinuti: serieMinuti, serieCheckin: serieCheckin,
     serieXp: serieXp, heatmapConsistenza: heatmapConsistenza,

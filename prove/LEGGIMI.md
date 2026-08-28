@@ -171,6 +171,21 @@ genera le chiavi, in un browser vero).
   doppie di un `url("data:...")` dentro un attributo `style`, che chiudevano
   l'attributo; e il giro delle schermate che lasciava la pagina sull'ultima,
   dove l'elemento da misurare non c'è.
+- **adesso.js** — «adesso o dopo», la domanda a cui la schermata *Oggi* deve
+  rispondere. Nasce da «mi sono confuso: l'attività che c'era mi sembrava
+  quella dopo, per come era scritta», ed erano due difetti insieme: la scheda
+  aveva lo stesso aspetto per «questa è di adesso» e «questa è la prossima, fra
+  cinque ore» (cambiava una frase piccola in mezzo alla didascalia, e il tasto
+  pieno diceva «Fatto» in tutti e due i casi), e le abitudini non entravano
+  proprio nel conto — chi apriva la schermata alle sette non vedeva la corsa
+  delle sette.
+  La prova costruisce quattro giornate con l'orologio fermo e pretende quattro
+  facce diverse: la parola della fascia, il suo colore, la nota che dice cosa
+  succede adesso, e quale comando è quello pieno. Poi mette un'abitudine alle
+  sette e controlla che diventi la cosa di adesso, che si veda che è
+  un'abitudine, che al posto di «Più tardi» ci sia «Salta oggi», che «Fatto» la
+  spunti davvero — e che il timer non perda i suoi minuti (cercando l'azione
+  per id non la troverebbe, e i minuti sparirebbero).
 - **giornata.js** — il resoconto della giornata: la notte, i pasti, le cose
   fatte senza scriverle. Tre famiglie di cose che si possono sbagliare.
   QUANDO SI CHIEDE: al mattino la notte, dalle 19 la giornata, una volta sola,
@@ -262,6 +277,7 @@ genera le chiavi, in un browser vero).
     node prove/segni.js      # solo Node, niente browser
     node prove/lezioni.js
     node prove/giornata.js
+    node prove/adesso.js
     node prove/squircle.js
     node prove/bordi.js      # 210 schermate, una decina di minuti
     node prove/promemoria.js

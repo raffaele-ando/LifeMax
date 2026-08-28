@@ -105,25 +105,45 @@ await p.evaluate(()=>{location.hash='#/oggi';});await p.waitForTimeout(800);
 await pulisci();
 const titolo=await p.evaluate(()=>document.querySelector('.focus-azione').textContent);
 const xp0=await p.evaluate(()=>LM.load().xp);
-const fatte0=await p.evaluate(()=>LM.azioniDiOggi().filter(a=>a.done).length);
 await p.evaluate(()=>{document.getElementById('btn-fatto').click();});await p.waitForTimeout(800);
 const xp1=await p.evaluate(()=>LM.load().xp);
 ok('la cosa è fatta e gli XP sono saliti', xp1>xp0, xp0+' → '+xp1);
 ok('c’è un punto a cui tornare', (await p.evaluate(()=>LM.puntiDiRitorno().length))>=1, String(await p.evaluate(()=>LM.puntiDiRitorno().length)));
 await alDiario();
-const idFatta=await p.evaluate(()=>LM.azioniDiOggi().filter(a=>a.done).sort((a,b)=>b.doneAt-a.doneAt)[0].id);
-const n=await p.evaluate(id=>document.querySelectorAll('[data-chiave="'+id+'"]').length, idFatta);
+/* la riga si cerca per TESTO, non per id di azione: da quando la schermata
+   «Adesso» può mostrare anche un'abitudine, quello che si è appena spuntato
+   non è per forza un'azione — e cercando fra le azioni si finiva ad annullare
+   tutt'altra cosa (l'ultima azione fatta dalla demo), con gli XP che non
+   tornavano. Si annulla quello che si è fatto. */
+const rigaFatta=(t)=>p.evaluate(tit=>{
+  const r=[...document.querySelectorAll('.diario-evento')]
+    .filter(e=>e.textContent.indexOf(tit.trim())>=0 && e.querySelector('[data-annulla]'));
+  return r.length;
+}, t);
+const n=await rigaFatta(titolo);
 ok('un «Annulla» per quella cosa, non due', n===1, n+' tasti per la stessa cosa');
 /* il punto di ritorno appena creato è quello di questa riga, che però si
    disfa da sola: nessuna riga deve offrire la strada del punto (che
    riporterebbe indietro anche il resto) */
 const conPunto=await p.evaluate(()=>[...document.querySelectorAll('[data-annulla]')].filter(b=>!b.getAttribute('data-tipo')).length);
 ok('e nessun’altra riga si prende il punto di ritorno', conPunto===0, String(conPunto));
-await p.evaluate(id=>{document.querySelector('[data-chiave="'+id+'"]').click();}, idFatta);await p.waitForTimeout(900);
-const dopo=await p.evaluate(()=>({xp:LM.load().xp, fatta:LM.load().azioni.some(a=>a.done&&a.testo===document.title)}));
+await p.evaluate(tit=>{
+  const r=[...document.querySelectorAll('.diario-evento')]
+    .find(e=>e.textContent.indexOf(tit.trim())>=0 && e.querySelector('[data-annulla]'));
+  if(r) r.querySelector('[data-annulla]').click();
+}, titolo);
+await p.waitForTimeout(900);
+const dopo=await p.evaluate(()=>({xp:LM.load().xp}));
 ok('gli XP tornano come prima', dopo.xp===xp0, xp0+' → '+dopo.xp);
-const fatte1=await p.evaluate(()=>LM.azioniDiOggi().filter(a=>a.done).length);
-ok('la cosa non è più fatta', fatte1===fatte0, fatte0+' fatte prima, '+fatte1+' dopo l’annulla (titolo: '+titolo.trim()+')');
+/* «non è più fatta» vale per tutte e due le specie: un'azione torna da fare,
+   un'abitudine torna senza spunta */
+const fatte1=await p.evaluate(tit=>{
+  const t=LM.todayKey();
+  const az=LM.azioniDiOggi().filter(a=>a.done && a.testo.indexOf(tit.trim())>=0).length;
+  const ab=LM.load().abitudini.filter(h=>h.fatti[t] && h.testo.indexOf(tit.trim())>=0).length;
+  return az+ab;
+}, titolo);
+ok('la cosa non è più fatta', fatte1===0, fatte1+' ancora fatte (titolo: '+titolo.trim()+')');
 const toast=await p.evaluate(()=>[...document.querySelectorAll('.toast')].map(x=>x.textContent.replace(/\s+/g,' ').trim()));
 ok('e il messaggio offre di rimettere', toast.some(x=>/Rimetti/.test(x)), JSON.stringify(toast));
 

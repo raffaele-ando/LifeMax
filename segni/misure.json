@@ -411,11 +411,8 @@
   "angolo": true
  },
  ".agg-riga": {
-  "corto": 46.6,
+  "corto": 47,
   "angolo": true
- },
- ".area-riga .icona-area": {
-  "corto": 28
  },
  ".att-badge": {
   "corto": 17
@@ -427,15 +424,11 @@
  ".aurora i": {
   "corto": 128
  },
- ".backup-riga": {
-  "corto": 63.8,
-  "angolo": true
- },
  ".banda-x": {
   "corto": 28
  },
  ".btn": {
-  "corto": 33.7,
+  "corto": 34,
   "angolo": true
  },
  ".btn-ghost": {
@@ -454,7 +447,7 @@
   "angolo": true
  },
  ".card": {
-  "corto": 97.5,
+  "corto": 138.4,
   "angolo": true
  },
  ".card-area .testata .icona-area": {
@@ -465,35 +458,18 @@
   "angolo": true
  },
  ".chip": {
-  "corto": 31.5,
-  "angolo": true
- },
- ".diag-console": {
-  "corto": 65.5,
-  "angolo": true
- },
- ".diag-riga": {
-  "corto": 27.3
- },
- ".diag-stato": {
-  "corto": 86.3,
+  "corto": 30,
   "angolo": true
  },
  ".diario-annulla": {
-  "corto": 24.3,
+  "corto": 24.5,
   "angolo": true
  },
  ".diario-ico": {
-  "corto": 26.8
- },
- ".evidenza": {
-  "corto": 17.9
- },
- ".evidenza-euristica": {
-  "angolo": true
+  "corto": 27
  },
  ".exp-verdetto": {
-  "corto": 46.2,
+  "corto": 46.3,
   "angolo": true
  },
  ".focus-cuore": {
@@ -512,20 +488,8 @@
   "corto": 57.8,
   "angolo": true
  },
- ".guida-ico": {
-  "corto": 32
- },
  ".icona-btn": {
   "corto": 34,
-  "angolo": true
- },
- ".icona-btn.area-on.on": {
-  "angolo": true
- },
- ".icona-btn.on": {
-  "angolo": true
- },
- ".imp-pericolo": {
   "angolo": true
  },
  ".lista": {
@@ -533,7 +497,7 @@
   "angolo": true
  },
  ".lista-azione": {
-  "corto": 25.8,
+  "corto": 26,
   "angolo": true
  },
  ".lista-azione.piena": {
@@ -553,7 +517,7 @@
   "angolo": true
  },
  ".lm-hbar-fill": {
-  "corto": 5.9
+  "corto": 6.1
  },
  ".lm-hbar-row": {
   "corto": 19.3
@@ -586,18 +550,14 @@
  ".pannello-cattura input[type=\"text\"]:focus": {
   "angolo": true
  },
- ".prom-int": {
-  "corto": 26,
-  "angolo": true
- },
- ".prom-int[aria-checked=\"true\"]": {
-  "angolo": true
- },
  ".punto-vivo": {
   "corto": 8
  },
  ".q-chip": {
   "corto": 34,
+  "angolo": true
+ },
+ ".q-chip.on": {
   "angolo": true
  },
  ".riga-azione": {
@@ -618,7 +578,7 @@
   "angolo": true
  },
  ".rit-gruppo": {
-  "corto": 56,
+  "corto": 166,
   "angolo": true
  },
  ".rit-ico": {
@@ -626,9 +586,6 @@
  },
  ".rit-ora": {
   "corto": 22.5
- },
- ".scienza-card .uso": {
-  "corto": 56.1
  },
  ".segmenti": {
   "corto": 34,
@@ -650,11 +607,11 @@
   "corto": 34
  },
  ".sel-area-azione": {
-  "corto": 19.6,
+  "corto": 19.8,
   "angolo": true
  },
  ".sheet": {
-  "corto": 233.5,
+  "corto": 320,
   "angolo": true
  },
  ".sheet-chiudi": {
@@ -670,14 +627,14 @@
   "corto": 8
  },
  ".tabbar": {
-  "corto": 64,
+  "corto": 63.3,
   "angolo": true
  },
  ".tabbar .tab-catt": {
-  "corto": 46
+  "corto": 45.3
  },
  ".tabbar button": {
-  "corto": 46
+  "corto": 45.3
  },
  ".tabbar button .tab-ico .nav-badge": {
   "corto": 17,
@@ -712,8 +669,8 @@
   "corto": 26,
   "angolo": true
  },
- ".tl-dur": {
-  "corto": 24
+ ".tl-ed-badge": {
+  "corto": 18.5
  },
  ".tl-now-line span": {
   "corto": 18.5
@@ -726,10 +683,6 @@
  },
  ".toast-azione": {
   "corto": 32
- },
- ".voto-area .stelline button": {
-  "corto": 44,
-  "angolo": true
  },
  ":focus-visible": {
   "corto": 50.3
@@ -747,7 +700,7 @@
   "angolo": true
  },
  "kbd": {
-  "corto": 18,
+  "corto": 22.5,
   "angolo": true
  },
  "select": {

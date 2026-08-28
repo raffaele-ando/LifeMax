@@ -56,6 +56,18 @@ rimuovi) da *Impostazioni → Gestisci le aree*. Il **check-in** usa una scala a
 con descrittori e il riferimento «il tuo solito» (media recente), così il punteggio
 è meno ambiguo. Una **guida in-app** (*Impostazioni → Come si usa*) riassume il tutto.
 
+**🎯 Adesso, o più tardi.** La schermata *Oggi* risponde a una domanda sola —
+cosa dovrei fare in questo momento — e la risposta si legge prima del titolo, in
+una fascia con una parola e un colore: **ADESSO** (con l'ora di inizio e fine),
+**IN RITARDO** (con l'ora che era), **QUANDO VUOI** (nessun orario), **PIÙ
+TARDI** (con l'ora e quanto manca), **LA PIÙ IMPORTANTE**. Quando tutto quello
+che resta è programmato più in là, la scheda lo dice — «adesso non hai niente in
+programma» — e il tasto pieno non è più «Fatto» ma **«Falla adesso»**, che porta
+qui una cosa di dopo per scelta tua, con la via del ritorno al piano. Fra le
+cose di adesso ci sono anche le **abitudini** del giorno: quella delle 7:00 è
+quello che devi fare alle 7:00, e la scheda lo dice — con «Salta oggi» al posto
+di «Più tardi», perché un'abitudine non si rimanda a domani.
+
 **🕒 La giornata** è una **griglia oraria a blocchi**: sonno, pasti, abitudini e cose di
 oggi occupano il tempo che scegli (durata regolabile), con gli spazi liberi visibili e
 la riga «adesso». Rende concreto il tempo per chi fatica a percepirlo (time blindness).

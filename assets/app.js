@@ -2143,16 +2143,21 @@
     if (registra && timer.azioneId) {
       var trascorsi = Math.round((timer.durata * 60000 - Math.max(0, timer.fine - Date.now())) / 60000);
       if (trascorsi >= 1) {
+        /* l'area la porta il timer: cercarla fra le azioni non funziona più da
+           quando qui può esserci anche un'abitudine, e i minuti sarebbero
+           finiti nel nulla */
         var a = LM.load().azioni.find(function (x) { return x.id === timer.azioneId; });
-        if (a) LM.registraMinuti(a.areaId, trascorsi);
+        var areaMin = timer.areaId || (a ? a.areaId : null);
+        if (areaMin) LM.registraMinuti(areaMin, trascorsi);
       }
     }
-    timer = { azioneId: null, fine: null, durata: 0, intervallo: null };
+    timer = { azioneId: null, areaId: null, fine: null, durata: 0, intervallo: null };
   }
 
-  function avviaTimer(azioneId, minuti) {
+  function avviaTimer(azioneId, minuti, areaId) {
     fermaTimer(false);
     timer.azioneId = azioneId;
+    timer.areaId = areaId || null;
     timer.durata = minuti;
     timer.fine = Date.now() + minuti * 60000;
     timer.intervallo = setInterval(function () {
@@ -2189,10 +2194,23 @@
   var mostraAltre = false;
   var ultimoFuocoKey = '';
 
+  /* «fra quattro ore»: un orario da solo non dice quanto manca, e quanto manca
+     è la cosa che fa decidere se cominciare qualcos'altro */
+  function fraQuanto(min) {
+    var d = new Date();
+    var q = min - (d.getHours() * 60 + d.getMinutes());
+    if (q <= 0 || q > 12 * 60) return '';
+    if (q < 60) return ', fra ' + q + ' minuti';
+    var ore = Math.round(q / 60);
+    return ', fra ' + (ore === 1 ? 'un’ora' : ore + ' ore');
+  }
+
   function vistaFocus() {
     var adesso;
     if (fuocoScelto) {
-      var pin = LM.azioniDiOggi().find(function (a) { return a.id === fuocoScelto && !a.done; });
+      /* la cosa scelta a mano può essere un'abitudine come una cosa di oggi:
+         si cerca fra tutte e due, con la stessa forma */
+      var pin = LM.vociDiAdesso().find(function (a) { return a.id === fuocoScelto; });
       if (pin) adesso = { azione: pin, stato: 'scelta', min: pin.ora ? minOf(pin.ora) : null, fine: null };
       else { fuocoScelto = null; adesso = LM.azioneAdesso(); }
     } else {
@@ -2271,16 +2289,42 @@
        prossima azione» sopra la prossima azione, in una sezione che si chiama
        «Adesso», sotto un sottotitolo che diceva la stessa cosa. Quando non c'è
        un motivo da spiegare resta solo l'area. */
-    var perche = '', perCls = '';
-    if (adesso.stato === 'scelta') { perche = 'scelta da te' + (adesso.min != null ? ', in programma alle ' + fmtMin(adesso.min) : '') + ' <button class="focus-torna" id="btn-torna-piano">torna al piano</button>'; perCls = ' ora'; }
-    else if (adesso.stato === 'corso') { perche = 'adesso nel piano, ' + fmtMin(adesso.min) + '–' + fmtMin(adesso.fine); perCls = ' ora'; }
-    else if (adesso.stato === 'ritardo') { perche = 'era alle ' + fmtMin(adesso.min) + ', riprendila'; perCls = ' ritardo'; }
-    else if (adesso.stato === 'programmata') { perche = 'in programma alle ' + fmtMin(adesso.min); perCls = ' ora'; }
-    /* la priorità del giorno tiene il suo segno: è l'unico stato che non ha
-       già un colore o un orario a distinguerlo. Senza lo scintillio che aveva
-       prima: un'animazione che gira in continuo sulla schermata della cosa da
-       fare tira via lo sguardo proprio da quella cosa. */
-    else if (prossima.mit) { perche = ICO('star', 13) + ' la più importante di oggi'; perCls = ' mit'; }
+    /* ADESSO O DOPO: la domanda a cui questa schermata deve rispondere prima
+       di ogni altra cosa.
+       Prima lo diceva una frase piccola in mezzo alla didascalia — «in
+       programma alle 15:00», accanto al nome dell'area, sotto un titolo
+       grande e sopra un tasto verde «Fatto» — e la scheda aveva lo STESSO
+       aspetto sia che quella cosa fosse da fare adesso sia che fosse la
+       prossima delle diciassette. Chi la leggeva capiva «questa è la prossima,
+       e adesso?»: è successo davvero, ed è il motivo di questo blocco.
+       Adesso lo dice una fascia sopra il titolo, con una parola sola e un
+       colore: ADESSO, IN RITARDO, QUANDO VUOI, PIÙ TARDI. La parola è la
+       risposta; il dettaglio (l'ora, il ritardo, il tempo che manca) sta
+       accanto, più piccolo. */
+    var stato = { parola: '', dett: '', cls: 'libera' };
+    if (adesso.stato === 'scelta') {
+      stato = { parola: 'Scelta da te', dett: adesso.min != null ? 'in programma alle ' + fmtMin(adesso.min) : '', cls: 'ora' };
+    } else if (adesso.stato === 'corso') {
+      stato = { parola: 'Adesso', dett: fmtMin(adesso.min) + ' → ' + fmtMin(adesso.fine), cls: 'ora' };
+    } else if (adesso.stato === 'ritardo') {
+      stato = { parola: 'In ritardo', dett: 'era alle ' + fmtMin(adesso.min), cls: 'ritardo' };
+    } else if (adesso.stato === 'programmata') {
+      stato = { parola: 'Più tardi', dett: 'alle ' + fmtMin(adesso.min) + fraQuanto(adesso.min), cls: 'dopo' };
+    } else if (prossima.mit) {
+      stato = { parola: 'La più importante', dett: 'quando vuoi', cls: 'mit' };
+    } else {
+      stato = { parola: 'Quando vuoi', dett: 'nessun orario', cls: 'libera' };
+    }
+    /* di che specie è questa cosa: un'abitudine non si «rimanda», si salta
+       per oggi, e chi guarda deve saperlo prima di premere */
+    var perche = '';
+    var perCls = ' ' + stato.cls;
+    if (prossima.tipo === 'abitudine') {
+      perche = ICO('refresh', 13) + ' abitudine' + (prossima.serie > 1 ? ' · ' + prossima.serie + ' giorni di fila' : '');
+    }
+    if (adesso.stato === 'scelta') {
+      perche = (perche ? perche + ' · ' : '') + '<button class="focus-torna" id="btn-torna-piano">torna al piano</button>';
+    }
 
     /* Le ALTRE cose di oggi, a portata di mano: se devi fare qualcos'altro la
        vedi e la scegli, senza sentirti obbligato da quella suggerita. */
@@ -2323,6 +2367,10 @@
        schermata sembrava interrotta a metà. */
     html += '<div class="focus-scena' + (timerAttivo ? ' timer-attivo' : '') + '">' +
       '<div class="focus-cuore" style="--c-area:' + colArea + '">' +
+      '<div class="chip focus-stato st-' + stato.cls + '">' +
+      '<span class="fs-parola">' + stato.parola + '</span>' +
+      (stato.dett ? '<span class="fs-dett">' + esc(stato.dett) + '</span>' : '') +
+      '</div>' +
       '<div class="focus-didascalia' + perCls + '" style="--c-area:' + colArea + '">' +
       segnoArea(area, 15, 'fd-area') + '<span class="fd-nome">' + esc(area.nome) + '</span>' +
       (perche ? '<span class="fd-sep">·</span><span class="fd-perche">' + perche + '</span>' : '') +
@@ -2335,14 +2383,27 @@
           '<div class="timer-eti">restano</div></div></div>'
         : '') +
       '<div class="focus-azione">' + esc(prossima.testo) + '</div>' +
+      /* La risposta alla domanda «e adesso?»: quando tutto quello che resta ha
+         un'ora più in là, ADESSO non c'è niente, e va detto. Prima la scheda
+         mostrava la cosa delle tre del pomeriggio come se fosse da fare
+         subito, e chi la leggeva alle dieci restava a chiedersi se doveva
+         cominciarla. */
+      (adesso.stato === 'programmata'
+        ? '<div class="focus-nota-dopo">Adesso non hai niente in programma. Se vuoi, portati avanti.</div>'
+        : '') +
       (prossima.ifThen ? '<div class="focus-ifthen">' + ICO('ancora', 15) + '<span>' + esc(prossima.ifThen) + '</span></div>' : '') +
       /* gerarchia chiara: un'unica azione dominante, il resto recede */
       '<div class="focus-primaria">' +
       /* «Fatto», e basta. Il «+10 XP» sul tasto trasformava l'unico comando
          che deve essere ovvio in due cose da leggere, e prometteva un premio
          prima di averlo dato: il premio si vede quando lo premi, e lì è
-         immediato per davvero. */
-      '<button class="btn btn-ok btn-grande" id="btn-fatto">' + ICO('check', 18) + ' Fatto</button>' +
+         immediato per davvero.
+         Quando la cosa è PIÙ TARDI il tasto pieno non può dire «Fatto»: quello
+         che uno vuole fare in quel momento è deciderlo — «la faccio adesso» —
+         e «Fatto» resta lì accanto, smorzato, per chi l'ha già fatta davvero. */
+      (adesso.stato === 'programmata'
+        ? '<button class="btn btn-primario btn-grande" id="btn-adesso">' + ICO('target', 18) + ' Falla adesso</button>'
+        : '<button class="btn btn-ok btn-grande" id="btn-fatto">' + ICO('check', 18) + ' Fatto</button>') +
       '</div>' +
       '<div class="focus-secondarie">' +
       /* Un tasto, non quattro. «Timer 25′ 10′ 50′» erano tre bersagli su otto
@@ -2350,11 +2411,17 @@
          durata era una scelta in più da fare PRIMA di cominciare, quando è
          già scritta sulla cosa stessa — quella che si dà nella «Giornata»
          trascinando un blocco. Se non c'è, venticinque minuti. */
-      (timerAttivo
-        ? '<button class="btn btn-mini" id="btn-stop-timer">' + ICO('pause', 15) + ' Ferma e registra</button>'
-        : '<button class="btn btn-mini" id="btn-timer" data-min="' + minTimer + '">' +
-          ICO('play', 15) + ' Timer ' + minTimer + '′</button>') +
-      '<button class="btn btn-mini btn-ghost" id="btn-nonora">Più tardi ' + ICO('rimanda', 15) + '</button>' +
+      (adesso.stato === 'programmata'
+        ? '<button class="btn btn-mini" id="btn-fatto">' + ICO('check', 15) + ' Fatto</button>'
+        : (timerAttivo
+          ? '<button class="btn btn-mini" id="btn-stop-timer">' + ICO('pause', 15) + ' Ferma e registra</button>'
+          : '<button class="btn btn-mini" id="btn-timer" data-min="' + minTimer + '">' +
+            ICO('play', 15) + ' Timer ' + minTimer + '′</button>')) +
+      /* un'abitudine non si rimanda a domani: domani c'è già. Si salta oggi,
+         e la serie lo sa. */
+      (prossima.tipo === 'abitudine'
+        ? '<button class="btn btn-mini btn-ghost" id="btn-salta">Salta oggi ' + ICO('salta', 15) + '</button>'
+        : '<button class="btn btn-mini btn-ghost" id="btn-nonora">Più tardi ' + ICO('rimanda', 15) + '</button>') +
       '</div>' +
       /* Quante ne restano lo dice già il contatore in cima e il tasto delle
          altre. Qui resta solo la cosa che nessuno dei due dice: che questa
@@ -2398,18 +2465,37 @@
     document.getElementById('btn-fatto').addEventListener('click', function (ev) {
       var eraTimer = timer.azioneId === prossima.id;
       if (eraTimer) fermaTimer(true);
-      var xp = LM.completaAzione(prossima.id);
+      var abitudine = prossima.tipo === 'abitudine';
+      var xp = abitudine ? LM.completaAbitudine(prossima.id) : LM.completaAzione(prossima.id);
       var r = ev.currentTarget.getBoundingClientRect();
       flyXp(r.left + r.width / 2, r.top, xp);
       if (prossima.mit) burst(r.left + r.width / 2, r.top + r.height / 2);
-      toast(prossima.mit ? 'Hai completato l’azione più importante di oggi.' : 'Azione completata.', xp, prossima.mit ? 'star' : 'check');
+      toast(abitudine ? 'Abitudine spuntata.'
+        : (prossima.mit ? 'Hai completato l’azione più importante di oggi.' : 'Azione completata.'),
+        xp, abitudine ? 'refresh' : (prossima.mit ? 'star' : 'check'));
       render();
     });
-    document.getElementById('btn-nonora').addEventListener('click', function () {
+    /* «Falla adesso» non è «Fatto»: è la scelta di spostare qui una cosa che
+       il piano metteva più in là. La scheda passa a «Scelta da te», con la
+       via del ritorno al piano accanto. */
+    var bAdesso = document.getElementById('btn-adesso');
+    if (bAdesso) bAdesso.addEventListener('click', function () {
+      fuocoScelto = prossima.id; mostraAltre = false; render();
+    });
+    var bNonOra = document.getElementById('btn-nonora');
+    if (bNonOra) bNonOra.addEventListener('click', function () {
       fermaTimer(false);
       if (fuocoScelto === prossima.id) fuocoScelto = null;
       LM.rimandaAzione(prossima.id);
       toast('Rimandata.', 0, 'rimanda');
+      render();
+    });
+    var bSalta = document.getElementById('btn-salta');
+    if (bSalta) bSalta.addEventListener('click', function () {
+      fermaTimer(false);
+      if (fuocoScelto === prossima.id) fuocoScelto = null;
+      LM.saltaGiornoAbitudine(prossima.id);
+      toast('Saltata per oggi: la serie non si azzera.', 0, 'salta');
       render();
     });
     if (timerAttivo) {
@@ -2420,7 +2506,7 @@
       });
     } else {
       var bt = document.getElementById('btn-timer');
-      if (bt) bt.addEventListener('click', function () { avviaTimer(prossima.id, minTimer); });
+      if (bt) bt.addEventListener('click', function () { avviaTimer(prossima.id, minTimer, prossima.areaId); });
     }
   }
 
