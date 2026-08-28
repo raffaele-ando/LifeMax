@@ -4383,20 +4383,22 @@
         '<button class="q-chip' + (risp === true && !altraOra ? ' on' : '') + '" data-pfatto="si">sì</button>' +
         '<button class="q-chip' + (risp === false ? ' on' : '') + '" data-pfatto="no">no</button>' +
         /* LA TERZA RISPOSTA È IL CAMPO DELL’ORA, non un tasto che apre un
-           campo dell’ora. Fra il dito e l’orologio del sistema non c’è più
+           campo dell’ora. Fra il dito e l’orologio del sistema non c’è
            niente di nostro: nessun ridisegno, nessuna richiesta di fuoco,
-           nessuna richiesta di aprire l’orologio. Tocchi un campo dell’ora
-           come su qualunque altro sito, e lo apre il browser.
-           Le due versioni con qualcosa in mezzo si sono rotte tutte e due:
-           la prima non apriva niente (il campo era irraggiungibile), la
-           seconda lo apriva e lo richiudeva un istante dopo. Quello che sta
-           in mezzo è la cosa che si rompe, quindi non c’è più niente in
-           mezzo.
+           nessuna richiesta di aprire l’orologio. Le due versioni con
+           qualcosa in mezzo si sono rotte tutte e due — la prima non apriva
+           niente, la seconda apriva e richiudeva.
+           Ed è un campo COME GLI ALTRI dell’app: la stessa forma, lo stesso
+           bordo, la stessa regola di stile dei campi dell’ora dei promemoria
+           e del ritmo di base, che hanno sempre funzionato. Niente
+           `<label>` attorno — un’etichetta che avvolge il suo campo gli
+           rimanda addosso un secondo tocco, e un orologio che riceve due
+           tocchi si apre col primo e si chiude col secondo. Le parole stanno
+           accanto, non intorno.
            Parte vuoto apposta: se ci trovasse dentro l’ora solita,
            riscegliere quella stessa ora non farebbe scattare nulla. */
-        '<label class="q-chip q-chip-ora' + (altraOra ? ' on' : '') + '">' +
-        '<span>a un’altra ora</span>' +
-        '<input type="time" data-poraval="1" value="" aria-label="' + esc(pa.nome) + ' a un’altra ora"></label>' +
+        '<span class="rec-alt' + (altraOra ? ' on' : '') + '"><span class="rec-alt-eti">a un’altra ora</span>' +
+        '<input type="time" class="rec-ora" data-poraval="1" value="" aria-label="' + esc(pa.nome) + ' a un’altra ora"></span>' +
         '</span></div>';
     }).join('');
 

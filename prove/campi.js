@@ -92,14 +92,22 @@ const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  
       const pill = i.closest('label');
       return {
         opacita: cs.opacity, puntatore: cs.pointerEvents, valore: i.value,
-        dentroUnaEtichetta: !!pill, pastiglia: pill ? pill.className : null,
+        /* NESSUNA etichetta attorno: un `<label>` rimanda al campo un secondo
+           tocco, e un orologio che ne riceve due si apre col primo e si
+           chiude col secondo */
+        dentroUnaEtichetta: !!pill,
+        /* e un bordo suo, come i campi dell'ora che hanno sempre funzionato */
+        bordo: parseFloat(cs.borderTopWidth), fondo: cs.backgroundColor,
         dentro: r.right <= innerWidth + 1 && r.left >= -1,
         /* niente tasti che «aprono» il campo: la strada che si è rotta due volte */
         tastiCheAprono: document.querySelectorAll('[data-pasto] [data-pora]').length
       };
     });
     ok('si vede e si tocca', st.opacita === '1' && st.puntatore !== 'none', JSON.stringify(st));
-    ok('sta dentro una pastiglia che lo attiva tutta', st.dentroUnaEtichetta && /q-chip-ora/.test(st.pastiglia || ''), st.pastiglia);
+    ok('non ha nessuna etichetta attorno che gli rimandi un secondo tocco',
+      st.dentroUnaEtichetta === false, JSON.stringify(st.dentroUnaEtichetta));
+    ok('ed è un campo come gli altri: bordo suo, fondo suo',
+      st.bordo > 0 && !/^(transparent|rgba\(0, 0, 0, 0\))$/.test(st.fondo), st.bordo + 'px · ' + st.fondo);
     /* pieno dell'ora solita, riscegliere quella stessa ora non farebbe
        scattare nessun evento: il tocco andrebbe perso */
     ok('parte vuoto', st.valore === '');
@@ -111,14 +119,14 @@ const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  
        aperto resta appeso a un elemento che non c'è più, e si chiude da solo
        un istante dopo. È esattamente quello che succedeva. */
     await p.evaluate(() => { window.__stesso = document.querySelector('[data-pasto] [data-poraval]'); });
-    await p.locator('[data-pasto] .q-chip-ora span').first().click();
+    await p.locator('[data-pasto] [data-poraval]').first().click();
     await p.waitForTimeout(500);
     const sopravvive = await p.evaluate(() => {
       const ora = document.querySelector('[data-pasto] [data-poraval]');
       return { stesso: window.__stesso === ora, fuoco: document.activeElement === ora };
     });
-    ok('toccarla non rifà il campo da capo', sopravvive.stesso === true, JSON.stringify(sopravvive));
-    ok('e il tocco arriva al campo', sopravvive.fuoco === true, JSON.stringify(sopravvive));
+    ok('toccarlo non lo rifà da capo', sopravvive.stesso === true, JSON.stringify(sopravvive));
+    ok('e il tocco ci arriva', sopravvive.fuoco === true, JSON.stringify(sopravvive));
 
     await p.evaluate(() => {
       const i = document.querySelector('[data-pasto] [data-poraval]');
@@ -131,13 +139,13 @@ const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  
         fatto: pa.fatto, ora: pa.ora, prec: pa.prec,
         sotto: riga.querySelector('.rec-solito').textContent,
         vuoto: riga.querySelector('[data-poraval]').value === '',
-        altra: riga.querySelector('.q-chip-ora').classList.contains('on'),
+        altra: riga.querySelector('.rec-alt').classList.contains('on'),
         si: riga.querySelector('[data-pfatto="si"]').classList.contains('on')
       };
     });
     ok('l’ora scelta si salva, e come ora precisa', s.fatto === true && s.ora === '08:45' && s.prec === 'preciso', JSON.stringify(s));
     ok('la riga lo dice', /alle 08:45/.test(s.sotto), s.sotto);
-    ok('la pastiglia dell’ora si accende, non «sì»', s.altra === true && s.si === false);
+    ok('si accende «a un’altra ora», non «sì»', s.altra === true && s.si === false);
     ok('e il campo torna vuoto, pronto per un’altra correzione', s.vuoto === true);
 
     /* «sì» vuol dire all'ora solita, più o meno: non deve pretendere un'ora

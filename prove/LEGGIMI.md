@@ -223,18 +223,25 @@ genera le chiavi, in un browser vero).
   Due richieste in fila: sulla maggior parte dei telefoni il fuoco su un campo
   dell'ora apre già la ruota, quindi la seconda richiudeva quello che aveva
   aperto la prima. L'orologio compariva e spariva.
-  TRE, quella buona: **la terza risposta È il campo dell'ora**. Sta dentro la
-  pastiglia, dentro un `<label>`, e fra il dito e l'orologio non c'è più niente
-  di nostro — nessun ridisegno, nessuna richiesta di fuoco, nessuna richiesta
-  di aprire niente. Si tocca un campo dell'ora come su qualunque altro sito, e
-  ad aprirlo è il browser. Quello che sta in mezzo è la cosa che si rompe.
+  TRE, quella buona: **la terza risposta È il campo dell'ora**, ed è un campo
+  come tutti gli altri dell'app. Fra il dito e l'orologio non c'è più niente di
+  nostro — nessun ridisegno, nessuna richiesta di fuoco, nessuna richiesta di
+  aprire niente — e attorno al campo non c'è nemmeno un `<label>`: un'etichetta
+  che avvolge il suo campo gli rimanda addosso un secondo tocco, perché è il
+  suo compito, e un orologio che ne riceve due si apre col primo e si chiude
+  col secondo. Le parole stanno accanto, non intorno. Il campo poi ha la
+  stessa identica regola di stile di quelli dei promemoria e del ritmo di base
+  — bordo suo, fondo suo, niente sopra — che è la ragione per cui quelli hanno
+  sempre funzionato: la traccia che ha risolto il caso è stata «tutti gli altri
+  orologi funzionano». Quello che sta in mezzo è la cosa che si rompe.
   La prova chiede al browser CHI RICEVE il tocco nel mezzo del campo — la
   domanda che tutte e tre le versioni hanno risposto diversamente — e poi che
   il campo parta VUOTO (con dentro l'ora solita, riscegliere quella stessa ora
-  non fa scattare nessun evento e il tocco va perso), che toccare la pastiglia
-  NON rifaccia il campo da capo (un orologio appeso a un elemento che viene
-  buttato via si chiude da solo: è la puntata due), che l'ora scelta si salvi
-  come precisa, e che «sì» resti l'ora solita più o meno. Sulla scadenza
+  non fa scattare nessun evento e il tocco va perso), che toccarlo NON lo
+  rifaccia da capo (un orologio appeso a un elemento che viene buttato via si
+  chiude da solo: è la puntata due), che non abbia nessuna etichetta attorno,
+  che abbia un bordo e un fondo suoi come i campi che funzionano, che l'ora
+  scelta si salvi come precisa, e che «sì» resti l'ora solita più o meno. Sulla scadenza
   controlla anche che la ✕ resti sopra al campo steso sulla riga: sotto,
   togliere la scadenza avrebbe aperto il calendario.
   Un pop-up di sistema da fuori non si vede — nessun browser guidato lo
