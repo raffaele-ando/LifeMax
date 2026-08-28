@@ -164,6 +164,8 @@
     coffee: '<path d="M4 8h13v6a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4z"/><path d="M17 9.5h1.6a2.4 2.4 0 0 1 0 4.8H17"/><path d="M7.5 3.2c-.4.7-.4 1.3 0 2M11 3.2c-.4.7-.4 1.3 0 2"/>',
     bed: '<path d="M3 6v13M3 12h18a0 0 0 0 1 0 0v7M21 19v-4a3 3 0 0 0-3-3H3M6.5 12v-2a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/>',
     /* ---------- presi dal pacco ---------- */
+    nonFunziona: '<path d="M9 18.12 10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H20a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2.76a2 2 0 0 0-1.79 1.11L12 22a3.13 3.13 0 0 1-3-3.88Z"/><path d="M17 14V2"/>',  /* lucide:thumbs-down — una cosa che non ti funziona */
+    funziona: '<path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2a3.13 3.13 0 0 1 3 3.88Z"/><path d="M7 10v12"/>',  /* lucide:thumbs-up — una cosa che ti funziona (verdetto tuo su di te) */
     chiavi: '<path d="m15.5 7.5 2.3 2.3a1 1 0 0 0 1.4 0l2.1-2.1a1 1 0 0 0 0-1.4L19 4"/><path d="m21 2-9.6 9.6"/><circle cx="7.5" cy="15.5" r="5.5"/>',  /* lucide:key — le due chiavi dei promemoria */
     notaFissa: '<path d="M21 9a2.4 2.4 0 0 0-.706-1.706l-3.588-3.588A2.4 2.4 0 0 0 15 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2z"/><path d="M15 3v5a1 1 0 0 0 1 1h5"/>',  /* lucide:sticky-note — la nota che resta fra le notifiche */
     altreOpzioni: '<circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/>',  /* lucide:ellipsis-vertical — le altre cose che puoi fare su questa riga */
@@ -228,6 +230,12 @@
     altreOpzioni: 'le altre cose che puoi fare su questa riga',
     notaFissa: 'la nota che resta fra le notifiche',
     fonte: 'lo studio da cui viene',
+
+    /* IL VERDETTO SU DI TE, che non è una misura: due segni, uno per verso.
+       Il segno della spunta vuol già dire «fatto» e la croce «chiudi»: usarli
+       anche qui avrebbe voluto dire due cose con la stessa figura. */
+    funziona: 'una cosa che ti funziona',
+    nonFunziona: 'una cosa che non ti funziona',
 
     /* il tempo */
     sun: 'il mattino, e il tema chiaro',

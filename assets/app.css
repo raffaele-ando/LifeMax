@@ -2182,6 +2182,10 @@ input.sc-nascosta {
 .q-chip, .att-chip {
   min-height: var(--h-btn-s); display: inline-flex; align-items: center; justify-content: center;
   font-size: 13px; font-weight: 700;
+  /* lo spazio fra il segno e la parola: in un contenitore flex lo spazio del
+     testo si mangia, e il segno finiva incollato alla parola («mi funziona»
+     con il pollice attaccato alla m) */
+  gap: 5px;
 }
 .q-chip { padding: 0 14px; border-radius: var(--r-tondo); border: 1px solid var(--bordo-forte); background: var(--superficie-1); color: var(--inchiostro-2); cursor: pointer; transition: all var(--t-veloce); }
 .q-chip:hover { border-color: var(--accento); color: var(--accento-testo); background: color-mix(in srgb, var(--accento) 8%, var(--superficie-1)); }
@@ -2948,6 +2952,33 @@ body.sto-trascinando { cursor: grabbing; user-select: none; -webkit-user-select:
 .lista-riga:active .lista-azione:not(:active) { transform: none; }
 /* un link dentro una frase: il browser non dà nessuna risposta al dito */
 a:not(.btn):not(.nav-voce):not(.menu-voce):active { opacity: .55; }
+
+
+/* --- COSA FUNZIONA PER ME: le righe di quello che hai capito su di te ---
+   La forma è quella delle altre liste dell'app (riga, comando a sinistra,
+   corpo che apre la scheda): una lista che si legge come le altre non va
+   imparata. Qui si aggiunge solo il COLORE del verdetto.
+   Il bordo della riga NON si tocca: colorato anche lui, la riga sembrava un
+   avviso invece di una cosa che hai scritto tu. E per lo stesso motivo il
+   fondo è appena accennato — sono righe che si guardano venti alla volta. */
+.lez-verso.lez-si {
+  color: var(--ok);
+  background: color-mix(in srgb, var(--ok) 10%, var(--superficie-1));
+}
+.lez-verso.lez-no {
+  color: var(--critico-testo);
+  background: color-mix(in srgb, var(--critico) 8%, var(--superficie-1));
+}
+/* il segno del verdetto non è un bersaglio da centrare: cresce un filo,
+   perché è quello che si guarda scorrendo la lista */
+.lez-verso .ico { transform: scale(1.02); }
+.lez-card h2 .ico { color: var(--ok); }
+/* la riga di aggiunta: la scelta del verso sta accanto all'area, e in un
+   telefono strettissimo va a capo per sé invece di stringere il selettore */
+.lez-scelta-verso { flex: none; }
+@media (max-width: 380px) {
+  .lez-scelta-verso { width: 100%; }
+}
 
 /* ==== SUPERCERCHI: GENERATO da segni/squircle.mjs — non a mano ==== */
 /* La curva è quella CONTINUA DI APPLE: tre Bézier per angolo, costanti in

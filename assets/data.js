@@ -152,6 +152,12 @@ var LM = (function () {
       reviewSera: {},    // reviewSera[data] = {vittoria, blocco, shutdown}
       reviewSettimana: {}, // reviewSettimana[lunedì] = {vittorie, blocchi, imparato, prossima}
       esperimenti: [],   // vedi motore N-of-1 sotto
+      /* Quello che hai capito su di te SENZA esperimento: una riga, un verso
+         (mi funziona / non mi funziona) e come fai a saperlo. Un esperimento
+         N-of-1 dura settimane, e nel frattempo le cose che uno impara su di sé
+         arrivano ogni giorno e se ne vanno: se l'unico posto dove metterle è
+         un esperimento, non le scrive nessuno. */
+      lezioni: [],       // {id, testo, verso:'si'|'no', forza, areaId, creata, aggiornata, espId?}
       xp: 0,
       xpPerGiorno: {},   // xpPerGiorno[data] = n
       log: [],           // (deprecato) eventi recenti per feedback immediato
@@ -182,6 +188,7 @@ var LM = (function () {
     });
     if (!Array.isArray(s.backlog)) s.backlog = [];
     if (!Array.isArray(s.abitudini)) s.abitudini = [];
+    if (!Array.isArray(s.lezioni)) s.lezioni = [];
     if (!Array.isArray(s.aree) || !s.aree.length) s.aree = JSON.parse(JSON.stringify(AREE_DEFAULT));
     /* profilo e ritmo della giornata (stati vecchi o dal cloud) */
     if (!s.profilo || typeof s.profilo !== 'object') s.profilo = vuoto.profilo;
@@ -524,7 +531,8 @@ var LM = (function () {
       (s.valutazioni ? Object.keys(s.valutazioni).length : 0) +
       (s.reviewSera ? Object.keys(s.reviewSera).length : 0) +
       (s.reviewSettimana ? Object.keys(s.reviewSettimana).length : 0) +
-      (s.esperimenti ? s.esperimenti.length : 0);
+      (s.esperimenti ? s.esperimenti.length : 0) +
+      (s.lezioni ? s.lezioni.length : 0);
   }
 
   function exportJson() {
@@ -1757,6 +1765,114 @@ var LM = (function () {
     return Object.keys(set).length;
   }
 
+  /* ---------- quello che funziona per te, senza esperimento ----------
+     Fra «mi sono accorto di una cosa su di me» e «ho fatto un esperimento
+     N-of-1 di quattro settimane» non c'era niente, e l'esperimento è troppo
+     per il novantacinque per cento di quello che uno capisce di sé. Qui una
+     riga di testo, un verso e COME FAI A SAPERLO: la stessa onestà che la
+     pagina della scienza usa per gli studi (alta / media / euristica),
+     applicata a te.
+
+     La forza non è un giudizio su di te, è un'etichetta su quella riga: serve
+     a chi vuole essere preciso per dire «questa l'ho vista una volta» senza
+     dover scegliere fra tacere e affermare. */
+
+  var FORZE_LEZIONE = [
+    { id: 'notato',   eti: 'notato una volta',   breve: 'una volta',   peso: 1 },
+    { id: 'ripetuto', eti: 'lo noto ogni volta', breve: 'ogni volta',  peso: 2 },
+    { id: 'misurato', eti: 'misurato',           breve: 'misurato',    peso: 3 }
+  ];
+  function forzaLezione(id) {
+    return FORZE_LEZIONE.find(function (f) { return f.id === id; }) || FORZE_LEZIONE[0];
+  }
+  function nomeArea(id) {
+    var a = load().aree.find(function (x) { return x.id === id; });
+    return a ? a.nome : id;
+  }
+  /* la riga di diario, con il segno del verso: due categorie e non una, così
+     nel diario si vede da lontano se è una cosa che funziona o una che no */
+  function registraLezione(l, testo) {
+    registra(l.verso === 'no' ? 'lezione-no' : 'lezione-si', testo, false);
+  }
+  function aggiungiLezione(testo, verso, opts) {
+    var s = load();
+    opts = opts || {};
+    var l = {
+      id: uid(),
+      testo: String(testo || '').trim(),
+      verso: verso === 'no' ? 'no' : 'si',
+      forza: forzaLezione(opts.forza).id,
+      areaId: opts.areaId || null,
+      espId: opts.espId || null,
+      creata: Date.now(),
+      aggiornata: Date.now()
+    };
+    if (!l.testo) return null;
+    s.lezioni.unshift(l);
+    if (!opts.interna) {
+      registraLezione(l, (l.verso === 'si' ? 'Ti funziona' : 'Non ti funziona') + ': «' + l.testo + '»');
+    }
+    save();
+    return l;
+  }
+  function trovaLezione(id) {
+    return load().lezioni.find(function (x) { return x.id === id; }) || null;
+  }
+  function modificaLezione(id, campi) {
+    var s = load();
+    var l = trovaLezione(id);
+    if (!l) return null;
+    var prima = { testo: l.testo, verso: l.verso, forza: l.forza, areaId: l.areaId };
+    if (campi.testo !== undefined) l.testo = String(campi.testo).trim() || l.testo;
+    if (campi.verso !== undefined) l.verso = campi.verso === 'no' ? 'no' : 'si';
+    if (campi.forza !== undefined) l.forza = forzaLezione(campi.forza).id;
+    if (campi.areaId !== undefined) l.areaId = campi.areaId || null;
+    if (campi.espId !== undefined) l.espId = campi.espId || null;
+    l.aggiornata = Date.now();
+    /* si racconta solo quello che è cambiato davvero: «rinominata» su una
+       riga in cui è cambiata l'area sarebbe una riga di diario che mente */
+    if (!campi.interna) {
+      if (prima.verso !== l.verso) {
+        registraLezione(l, 'Cambiato verso: «' + l.testo + '» adesso ' +
+          (l.verso === 'si' ? 'ti funziona' : 'non ti funziona'));
+      } else if (prima.testo !== l.testo) {
+        registraLezione(l, 'Riscritta una cosa che hai imparato → «' + l.testo + '»');
+      } else if (prima.forza !== l.forza) {
+        registraLezione(l, '«' + l.testo + '» · ' + forzaLezione(l.forza).eti);
+      } else if (prima.areaId !== l.areaId) {
+        registraLezione(l, 'Area di «' + l.testo + '» → ' + (l.areaId ? nomeArea(l.areaId) : 'nessuna'));
+      }
+    }
+    save();
+    return l;
+  }
+  function giraLezione(id) {
+    var l = trovaLezione(id);
+    if (!l) return null;
+    return modificaLezione(id, { verso: l.verso === 'si' ? 'no' : 'si' });
+  }
+  function rimuoviLezione(id) {
+    var s = load();
+    var i = s.lezioni.findIndex(function (x) { return x.id === id; });
+    if (i < 0) return;
+    var l = s.lezioni[i];
+    s.lezioni.splice(i, 1);
+    registraLezione(l, 'Tolta dalle cose che hai imparato: «' + l.testo + '»');
+    save();
+  }
+  /* ordinate per quanto sono solide, poi per quanto sono recenti: in cima
+     quello che sai davvero, e a pari forza quello di cui ti sei accorto ora */
+  function lezioni(verso) {
+    var s = load();
+    return s.lezioni
+      .filter(function (l) { return !verso || l.verso === verso; })
+      .slice()
+      .sort(function (a, b) {
+        var d = forzaLezione(b.forza).peso - forzaLezione(a.forza).peso;
+        return d !== 0 ? d : (b.aggiornata || b.creata) - (a.aggiornata || a.creata);
+      });
+  }
+
   /* ---------- motore esperimenti (N-of-1) ---------- */
   /* Un esperimento confronta una metrica esistente tra una fase di
      baseline (A) e una di intervento (B). Onestà scientifica:
@@ -1783,11 +1899,25 @@ var LM = (function () {
       inizioBaseline: dati.inizioBaseline,
       inizioIntervento: dati.inizioIntervento,
       fine: dati.fine,
-      stato: 'attivo'
+      stato: 'attivo',
+      /* la riga imparata da cui è nato, se è nato da una: serve a non
+         scriverne una seconda quando l'esperimento finisce — quella riga si
+         aggiorna, non si duplica */
+      lezioneId: dati.lezioneId || null
     };
     s.esperimenti.unshift(e);
     save();
     return e;
+  }
+
+  /* il legame nell'altro verso: l'esperimento è già avviato e la riga nasce
+     dal suo risultato */
+  function creaLegameEsperimento(espId, lezId) {
+    var s = load();
+    var e = s.esperimenti.find(function (x) { return x.id === espId; });
+    if (!e) return;
+    e.lezioneId = lezId;
+    save();
   }
 
   function valoreMetrica(e, k) {
@@ -2076,6 +2206,27 @@ var LM = (function () {
       stato: 'attivo'
     });
 
+    /* quello che ha capito su di sé senza esperimento: mescolate le tre
+       forze, e una col verso girato — perché succede davvero che una cosa
+       smetta di funzionare */
+    [
+      ['Studiare in biblioteca invece che in camera', 'si', 'ripetuto', 'studio'],
+      ['Iniziare dalla cosa più difficile appena mi sveglio', 'si', 'ripetuto', null],
+      ['Mettere il telefono in un’altra stanza', 'si', 'misurato', 'studio'],
+      ['Camminare venti minuti dopo pranzo', 'si', 'notato', 'salute'],
+      ['Dire «lo faccio dopo» senza scrivere quando', 'no', 'ripetuto', null],
+      ['Le liste lunghissime: mi bloccano invece di aiutarmi', 'no', 'ripetuto', null],
+      ['Studiare dopo cena', 'no', 'notato', 'studio'],
+      ['Le sveglie multiple: le spengo tutte e dormo di più', 'no', 'notato', 'salute']
+    ].forEach(function (r, i) {
+      s.lezioni.push({
+        id: uid() + 'lez' + i,
+        testo: r[0], verso: r[1], forza: r[2], areaId: r[3], espId: null,
+        creata: parseKey(giorni[20 + i * 3]).getTime(),
+        aggiornata: parseKey(giorni[30 + i * 2]).getTime()
+      });
+    });
+
     s.registro = []; // la demo parte con un diario-registro pulito
     save();
   }
@@ -2127,6 +2278,10 @@ var LM = (function () {
     minutiSettimanaPerArea: minutiSettimanaPerArea, mediaValutazioneArea: mediaValutazioneArea,
     diario: diario, giorniConAttivita: giorniConAttivita, registra: registra,
     creaEsperimento: creaEsperimento, risultatiEsperimento: risultatiEsperimento,
+    creaLegameEsperimento: creaLegameEsperimento,
+    FORZE_LEZIONE: FORZE_LEZIONE, forzaLezione: forzaLezione, lezioni: lezioni,
+    aggiungiLezione: aggiungiLezione, modificaLezione: modificaLezione,
+    giraLezione: giraLezione, rimuoviLezione: rimuoviLezione, trovaLezione: trovaLezione,
     uid: uid
   };
 })();

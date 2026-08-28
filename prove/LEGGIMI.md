@@ -171,6 +171,23 @@ genera le chiavi, in un browser vero).
   doppie di un `url("data:...")` dentro un attributo `style`, che chiudevano
   l'attributo; e il giro delle schermate che lasciava la pagina sull'ultima,
   dove l'elemento da misurare non c'è.
+- **lezioni.js** — «cosa funziona per me»: le righe che si scrivono senza fare un
+  esperimento. Il pericolo di una funzione così è che diventi un cimitero — si
+  scrivono dieci righe, non le rivede nessuno, e fra un mese non sono né dati né
+  ricordi — quindi la prova non guarda solo che il campo salvi: guarda i punti in
+  cui quelle righe devono ENTRARE e USCIRE. Che una riga si scriva in un campo
+  solo e finisca nel mucchio giusto; che parta dalla forza più debole («notato
+  una volta») invece di affermare più di quello che sai; che il tasto a sinistra
+  la giri nell'altro mucchio senza perdere il testo; che la review della sera la
+  sappia tenere e che il tasto si spenga dopo, per non promettere due volte la
+  stessa cosa; che un esperimento che finisce aggiorni LA SUA riga invece di
+  scriverne una seconda uguale; che dalla riga si parta per l'esperimento col
+  modulo già compilato.
+  Ha trovato un difetto che c'era già da prima: il modulo del nuovo esperimento
+  viveva solo nel DOM, e la pagina si ridisegna da sé quando arriva la risposta
+  dell'account o un aggiornamento dal cloud — chi aveva scritto mezza domanda se
+  la vedeva sparire senza aver toccato niente. Adesso quello che c'è scritto
+  sopravvive al ridisegno, e la prova lo verifica forzando l'evento vero.
 - **bordi.js** — la stessa cosa, ma DAPPERTUTTO. La forma degli angoli la
   misura `squircle.js` su nove schermate; questa guarda una cosa sola — che il
   bordo sia dove deve essere, di un colore solo, dipinto una volta sola — e la
@@ -227,6 +244,7 @@ genera le chiavi, in un browser vero).
     node prove/clic.js
     node prove/modalita.js
     node prove/segni.js      # solo Node, niente browser
+    node prove/lezioni.js
     node prove/squircle.js
     node prove/bordi.js      # 210 schermate, una decina di minuti
     node prove/promemoria.js

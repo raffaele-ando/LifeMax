@@ -836,7 +836,13 @@
     { id: 'inbox',       nome: 'Attività',    icona: 'lista',     gruppo: 'primaria',   livello: 'quotidiana' },
     { id: 'rituali',     nome: 'Rituali',     icona: 'rituali',   gruppo: 'primaria',   livello: 'quotidiana' },
     { id: 'plancia',     nome: 'Panoramica',  icona: 'dashboard', gruppo: 'primaria',   livello: 'quotidiana' },
-    { id: 'esperimenti', nome: 'Esperimenti', icona: 'flask',     gruppo: 'secondaria', livello: 'extra' },
+    /* La pagina non si chiama più «Esperimenti»: l'esperimento è UNO dei due
+       modi di rispondere alla domanda che uno si fa davvero — «questa cosa a
+       me funziona?». L'altro è dirlo e basta, e quello è il modo che si usa
+       novantacinque volte su cento. Il nome della pagina è la domanda; il
+       segno è il verdetto, e la beuta resta il segno degli esperimenti là
+       dentro. */
+    { id: 'esperimenti', nome: 'Cosa funziona', icona: 'funziona', gruppo: 'secondaria', livello: 'extra' },
     { id: 'scienza',     nome: 'Perché funziona', breve: 'Scienza', icona: 'atom', gruppo: 'secondaria', livello: 'extra' },
     /* stanza a parte: dieci vestiti per gli stessi elementi, da confrontare
        per scegliere la base grafica di tutto il sito */
@@ -861,7 +867,7 @@
       { id: 'inbox', eti: 'Attività' }
     ] },
     { id: 'plancia', nome: 'Andamento', icona: 'dashboard', viste: [
-      { id: 'plancia', eti: 'Panoramica' }, { id: 'esperimenti', eti: 'Esperimenti' }
+      { id: 'plancia', eti: 'Panoramica' }, { id: 'esperimenti', eti: 'Cosa funziona' }
     ],
       /* Queste due appartengono alla porta ma NON stanno fra le linguette:
          si leggono una volta e poi mai più, e una linguetta che non si tocca
@@ -1777,7 +1783,8 @@
       voce('target', '3 · Fai una cosa per volta', 'La schermata <b>Oggi</b> mostra una sola azione. Al mattino scegli le tre azioni del giorno in <b>Rituali</b>, la sera chiudi con la review.') +
       voce('giornata', 'La giornata', 'Mostra come sono divise le tue ore: sonno, pasti, abitudini e azioni con un orario. Dove vederla si sceglie dal menù sulla timeline.') +
       voce('polso', 'Check-in', 'Energia, concentrazione, umore, su una scala da 1 a 5. Conta l’andamento nei giorni, non il numero di oggi.') +
-      voce('flask', 'Esperimenti', 'Introduci un cambiamento (per esempio sport al mattino) e l’app confronta i tuoi dati prima e dopo.') +
+      voce('funziona', 'Cosa funziona per me', 'Una riga per ogni cosa che hai capito su di te, divisa fra quelle che ti funzionano e quelle che no. Accanto a ognuna resta scritto <b>come fai a saperlo</b>: l’hai notato una volta, lo noti ogni volta, o l’hai misurato. Serve a poterla scrivere senza doverne essere sicuro.') +
+      voce('flask', 'Esperimenti', 'Dalla stessa pagina, quando di una cosa vuoi essere sicuro: introduci un cambiamento (per esempio sport al mattino) e l’app confronta i tuoi dati prima e dopo.') +
       voce('dashboard', 'Panoramica e Diario', 'In <b>Panoramica</b> vedi progressi, costanza e andamento; nel <b>Diario</b> lo storico giorno per giorno.') +
       voce('dati', 'I dati', 'Backup automatici, esportazione e importazione in .json, sincronizzazione sull’account Google fra dispositivi.') +
       '</div>', null);
@@ -3534,7 +3541,10 @@
          vogliono dire «extra») e «focus» il quadrante come «giornata» — due
          categorie diverse con la stessa figura. */
       var icoCat = { azione: 'target', abitudine: 'refresh', backlog: 'lista', inbox: 'inbox',
-        area: 'aree', giornata: 'giornata', focus: 'mirino', impostazioni: 'ingranaggio', dati: 'dati' };
+        area: 'aree', giornata: 'giornata', focus: 'mirino', impostazioni: 'ingranaggio', dati: 'dati',
+        /* due categorie e non una: nel diario si deve vedere da lontano se
+           quella riga racconta una cosa che funziona o una che no */
+        'lezione-si': 'funziona', 'lezione-no': 'nonFunziona' };
       ico = '<span class="diario-ico' + (ev.imp ? '' : ' minore') + '">' + ICO(icoCat[ev.cat] || 'lista', 13) + '</span>';
       testo = '<span class="diario-log">' + esc(ev.testo) + '</span>';
       cls = ev.imp ? '' : ' minore';
@@ -4515,6 +4525,38 @@
     ], { min: 1, max: 5, h: 180 });
   }
 
+  /* «TIENILA»: prende quello che c'è in un campo della review e ne fa una riga
+     fra le cose che hai capito su di te. Il campo resta com'è — la review è il
+     racconto di quel giorno, la riga è quello che ne hai imparato: due cose
+     diverse, e cancellare la prima per avere la seconda sarebbe una perdita.
+     Il tasto si nasconde da sé quando il campo è vuoto o quando quella riga
+     c'è già, così non promette due volte la stessa cosa. */
+  function collegaTenutaLezione(scope, idCampo, idTasto, verso, forza) {
+    var campo = scope.querySelector('#' + idCampo);
+    var tasto = scope.querySelector('#' + idTasto);
+    if (!campo || !tasto) return;
+    function giaC(v) {
+      return LM.load().lezioni.some(function (l) {
+        return l.verso === verso && l.testo.toLowerCase() === v.toLowerCase();
+      });
+    }
+    function aggiorna() {
+      var v = campo.value.trim();
+      tasto.hidden = !v || giaC(v);
+    }
+    campo.addEventListener('input', aggiorna);
+    tasto.addEventListener('click', function () {
+      var v = campo.value.trim();
+      if (!v) return;
+      LM.aggiungiLezione(v, verso, { forza: forza || 'notato' });
+      toast(verso === 'si' ? 'Tenuta fra le cose che ti funzionano.' : 'Tenuta fra le cose che non ti funzionano.',
+        0, verso === 'si' ? 'funziona' : 'nonFunziona');
+      aggiorna();
+      aggiornaNav();
+    });
+    aggiorna();
+  }
+
   function ritualeSera(corpo) {
     var s = LM.load();
     var t = LM.todayKey();
@@ -4536,10 +4578,22 @@
       }).join('') + '</div>' +
       '<label class="campo" for="sera-vittoria">Una cosa andata bene oggi, anche piccola</label>' +
       '<input type="text" id="sera-vittoria" value="' + (rev ? esc(rev.vittoria || '') : '') + '" placeholder="Es. ho studiato 90 minuti senza guardare il telefono">' +
+      /* QUI L'INSEGNAMENTO È FRESCO E GIÀ SCRITTO. Queste due righe finivano
+         in un campo di testo che nessuno riapre: il tasto le porta fra le cose
+         che hai capito su di te, dove restano e si contano. La forza è
+         «notato una volta», perché è quello che è: un giorno, un'osservazione. */
+      '<button class="btn btn-mini" id="sera-vitt-lez" hidden>' + ICO('funziona', 15) + ' Tienila fra le cose che ti funzionano</button>' +
       '<label class="campo" for="sera-blocco">Un ostacolo che hai incontrato</label>' +
       '<input type="text" id="sera-blocco" value="' + (rev ? esc(rev.blocco || '') : '') + '" placeholder="Es. ho iniziato tardi, mi hanno distratto le notifiche">' +
+      '<button class="btn btn-mini" id="sera-blocco-lez" hidden>' + ICO('nonFunziona', 15) + ' Tienila fra le cose che non ti funzionano</button>' +
       '<div class="riga-flex mt"><button class="btn btn-primario btn-grande" id="btn-salva-sera">' + (rev ? ICO('save', 15) + ' Aggiorna' : ICO('moon', 15) + ' Concludi la giornata') + ' <small>+' + LM.XP_EVENTI.reviewSera + ' XP</small></button></div>' +
       '</div>';
+
+    /* il tasto compare solo quando c'è qualcosa da tenere, e sparisce quando
+       quella riga è già stata tenuta: un tasto sempre acceso che a volte non fa
+       niente è un tasto che non si tocca più */
+    collegaTenutaLezione(corpo, 'sera-vittoria', 'sera-vitt-lez', 'si');
+    collegaTenutaLezione(corpo, 'sera-blocco', 'sera-blocco-lez', 'no');
 
     corpo.querySelectorAll('.voto-area').forEach(function (riga) {
       riga.querySelectorAll('button').forEach(function (b) {
@@ -4579,12 +4633,19 @@
       '<div class="stat"><span class="stat-val">' + attivi + '/7</span><span class="stat-eti">giorni attivi</span></div>' +
       '</div>' +
       '<label class="campo" for="w-vittorie">Cosa ha funzionato questa settimana</label><textarea id="w-vittorie">' + (rev ? esc(rev.vittorie || '') : '') + '</textarea>' +
+      /* La review della settimana parla di quello che si è RIPETUTO: la riga
+         che ne nasce lo dice, e vale più di un'osservazione di un giorno. */
+      '<button class="btn btn-mini" id="w-vitt-lez" hidden>' + ICO('funziona', 15) + ' Tienila fra le cose che ti funzionano</button>' +
       '<label class="campo" for="w-blocchi">Gli ostacoli che si sono ripetuti</label><textarea id="w-blocchi">' + (rev ? esc(rev.blocchi || '') : '') + '</textarea>' +
+      '<button class="btn btn-mini" id="w-blocchi-lez" hidden>' + ICO('nonFunziona', 15) + ' Tienila fra le cose che non ti funzionano</button>' +
       '<label class="campo" for="w-imparato">Cosa hai imparato sul tuo metodo</label><textarea id="w-imparato">' + (rev ? esc(rev.imparato || '') : '') + '</textarea>' +
       '<label class="campo" for="w-prossima">L’unica cosa che vuoi cambiare la prossima settimana</label><textarea id="w-prossima">' + (rev ? esc(rev.prossima || '') : '') + '</textarea>' +
       '<div class="riga-flex mt"><button class="btn btn-primario btn-grande" id="btn-salva-sett">' + ICO('save', 15) + (rev ? ' Aggiorna' : ' Salva la review') + ' <small>+' + LM.XP_EVENTI.reviewSettimana + ' XP</small></button>' +
       '<button class="btn btn-ghost" data-vai="esperimenti">' + ICO('flask', 15) + ' Trasformala in un esperimento</button></div>' +
       '</div>';
+
+    collegaTenutaLezione(corpo, 'w-vittorie', 'w-vitt-lez', 'si', 'ripetuto');
+    collegaTenutaLezione(corpo, 'w-blocchi', 'w-blocchi-lez', 'no', 'ripetuto');
 
     document.getElementById('btn-salva-sett').addEventListener('click', function () {
       var xp = LM.salvaReviewSettimana({
@@ -5312,6 +5373,260 @@
   }
 
   /* ============================================================
+     COSA FUNZIONA PER ME (senza esperimento)
+     ============================================================
+
+     Perché esiste. L'esperimento N-of-1 è la cosa giusta e nessuno la fa: due
+     settimane di base, due di intervento, e intanto le cose che uno capisce su
+     di sé arrivano ogni giorno — «in biblioteca studio, in camera no», «se dico
+     "dopo" senza scrivere quando, non lo faccio più». Se l'unico posto dove
+     metterle è un esperimento, non le scrive nessuno e a fine mese sono
+     sparite. Qui una riga basta.
+
+     Le tre scelte di questa schermata, e il perché:
+
+     · DUE MUCCHI, non un voto. «Mi funziona» / «Non mi funziona» è il verdetto
+       che uno ha già in testa quando apre l'app; una scala da 1 a 5 sarebbe una
+       domanda in più a cui rispondere, e su una cosa che non è una misura.
+
+     · COME FAI A SAPERLO, scritto accanto. La pagina della scienza etichetta
+       ogni studio (alta / media / euristica): la stessa onestà applicata a te.
+       Serve a chi vuole essere preciso: senza quell'etichetta, scrivere «mi
+       funziona» dopo averlo visto UNA volta sembra un'affermazione più grossa
+       di quella che è, e allora chi tiene alla precisione non scrive niente.
+       Tre gradini e non cinque: notato una volta, lo noto ogni volta, misurato.
+
+     · SI GIRA. Una cosa che funzionava smette di funzionare, e succede spesso:
+       il tasto a sinistra della riga sposta la riga nell'altro mucchio senza
+       aprire niente. Senza quello, l'unica strada era cancellare e riscrivere,
+       cioè perdere che una volta funzionava. */
+
+  var LEZ_VERSI = {
+    si: { ico: 'funziona', eti: 'Mi funziona', breve: 'ti funziona' },
+    no: { ico: 'nonFunziona', eti: 'Non mi funziona', breve: 'non ti funziona' }
+  };
+
+  /* l'area è FACOLTATIVA: «le liste lunghissime mi bloccano» non è di
+     un'area, è di te. Il selettore normale non ha il posto per dire «nessuna». */
+  function selectAreeOpz(id, selezionata, cls) {
+    return '<select id="' + id + '"' + (cls ? ' class="' + cls + '"' : '') + ' aria-label="Area">' +
+      '<option value=""' + (selezionata ? '' : ' selected') + '>nessuna in particolare</option>' +
+      areeAttive().map(function (a) {
+        return '<option value="' + a.id + '"' + (a.id === selezionata ? ' selected' : '') + '>' + esc(a.nome) + '</option>';
+      }).join('') + '</select>';
+  }
+
+  function rigaLezioneHtml(l) {
+    var v = LEZ_VERSI[l.verso] || LEZ_VERSI.si;
+    var altro = l.verso === 'si' ? LEZ_VERSI.no : LEZ_VERSI.si;
+    var ar = l.areaId ? areaById(l.areaId) : null;
+    var sotto = [LM.forzaLezione(l.forza).eti];
+    if (l.espId) {
+      var e = LM.load().esperimenti.find(function (x) { return x.id === l.espId; });
+      if (e) sotto[0] = 'misurato con «' + esc(e.nome) + '»';
+    }
+    return '<div class="lista-riga lez-riga" data-lid="' + l.id + '">' +
+      '<button class="lista-azione lez-verso lez-' + l.verso + '" data-lezgira="' + l.id + '"' +
+      ' title="Sposta fra le cose che ' + altro.breve + '"' +
+      ' aria-label="«' + esc(l.testo) + '»: spostala fra le cose che ' + altro.breve + '">' +
+      ICO(v.ico, 15) + '</button>' +
+      '<button class="lista-apri" data-lezapri="' + l.id + '" aria-label="Apri «' + esc(l.testo) + '»">' +
+      '<span class="lista-corpo">' +
+      '<span class="lista-tit">' + (ar ? segnoArea(ar, 13, 'tit-area') : '') + esc(l.testo) + '</span>' +
+      '<span class="lista-sub">' + sotto.join(' · ') + '</span>' +
+      '</span><span class="lista-chev">' + ICO('chevronGiu', 15) + '</span></button>' +
+      '</div>';
+  }
+
+  function bloccoLezioniHtml() {
+    var si = LM.lezioni('si'), no = LM.lezioni('no');
+    var vuoto = !si.length && !no.length;
+    return '<div class="card lez-card">' +
+      '<h2>' + ICO('funziona', 18) + ' Cosa funziona per me</h2>' +
+      '<div class="sotto">Una riga per volta, come viene: le cose che capisci su di te non arrivano mentre fai un esperimento, arrivano mentre vivi. Accanto a ognuna resta scritto come fai a saperlo, così puoi scriverla anche quando non ne sei sicuro.</div>' +
+      rigaAggiunta('agg-lez', 'Cosa hai capito su di te…',
+        '<div class="q-chips lez-scelta-verso">' +
+        '<button type="button" class="q-chip on" data-verso="si">' + ICO('funziona', 13) + ' Mi funziona</button>' +
+        '<button type="button" class="q-chip" data-verso="no">' + ICO('nonFunziona', 13) + ' Non mi funziona</button>' +
+        '</div>' +
+        '<label class="agg-area"><span class="agg-eti">in</span>' + selectAreeOpz('agg-lez-area', null) + '</label>') +
+      (vuoto
+        ? '<p class="lista-nota">Per esempio: «studiare in biblioteca invece che in camera» fra le cose che funzionano, «dire <i>lo faccio dopo</i> senza scrivere quando» fra quelle che no.</p>'
+        : '') +
+      (si.length
+        ? etichetta('Mi funziona', 'funziona', si.length) +
+          '<div class="lista">' + si.map(rigaLezioneHtml).join('') + '</div>'
+        : '') +
+      (no.length
+        ? etichetta('Non mi funziona', 'nonFunziona', no.length) +
+          '<div class="lista">' + no.map(rigaLezioneHtml).join('') + '</div>'
+        : '') +
+      '</div>';
+  }
+
+  /* IL RIQUADRO SI RIFÀ DA SÉ, non tutta la pagina. Un `render()` intero qui
+     avrebbe due difetti: butta via il campo in cui si sta scrivendo (e chi
+     butta giù una riga spesso ne butta giù tre di fila) e fa ripartire i
+     grafici degli esperimenti sotto, che non c'entrano niente. */
+  function ridisegnaLezioni(tornaNelCampo) {
+    var vecchia = document.querySelector('.lez-card');
+    if (!vecchia || !vecchia.parentNode) { render(); return; }
+    var tmp = document.createElement('div');
+    tmp.innerHTML = bloccoLezioniHtml();
+    var nuova = tmp.firstChild;
+    vecchia.parentNode.replaceChild(nuova, vecchia);
+    wireLezioni(nuova);
+    if (tornaNelCampo) {
+      var inp = nuova.querySelector('#agg-lez .agg-testo');
+      if (inp) inp.focus();
+    }
+  }
+
+  function wireLezioni(scope) {
+    wireRigaAggiunta(scope, 'agg-lez', function (testo, opz) {
+      var sceltoVerso = opz ? opz.querySelector('.lez-scelta-verso .q-chip.on') : null;
+      var verso = sceltoVerso ? sceltoVerso.getAttribute('data-verso') : 'si';
+      var sel = opz ? opz.querySelector('#agg-lez-area') : null;
+      LM.aggiungiLezione(testo, verso, { areaId: sel ? sel.value : null, forza: 'notato' });
+      /* il messaggio dice in quale mucchio è finita: la scelta sta in una riga
+         di opzioni che si apre scrivendo, e chi non l'ha guardata deve poter
+         accorgersi qui che è andata dove non voleva */
+      toast(verso === 'si' ? 'Salvata fra le cose che ti funzionano.' : 'Salvata fra le cose che non ti funzionano.',
+        0, verso === 'si' ? 'funziona' : 'nonFunziona');
+      ridisegnaLezioni(true);
+    });
+    /* la scelta del verso nella riga di aggiunta */
+    scope.querySelectorAll('.lez-scelta-verso .q-chip').forEach(function (b) {
+      b.addEventListener('click', function () {
+        b.parentNode.querySelectorAll('.q-chip').forEach(function (x) { x.classList.remove('on'); });
+        b.classList.add('on');
+      });
+    });
+    scope.querySelectorAll('[data-lezgira]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var l = LM.giraLezione(b.getAttribute('data-lezgira'));
+        if (!l) return;
+        toast(l.verso === 'si' ? 'Spostata fra le cose che ti funzionano.' : 'Spostata fra le cose che non ti funzionano.',
+          0, l.verso === 'si' ? 'funziona' : 'nonFunziona');
+        ridisegnaLezioni();
+      });
+    });
+    scope.querySelectorAll('[data-lezapri]').forEach(function (b) {
+      b.addEventListener('click', function () { apriLezione(b.getAttribute('data-lezapri')); });
+    });
+  }
+
+  /* la scheda di una cosa imparata: come per le attività, un posto solo dove
+     si sistema tutto quello che c'è da sistemare */
+  function apriLezione(id) {
+    function trova() { return LM.trovaLezione(id); }
+    if (!trova()) return;
+
+    function corpoHtml() {
+      var l = trova();
+      if (!l) return '';
+      var esp = l.espId ? LM.load().esperimenti.find(function (x) { return x.id === l.espId; }) : null;
+      function riga(eti, valore, attrib, cls) {
+        return '<div class="lista-riga sc-riga' + (cls ? ' ' + cls : '') + '"' + (attrib || '') + '>' +
+          '<span class="sc-eti">' + eti + '</span>' + valore + '</div>';
+      }
+      return '<div class="sc">' +
+        '<label class="campo" for="lez-testo">Cosa hai capito</label>' +
+        '<textarea id="lez-testo" rows="2">' + esc(l.testo) + '</textarea>' +
+
+        etichetta('Come fai a saperlo', 'confronto') +
+        '<div class="q-chips">' + LM.FORZE_LEZIONE.map(function (f) {
+          return '<button class="q-chip' + (f.id === l.forza ? ' on' : '') + '" data-forza="' + f.id + '">' + esc(f.eti) + '</button>';
+        }).join('') + '</div>' +
+        '<p class="lista-nota">Non è un voto su di te: è quanto è solida questa riga. Serve a poterla scrivere anche quando l’hai vista una volta sola.</p>' +
+
+        etichetta('Dettagli', 'ingranaggio') +
+        '<div class="lista">' +
+        riga('Verso', '<span class="sc-val q-chips">' +
+          '<button class="q-chip' + (l.verso === 'si' ? ' on' : '') + '" data-verso="si">' + ICO('funziona', 13) + ' mi funziona</button>' +
+          '<button class="q-chip' + (l.verso === 'no' ? ' on' : '') + '" data-verso="no">' + ICO('nonFunziona', 13) + ' non mi funziona</button>' +
+          '</span>', '', 'sc-riga-alta') +
+        riga('Area', '<span class="sc-val">' + selectAreeOpz('lez-area', l.areaId, 'sc-inline') + '</span>') +
+        (esp ? riga('Misurato con', '<span class="sc-val">' + esc(esp.nome) + '</span>') : '') +
+        riga('Scritta', '<span class="sc-val">' + LM.fmtShort(LM.dayKey(new Date(l.creata))) + '</span>') +
+        '</div>' +
+
+        '<div class="lista mt">' +
+        '<button class="lista-riga sc-riga sc-tocca" id="lez-esp">' +
+        '<span class="sc-eti">' + ICO('flask', 15) + ' Provalo con un esperimento</span>' +
+        '<span class="lista-chev">' + ICO('chevronGiu', 15) + '</span></button>' +
+        '<button class="lista-riga sc-riga sc-tocca sc-pericolo" id="lez-del">' +
+        '<span class="sc-eti">' + ICO('trash', 15) + ' Togli questa riga</span></button>' +
+        '</div>' +
+        '</div>';
+    }
+
+    function collega(root) {
+      var l = trova();
+      if (!l) { chiudiSheet(); ridisegna(); return; }
+      var ta = root.querySelector('#lez-testo');
+      /* si salva uscendo dal campo, come le altre schede: un tasto «salva» per
+         una riga di testo è un tasto che si dimentica di premere */
+      ta.addEventListener('blur', function () {
+        var v = ta.value.trim();
+        if (v && v !== trova().testo) { LM.modificaLezione(id, { testo: v }); ridisegnaLezioni(); }
+      });
+      root.querySelectorAll('[data-forza]').forEach(function (b) {
+        b.addEventListener('click', function () {
+          LM.modificaLezione(id, { forza: b.getAttribute('data-forza') });
+          ridisegnaScheda();
+        });
+      });
+      root.querySelectorAll('[data-verso]').forEach(function (b) {
+        b.addEventListener('click', function () {
+          LM.modificaLezione(id, { verso: b.getAttribute('data-verso') });
+          ridisegnaScheda();
+        });
+      });
+      root.querySelector('#lez-area').addEventListener('change', function (e) {
+        LM.modificaLezione(id, { areaId: e.target.value || null });
+        ridisegnaLezioni();
+      });
+      root.querySelector('#lez-esp').addEventListener('click', function () {
+        /* Il modulo dell'esperimento si apre già scritto con la riga di qui:
+           chi vuole verificare una cosa che ha già capito non deve ribatterla.
+           Si passa per una variabile e non per una chiamata a caldo: la vista
+           si ridisegna da zero, e un `setTimeout` che va a cercare il modulo
+           dopo sessanta millesimi funziona o no a seconda di cos'altro sta
+           succedendo. Così invece è il disegno stesso che lo apre. */
+        lezDaProvare = trova();
+        chiudiSheet();
+        location.hash = '#/esperimenti';
+        render();
+      });
+      root.querySelector('#lez-del').addEventListener('click', function () {
+        var q = trova();
+        conAnnulla('Riga tolta.', 'trash', function () { LM.rimuoviLezione(id); });
+        chiudiSheet(); ridisegnaLezioni();
+        void q;
+      });
+    }
+
+    function ridisegnaScheda() {
+      var root = document.getElementById('sheet-corpo');
+      if (!root) return;
+      root.innerHTML = corpoHtml();
+      collega(root);
+      ridisegnaLezioni();
+    }
+
+    apriSheet('Una cosa che hai capito', corpoHtml(), collega, false,
+      { nome: 'Una cosa che hai capito', apri: function () { apriLezione(id); } });
+  }
+
+  /* la riga da cui aprire il modulo dell'esperimento al prossimo disegno della
+     pagina: la mette la scheda di una riga imparata, la consuma la vista */
+  var lezDaProvare = null;
+  /* il modulo del nuovo esperimento mentre è aperto, con quello che c'è
+     scritto dentro: sopravvive ai ridisegni della pagina */
+  var formExp = null;
+
+  /* ============================================================
      VISTA: ESPERIMENTI
      ============================================================ */
 
@@ -5321,11 +5636,20 @@
        che spiega cosa manca: due pulsanti uguali sulla stessa schermata
        sono due volte la stessa domanda */
     var vuota = !s.esperimenti.length;
-    var html = topbar('Esperimenti', '', 
-      vuota ? '' : '<button class="btn btn-primario" id="btn-nuovo-exp">' + ICO('plus', 15) + ' Nuovo esperimento</button>', '', true) +
-      '<div class="card"><div class="sotto" style="margin:0">Come funziona: prima misuri una metrica senza cambiare nulla (fase <b>A</b>, la base di partenza), poi introduci una modifica e continui a misurare (fase <b>B</b>). Il confronto tra le due fasi ti dice se la modifica ha avuto effetto. Un avvertimento onesto: senza gruppo di controllo il risultato è un’indicazione, non una prova definitiva; ripetere l’esperimento lo rende più affidabile.</div></div>' +
+    /* L'ORDINE DELLA PAGINA È UNA SCELTA. Prima il registro di quello che hai
+       capito su di te — è la cosa che si usa ogni giorno e si scrive in dieci
+       secondi — e sotto gli esperimenti, che sono lo stesso mestiere fatto per
+       bene quando di una cosa vuoi essere sicuro. Al contrario, la pagina
+       chiedeva quattro settimane di pazienza per poter scrivere la prima riga. */
+    var html = topbar('Cosa funziona per me', '', '', '', true) +
+      bloccoLezioniHtml() +
+      etichetta('Esperimenti', 'flask', s.esperimenti.length || null) +
+      '<div class="card"><div class="sotto" style="margin:0">Quando di una cosa vuoi essere sicuro. Prima misuri una metrica senza cambiare nulla (fase <b>A</b>, la base di partenza), poi introduci una modifica e continui a misurare (fase <b>B</b>). Il confronto tra le due fasi ti dice se la modifica ha avuto effetto. Un avvertimento onesto: senza gruppo di controllo il risultato è un’indicazione, non una prova definitiva; ripetere l’esperimento lo rende più affidabile.' +
+      (vuota ? '' : '</div><div class="riga-flex mt-s"><button class="btn btn-mini" id="btn-nuovo-exp">' + ICO('plus', 15) + ' Nuovo esperimento</button></div>') +
+      '</div>' +
       '<div id="form-exp-zona"></div><div class="griglia mt" id="lista-exp" style="gap:16px"></div>';
     $vista.innerHTML = html;
+    wireLezioni($vista);
 
     var bNuovo = document.getElementById('btn-nuovo-exp');
     if (bNuovo) bNuovo.addEventListener('click', mostraFormExp);
@@ -5353,7 +5677,16 @@
         verdetto = '<div class="exp-verdetto">' + ICO('confronto', 15) +
           '<span>Nella fase iniziale la media era <b>' + LMCharts.fmtNum(ris.baseline.media) + '</b> (su ' + ris.baseline.n + ' giorni); dopo la modifica è <b>' + LMCharts.fmtNum(ris.intervento.media) + '</b> (su ' + ris.intervento.n + ' giorni), con una differenza di <b>' + (diff > 0 ? '+' : '') + LMCharts.fmtNum(diff) + '</b>' +
           (dEff !== null ? '. L’entità del cambiamento è <b>' + forza + '</b> (d≈' + LMCharts.fmtNum(dEff) + ')' : '') + '.' +
-          '<br><small>È un indizio utile, non una prova definitiva: se il risultato ti interessa, ripeti l’esperimento per confermarlo.</small></span></div>';
+          '<br><small>È un indizio utile, non una prova definitiva: se il risultato ti interessa, ripeti l’esperimento per confermarlo.</small></span></div>' +
+          /* IL RISULTATO DIVENTA UNA RIGA. Un esperimento che finisce e resta
+             un grafico non serve a niente il mese dopo: quello che uno vuole
+             ritrovare è la frase, con scritto che quella l'ha misurata. Se
+             l'esperimento è nato da una riga, questo tasto aggiorna QUELLA
+             invece di scriverne una seconda uguale. */
+          '<div class="riga-flex mt-s"><button class="btn btn-mini" data-expsalva="' + e.id + '">' +
+          ICO(diff > 0 ? 'funziona' : 'nonFunziona', 15) + ' ' +
+          (lezDi(e) ? 'Aggiorna la riga: l’hai misurata' : (diff > 0 ? 'Salvala fra le cose che ti funzionano' : 'Salvala fra le cose che non ti funzionano')) +
+          '</button></div>';
       } else {
         verdetto = '<div class="exp-verdetto">' + ICO('attesa', 15) + '<span>Non ci sono ancora abbastanza dati: servono almeno due giorni con una misura in ciascuna fase. Continua a fare i check-in.</span></div>';
       }
@@ -5363,6 +5696,8 @@
         (e.intervento ? '<div class="sotto" style="margin:0">Intervento: ' + esc(e.intervento) + '</div>' : '') +
         '<div id="exp-chart-' + i + '"></div>' + verdetto;
       lista.appendChild(card);
+      var bSalva = card.querySelector('[data-expsalva]');
+      if (bSalva) bSalva.addEventListener('click', function () { salvaEsitoInLezione(e, ris); });
       LMCharts.experiment(document.getElementById('exp-chart-' + i), ris, {
         label: 'Esperimento ' + e.nome,
         max: (m && m.fonte !== 'minuti' && m.fonte !== 'xp') ? 5 : undefined,
@@ -5371,12 +5706,28 @@
       });
     });
 
-    function mostraFormExp() {
+    /* IL MODULO SOPRAVVIVE A UN RIDISEGNO, e non è un lusso: la pagina si
+       ridisegna da sé quando arriva la risposta dell'account, quando il cloud
+       porta un aggiornamento, quando la rete cade. Prima il modulo stava solo
+       nel DOM, quindi uno che aveva scritto mezza domanda se la vedeva sparire
+       senza aver toccato niente — e la stessa cosa faceva sparire il modulo già
+       compilato che si apre da una riga imparata (trovato da prove/lezioni.js,
+       che gira senza cloud e quindi riceve subito «account non disponibile»).
+       Adesso quello che c'è scritto vive in `formExp`, e il disegno lo rimette. */
+    function mostraFormExp(daLezione) {
       var zona = document.getElementById('form-exp-zona');
+      if (!zona) return;
+      /* la riga da cui parte, se parte da una riga: il nome è la domanda,
+         l'intervento è la cosa stessa */
+      var pre = daLezione && daLezione.testo
+        ? { nome: '«' + daLezione.testo + '»: è vero?', int: daLezione.testo, area: daLezione.areaId || '',
+            metrica: '', durata: '', lez: daLezione.id }
+        : (formExp || { nome: '', int: '', area: '', metrica: '', durata: '', lez: null });
+      formExp = { nome: pre.nome, int: pre.int, area: pre.area, metrica: pre.metrica, durata: pre.durata, lez: pre.lez };
       zona.innerHTML = '<div class="card mt">' +
         '<h2>Nuovo esperimento</h2><div class="sotto">I giorni già passati fanno da base di partenza; la modifica che vuoi testare inizia oggi.</div>' +
-        '<label class="campo" for="exp-nome">Cosa vuoi scoprire</label><input type="text" id="exp-nome" placeholder="Es. studiare in biblioteca mi fa studiare di più?">' +
-        '<label class="campo" for="exp-int">La modifica che vuoi testare</label><input type="text" id="exp-int" placeholder="Es. ogni pomeriggio studio in biblioteca invece che in camera">' +
+        '<label class="campo" for="exp-nome">Cosa vuoi scoprire</label><input type="text" id="exp-nome" value="' + esc(pre.nome) + '" placeholder="Es. studiare in biblioteca mi fa studiare di più?">' +
+        '<label class="campo" for="exp-int">La modifica che vuoi testare</label><input type="text" id="exp-int" value="' + esc(pre.int) + '" placeholder="Es. ogni pomeriggio studio in biblioteca invece che in camera">' +
         '<div class="griglia griglia-3 mt-s"><div><label class="campo" for="exp-metrica">Cosa misuri</label><select id="exp-metrica">' +
         LM.METRICHE_ESPERIMENTO.map(function (m2) { return '<option value="' + m2.id + '">' + esc(m2.nome) + '</option>'; }).join('') +
         '</select></div>' +
@@ -5388,25 +5739,78 @@
         '</select></div></div>' +
         '<div class="riga-flex mt"><button class="btn btn-primario" id="exp-crea">' + ICO('flask', 15) + ' Avvia</button>' +
         '<button class="btn btn-ghost" id="exp-annulla">Annulla</button></div></div>';
-      document.getElementById('exp-annulla').addEventListener('click', function () { zona.innerHTML = ''; });
-      document.getElementById('exp-crea').addEventListener('click', function () {
-        var nome = document.getElementById('exp-nome').value.trim();
+      document.getElementById('exp-annulla').addEventListener('click', function () {
+        formExp = null; zona.innerHTML = '';
+      });
+      /* i valori scelti si rimettono dopo, non nell'HTML: un `selected` da
+         costruire dentro tre `map` diversi è tre posti dove sbagliarsi */
+      var campo = function (id) { return document.getElementById(id); };
+      if (pre.area) campo('exp-area').value = pre.area;
+      if (pre.metrica) campo('exp-metrica').value = pre.metrica;
+      if (pre.durata) campo('exp-durata').value = pre.durata;
+      /* quello che si scrive resta scritto anche se la pagina si ridisegna */
+      var tieni = function (id, chiave) {
+        var el = campo(id);
+        if (!el) return;
+        var scrivi = function () { if (formExp) formExp[chiave] = el.value; };
+        el.addEventListener('input', scrivi);
+        el.addEventListener('change', scrivi);
+      };
+      tieni('exp-nome', 'nome'); tieni('exp-int', 'int');
+      tieni('exp-metrica', 'metrica'); tieni('exp-area', 'area'); tieni('exp-durata', 'durata');
+      zona.scrollIntoView({ block: 'nearest' });
+      var primo = campo('exp-nome');
+      if (primo && !pre.nome && !daLezione) primo.focus();
+      campo('exp-crea').addEventListener('click', function () {
+        var nome = campo('exp-nome').value.trim();
         if (!nome) { toast('Scrivi cosa vuoi scoprire con l’esperimento.', 0, 'flask'); return; }
-        var dur = document.getElementById('exp-durata').value.split('-');
+        var dur = campo('exp-durata').value.split('-');
         var t = LM.todayKey();
         LM.creaEsperimento({
           nome: nome,
-          intervento: document.getElementById('exp-int').value.trim(),
-          metrica: document.getElementById('exp-metrica').value,
-          areaId: document.getElementById('exp-area').value,
+          intervento: campo('exp-int').value.trim(),
+          metrica: campo('exp-metrica').value,
+          areaId: campo('exp-area').value,
           inizioBaseline: LM.addDays(t, -(+dur[0])),
           inizioIntervento: t,
-          fine: LM.addDays(t, +dur[1])
+          fine: LM.addDays(t, +dur[1]),
+          lezioneId: pre.lez
         });
+        formExp = null;
         toast('Esperimento avviato.', 0, 'flask');
         render();
       });
     }
+    /* chi è arrivato qui da una riga imparata trova il modulo già aperto e
+       già scritto; chi lo aveva aperto e stava scrivendo lo ritrova com'era */
+    if (lezDaProvare) { var daQui = lezDaProvare; lezDaProvare = null; mostraFormExp(daQui); }
+    else if (formExp) mostraFormExp();
+  }
+
+  /* la riga imparata da cui è nato un esperimento, se c'è ancora */
+  function lezDi(e) {
+    return e.lezioneId ? LM.trovaLezione(e.lezioneId) : null;
+  }
+
+  /* IL RISULTATO DI UN ESPERIMENTO, MESSO IN UNA RIGA. Tutte le metriche di
+     questa app sono «più è meglio» (focus, energia, umore, voto, minuti, XP),
+     quindi il verso lo decide il segno della differenza. */
+  function salvaEsitoInLezione(e, ris) {
+    var diff = ris.intervento.media - ris.baseline.media;
+    var verso = diff > 0 ? 'si' : 'no';
+    var testo = e.intervento || e.nome;
+    var l = lezDi(e);
+    if (l) {
+      LM.modificaLezione(l.id, { verso: verso, forza: 'misurato', espId: e.id });
+      toast('Riga aggiornata: adesso c’è scritto che l’hai misurata.', 0, verso === 'si' ? 'funziona' : 'nonFunziona');
+    } else {
+      var nuova = LM.aggiungiLezione(testo, verso, { forza: 'misurato', areaId: e.areaId, espId: e.id });
+      if (nuova) LM.creaLegameEsperimento(e.id, nuova.id);
+      toast(verso === 'si' ? 'Salvata fra le cose che ti funzionano, con scritto che l’hai misurata.'
+        : 'Salvata fra le cose che non ti funzionano, con scritto che l’hai misurata.',
+        0, verso === 'si' ? 'funziona' : 'nonFunziona');
+    }
+    render();
   }
 
   /* ============================================================

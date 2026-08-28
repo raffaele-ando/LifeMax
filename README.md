@@ -29,8 +29,8 @@ Il "loop quotidiano" è implementato per intero e persistente:
 **☀️ Mattina (60″)** max 3 azioni + intenzione «Se… allora…» → **🎯 Focus** una sola
 azione a schermo, timer 10/25/50′ che registra i minuti da solo → **⚡ Check-in (10″)**
 energia/focus/umore in 3 tap → **🌙 Sera (2′)** voto alle aree + vittoria + blocco →
-**🗓️ Settimana** review strutturata → **🧪 Esperimenti** i dati raccolti alimentano
-confronti baseline→intervento (N-of-1) su di te.
+**🗓️ Settimana** review strutturata → **👍 Cosa funziona** quello che hai capito su di
+te, e gli **esperimenti** N-of-1 quando vuoi esserne sicuro.
 
 In ogni momento: **cattura istantanea** con `C`, `⌘K` o il bottone `＋` — un campo,
 zero categorie, le decisioni si prendono dopo.
@@ -78,6 +78,19 @@ di cose a oggi. La pagina ha poi quattro **orizzonti** — **Giorno**,
 quanto è stato pieno e dei mattoncini colorati mostrano le cose fatte per area (i giorni
 futuri sono tratteggiati). Da settimana e mese si apre il singolo giorno con un tocco.
 Sonno, sveglia e pasti si impostano da *Sonno e pasti*.
+
+**👍 Cosa funziona per me** (*Andamento → Cosa funziona*) è il registro di quello che
+hai capito su di te, diviso in due mucchi: **mi funziona** e **non mi funziona**. Una
+riga di testo, e accanto **come fai a saperlo** — *notato una volta*, *lo noto ogni
+volta*, *misurato* — perché senza quell'etichetta scrivere «mi funziona» dopo averlo
+visto una volta sembra un'affermazione più grossa di quella che è, e chi tiene alla
+precisione preferisce non scrivere niente. Il tasto a sinistra della riga la **gira**
+nell'altro mucchio: una cosa che funzionava smette di funzionare, e quello va registrato
+senza cancellare e riscrivere. Le due review sanno **tenere** la riga che hai appena
+scritto (la sera con «notato una volta», la settimana con «lo noto ogni volta»), e nella
+stessa pagina, sotto, ci sono gli **🧪 esperimenti**: si parte da una riga col modulo già
+compilato, e quando l'esperimento dà un verdetto quella riga si aggiorna da sé in
+«misurato». È il ponte che mancava fra un'intuizione e quattro settimane di misure.
 
 ## Più approcci UX, stessi dati (di proposito)
 
