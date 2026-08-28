@@ -228,6 +228,15 @@ genera le chiavi, in un browser vero).
   che si possa cambiare idea, e che «sì» resti l'ora solita più o meno. Sulla
   scadenza controlla anche che la ✕ resti sopra al campo steso sulla riga:
   sotto, togliere la scadenza avrebbe aperto il calendario.
+  C'è stata una seconda puntata: col campo in chiaro l'orologio si apriva —
+  e si richiudeva subito. Erano due richieste in fila, il fuoco e poi
+  `showPicker()`, e sulla maggior parte dei telefoni il fuoco su un campo
+  dell'ora apre già la ruota: la seconda richiesta la richiudeva un istante
+  dopo. Due modi di dire la stessa cosa non sono meglio di uno. Un pop-up di
+  sistema da fuori non si vede — nessun browser guidato lo disegna, quindi
+  guardarlo non serve a niente — e allora quella parte la prova la legge nel
+  codice: chiedere l'orologio A MANO è la strada che si è rotta due volte, e
+  l'app non la prende più.
 - **lezioni.js** — «cosa funziona per me»: le righe che si scrivono senza fare un
   esperimento. Il pericolo di una funzione così è che diventi un cimitero — si
   scrivono dieci righe, non le rivede nessuno, e fra un mese non sono né dati né

@@ -143,6 +143,24 @@ const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  
     await ctx.close();
   }
 
+  /* La seconda puntata dello stesso guaio: il campo si vedeva e si toccava,
+     ma l'orologio si apriva e si richiudeva subito. Erano due richieste in
+     fila — il fuoco, e poi `showPicker()` — e sulla maggior parte dei
+     telefoni il fuoco su un campo dell'ora apre già la ruota: la seconda
+     richiesta la richiudeva. Due modi di dire la stessa cosa non sono meglio
+     di uno. Qui si legge il codice, perché un pop-up di sistema non si vede
+     da fuori: nessun browser guidato lo disegna, quindi guardarlo non serve.
+     Chiedere l'orologio A MANO è la strada che si è già rotta due volte:
+     l'app non la prende più. */
+  console.log('UNA SOLA RICHIESTA, NON DUE');
+  {
+    const sorgente = fs.readFileSync(path.join(RADICE, 'assets', 'app.js'), 'utf8');
+    /* via i commenti: lì «showPicker» ci sta, ed è il racconto di com'era */
+    const vivo = sorgente.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/[^\n]*/g, '$1');
+    ok('l’app non chiede l’orologio a mano da nessuna parte',
+      vivo.indexOf('showPicker') < 0, (vivo.match(/.{0,40}showPicker.{0,40}/g) || []).join(' · '));
+  }
+
   console.log('LA SCADENZA DI UN’ATTIVITÀ');
   for (const conScadenza of [false, true]) {
     const { ctx, p, err } = await apri(390, 'inbox', conScadenza

@@ -4453,9 +4453,19 @@
          chiaro. Prima non faceva niente di visibile: il campo era largo un
          pixel, trasparente e con «pointer-events: none», quindi il dito non
          poteva raggiungerlo, e l’unica strada era aprire l’orologio a mano su
-         un elemento che non si vede — cosa che il browser fa volentieri
-         quando gli pare. Adesso il campo c’è: si tocca da sé, e l’orologio
-         proviamo comunque ad aprirlo per chi arriva col dito.
+         un elemento che non si vede — cosa che il browser fa quando gli pare.
+
+         L’orologio lo chiediamo UNA VOLTA SOLA, e chiedendo il fuoco. Prima
+         qui c’erano due richieste in fila, il fuoco e poi `showPicker()`:
+         sulla maggior parte dei telefoni il fuoco su un campo dell’ora apre
+         già la ruota, e la seconda richiesta la richiudeva un istante dopo —
+         l’orologio si apriva e spariva. Due modi di dire la stessa cosa non
+         sono meglio di uno: sono un interruttore premuto due volte.
+         Il campo esiste già nel documento (leggerne la larghezza obbliga il
+         browser a dargli un posto prima di andare avanti), così la ruota si
+         appende a qualcosa che sta già dove deve stare.
+         Se il fuoco non basta ad aprirla, il campo è lì, si vede e si tocca.
+
          La risposta si salva quando l’ora è scelta, non prima: un pasto
          registrato all’ora sbagliata e poi corretto lascia due righe nel
          diario. */
@@ -4465,8 +4475,8 @@
         rifai();
         var nuovo = document.querySelector('[data-pasto="' + id + '"] [data-poraval]');
         if (!nuovo) return;
+        void nuovo.offsetWidth;
         nuovo.focus();
-        if (nuovo.showPicker) { try { nuovo.showPicker(); } catch (e) { void e; } }
       });
       if (campoOra) campoOra.addEventListener('change', function () {
         if (!campoOra.value) return;
