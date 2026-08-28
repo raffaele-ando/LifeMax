@@ -1,6 +1,6 @@
 # Prove
 
-Diciassette controlli automatici che guardano una cosa sola ciascuno, ma
+Diciotto controlli automatici che guardano una cosa sola ciascuno, ma
 quella cosa fa morire l'app — o la fa diventare illeggibile — quando si
 rompe. Sono nati da problemi veri.
 
@@ -210,6 +210,34 @@ genera le chiavi, in un browser vero).
   una cosa scritta dopo nasce già fatta, con gli XP e col segno `dopo`.
   E il pop-up chiuso vale «non adesso»: ricaricando non torna, ma la domanda
   si trova ancora nei Rituali — la promessa scritta nella nota è verificata.
+- **larghezze.js** — dieci larghezze, dal telefono piccolo al tablet. Le altre
+  prove ne guardano tre — 320, 390 e 1280 — e in mezzo c'è tutta la fascia dei
+  tablet (768, 810, 834, 1024, 1180) che non guardava nessuno. È la fascia dove
+  le cose si rompono in modo silenzioso: se la pagina diventa più larga del
+  display il browser la mostra RIMPICCIOLITA per farcela stare, e da quel
+  momento tutto quello che è agganciato al riquadro d'impianto si stacca da
+  quello che si vede — la barra in basso finisce in mezzo allo schermo e sembra
+  bloccata lì. Il controllo è uno: la pagina non è mai più larga della
+  finestra; quando lo è, la prova dice anche chi sporge, saltando chi ha
+  diritto di farlo (chi sta dentro un contenitore che scorre da sé, la
+  decorazione senza eventi del puntatore, e chi è fissato al riquadro).
+  E una seconda parte per la barra in basso: un browser guidato non sa
+  separare il riquadro visibile da quello d'impianto, quindi si prova il
+  MECCANISMO — che il fondo della barra passi da `--vv-giu`, e che quel numero
+  ci sia davvero qualcuno che lo scrive.
+- **adesso.js** ha una sezione nuova, «SI GUARDA, NON SI LEGGE». Nasce da
+  «migliora la ux della card nella pagina adesso: non ci deve essere scritto
+  cosa è, devo guardarlo e capirlo subito». Prima l'unica differenza fra
+  «questa è per adesso» e «questa comincia fra cinque ore» era una parola in
+  maiuscolo dentro una pastiglia: tutto il resto della scheda era identico, e
+  il segnale più forte — il filo colorato in cima — diceva l'AREA, che è
+  l'informazione meno urgente delle due. La prova costruisce i quattro stati,
+  butta via le parole e guarda solo le FORME: il colore del filo in cima, il
+  fondo, e quanto è piena la barra del tempo. Se due stati danno la stessa
+  terna, a occhio non si distinguono, e la prova non passa. In più pretende che
+  la barra dica davvero il tempo: piena a metà mentre la cosa è in corso, piena
+  tutta quando è passata, un binario vuoto quando deve ancora cominciare, e
+  assente quando un orario non c'è.
 - **campi.js** — i campi che si aprono col tocco: l'ora di un pasto, la
   scadenza di un'attività. Nasce da «non funziona il pulsante "a un'altra ora"
   quando indico i pasti della giornata in Rituali», ed è finita in tre puntate,
@@ -368,6 +396,7 @@ genera le chiavi, in un browser vero).
     node prove/segni.js      # solo Node, niente browser
     node prove/lezioni.js
     node prove/campi.js
+    node prove/larghezze.js
     node prove/giornata.js
     node prove/adesso.js
     node prove/squircle.js

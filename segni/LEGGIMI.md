@@ -414,6 +414,26 @@ tema. A occhio se ne erano visti tre o quattro; lei ne ha contati settanta.
     comparso il giorno in cui il ritaglio ha smesso di farlo. Adesso due
     selettori si considerano lo stesso elemento se uno è l'altro più un pezzo
     attaccato senza spazi.
+15. **La rete non provava la cosa che stava proteggendo.** Il blocco sta
+    dentro un `@supports` che chiedeva al motore se sa fare `min()` e `calc()`
+    dentro un `polygon()`. Ma ogni tracciato cominciava con `evenodd`, che
+    dentro `polygon()` è un'altra funzione, e che WebKit non fa: su un iPad il
+    test passava, il blocco entrava, e ogni `clip-path` finiva invalido. E qui
+    la cosa peggiora, perché un valore che arriva da una `var()` e non è valido
+    non fa cadere la regola — la porta a `unset`. Spariva il ritaglio
+    dell'elemento, che tornava un rettangolo, e spariva quello dell'anello, che
+    senza il suo ritaglio smette di essere un anello e diventa un rettangolo
+    PIENO del colore del bordo, un pixel più grande dell'elemento. Rettangoli
+    col colore del bordo sopra le forme tonde, e nei pannelli — dove i raggi
+    sono grandi — più che altrove. Per un mese l'app su iPad si è vista così.
+    Adesso `evenodd` non serve più: due contorni che girano in versi opposti
+    fanno un buco anche col riempimento normale. Il morso in alto a sinistra
+    gira nello stesso verso del rettangolone (le mappe degli altri tre
+    scambiano o specchiano gli assi) e va percorso al rovescio; nell'anello va
+    al rovescio il contorno interno. La forma sui pixel è identica, misurata.
+    E `prove/squircle.js` adesso raccoglie i pezzi di sintassi che i tracciati
+    usano davvero e pretende che la condizione del `@supports` li nomini tutti:
+    una rete che non prova quello che protegge non è una rete.
 14. **Una scena che misurava a seconda dell'ora del giorno.** La scena della
     review della sera apriva la sezione cliccandoci sopra. Ma nei Rituali la
     sezione dell'ORA è già aperta da sé — quella del mattino la mattina, il

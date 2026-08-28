@@ -2209,6 +2209,18 @@
 
   /* «fra quattro ore»: un orario da solo non dice quanto manca, e quanto manca
      è la cosa che fa decidere se cominciare qualcos'altro */
+  /* quanto tempo È PASSATO da un'ora già andata: «era alle 15:00, un'ora fa».
+     Senza, «era alle 15:00» non dice se il ritardo è di cinque minuti o di
+     cinque ore, e sono due situazioni diverse. */
+  function daQuanto(min) {
+    var d = new Date();
+    var q = (d.getHours() * 60 + d.getMinutes()) - min;
+    if (q <= 0 || q > 12 * 60) return '';
+    if (q < 60) return ', ' + q + ' minuti fa';
+    var ore = Math.round(q / 60);
+    return ', ' + (ore === 1 ? 'un’ora fa' : ore + ' ore fa');
+  }
+
   function fraQuanto(min) {
     var d = new Date();
     var q = min - (d.getHours() * 60 + d.getMinutes());
@@ -2314,22 +2326,47 @@
        colore: ADESSO, IN RITARDO, QUANDO VUOI, PIÙ TARDI. La parola è la
        risposta; il dettaglio (l'ora, il ritardo, il tempo che manca) sta
        accanto, più piccolo. */
-    var stato = { parola: '', dett: '', cls: 'libera' };
+    /* SI GUARDA, NON SI LEGGE.
+       Qui c'era una pastiglia con dentro una parola in maiuscolo — ADESSO, IN
+       RITARDO, PIÙ TARDI, QUANDO VUOI — e quella parola era l'unica cosa che
+       distingueva uno stato dall'altro: il resto della scheda era identico, e
+       il colore forte (il filo in cima, la tinta del fondo) diceva l'AREA, che
+       è l'informazione meno urgente delle due. Aprendo «Adesso» la domanda è
+       «questa è per adesso o no»: la risposta deve arrivare prima di leggere.
+       Adesso la porta una barra del tempo, che è la stessa cosa detta con una
+       forma:
+         · in corso   la barra è piena FINO A DOVE SIAMO e si ferma lì — si
+                      vede a che punto del blocco sei;
+         · in ritardo la barra è piena tutta, del colore dell'avviso: il tempo
+                      è finito;
+         · più tardi  la barra è un binario VUOTO con un segno dove comincia —
+                      non è ancora partito niente;
+         · quando vuoi nessuna barra. Non c'è un tempo, e l'assenza è il segno.
+       Accanto restano i numeri, che non sono un'etichetta ma il dato. La
+       parola resta per chi usa un lettore di schermo, che una forma non la
+       vede: `.solo-lettore`. */
+    var oraAdesso = LM.oraDelGiorno();
+    var stato = { parola: '', dett: '', cls: 'libera', barra: null, quota: 0, ico: null };
     if (adesso.stato === 'scelta') {
-      stato = { parola: 'Scelta da te', dett: adesso.min != null ? 'in programma alle ' + fmtMin(adesso.min) : '', cls: 'ora' };
+      stato = { parola: 'Scelta da te', dett: adesso.min != null ? 'in programma alle ' + fmtMin(adesso.min) : 'quando vuoi',
+        cls: 'ora', barra: 'scelta', quota: 1, ico: 'target' };
     } else if (adesso.stato === 'corso') {
-      stato = { parola: 'Adesso', dett: fmtMin(adesso.min) + ' → ' + fmtMin(adesso.fine), cls: 'ora' };
+      var durata = Math.max(1, adesso.fine - adesso.min);
+      stato = { parola: 'Adesso', dett: fmtMin(adesso.min) + ' → ' + fmtMin(adesso.fine),
+        cls: 'ora', barra: 'corso', ico: 'target',
+        quota: Math.max(0.02, Math.min(1, (oraAdesso - adesso.min) / durata)) };
     } else if (adesso.stato === 'ritardo') {
-      stato = { parola: 'In ritardo', dett: 'era alle ' + fmtMin(adesso.min), cls: 'ritardo' };
+      stato = { parola: 'In ritardo', dett: 'era alle ' + fmtMin(adesso.min) + daQuanto(adesso.fine),
+        cls: 'ritardo', barra: 'ritardo', quota: 1, ico: 'avviso' };
     } else if (adesso.stato === 'programmata') {
-      stato = { parola: 'Più tardi', dett: 'alle ' + fmtMin(adesso.min) + fraQuanto(adesso.min), cls: 'dopo' };
+      stato = { parola: 'Più tardi', dett: 'alle ' + fmtMin(adesso.min) + fraQuanto(adesso.min),
+        cls: 'dopo', barra: 'dopo', quota: 0, ico: 'clock' };
     } else if (prossima.mit) {
-      stato = { parola: 'La più importante', dett: 'quando vuoi', cls: 'mit' };
+      stato = { parola: 'La più importante', dett: '', cls: 'mit', barra: null, quota: 0, ico: 'star' };
     } else {
-      /* nessun dettaglio: «Quando vuoi» e «nessun orario» sono la stessa
-         informazione scritta due volte nella stessa fascia */
-      stato = { parola: 'Quando vuoi', dett: '', cls: 'libera' };
+      stato = { parola: 'Quando vuoi', dett: '', cls: 'libera', barra: null, quota: 0, ico: null };
     }
+
     /* di che specie è questa cosa: un'abitudine non si «rimanda», si salta
        per oggi, e chi guarda deve saperlo prima di premere */
     var perche = '';
@@ -2381,11 +2418,17 @@
        incollata sotto ai tasti con duecento pixel di niente sotto di sé: la
        schermata sembrava interrotta a metà. */
     html += '<div class="focus-scena' + (timerAttivo ? ' timer-attivo' : '') + '">' +
-      '<div class="focus-cuore" style="--c-area:' + colArea + '">' +
-      '<div class="chip focus-stato st-' + stato.cls + '">' +
-      '<span class="fs-parola">' + stato.parola + '</span>' +
+      '<div class="focus-cuore st-' + stato.cls + '" style="--c-area:' + colArea + '">' +
+      '<div class="focus-stato st-' + stato.cls + '">' +
+      (stato.barra
+        ? '<div class="fs-barra fs-b-' + stato.barra + '" style="--p:' + stato.quota + '" aria-hidden="true"><i></i></div>'
+        : '') +
+      '<div class="fs-riga">' +
+      (stato.ico ? '<span class="fs-ico">' + ICO(stato.ico, 13) + '</span>' : '') +
+      /* la parola resta per chi non vede la forma */
+      '<span class="fs-parola solo-lettori">' + stato.parola + '</span>' +
       (stato.dett ? '<span class="fs-dett">' + esc(stato.dett) + '</span>' : '') +
-      '</div>' +
+      '</div></div>' +
       '<div class="focus-didascalia' + perCls + '" style="--c-area:' + colArea + '">' +
       segnoArea(area, 15, 'fd-area') + '<span class="fd-nome">' + esc(area.nome) + '</span>' +
       (perche ? '<span class="fd-sep">·</span><span class="fd-perche">' + perche + '</span>' : '') +
@@ -4115,26 +4158,33 @@
     return ora < 12 ? 'mattina' : (ora >= 19 ? 'sera' : 'checkin');
   }
   /* per ogni rituale: se è già stato fatto oggi e come si racconta in una riga */
+  /* UNA COLONNA, UNA DOMANDA.
+     Qui uscivano sei frasi di forma diversa nello stesso posto — «fatto
+     stamattina», «2 azioni scelte», «1 oggi», «nessuno oggi», «fatta», «da
+     fare» — e chi guardava la colonna doveva leggerle una per una per capire
+     se erano un sì, un no o un conteggio. La colonna risponde a UNA domanda,
+     «è fatto oggi?», e lo dice sempre nello stesso modo; il numero, quando
+     aggiunge qualcosa, sta sotto, più piccolo e muto. */
   function statoRituale(id) {
     var s = LM.load(), t = LM.todayKey();
     if (id === 'mattina') {
-      if (s.pianoMattina[t]) return { fatto: true, testo: 'fatto stamattina' };
+      if (s.pianoMattina[t]) return { fatto: true, testo: 'fatto' };
       /* le azioni possono essere state scelte anche senza passare dal rituale
-         (dalla Giornata, o tirandole su da Attività): dire «da fare» quando ce
-         ne sono già tre in lista è una bugia che chiede una cosa già fatta */
+         (dalla Giornata, o tirandole su da Attività): dire «da fare» e basta
+         quando ce ne sono già tre in lista è una bugia che chiede una cosa
+         già fatta — il conto lo dice la riga sotto */
       var n = LM.azioniDiOggi().length;
-      return n ? { fatto: false, testo: n === 1 ? '1 azione scelta' : n + ' azioni scelte' }
-               : { fatto: false, testo: 'da fare' };
+      return { fatto: false, testo: 'da fare', dett: n ? n + ' di 3 scelte' : '' };
     }
     if (id === 'checkin') {
-      var n = s.checkins.filter(function (c) { return c.data === t; }).length;
-      return { fatto: n > 0, testo: n === 0 ? 'nessuno oggi' : (n === 1 ? '1 oggi' : n + ' oggi') };
+      var q = s.checkins.filter(function (c) { return c.data === t; }).length;
+      return { fatto: q > 0, testo: q > 0 ? 'fatto' : 'da fare', dett: q > 1 ? q + ' oggi' : '' };
     }
     if (id === 'sera') {
-      return s.reviewSera[t] ? { fatto: true, testo: 'fatta' } : { fatto: false, testo: 'da fare' };
+      return s.reviewSera[t] ? { fatto: true, testo: 'fatto' } : { fatto: false, testo: 'da fare' };
     }
     var wk = LM.weekKey(t);
-    return s.reviewSettimana[wk] ? { fatto: true, testo: 'fatta' } : { fatto: false, testo: 'da fare' };
+    return s.reviewSettimana[wk] ? { fatto: true, testo: 'fatto' } : { fatto: false, testo: 'da fare' };
   }
 
   function vistaRituali() {
@@ -4153,12 +4203,19 @@
     function rigaRit(r) {
       var st = statoRituale(r.id);
       var aperto = !!ritualiAperti[r.id];
-      return '<section class="rit-blocco' + (aperto ? ' aperto' : '') + '" data-rit="' + r.id + '">' +
+      /* «adesso» era una pastiglia in mezzo alla riga, accanto a un'altra
+         pastiglia con lo stato: due etichette su una riga sola, e quella che
+         conta di più — è fatto o no — sembrava la seconda. Adesso il rituale
+         di questo momento si riconosce dalla riga stessa: un filo d'accento a
+         sinistra e l'icona piena. La parola resta per chi non vede il filo. */
+      return '<section class="rit-blocco' + (aperto ? ' aperto' : '') + (r.id === adesso ? ' ora' : '') + '" data-rit="' + r.id + '">' +
         '<button class="rit-riga" data-sub="' + r.id + '" aria-expanded="' + aperto + '" aria-controls="corpo-rit-' + r.id + '">' +
         '<span class="rit-ico">' + ICO(r.ico, 15) + '</span>' +
-        '<span class="rit-nome">' + r.nome + '</span>' +
-        (r.id === adesso ? '<span class="rit-ora">adesso</span>' : '') +
-        '<span class="rit-stato' + (st.fatto ? ' fatto' : '') + '">' + (st.fatto ? ICO('check', 13) + ' ' : '') + esc(st.testo) + '</span>' +
+        '<span class="rit-nome">' + r.nome +
+        (r.id === adesso ? '<span class="solo-lettori"> — è il rituale di adesso</span>' : '') + '</span>' +
+        '<span class="rit-stato' + (st.fatto ? ' fatto' : '') + '">' +
+        '<span class="rs-che">' + (st.fatto ? ICO('check', 13) + ' ' : '') + esc(st.testo) + '</span>' +
+        (st.dett ? '<span class="rs-dett">' + esc(st.dett) + '</span>' : '') + '</span>' +
         '<span class="rit-chevron' + (aperto ? ' aperta' : '') + '">' + ICO('chevronGiu', 15) + '</span></button>' +
         (aperto ? '<div class="rit-corpo" id="corpo-rit-' + r.id + '"></div>' : '') +
         '</section>';
@@ -5378,27 +5435,41 @@
         /* una colonna sola, larga quanto si legge comodamente: sullo schermo
            grande la decisione non deve attraversare mezzo metro di monitor */
         '<div class="sm-uno">' +
-        etichetta('Da sistemare', 'inbox', coda.length) +
-        '<div class="lista">' +
-        /* il testo è un campo, non un testo con una matita accanto: si
-           corregge scrivendoci sopra, senza entrare e uscire da un modo */
-        '<div class="lista-riga sm-testa">' +
-        '<textarea class="sm-titolo" id="sm-testo" rows="1" aria-label="Testo della nota">' + esc(nota.testo) + '</textarea>' +
-        '</div>' +
-        '<div class="lista-riga sc-riga"><span class="sc-eti">Scritta</span><span class="sc-val">' + esc(quando) + '</span></div>' +
-        '<div class="lista-riga sc-riga"><span class="sc-eti">Area</span>' +
-        '<span class="sc-val">' + selectAree('sm-area', nota.areaSug || 'altro', 'Area', 'sc-inline') + '</span></div>' +
-        '</div>' +
+        /* il numero stava anche qui, e la linguetta sopra lo scrive già: due
+           contatori identici a quaranta pixel di distanza */
+        etichetta('Da sistemare', 'inbox') +
 
-        '<button class="btn btn-primario btn-grande sc-primaria" data-fai="azione">' +
-        ICO('target', 15) + ' Portala in Oggi</button>' +
-        '<div class="lista">' +
-        '<button class="lista-riga sc-riga sc-tocca" data-fai="backlog">' +
-        '<span class="sc-eti">' + ICO('lista', 15) + ' Mettila in «Da fare»</span>' +
-        '<span class="sc-val">più avanti</span></button>' +
-        '<button class="lista-riga sc-riga sc-tocca sc-pericolo" data-fai="scarta">' +
-        '<span class="sc-eti">' + ICO('trash', 15) + ' Scarta</span>' +
-        '<span class="sc-val">non serve</span></button>' +
+        /* PRIMA COSA CHE È, POI CHE FINE FA.
+           Erano cinque righe dello stesso elenco: il testo, «Scritta», «Area»,
+           e in mezzo un tasto pieno alto quaranta pixel, e sotto altre due
+           righe. Cinque cose uguali per due mestieri diversi — descrivere la
+           nota, e deciderne la sorte — e la decisione, che è l'unica ragione
+           per cui si apre questa schermata, stava spezzata in tre pezzi di
+           tre forme diverse: un tasto grosso in mezzo alla lista e due righe
+           d'elenco. Qui sopra c'è la nota (il testo si corregge scrivendoci
+           sopra, l'area si cambia lì accanto, e la data è una didascalia
+           muta), e sotto ci sono TRE PORTE, uguali, affiancate: una scelta
+           sola con tre uscite, che è quello che è. */
+        '<div class="sm-nota">' +
+        '<textarea class="sm-titolo" id="sm-testo" rows="1" aria-label="Testo della nota">' + esc(nota.testo) + '</textarea>' +
+        '<div class="sm-meta">' +
+        selectAree('sm-area', nota.areaSug || 'altro', 'Area', 'sm-area-sel') +
+        '<span class="sm-quando">scritta ' + esc(quando) + '</span>' +
+        '</div></div>' +
+
+        '<div class="sm-scelte" role="group" aria-label="Che fine fa questa nota">' +
+        '<button class="sm-porta sm-porta-si" data-fai="azione">' +
+        '<span class="sm-porta-ico">' + ICO('target', 18) + '</span>' +
+        '<span class="sm-porta-che">Oggi</span>' +
+        '<span class="sm-porta-nota">la fai oggi</span></button>' +
+        '<button class="sm-porta" data-fai="backlog">' +
+        '<span class="sm-porta-ico">' + ICO('lista', 18) + '</span>' +
+        '<span class="sm-porta-che">Da fare</span>' +
+        '<span class="sm-porta-nota">più avanti</span></button>' +
+        '<button class="sm-porta sm-porta-no" data-fai="scarta">' +
+        '<span class="sm-porta-ico">' + ICO('trash', 18) + '</span>' +
+        '<span class="sm-porta-che">Scarta</span>' +
+        '<span class="sm-porta-nota">non serve</span></button>' +
         '</div>' +
 
         (resto.length
@@ -5406,7 +5477,7 @@
             '<div class="sm-coda">' +
             resto.slice(0, MOSTRA).map(function (x) { return '<p>' + esc(x.testo) + '</p>'; }).join('') +
             (resto.length > MOSTRA
-              ? '<p class="sm-coda-piu">' + (resto.length - MOSTRA === 1 ? 'e un’altra' : 'e altre ' + (resto.length - MOSTRA)) + '</p>'
+              ? '<p class="sm-coda-piu">e ' + (resto.length - MOSTRA === 1 ? 'un’altra' : 'altre ' + (resto.length - MOSTRA)) + '</p>'
               : '') +
             '</div>'
           : '<p class="lista-nota">Ultima della coda.</p>') +

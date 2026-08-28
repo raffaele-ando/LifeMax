@@ -217,6 +217,59 @@ const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  
     await ctx.close();
   }
 
+  /* SI GUARDA, NON SI LEGGE.
+     Nasce da «migliora la ux della card nella pagina adesso: non ci deve
+     essere scritto cosa è, devo guardarlo e capirlo subito».
+     Prima l'unica differenza fra «questa è per adesso» e «questa comincia fra
+     cinque ore» era una parola in maiuscolo dentro una pastiglia — tutto il
+     resto della scheda era identico, e il segnale più forte (il filo colorato
+     in cima) diceva l'AREA, che è l'informazione meno urgente delle due.
+     Questa prova toglie di mezzo le parole e guarda solo le FORME: il colore
+     del filo in cima e quanto è piena la barra del tempo. Se due stati
+     diversi danno la stessa coppia, la scheda non si distingue a occhio, e la
+     prova non passa. */
+  console.log('\nSI GUARDA, NON SI LEGGE');
+  {
+    const CASI = [
+      ['in corso', '2026-08-25T15:20:00', () => { LM.aggiungiAzione('Confrontare piani telefonici', 'finanze', { ora: '15:00', durata: 60 }); }],
+      ['in ritardo', '2026-08-25T17:30:00', () => { LM.aggiungiAzione('Confrontare piani telefonici', 'finanze', { ora: '15:00', durata: 60 }); }],
+      ['più tardi', '2026-08-25T10:00:00', () => { LM.aggiungiAzione('Confrontare piani telefonici', 'finanze', { ora: '15:00', durata: 60 }); }],
+      ['quando vuoi', '2026-08-25T11:00:00', () => { LM.aggiungiAzione('Sistemare la scrivania', 'altro', {}); }]
+    ];
+    const forme = [];
+    for (const [nome, quando, prep] of CASI) {
+      const { ctx, p } = await scena(quando, prep);
+      const f = await p.evaluate(() => {
+        const c = document.querySelector('.focus-cuore');
+        if (!c) return null;
+        const filo = getComputedStyle(c, '::before').backgroundColor;
+        const barra = c.querySelector('.fs-barra');
+        const i = barra && barra.querySelector('i');
+        const quota = i && barra
+          ? Math.round((i.getBoundingClientRect().width / barra.getBoundingClientRect().width) * 100)
+          : -1;
+        return { classe: c.className, filo: filo, quota: quota, fondo: getComputedStyle(c).backgroundColor };
+      });
+      forme.push([nome, f]);
+      await ctx.close();
+    }
+    forme.forEach(([nome, f]) => {
+      ok('«' + nome + '» ha una sua forma', !!f && /st-/.test(f.classe || ''),
+        f ? f.filo + ' · barra ' + f.quota + '%' : 'niente scheda');
+    });
+    /* il cuore della prova: quattro stati, quattro aspetti diversi */
+    const impronte = forme.map(([, f]) => (f ? f.filo + '|' + f.quota + '|' + f.fondo : 'x'));
+    const uniche = new Set(impronte);
+    ok('e nessuno stato ha lo stesso aspetto di un altro', uniche.size === forme.length,
+      uniche.size + ' aspetti diversi su ' + forme.length);
+    /* e la barra del tempo dice davvero il tempo */
+    const q = (n) => (forme.find((x) => x[0] === n) || [, {}])[1].quota;
+    ok('in corso la barra è piena a metà strada, non tutta', q('in corso') > 5 && q('in corso') < 95, q('in corso') + '%');
+    ok('in ritardo è piena tutta', q('in ritardo') >= 99, q('in ritardo') + '%');
+    ok('più tardi è un binario vuoto', q('più tardi') >= 0 && q('più tardi') <= 5, q('più tardi') + '%');
+    ok('quando vuoi non ha barra: non c’è un tempo da mostrare', q('quando vuoi') === -1, '' + q('quando vuoi'));
+  }
+
   console.log('');
   ok('nessun errore JS', err.length === 0, err.slice(0, 3).join(' | '));
   console.log(fail ? '\n>>> ' + fail + ' PROBLEMI' : '\n>>> TUTTO A POSTO');

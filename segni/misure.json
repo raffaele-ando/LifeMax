@@ -408,7 +408,7 @@
   "angolo": true
  },
  ".agg-riga": {
-  "corto": 47,
+  "corto": 46.6,
   "angolo": true
  },
  ".area-riga .icona-area": {
@@ -440,7 +440,7 @@
   "corto": 28
  },
  ".btn": {
-  "corto": 34,
+  "corto": 33.7,
   "angolo": true
  },
  ".btn-ghost": {
@@ -477,7 +477,7 @@
   "angolo": true
  },
  ".chip": {
-  "corto": 30,
+  "corto": 31.5,
   "angolo": true
  },
  ".diag-console": {
@@ -512,6 +512,15 @@
   "corto": 288,
   "angolo": true
  },
+ ".focus-cuore.st-ritardo": {
+  "angolo": true
+ },
+ ".fs-barra": {
+  "corto": 5
+ },
+ ".fs-barra i": {
+  "corto": 5
+ },
  ".gio-so-corpo": {
   "corto": 35.5,
   "angolo": true
@@ -542,7 +551,7 @@
   "angolo": true
  },
  ".lista-azione": {
-  "corto": 26,
+  "corto": 25.8,
   "angolo": true
  },
  ".lista-azione.piena": {
@@ -653,9 +662,6 @@
  ".rit-ico": {
   "corto": 28
  },
- ".rit-ora": {
-  "corto": 22.5
- },
  ".scad-badge": {
   "corto": 20.5
  },
@@ -698,6 +704,17 @@
  },
  ".sheet-chiudi": {
   "corto": 34
+ },
+ ".sm-nota": {
+  "corto": 108,
+  "angolo": true
+ },
+ ".sm-porta": {
+  "corto": 56,
+  "angolo": true
+ },
+ ".sm-porta-si": {
+  "angolo": true
  },
  ".sotto-seg": {
   "angolo": true
