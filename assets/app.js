@@ -695,7 +695,7 @@
 
   /* Come si torna da dove si è entrati. Cinque pannelli si aprono da dentro
      un altro — «Le tue aree», «Sonno e pasti», «Backup», «Come si usa»,
-     «Cosa sta succedendo» tutti da «Impostazioni» — e finora non c'era modo
+     «Registro tecnico» tutti da «Impostazioni» — e finora non c'era modo
      di tornare indietro: chiudevi e riaprivi. Chi apre un pannello dice come
      si riapre lui, e da lì in poi il ritorno è automatico. */
   var pilaSheet = [];
@@ -1692,7 +1692,7 @@
   function apriDiagnostica() {
     var st = statoSalvataggioSpiegato();
     var nProblemi = window.LMLog ? LMLog.righe().filter(function (x) { return x.liv !== 'info'; }).length : 0;
-    apriSheet('Cosa sta succedendo',
+    apriSheet('Registro tecnico',
       '<div class="diag-stato ' + st.cls + '"><b>' + esc(st.tit) + '</b><span>' + esc(st.txt.trim()) + '</span></div>' +
       '<div class="diag-barra">' +
       '<button class="btn btn-mini btn-primario" id="diag-copia">' + ICO('copy', 15) + ' Copia tutto</button>' +
