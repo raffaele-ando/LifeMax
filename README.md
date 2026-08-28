@@ -29,7 +29,7 @@ Il "loop quotidiano" è implementato per intero e persistente:
 **☀️ Mattina (60″)** max 3 azioni + intenzione «Se… allora…» → **🎯 Focus** una sola
 azione a schermo, timer 10/25/50′ che registra i minuti da solo → **⚡ Check-in (10″)**
 energia/focus/umore in 3 tap → **🌙 Sera (2′)** voto alle aree + vittoria + blocco →
-**🗓️ Settimana** review strutturata → **👍 Cosa funziona** quello che hai capito su di
+**🗓️ Settimana** review strutturata → **👍 Scoperte** quello che hai capito su di
 te, e gli **esperimenti** N-of-1 quando vuoi esserne sicuro.
 
 In ogni momento: **cattura istantanea** con `C`, `⌘K` o il bottone `＋` — un campo,
@@ -52,7 +52,7 @@ pulsante **Passo** porta in *Oggi* solo il prossimo passo non ancora fatto — u
 volta invece di tutto insieme. Le **abitudini
 ricorrenti** (Rituali → Abitudini) sono separate dalle azioni del giorno, con scelta
 dei giorni e serie di costanza. Le **aree** sono personalizzabili (rinomina, crea,
-rimuovi) da *Impostazioni → Gestisci le aree*. Il **check-in** usa una scala ancorata
+rimuovi) da *Impostazioni → Aree*. Il **check-in** usa una scala ancorata
 con descrittori e il riferimento «il tuo solito» (media recente), così il punteggio
 è meno ambiguo. Una **guida in-app** (*Impostazioni → Come si usa*) riassume il tutto.
 
@@ -108,18 +108,22 @@ saltato è un dato, non un buco — nella *Giornata* resta al suo posto, sbiadit
 barrato. Le cose scritte dopo nascono già fatte, con i loro XP, e restano
 marcate come recuperate.
 
-**👍 Cosa funziona per me** (*Andamento → Cosa funziona*) è il registro di quello che
-hai capito su di te, diviso in due mucchi: **mi funziona** e **non mi funziona**. Una
-riga di testo, e accanto **come fai a saperlo** — *notato una volta*, *lo noto ogni
-volta*, *misurato* — perché senza quell'etichetta scrivere «mi funziona» dopo averlo
-visto una volta sembra un'affermazione più grossa di quella che è, e chi tiene alla
-precisione preferisce non scrivere niente. Il tasto a sinistra della riga la **gira**
-nell'altro mucchio: una cosa che funzionava smette di funzionare, e quello va registrato
-senza cancellare e riscrivere. Le due review sanno **tenere** la riga che hai appena
-scritto (la sera con «notato una volta», la settimana con «lo noto ogni volta»), e nella
-stessa pagina, sotto, ci sono gli **🧪 esperimenti**: si parte da una riga col modulo già
-compilato, e quando l'esperimento dà un verdetto quella riga si aggiorna da sé in
-«misurato». È il ponte che mancava fra un'intuizione e quattro settimane di misure.
+**👍 Scoperte** (*Andamento → Scoperte*) è il registro di quello che
+hai capito su di te, diviso in due mucchi: **Funziona** e **Non funziona**. Una riga di
+testo, e accanto l'**evidenza** — *notato una volta*, *lo noto ogni volta*, *misurato* —
+perché senza quell'etichetta scrivere «funziona» dopo averlo visto una volta sembra
+un'affermazione più grossa di quella che è, e chi tiene alla precisione preferisce non
+scrivere niente. Il tasto a sinistra della riga la **gira** nell'altro mucchio: una cosa
+che funzionava smette di funzionare, e quello va registrato senza cancellare e
+riscrivere. Le due review sanno **salvare** la riga che hai appena scritto (la sera con
+«notato una volta», la settimana con «lo noto ogni volta»).
+
+La pagina ha **due sezioni**, non una colonna lunga: *Registro* e **🧪 Esperimenti**.
+Erano una sopra l'altra, e con quaranta righe nel registro per arrivare agli esperimenti
+bisognava scorrere davanti a tutto quello che si sa già — la strada si allungava proprio
+per chi usa il registro di più. Un esperimento si avvia da una riga col modulo già
+compilato, e quando dà un verdetto quella riga si aggiorna da sé in «misurato»: è il
+ponte fra un'intuizione e quattro settimane di misure.
 
 ## Più approcci UX, stessi dati (di proposito)
 
@@ -133,6 +137,20 @@ Tre modalità intercambiabili — la varietà è incanalata nel sistema invece c
 
 Due **skin** (🌿 Quiete a bassa stimolazione, 🕹️ Arcade ad alta salienza) e modalità
 chiaro/scuro/auto. Desktop-first con sidebar; sotto 860px layout mobile con tab bar.
+Le **impostazioni** stanno in fondo alla colonna su desktop e in alto a destra su
+telefono, con lo stesso ragionamento: una porta che si apre una volta al mese non può
+occupare un quarto della barra che il pollice raggiunge senza spostare la mano.
+
+Gli angoli sono **supercerchi di Apple** — tre Bézier per angolo, non un arco di
+cerchio e non una superellisse — e la forma la fa un `clip-path` generato
+(`segni/squircle.mjs`), perché `corner-shape` non c'è ancora. Il ritaglio toglie
+**soltanto i quattro morsi d'angolo**: fuori dal riquadro del bordo un elemento
+disegna l'ombra e il contorno di messa a fuoco, e un ritaglio pieno li portava via
+tutti e due — l'app non aveva più nemmeno un'ombra in centoventi punti che ne
+dichiaravano una, e il fuoco da tastiera si spostava senza lasciare traccia. Il
+dettaglio sta in `segni/LEGGIMI.md`; le prove che lo tengono in piedi sono
+`prove/squircle.js` (i pixel), `prove/bordi.js` (210 schermate) e `prove/stati.js`
+(l'app mentre reagisce).
 
 ## Perché è fatto così (sintesi — la vista Scienza cita tutto)
 

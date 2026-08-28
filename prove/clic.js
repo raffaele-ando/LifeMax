@@ -146,12 +146,12 @@ const SCENE_PREMUTO=[
   ['Andamento','plancia',null,null],
   ['Diario','plancia',1,null],
   ['Esperimenti','esperimenti',null,null],
-  ['Impostazioni','plancia',null,()=>{const b=[...document.querySelectorAll('#vista button')].find(x=>/Impostazioni/.test(x.textContent));if(b)b.click();}],
+  ['Impostazioni','plancia',null,()=>{const b=document.getElementById('fondo-impostazioni')||document.querySelector('[data-imp]');if(b)b.click();}],
   /* i due clic uno dopo l'altro, senza aspettare: il pannello si scrive con
      innerHTML dentro la stessa chiamata, quindi il secondo pulsante c'è già.
      Con un setTimeout la prova andava avanti prima che la schermata si
      aprisse, e diceva «tutto a posto» su una schermata mai vista. */
-  ['Come ti avviso','plancia',null,()=>{const b=[...document.querySelectorAll('#vista button')].find(x=>/Impostazioni/.test(x.textContent));if(b)b.click();
+  ['Come ti avviso','plancia',null,()=>{const b=document.getElementById('fondo-impostazioni')||document.querySelector('[data-imp]');if(b)b.click();
     const c=document.getElementById('imp-prom-come');if(c)c.click();}],
   ['Scheda di un’attività','inbox',1,()=>{const r=document.querySelector('[data-bkapri]');if(r)r.click();}],
   ['Scheda di un’abitudine','inbox',2,()=>{const r=document.querySelector('[data-abdett]');if(r)r.click();}]
@@ -177,6 +177,74 @@ const SCENE_PREMUTO=[
   [...senza.entries()].sort((a,b)=>b[1].size-a[1].size).slice(0,20)
     .forEach(([c,d])=>console.log('  - .'+c+'  ('+[...d].join(', ').slice(0,60)+')'));
   ok('ogni comando ha uno stato «premuto»', senza.size===0, senza.size+' famiglie mute');
+}
+
+/* UNA SCELTA TOCCATA SI VEDE SUBITO.
+   Un segmento dice due cose insieme: fa una cosa, e dice quale delle sue scelte
+   è quella in vigore. La seconda si scriveva a mano, in ogni punto dell'app che
+   disegna un segmento, e dove non era scritta non succedeva: su «Tema» (Auto ·
+   Chiaro · Scuro) e su «Stile» il sito cambiava davvero e la pastiglia accesa
+   restava su quella di prima. Toccavi «Scuro», il sito diventava scuro, e il
+   comando continuava a dirti che eri su «Chiaro» — chi guarda non pensa «manca
+   un aggiornamento», pensa di aver toccato male, e tocca di nuovo.
+   Qui si prova ogni segmento di ogni pannello: si toccano tutte le sue voci una
+   per una e si pretende che l'accesa sia quella toccata. */
+{
+  const ps = await b.newPage({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+  await ps.goto('http://localhost:8561/index.html'); await ps.waitForTimeout(400);
+  await ps.evaluate(() => { localStorage.clear(); LM.seedDemo(); });
+  await ps.reload(); await ps.waitForTimeout(700);
+  const mute = [];
+  const provaSegmenti = async (dove) => {
+    const file = await ps.evaluate(() => {
+      const out = [];
+      document.querySelectorAll('.segmenti').forEach((f, i) => {
+        if (f.closest('[hidden]')) return;
+        const v = [...f.children].filter((c) => /^(BUTTON|A)$/.test(c.tagName));
+        if (v.length > 1) out.push({ i: i, quante: v.length, id: f.id || '' });
+      });
+      return out;
+    });
+    for (const f of file) {
+      for (let k = 0; k < f.quante; k++) {
+        const esito = await ps.evaluate((arg) => {
+          const f2 = document.querySelectorAll('.segmenti')[arg.i];
+          if (!f2) return null;
+          const v = [...f2.children].filter((c) => /^(BUTTON|A)$/.test(c.tagName));
+          const b2 = v[arg.k];
+          if (!b2 || b2.disabled) return null;
+          const eti = (b2.textContent || '').trim().slice(0, 20);
+          b2.click();
+          /* subito, senza aspettare: la pastiglia accesa deve muoversi nello
+             stesso momento in cui si tocca */
+          const f3 = document.querySelectorAll('.segmenti')[arg.i];
+          if (!f3) return { eti: eti, ok: true };   /* il pannello si è rifatto */
+          const v3 = [...f3.children].filter((c) => /^(BUTTON|A)$/.test(c.tagName));
+          const acceso = v3.findIndex((c) => c.classList.contains('attivo'));
+          return { eti: eti, ok: acceso === arg.k, acceso: acceso, id: f3.id || '' };
+        }, { i: f.i, k: k });
+        await ps.waitForTimeout(140);
+        if (esito && !esito.ok) mute.push(dove + ' · ' + (esito.id || 'segmento ' + f.i) +
+          ' → «' + esito.eti + '» toccata, accesa la ' + esito.acceso);
+      }
+    }
+  };
+  await provaSegmenti('Andamento');
+  await ps.evaluate(() => { location.hash = '#/esperimenti'; }); await ps.waitForTimeout(700);
+  await provaSegmenti('Scoperte');
+  await ps.evaluate(() => { location.hash = '#/inbox'; }); await ps.waitForTimeout(700);
+  await provaSegmenti('Attività');
+  await ps.evaluate(() => {
+    const g = document.getElementById('fondo-impostazioni') || document.querySelector('[data-imp]');
+    if (g) g.click();
+  });
+  await ps.waitForTimeout(700);
+  await provaSegmenti('Impostazioni');
+  await ps.close();
+  console.log('\n=== SCELTE CHE NON SI ACCENDONO QUANDO LE TOCCHI ===');
+  if (!mute.length) console.log('  nessuna');
+  mute.slice(0, 20).forEach((m) => console.log('  - ' + m));
+  ok('la pastiglia accesa si sposta su quella che hai toccato', mute.length === 0, mute.length + ' casi');
 }
 
 console.log('\n=== AREE DI TOCCO CHE SBORDANO ===');

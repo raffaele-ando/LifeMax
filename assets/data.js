@@ -2000,7 +2000,7 @@ var LM = (function () {
     if (!l.testo) return null;
     s.lezioni.unshift(l);
     if (!opts.interna) {
-      registraLezione(l, (l.verso === 'si' ? 'Ti funziona' : 'Non ti funziona') + ': «' + l.testo + '»');
+      registraLezione(l, 'Scoperta · ' + (l.verso === 'si' ? 'funziona' : 'non funziona') + ': «' + l.testo + '»');
     }
     save();
     return l;
@@ -2023,10 +2023,10 @@ var LM = (function () {
        riga in cui è cambiata l'area sarebbe una riga di diario che mente */
     if (!campi.interna) {
       if (prima.verso !== l.verso) {
-        registraLezione(l, 'Cambiato verso: «' + l.testo + '» adesso ' +
-          (l.verso === 'si' ? 'ti funziona' : 'non ti funziona'));
+        registraLezione(l, 'Spostata: «' + l.testo + '» adesso è fra quelle che ' +
+          (l.verso === 'si' ? 'funzionano' : 'non funzionano'));
       } else if (prima.testo !== l.testo) {
-        registraLezione(l, 'Riscritta una cosa che hai imparato → «' + l.testo + '»');
+        registraLezione(l, 'Riscritta una scoperta → «' + l.testo + '»');
       } else if (prima.forza !== l.forza) {
         registraLezione(l, '«' + l.testo + '» · ' + forzaLezione(l.forza).eti);
       } else if (prima.areaId !== l.areaId) {
@@ -2047,7 +2047,7 @@ var LM = (function () {
     if (i < 0) return;
     var l = s.lezioni[i];
     s.lezioni.splice(i, 1);
-    registraLezione(l, 'Tolta dalle cose che hai imparato: «' + l.testo + '»');
+    registraLezione(l, 'Tolta dalle Scoperte: «' + l.testo + '»');
     save();
   }
   /* ordinate per quanto sono solide, poi per quanto sono recenti: in cima

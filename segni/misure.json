@@ -411,24 +411,31 @@
   "angolo": true
  },
  ".agg-riga": {
-  "corto": 47,
+  "corto": 46.6,
   "angolo": true
+ },
+ ".area-riga .icona-area": {
+  "corto": 28
  },
  ".att-badge": {
   "corto": 17
  },
  ".att-filtro": {
-  "corto": 34,
+  "corto": 33.7,
   "angolo": true
  },
  ".aurora i": {
   "corto": 128
  },
+ ".backup-riga": {
+  "corto": 63.8,
+  "angolo": true
+ },
  ".banda-x": {
   "corto": 28
  },
  ".btn": {
-  "corto": 34,
+  "corto": 33.7,
   "angolo": true
  },
  ".btn-ghost": {
@@ -446,8 +453,12 @@
  ".btn-tinta": {
   "angolo": true
  },
+ ".btn-tu": {
+  "corto": 40,
+  "angolo": true
+ },
  ".card": {
-  "corto": 138.4,
+  "corto": 79.5,
   "angolo": true
  },
  ".card-area .testata .icona-area": {
@@ -461,15 +472,28 @@
   "corto": 30,
   "angolo": true
  },
+ ".diag-console": {
+  "corto": 93.8,
+  "angolo": true
+ },
+ ".diag-riga": {
+  "corto": 27.3
+ },
+ ".diag-stato": {
+  "corto": 86.3,
+  "angolo": true
+ },
  ".diario-annulla": {
-  "corto": 24.5,
+  "corto": 24.3,
   "angolo": true
  },
  ".diario-ico": {
-  "corto": 27
+  "corto": 26.8
  },
- ".exp-verdetto": {
-  "corto": 46.3,
+ ".evidenza": {
+  "corto": 18
+ },
+ ".evidenza-euristica": {
   "angolo": true
  },
  ".focus-cuore": {
@@ -488,16 +512,25 @@
   "corto": 57.8,
   "angolo": true
  },
+ ".guida-ico": {
+  "corto": 32
+ },
  ".icona-btn": {
   "corto": 34,
   "angolo": true
  },
+ ".icona-btn.area-on.on": {
+  "angolo": true
+ },
+ ".icona-btn.on": {
+  "angolo": true
+ },
  ".lista": {
-  "corto": 58,
+  "corto": 54,
   "angolo": true
  },
  ".lista-azione": {
-  "corto": 26,
+  "corto": 25.8,
   "angolo": true
  },
  ".lista-azione.piena": {
@@ -544,24 +577,19 @@
  ".pannello-cattura": {
   "corto": 121.3
  },
- ".pannello-cattura input[type=\"text\"]": {
+ ".prom-int": {
+  "corto": 26,
   "angolo": true
  },
- ".pannello-cattura input[type=\"text\"]:focus": {
+ ".prom-int[aria-checked=\"true\"]": {
   "angolo": true
- },
- ".punto-vivo": {
-  "corto": 8
  },
  ".q-chip": {
   "corto": 34,
   "angolo": true
  },
- ".q-chip.on": {
-  "angolo": true
- },
  ".riga-azione": {
-  "corto": 45,
+  "corto": 50,
   "angolo": true
  },
  ".riga-azione .spunta": {
@@ -578,7 +606,7 @@
   "angolo": true
  },
  ".rit-gruppo": {
-  "corto": 166,
+  "corto": 56,
   "angolo": true
  },
  ".rit-ico": {
@@ -586,6 +614,16 @@
  },
  ".rit-ora": {
   "corto": 22.5
+ },
+ ".scala button": {
+  "corto": 45.2,
+  "angolo": true
+ },
+ ".scienza-card .uso": {
+  "corto": 57
+ },
+ ".seg-n": {
+  "corto": 12.6
  },
  ".segmenti": {
   "corto": 34,
@@ -607,11 +645,11 @@
   "corto": 34
  },
  ".sel-area-azione": {
-  "corto": 19.8,
+  "corto": 19.6,
   "angolo": true
  },
  ".sheet": {
-  "corto": 320,
+  "corto": 233.5,
   "angolo": true
  },
  ".sheet-chiudi": {
@@ -669,6 +707,9 @@
   "corto": 26,
   "angolo": true
  },
+ ".tl-dur": {
+  "corto": 24
+ },
  ".tl-ed-badge": {
   "corto": 18.5
  },
@@ -684,23 +725,14 @@
  ".toast-azione": {
   "corto": 32
  },
- ":focus-visible": {
-  "corto": 50.3
- },
  ":root[data-mode=\"dark\"] .toast": {
   "angolo": true
  },
  "button": {
   "angolo": true
  },
- "input[type=\"text\"]": {
-  "angolo": true
- },
- "input[type=\"text\"]:focus": {
-  "angolo": true
- },
  "kbd": {
-  "corto": 22.5,
+  "corto": 18,
   "angolo": true
  },
  "select": {

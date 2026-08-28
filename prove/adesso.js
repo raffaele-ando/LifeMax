@@ -143,7 +143,10 @@ const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  
     const s = await scheda(p);
     ok('quella senza ora dice QUANDO VUOI',
       s.stato === 'libera' && /quando vuoi/i.test(s.parola || ''), s.parola);
-    ok('e spiega perché: nessun orario', /nessun orario/.test(s.dett || ''), s.dett);
+    /* e non ripete la stessa cosa a fianco. La fascia diceva «QUANDO VUOI ·
+       nessun orario»: due modi di dire che un orario non c'è, uno accanto
+       all'altro nella stessa riga. */
+    ok('e non lo ripete nel dettaglio', !(s.dett || '').trim(), s.dett);
     await ctx.close();
   }
   {

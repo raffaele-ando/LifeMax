@@ -45,10 +45,10 @@ const SCENE = [
   { n: 'Andamento · diario', vai: 'plancia', tab: 1 },
   { n: 'Esperimenti', vai: 'esperimenti' },
   { n: 'Scheda di un’attività', vai: 'inbox', tab: 1, poi: p => p.evaluate(() => { const r = document.querySelector('[data-bkapri]'); if (r) r.click(); }) },
-  { n: 'Impostazioni', vai: 'plancia', poi: p => p.evaluate(() => { const b = [...document.querySelectorAll('#vista button')].find(x => /Impostazioni/.test(x.textContent)); if (b) b.click(); }) },
+  { n: 'Impostazioni', vai: 'plancia', poi: p => p.evaluate(() => { const b = (document.getElementById('fondo-impostazioni') || document.querySelector('[data-imp]')); if (b) b.click(); }) },
   { n: 'Cattura rapida', vai: 'oggi', poi: p => p.evaluate(() => { const b = document.querySelector('.tabbar [data-catt]'); if (b) b.click(); }) },
   { n: 'Come ti avviso', vai: 'plancia', poi: async p => {
-      await p.evaluate(() => { const b = [...document.querySelectorAll('#vista button')].find(x => /Impostazioni/.test(x.textContent)); if (b) b.click(); });
+      await p.evaluate(() => { const b = (document.getElementById('fondo-impostazioni') || document.querySelector('[data-imp]')); if (b) b.click(); });
       await p.waitForTimeout(650);
       await p.evaluate(() => { const b = document.getElementById('imp-prom-come'); if (b) b.click(); });
     } }

@@ -178,6 +178,78 @@ export function poligono(r4, tolleranza = 0.1) {
   return 'polygon(' + est.join(',') + ')';
 }
 
+/* ============================================================
+   SOLO I QUATTRO MORSI — il ritaglio che non porta via nient'altro
+   ============================================================
+
+   Il problema, misurato riquadro per riquadro. Un `clip-path` taglia TUTTO il
+   disegno dell'elemento, e fuori dal riquadro del bordo l'elemento disegna
+   ancora due cose che contano:
+
+     · `box-shadow`, l'ombra. L'app ne dichiara tre livelli (--e1, --e2, --e3) e
+       li usa in centoventi punti: la scheda che si stacca dal fondo, il
+       pulsante che si alza quando ci passi sopra, la pastiglia accesa dentro un
+       segmento. Con il ritaglio pieno NON SE NE VEDEVA NESSUNA. Tutta l'app era
+       piatta, e su «Chiaro · Auto · Scuro» l'unico segno che dicesse quale
+       fosse la scelta in vigore era proprio quell'ombra: si toccava «Scuro», il
+       sito diventava scuro, e il comando sembrava non aver ricevuto il tocco.
+     · `outline`, il contorno di messa a fuoco. Chi va a tastiera vedeva
+       spostarsi il fuoco senza nessun segno di dove fosse arrivato.
+
+   Nessuno dei due si può ridisegnare dentro l'elemento: uno pseudo-elemento è
+   un discendente, e il ritaglio del padre taglia anche lui (provato: un
+   `::before` a `inset: -10px` sotto un padre ritagliato non esce di un pixel).
+   `filter: drop-shadow()` nemmeno: il filtro si applica PRIMA del ritaglio,
+   quindi l'ombra nasce e viene tagliata via nello stesso passaggio.
+
+   Il ritaglio però non ha bisogno di togliere tutto quello che sta fuori: gli
+   serve togliere QUATTRO MORSI, uno per angolo. Quindi il tracciato diventa un
+   rettangolone larghissimo (200px oltre l'elemento da ogni parte, più di
+   qualunque ombra dichiarata) meno le quattro zone d'angolo, ognuna chiusa fra
+   i due lati e la curva. Riempimento `evenodd`: dentro il rettangolone e dentro
+   un morso fa due, cioè fuori.
+   Il fondo e il bordo restano ritagliati come prima — un `background` non esce
+   dal riquadro del bordo per conto suo — e l'ombra e il contorno, che stanno
+   fuori, non li tocca più nessuno.
+
+   I quattro morsi non si sovrappongono mai: ogni coordinata è limitata a metà
+   del lato (`min(px, 50%)`), quindi al massimo si toccano sulla mezzeria. Se si
+   sovrapponessero, l'evenodd li annullerebbe a vicenda e l'angolo tornerebbe
+   quadrato.
+
+   L'ombra, sì, tiene gli spigoli vivi: `border-radius` è zero, quindi la sua
+   sagoma è un rettangolo. Sotto una sfocatura da dieci pixel la differenza fra
+   un angolo quadrato e un supercerchio non esiste — e il confronto vero non è
+   con un'ombra perfetta, è con nessuna ombra. */
+const FUORI = 200;
+const F0 = -FUORI + 'px';
+const F1 = 'calc(100% + ' + FUORI + 'px)';
+
+export function poligonoAngoli(r4, tolleranza = 0.1) {
+  const [tl, tr, br, bl] = r4;
+  const perno = F0 + ' ' + F0;
+  /* il rettangolone, in senso orario dal perno */
+  const p = [perno, F1 + ' ' + F0, F1 + ' ' + F1, F0 + ' ' + F1, perno];
+  /* un morso: il vertice, il lato, la curva, l'altro lato, e ritorno al perno.
+     Il ponte perno→vertice si percorre due volte in versi opposti, quindi ha
+     area zero e non si vede. */
+  const morso = (raggio, vertice, mappa) => {
+    if (!(raggio > 0)) return;
+    const L = puntiAngolo(raggio, tolleranza);
+    const lung = INIZIO * raggio;
+    p.push(vertice);
+    L.forEach(([x, y]) => p.push(mappa(x, y, lung)));
+    p.push(vertice, perno);
+  };
+  morso(tl, '0 0', (x, y, L) => vicino(x, L) + ' ' + vicino(y, L));
+  morso(tr, '100% 0', (x, y, L) => lontano(x, L) + ' ' + vicino(y, L));
+  morso(br, '100% 100%', (x, y, L) => lontano(y, L) + ' ' + lontano(x, L));
+  morso(bl, '0 100%', (x, y, L) => vicino(x, L) + ' ' + lontano(y, L));
+  /* l'ultimo perno è di troppo: il poligono si chiude da sé */
+  if (p[p.length - 1] === perno) p.pop();
+  return 'polygon(evenodd,' + p.filter((x, i) => i === 0 || x !== p[i - 1]).join(',') + ')';
+}
+
 /* L'ANELLO, e perché il contorno esterno è un RETTANGOLO e non la curva.
    L'anello sta su uno pseudo-elemento dentro l'elemento ritagliato, quindi il
    ritaglio del padre lo taglia già lui. Dandogli anche la curva come contorno

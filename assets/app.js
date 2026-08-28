@@ -195,6 +195,26 @@
       b.setAttribute('aria-pressed', b.classList.contains('attivo') ? 'true' : 'false');
     });
   }
+  /* LA PASTIGLIA ACCESA SI SPOSTA DA SÉ.
+     Un segmento dice due cose insieme: fa una cosa, e dice quale delle sue
+     scelte è quella in vigore. La seconda si scriveva a mano, ogni volta, in
+     ogni punto dell'app che disegna un segmento — e dove non era scritta non
+     succedeva. Su «Tema» (Auto · Chiaro · Scuro) e su «Aspetto» il colore del
+     sito cambiava davvero e la pastiglia accesa restava su quella di prima:
+     hai toccato «Scuro», il sito diventa scuro, e il comando continua a dirti
+     che sei su «Chiaro». Chi guarda non pensa «manca un aggiornamento»: pensa
+     di aver toccato male, e tocca di nuovo.
+     Toccare una scelta È sceglierla, dappertutto e senza eccezioni, quindi la
+     regola sta in un posto solo. In fase di CATTURA, così chi ridisegna la
+     schermata subito dopo (la maggior parte dei casi) vince comunque: l'ultima
+     parola resta a chi conosce lo stato vero. */
+  document.addEventListener('click', function (ev) {
+    var b = ev.target.closest && ev.target.closest('.segmenti > button, .segmenti > a');
+    if (!b || b.disabled) return;
+    var fila = b.parentElement;
+    [].slice.call(fila.children).forEach(function (o) { o.classList.toggle('attivo', o === b); });
+    marcaSegmenti(fila);
+  }, true);
   if (window.MutationObserver) {
     var osservatore = new MutationObserver(function (mut) {
       var tocca = false;
@@ -847,7 +867,7 @@
        novantacinque volte su cento. Il nome della pagina è la domanda; il
        segno è il verdetto, e la beuta resta il segno degli esperimenti là
        dentro. */
-    { id: 'esperimenti', nome: 'Cosa funziona', icona: 'funziona', gruppo: 'secondaria', livello: 'extra' },
+    { id: 'esperimenti', nome: 'Scoperte', icona: 'funziona', gruppo: 'secondaria', livello: 'extra' },
     { id: 'scienza',     nome: 'Perché funziona', breve: 'Scienza', icona: 'atom', gruppo: 'secondaria', livello: 'extra' },
     /* stanza a parte: dieci vestiti per gli stessi elementi, da confrontare
        per scegliere la base grafica di tutto il sito */
@@ -872,7 +892,7 @@
       { id: 'inbox', eti: 'Attività' }
     ] },
     { id: 'plancia', nome: 'Andamento', icona: 'dashboard', viste: [
-      { id: 'plancia', eti: 'Panoramica' }, { id: 'esperimenti', eti: 'Cosa funziona' }
+      { id: 'plancia', eti: 'Panoramica' }, { id: 'esperimenti', eti: 'Scoperte' }
     ],
       /* Queste due appartengono alla porta ma NON stanno fra le linguette:
          si leggono una volta e poi mai più, e una linguetta che non si tocca
@@ -930,11 +950,14 @@
     /* footer sidebar: account + impostazioni */
     if (scriviSe(document.getElementById('sidebar-fondo'), footerSidebar())) wireFooterSidebar();
 
-    /* tab bar mobile. Con le tre porte i pulsanti sono TRE: «Altro» era una
-       quarta destinazione che non è una destinazione — un contenitore di cose
-       diverse fra loro (pagine, account, impostazioni) che si apre per scoprire
-       cosa c'è dentro. Le impostazioni ora stanno dove stanno sempre su
-       telefono, nell'angolo in alto della schermata, e non costano una porta.
+    /* tab bar mobile. Con le tre porte i pulsanti sono TRE, e sono tre
+       destinazioni: qui sta solo quello che si tocca ogni giorno. «Altro» era
+       una quarta voce che non è una destinazione — un contenitore di cose
+       diverse fra loro che si apre per scoprire cosa c'è dentro — e le
+       impostazioni sono state per un po' al suo posto, che è anche peggio: la
+       fascia che il pollice raggiunge senza spostare la mano spesa per una
+       schermata che si apre una volta al mese. Adesso stanno in alto a destra,
+       fuori dalla strada e sempre nello stesso angolo (vedi `sottoNav`).
        Senza le tre porte torna la barra di prima: quattro pagine + «Altro». */
     var tab = document.getElementById('nav-tab');
     var primNav = TAB_MOBILE.map(vistaById);
@@ -948,15 +971,7 @@
         return '<button data-vai="' + v.id + '" class="' + (corrente === v.id ? 'attivo' : '') + '">' +
           '<span class="tab-ico">' + ICO(v.icona, 18) + badgeInbox(v, s) + '</span>' + v.nome + '</button>';
       }).join('')) +
-      /* LA PORTA DELLE IMPOSTAZIONI, su telefono. Prima era un pulsante nella
-         testa di «Panoramica»: l'unica porta di tutta l'app stava nell'angolo
-         di UNA schermata, e per arrivarci bisognava sapere che era là. Adesso
-         sta dove stanno le altre porte, sempre nello stesso posto, con
-         l'ingranaggio che è il segno che tutti cercano. Con «Tutte le pagine»
-         resta «Altro», che è un menu di pagine e le impostazioni ce le ha
-         dentro. */
-      (tre
-        ? '<button data-imp="1" class="' + (inSecondaria ? 'attivo' : '') + '"><span class="tab-ico">' + ICO('ingranaggio', 18) + '</span>Impostazioni</button>'
+      (tre ? ''
         : '<button data-menu="1" class="' + (inSecondaria ? 'attivo' : '') + '"><span class="tab-ico">' + ICO('altro', 18) + '</span>Altro</button>') +
       /* La cattura sta DENTRO la barra, non su un pulsante che galleggia sopra
          la pagina. Quello tondo, fisso in basso a destra, stava sopra un
@@ -973,8 +988,6 @@
       });
       var bMenu = tab.querySelector('[data-menu]');
       if (bMenu) bMenu.addEventListener('click', apriMenuAltro);
-      var bImp = tab.querySelector('[data-imp]');
-      if (bImp) bImp.addEventListener('click', apriImpostazioni);
       var bCatt = tab.querySelector('[data-catt]');
       if (bCatt) bCatt.addEventListener('click', apriCattura);
     }
@@ -1112,7 +1125,7 @@
     return { val: 'spenti', porta: true,
       nota: P.configurato()
         ? 'Servono per i momenti della giornata e per le abitudini con un’ora.'
-        : 'Accendendoli ti avviso quando finisce un timer. Per i promemoria a orario serve il server, che non è ancora collegato.',
+        : 'Da accesi arriva l’avviso di fine timer. Quelli a orario hanno bisogno del server, che non è ancora collegato.',
       azione: '<button class="btn btn-mini btn-tinta" id="imp-prom-on">' + ICO('campana', 15) + ' Accendi i promemoria</button>' };
   }
 
@@ -1134,11 +1147,11 @@
 
     return '<div class="sc">' +
       /* --- TU: chi sei e dove stanno i dati --- */
-      etichetta('Tu', 'user') +
+      etichetta('Account', 'user') +
       htmlAccount() +
 
       /* --- LE TUE COSE: quello che l'app sa di te --- */
-      etichetta('Le tue cose', 'aree') +
+      etichetta('Il tuo profilo', 'aree') +
       '<div class="lista">' +
       rigaPorta('imp-aree', 'aree', 'Aree', nAree + ' attive') +
       rigaPorta('imp-ritmo', 'ritmo', 'Sonno e pasti', valRitmo) +
@@ -1153,16 +1166,16 @@
       /* --- COME SI VEDE: tre scelte che valgono subito, tutte insieme.
              Prima «Tema» e «Aspetto» erano due sezioni diverse per la stessa
              domanda, e «Navigazione» stava in mezzo ai backup. --- */
-      etichetta('Come si vede', 'palette') +
+      etichetta('Aspetto', 'palette') +
       '<div class="lista">' +
       rigaScelta('Tema', '<span class="segmenti imp-seg" id="seg-modo">' +
         segM('auto', 'automatico', 'Auto') + segM('light', 'sun', 'Chiaro') + segM('dark', 'moon', 'Scuro') + '</span>') +
-      rigaScelta('Aspetto', '<span class="segmenti imp-seg" id="seg-skin">' +
+      rigaScelta('Stile', '<span class="segmenti imp-seg" id="seg-skin">' +
         segS('quiete', 'Aurora') + segS('arcade', 'Arcade') + '</span>') +
       rigaScelta('Barra di navigazione', '<span class="segmenti imp-seg" id="seg-nav">' +
         segN('tre', 'Tre porte') + segN('tutte', 'Tutte le pagine') + '</span>') +
       '</div>' +
-      '<p class="lista-nota">Aurora è più sobrio, Arcade più acceso: cambia l’aspetto, non i dati. La barra a <b>tre porte</b> tiene le altre schermate dentro, in una riga di linguette sotto al titolo; con <b>tutte le pagine</b> torna la barra lunga. Non sparisce niente in nessuno dei due casi: cambia da dove ci si arriva.</p>' +
+      '<p class="lista-nota">Aurora è più sobrio, Arcade più acceso. Con <b>tre porte</b> le altre schermate stanno in una riga di linguette sotto al titolo; con <b>tutte le pagine</b> torna la barra lunga. In entrambi i casi ci sono tutte: cambia solo da dove ci si arriva.</p>' +
 
       /* --- I TUOI DATI: due cose che si fanno e una porta --- */
       etichetta('I tuoi dati', 'dati') +
@@ -1172,17 +1185,17 @@
       rigaPorta('imp-backup', 'archivio', 'Backup e ripristino', nBackup ? String(nBackup) : 'nessuno') +
       '</div>' +
       '<input type="file" id="imp-file" accept="application/json,.json" hidden>' +
-      '<p class="lista-nota">Ogni operazione che sostituisce i dati crea prima un backup ripristinabile.</p>' +
+      '<p class="lista-nota">Prima di sostituire i dati l’app fa sempre un backup, e da lì si torna indietro.</p>' +
 
       /* --- CAPIRE L'APP: le pagine che si leggono, non si usano --- */
-      etichetta('Capire l’app', 'aiuto') +
+      etichetta('Guida', 'aiuto') +
       '<div class="lista">' +
       rigaPorta('imp-guida', 'aiuto', 'Come si usa') +
       rigaPorta('imp-scienza', 'atom', 'Perché funziona') +
-      rigaPorta('imp-diag', 'terminale', 'Cosa sta succedendo') +
+      rigaPorta('imp-diag', 'terminale', 'Registro tecnico') +
       rigaPorta('imp-lab', 'palette', 'Design lab') +
       '</div>' +
-      '<p class="lista-nota">«Perché funziona» racconta su quali studi è appoggiata ogni scelta dell’app. «Cosa sta succedendo» mostra se i dati sono davvero salvati, da copiare e inviare se qualcosa non torna.</p>' +
+      '<p class="lista-nota">Il registro tecnico mostra se i dati sono davvero salvati: si copia e si manda quando qualcosa non torna.</p>' +
 
       /* --- RIPARTIRE: staccato, e in fondo. Quello che cancella non può
              stare in fila con quello che salva. --- */
@@ -1191,7 +1204,7 @@
       rigaFa('imp-demo', 'sparkles', 'Carica dati di esempio') +
       rigaFa('imp-azzera', 'trash', 'Azzera tutto', 'sc-pericolo') +
       '</div>' +
-      '<p class="lista-nota">L’azzeramento crea comunque un backup: potrai recuperare i dati da «Backup e ripristino».</p>' +
+      '<p class="lista-nota">Anche l’azzeramento fa un backup: i dati si recuperano da «Backup e ripristino».</p>' +
       '</div>';
   }
 
@@ -1264,7 +1277,7 @@
         riga('mit', 'La priorità del giorno', 'Un colpetto, se è ancora lì intatta.') +
         riga('sera', 'La chiusura della giornata', 'Solo se non hai ancora chiuso.') +
         riga('abitudini', 'Le abitudini con un’ora', 'Quelle senza orario non suonano mai.') +
-        '<div class="imp-nota">Spegnere un promemoria non cancella la cosa: la review della sera resta da fare, semplicemente non te lo dico io.</div>' +
+        '<div class="imp-nota">Spegnere un promemoria non cancella la cosa: la review della sera resta da fare, solo senza avviso.</div>' +
       '</div>' +
 
       /* SILENZIO */
@@ -1557,7 +1570,7 @@
         if (esito === 'negato') toast('Il permesso è stato negato: senza quello non arrivano notifiche.', 0, 'avviso');
         else if (esito === 'chiave') toast('La chiave pubblica non va bene: guarda in «Come ti avviso».', 0, 'avviso');
         else if (esito === 'server') toast('Il permesso c’è, ma il server non risponde: guarda in «Come ti avviso».', 0, 'avviso');
-        else if (!window.LM_PROMEMORIA.configurato()) toast('Fatto. Per adesso arriva la fine del timer.', 0, 'campana');
+        else if (!window.LM_PROMEMORIA.configurato()) toast('Acceso. Per ora arriva solo la fine del timer.', 0, 'campana');
         else toast('Promemoria accesi.', 0, 'campana');
         riscriviImpostazioni();
       });
@@ -1570,7 +1583,7 @@
       window.LM_PROMEMORIA.spegni().then(function () {
         /* il permesso del browser non si può togliere da qui: si toglie
            l'iscrizione, e il pannello lo dice senza far finta d'altro */
-        toast('Non ti manderò più promemoria da fuori.', 0, 'campanaOff');
+        toast('Promemoria spenti.', 0, 'campanaOff');
         riscriviImpostazioni();
       });
     });
@@ -1728,7 +1741,7 @@
     root.querySelector('#diag-riprova').addEventListener('click', function () {
       LM.save();   // forza un giro di salvataggio: rilancia anche il push sul cloud
       if (window.LMLog) LMLog.info('registro', 'Salvataggio richiesto a mano dall’utente');
-      toast('Salvataggio richiesto: le righe qui sotto dicono com’è andato.', 0, 'riprova');
+      toast('Salvataggio richiesto: l’esito è nelle righe qui sotto.', 0, 'riprova');
     });
 
     root.querySelector('#diag-svuota').addEventListener('click', function () {
@@ -1864,8 +1877,8 @@
       voce('target', '3 · Fai una cosa per volta', 'La schermata <b>Oggi</b> mostra una sola azione. Al mattino scegli le tre azioni del giorno in <b>Rituali</b>, la sera chiudi con la review.') +
       voce('giornata', 'La giornata', 'Mostra come sono divise le tue ore: sonno, pasti, abitudini e azioni con un orario. Dove vederla si sceglie dal menù sulla timeline.') +
       voce('polso', 'Check-in', 'Energia, concentrazione, umore, su una scala da 1 a 5. Conta l’andamento nei giorni, non il numero di oggi.') +
-      voce('funziona', 'Cosa funziona per me', 'Una riga per ogni cosa che hai capito su di te, divisa fra quelle che ti funzionano e quelle che no. Accanto a ognuna resta scritto <b>come fai a saperlo</b>: l’hai notato una volta, lo noti ogni volta, o l’hai misurato. Serve a poterla scrivere senza doverne essere sicuro.') +
-      voce('flask', 'Esperimenti', 'Dalla stessa pagina, quando di una cosa vuoi essere sicuro: introduci un cambiamento (per esempio sport al mattino) e l’app confronta i tuoi dati prima e dopo.') +
+      voce('funziona', 'Scoperte', 'Una riga per ogni cosa che hai capito su di te, in due mucchi: <b>Funziona</b> e <b>Non funziona</b>. Accanto a ognuna sta scritta l’<b>evidenza</b> — notato una volta, lo noto ogni volta, misurato — così una riga si può scrivere anche senza esserne sicuro.') +
+      voce('flask', 'Esperimenti', 'La seconda sezione di <b>Scoperte</b>, per quando di una cosa vuoi essere sicuro: introduci un cambiamento (per esempio sport al mattino) e l’app confronta i tuoi dati prima e dopo.') +
       voce('dashboard', 'Panoramica e Diario', 'In <b>Panoramica</b> vedi progressi, costanza e andamento; nel <b>Diario</b> lo storico giorno per giorno.') +
       voce('dati', 'I dati', 'Backup automatici, esportazione e importazione in .json, sincronizzazione sull’account Google fra dispositivi.') +
       '</div>', null);
@@ -1875,8 +1888,8 @@
      il salvataggio, entra ed esci. Toccava sparire con «Altro», e invece è la
      cosa che si va a cercare quando si dubita che i dati siano al sicuro. */
   /* IL BLOCCO DELL'ACCOUNT dentro le impostazioni. Non porta la sua etichetta:
-     ce l'ha già sopra («Tu»), e due titoli per lo stesso blocco erano uno di
-     troppo. Lo stato del salvataggio resta CLICCABILE: chi legge
+     ce l'ha già sopra («Account»), e due titoli per lo stesso blocco erano uno
+     di troppo. Lo stato del salvataggio resta CLICCABILE: chi legge
      «Salvataggio…» vuole sapere subito perché, e la spiegazione deve stare
      dietro quella parola. */
   function htmlAccount() {
@@ -1933,15 +1946,16 @@
     } else {
       acct = '<div class="fondo-locale">' + ICO('soloQui', 13) + ' Dati salvati su questo dispositivo</div>';
     }
-    /* Le impostazioni NON stanno più qui dentro. Prima questo pannello era
-       navigazione + account + tema + aspetto + dati + ripartenza + diagnostica
-       in un unico scorrimento da nove schermate: per raggiungere «Giornata»
-       si passava davanti a trenta comandi che non si stavano cercando. Ora è
-       un menu di pagine, e le impostazioni sono una porta sola — come su
-       desktop, dove hanno sempre funzionato così. */
+    /* Le impostazioni NON stanno qui dentro, e non ci stanno nemmeno per un
+       pezzo. Prima questo pannello era navigazione + account + tema + aspetto
+       + dati + ripartenza + diagnostica in un unico scorrimento da nove
+       schermate: per raggiungere «Giornata» si passava davanti a trenta
+       comandi che non si stavano cercando. Poi ci era rimasto un pulsante
+       «Impostazioni», che era un secondo modo di aprire la stessa porta: da
+       quando l'ingranaggio sta in alto a destra su ogni schermata, questo era
+       il doppione. Qui c'è un menu di pagine e il tuo account. */
     apriSheet('Menu', (link ? '<div class="menu-lista">' + link + '</div>' : '') +
-      '<div class="imp-sezione"><div class="imp-eti">Account</div>' + acct + '</div>' +
-      '<button class="btn-strumento-largo" id="menu-impostazioni">' + ICO('ingranaggio', 15) + '<span>Impostazioni</span>' + ICO('arrowRight', 15) + '</button>',
+      '<div class="imp-sezione"><div class="imp-eti">Account</div>' + acct + '</div>',
       function (root) {
         root.querySelectorAll('[data-vai]').forEach(function (b) {
           b.addEventListener('click', function () { chiudiSheet(); location.hash = '#/' + b.getAttribute('data-vai'); });
@@ -1949,7 +1963,6 @@
         var la = root.querySelector('#menu-accedi'); if (la) la.addEventListener('click', function () { if (window.LMCloud && window.LMCloud.available) window.LMCloud.signIn(); });
         var le = root.querySelector('#menu-esci'); if (le) le.addEventListener('click', function () { if (window.LMCloud) window.LMCloud.signOut(); chiudiSheet(); toast('Hai effettuato la disconnessione.', 0, 'logout'); });
         root.querySelectorAll('[data-diag]').forEach(function (b) { b.addEventListener('click', apriDiagnostica); });
-        root.querySelector('#menu-impostazioni').addEventListener('click', apriImpostazioni);
       });
   }
 
@@ -2240,7 +2253,7 @@
     if (!prossima) {
       var finita = oggi.length > 0;
       html += '<div class="focus-scena"><div class="vuoto">' + illoSole() +
-        (oggi.length ? '<b>Per oggi hai finito tutto.</b><br>Puoi chiudere con la review della sera, o aggiungere qualcosa se ti va.'
+        (oggi.length ? '<b>Per oggi hai finito tutto.</b><br>Restano la review della sera, o una cosa in più se ne hai voglia.'
                      : '<b>Oggi non hai ancora scelto cosa fare.</b><br>Bastano pochi secondi: scegli la prima cosa e parti.') +
         '</div>' +
         /* UN pieno, ed è il passo che il testo qui sopra consiglia: a giornata
@@ -2313,7 +2326,9 @@
     } else if (prossima.mit) {
       stato = { parola: 'La più importante', dett: 'quando vuoi', cls: 'mit' };
     } else {
-      stato = { parola: 'Quando vuoi', dett: 'nessun orario', cls: 'libera' };
+      /* nessun dettaglio: «Quando vuoi» e «nessun orario» sono la stessa
+         informazione scritta due volte nella stessa fascia */
+      stato = { parola: 'Quando vuoi', dett: '', cls: 'libera' };
     }
     /* di che specie è questa cosa: un'abitudine non si «rimanda», si salta
        per oggi, e chi guarda deve saperlo prima di premere */
@@ -2424,12 +2439,13 @@
         : '<button class="btn btn-mini btn-ghost" id="btn-nonora">Più tardi ' + ICO('rimanda', 15) + '</button>') +
       '</div>' +
       /* Quante ne restano lo dice già il contatore in cima e il tasto delle
-         altre. Qui resta solo la cosa che nessuno dei due dice: che questa
-         chiude la giornata. Il promemoria del tasto per annotare si vede solo
-         da tastiera e solo se non c'è un rituale da fare: un rituale vale più
-         del ripasso di una scorciatoia. */
+         altre. Qui resta solo la cosa che nessuno dei due dice: che dopo
+         questa non c'è più niente. Scritto come un'etichetta e non come una
+         frase — «È l'ultima di oggi» suonava come una voce fuori campo che
+         commenta quello che stai facendo, e un'app non ha niente da
+         commentare. */
       (inCoda > 0 ? '' :
-        '<div class="focus-coda"><span>È l’ultima di oggi.</span></div>') +
+        '<div class="focus-coda"><span>Ultima di oggi</span></div>') +
       '</div>' +
       altreHtml +
       '</div>';
@@ -3138,7 +3154,7 @@
       ? (sommario || 'Come è divisa la tua giornata. Spunta ciò che fai; per cambiarla apri Giornata.')
       : (isFuturo ? 'Stai preparando un giorno che non è arrivato: le cose si spuntano quando ci arrivi.'
          : d.isToday ? ''
-         : 'Giorno passato: puoi ancora spuntare quello che avevi fatto e non avevi segnato.');
+         : 'Giorno passato: le spunte si mettono ancora, se qualcosa era rimasto fuori.');
     /* nel pop-up il titolo è già nell'intestazione del pannello: ripeterlo
        "La giornata / La giornata" era solo rumore */
     var head = (opts.header === false || (!compact && !sottoHead)) ? '' :
@@ -3564,11 +3580,13 @@
       var dd = m(sveglia) - m(aletto); if (dd <= 0) dd += 1440; return dd;
     }
     apriSheet('Sonno e pasti',
-      '<div class="imp-nota" style="margin-top:0">È il tuo ritmo di base: disegna lo sfondo della giornata. Un singolo giorno lo puoi registrare a parte dalla pagina <i>Giornata</i>.</div>' +
+      '<div class="imp-nota" style="margin-top:0">È il ritmo di base, quello che disegna lo sfondo della giornata. Un singolo giorno si registra a parte, dalla pagina <i>Giornata</i>.</div>' +
       '<div class="ritmo-riga2"><label class="campo" for="ritmo-sonno">A letto</label><input type="time" id="ritmo-sonno" value="' + esc(r.sonno) + '">' +
       '<label class="campo" for="ritmo-sveglia">Sveglia</label><input type="time" id="ritmo-sveglia" value="' + esc(r.sveglia) + '"></div>' +
       '<div class="sp-dorm" style="margin:2px 0 4px">' + ICO('durata', 13) + ' dormi <b id="ritmo-dorm">' + fmtOre(durSonno(r.sonno, r.sveglia)) + '</b></div>' +
-      '<div class="imp-sezione"><div class="imp-eti">Pasti (nome · ora · durata)</div><div id="ritmo-pasti">' + (r.pasti || []).map(pastoRiga).join('') + '</div>' +
+      /* «Pasti (nome · ora · durata)» erano le intestazioni di una tabella
+         scritte nel titolo, sopra tre campi che dicono già cosa sono */
+      '<div class="imp-sezione"><div class="imp-eti">Pasti</div><div id="ritmo-pasti">' + (r.pasti || []).map(pastoRiga).join('') + '</div>' +
       '<button class="btn btn-mini mt-s" id="ritmo-add">' + ICO('plus', 13) + ' Aggiungi un pasto</button></div>' +
       '<div class="riga-flex mt"><button class="btn btn-primario btn-grande" id="ritmo-salva">' + ICO('save', 15) + ' Salva</button></div>',
       function (root) {
@@ -3848,7 +3866,10 @@
            riquadri sopra, nella stessa schermata, e portava esattamente allo
            stesso posto. «Rituali» resta, da questa scheda non si raggiunge
            altrimenti. */
-        '<div class="sotto">Scelte in <a href="#/rituali">Rituali</a>, fatte una per volta in <i>Oggi</i>. Qui sono tutte insieme.</div>' +
+        /* Il paragrafo che stava qui («Scelte in Rituali, fatte una per volta
+     in Oggi. Qui sono tutte insieme.») spiegava l'architettura dell'app
+     sopra una lista di due righe che si legge da sé. Il titolo dice cosa
+     sono, le spunte dicono come si usano: la mappa del sito non serve. */
         '<div class="lista-azioni" id="lista-oggi"></div>' +
         /* la stessa riga d'aggiunta di tutte le altre: era la terza variante
            in tre schermate — qui campo, tendina e tasto in fila; in Rituali
@@ -3859,7 +3880,7 @@
           '<label class="agg-area"><span class="agg-eti">in</span>' + selectAree('agg-riep-area') + '</label>') +
         '</div></div>' +
         '<div class="card" style="--i:1"><h2>' + ICO('trendUp', 15) + ' Costanza</h2>' +
-        '<div class="sotto">XP guadagnati ogni giorno, nelle ultime 12 settimane.</div>' +
+        '<div class="sotto">XP di ogni giorno, nelle ultime 12 settimane.</div>' +
         '<div id="heatmap"></div></div></div>';
 
       LMCharts.heatmap(document.getElementById('heatmap'), LM.heatmapConsistenza(12));
@@ -3917,9 +3938,9 @@
         '<div class="segmenti mini-seg" id="seg-periodo">' +
         '<button data-g="14" class="' + (periodoTrend === 14 ? 'attivo' : '') + '">14 giorni</button>' +
         '<button data-g="30" class="' + (periodoTrend === 30 ? 'attivo' : '') + '">30 giorni</button></div></div>' +
-        '<div class="sotto">Media dei tuoi check-in, su una scala da 1 a 5.</div><div id="trend-checkin"></div></div>' +
+        '<div class="sotto">Media dei check-in, da 1 a 5.</div><div id="trend-checkin"></div></div>' +
         '<div class="card mt" style="--i:1"><h2>' + ICO('tempospeso', 15) + ' Come hai speso il tempo</h2>' +
-        '<div class="sotto">Minuti registrati per ciascuna area negli ultimi 7 giorni.</div><div id="hbar-minuti"></div></div>';
+        '<div class="sotto">Minuti per area, negli ultimi 7 giorni.</div><div id="hbar-minuti"></div></div>';
 
       LMCharts.trend(document.getElementById('trend-checkin'), [
         { nome: 'Energia', colore: dark ? '#c98500' : '#eda100', punti: LM.serieCheckin('energia', periodoTrend) },
@@ -3946,10 +3967,15 @@
         '<button data-tutto="1" class="' + (diarioTutto ? 'attivo' : '') + '">Tutto</button></div>';
       var html;
       if (!giorni.length) {
-        html = '<div class="card diario"><div class="card-testa"><div class="sotto" style="margin:0">La storia di tutto ciò che fai, dal più recente.</div>' + filtro + '</div>' +
+        html = '<div class="card diario"><div class="card-testa">' + filtro + '</div>' +
           '<div class="vuoto" style="padding:20px 8px">' + ICO('quaderno', 26) + '<br><b>Ancora niente da mostrare.</b><br>Appena fai qualcosa comparirà qui, giorno per giorno.</div></div>';
       } else {
-        html = '<div class="card diario"><div class="card-testa"><div class="sotto" style="margin:0">La storia di tutto ciò che fai — azioni, note, scelte, impostazioni. ' + (diarioTutto ? 'Stai vedendo <b>tutto</b>.' : 'Mostro le <b>cose importanti</b>; con «Tutto» vedi anche le modifiche minori.') + '</div>' + filtro + '</div>';
+        /* la riga sotto il filtro dice SOLO quello che il filtro non dice da
+           sé: cosa resta fuori. Prima ci stava anche «la storia di tutto ciò
+           che fai — azioni, note, scelte, impostazioni», che è la definizione
+           della parola «diario» scritta sotto la parola «Diario». */
+        html = '<div class="card diario"><div class="card-testa">' + filtro +
+          (diarioTutto ? '' : '<div class="sotto" style="margin:0">Con «Tutto» compaiono anche le modifiche minori.</div>') + '</div>';
         giorni.forEach(function (g) {
           html += '<div class="diario-giorno">' +
             '<div class="diario-data">' + etichettaGiorno(g.data) + '</div>' +
@@ -4042,7 +4068,7 @@
      dentro anche un pannello di configurazione. */
   var GRUPPI_RIT = [
     { eti: 'Il piano di oggi', ids: ['mattina'] },
-    { eti: 'Come è andata',    ids: ['checkin', 'sera', 'settimana'] }
+    { eti: 'Bilanci',          ids: ['checkin', 'sera', 'settimana'] }
   ];
   /* quali sezioni sono aperte: ognuna si apre e si chiude per conto suo, e
      aprirne una non chiude le altre (linee guida Apple: le sezioni a
@@ -4234,15 +4260,20 @@
         '</div>';
     }
     return '<div id="blocco-notte">' +
-      '<p class="rituale-intro">A che ora sei andato a letto e a che ora ti sei svegliato. Se non lo sai al minuto va bene comunque: c’è scritto accanto quanto è preciso.</p>' +
+      /* le due righe qui sotto hanno già scritto «A letto» e «Sveglio», e
+         accanto c'è la riga che chiede quanto sono precisi: la frase che
+         ripeteva tutte e tre le cose andava letta prima di poter guardare i
+         campi che dicevano lo stesso. Resta il permesso di non saperlo, che
+         nessun campo può dare. */
+      '<p class="rituale-intro">Se non lo sai al minuto va bene comunque.</p>' +
       '<button class="btn btn-primario btn-grande btn-due-righe" id="notte-solito">' + ICO('bed', 15) +
-      ' È andata come sempre <small>a letto ' + esc(r.sonnoRoutine) + ', sveglio ' + esc(r.svegliaRoutine) + '</small></button>' +
+      ' Come sempre <small>a letto ' + esc(r.sonnoRoutine) + ', sveglio ' + esc(r.svegliaRoutine) + '</small></button>' +
       '<div class="lista mt-s">' +
       '<div class="lista-riga sc-riga"><span class="sc-eti">' + ICO('bed', 15) + ' A letto</span>' +
       '<span class="sc-val"><input type="time" id="notte-sonno" class="sc-inline" value="' + esc(r.sonno) + '" aria-label="A che ora sei andato a letto"></span></div>' +
       '<div class="lista-riga sc-riga"><span class="sc-eti">' + ICO('sun', 15) + ' Sveglio</span>' +
       '<span class="sc-val"><input type="time" id="notte-sveglia" class="sc-inline" value="' + esc(r.sveglia) + '" aria-label="A che ora ti sei svegliato"></span></div>' +
-      '<div class="lista-riga sc-riga sc-riga-alta"><span class="sc-eti">Quanto sono precisi</span>' +
+      '<div class="lista-riga sc-riga sc-riga-alta"><span class="sc-eti">Precisione</span>' +
       '<span class="sc-val q-chips" id="notte-prec">' +
       '<button class="q-chip' + (prec === 'circa' ? ' on' : '') + '" data-prec="circa">più o meno</button>' +
       '<button class="q-chip' + (prec === 'preciso' ? ' on' : '') + '" data-prec="preciso">precisi</button>' +
@@ -4250,7 +4281,7 @@
       '</div>' +
       '<div class="riga-flex mt"><button class="btn btn-primario" id="notte-salva">' + ICO('save', 15) + ' Salva la notte</button>' +
       '<button class="btn btn-ghost" id="notte-boh">Non me lo ricordo</button></div>' +
-      '<p class="lista-nota">Le ore di sonno entrano nella <b>Giornata</b> e nei grafici. Quando gli orari sono «più o meno», l’app lo sa e non li tratta come misure precise. Se chiudi senza rispondere non te lo richiedo oggi: la domanda resta nei <b>Rituali</b>.</p>' +
+      '<p class="lista-nota">Gli orari «più o meno» restano segnati come tali e non fanno da misura. Se chiudi senza rispondere la domanda non torna oggi: resta nei <b>Rituali</b>.</p>' +
       '</div>';
   }
 
@@ -4309,7 +4340,7 @@
       /* nessun orario: il giorno resta sul ritmo di base, e non si richiede.
          Meglio un dato che non c'è di un numero inventato. */
       LM.segnaChiesto(t, 'notte');
-      toast('Va bene: non te lo chiedo più per oggi.', 0, 'check');
+      toast('Niente orari per stanotte. La domanda non torna oggi.', 0, 'check');
       if (dopo) dopo();
       render();
     });
@@ -4345,11 +4376,13 @@
     }).join('');
 
     return '<div id="blocco-recupero">' +
-      '<p class="rituale-intro">Due domande, e poi hai finito: se hai mangiato, e le cose che hai fatto oggi senza fermarti a scriverle.</p>' +
+      /* le due etichette qui sotto dicono già «I pasti di oggi» e «Altre cose
+         fatte»: la frase che le annunciava era un indice di due voci messo
+         sopra due voci. */
       (righePasti
         ? etichetta('I pasti di oggi', 'utensils') + '<div class="lista">' + righePasti + '</div>'
         : '') +
-      etichetta('Cos’altro hai fatto oggi', 'check', fatte.length || null) +
+      etichetta('Altre cose fatte', 'check', fatte.length || null) +
       /* la stessa riga d'aggiunta di tutto il resto dell'app: una cosa per
          volta, e l'area compare quando hai cominciato a scrivere */
       rigaAggiunta('agg-fatto', 'Una cosa che hai fatto…',
@@ -4369,7 +4402,7 @@
             '<button class="icona-btn icona-pericolo" data-ftogli="' + a.id + '" title="Togli" aria-label="Togli «' + esc(a.testo) + '»">' + ICO('trash', 15) + '</button>' +
             '</div>';
         }).join('') + '</div>'
-        : '<p class="lista-nota">Anche una sola: «camminata di mezz’ora», «chiamato mio fratello». Conta come una cosa fatta oggi, con i suoi XP — il lavoro l’hai fatto, che l’abbia scritto prima o dopo non cambia niente.</p>') +
+        : '<p class="lista-nota">Per esempio: «camminata di mezz’ora», «chiamato mio fratello». Vale come una cosa fatta oggi, con i suoi XP: che l’abbia scritta prima o dopo non cambia niente.</p>') +
       '<div class="riga-flex mt"><button class="btn btn-primario" id="rec-fine">' + ICO('check', 15) + ' Ho finito</button></div>' +
       '</div>';
   }
@@ -4451,11 +4484,11 @@
     apriSheet(titolo, '<div class="sc">' + html + '</div>', wire, false, { nome: titolo, apri: riapri });
   }
   function apriChiestaNotte() {
-    popupGiornata('Com’è andata la notte', 'notte', bloccoNotte(),
+    popupGiornata('Il sonno di stanotte', 'notte', bloccoNotte(),
       function (root) { wireNotte(root, chiudiSheet); }, apriChiestaNotte);
   }
   function apriChiestaGiornata() {
-    popupGiornata('Com’è andata la giornata', 'giorno', bloccoRecupero(),
+    popupGiornata('Pasti e cose fatte', 'giorno', bloccoRecupero(),
       function (root) { wireRecupero(root, chiudiSheet); }, apriChiestaGiornata);
   }
 
@@ -4496,8 +4529,11 @@
     var notte = '<div class="card">' + bloccoNotte() + '</div>';
 
     corpo.innerHTML = notte + '<div class="card">' +
-      testaRituale('sun', 'Le azioni di oggi',
-        'Le scegli qui e le fai in <i>Oggi</i>. La prima è quella più importante. Ogni giorno riparte da capo.') +
+      /* Della riga sotto il titolo resta la sola cosa che non si vede: che
+         la prima della lista è quella che conta. «Le scegli qui e le fai in
+         Oggi. Ogni giorno riparte da capo.» era il funzionamento dell'app
+         raccontato sopra una lista in cui si sta già scrivendo. */
+      testaRituale('sun', 'Le azioni di oggi', 'La prima è quella più importante.') +
       '<div class="lista-azioni" id="piano-lista"></div>' +
       /* Tre è il consiglio, non un muro: chi ha una giornata piena deve poter
          scrivere quello che gli serve. Oltre le tre lo diciamo e basta. */
@@ -4509,8 +4545,12 @@
       rigaAggiunta('agg-piano', oggi.length === 0 ? 'La cosa più importante di oggi…' : 'Un’altra cosa (se vuoi)…',
         '<label class="agg-area"><span class="agg-eti">in</span>' + selectAree('agg-piano-area') + '</label>') +
       '</div>' +
-      (oggi.length >= 3 ? '<div class="sotto" style="margin:8px 0 0">Hai <b>' + oggi.length + '</b> azioni per oggi. Oltre tre diventa difficile finirle: le altre si possono spostare a domani da <i>La giornata</i>.</div>' : '') +
-      '<label class="campo" for="piano-ifthen">Quando e dove inizi la prima?</label>' +
+      /* Tre è il consiglio, e lo diciamo in una riga sola: «Hai 5 azioni per
+         oggi. Oltre tre diventa difficile finirle: le altre si possono
+         spostare a domani da La giornata» erano due frasi per dire un numero
+         e un posto dove andare. */
+      (oggi.length >= 3 ? '<div class="sotto" style="margin:8px 0 0">' + oggi.length + ' azioni per oggi: oltre tre è difficile chiuderle tutte. Da <i>La giornata</i> puoi spostarne a domani.</div>' : '') +
+      '<label class="campo" for="piano-ifthen">Quando e dove inizi la prima</label>' +
       '<input type="text" id="piano-ifthen" placeholder="Es. alle 9:00, appena mi siedo alla scrivania, apro solo il file su cui devo lavorare" value="' + (piano ? esc(piano.intenzione) : '') + '">' +
       /* Un pulsante, non due. C'erano «Salva e parti» (pieno, con la freccia,
          +5 XP) e «Inizia ora» accanto: il primo salvava e NON si muoveva,
@@ -4717,7 +4757,7 @@
       prog +
       '<div class="ab-nuova">' +
       rigaAggiunta('agg-ab', 'Nuova abitudine…',
-        '<span class="agg-eti">In che giorni?</span>' +
+        '<span class="agg-eti">In che giorni</span>' +
         '<div id="agg-ab-giorni" class="agg-giorni">' + chipsGiorni([]) + '</div>' +
         '<span class="agg-nota">nessuno selezionato = ogni giorno</span>' +
         /* l'ora si decide adesso, mentre l'intenzione è fresca: è il
@@ -4962,8 +5002,13 @@
   function ritualeCheckin(corpo) {
     var voti = { energia: 0, focus: 0, umore: 0 };
     corpo.innerHTML = '<div class="card">' +
-      testaRituale('polso', 'Come stai adesso',
-        'Energia, concentrazione e umore su una scala da 1 a 5. Conta l’andamento nei giorni, non il numero di oggi.') +
+      testaRituale('polso', 'Energia, focus e umore',
+        /* la prima metà («Energia, concentrazione e umore su una scala da 1 a
+           5») è l'elenco delle tre domande che stanno subito sotto, con le
+           scale accanto. Resta la seconda, che nessuna domanda dice e che
+           serve a chi tiene alla precisione: il numero di oggi non è un
+           voto. */
+        'Conta l’andamento nei giorni, non il numero di oggi.') +
       scala('energia', 'batteria', 'Quanta energia hai?') +
       scala('focus', 'mirino', 'Quanto riesci a concentrarti?') +
       scala('umore', 'smile', 'Come ti senti?') +
@@ -4983,7 +5028,7 @@
           /* tutto il testo in un solo elemento: il contenitore è inline-flex
              con un gap, e un punto lasciato fuori diventava un pezzo a sé
              staccato di sei pixel («è 4.3 .») */
-          '<span>La tua media recente è <b>' + base.toFixed(1) + '</b>.</span></div>' : '') +
+          '<span>Media recente <b>' + base.toFixed(1) + '</b></span></div>' : '') +
         '</div>';
     }
     corpo.querySelectorAll('.scala').forEach(function (sc) {
@@ -5036,7 +5081,7 @@
       var v = campo.value.trim();
       if (!v) return;
       LM.aggiungiLezione(v, verso, { forza: forza || 'notato' });
-      toast(verso === 'si' ? 'Tenuta fra le cose che ti funzionano.' : 'Tenuta fra le cose che non ti funzionano.',
+      toast(verso === 'si' ? 'Salvata fra le Scoperte, in «Funziona».' : 'Salvata fra le Scoperte, in «Non funziona».',
         0, verso === 'si' ? 'funziona' : 'nonFunziona');
       aggiorna();
       aggiornaNav();
@@ -5061,8 +5106,11 @@
     var recupero = '<div class="card">' + bloccoRecupero() + '</div>';
 
     corpo.innerHTML = recupero + '<div class="card">' +
-      testaRituale('moon', 'Review della sera',
-        'Voto alle aree su cui hai lavorato, una cosa andata bene e un ostacolo. Due minuti.') +
+      /* i campi qui sotto portano ognuno la sua domanda scritta sopra: la
+         riga che riassumeva tutte e tre («Voto alle aree su cui hai lavorato,
+         una cosa andata bene e un ostacolo») era l'indice di una pagina lunga
+         mezzo schermo. Resta il tempo che ci vuole, che nessun campo dice. */
+      testaRituale('moon', 'Review della sera', 'Due minuti.') +
       '<div id="voti-aree">' + ordinate.map(function (a) {
         return '<div class="voto-area" data-area="' + a.id + '" style="--c-area:' + LM.coloreArea(a) + '">' +
           '<span class="nome">' + ICO(a.icona, 15) + ' ' + esc(a.nome) + '</span>' +
@@ -5076,10 +5124,10 @@
          in un campo di testo che nessuno riapre: il tasto le porta fra le cose
          che hai capito su di te, dove restano e si contano. La forza è
          «notato una volta», perché è quello che è: un giorno, un'osservazione. */
-      '<button class="btn btn-mini" id="sera-vitt-lez" hidden>' + ICO('funziona', 15) + ' Tienila fra le cose che ti funzionano</button>' +
+      '<button class="btn btn-mini" id="sera-vitt-lez" hidden>' + ICO('funziona', 15) + ' Salvala fra le Scoperte</button>' +
       '<label class="campo" for="sera-blocco">Un ostacolo che hai incontrato</label>' +
       '<input type="text" id="sera-blocco" value="' + (rev ? esc(rev.blocco || '') : '') + '" placeholder="Es. ho iniziato tardi, mi hanno distratto le notifiche">' +
-      '<button class="btn btn-mini" id="sera-blocco-lez" hidden>' + ICO('nonFunziona', 15) + ' Tienila fra le cose che non ti funzionano</button>' +
+      '<button class="btn btn-mini" id="sera-blocco-lez" hidden>' + ICO('nonFunziona', 15) + ' Salvalo fra le Scoperte</button>' +
       '<div class="riga-flex mt"><button class="btn btn-primario btn-grande" id="btn-salva-sera">' + (rev ? ICO('save', 15) + ' Aggiorna' : ICO('moon', 15) + ' Concludi la giornata') + ' <small>+' + LM.XP_EVENTI.reviewSera + ' XP</small></button></div>' +
       '</div>';
 
@@ -5122,8 +5170,7 @@
     var attivi = giorni.filter(function (k) { return LM.giornoAttivo(k); }).length;
 
     corpo.innerHTML = '<div class="card">' +
-      testaRituale('unaSettimana', 'Review della settimana',
-        'Riepilogo della settimana e una cosa da portare in quella dopo. Dieci minuti.') +
+      testaRituale('unaSettimana', 'Review della settimana', 'Dieci minuti.') +
       '<div class="eroe-statistiche" style="justify-content:center;margin-bottom:16px">' +
       '<div class="stat"><span class="stat-val">' + xpSett + '</span><span class="stat-eti">XP guadagnati</span></div>' +
       '<div class="stat"><span class="stat-val">' + azioniSett + '</span><span class="stat-eti">azioni completate</span></div>' +
@@ -5132,13 +5179,13 @@
       '<label class="campo" for="w-vittorie">Cosa ha funzionato questa settimana</label><textarea id="w-vittorie">' + (rev ? esc(rev.vittorie || '') : '') + '</textarea>' +
       /* La review della settimana parla di quello che si è RIPETUTO: la riga
          che ne nasce lo dice, e vale più di un'osservazione di un giorno. */
-      '<button class="btn btn-mini" id="w-vitt-lez" hidden>' + ICO('funziona', 15) + ' Tienila fra le cose che ti funzionano</button>' +
+      '<button class="btn btn-mini" id="w-vitt-lez" hidden>' + ICO('funziona', 15) + ' Salvala fra le Scoperte</button>' +
       '<label class="campo" for="w-blocchi">Gli ostacoli che si sono ripetuti</label><textarea id="w-blocchi">' + (rev ? esc(rev.blocchi || '') : '') + '</textarea>' +
-      '<button class="btn btn-mini" id="w-blocchi-lez" hidden>' + ICO('nonFunziona', 15) + ' Tienila fra le cose che non ti funzionano</button>' +
+      '<button class="btn btn-mini" id="w-blocchi-lez" hidden>' + ICO('nonFunziona', 15) + ' Salvali fra le Scoperte</button>' +
       '<label class="campo" for="w-imparato">Cosa hai imparato sul tuo metodo</label><textarea id="w-imparato">' + (rev ? esc(rev.imparato || '') : '') + '</textarea>' +
-      '<label class="campo" for="w-prossima">L’unica cosa che vuoi cambiare la prossima settimana</label><textarea id="w-prossima">' + (rev ? esc(rev.prossima || '') : '') + '</textarea>' +
+      '<label class="campo" for="w-prossima">Una cosa da cambiare la settimana prossima</label><textarea id="w-prossima">' + (rev ? esc(rev.prossima || '') : '') + '</textarea>' +
       '<div class="riga-flex mt"><button class="btn btn-primario btn-grande" id="btn-salva-sett">' + ICO('save', 15) + (rev ? ' Aggiorna' : ' Salva la review') + ' <small>+' + LM.XP_EVENTI.reviewSettimana + ' XP</small></button>' +
-      '<button class="btn btn-ghost" data-vai="esperimenti">' + ICO('flask', 15) + ' Trasformala in un esperimento</button></div>' +
+      '<button class="btn btn-ghost" data-vai="esperimenti">' + ICO('flask', 15) + ' Apri le Scoperte</button></div>' +
       '</div>';
 
     collegaTenutaLezione(corpo, 'w-vittorie', 'w-vitt-lez', 'si', 'ripetuto');
@@ -5279,7 +5326,7 @@
         '</div>' +
 
         '<button class="btn btn-primario btn-grande sc-primaria" data-fai="azione">' +
-        ICO('target', 15) + ' Fallo oggi</button>' +
+        ICO('target', 15) + ' Portala in Oggi</button>' +
         '<div class="lista">' +
         '<button class="lista-riga sc-riga sc-tocca" data-fai="backlog">' +
         '<span class="sc-eti">' + ICO('lista', 15) + ' Mettila in «Da fare»</span>' +
@@ -5293,9 +5340,11 @@
           ? '<div class="lista-eti">Dopo questa <span>' + resto.length + '</span></div>' +
             '<div class="sm-coda">' +
             resto.slice(0, MOSTRA).map(function (x) { return '<p>' + esc(x.testo) + '</p>'; }).join('') +
-            (resto.length > MOSTRA ? '<p class="sm-coda-piu">e altre ' + (resto.length - MOSTRA) + '</p>' : '') +
+            (resto.length > MOSTRA
+              ? '<p class="sm-coda-piu">' + (resto.length - MOSTRA === 1 ? 'e un’altra' : 'e altre ' + (resto.length - MOSTRA)) + '</p>'
+              : '') +
             '</div>'
-          : '<p class="lista-nota">È l’ultima della coda.</p>') +
+          : '<p class="lista-nota">Ultima della coda.</p>') +
         '</div>';
 
       /* il testo si salva quando si esce dal campo: nessun tasto «salva» per
@@ -5653,7 +5702,7 @@
           '<button class="btn btn-primario btn-grande sc-primaria" id="sc-oggi">' + ICO('target', 15) + ' ' +
           (isProg ? 'Prossimo passo in Oggi' : 'Portala in Oggi') + '</button>' +
 
-          etichetta('Se non oggi', 'calendar') +
+          etichetta('Rimanda a', 'calendar') +
           '<div class="q-chips sc-quando">' +
           gChip(LM.addDays(oggi, 1), 'Domani') +
           gChip(LM.addDays(oggi, 2), etichettaGiorno(LM.addDays(oggi, 2)).split(' ')[0]) +
@@ -5698,7 +5747,7 @@
           '<span class="sc-eti">Tieni in cima</span>' +
           '<span class="sc-val">' + (b.pin ? ICO('pin', 15, 'sc-si') + ' sì' : 'no') + '</span></button>' +
           '</div>' +
-          '<p class="lista-nota">«Se non oggi» la mette tra le cose di quel giorno. La scadenza è solo un conto alla rovescia: non la mette in agenda.</p>' +
+          '<p class="lista-nota">«Rimanda a» la sposta fra le cose di quel giorno. La scadenza fa solo da conto alla rovescia e non la mette in agenda.</p>' +
 
           '<div class="lista mt">' +
           '<button class="lista-riga sc-riga sc-tocca" id="sc-abitudine">' +
@@ -5899,8 +5948,8 @@
        cioè perdere che una volta funzionava. */
 
   var LEZ_VERSI = {
-    si: { ico: 'funziona', eti: 'Mi funziona', breve: 'ti funziona' },
-    no: { ico: 'nonFunziona', eti: 'Non mi funziona', breve: 'non ti funziona' }
+    si: { ico: 'funziona', eti: 'Funziona', breve: 'Funziona' },
+    no: { ico: 'nonFunziona', eti: 'Non funziona', breve: 'Non funziona' }
   };
 
   /* l'area è FACOLTATIVA: «le liste lunghissime mi bloccano» non è di
@@ -5924,8 +5973,8 @@
     }
     return '<div class="lista-riga lez-riga" data-lid="' + l.id + '">' +
       '<button class="lista-azione lez-verso lez-' + l.verso + '" data-lezgira="' + l.id + '"' +
-      ' title="Sposta fra le cose che ' + altro.breve + '"' +
-      ' aria-label="«' + esc(l.testo) + '»: spostala fra le cose che ' + altro.breve + '">' +
+      ' title="Spostala in «' + altro.breve + '»"' +
+      ' aria-label="«' + esc(l.testo) + '»: spostala in «' + altro.breve + '»">' +
       ICO(v.ico, 15) + '</button>' +
       '<button class="lista-apri" data-lezapri="' + l.id + '" aria-label="Apri «' + esc(l.testo) + '»">' +
       '<span class="lista-corpo">' +
@@ -5938,24 +5987,31 @@
   function bloccoLezioniHtml() {
     var si = LM.lezioni('si'), no = LM.lezioni('no');
     var vuoto = !si.length && !no.length;
+    /* NIENTE PARAGRAFO SOTTO IL TITOLO. Ce n'era uno di quattro righe che
+       spiegava perché il registro esiste e cosa vuol dire l'etichetta accanto a
+       ogni riga. Sotto c'erano già: il campo con scritto cosa scriverci, i due
+       tasti «funziona / non funziona» e i due mucchi con il loro nome. Se la
+       spiegazione serve, il comando è scritto male; e questa era una
+       spiegazione che si legge una volta e poi resta lì per sempre, in cima
+       alla cosa che si usa ogni giorno. L'esempio invece resta finché i mucchi
+       sono vuoti — là non c'è niente da guardare, e serve capire che tipo di
+       frase ci va. */
     return '<div class="card lez-card">' +
-      '<h2>' + ICO('funziona', 18) + ' Cosa funziona per me</h2>' +
-      '<div class="sotto">Una riga per volta, come viene: le cose che capisci su di te non arrivano mentre fai un esperimento, arrivano mentre vivi. Accanto a ognuna resta scritto come fai a saperlo, così puoi scriverla anche quando non ne sei sicuro.</div>' +
       rigaAggiunta('agg-lez', 'Cosa hai capito su di te…',
         '<div class="q-chips lez-scelta-verso">' +
-        '<button type="button" class="q-chip on" data-verso="si">' + ICO('funziona', 13) + ' Mi funziona</button>' +
-        '<button type="button" class="q-chip" data-verso="no">' + ICO('nonFunziona', 13) + ' Non mi funziona</button>' +
+        '<button type="button" class="q-chip on" data-verso="si">' + ICO('funziona', 13) + ' Funziona</button>' +
+        '<button type="button" class="q-chip" data-verso="no">' + ICO('nonFunziona', 13) + ' Non funziona</button>' +
         '</div>' +
         '<label class="agg-area"><span class="agg-eti">in</span>' + selectAreeOpz('agg-lez-area', null) + '</label>') +
       (vuoto
         ? '<p class="lista-nota">Per esempio: «studiare in biblioteca invece che in camera» fra le cose che funzionano, «dire <i>lo faccio dopo</i> senza scrivere quando» fra quelle che no.</p>'
         : '') +
       (si.length
-        ? etichetta('Mi funziona', 'funziona', si.length) +
+        ? etichetta('Funziona', 'funziona', si.length) +
           '<div class="lista">' + si.map(rigaLezioneHtml).join('') + '</div>'
         : '') +
       (no.length
-        ? etichetta('Non mi funziona', 'nonFunziona', no.length) +
+        ? etichetta('Non funziona', 'nonFunziona', no.length) +
           '<div class="lista">' + no.map(rigaLezioneHtml).join('') + '</div>'
         : '') +
       '</div>';
@@ -5988,7 +6044,7 @@
       /* il messaggio dice in quale mucchio è finita: la scelta sta in una riga
          di opzioni che si apre scrivendo, e chi non l'ha guardata deve poter
          accorgersi qui che è andata dove non voleva */
-      toast(verso === 'si' ? 'Salvata fra le cose che ti funzionano.' : 'Salvata fra le cose che non ti funzionano.',
+      toast(verso === 'si' ? 'Aggiunta in «Funziona».' : 'Aggiunta in «Non funziona».',
         0, verso === 'si' ? 'funziona' : 'nonFunziona');
       ridisegnaLezioni(true);
     });
@@ -6003,7 +6059,7 @@
       b.addEventListener('click', function () {
         var l = LM.giraLezione(b.getAttribute('data-lezgira'));
         if (!l) return;
-        toast(l.verso === 'si' ? 'Spostata fra le cose che ti funzionano.' : 'Spostata fra le cose che non ti funzionano.',
+        toast(l.verso === 'si' ? 'Spostata in «Funziona».' : 'Spostata in «Non funziona».',
           0, l.verso === 'si' ? 'funziona' : 'nonFunziona');
         ridisegnaLezioni();
       });
@@ -6031,17 +6087,17 @@
         '<label class="campo" for="lez-testo">Cosa hai capito</label>' +
         '<textarea id="lez-testo" rows="2">' + esc(l.testo) + '</textarea>' +
 
-        etichetta('Come fai a saperlo', 'confronto') +
+        etichetta('Evidenza', 'confronto') +
         '<div class="q-chips">' + LM.FORZE_LEZIONE.map(function (f) {
           return '<button class="q-chip' + (f.id === l.forza ? ' on' : '') + '" data-forza="' + f.id + '">' + esc(f.eti) + '</button>';
         }).join('') + '</div>' +
-        '<p class="lista-nota">Non è un voto su di te: è quanto è solida questa riga. Serve a poterla scrivere anche quando l’hai vista una volta sola.</p>' +
+        '<p class="lista-nota">Dice quanto è solida questa riga, non quanto vali tu. Serve a poterla scrivere anche dopo averla vista una volta sola.</p>' +
 
         etichetta('Dettagli', 'ingranaggio') +
         '<div class="lista">' +
-        riga('Verso', '<span class="sc-val q-chips">' +
-          '<button class="q-chip' + (l.verso === 'si' ? ' on' : '') + '" data-verso="si">' + ICO('funziona', 13) + ' mi funziona</button>' +
-          '<button class="q-chip' + (l.verso === 'no' ? ' on' : '') + '" data-verso="no">' + ICO('nonFunziona', 13) + ' non mi funziona</button>' +
+        riga('Esito', '<span class="sc-val q-chips">' +
+          '<button class="q-chip' + (l.verso === 'si' ? ' on' : '') + '" data-verso="si">' + ICO('funziona', 13) + ' funziona</button>' +
+          '<button class="q-chip' + (l.verso === 'no' ? ' on' : '') + '" data-verso="no">' + ICO('nonFunziona', 13) + ' non funziona</button>' +
           '</span>', '', 'sc-riga-alta') +
         riga('Area', '<span class="sc-val">' + selectAreeOpz('lez-area', l.areaId, 'sc-inline') + '</span>') +
         (esp ? riga('Misurato con', '<span class="sc-val">' + esc(esp.nome) + '</span>') : '') +
@@ -6127,26 +6183,77 @@
      VISTA: ESPERIMENTI
      ============================================================ */
 
+  /* QUALE DELLE DUE SEZIONI È APERTA. Sta fuori dalla funzione perché deve
+     sopravvivere a un ridisegno: la pagina si rifà da sé quando arriva la
+     risposta dell'account o un aggiornamento dal cloud, e ritrovarsi
+     riportati sull'altra sezione senza aver toccato niente è peggio del
+     problema che questa divisione risolve. */
+  var sezScoperte = 'registro';
+
   function vistaEsperimenti() {
     var s = LM.load();
+
+    /* DUE SEZIONI, NON UNA COLONNA LUNGA.
+       Prima stavano una sopra l'altra: il registro in cima — è la cosa che si
+       usa ogni giorno e si scrive in dieci secondi — e gli esperimenti sotto.
+       Funzionava con sei righe. Con quaranta, per arrivare agli esperimenti
+       bisognava scorrere davanti a tutto quello che si sa già, ogni volta, e
+       la lunghezza della strada dipendeva da quanto uno ha scritto: più usi il
+       registro, più lontano diventa l'altra metà della pagina.
+       Adesso sono due sezioni, come in «Panoramica»: si vede una per volta e
+       ognuna comincia in cima. La riga di linguette è la stessa di tutte le
+       altre pagine, quindi non c'è niente di nuovo da capire. */
+    function segs(id, ico, et, quanti) {
+      return '<button data-scop="' + id + '" class="' + (sezScoperte === id ? 'attivo' : '') + '">' +
+        '<span class="seg-ico">' + ICO(ico, 13) + '</span><span class="seg-eti">' + et +
+        (quanti ? ' <span class="seg-n">' + quanti + '</span>' : '') + '</span></button>';
+    }
+    /* chi arriva qui per aprire un esperimento — dalla scheda di una riga, o
+       perché ne aveva uno mezzo scritto — entra dalla parte degli esperimenti:
+       il modulo vive là dentro, e aprire la pagina sul registro vorrebbe dire
+       far sparire quello che stava scrivendo. */
+    if (lezDaProvare || formExp) sezScoperte = 'esperimenti';
+    var nLez = LM.load().lezioni.length;
+    var html = topbar('Scoperte', '', '', '', true) +
+      '<div class="segmenti mini-seg sotto-seg" id="sez-scoperte">' +
+      segs('registro', 'funziona', 'Registro', nLez || null) +
+      segs('esperimenti', 'flask', 'Esperimenti', s.esperimenti.length || null) +
+      '</div><div id="scop-corpo"></div>';
+    $vista.innerHTML = html;
+    $vista.querySelector('#sez-scoperte').querySelectorAll('[data-scop]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        sezScoperte = b.getAttribute('data-scop');
+        disegnaScoperte();
+      });
+    });
+    disegnaScoperte();
+  }
+
+  function disegnaScoperte() {
+    var s = LM.load();
+    var c = document.getElementById('scop-corpo');
+    if (!c) return;
+    if (sezScoperte === 'registro') {
+      c.innerHTML = bloccoLezioniHtml();
+      wireLezioni(c);
+      return;
+    }
     /* con la lista vuota il pulsante sta una volta sola, dentro il riquadro
        che spiega cosa manca: due pulsanti uguali sulla stessa schermata
        sono due volte la stessa domanda */
     var vuota = !s.esperimenti.length;
-    /* L'ORDINE DELLA PAGINA È UNA SCELTA. Prima il registro di quello che hai
-       capito su di te — è la cosa che si usa ogni giorno e si scrive in dieci
-       secondi — e sotto gli esperimenti, che sono lo stesso mestiere fatto per
-       bene quando di una cosa vuoi essere sicuro. Al contrario, la pagina
-       chiedeva quattro settimane di pazienza per poter scrivere la prima riga. */
-    var html = topbar('Cosa funziona per me', '', '', '', true) +
-      bloccoLezioniHtml() +
-      etichetta('Esperimenti', 'flask', s.esperimenti.length || null) +
-      '<div class="card"><div class="sotto" style="margin:0">Quando di una cosa vuoi essere sicuro. Prima misuri una metrica senza cambiare nulla (fase <b>A</b>, la base di partenza), poi introduci una modifica e continui a misurare (fase <b>B</b>). Il confronto tra le due fasi ti dice se la modifica ha avuto effetto. Un avvertimento onesto: senza gruppo di controllo il risultato è un’indicazione, non una prova definitiva; ripetere l’esperimento lo rende più affidabile.' +
+    /* IL PARAGRAFO CHE È RIMASTO, e perché. Quasi tutti quelli sotto un titolo
+       sono andati via: dicevano a parole quello che il comando sotto diceva
+       già da sé. Questo no — un confronto A/B su una persona sola non si
+       indovina guardando lo schermo, e senza sapere che i primi giorni servono
+       come base di partenza non si capisce perché l'app chieda di aspettare.
+       Riscritto in tre frasi invece di sei righe, e il limite del metodo sta
+       dove serve leggerlo: sotto il verdetto, non prima di cominciare. */
+    c.innerHTML = '<div class="card"><div class="sotto" style="margin:0">' +
+      'Per prima cosa l’app misura come vanno le cose adesso, senza cambiare niente: è la <b>base di partenza</b>. Poi introduci la modifica e continua a misurare. La differenza fra i due periodi è la risposta.' +
       (vuota ? '' : '</div><div class="riga-flex mt-s"><button class="btn btn-mini" id="btn-nuovo-exp">' + ICO('plus', 15) + ' Nuovo esperimento</button></div>') +
       '</div>' +
       '<div id="form-exp-zona"></div><div class="griglia mt" id="lista-exp" style="gap:16px"></div>';
-    $vista.innerHTML = html;
-    wireLezioni($vista);
 
     var bNuovo = document.getElementById('btn-nuovo-exp');
     if (bNuovo) bNuovo.addEventListener('click', mostraFormExp);
@@ -6182,7 +6289,7 @@
              invece di scriverne una seconda uguale. */
           '<div class="riga-flex mt-s"><button class="btn btn-mini" data-expsalva="' + e.id + '">' +
           ICO(diff > 0 ? 'funziona' : 'nonFunziona', 15) + ' ' +
-          (lezDi(e) ? 'Aggiorna la riga: l’hai misurata' : (diff > 0 ? 'Salvala fra le cose che ti funzionano' : 'Salvala fra le cose che non ti funzionano')) +
+          (lezDi(e) ? 'Aggiorna la riga: adesso è misurata' : (diff > 0 ? 'Salvala in «Funziona»' : 'Salvala in «Non funziona»')) +
           '</button></div>';
       } else {
         verdetto = '<div class="exp-verdetto">' + ICO('attesa', 15) + '<span>Non ci sono ancora abbastanza dati: servono almeno due giorni con una misura in ciascuna fase. Continua a fare i check-in.</span></div>';
@@ -6303,8 +6410,8 @@
     } else {
       var nuova = LM.aggiungiLezione(testo, verso, { forza: 'misurato', areaId: e.areaId, espId: e.id });
       if (nuova) LM.creaLegameEsperimento(e.id, nuova.id);
-      toast(verso === 'si' ? 'Salvata fra le cose che ti funzionano, con scritto che l’hai misurata.'
-        : 'Salvata fra le cose che non ti funzionano, con scritto che l’hai misurata.',
+      toast(verso === 'si' ? 'Salvata in «Funziona», con l’etichetta «misurato».'
+        : 'Salvata in «Non funziona», con l’etichetta «misurato».',
         0, verso === 'si' ? 'funziona' : 'nonFunziona');
     }
     render();
@@ -6456,7 +6563,7 @@
 
   function vistaScienza() {
     var html = topbar('Perché l’app è fatta così', 'Le ricerche dietro ogni funzione, con le fonti.') +
-      '<div class="card"><div class="sotto" style="margin:0">Le etichette dicono quanto è solida ogni prova: <span class="evidenza evidenza-alta">evidenza alta</span> significa meta-analisi o studi clinici controllati; <span class="evidenza evidenza-media">media</span> significa studi solidi ma non conclusivi; <span class="evidenza evidenza-euristica">euristica</span> significa pratica clinica ragionevole, non ancora dimostrata. In ogni caso la verifica finale spetta a te: la sezione Esperimenti serve proprio a controllare cosa funziona <b>nel tuo caso</b>.</div></div>' +
+      '<div class="card"><div class="sotto" style="margin:0">Le etichette dicono quanto è solida ogni prova: <span class="evidenza evidenza-alta">evidenza alta</span> significa meta-analisi o studi clinici controllati; <span class="evidenza evidenza-media">media</span> significa studi solidi ma non conclusivi; <span class="evidenza evidenza-euristica">euristica</span> significa pratica clinica ragionevole, non ancora dimostrata. La verifica finale spetta comunque a te, e serve a questo la pagina <b>Scoperte</b>.</div></div>' +
       '<div class="griglia griglia-2 mt">' +
       PRINCIPI.map(function (p, i) {
         var cls = p.evidenza === 'alta' ? 'evidenza-alta' : (p.evidenza === 'media' ? 'evidenza-media' : 'evidenza-euristica');
@@ -6485,7 +6592,7 @@
       if (passo === 0) {
         step = '<div class="card"><h2>Come ti chiami</h2><div class="sotto">Puoi compilare ora oppure saltare: quasi tutto qui è facoltativo.</div>' +
           '<label class="campo" for="ob-nome">Nome</label><input type="text" id="ob-nome" value="' + esc(scelte.nome) + '" placeholder="Il tuo nome">' +
-          '<label class="campo" for="ob-visione">In una frase, cosa vuoi ottenere migliorando</label>' +
+          '<label class="campo" for="ob-visione">In una frase, cosa vuoi ottenere</label>' +
           '<textarea id="ob-visione" placeholder="Es. imparare più in fretta, restare in salute e costruire progetti che contano">' + esc(scelte.visione) + '</textarea>' +
           '<div class="riga-flex mt"><button class="btn btn-primario btn-grande" id="ob-avanti">Avanti ' + ICO('arrowRight', 15) + '</button>' +
           '<button class="btn btn-ghost" id="ob-demo">Salta e vai alla demo</button></div></div>';
@@ -6604,14 +6711,31 @@
     return !st.fatto;
   }
 
+  /* LA PORTA DELLE IMPOSTAZIONI, su telefono.
+     È stata in due posti sbagliati, per due ragioni opposte. Prima nella testa
+     di «Panoramica»: l'unica porta dell'app stava nell'angolo di UNA schermata,
+     e per trovarla bisognava già sapere che era là. Poi nella barra in basso,
+     accanto alle tre porte: trovabile sì, ma la barra in basso è il posto delle
+     cose che si toccano venti volte al giorno, e le impostazioni si aprono
+     forse una volta al mese. Un quarto della barra — la fascia più preziosa
+     dello schermo, quella che il pollice raggiunge senza spostare la mano —
+     spesa per una cosa che quasi non si usa.
+     Adesso sta dove l'ha messa tutto il resto del mondo: in alto a destra,
+     l'angolo più lontano dal pollice, lo stesso su ogni schermata. Fuori dalla
+     strada, e sempre nello stesso punto. Sul desktop non c'è: là la colonna la
+     tiene già in fondo, che è lo stesso ragionamento. */
+  function bottoneImpostazioni() {
+    return '<button type="button" class="btn-tu" data-imp="1" aria-label="Impostazioni" ' +
+      'title="Impostazioni">' + ICO('ingranaggio', 18) + '</button>';
+  }
+
   function sottoNav(v) {
     /* SOLO la riga che ha creato questa funzione: `.sez-nav` è la classe
        condivisa dello stile e ce l'hanno anche le linguette proprie di
        Attività e Andamento — cercandola qui le si cancellava a ogni ridisegno */
-    var vecchia = $vista.querySelector('.porta-nav');
+    var vecchia = $vista.querySelector('.testa-porta');
     if (vecchia) vecchia.remove();
     document.documentElement.style.setProperty('--sottonav-h', '0px');
-    if (!navTre()) return;
     var g = gruppoDi(v);
     var lista = g.viste.slice();
     /* se sei in una schermata «di passaggio» (Perché funziona, Design lab) la
@@ -6624,7 +6748,6 @@
       var vi = vistaById(v);
       lista.push({ id: v, eti: (vi && (vi.breve || vi.nome)) || v });
     }
-    if (lista.length < 2) return;
     /* La riga delle sezioni è LA STESSA di tutte le altre pagine. Prima qui
        c'erano linguette sottolineate e in Attività e Andamento pastiglie a
        segmenti: due controlli per lo stesso mestiere («scegli una sezione di
@@ -6632,6 +6755,8 @@
        sono tre indirizzi e sotto l'altro tre pannelli. Il commento di
        `.segmenti.tabs-fisse` diceva già «vale per TUTTE le barre di sezione»:
        mancava solo che questa la usasse. */
+    var riga = document.createElement('div');
+    riga.className = 'testa-porta';
     var bar = document.createElement('nav');
     bar.className = 'segmenti sez-nav porta-nav tabs-fisse' + (lista.length === 2 ? ' tabs-due' : '');
     bar.setAttribute('aria-label', 'Sezioni di ' + g.nome);
@@ -6657,10 +6782,16 @@
        rimaste solo dove tengono un comando il contenuto cominciava sessanta
        pixel più in basso su tre pagine e in cima sulle altre sette: cambiando
        porta la pagina saltava. La barra di strumenti, se c'è, viene dopo. */
-    $vista.prepend(bar);
+    var conNav = navTre() && lista.length >= 2;
+    if (conNav) riga.appendChild(bar);
+    else riga.className += ' testa-porta-sola';
+    riga.insertAdjacentHTML('beforeend', bottoneImpostazioni());
+    riga.querySelector('[data-imp]').addEventListener('click', apriImpostazioni);
+    /* la riga delle sezioni è SEMPRE il primo blocco della pagina */
+    $vista.prepend(riga);
     /* niente più sfumatura di scorrimento: a colonne uguali la riga ci sta per
        costruzione a qualunque larghezza, come nelle altre pagine */
-    document.documentElement.style.setProperty('--sottonav-h', (bar.offsetHeight + 14) + 'px');
+    document.documentElement.style.setProperty('--sottonav-h', (riga.offsetHeight + 14) + 'px');
   }
 
   var vistaMostrata = '';

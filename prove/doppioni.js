@@ -142,17 +142,17 @@ const SCENE = [
   { nome: 'Cattura rapida', vai: 'oggi', poi: async p => {
       await p.evaluate(() => { const b = document.querySelector('.tabbar [data-catt]'); if (b) b.click(); }); } },
   { nome: 'Impostazioni', vai: 'plancia', poi: async p => {
-      await p.evaluate(() => { const b = [...document.querySelectorAll('#vista button')].find(x => /Impostazioni/.test(x.textContent)); if (b) b.click(); }); } },
+      await p.evaluate(() => { const b = (document.getElementById('fondo-impostazioni') || document.querySelector('[data-imp]')); if (b) b.click(); }); } },
   { nome: 'Come ti avviso', vai: 'plancia', poi: async p => {
-      await p.evaluate(() => { const b = [...document.querySelectorAll('#vista button')].find(x => /Impostazioni/.test(x.textContent)); if (b) b.click(); });
+      await p.evaluate(() => { const b = (document.getElementById('fondo-impostazioni') || document.querySelector('[data-imp]')); if (b) b.click(); });
       await p.waitForTimeout(650);
       await p.evaluate(() => { const b = document.getElementById('imp-prom-come'); if (b) b.click(); }); } },
   { nome: 'Sonno e pasti', vai: 'plancia', poi: async p => {
-      await p.evaluate(() => { const b = [...document.querySelectorAll('#vista button')].find(x => /Impostazioni/.test(x.textContent)); if (b) b.click(); });
+      await p.evaluate(() => { const b = (document.getElementById('fondo-impostazioni') || document.querySelector('[data-imp]')); if (b) b.click(); });
       await p.waitForTimeout(650);
       await p.evaluate(() => { const b = document.getElementById('imp-ritmo'); if (b) b.click(); }); } },
   { nome: 'Gestisci le aree', vai: 'plancia', poi: async p => {
-      await p.evaluate(() => { const b = [...document.querySelectorAll('#vista button')].find(x => /Impostazioni/.test(x.textContent)); if (b) b.click(); });
+      await p.evaluate(() => { const b = (document.getElementById('fondo-impostazioni') || document.querySelector('[data-imp]')); if (b) b.click(); });
       await p.waitForTimeout(650);
       await p.evaluate(() => { const b = document.getElementById('imp-aree'); if (b) b.click(); }); } }
 ];

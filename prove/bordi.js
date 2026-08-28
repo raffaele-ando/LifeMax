@@ -12,7 +12,7 @@
    Li ha trovati l'occhio, uno per volta, su schermate diverse. Questa prova li
    cerca tutti insieme.
 
-   LE SETTE COSE CHE CERCA
+   LE OTTO COSE CHE CERCA
    1. angolo tondo senza ritaglio      → è rimasto un arco di cerchio
    2. bordo con lo spessore e nessuno che lo dipinge → bordo sparito
    3. bordo dipinto DUE volte           → fianchi scuri e angoli chiari
@@ -20,6 +20,7 @@
    5. overflow che si mangia l'anello   → bordo sparito, e ne restano altri
    6. ritaglio che mangia quello che sporge → pezzi tagliati di netto
    7. angolo più grande di quanto ci sta  → forma strozzata
+   8. anello sullo pseudo-elemento di qualcun altro → quel disegno esce a pezzi
 
    node prove/bordi.js        (CHROMIUM=/percorso/di/chrome se serve)  */
 'use strict';
@@ -36,15 +37,31 @@ const ok = (n, c, d) => { if (!c) guai++; console.log('  ' + (c ? 'ok  ' : 'KO  
    ventuno schermate e i pannelli che mancavano — «La scienza», «Backup»,
    «Come si usa» — sono esattamente quelli dove poi si sono trovate le
    pastiglie mai misurate, rimaste archi di cerchio. */
-const SCENE = JSON.parse(fs.readFileSync(path.join(RADICE, 'segni/scene.json'), 'utf8'))
-  .map((x) => [x.nome, x.via, x.tab, x.poi]);
+const SCENE = JSON.parse(fs.readFileSync(path.join(RADICE, 'segni/scene.json'), 'utf8'));
 
 /* --- il controllo, dentro la pagina --- */
 const CONTROLLA = `(function () {
   var nome = function (e) { return e.tagName.toLowerCase() +
     (e.className && e.className.toString ? '.' + e.className.toString().trim().split(/\\s+/).slice(0, 3).join('.') : ''); };
   var vuoto = function (c) { return !c || /^(transparent|rgba\\(0, 0, 0, 0\\))$/.test(c); };
-  var out = { ritagliati: 0, tondi: [], spariti: [], doppi: [], senzaForma: [], overflow: [], mangiati: [], strozzati: [] };
+  /* IL COLORE, NORMALIZZATO. La proprietà --sq-b è personalizzata: arriva come
+     l'ha scritta il foglio di stile (#d5d5de, color-mix(...)), mentre lo
+     pseudo-elemento lo dà già risolto (rgb(213, 213, 222)). Confrontare le due
+     stringhe dava novantacinque falsi allarmi al primo giro. Si passa dal
+     browser: lo stesso valore messo su una proprietà color esce normalizzato. */
+  var provino = document.createElement('span');
+  provino.style.position = 'fixed'; provino.style.left = '-9999px';
+  document.body.appendChild(provino);
+  var cache = {};
+  var risolvi = function (v) {
+    if (!v) return '';
+    if (cache[v] !== undefined) return cache[v];
+    provino.style.color = '';
+    provino.style.color = v;
+    cache[v] = getComputedStyle(provino).color;
+    return cache[v];
+  };
+  var out = { ritagliati: 0, tondi: [], spariti: [], doppi: [], senzaForma: [], overflow: [], mangiati: [], strozzati: [], dueP: [] };
   document.querySelectorAll('body *').forEach(function (e) {
     var s = getComputedStyle(e), r = e.getBoundingClientRect();
     if (r.width < 4 || r.height < 4 || s.visibility === 'hidden' || s.display === 'none' || s.opacity === '0') return;
@@ -59,7 +76,21 @@ const CONTROLLA = `(function () {
     var anello = null;
     ['::before', '::after'].forEach(function (ps) {
       var q = getComputedStyle(e, ps);
-      if (/^polygon\\(evenodd/.test(q.clipPath || '')) anello = q;
+      if (/^polygon\\(evenodd/.test(q.clipPath || '')) {
+        anello = q;
+        /* 8. LO PSEUDO-ELEMENTO È DI DUE PADRONI. L'anello del bordo si
+              disegna su ::before, e se quello pseudo-elemento serviva già a
+              qualcos'altro (una barretta, un pallino, una freccia) le due
+              regole finiscono sullo stesso elemento: l'anello gli mette
+              addosso il proprio ritaglio e quel disegno esce a pezzi. È
+              successo alla barretta dell'accento nella colonna di sinistra
+              (.nav-item.attivo, il suo ::before) e non si vedeva perché allora il
+              ritaglio portava via tutto quello che stava fuori dal riquadro.
+              Se dipinge un colore che non è quello dell'anello, sopra quello
+              pseudo-elemento non c'è solo l'anello. */
+        if (!vuoto(q.backgroundColor) && risolvi(q.backgroundColor) !== risolvi(sqb))
+          out.dueP.push(nome(e) + ps + ' dipinge ' + q.backgroundColor + ' e non ' + sqb);
+      }
     });
     if (clip) out.ritagliati++;
 
@@ -95,8 +126,14 @@ const CONTROLLA = `(function () {
           ') anello a ' + anello.top);
     }
 
-    /* 6. il ritaglio mangia quello che sporge oltre il bordo esterno */
-    if (clip && /^visible/.test(s.overflow) && /^visible/.test(s.overflowY)) {
+    /* 6. il ritaglio mangia quello che sporge oltre il bordo esterno.
+          Vale solo per un ritaglio che sta DENTRO il riquadro del bordo: quello
+          a quattro morsi toglie soltanto le quattro zone d'angolo e lascia
+          vivere tutto il resto, quindi non può mangiare niente che sporga —
+          ed è per questo che la barretta dell'accento della colonna, che sta
+          quattordici pixel FUORI dalla voce di menu, adesso si vede. */
+    var dentroIlRiquadro = clip && !/-\\d\\d+(\\.\\d+)?px/.test(clip);
+    if (dentroIlRiquadro && /^visible/.test(s.overflow) && /^visible/.test(s.overflowY)) {
       for (var i = 0; i < e.children.length; i++) {
         var c = e.children[i], cs = getComputedStyle(c);
         if (cs.position === 'fixed') continue;
@@ -143,12 +180,13 @@ const CONTROLLA = `(function () {
   const b = await chromium.launch({ executablePath: process.env.CHROMIUM || undefined });
 
   const tot = { tondi: new Map(), spariti: new Map(), doppi: new Map(), senzaForma: new Map(),
-    overflow: new Map(), mangiati: new Map(), strozzati: new Map() };
+    overflow: new Map(), mangiati: new Map(), strozzati: new Map(), dueP: new Map() };
   let ritagliati = 0, viste = 0;
+  const rotte = new Map();
   const VIE = [[320, true, 'light'], [390, true, 'light'], [390, true, 'dark'], [1280, false, 'light'], [1280, false, 'dark']];
   for (const [largh, mob, tema] of VIE) {
     const ctx = await b.newContext({ viewport: { width: largh, height: 900 }, hasTouch: mob, isMobile: mob, colorScheme: tema });
-    for (const [nome, via, tab, poi] of SCENE) {
+    for (const { nome, via, tab, poi, prova } of SCENE) {
       const p = await ctx.newPage();
       try {
         await p.goto('http://localhost:' + PORTA + '/index.html'); await p.waitForTimeout(300);
@@ -160,12 +198,22 @@ const CONTROLLA = `(function () {
           await p.waitForTimeout(450);
         }
         if (poi) { await p.evaluate(poi); await p.waitForTimeout(800); }
+        /* la scena è arrivata dove doveva? Senza questa riga una scena che
+           sbaglia strada mostra un'altra schermata e la prova la promuove.
+           È così che otto pannelli sono rimasti fuori dai controlli per un
+           mese: la porta delle impostazioni si era spostata e il clic finiva
+           nel vuoto. */
+        if (prova) {
+          const c = await p.evaluate((q) => document.querySelectorAll(q).length, prova);
+          if (!c) throw new Error('la scena non è arrivata: manca «' + prova + '»');
+        }
         const r = await p.evaluate(CONTROLLA);
         ritagliati += r.ritagliati; viste++;
         const dove = largh + 'px/' + tema + ' · ' + nome;
         Object.keys(tot).forEach((k) => r[k].forEach((x) => { if (!tot[k].has(x)) tot[k].set(x, dove); }));
-      } catch (e) { console.log('  (' + nome + ' a ' + largh + 'px: ' + String(e).split('\n')[0].slice(0, 60) + ')'); }
-      finally { await p.close(); }
+      } catch (e) {
+        rotte.set(nome + ' a ' + largh + 'px', String(e).split('\n')[0].replace(/^Error: /, '').slice(0, 80));
+      } finally { await p.close(); }
     }
     await ctx.close();
     console.log('  ' + largh + 'px ' + tema + ': fatto');
@@ -186,6 +234,8 @@ const CONTROLLA = `(function () {
   mostra('nessun overflow si mangia l’anello', tot.overflow);
   mostra('il ritaglio non mangia niente che sporge', tot.mangiati);
   mostra('nessun angolo è più grande di quanto ci sta', tot.strozzati);
+  mostra('nessuno pseudo-elemento serve a due cose insieme', tot.dueP);
+  mostra('nessuna scena ha sbagliato strada', rotte);
 
   console.log(guai ? '\n>>> ' + guai + ' PROBLEMI' : '\n>>> TUTTO A POSTO');
   await b.close(); srv.close(); process.exit(guai ? 1 : 0);

@@ -400,8 +400,8 @@ const CONTORNO = `(function (b64, R, dritto) {
   const SCENE = [
     ['Oggi', 'oggi', null], ['La giornata', 'giornata', null], ['Attività', 'inbox', null],
     ['Rituali', 'rituali', null], ['Andamento', 'plancia', null], ['Esperimenti', 'esperimenti', null],
-    ['Impostazioni', 'plancia', () => { const b2 = [...document.querySelectorAll('#vista button')].find(x => /Impostazioni/.test(x.textContent)); if (b2) b2.click(); }],
-    ['Come ti avviso', 'plancia', () => { const b2 = [...document.querySelectorAll('#vista button')].find(x => /Impostazioni/.test(x.textContent)); if (b2) b2.click(); const c = document.getElementById('imp-prom-come'); if (c) c.click(); }],
+    ['Impostazioni', 'plancia', () => { const b2 = (document.getElementById('fondo-impostazioni') || document.querySelector('[data-imp]')); if (b2) b2.click(); }],
+    ['Come ti avviso', 'plancia', () => { const b2 = (document.getElementById('fondo-impostazioni') || document.querySelector('[data-imp]')); if (b2) b2.click(); const c = document.getElementById('imp-prom-come'); if (c) c.click(); }],
     ['Design lab', 'lab', null]
   ];
   const ps = await b.newPage({ viewport: { width: 390, height: 900 }, hasTouch: true, isMobile: true });

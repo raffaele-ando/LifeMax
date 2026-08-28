@@ -44,6 +44,15 @@ const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  
     await p.evaluate(() => { location.hash = '#/esperimenti'; });
     await p.waitForTimeout(700);
   };
+  /* la pagina ha due sezioni e se ne vede una per volta: chi cerca il registro
+     o gli esperimenti deve dire quale */
+  const sezione = async (quale) => {
+    await p.evaluate((q) => {
+      const b = document.querySelector('#sez-scoperte [data-scop="' + q + '"]');
+      if (b) b.click();
+    }, quale);
+    await p.waitForTimeout(500);
+  };
   const conta = () => p.evaluate(() => ({
     si: LM.lezioni('si').length, no: LM.lezioni('no').length,
     righeSi: document.querySelectorAll('.lez-riga .lez-si').length,
@@ -57,15 +66,51 @@ const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  
     JSON.stringify(c0));
   ok('e in pagina ce ne sono tante quante nei dati', c0.righeSi === c0.si && c0.righeNo === c0.no,
     JSON.stringify(c0));
-  /* l'ordine della pagina è una scelta: il registro sta SOPRA gli esperimenti,
-     perché è la cosa che si usa ogni giorno */
-  const ordine = await p.evaluate(() => {
-    const lez = document.querySelector('.lez-card');
-    const exp = document.querySelector('.exp-card') || document.getElementById('lista-exp');
-    if (!lez || !exp) return null;
-    return lez.getBoundingClientRect().top < exp.getBoundingClientRect().top;
+  /* DUE SEZIONI, E SI VEDE UNA PER VOLTA.
+     Prima stavano una sopra l'altra, il registro in cima perché è la cosa che
+     si usa ogni giorno. Con sei righe andava bene; con quaranta, per arrivare
+     agli esperimenti bisognava scorrere davanti a tutto quello che si sa già —
+     e la strada si allungava proprio per chi usa il registro di più. Quindi
+     quello che si controlla è che la lunghezza del registro NON sposti gli
+     esperimenti: la linguetta sta dove sta, qualunque cosa ci sia dentro. */
+  const dueSezioni = await p.evaluate(() => {
+    const bar = document.getElementById('sez-scoperte');
+    return bar ? {
+      quante: bar.querySelectorAll('[data-scop]').length,
+      aperta: (bar.querySelector('.attivo') || {}).getAttribute
+        ? bar.querySelector('.attivo').getAttribute('data-scop') : null,
+      registro: !!document.querySelector('.lez-card'),
+      esperimenti: !!document.getElementById('lista-exp')
+    } : null;
   });
-  ok('il registro sta sopra gli esperimenti', ordine === true, 'lez prima di exp: ' + ordine);
+  ok('la pagina ha due sezioni e si apre sul registro',
+    !!dueSezioni && dueSezioni.quante === 2 && dueSezioni.aperta === 'registro' &&
+    dueSezioni.registro && !dueSezioni.esperimenti, JSON.stringify(dueSezioni));
+  const quantoLontano = async () => p.evaluate(() => {
+    const b = document.querySelector('#sez-scoperte [data-scop="esperimenti"]');
+    return b ? Math.round(b.getBoundingClientRect().top) : null;
+  });
+  const lontanoPrima = await quantoLontano();
+  await p.evaluate(() => {
+    /* venti righe in più nel registro: la porta degli esperimenti non si deve
+       spostare di un pixel */
+    for (let i = 0; i < 20; i++) LM.aggiungiLezione('Riga di prova numero ' + i, 'si', { forza: 'notato' });
+  });
+  await allaPagina();
+  const lontanoDopo = await quantoLontano();
+  ok('e venti righe nel registro non allontanano gli esperimenti',
+    lontanoPrima !== null && lontanoPrima === lontanoDopo, lontanoPrima + ' → ' + lontanoDopo);
+  await p.evaluate(() => {
+    LM.load().lezioni.filter(l => /^Riga di prova numero /.test(l.testo)).forEach(l => LM.rimuoviLezione(l.id));
+  });
+  await allaPagina();
+  await sezione('esperimenti');
+  const soloExp = await p.evaluate(() => ({
+    registro: !!document.querySelector('.lez-card'), esperimenti: !!document.getElementById('lista-exp')
+  }));
+  ok('e la linguetta «Esperimenti» mostra solo quelli',
+    soloExp.esperimenti && !soloExp.registro, JSON.stringify(soloExp));
+  await sezione('registro');
 
   console.log('\nSI SCRIVE IN UNA RIGA, E FINISCE NEL MUCCHIO GIUSTO');
   const scrivi = async (testo, verso) => {
@@ -192,6 +237,7 @@ const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  
 
   console.log('\nUN ESPERIMENTO CHE FINISCE AGGIORNA LA SUA RIGA');
   await allaPagina();
+  await sezione('esperimenti');
   const primoClic = await p.evaluate(() => {
     const b2 = document.querySelector('[data-expsalva]');
     if (!b2) return null;
@@ -207,6 +253,7 @@ const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  
   ok('il verdetto diventa una riga, con scritto che l’hai misurata',
     primoClic !== null && esito1.quante === primoClic + 1 && esito1.misurate >= 1, JSON.stringify(esito1));
   await allaPagina();
+  await sezione('esperimenti');
   const testoTasto = await p.evaluate(() => {
     const b2 = document.querySelector('[data-expsalva]');
     return b2 ? b2.textContent.trim() : null;
@@ -221,6 +268,7 @@ const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  
 
   console.log('\nDALLA RIGA SI PARTE PER L’ESPERIMENTO');
   await allaPagina();
+  await sezione('registro');
   const idPer = (await trovaPerTesto('biblioteca')).id;
   await p.evaluate((id) => { document.querySelector('[data-lezapri="' + id + '"]').click(); }, idPer);
   await p.waitForTimeout(600);
@@ -242,12 +290,15 @@ const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  
   ok('e l’esperimento si ricorda da quale riga è nato', !!legame, legame);
 
   console.log('\nIL MODULO NON SI PERDE SE LA PAGINA SI RIDISEGNA');
+  /* e ci si apre da sé sulla sezione giusta: il modulo vive fra gli
+     esperimenti, e chi stava scrivendo non deve ritrovarsi sul registro */
   /* La pagina si ridisegna da sé: quando arriva la risposta dell'account,
      quando il cloud porta un aggiornamento, quando la rete cade. Il modulo
      stava solo nel DOM, quindi chi aveva scritto mezza domanda se la vedeva
      sparire senza aver toccato niente — e lo stesso capitava al modulo aperto
      da una riga imparata. Qui si forza il ridisegno con l'evento vero. */
   await allaPagina();
+  await sezione('esperimenti');
   await p.evaluate(() => { document.getElementById('btn-nuovo-exp').click(); });
   await p.waitForTimeout(400);
   await p.evaluate(() => {

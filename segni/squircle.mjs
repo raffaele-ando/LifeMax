@@ -373,8 +373,30 @@ export function genera() {
     /* se in questo gruppo c'è qualcuno che SCORRE, gli serve l'anello
        rientrato: quello normale glielo taglierebbe l'overflow */
     const scorre = sel.some((x) => /auto|scroll|clip/.test(taglia.get(x) || ''));
+    /* IL RAGGIO CHE RESTA AL BOX, e perché non è più zero.
+       Serviva a zero perché il ritaglio pieno tagliava anche il bordo del box:
+       lasciargli un raggio voleva dire due angoli diversi sovrapposti. Adesso
+       il ritaglio toglie solo i quattro morsi, e allora il raggio torna utile
+       per una cosa che il ritaglio non sa fare: dare all'OMBRA un angolo tondo.
+       L'ombra si disegna dalla sagoma del box, e con raggio zero usciva un
+       rettangolo a spigoli — un alone quadrato attorno a una scheda tonda.
+       Il raggio si tiene un filo sotto quello nominale (0.99) perché a 0.995
+       l'arco tocca esattamente la curva di Apple sulla diagonale: misurato, il
+       punto più vicino al vertice sta a 0.41225 raggi e l'arco ci arriva a
+       0.41421. Sotto quel valore l'arco contiene la curva dappertutto, quindi
+       la forma che si vede resta esattamente quella di Apple e l'arco lavora
+       solo per l'ombra. */
+    const rOmbra = q.map((x) => Math.round(x * 0.99 * 10) / 10);
     nomi.set(nome, {
-      pieno: A.poligono(q, TOLLERANZA),
+      rOmbra: rOmbra.every((x) => x === rOmbra[0]) ? (rOmbra[0] + 'px')
+        : rOmbra.map((x) => x + 'px').join(' '),
+      /* `poligonoAngoli` e non `poligono`: il ritaglio toglie i quattro morsi
+         d'angolo e lascia stare tutto il resto, così l'ombra e il contorno di
+         messa a fuoco — che stanno FUORI dal riquadro del bordo — continuano a
+         esistere. Col ritaglio pieno l'app non aveva più nemmeno un'ombra, in
+         centoventi punti che ne dichiaravano una. (Il perché sta in
+         segni/apple.mjs, sopra `poligonoAngoli`.) */
+      pieno: A.poligonoAngoli(q, TOLLERANZA),
       anello: A.anello(q, sp, TOLLERANZA),
       dentro: scorre ? A.anelloDentro(q, sp, TOLLERANZA) : null
     });
@@ -394,9 +416,15 @@ export function genera() {
     '   L\'angolo si mangia 1.528665 raggi lungo ogni lato — una volta e mezza — e',
     '   toglie 1.05 volte l\'area di un arco allo stesso raggio: per questo i raggi',
     '   restano quelli di prima e l\'app non sembra più spigolosa.',
-    '   Il raggio si azzera perché un ritaglio può solo togliere. Il bordo, che',
-    '   seguiva gli spigoli e verrebbe tagliato proprio sulla curva, si ridisegna',
-    '   come anello cavo sullo pseudo-elemento, spesso quanto il bordo vero.',
+    '   Il ritaglio toglie SOLO i quattro morsi d\'angolo: fuori dal riquadro del',
+    '   bordo l\'elemento disegna ancora l\'ombra e il contorno di messa a fuoco, e',
+    '   un ritaglio pieno li portava via tutti e due — l\'app non aveva più',
+    '   nemmeno un\'ombra in centoventi punti che ne dichiaravano una.',
+    '   Il bordo, che seguiva gli spigoli e verrebbe tagliato proprio sulla curva,',
+    '   si ridisegna come anello cavo sullo pseudo-elemento, spesso quanto il',
+    '   bordo vero. Il border-radius resta (99% di quello nominale) e serve solo',
+    '   a dare un angolo tondo all\'ombra: la forma che si vede la decide il',
+    '   ritaglio, che è più stretto dappertutto.',
     '   Rigenerare: node segni/squircle.mjs */',
     ''
   ].join('\n');
@@ -421,12 +449,29 @@ export function genera() {
   const coda = (x) => x + NON_CAMPO;
   const perOverflow = new Map();      /* spessore → selettori che tagliavano */
   for (const [sel, nome, sp, serve] of perGruppo) {
-    css += righe(sel.map(coda), 2) + ' {\n    border-radius: 0;\n    clip-path: var(' + nome + '-p);\n  }\n';
+    css += righe(sel.map(coda), 2) + ' {\n    border-radius: ' + nomi.get(nome).rOmbra +
+      ';\n    clip-path: var(' + nome + '-p);\n  }\n';
     if (!serve) continue;
     const scorre = (x) => /auto|scroll|clip/.test(taglia.get(x) || '');
     const fuori = sel.filter((x) => !scorre(x)), dentro = sel.filter(scorre);
-    const psDi = (lista) => [...lista.filter((x) => !beforeOccupato.has(x)).map((x) => coda(x) + '::before'),
-      ...lista.filter((x) => beforeOccupato.has(x)).map((x) => coda(x) + '::after')];
+    /* «QUESTO ::before È GIÀ DI QUALCUNO?» non si risponde confrontando il
+       testo del selettore. `.nav-item.attivo::before` disegna la barretta
+       dell'accento a sinistra della voce di menu accesa; il gruppo della forma
+       si chiama `.nav-item`, che è un altro testo — e così l'anello del bordo
+       finiva sullo STESSO pseudo-elemento della barretta, sullo stesso
+       elemento, quando quella voce era accesa. Il risultato: la barretta
+       prendeva il `clip-path` dell'anello e usciva a pezzi, due trattini
+       invece di una riga.
+       Per un anno non si è visto perché il ritaglio pieno tagliava via tutto
+       quello che stava fuori dal riquadro, barretta compresa: il difetto è
+       comparso il giorno in cui il ritaglio ha smesso di farlo.
+       Due selettori si pestano i piedi se uno è l'altro più un pezzo attaccato
+       senza spazi — `.nav-item` e `.nav-item.attivo` sono lo stesso elemento in
+       due momenti. Con uno spazio in mezzo invece sono due elementi diversi. */
+    const attaccato = (a, b) => a.startsWith(b) && /^[.:#[]/.test(a.slice(b.length));
+    const beforePreso = (x) => [...beforeOccupato].some((o) => o === x || attaccato(o, x) || attaccato(x, o));
+    const psDi = (lista) => [...lista.filter((x) => !beforePreso(x)).map((x) => coda(x) + '::before'),
+      ...lista.filter((x) => beforePreso(x)).map((x) => coda(x) + '::after')];
     if (fuori.length) {
       css += righe(psDi(fuori), 2) + ' {\n' +
         "    content: ''; position: absolute; inset: " + (-sp) + 'px; pointer-events: none;\n' +

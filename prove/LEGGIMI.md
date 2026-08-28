@@ -228,7 +228,7 @@ genera le chiavi, in un browser vero).
   Nasce da «quelli sono solo alcuni, ce ne sono in varie sezioni e pagine»: i
   difetti li aveva trovati l'occhio, tre o quattro per volta, e ogni volta la
   causa era un'altra con lo stesso aspetto — «il bordo sembra tagliato». Le
-  sette cause, tutte in una prova:
+  otto cause, tutte in una prova:
   1. un angolo tondo senza ritaglio (è rimasto un arco di cerchio);
   2. un bordo con lo spessore e nessuno che lo dipinge (bordo sparito);
   3. un bordo dipinto DUE volte, box e anello (fianchi scuri, angoli chiari);
@@ -236,11 +236,50 @@ genera le chiavi, in un browser vero).
   5. un `overflow` che si mangia l'anello;
   6. un ritaglio che mangia quello che sporge — figli, pseudo-elementi, e con
      loro l'area del dito;
-  7. un angolo più grande di mezzo lato, che si strozza in una punta.
+  7. un angolo più grande di mezzo lato, che si strozza in una punta;
+  8. l'anello messo sullo pseudo-elemento di qualcun altro. `::before` è uno
+     per elemento: se lo usava già una barretta, un pallino o una freccia, le
+     due regole finiscono sullo stesso pezzo di schermo e quel disegno prende
+     addosso il ritaglio dell'anello. È successo alla barretta dell'accento
+     nella colonna di sinistra (`.nav-item.attivo::before`), che ne usciva a
+     trattini. Il generatore ora sa che `.nav-item` e `.nav-item.attivo` sono
+     lo stesso elemento in due momenti; la prova controlla il risultato.
   Alla prima passata: settanta casi, in pagine che a occhio non erano mai state
   guardate — «La scienza», «Backup», «Come si usa», il Design lab. Stampa
   TUTTI i casi, uno per riga, e non i primi sei: con l'elenco tagliato si
   lavorava tre volte sugli stessi e mai sugli altri.
+
+  **E che ogni scena sia arrivata dove doveva.** Ogni voce di
+  `segni/scene.json` porta un `prova`: un selettore che DEVE esserci quando la
+  scena è pronta. Senza, una scena che sbaglia strada non fallisce — mostra
+  un'altra schermata, e la prova promuove quella. È esattamente quello che è
+  successo: il giorno in cui la porta delle impostazioni si è spostata, otto
+  scene su quarantadue hanno smesso di aprire il pannello e sono rimaste sulla
+  pagina che c'era sotto. Per settimane il generatore ha misurato la stessa
+  schermata otto volte e la prova ha detto che andava tutto bene, mentre le
+  pastiglie di quei pannelli restavano archi di cerchio. Adesso la corsa si
+  ferma e stampa quali scene non ci sono arrivate.
+
+- **stati.js** — l'app MENTRE REAGISCE: sopra col mouse, a fuoco da tastiera,
+  premuta. Le altre prove la guardano ferma, e c'era una famiglia di difetti
+  che si vedeva solo tenendo premuto.
+  Un `clip-path` taglia tutto il disegno dell'elemento, anche quello che sta
+  FUORI dal riquadro del bordo — e fuori un elemento disegna due cose che
+  contano solo quando reagisce: l'**ombra** (`box-shadow`, tre livelli
+  dichiarati e usati in centoventi punti) e il **contorno di messa a fuoco**
+  (`outline`). Col ritaglio pieno non se ne vedeva nessuna delle due: l'app era
+  piatta senza saperlo, e chi navigava col Tab vedeva il fuoco spostarsi senza
+  nessun segno di dove fosse arrivato. Su «Chiaro · Auto · Scuro» quell'ombra
+  era l'unica differenza fra la pastiglia scelta e le altre.
+  Nessuna prova poteva accorgersene: `bordi.js` controlla che il BORDO ci sia,
+  e il bordo c'era. Gli stati si accendono con `CSS.forcePseudoState` del
+  protocollo di Chrome — `:hover` non si simula da JavaScript, e passare il
+  mouse su duemila elementi uno per volta costerebbe mezz'ora per schermata.
+  Tre controlli: nessun contorno tagliato, nessuna ombra tagliata, nessuna
+  evidenziazione a spigoli vivi appoggiata al bordo di un contenitore tondo.
+  Nasce da «quando è selezionato o ci passo sopra col mouse non evidenzia tutto
+  l'elemento, sembra tagliato o rettangolare» e da «in altri elementi ci
+  dovrebbe essere un bordo che li circonda e non sembra esserci».
 - **gesto.js** — il foglio dal basso: il gesto, e che dopo si possa ancora
   toccare. Prima di tutto campiona la SUPERFICIE del foglio aperto e pretende
   che ogni punto arrivi al foglio: nasce da una regressione in cui il velo
@@ -280,6 +319,7 @@ genera le chiavi, in un browser vero).
     node prove/adesso.js
     node prove/squircle.js
     node prove/bordi.js      # 210 schermate, una decina di minuti
+    node prove/stati.js      # 42 schermate × 4 stati × 2 vie
     node prove/promemoria.js
     node prove/doppioni.js   # qualche minuto
     node prove/sezioni.js

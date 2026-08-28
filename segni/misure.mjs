@@ -101,10 +101,19 @@ const DENTRO = (dati) => {
 
 const b = await chromium.launch({ executablePath: process.env.CHROMIUM || undefined });
 const corto = {}, angolo = {};
+/* LE SCENE CHE NON ARRIVANO. Ogni scena dichiara un `prova`: un selettore che
+   DEVE esserci una volta che la scena è pronta. Serve perché una scena che
+   sbaglia strada non fallisce — mostra un'altra schermata, e le misure escono
+   giuste per quella. È successo davvero: quando la porta delle impostazioni si
+   è spostata, otto scene su quarantadue hanno smesso di aprire il pannello e
+   hanno misurato la pagina che c'era sotto. Il generatore ha continuato a dire
+   che andava tutto bene, e le pastiglie di quelle otto schermate sono rimaste
+   archi di cerchio finché non le ha viste un occhio. Adesso la corsa si ferma. */
+const rotte = [];
 /* due larghezze e i due temi: il tema cambia i bordi, la larghezza le altezze */
 for (const [largh, mob, tema] of [[320, true, 'light'], [390, true, 'light'], [1280, false, 'dark']]) {
   const ctx = await b.newContext({ viewport: { width: largh, height: 900 }, hasTouch: mob, isMobile: mob, colorScheme: tema });
-  for (const { nome, via, tab, poi } of SCENE) {
+  for (const { nome, via, tab, poi, prova } of SCENE) {
     const p = await ctx.newPage();
     try {
       await p.goto('http://localhost:' + PORTA + '/index.html'); await p.waitForTimeout(300);
@@ -116,19 +125,30 @@ for (const [largh, mob, tema] of [[320, true, 'light'], [390, true, 'light'], [1
         await p.waitForTimeout(450);
       }
       if (poi) { await p.evaluate(poi); await p.waitForTimeout(800); }
+      if (prova) {
+        const c = await p.evaluate((q) => document.querySelectorAll(q).length, prova);
+        if (!c) throw new Error('la scena non è arrivata: manca «' + prova + '»');
+      }
       const r = await p.evaluate(DENTRO, { raggi, bordi, forma });
       Object.keys(r.corto).forEach((k) => {
         if (corto[k] === undefined || r.corto[k] < corto[k]) corto[k] = r.corto[k];
       });
       Object.keys(r.angolo).forEach((k) => { angolo[k] = true; });
     } catch (e) {
-      console.log('  (' + nome + ' a ' + largh + 'px: ' + String(e).split('\n')[0].slice(0, 70) + ')');
+      rotte.push(nome + ' a ' + largh + 'px: ' + String(e).split('\n')[0].replace(/^Error: /, '').slice(0, 90));
     } finally { await p.close(); }
   }
   await ctx.close();
   console.log('  ' + largh + 'px ' + tema + ': fatto');
 }
 await b.close(); srv.close();
+
+if (rotte.length) {
+  console.log('\n  SCENE CHE NON SONO ARRIVATE — le misure sarebbero sbagliate:');
+  rotte.forEach((x) => console.log('    ' + x));
+  console.log('  segni/misure.json NON è stato riscritto.');
+  process.exit(1);
+}
 
 const fuori = {};
 [...new Set([...Object.keys(corto), ...Object.keys(angolo)])].sort().forEach((k) => {

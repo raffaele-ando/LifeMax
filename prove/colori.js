@@ -40,11 +40,11 @@ const SCENE = [
      sotto un campo) ed è proprio quella la combinazione che scivola sotto il
      minimo senza che si veda */
   { nome: 'Impostazioni', vai: 'plancia', apri: p => p.evaluate(() => {
-      const b = [...document.querySelectorAll('#vista button')].find(x => /Impostazioni/.test(x.textContent));
+      const b = (document.getElementById('fondo-impostazioni') || document.querySelector('[data-imp]'));
       if (b) b.click();
     }) },
   { nome: 'Come ti avviso', vai: 'plancia', apri: p => p.evaluate(() => {
-      const b = [...document.querySelectorAll('#vista button')].find(x => /Impostazioni/.test(x.textContent));
+      const b = (document.getElementById('fondo-impostazioni') || document.querySelector('[data-imp]'));
       if (b) b.click();
       const c = document.getElementById('imp-prom-come');
       if (c) c.click();

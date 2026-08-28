@@ -54,8 +54,8 @@ const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  
        di «Panoramica»: cercandola dentro #vista non si trovava più niente, e
        il foglio non si apriva — undici prove rosse per una porta spostata */
     await p.evaluate(() => {
-      var b = document.querySelector('.tabbar [data-imp]') ||
-        [...document.querySelectorAll('button')].find(x => /Impostazioni/.test(x.textContent || ''));
+      var b = document.querySelector('[data-imp]') ||
+        document.getElementById('fondo-impostazioni');
       if (b) b.click();
     });
     await p.waitForTimeout(680);
@@ -177,7 +177,7 @@ const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  
   console.log('IL FOGLIO RICEVE IL TOCCO DOVE LO TOCCHI');
   {
     const pannelli = [
-      ['Impostazioni', () => { const b = (document.querySelector('.tabbar [data-imp]') || [...document.querySelectorAll('button')].find(x => /Impostazioni/.test(x.textContent || ''))); if (b) b.click(); }],
+      ['Impostazioni', () => { const b = (document.querySelector('[data-imp]') || document.getElementById('fondo-impostazioni')); if (b) b.click(); }],
       ['Scheda di un’attività', () => { const r = document.querySelector('[data-bkapri]'); if (r) r.click(); }]
     ];
     for (const [nome, apriQuesto] of pannelli) {
@@ -262,7 +262,7 @@ const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  
     await pm.goto('http://localhost:' + PORTA + '/index.html'); await pm.waitForTimeout(400);
     await pm.evaluate(() => { localStorage.clear(); LM.seedDemo(); location.hash = '#/plancia'; });
     await pm.reload(); await pm.waitForTimeout(700);
-    await pm.evaluate(() => { const b = (document.querySelector('.tabbar [data-imp]') || [...document.querySelectorAll('button')].find(x => /Impostazioni/.test(x.textContent || ''))); if (b) b.click(); });
+    await pm.evaluate(() => { const b = (document.querySelector('[data-imp]') || document.getElementById('fondo-impostazioni')); if (b) b.click(); });
     await pm.waitForTimeout(700);
     const yt = await pm.evaluate(() => Math.round(document.querySelector('.sheet').getBoundingClientRect().top));
     await pm.mouse.move(200, yt + 200); await pm.mouse.down();
@@ -273,7 +273,7 @@ const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  
       'larghezza da telefono, ma senza tocco');
     /* e premere DENTRO rilasciando FUORI non deve chiudere */
     await pm.evaluate(() => { const c = document.getElementById('sheet-chiudi'); if (c) c.click(); }); await pm.waitForTimeout(300);
-    await pm.evaluate(() => { const b = (document.querySelector('.tabbar [data-imp]') || [...document.querySelectorAll('button')].find(x => /Impostazioni/.test(x.textContent || ''))); if (b) b.click(); });
+    await pm.evaluate(() => { const b = (document.querySelector('[data-imp]') || document.getElementById('fondo-impostazioni')); if (b) b.click(); });
     await pm.waitForTimeout(700);
     const yt2 = await pm.evaluate(() => Math.round(document.querySelector('.sheet').getBoundingClientRect().top));
     await pm.mouse.move(200, yt2 + 60); await pm.mouse.down();

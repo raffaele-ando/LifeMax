@@ -209,8 +209,52 @@ perché un `polygon()` è UN contorno chiuso: i due si collegano con un ponte, e
 il ponte deve avere area zero o si vede — partendo da `0 0` diventava una
 scheggia diagonale che apriva una fessura bianca in mezzo al fianco.
 
-**Quello che si perde è l'ombra ESTERNA:** qualsiasi ritaglio la cancella, e
-anche `filter: drop-shadow` (misurato — il ritaglio si applica dopo il filtro).
+**Il ritaglio toglie SOLO i quattro morsi d'angolo.** Questa è la cosa che ha
+cambiato tutto, e ci si è arrivati misurando. Un `clip-path` taglia tutto il
+disegno dell'elemento, e fuori dal riquadro del bordo un elemento disegna ancora
+due cose:
+
+- `box-shadow`, l'**ombra**. L'app ne dichiara tre livelli (`--e1`, `--e2`,
+  `--e3`) e li usa in centoventi punti — la scheda che si stacca dal fondo, il
+  pulsante che si alza sotto il puntatore, la pastiglia accesa in un segmento.
+  Con il ritaglio pieno **non se ne vedeva nessuna**: l'app era piatta senza che
+  nessuno se ne fosse accorto, e su «Chiaro · Auto · Scuro» quell'ombra era
+  l'unico segno di quale fosse la scelta in vigore.
+- `outline`, il **contorno di messa a fuoco**. Chi navigava col Tab vedeva il
+  fuoco spostarsi senza nessun segno di dove fosse arrivato.
+
+Nessuno dei due si può ridisegnare dentro l'elemento: uno pseudo-elemento è un
+discendente e il ritaglio del padre taglia anche lui (provato: un `::before` a
+`inset: -10px` sotto un padre ritagliato non esce di un pixel).
+`filter: drop-shadow()` nemmeno — il filtro si applica PRIMA del ritaglio,
+quindi l'ombra nasce e viene tagliata via nello stesso passaggio (misurato).
+
+Ma al ritaglio non serve togliere tutto quello che sta fuori: gli serve togliere
+**quattro morsi**, uno per angolo. Quindi `poligonoAngoli()` scrive un
+rettangolone (200px oltre l'elemento da ogni parte, più di qualunque ombra
+dichiarata) meno le quattro zone d'angolo, ognuna chiusa fra i due lati e la
+curva, con riempimento `evenodd`: dentro il rettangolone e dentro un morso fa
+due, cioè fuori. Il fondo e il bordo restano ritagliati come prima — un
+`background` non esce dal riquadro del bordo per conto suo — e l'ombra e il
+contorno non li tocca più nessuno.
+
+I quattro morsi non si sovrappongono mai, perché ogni coordinata è limitata a
+metà del lato (`min(px, 50%)`): al massimo si toccano sulla mezzeria. Se si
+sovrapponessero, l'`evenodd` li annullerebbe a vicenda e l'angolo tornerebbe
+quadrato.
+
+**E il `border-radius` torna, al 99%.** Era a zero perché il ritaglio pieno
+tagliava anche il bordo del box e due angoli diversi sovrapposti non hanno
+senso. Adesso serve per l'unica cosa che il ritaglio non sa fare: dare all'ombra
+un angolo tondo. L'ombra si disegna dalla sagoma del box, e a raggio zero
+usciva un alone quadrato attorno a una scheda tonda. Il numero è 0.99 perché a
+0.995 l'arco tocca esattamente la curva di Apple sulla diagonale — misurato: il
+punto della curva più vicino al vertice sta a 0.41225 raggi, e l'arco ci arriva
+a 0.41421. Sotto quel valore l'arco contiene la curva **dappertutto**, quindi la
+forma che si vede resta esattamente quella di Apple e l'arco lavora solo per
+l'ombra. (L'ombra tiene gli spigoli dell'arco, non del supercerchio: sotto una
+sfocatura da dieci pixel la differenza non esiste, e il confronto vero non è con
+un'ombra perfetta ma con nessuna ombra.)
 
 ### I raggi
 
@@ -338,3 +382,28 @@ tema. A occhio se ne erano visti tre o quattro; lei ne ha contati settanta.
     che misura quello che sporge — `.lista-azione` perdeva undici pixel per
     lato, `.diario-annulla` sedici. Adesso quei due sono grandi 40px per
     davvero, col dito.
+12. **Le scene possono sbagliare strada, e nessuno se ne accorge.** Il giorno
+    in cui la porta delle impostazioni si è spostata dalla testa di
+    «Panoramica» alla barra in basso, otto voci di `segni/scene.json` su
+    quarantadue hanno smesso di aprire il pannello: il clic finiva nel vuoto e
+    la scena misurava la pagina che c'era sotto. Otto misure identiche della
+    stessa schermata, e nessun errore da nessuna parte — il generatore ha
+    continuato a dire che andava tutto bene, `prove/bordi.js` a passare, e le
+    pastiglie di Impostazioni, Backup, Come si usa, Sonno e pasti, Le tue aree,
+    Come ti avviso, Registro tecnico e La scienza sono rimaste archi di cerchio
+    finché non le ha viste un occhio. Adesso ogni scena porta un `prova`: un
+    selettore che DEVE esserci quando la scena è pronta. Se manca, la corsa si
+    ferma, elenca le scene che non ci sono arrivate e NON riscrive
+    `misure.json`. Alla prima passata con la rete ne ha pescate altre tre che
+    erano rotte da prima.
+13. **Lo pseudo-elemento di qualcun altro.** `::before` è uno per elemento, e
+    `beforeOccupato` confrontava il TESTO dei selettori:
+    `.nav-item.attivo::before` disegna la barretta dell'accento accanto alla
+    voce di menu accesa, il gruppo della forma si chiama `.nav-item`, testi
+    diversi — quindi l'anello del bordo finiva sullo stesso pseudo-elemento
+    della barretta, che ne usciva a trattini col `clip-path` dell'anello
+    addosso. Per un anno non si è visto perché il ritaglio pieno portava via
+    tutto quello che stava fuori dal riquadro, barretta compresa: il difetto è
+    comparso il giorno in cui il ritaglio ha smesso di farlo. Adesso due
+    selettori si considerano lo stesso elemento se uno è l'altro più un pezzo
+    attaccato senza spazi.
