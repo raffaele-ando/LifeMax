@@ -138,7 +138,13 @@ var LM = (function () {
       /* giornataPos: dove mostrare la timeline della giornata
          ('oggi-strip' | 'panoramica' | 'oggi-full' | 'menu') */
       profilo: { nome: '', visione: '', skin: 'quiete', modo: 'auto', giornataPos: 'oggi-strip', ritmo: JSON.parse(JSON.stringify(RITMO_DEFAULT)) },
-      ritmoGiorno: {},   // ritmoGiorno[data] = {sveglia?, sonno?, pasti?} — registro di sonno e pasti del singolo giorno
+      ritmoGiorno: {},   // ritmoGiorno[data] = {sveglia?, sonno?, prec?, pasti?, chiesto?} — registro di sonno e pasti del singolo giorno
+      /* l'ultima volta che ti ho visto. Serve a una cosa sola, ed è
+         importante: sapere se fra ieri e oggi c'è stato un BUCO in cui la
+         notte ci sta. Chi è rimasto sveglio fino alle quattro e riapre l'app
+         alle quattro e dieci non deve sentirsi chiedere com'è andata la
+         notte. */
+      visto: 0,
       aree: JSON.parse(JSON.stringify(AREE_DEFAULT)),
       areeAttive: AREE_DEFAULT.map(function (a) { return a.id; }),
       azioni: [],        // {id, areaId, testo, ifThen, mit, done, data, doneAt, creata}
@@ -189,6 +195,7 @@ var LM = (function () {
     if (!Array.isArray(s.backlog)) s.backlog = [];
     if (!Array.isArray(s.abitudini)) s.abitudini = [];
     if (!Array.isArray(s.lezioni)) s.lezioni = [];
+    if (typeof s.visto !== 'number') s.visto = 0;
     if (!Array.isArray(s.aree) || !s.aree.length) s.aree = JSON.parse(JSON.stringify(AREE_DEFAULT));
     /* profilo e ritmo della giornata (stati vecchi o dal cloud) */
     if (!s.profilo || typeof s.profilo !== 'object') s.profilo = vuoto.profilo;
@@ -1765,6 +1772,155 @@ var LM = (function () {
     return Object.keys(set).length;
   }
 
+  /* ---------- il resoconto della giornata: notte, pasti, e quello che hai
+       fatto senza scriverlo ----------
+
+     Tre cose che l'app non può sapere da sola e che senza di lei si perdono:
+     a che ora hai dormito, se hai mangiato, e le cose che hai fatto senza
+     avere voglia di aprire l'app per scriverle. Si chiedono UNA volta al
+     giorno, nel momento in cui la risposta esiste — la notte al mattino, i
+     pasti e il resto la sera — e si può sempre dire «non adesso».
+
+     LA PRECISIONE È UN DATO, non un dettaglio. «Mi sono svegliato alle 7:30»
+     detto da chi ha guardato la sveglia e da chi tira a indovinare sono due
+     numeri diversi con lo stesso aspetto: mescolarli avvelena qualunque media
+     si calcoli dopo. E chi tiene alla precisione, se non può dire «più o
+     meno», preferisce non rispondere: l'abbiamo già visto con le righe di
+     «cosa funziona». Quindi ogni orario porta con sé come è stato dato. */
+
+  var PRECISIONE = {
+    preciso: { eti: 'preciso', breve: '' },
+    circa: { eti: 'più o meno', breve: 'circa ' }
+  };
+  function precisioneValida(x) { return x === 'preciso' ? 'preciso' : 'circa'; }
+
+  /* l'ultima volta che ti ho visto, e la segna adesso. Torna il valore di
+     PRIMA: è quello che serve per capire se in mezzo c'è stata una notte. */
+  function segnaVisto() {
+    var s = load();
+    var prima = s.visto || 0;
+    /* Non si scrive a ogni ritorno sulla scheda: chi passa da un'app all'altra
+       lo farebbe cento volte in un'ora, e ogni volta è un salvataggio e un
+       giro di sincronizzazione. Sotto i cinque minuti non è nemmeno
+       un'assenza. */
+    if (Date.now() - prima < 5 * 60 * 1000) return prima;
+    s.visto = Date.now();
+    save();
+    return prima;
+  }
+
+  /* IL RESOCONTO DELLA NOTTE. `prec` vale per tutti e due gli orari: sono
+     stati dati insieme, nello stesso momento e con la stessa faccia. */
+  function registraNotte(k, dati) {
+    var s = load();
+    k = k || todayKey();
+    var patch = {};
+    if (dati.sonno) patch.sonno = dati.sonno;
+    if (dati.sveglia) patch.sveglia = dati.sveglia;
+    if (Object.keys(patch).length) setRitmoGiorno(k, patch);
+    var g = s.ritmoGiorno[k] || (s.ritmoGiorno[k] = {});
+    g.prec = precisioneValida(dati.prec);
+    g.chiestoNotte = true;
+    if (dati.sonno || dati.sveglia) {
+      var m = minutiSonno(k);
+      registra('giornata', 'Notte registrata: a letto ' + (patch.sonno || g.sonno) +
+        ', sveglio ' + (patch.sveglia || g.sveglia) +
+        (m ? ' (' + Math.floor(m / 60) + 'h ' + (m % 60 ? (m % 60) + 'm' : '').trim() + ')' : '') +
+        (g.prec === 'circa' ? ' — più o meno' : ''), false);
+    }
+    save();
+  }
+
+  /* UN PASTO DEL GIORNO. `fatto: false` non è un buco: è un'informazione, e
+     nel grafico della giornata quel pasto si vede saltato. */
+  function registraPasto(k, id, dati) {
+    var s = load();
+    k = k || todayKey();
+    var base = ritmoDi(k);
+    var pasti = JSON.parse(JSON.stringify(base.pasti || []));
+    var pas = pasti.find(function (x) { return x.id === id; });
+    if (!pas) return null;
+    if (dati.ora) pas.ora = dati.ora;
+    pas.fatto = dati.fatto !== false;
+    pas.prec = precisioneValida(dati.prec);
+    setRitmoGiorno(k, { pasti: pasti });
+    registra('giornata', pas.fatto
+      ? pas.nome + (dati.ora ? ' alle ' + pas.ora : '') + (pas.prec === 'circa' ? ' (più o meno)' : '')
+      : pas.nome + ': saltato', false);
+    save();
+    return pas;
+  }
+
+  /* «l'ho chiesto e mi hai detto non adesso»: non si richiede oggi, e la
+     domanda resta dove sta di casa (nei rituali) per chi la vuole */
+  function segnaChiesto(k, quale) {
+    var s = load();
+    k = k || todayKey();
+    if (!s.ritmoGiorno) s.ritmoGiorno = {};
+    if (!s.ritmoGiorno[k]) s.ritmoGiorno[k] = {};
+    s.ritmoGiorno[k][quale === 'notte' ? 'chiestoNotte' : 'chiestoGiorno'] = true;
+    save();
+  }
+  function giaChiesto(k, quale) {
+    var g = load().ritmoGiorno[k || todayKey()] || {};
+    return !!g[quale === 'notte' ? 'chiestoNotte' : 'chiestoGiorno'];
+  }
+
+  /* I PASTI DI CUI SI PUÒ ANCORA PARLARE: quelli la cui ora è passata. Alle
+     nove del mattino non si chiede se hai cenato. */
+  function pastiDaChiedere(k, oraOra) {
+    k = k || todayKey();
+    var r = ritmoDi(k);
+    var ora = oraOra == null ? oraDelGiorno() : oraOra;
+    return (r.pasti || []).filter(function (pa) {
+      if (pa.fatto !== undefined) return false;         /* già risposto */
+      return minutiDaOra(pa.ora) <= ora + 30;           /* mezz'ora di grazia */
+    });
+  }
+  function oraDelGiorno() {
+    var d = new Date();
+    return d.getHours() * 60 + d.getMinutes();
+  }
+  function minutiDaOra(hhmm) {
+    var m = /^(\d{1,2}):(\d{2})$/.exec(String(hhmm || ''));
+    return m ? (+m[1]) * 60 + (+m[2]) : 0;
+  }
+
+  /* UNA COSA FATTA E SCRITTA DOPO. Non è un'azione da fare che poi si spunta:
+     nasce già fatta, e il diario lo dice — se dicesse «aggiunta» e poi
+     «completata» racconterebbe due gesti dove ce n'è stato uno.
+     Gli XP sono quelli di un'azione qualunque: il lavoro l'hai fatto, che tu
+     l'abbia scritto prima o dopo non cambia niente. */
+  function registraFatta(testo, areaId, opts) {
+    var s = load();
+    opts = opts || {};
+    var data = opts.data || todayKey();
+    var a = {
+      id: uid(),
+      areaId: areaId || 'altro',
+      testo: String(testo || '').trim(),
+      ifThen: '', mit: false,
+      done: true,
+      data: data,
+      doneAt: data === todayKey() ? Date.now() : (parseKey(data).getTime() + 12 * 3600000),
+      creata: Date.now(),
+      ora: opts.ora || null,
+      durata: opts.durata || null,
+      passoDi: null,
+      /* scritta dopo: serve a saperlo guardando i dati, e a non contarla come
+         una cosa pianificata quando si guarda se il piano del mattino ha
+         funzionato */
+      dopo: true
+    };
+    if (!a.testo) return null;
+    s.azioni.push(a);
+    var punti = premiaXp('azione', data);
+    registra('azione', 'Fatta oggi, scritta dopo: «' + a.testo + '»' +
+      (a.ora ? ' (' + a.ora + ')' : '') + ' (+' + punti + ' XP)', true);
+    save();
+    return a;
+  }
+
   /* ---------- quello che funziona per te, senza esperimento ----------
      Fra «mi sono accorto di una cosa su di me» e «ho fatto un esperimento
      N-of-1 di quattro settimane» non c'era niente, e l'esperimento è troppo
@@ -2227,6 +2383,14 @@ var LM = (function () {
       });
     });
 
+    /* I DATI DI ESEMPIO ARRIVANO CON LA GIORNATA GIÀ RACCONTATA: chiedere
+       «com'è andata la notte» sopra una storia inventata non ha senso, e
+       soprattutto rende prevedibile l'app per le prove, che partono tutte da
+       qui. Domani le domande tornano. */
+    if (!s.ritmoGiorno[oggi]) s.ritmoGiorno[oggi] = {};
+    s.ritmoGiorno[oggi].chiestoNotte = true;
+    s.ritmoGiorno[oggi].chiestoGiorno = true;
+
     s.registro = []; // la demo parte con un diario-registro pulito
     save();
   }
@@ -2279,6 +2443,11 @@ var LM = (function () {
     diario: diario, giorniConAttivita: giorniConAttivita, registra: registra,
     creaEsperimento: creaEsperimento, risultatiEsperimento: risultatiEsperimento,
     creaLegameEsperimento: creaLegameEsperimento,
+    PRECISIONE: PRECISIONE, segnaVisto: segnaVisto,
+    registraNotte: registraNotte, registraPasto: registraPasto,
+    segnaChiesto: segnaChiesto, giaChiesto: giaChiesto,
+    pastiDaChiedere: pastiDaChiedere, oraDelGiorno: oraDelGiorno, minutiDaOra: minutiDaOra,
+    registraFatta: registraFatta,
     FORZE_LEZIONE: FORZE_LEZIONE, forzaLezione: forzaLezione, lezioni: lezioni,
     aggiungiLezione: aggiungiLezione, modificaLezione: modificaLezione,
     giraLezione: giraLezione, rimuoviLezione: rimuoviLezione, trovaLezione: trovaLezione,

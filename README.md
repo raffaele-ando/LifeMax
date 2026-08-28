@@ -79,6 +79,23 @@ quanto è stato pieno e dei mattoncini colorati mostrano le cose fatte per area 
 futuri sono tratteggiati). Da settimana e mese si apre il singolo giorno con un tocco.
 Sonno, sveglia e pasti si impostano da *Sonno e pasti*.
 
+**🛏️ Il resoconto della giornata.** Tre dati che l'app non può sapere da sola e
+che senza qualcuno che li chieda non esistono: a che ora hai dormito, se hai
+mangiato, e le cose che hai fatto senza avere voglia di aprire l'app per
+scriverle. Ogni domanda arriva **nel momento in cui la risposta esiste** — la
+notte al mattino, i pasti e il resto la sera — una volta al giorno, e «non
+adesso» è sempre una risposta valida: la domanda resta nei **Rituali**, dove sta
+di casa. Chi è rimasto sveglio fino alle quattro e riapre l'app alle quattro e
+dieci **non** si sente chiedere com'è andata la notte: si guarda il buco fra
+l'ultima volta che l'app ti ha visto e adesso, e sotto le tre ore una notte non
+ci sta. Ogni orario porta con sé **come è stato dato**: «è andata come sempre»
+vale *più o meno*, toccare l'orologio e mettere 7:12 vale *preciso*, e la scelta
+si sposta da sé (ma chi la fa a mano vince). «Non me lo ricordo» non scrive
+nessun orario: meglio un dato che non c'è di un numero inventato. Un pasto
+saltato è un dato, non un buco — nella *Giornata* resta al suo posto, sbiadito e
+barrato. Le cose scritte dopo nascono già fatte, con i loro XP, e restano
+marcate come recuperate.
+
 **👍 Cosa funziona per me** (*Andamento → Cosa funziona*) è il registro di quello che
 hai capito su di te, diviso in due mucchi: **mi funziona** e **non mi funziona**. Una
 riga di testo, e accanto **come fai a saperlo** — *notato una volta*, *lo noto ogni

@@ -171,6 +171,22 @@ genera le chiavi, in un browser vero).
   doppie di un `url("data:...")` dentro un attributo `style`, che chiudevano
   l'attributo; e il giro delle schermate che lasciava la pagina sull'ultima,
   dove l'elemento da misurare non c'è.
+- **giornata.js** — il resoconto della giornata: la notte, i pasti, le cose
+  fatte senza scriverle. Tre famiglie di cose che si possono sbagliare.
+  QUANDO SI CHIEDE: al mattino la notte, dalle 19 la giornata, una volta sola,
+  mai sopra un pannello già aperto, mai alla primissima visita, e — la regola
+  che conta — **mai a chi non è andato a dormire**: se fra l'ultima volta che
+  l'app ti ha visto e adesso non c'è un buco di almeno tre ore, la notte non ci
+  sta. La prova mette l'orologio alle 4:30 con mezz'ora di assenza e pretende
+  silenzio.
+  LA PRECISIONE: di partenza «più o meno», si sposta da sé su «precisi» quando
+  cambi l'ora col dito, e chi sceglie a mano non viene sovrascritto. «Non me lo
+  ricordo» non scrive nessun orario.
+  QUELLO CHE RESTA NEI DATI: un pasto saltato è `fatto: false` e nella giornata
+  si vede sbiadito e barrato (controllato sul CSS calcolato, non sul markup);
+  una cosa scritta dopo nasce già fatta, con gli XP e col segno `dopo`.
+  E il pop-up chiuso vale «non adesso»: ricaricando non torna, ma la domanda
+  si trova ancora nei Rituali — la promessa scritta nella nota è verificata.
 - **lezioni.js** — «cosa funziona per me»: le righe che si scrivono senza fare un
   esperimento. Il pericolo di una funzione così è che diventi un cimitero — si
   scrivono dieci righe, non le rivede nessuno, e fra un mese non sono né dati né
@@ -245,6 +261,7 @@ genera le chiavi, in un browser vero).
     node prove/modalita.js
     node prove/segni.js      # solo Node, niente browser
     node prove/lezioni.js
+    node prove/giornata.js
     node prove/squircle.js
     node prove/bordi.js      # 210 schermate, una decina di minuti
     node prove/promemoria.js

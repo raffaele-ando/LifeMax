@@ -2985,6 +2985,21 @@ a:not(.btn):not(.nav-voce):not(.menu-voce):active { opacity: .55; }
   .tabbar button { font-size: 9.5px; letter-spacing: -0.01em; padding: 5px 1px; }
 }
 
+
+/* --- il tasto «È andata come sempre»: due righe, il dettaglio sotto ---
+   Con l'orario sulla stessa riga del titolo, a 390px il titolo andava a capo
+   e il dettaglio restava di fianco: due colonne di parole dentro un pulsante.
+   È lo stesso trattamento del tasto «Fatto» in fondo alla giornata. */
+.btn-due-righe { flex-wrap: wrap; row-gap: 1px; }
+.btn-due-righe small { flex-basis: 100%; font-weight: 650; opacity: .75; font-size: 11.5px; }
+/* «di solito alle 08:00» sotto il nome del pasto: è un promemoria, non una
+   risposta, e non deve pesare come il nome */
+.rec-solito { display: block; font-weight: 600; font-size: 11.5px; color: var(--inchiostro-muto); }
+/* un pasto SALTATO resta al suo posto nella giornata, sbiadito e barrato:
+   «non ho pranzato» è un dato, e un buco nel grafico non lo racconta */
+.tl-blk-pasto.saltato { opacity: .5; }
+.tl-blk-pasto.saltato .tl-blk-t { text-decoration: line-through; }
+
 /* ==== SUPERCERCHI: GENERATO da segni/squircle.mjs — non a mano ==== */
 /* La curva è quella CONTINUA DI APPLE: tre Bézier per angolo, costanti in
    segni/apple.mjs, ricavate leggendo UIBezierPath. Non è una superellisse —
