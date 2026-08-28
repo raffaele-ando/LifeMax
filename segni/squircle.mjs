@@ -59,6 +59,20 @@ const INIZIO = '/* ==== SUPERCERCHI: GENERATO da segni/squircle.mjs — non a ma
    resta uniforme (0.98–1.00) a qualunque tolleranza: questo numero decide solo
    quanto è liscio il contorno in sé, e un decimo di pixel basta. */
 const TOLLERANZA = 0.1;
+/* IL TEST DEVE PROVARE QUELLO CHE POI USA.
+   Provava `min()` e `calc()` dentro un `polygon()`, e per un po' i tracciati
+   hanno cominciato con `evenodd` — che è un'altra funzione, e che WebKit
+   dentro `polygon()` non fa. Su un iPad il test passava, il blocco entrava, e
+   ogni `clip-path` finiva invalido; con una differenza che conta, perché un
+   valore che arriva da una `var()` e non è valido non fa cadere la regola, la
+   porta a `unset`. Spariva il ritaglio dell'elemento (che tornava un
+   rettangolo) E quello dell'anello, che senza il suo ritaglio smette di essere
+   un anello e diventa un rettangolo PIENO del colore del bordo, grande un
+   pixel più dell'elemento. Rettangoli col colore del bordo sopra le forme
+   tonde: esattamente quello che si vedeva.
+   Adesso `evenodd` non serve più — i buchi si fanno girando i contorni in
+   versi opposti, vedi `segni/apple.mjs` — e il test prova le due sole cose che
+   restano: `min()` e `calc()` dentro un poligono. */
 const SUPPORTO = '@supports (clip-path: polygon(min(1px, 50%) 0px, ' +
   'calc(100% - min(1px, 50%)) 0px, 100% 100%))';
 

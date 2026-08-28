@@ -151,7 +151,7 @@ const SCENE_PREMUTO=[
      innerHTML dentro la stessa chiamata, quindi il secondo pulsante c'è già.
      Con un setTimeout la prova andava avanti prima che la schermata si
      aprisse, e diceva «tutto a posto» su una schermata mai vista. */
-  ['Come ti avviso','plancia',null,()=>{const b=document.getElementById('fondo-impostazioni')||document.querySelector('[data-imp]');if(b)b.click();
+  ['Promemoria','plancia',null,()=>{const b=document.getElementById('fondo-impostazioni')||document.querySelector('[data-imp]');if(b)b.click();
     const c=document.getElementById('imp-prom-come');if(c)c.click();}],
   ['Scheda di un’attività','inbox',1,()=>{const r=document.querySelector('[data-bkapri]');if(r)r.click();}],
   ['Scheda di un’abitudine','inbox',2,()=>{const r=document.querySelector('[data-abdett]');if(r)r.click();}]

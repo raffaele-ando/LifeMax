@@ -43,7 +43,7 @@ const SCENE = [
       const b = (document.getElementById('fondo-impostazioni') || document.querySelector('[data-imp]'));
       if (b) b.click();
     }) },
-  { nome: 'Come ti avviso', vai: 'plancia', apri: p => p.evaluate(() => {
+  { nome: 'Promemoria', vai: 'plancia', apri: p => p.evaluate(() => {
       const b = (document.getElementById('fondo-impostazioni') || document.querySelector('[data-imp]'));
       if (b) b.click();
       const c = document.getElementById('imp-prom-come');

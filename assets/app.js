@@ -694,7 +694,7 @@
   })();
 
   /* Come si torna da dove si è entrati. Cinque pannelli si aprono da dentro
-     un altro — «Le tue aree», «Sonno e pasti», «Backup», «Come si usa»,
+     un altro — «Aree», «Sonno e pasti», «Backup», «Primi passi»,
      «Registro tecnico» tutti da «Impostazioni» — e finora non c'era modo
      di tornare indietro: chiudevi e riaprivi. Chi apre un pannello dice come
      si riapre lui, e da lì in poi il ritorno è automatico. */
@@ -868,7 +868,7 @@
        segno è il verdetto, e la beuta resta il segno degli esperimenti là
        dentro. */
     { id: 'esperimenti', nome: 'Scoperte', icona: 'funziona', gruppo: 'secondaria', livello: 'extra' },
-    { id: 'scienza',     nome: 'Perché funziona', breve: 'Scienza', icona: 'atom', gruppo: 'secondaria', livello: 'extra' },
+    { id: 'scienza',     nome: 'Scienza',      icona: 'atom',      gruppo: 'secondaria', livello: 'extra' },
     /* stanza a parte: dieci vestiti per gli stessi elementi, da confrontare
        per scegliere la base grafica di tutto il sito */
     { id: 'lab',         nome: 'Design lab',  breve: 'Lab', icona: 'palette',  gruppo: 'secondaria', livello: 'extra' }
@@ -1190,8 +1190,8 @@
       /* --- CAPIRE L'APP: le pagine che si leggono, non si usano --- */
       etichetta('Guida', 'aiuto') +
       '<div class="lista">' +
-      rigaPorta('imp-guida', 'aiuto', 'Come si usa') +
-      rigaPorta('imp-scienza', 'atom', 'Perché funziona') +
+      rigaPorta('imp-guida', 'aiuto', 'Primi passi') +
+      rigaPorta('imp-scienza', 'atom', 'Scienza') +
       rigaPorta('imp-diag', 'terminale', 'Registro tecnico') +
       rigaPorta('imp-lab', 'palette', 'Design lab') +
       '</div>' +
@@ -1236,7 +1236,7 @@
         '</div>';
     }
 
-    apriSheet('Come ti avviso',
+    apriSheet('Promemoria',
       /* IL POSTINO — prima cosa, perché senza questo il resto non parte */
       '<div class="imp-sezione" style="padding-top:0"><div class="imp-eti">Il postino</div>' +
         '<div class="imp-nota" style="margin-top:0">' +
@@ -1299,7 +1299,7 @@
 
       /* LA NOTA FISSA */
       htmlNotaFissa(),
-      wirePromemoria, false, { nome: 'Come ti avviso', apri: apriPromemoria });
+      wirePromemoria, false, { nome: 'Promemoria', apri: apriPromemoria });
   }
 
   /* LA NOTA FISSA — e cosa si può davvero fare.
@@ -1568,8 +1568,8 @@
       pon.disabled = true;
       window.LM_PROMEMORIA.accendi().then(function (esito) {
         if (esito === 'negato') toast('Il permesso è stato negato: senza quello non arrivano notifiche.', 0, 'avviso');
-        else if (esito === 'chiave') toast('La chiave pubblica non va bene: guarda in «Come ti avviso».', 0, 'avviso');
-        else if (esito === 'server') toast('Il permesso c’è, ma il server non risponde: guarda in «Come ti avviso».', 0, 'avviso');
+        else if (esito === 'chiave') toast('La chiave pubblica non va bene: guarda in «Promemoria».', 0, 'avviso');
+        else if (esito === 'server') toast('Il permesso c’è, ma il server non risponde: guarda in «Promemoria».', 0, 'avviso');
         else if (!window.LM_PROMEMORIA.configurato()) toast('Acceso. Per ora arriva solo la fine del timer.', 0, 'campana');
         else toast('Promemoria accesi.', 0, 'campana');
         riscriviImpostazioni();
@@ -1869,7 +1869,7 @@
     function voce(ico, tit, testo) {
       return '<div class="guida-voce"><span class="guida-ico">' + ICO(ico, 15) + '</span><div><b>' + tit + '</b><p>' + testo + '</p></div></div>';
     }
-    apriSheet('Come si usa LifeMax',
+    apriSheet('Primi passi',
       '<div class="imp-nota" style="margin-top:0">Tre passaggi: <b>annoti</b> quello che ti viene in mente, <b>decidi</b> cosa farne, <b>fai</b> una cosa per volta.</div>' +
       '<div class="guida">' +
       voce('bolt', '1 · Annota', 'Premi <kbd>C</kbd> (o il tasto ＋) e scrivi. La nota finisce in <b>Attività</b>, sezione «Sistemare»: non serve decidere altro adesso.') +
@@ -4839,6 +4839,41 @@
        una preferenza da ricordare */
     var abdApertaConfig = false;
 
+    /* TRE NUMERI IN FILA NON SONO UN'INFORMAZIONE.
+       Qui c'era «3 giorni di fila · record 5 · 8 volte in tutto»: tre fatti
+       della stessa dimensione, uno accanto all'altro, e il conto che conta
+       davvero — quanto manca al record — lo doveva fare chi legge. Peggio:
+       tre numeri tutti uguali di peso non dicono quale guardare, e quando
+       tutto è importante niente lo è.
+       Adesso il conto lo fa l'app, e la fila diventa una scala: dove sei
+       adesso, che cosa manca al passo dopo, e in fondo, piano, quanto hai
+       fatto in tutto. Il passo dopo è la parte che muove qualcosa — una meta
+       vicina e raggiungibile tira più di una medaglia lontana.
+       E una fiamma accanto a uno zero è solo un rimprovero: se la serie non
+       c'è si dice com'è, senza medaglia spenta. */
+    function numeriAbitudine(serie, record, volte) {
+      var quanti = function (n, uno, tanti) { return n + ' ' + (n === 1 ? uno : tanti); };
+      var capo, sotto;
+      if (serie > 0) {
+        capo = ICO('flame', 18, 'fiamma') + ' <b>' + serie + '</b> ' +
+          (serie === 1 ? 'giorno di fila' : 'giorni di fila');
+        sotto = record > serie
+          ? 'ancora ' + quanti(record - serie, 'giorno', 'giorni') + ' e batti il tuo record di ' + record
+          : (record > 1 ? 'è il tuo record' : '');
+      } else if (record > 1) {
+        capo = 'Serie da riaprire';
+        sotto = 'il tuo record è ' + quanti(record, 'giorno', 'giorni') + ': si riparte da uno';
+      } else {
+        capo = 'Non è ancora partita';
+        sotto = 'la serie comincia il primo giorno che la segni';
+      }
+      return '<div class="abd-serie">' +
+        '<div class="abd-serie-capo">' + capo + '</div>' +
+        (sotto ? '<div class="abd-serie-sotto">' + sotto + '</div>' : '') +
+        (volte > 0 ? '<div class="abd-serie-tot">' + quanti(volte, 'volta', 'volte') + ' da quando l\u2019hai creata</div>' : '') +
+        '</div>';
+    }
+
     function corpoHtml() {
       var h = trova();
       if (!h) return '';
@@ -4885,18 +4920,13 @@
             ICO('check', 15) + (st.fatta ? ' Fatta oggi' : ' Segna come fatta') + '</button>' +
             (prevista ? '<button class="btn btn-mini btn-ghost" id="abd-salta">' + ICO('salta', 15) + ' Salta oggi</button>' : '')) +
         '</div>' +
-        '<div class="abd-numeri">' +
-        /* una fiamma accanto a uno zero è solo un rimprovero: quando la
-           serie non c'è si dice com'è, senza medaglia spenta */
-        (serie > 0
-          ? '<span>' + ICO('flame', 13, 'fiamma') + ' <b>' + serie + '</b> ' + (serie === 1 ? 'giorno di fila' : 'giorni di fila') + '</span>'
-          : '<span>nessuna serie aperta</span>') +
-        (record > serie ? '<span>record <b>' + record + '</b></span>' : '') +
-        '<span><b>' + volte + '</b> ' + (volte === 1 ? 'volta in tutto' : 'volte in tutto') + '</span>' +
-        '</div>' +
+        numeriAbitudine(serie, record, volte) +
         catena +
         '<p class="abd-nota">Tocca un giorno passato se te ne sei ricordato dopo.</p>' +
-        /* Come è impostata: chiusa, finché non la si vuole cambiare.
+        /* Le regole: chiuse, finché non le si vuole cambiare. L'etichetta
+           diceva «Come è impostata», che è il modo in cui si descrive una
+           cosa a voce, non il modo in cui la si chiama: un comando porta il
+           nome di quello che fa.
            Questo pannello faceva tre cose in una sola colonna da quaranta
            comandi — spuntare l'abitudine di oggi, guardare come sta andando,
            e cambiarne le regole — mentre la ragione per cui lo si apre è
@@ -4905,7 +4935,7 @@
            «Adesso» e come il selettore dei segni nelle aree. Anche
            «Elimina» sta qui dentro: è raro e non si torna indietro. */
         '<button class="lista-eti lista-eti-btn" id="abd-piu" aria-expanded="' + (abdApertaConfig ? 'true' : 'false') + '" aria-controls="abd-config">' +
-        ICO('ingranaggio', 13) + 'Come è impostata' +
+        ICO('ingranaggio', 13) + 'Modifica' +
         '<span class="lista-chev' + (abdApertaConfig ? ' aperta' : '') + '">' + ICO('chevronGiu', 15) + '</span></button>' +
         '<div id="abd-config"' + (abdApertaConfig ? '' : ' hidden') + '>' +
         '<label class="campo" for="abd-nome">Nome</label>' +
@@ -6773,13 +6803,15 @@
     document.documentElement.style.setProperty('--sottonav-h', '0px');
     var g = gruppoDi(v);
     var lista = g.viste.slice();
-    /* se sei in una schermata «di passaggio» (Perché funziona, Design lab) la
+    /* se sei in una schermata «di passaggio» (Scienza, Design lab) la
        sua linguetta si aggiunge in fondo, attiva: non c'è normalmente, ma
        mentre ci sei dentro dice dove sei e ti riporta indietro */
     if ((g.anche || []).indexOf(v) >= 0) {
-      /* qui il nome sta corto: la linguetta è quella su cui SEI e il titolo
-         sopra lo scrive già per intero, mentre «Perché funziona» da solo si
-         mangiava cento pixel e mandava la riga a scorrere sul telefono */
+      /* si usa il nome breve se ce n'è uno: la linguetta è quella su cui SEI
+         e il titolo sopra lo scrive già per intero. Quando la pagina della
+         scienza si chiamava «Perché funziona» quel nome da solo si mangiava
+         cento pixel e mandava la riga a scorrere sul telefono — adesso i nomi
+         sono nomi, e ci stanno. */
       var vi = vistaById(v);
       lista.push({ id: v, eti: (vi && (vi.breve || vi.nome)) || v });
     }
@@ -6989,6 +7021,32 @@
     }
   });
   avviaBattito();
+
+  /* IL FONDO DI QUELLO CHE SI VEDE.
+     `position: fixed` si aggancia al riquadro di IMPIANTO della pagina, che
+     non è quello che hai davanti agli occhi. Su un tablet i due si separano
+     spesso: la modalità desktop mostra la pagina rimpicciolita, due dita la
+     allargano, la barra del browser si ritira e torna. Quando si separano, la
+     barra in basso resta agganciata a un fondo che non è più il fondo dello
+     schermo — sotto il bordo, o in mezzo allo schermo, ferma lì mentre
+     scorri. Qui si misura la differenza e si passa al foglio di stile.
+     Dove i due riquadri coincidono (ogni telefono, ogni computer) vale zero e
+     non cambia niente. */
+  var vv = window.visualViewport;
+  if (vv) {
+    var ultimoGiu = -1;
+    var misuraFondo = function () {
+      var impianto = document.documentElement.clientHeight;
+      var giu = Math.max(0, Math.round(impianto - (vv.height + vv.offsetTop)));
+      /* si riscrive solo quando cambia davvero: `scroll` batte a ogni pixel */
+      if (giu === ultimoGiu) return;
+      ultimoGiu = giu;
+      document.documentElement.style.setProperty('--vv-giu', giu + 'px');
+    };
+    vv.addEventListener('resize', misuraFondo);
+    vv.addEventListener('scroll', misuraFondo);
+    misuraFondo();
+  }
 
   applicaTema();
   /* si segna la visita PRIMA del disegno e si tiene da parte quella di prima:

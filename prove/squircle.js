@@ -336,7 +336,7 @@ const CONTORNO = `(function (b64, R, dritto) {
         var quale = null;
         ['::before', '::after'].forEach(function (ps) {
           var q = getComputedStyle(e, ps);
-          if (/^polygon\\(evenodd/.test(q.clipPath || '')) quale = q;
+          if (/^polygon\\(/.test(q.clipPath || '') && !/-200px/.test(q.clipPath || '')) quale = q;
         });
         if (!quale) out.anelloSpento.push(nome(e) + ' — nessun anello, bordo ' + bw + 'px ' + bc);
         else if (/rgba\\(0, 0, 0, 0\\)|transparent/.test(quale.backgroundColor))
@@ -401,7 +401,7 @@ const CONTORNO = `(function (b64, R, dritto) {
     ['Oggi', 'oggi', null], ['La giornata', 'giornata', null], ['Attività', 'inbox', null],
     ['Rituali', 'rituali', null], ['Andamento', 'plancia', null], ['Esperimenti', 'esperimenti', null],
     ['Impostazioni', 'plancia', () => { const b2 = (document.getElementById('fondo-impostazioni') || document.querySelector('[data-imp]')); if (b2) b2.click(); }],
-    ['Come ti avviso', 'plancia', () => { const b2 = (document.getElementById('fondo-impostazioni') || document.querySelector('[data-imp]')); if (b2) b2.click(); const c = document.getElementById('imp-prom-come'); if (c) c.click(); }],
+    ['Promemoria', 'plancia', () => { const b2 = (document.getElementById('fondo-impostazioni') || document.querySelector('[data-imp]')); if (b2) b2.click(); const c = document.getElementById('imp-prom-come'); if (c) c.click(); }],
     ['Design lab', 'lab', null]
   ];
   const ps = await b.newPage({ viewport: { width: 390, height: 900 }, hasTouch: true, isMobile: true });
@@ -498,7 +498,7 @@ const CONTORNO = `(function (b64, R, dritto) {
           const q = getComputedStyle(x, '::before');
           return r.width > 120 && r.height > 40 && /^polygon\(/.test(s.clipPath || '') &&
             (parseFloat(s.borderTopWidth) || 0) > 0 &&
-            /^polygon\(evenodd/.test(q.clipPath || '') &&
+            /^polygon\(/.test(q.clipPath || '') && !/-200px/.test(q.clipPath || '') &&
             !/rgba\(0, 0, 0, 0\)|transparent/.test(q.backgroundColor);
         });
         if (e) break;
@@ -624,6 +624,36 @@ const CONTORNO = `(function (b64, R, dritto) {
       .map((m) => m[1].trim()).filter((v) => v !== 'inset(50%)');
     ok('e fuori dal blocco nessuno dà una forma col ritaglio', fuori.length === 0,
       fuori.slice(0, 2).join(' | ') || 'solo il testo per i lettori di schermo');
+
+    /* IL TEST DEVE PROVARE TUTTO QUELLO CHE IL BLOCCO USA.
+       Il `@supports` provava `min()` e `calc()` dentro un `polygon()`, ma per
+       un po' ogni tracciato ha cominciato con `evenodd` — che è un'altra
+       funzione, e che WebKit dentro `polygon()` non fa. Su un iPad il test
+       passava, il blocco entrava, e ogni `clip-path` finiva invalido: un
+       valore che arriva da una `var()` e non è valido non fa cadere la
+       regola, la porta a `unset`. Via il ritaglio dell'elemento, e via quello
+       dell'anello — che senza il suo ritaglio smette di essere un anello e
+       diventa un rettangolo PIENO del colore del bordo. La rete c'era e non
+       serviva a niente, perché non provava la cosa giusta.
+       Qui si raccolgono i pezzi di sintassi che i tracciati usano davvero e
+       si pretende che la condizione del `@supports` li nomini tutti. */
+    const corpo = dopo.split('/* ==== SUPERCERCHI')[1] || '';
+    const condizione = (corpo.match(/@supports \(([^{]+)\) \{/) || [, ''])[1];
+    const usati = new Set();
+    [...corpo.matchAll(/polygon\(([^;]*?)\);/g)].forEach((m) => {
+      const t = m[1];
+      usati.add('polygon(');
+      if (/\bmin\(/.test(t)) usati.add('min(');
+      if (/\bmax\(/.test(t)) usati.add('max(');
+      if (/\bclamp\(/.test(t)) usati.add('clamp(');
+      if (/\bcalc\(/.test(t)) usati.add('calc(');
+      /* il riempimento: sta subito dopo la parentesi del poligono */
+      const f = t.match(/^\s*(evenodd|nonzero)\b/);
+      if (f) usati.add(f[1]);
+    });
+    const scoperti = [...usati].filter((x) => condizione.indexOf(x) < 0);
+    ok('e la rete prova TUTTO quello che i tracciati usano', scoperti.length === 0,
+      scoperti.length ? 'mai provati: ' + scoperti.join(', ') : [...usati].join(' '));
   }
 
   /* ============ 9. l'icona dell'app ============ */

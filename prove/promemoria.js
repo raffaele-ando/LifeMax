@@ -451,7 +451,7 @@ const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  
   await p.waitForTimeout(400);
   await p.evaluate(() => { const b = document.getElementById('imp-prom-come'); if (b) b.click(); });
   await p.waitForTimeout(500);
-  ok('la schermata «Come ti avviso» si apre', await p.evaluate(() => !!document.getElementById('prom-collega')));
+  ok('la schermata «Promemoria» si apre', await p.evaluate(() => !!document.getElementById('prom-collega')));
   /* la pagina che fa le chiavi deve essere raggiungibile DALL'APP: un file
      dentro il progetto non lo apre chi non ha il progetto, e senza le chiavi
      non si va avanti */

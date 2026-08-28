@@ -396,8 +396,8 @@ tema. A occhio se ne erano visti tre o quattro; lei ne ha contati settanta.
     la scena misurava la pagina che c'era sotto. Otto misure identiche della
     stessa schermata, e nessun errore da nessuna parte — il generatore ha
     continuato a dire che andava tutto bene, `prove/bordi.js` a passare, e le
-    pastiglie di Impostazioni, Backup, Come si usa, Sonno e pasti, Le tue aree,
-    Come ti avviso, Registro tecnico e La scienza sono rimaste archi di cerchio
+    pastiglie di Impostazioni, Backup, Primi passi, Sonno e pasti, Aree,
+    Promemoria, Registro tecnico e Scienza sono rimaste archi di cerchio
     finché non le ha viste un occhio. Adesso ogni scena porta un `prova`: un
     selettore che DEVE esserci quando la scena è pronta. Se manca, la corsa si
     ferma, elenca le scene che non ci sono arrivate e NON riscrive

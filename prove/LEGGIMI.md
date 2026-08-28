@@ -297,7 +297,7 @@ genera le chiavi, in un browser vero).
      perché `repeat(7, 1fr)` non fa scendere una colonna sotto il titolo più
      lungo che ha dentro — e due colonne su sette stavano fuori dalla pagina.
   Alla prima passata: settanta casi, in pagine che a occhio non erano mai state
-  guardate — «La scienza», «Backup», «Come si usa», il Design lab. Stampa
+  guardate — «Scienza», «Backup», «Primi passi», il Design lab. Stampa
   TUTTI i casi, uno per riga, e non i primi sei: con l'elenco tagliato si
   lavorava tre volte sugli stessi e mai sugli altri.
 

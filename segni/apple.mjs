@@ -233,21 +233,25 @@ export function poligonoAngoli(r4, tolleranza = 0.1) {
   /* un morso: il vertice, il lato, la curva, l'altro lato, e ritorno al perno.
      Il ponte perno→vertice si percorre due volte in versi opposti, quindi ha
      area zero e non si vede. */
-  const morso = (raggio, vertice, mappa) => {
+  const morso = (raggio, vertice, mappa, alRovescio) => {
     if (!(raggio > 0)) return;
     const L = puntiAngolo(raggio, tolleranza);
     const lung = INIZIO * raggio;
     p.push(vertice);
-    L.forEach(([x, y]) => p.push(mappa(x, y, lung)));
+    (alRovescio ? L.slice().reverse() : L).forEach(([x, y]) => p.push(mappa(x, y, lung)));
     p.push(vertice, perno);
   };
-  morso(tl, '0 0', (x, y, L) => vicino(x, L) + ' ' + vicino(y, L));
-  morso(tr, '100% 0', (x, y, L) => lontano(x, L) + ' ' + vicino(y, L));
-  morso(br, '100% 100%', (x, y, L) => lontano(y, L) + ' ' + lontano(x, L));
-  morso(bl, '0 100%', (x, y, L) => vicino(x, L) + ' ' + lontano(y, L));
+  /* Il morso in alto a sinistra gira NELLO STESSO VERSO del rettangolone —
+     gli altri tre no, perché le loro mappe scambiano o specchiano gli assi —
+     quindi va percorso al rovescio. Misurato: l'area con segno di ognuno dei
+     quattro, confrontata con quella del rettangolo. */
+  morso(tl, '0 0', (x, y, L) => vicino(x, L) + ' ' + vicino(y, L), true);
+  morso(tr, '100% 0', (x, y, L) => lontano(x, L) + ' ' + vicino(y, L), false);
+  morso(br, '100% 100%', (x, y, L) => lontano(y, L) + ' ' + lontano(x, L), false);
+  morso(bl, '0 100%', (x, y, L) => vicino(x, L) + ' ' + lontano(y, L), false);
   /* l'ultimo perno è di troppo: il poligono si chiude da sé */
   if (p[p.length - 1] === perno) p.pop();
-  return 'polygon(evenodd,' + p.filter((x, i) => i === 0 || x !== p[i - 1]).join(',') + ')';
+  return 'polygon(' + p.filter((x, i) => i === 0 || x !== p[i - 1]).join(',') + ')';
 }
 
 /* L'ANELLO, e perché il contorno esterno è un RETTANGOLO e non la curva.
@@ -265,8 +269,12 @@ export function anello(r4, s, tolleranza = 0.1) {
      diventava una scheggia diagonale che tagliava via un pezzo di anello — una
      fessura bianca in mezzo al fianco. */
   const est = ['0 50%', '0 0', '100% 0', '100% 100%', '0 100%', '0 50%'];
-  const int = contorno(r4, (r) => puntiAngoloDentro(r, s, tolleranza), s);
-  return 'polygon(evenodd,' + est.join(',') + ',' + int.join(',') + ')';
+  /* il contorno interno gira AL ROVESCIO di quello esterno: due contorni in
+     versi opposti fanno un buco anche col riempimento normale, e così il
+     tracciato non ha bisogno di `evenodd` — che WebKit dentro `polygon()`
+     non fa, e senza il quale su iPad l'anello diventava un rettangolo pieno */
+  const int = contorno(r4, (r) => puntiAngoloDentro(r, s, tolleranza), s).slice().reverse();
+  return 'polygon(' + est.join(',') + ',' + int.join(',') + ')';
 }
 
 /* L'ANELLO PER CHI SCORRE. `overflow: auto` taglia al riquadro interno (il
@@ -277,8 +285,8 @@ export function anello(r4, s, tolleranza = 0.1) {
    era non avere bordo. */
 export function anelloDentro(r4, s, tolleranza = 0.1) {
   const est = contorno(r4, (r) => puntiAngoloDentro(r, s, tolleranza), s);
-  const int = contorno(r4, (r) => puntiAngoloDentro(r, 2 * s, tolleranza), 2 * s);
-  return 'polygon(evenodd,' + est.join(',') + ',' + int.join(',') + ')';
+  const int = contorno(r4, (r) => puntiAngoloDentro(r, 2 * s, tolleranza), 2 * s).slice().reverse();
+  return 'polygon(' + est.join(',') + ',' + int.join(',') + ')';
 }
 
 /* il tracciato SVG, per il logo e per le icone: là le Bézier ci stanno per

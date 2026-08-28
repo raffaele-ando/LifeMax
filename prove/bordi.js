@@ -36,7 +36,7 @@ const ok = (n, c, d) => { if (!c) guai++; console.log('  ' + (c ? 'ok  ' : 'KO  
    segni/misure.mjs, che da lì ricava le misure su cui il generatore taglia i
    raggi. Quando le due liste erano due, quella delle misure era rimasta a
    ventuno schermate e i pannelli che mancavano — «La scienza», «Backup»,
-   «Come si usa» — sono esattamente quelli dove poi si sono trovate le
+   «Primi passi» — sono esattamente quelli dove poi si sono trovate le
    pastiglie mai misurate, rimaste archi di cerchio. */
 const SCENE = JSON.parse(fs.readFileSync(path.join(RADICE, 'segni/scene.json'), 'utf8'));
 
@@ -73,11 +73,14 @@ const CONTROLLA = `(function () {
     var campo = /^(input|select|textarea|progress|meter)$/.test(e.tagName.toLowerCase());
     var bw = parseFloat(s.borderTopWidth) || 0;
     var sqb = (s.getPropertyValue('--sq-b') || '').trim();
-    /* l'anello: uno pseudo-elemento col ritaglio a riempimento evenodd */
+    /* l'anello: uno pseudo-elemento col ritaglio che NON è il rettangolone.
+       Il tracciato dell'elemento comincia 200px fuori da ogni lato (toglie
+       solo i quattro morsi d'angolo); quello dell'anello no. Prima si
+       distinguevano per il riempimento a zone alterne, che non c'e' piu'. */
     var anello = null;
     ['::before', '::after'].forEach(function (ps) {
       var q = getComputedStyle(e, ps);
-      if (/^polygon\\(evenodd/.test(q.clipPath || '')) {
+      if (/^polygon\\(/.test(q.clipPath || '') && !/-200px/.test(q.clipPath || '')) {
         anello = q;
         /* 8. LO PSEUDO-ELEMENTO È DI DUE PADRONI. L'anello del bordo si
               disegna su ::before, e se quello pseudo-elemento serviva già a

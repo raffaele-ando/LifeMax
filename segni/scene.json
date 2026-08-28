@@ -119,7 +119,7 @@
   "prova": "#seg-modo"
  },
  {
-  "nome": "Come ti avviso",
+  "nome": "Promemoria",
   "via": "plancia",
   "tab": null,
   "poi": "(async () => {\n  const g = document.getElementById('fondo-impostazioni') || document.querySelector('[data-imp]');\n  if (!g) throw new Error('la porta delle impostazioni non c\\u2019\\u00e8');\n  g.click();\n  await new Promise((r) => setTimeout(r, 500));\n  const c = document.getElementById('imp-prom-come');\n  if (!c) throw new Error('manca #imp-prom-come');\n  c.click();\n})()",
@@ -147,7 +147,7 @@
   "prova": ".sheet-corpo .lista, .bk-riga, .sheet-corpo"
  },
  {
-  "nome": "Come si usa",
+  "nome": "Primi passi",
   "via": "plancia",
   "tab": null,
   "poi": "(async () => {\n  const g = document.getElementById('fondo-impostazioni') || document.querySelector('[data-imp]');\n  if (!g) throw new Error('la porta delle impostazioni non c\\u2019\\u00e8');\n  g.click();\n  await new Promise((r) => setTimeout(r, 500));\n  const c = document.getElementById('imp-guida');\n  if (!c) throw new Error('manca #imp-guida');\n  c.click();\n})()",

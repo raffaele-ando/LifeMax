@@ -466,7 +466,7 @@
   "angolo": true
  },
  ".card": {
-  "corto": 78.9,
+  "corto": 79.5,
   "angolo": true
  },
  ".card-area .testata .icona-area": {
@@ -499,7 +499,7 @@
   "corto": 26.8
  },
  ".evidenza": {
-  "corto": 17.9
+  "corto": 18
  },
  ".evidenza-euristica": {
   "angolo": true
@@ -664,7 +664,7 @@
   "angolo": true
  },
  ".scienza-card .uso": {
-  "corto": 56.1
+  "corto": 57
  },
  ".seg-n": {
   "corto": 12.6
@@ -750,9 +750,6 @@
  ".tl-check": {
   "corto": 26,
   "angolo": true
- },
- ".tl-dur": {
-  "corto": 24
  },
  ".tl-ed-badge": {
   "corto": 18.5

@@ -143,7 +143,7 @@ const SCENE = [
       await p.evaluate(() => { const b = document.querySelector('.tabbar [data-catt]'); if (b) b.click(); }); } },
   { nome: 'Impostazioni', vai: 'plancia', poi: async p => {
       await p.evaluate(() => { const b = (document.getElementById('fondo-impostazioni') || document.querySelector('[data-imp]')); if (b) b.click(); }); } },
-  { nome: 'Come ti avviso', vai: 'plancia', poi: async p => {
+  { nome: 'Promemoria', vai: 'plancia', poi: async p => {
       await p.evaluate(() => { const b = (document.getElementById('fondo-impostazioni') || document.querySelector('[data-imp]')); if (b) b.click(); });
       await p.waitForTimeout(650);
       await p.evaluate(() => { const b = document.getElementById('imp-prom-come'); if (b) b.click(); }); } },

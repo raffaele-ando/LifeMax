@@ -144,7 +144,7 @@
     /* salta: scavalca oggi e riprende domani. Prima era la luna, che nell'app
        vuol dire «la sera». */
     salta: '<path d="M5.4 6l8 6-8 6z"/><path d="M18.2 5.4v13.2"/>',
-    /* fonte: lo studio citato in «Perché funziona». Prima era il libro, che è
+    /* fonte: lo studio citato in «Scienza». Prima era il libro, che è
        anche l'icona dell'area «Studio»: la stessa figura per «la tua area» e
        per «la ricerca da cui viene questa scelta». */
     fonte: '<path d="M13.6 3.2H7A2 2 0 0 0 5 5.2v13.6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8.6z"/><path d="M13.4 3.3v5.3H19"/><path d="M8.6 13h6.8M8.6 16.6h4.4"/>',
