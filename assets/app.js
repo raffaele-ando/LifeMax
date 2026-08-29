@@ -409,6 +409,12 @@
 
   var wireSheet = null;
   var $sheetPanel = $sheet.querySelector('.sheet');
+  /* CHI SCORRE dentro il pannello. Non è più il pannello: il pannello sta
+     fermo (testata e maniglia comprese) e scorre il suo corpo. Chi ha
+     bisogno della posizione dello scorrimento — il gesto per chiudere, e il
+     ritorno in cima quando il pannello cambia contenuto — deve chiederla a
+     lui, se no legge sempre zero e il gesto parte anche a metà pagina. */
+  var $sheetScorre = $sheet.querySelector('.sheet-corpo');
   /* Anima l'ingresso UNA volta e poi toglie la classe: se restasse attaccata,
      ogni elemento ricreato dopo (una spunta, un filtro) ripartirebbe con la
      stessa animazione e sembrerebbe un refresh continuo. */
@@ -582,7 +588,7 @@
       /* dentro un campo il dito seleziona il testo, non trascina il foglio */
       if (e.target.closest && e.target.closest('input, textarea, select, [contenteditable="true"]')) return;
       var presa = !!(e.target.closest && e.target.closest('.sheet-maniglia, .sheet-testa'));
-      giu = { y: t.clientY, x: t.clientX, top: $sheetPanel.scrollTop, presa: presa };
+      giu = { y: t.clientY, x: t.clientX, top: $sheetScorre ? $sheetScorre.scrollTop : 0, presa: presa };
       campioni = [{ t: e.timeStamp, y: t.clientY }];
     }
 
@@ -724,7 +730,7 @@
     bloccaSfondo(true);
     wireSheet = onWire || null;
     if (wireSheet) wireSheet(document.getElementById('sheet-corpo'));
-    if (giaAperto) { if ($sheetPanel) { $sheetPanel.scrollTop = 0; $sheetPanel.focus({ preventScroll: true }); } }
+    if (giaAperto) { if ($sheetScorre) $sheetScorre.scrollTop = 0; if ($sheetPanel) $sheetPanel.focus({ preventScroll: true }); }
     else { animaIngressoSheet(); entraFuoco($sheetPanel); }
   }
 
@@ -1706,7 +1712,13 @@
       '<div class="segmenti diag-filtro" id="diag-filtro">' +
       '<button data-filtro="tutto" class="' + (LOG_SOLO_PROBLEMI ? '' : 'attivo') + '">Tutto</button>' +
       '<button data-filtro="problemi" class="' + (LOG_SOLO_PROBLEMI ? 'attivo' : '') + '">Solo problemi' + (nProblemi ? ' (' + nProblemi + ')' : '') + '</button></div>' +
+      /* LA CORNICE STA FUORI, DENTRO SCORRE. Erano la stessa scatola, e il
+         filo del bordo è uno pseudo-elemento assoluto: dentro un contenitore
+         che scorre se ne va a spasso col contenuto, e la cornice della
+         console finiva in mezzo alle righe del registro. Fuori, sta ferma. */
+      '<div class="diag-cornice">' +
       '<div class="diag-console" id="diag-console" tabindex="0" role="log" aria-label="Registro diagnostico">' + righeLogHtml() + '</div>' +
+      '</div>' +
       '<textarea id="diag-testo" class="diag-testo" readonly aria-label="Testo del registro, da copiare a mano"></textarea>',
       wireDiagnostica, true);
   }
@@ -2346,36 +2358,84 @@
        parola resta per chi usa un lettore di schermo, che una forma non la
        vede: `.solo-lettore`. */
     var oraAdesso = LM.oraDelGiorno();
-    var stato = { parola: '', dett: '', cls: 'libera', barra: null, quota: 0, ico: null };
+    /* DUE DOMANDE, DUE CANALI. La scheda di «Adesso» deve rispondere a due
+       cose diverse, e prima ne rispondeva a una sola:
+         · QUANDO — è per adesso, è passata, è più tardi, o non ha un'ora?
+         · CHE COS'È — un'abitudine che torna ogni volta, o una cosa di oggi?
+       Il secondo canale non c'era: un'abitudine e un'attività avevano la
+       stessa faccia, e la differenza la faceva una parola scritta piccola
+       («abitudine») accanto al nome dell'area. Ma i due comandi che offrono
+       NON sono gli stessi — un'abitudine si salta per oggi, un'attività si
+       rimanda a domani — e chi non ha letto quella parola preme il tasto
+       sbagliato. Adesso il tipo si vede: una tessera col segno a sinistra
+       dello stato, e sotto il titolo la settimana dell'abitudine, che
+       un'attività non ha e non può avere.
+       IL TEMPO È LA BARRA, e adesso ha una forma per ognuno dei casi, non
+       solo per tre:
+         · in corso        piena fino a dove siamo — si vede a che punto sei;
+         · in ritardo      piena tutta, colore d'avviso: il tempo è finito;
+         · più tardi       binario vuoto: il blocco c'è ma non è cominciato;
+         · a un'ora, senza durata  un segno solo, non un binario: è un
+                           istante, non un pezzo di giornata;
+         · quando vuoi     binario tratteggiato: nessun confine, e si vede.
+       L'ultima riga è l'unica che cambia rispetto a prima, dove «quando vuoi»
+       non aveva nessuna barra. L'assenza però non è un segno: sembrava solo
+       una scheda con meno roba, e a parità di tutto il resto le due schede
+       erano identiche. Un tratteggio è la stessa cosa detta con una forma. */
+    var haOra = adesso.min != null;
+    var haDurata = !!prossima.durata;
+    var stato = { parola: '', dett: '', cls: 'libera', barra: 'libera', quota: 0, ico: null };
     if (adesso.stato === 'scelta') {
-      stato = { parola: 'Scelta da te', dett: adesso.min != null ? 'in programma alle ' + fmtMin(adesso.min) : 'quando vuoi',
+      stato = { parola: 'Scelta da te', dett: haOra ? 'in programma alle ' + fmtMin(adesso.min) : 'quando vuoi',
         cls: 'ora', barra: 'scelta', quota: 1, ico: 'target' };
     } else if (adesso.stato === 'corso') {
       var durata = Math.max(1, adesso.fine - adesso.min);
-      stato = { parola: 'Adesso', dett: fmtMin(adesso.min) + ' → ' + fmtMin(adesso.fine),
+      var restano = Math.max(0, adesso.fine - oraAdesso);
+      stato = { parola: 'Adesso', dett: fmtMin(adesso.min) + ' → ' + fmtMin(adesso.fine) + ' · restano ' + restano + '′',
         cls: 'ora', barra: 'corso', ico: 'target',
         quota: Math.max(0.02, Math.min(1, (oraAdesso - adesso.min) / durata)) };
     } else if (adesso.stato === 'ritardo') {
       stato = { parola: 'In ritardo', dett: 'era alle ' + fmtMin(adesso.min) + daQuanto(adesso.fine),
         cls: 'ritardo', barra: 'ritardo', quota: 1, ico: 'avviso' };
     } else if (adesso.stato === 'programmata') {
-      stato = { parola: 'Più tardi', dett: 'alle ' + fmtMin(adesso.min) + fraQuanto(adesso.min),
-        cls: 'dopo', barra: 'dopo', quota: 0, ico: 'clock' };
+      /* con una durata è un BLOCCO e la barra è un binario; senza durata è un
+         ISTANTE e la barra è un segno solo. Sono due cose diverse da fare e
+         due impegni diversi da prendere: «alle 15 per tre quarti d'ora» non è
+         «alle 15». */
+      stato = { parola: 'Più tardi',
+        dett: 'alle ' + fmtMin(adesso.min) + (haDurata ? ' · ' + prossima.durata + '′' : '') + fraQuanto(adesso.min),
+        cls: 'dopo', barra: haDurata ? 'dopo' : 'punto', quota: 0, ico: 'clock' };
     } else if (prossima.mit) {
-      stato = { parola: 'La più importante', dett: '', cls: 'mit', barra: null, quota: 0, ico: 'star' };
+      stato = { parola: 'La più importante', dett: 'quando vuoi, ma prima delle altre', cls: 'mit', barra: 'libera', quota: 0, ico: 'star' };
     } else {
-      stato = { parola: 'Quando vuoi', dett: '', cls: 'libera', barra: null, quota: 0, ico: null };
+      stato = { parola: 'Quando vuoi', dett: 'nessun orario', cls: 'libera', barra: 'libera', quota: 0, ico: null };
     }
 
-    /* di che specie è questa cosa: un'abitudine non si «rimanda», si salta
-       per oggi, e chi guarda deve saperlo prima di premere */
+    /* DI CHE SPECIE È QUESTA COSA. Non più una parola in coda alla riga
+       dell'area: una tessera col segno, e per le abitudini la settimana
+       disegnata. Un'abitudine non si «rimanda», si salta per oggi — e chi
+       guarda deve saperlo prima di premere, non dopo. */
+    var tipoCls = prossima.tipo === 'abitudine' ? 'abitudine' : 'azione';
     var perche = '';
     var perCls = ' ' + stato.cls;
-    if (prossima.tipo === 'abitudine') {
-      perche = ICO('refresh', 13) + ' abitudine' + (prossima.serie > 1 ? ' · ' + prossima.serie + ' giorni di fila' : '');
-    }
     if (adesso.stato === 'scelta') {
-      perche = (perche ? perche + ' · ' : '') + '<button class="focus-torna" id="btn-torna-piano">torna al piano</button>';
+      perche = '<button class="focus-torna" id="btn-torna-piano">torna al piano</button>';
+    }
+    /* la settimana dell'abitudine: sette pallini, quelli in cui torna sono
+       pieni, oggi ha il suo anello. È il segno che nessuna attività può
+       avere, e si legge senza leggere. */
+    var ripeteHtml = '';
+    if (prossima.tipo === 'abitudine') {
+      var oggiDow = new Date().getDay();
+      var giorni = prossima.giorni && prossima.giorni.length ? prossima.giorni : GIORNI_ORD;
+      ripeteHtml = '<div class="focus-ripete" role="img" aria-label="' +
+        esc('Abitudine' + (prossima.serie > 0 ? ', ' + prossima.serie + (prossima.serie === 1 ? ' giorno di fila' : ' giorni di fila') : '')) + '">' +
+        '<span class="fr-pips">' + GIORNI_ORD.map(function (d) {
+          return '<i class="' + (giorni.indexOf(d) >= 0 ? 'on' : '') + (d === oggiDow ? ' oggi' : '') + '"></i>';
+        }).join('') + '</span>' +
+        (prossima.serie > 0
+          ? '<span class="fr-serie">' + ICO('flame', 13, 'fiamma') + '<b>' + prossima.serie + '</b></span>'
+          : '') + '</div>';
     }
 
     /* Le ALTRE cose di oggi, a portata di mano: se devi fare qualcos'altro la
@@ -2418,12 +2478,19 @@
        incollata sotto ai tasti con duecento pixel di niente sotto di sé: la
        schermata sembrava interrotta a metà. */
     html += '<div class="focus-scena' + (timerAttivo ? ' timer-attivo' : '') + '">' +
-      '<div class="focus-cuore st-' + stato.cls + '" style="--c-area:' + colArea + '">' +
+      '<div class="focus-cuore st-' + stato.cls + ' tipo-' + tipoCls + '" style="--c-area:' + colArea + '">' +
       '<div class="focus-stato st-' + stato.cls + '">' +
       (stato.barra
         ? '<div class="fs-barra fs-b-' + stato.barra + '" style="--p:' + stato.quota + '" aria-hidden="true"><i></i></div>'
         : '') +
       '<div class="fs-riga">' +
+      /* LA TESSERA DEL TIPO, prima di tutto il resto: il segno che ripete per
+         un'abitudine, il segno dell'area per una cosa di oggi. Sta a
+         sinistra perché è la prima domanda («che roba è?») e perché è nello
+         stesso posto in cui sta nelle righe dei Rituali e delle liste. */
+      '<span class="fs-tipo fs-tipo-' + tipoCls + '">' +
+      (tipoCls === 'abitudine' ? ICO('refresh', 13) : segnoArea(area, 13, '')) + '</span>' +
+      '<span class="fs-tipo-nome solo-lettori">' + (tipoCls === 'abitudine' ? 'Abitudine' : 'Attività') + '</span>' +
       (stato.ico ? '<span class="fs-ico">' + ICO(stato.ico, 13) + '</span>' : '') +
       /* la parola resta per chi non vede la forma */
       '<span class="fs-parola solo-lettori">' + stato.parola + '</span>' +
@@ -2441,6 +2508,7 @@
           '<div class="timer-eti">restano</div></div></div>'
         : '') +
       '<div class="focus-azione">' + esc(prossima.testo) + '</div>' +
+      ripeteHtml +
       /* La risposta alla domanda «e adesso?»: quando tutto quello che resta ha
          un'ora più in là, ADESSO non c'è niente, e va detto. Prima la scheda
          mostrava la cosa delle tre del pomeriggio come se fosse da fare
@@ -2714,6 +2782,21 @@
          segna come «basso» e col tocco la spunta sparisce (si apre la
          scheda del blocco, dove «Fatto» è grande quanto serve) */
       var basso = hgt < 46;
+      /* QUANTO CI STA DENTRO UN BLOCCO. Il titolo vuole quattordici pixel, la
+         riga dell'orario tredici, e sopra e sotto ce ne sono tre di
+         imbottitura: trentaquattro in tutto. Il blocco però è alto quanto
+         DURA, e su una giornata intera in mezzo schermo un'ora sta in
+         diciotto pixel — un impegno di un'ora e mezza ne vale ventisette, e
+         là dentro le due righe non ci stanno. Il contenuto è centrato, quindi
+         quello che avanza esce da sopra E da sotto e il ritaglio lo taglia a
+         metà altezza: il titolo appariva mozzato per il lungo, con solo la
+         metà bassa delle lettere. Sembrava un difetto del bordo, ed era una
+         riga di troppo.
+         Sotto i trentotto pixel l'orario se ne va (sta già scritto a
+         sinistra, sul righello delle ore); sotto i ventiquattro anche
+         l'imbottitura, perché una lettera intera vale più di due pixel di
+         aria. */
+      var corto = hgt < 38;
       var check = (opts.spuntabile && !opts.mini) ? '<button class="tl-blk-check" ' + attr + ' aria-label="Fatto">' + ICO('check', 11) + '</button>' : '';
       /* nella pagina Giornata il blocco si tocca per modificarlo (orario,
          durata, area) in un pannellino: niente più lista doppia sotto. */
@@ -2726,10 +2809,10 @@
          Così col dito si prende subito, senza che il browser rubi il gesto
          per selezionare il testo. */
       if (e.tipo === 'azione') clic += ' data-drag-az="' + e.id + '"' + (opts.mini ? ' data-manico' : '');
-      return '<div class="tl-blk tl-blk-att' + (fatto ? ' fatta' : '') + (basso ? ' tl-blk-basso' : '') + (opts.interactive && !opts.mini ? ' tl-blk-clic' : '') + '"' + clic + ' style="' + pos + ';--c-area:' + col + '" title="' + esc(e.testo) + '">' +
+      return '<div class="tl-blk tl-blk-att' + (fatto ? ' fatta' : '') + (basso ? ' tl-blk-basso' : '') + (corto ? ' tl-blk-corto' : '') + (opts.interactive && !opts.mini ? ' tl-blk-clic' : '') + '"' + clic + ' style="' + pos + ';--c-area:' + col + '" title="' + esc(e.testo) + '">' +
         check + (e.tipo === 'azione' && !opts.mini && opts.interactive ? '<span class="manico" data-manico aria-hidden="true">' + ICO('presa', 13) + '</span>' : '') +
         '<span class="tl-blk-t">' + (e.mit ? ICO('star', 11) + ' ' : '') + esc(e.testo) + '</span>' +
-        (hgt > 30 && !opts.mini ? '<span class="tl-blk-ora">' + e.ora + '–' + fmtMin(e.min + dur) + '</span>' : '') + '</div>';
+        (!corto && !opts.mini ? '<span class="tl-blk-ora">' + e.ora + '–' + fmtMin(e.min + dur) + '</span>' : '') + '</div>';
     }).join('');
     var now = '';
     if (opts.nowMin != null) { var nm = em(opts.nowMin); if (nm >= gs && nm <= ge) now = '<div class="tl-now-line" style="top:' + y(nm) + 'px"><span>' + fmtMin(opts.nowMin) + '</span></div>'; }
@@ -3619,6 +3702,23 @@
      giorni che non hanno un registro proprio. */
   function apriRitmo() {
     var r = LM.load().profilo.ritmo || LM.RITMO_DEFAULT;
+    var q = LM.chiediQuando();
+    function rigaChiedi(quale, nome, spiega, v) {
+      return '<div class="prom-riga' + (v.on ? '' : ' spenta') + '">' +
+        '<button class="prom-int" data-chint="' + quale + '" role="switch" aria-checked="' + (v.on ? 'true' : 'false') + '" ' +
+          'aria-label="' + esc(nome) + (v.on ? ', acceso' : ', spento') + '">' +
+          ICO(v.on ? 'check' : 'x', 13) + '</button>' +
+        '<div class="prom-testo"><b>' + esc(nome) + '</b><span>' + spiega + '</span></div>' +
+        '<span class="chiedi-ore">' +
+        '<input type="time" class="prom-ora" data-chora="' + quale + '" data-chcampo="da" value="' + esc(v.da) + '" ' +
+          'aria-label="' + esc(nome) + ', non prima delle"' + (v.on ? '' : ' disabled') + '>' +
+        (v.a != null
+          ? '<span class="chiedi-tratto" aria-hidden="true">\u2192</span>' +
+            '<input type="time" class="prom-ora" data-chora="' + quale + '" data-chcampo="a" value="' + esc(v.a) + '" ' +
+              'aria-label="' + esc(nome) + ', non dopo le"' + (v.on ? '' : ' disabled') + '>'
+          : '') +
+        '</span></div>';
+    }
     function durOpt(v) { return DURATE.map(function (o) { return '<option value="' + o.v + '"' + ((v || '') === o.v ? ' selected' : '') + '>' + o.t + '</option>'; }).join(''); }
     function pastoRiga(p, i) {
       return '<div class="ritmo-pasto" data-pi="' + i + '">' +
@@ -3640,8 +3740,38 @@
          scritte nel titolo, sopra tre campi che dicono già cosa sono */
       '<div class="imp-sezione"><div class="imp-eti">Pasti</div><div id="ritmo-pasti">' + (r.pasti || []).map(pastoRiga).join('') + '</div>' +
       '<button class="btn btn-mini mt-s" id="ritmo-add">' + ICO('plus', 13) + ' Aggiungi un pasto</button></div>' +
+      /* QUANDO L'APP CHIEDE. Sta qui e non fra i promemoria perché non è una
+         notifica: è il pannello che si apre da solo dentro l'app, e le due
+         domande che fa sono esattamente sul sonno e sui pasti — cioè su
+         questa pagina. Ognuna ha il suo interruttore e la sua ora: spenta, la
+         domanda non arriva più e il posto dove rispondere resta comunque, nel
+         «Registro di oggi» dei Rituali. La stessa riga dei promemoria:
+         interruttore, nome, ora. */
+      '<div class="imp-sezione"><div class="imp-eti">Quando chiedere</div>' +
+      rigaChiedi('notte', 'Il sonno di stanotte', 'La mattina, se sono passate almeno tre ore dall\u2019ultima volta.', q.notte) +
+      rigaChiedi('giorno', 'Pasti e cose fatte', 'A fine giornata, una volta sola.', q.giorno) +
+      '<p class="lista-nota">Spente, le due domande non arrivano pi\u00f9 da sole. Il posto dove rispondere resta: \u00e8 il <b>Registro di oggi</b>, nei Rituali.</p></div>' +
       '<div class="riga-flex mt"><button class="btn btn-primario btn-grande" id="ritmo-salva">' + ICO('save', 15) + ' Salva</button></div>',
       function (root) {
+        root.querySelectorAll('[data-chint]').forEach(function (b) {
+          b.addEventListener('click', function () {
+            var quale = b.getAttribute('data-chint');
+            var acceso = b.getAttribute('aria-checked') !== 'true';
+            LM.impostaChiedi(quale === 'notte' ? { notte: { on: acceso } } : { giorno: { on: acceso } });
+            b.setAttribute('aria-checked', acceso ? 'true' : 'false');
+            b.innerHTML = ICO(acceso ? 'check' : 'x', 13);
+            b.closest('.prom-riga').classList.toggle('spenta', !acceso);
+            b.closest('.prom-riga').querySelectorAll('input[type=time]').forEach(function (i) { i.disabled = !acceso; });
+          });
+        });
+        root.querySelectorAll('[data-chora]').forEach(function (i) {
+          i.addEventListener('change', function () {
+            var quale = i.getAttribute('data-chora');
+            var campo = i.getAttribute('data-chcampo');
+            var patch = {}; patch[quale] = {}; patch[quale][campo] = i.value || null;
+            if (i.value) LM.impostaChiedi(patch);
+          });
+        });
         function aggiornaDorm() {
           root.querySelector('#ritmo-dorm').textContent = fmtOre(durSonno(root.querySelector('#ritmo-sonno').value || '23:30', root.querySelector('#ritmo-sveglia').value || '07:30'));
         }
@@ -4119,8 +4249,16 @@
      accanto a una misura, e le abitudini accanto a entrambe era metterci
      dentro anche un pannello di configurazione. */
   var GRUPPI_RIT = [
-    { eti: 'Il piano di oggi', ids: ['mattina'] },
-    { eti: 'Bilanci',          ids: ['checkin', 'sera', 'settimana'] }
+    { eti: 'Il piano di oggi',   ids: ['mattina'] },
+    /* IL REGISTRO HA UNA RIGA SUA, e si vede dall'elenco senza aprire niente.
+       Sonno, pasti e cose fatte erano tre domande sparse in due rituali
+       diversi: la notte in cima a «Le azioni di oggi», i pasti dentro la
+       «Review della sera» — cioè dietro una sezione che si apre la sera e che
+       parla d'altro. Chi cercava dove segnare un pasto non lo trovava, ed è
+       esattamente quello che è successo. Sono tre cose che l'app non può
+       sapere da sola: stanno insieme, in un posto che porta il loro nome. */
+    { eti: 'Il registro di oggi', ids: ['registro'] },
+    { eti: 'Bilanci',            ids: ['checkin', 'sera', 'settimana'] }
   ];
   /* quali sezioni sono aperte: ognuna si apre e si chiude per conto suo, e
      aprirne una non chiude le altre (linee guida Apple: le sezioni a
@@ -4128,6 +4266,7 @@
   var ritualiAperti = null;
   var RITUALI = [
     { id: 'mattina',   ico: 'sun',      nome: 'Le azioni di oggi',      quando: 'giorno' },
+    { id: 'registro',  ico: 'ritmo',    nome: 'Sonno, pasti e cose fatte', quando: 'giorno' },
     { id: 'checkin',   ico: 'polso',    nome: 'Check-in',               quando: 'giorno' },
     { id: 'sera',      ico: 'moon',     nome: 'Review della sera',      quando: 'giorno' },
     { id: 'settimana', ico: 'calendar', nome: 'Review della settimana', quando: 'ogni tanto' }
@@ -4146,7 +4285,11 @@
       if (!id || !el) return;
       var st = statoRituale(id);
       el.className = 'rit-stato' + (st.fatto ? ' fatto' : '');
-      el.innerHTML = (st.fatto ? ICO('check', 13) + ' ' : '') + esc(st.testo);
+      /* il dettaglio va riscritto insieme allo stato: senza la seconda riga
+         qui sotto, «2 di 3» spariva al primo aggiornamento e la colonna
+         cambiava altezza sotto gli occhi */
+      el.innerHTML = '<span class="rs-che">' + (st.fatto ? ICO('check', 13) + ' ' : '') + esc(st.testo) + '</span>' +
+        (st.dett ? '<span class="rs-dett">' + esc(st.dett) + '</span>' : '');
     });
   }
   document.addEventListener('lm:change', function () {
@@ -4175,6 +4318,18 @@
          già fatta — il conto lo dice la riga sotto */
       var n = LM.azioniDiOggi().length;
       return { fatto: false, testo: 'da fare', dett: n ? n + ' di 3 scelte' : '' };
+    }
+    if (id === 'registro') {
+      /* la riga dice a che punto è il registro, non se «è fatto»: le cose da
+         segnare sono tre e arrivano in momenti diversi della giornata */
+      var g = s.ritmoGiorno[t] || {};
+      var nottePronta = !!(g.sveglia || g.sonno);
+      var pasti = (LM.ritmoDi(t).pasti || []);
+      var risposti = pasti.filter(function (pa) { return pa.fatto === true || pa.fatto === false; }).length;
+      var quante = (nottePronta ? 1 : 0) + risposti;
+      var tutte = 1 + pasti.length;
+      return { fatto: quante >= tutte, testo: quante >= tutte ? 'fatto' : 'da segnare',
+        dett: quante >= tutte ? '' : quante + ' di ' + tutte };
     }
     if (id === 'checkin') {
       var q = s.checkins.filter(function (c) { return c.data === t; }).length;
@@ -4232,7 +4387,7 @@
 
     /* disegna il contenuto di TUTTE le sezioni aperte */
     var disegna = {
-      mattina: ritualeMattina,
+      mattina: ritualeMattina, registro: ritualeRegistro,
       checkin: ritualeCheckin, sera: ritualeSera, settimana: ritualeSettimana
     };
     Object.keys(disegna).forEach(function (id) {
@@ -4317,11 +4472,20 @@
     var prec = g.prec || 'circa';
     var registrata = !!(g.sveglia || g.sonno);
     if (registrata && !forzaAperto) {
+      /* NOME SOPRA, VALORE SOTTO, comando a destra: la forma che hanno le
+         righe in tutto il resto dell'app. Prima era una riga sola con
+         l'etichetta a sinistra e il valore a destra, e siccome il valore è
+         allineato a destra, quando non ci stava non sbordava a destra: sbordava
+         a SINISTRA, cioè addosso all'etichetta. Su uno schermo stretto
+         «verso le 23:30 → 07:30 · 8h» finiva scritto sopra la parola
+         «Stanotte». Incolonnati non si possono più incontrare, a nessuna
+         larghezza. */
       return '<div id="blocco-notte">' +
-        '<div class="lista"><div class="lista-riga sc-riga">' +
-        '<span class="sc-eti">' + ICO('bed', 15) + ' Stanotte</span>' +
-        '<span class="sc-val">' + (prec === 'circa' ? 'verso le ' : '') + esc(r.sonno) + ' → ' + esc(r.sveglia) +
-        ' · ' + fmtOre(LM.minutiSonno(t)) + '</span>' +
+        '<div class="lista"><div class="lista-riga">' +
+        '<span class="diario-ico" aria-hidden="true">' + ICO('bed', 15) + '</span>' +
+        '<span class="lista-corpo"><span class="lista-tit">Stanotte</span>' +
+        '<span class="lista-sub">' + (prec === 'circa' ? 'verso le ' : '') + esc(r.sonno) + ' → ' + esc(r.sveglia) +
+        ' · ' + fmtOre(LM.minutiSonno(t)) + '</span></span>' +
         '<button class="btn btn-mini" id="notte-cambia">Cambia</button></div></div>' +
         '</div>';
     }
@@ -4413,13 +4577,18 @@
   }
 
   /* --- i pasti e le cose fatte senza scriverle --- */
-  function bloccoRecupero() {
+  function bloccoRecupero(tutti) {
     var t = LM.todayKey();
     var r = LM.ritmoDi(t);
     var ora = LM.oraDelGiorno();
-    /* solo i pasti di cui si può ancora parlare: alle nove del mattino non si
-       chiede se hai cenato */
-    var pasti = (r.pasti || []).filter(function (pa) { return LM.minutiDaOra(pa.ora) <= ora + 30; });
+    /* NEL POP-UP solo i pasti di cui si può già parlare: alle nove del mattino
+       nessuno vuole sentirsi chiedere se ha cenato.
+       NELLA SEZIONE invece ci sono tutti, e per una ragione precisa: quella è
+       la pagina dove uno va a cercare il posto dove si segnano i pasti, e una
+       pagina che a colazione mostra una voce sola e a cena tre non è un posto,
+       è un indovinello. La cena di stasera si può anche segnare in anticipo:
+       chi salta i pasti lo sa già a mezzogiorno. */
+    var pasti = (r.pasti || []).filter(function (pa) { return tutti || LM.minutiDaOra(pa.ora) <= ora + 30; });
     var fatte = LM.load().azioni.filter(function (a) { return a.data === t && a.dopo; });
 
     var righePasti = pasti.map(function (pa) {
@@ -4553,6 +4722,20 @@
      pop-up che torna dopo che l'hai chiuso è la cosa che fa disinstallare le
      app. La domanda non sparisce, si sposta: resta nei Rituali, dove sta di
      casa, e torna da sé domani. */
+  /* IL REGISTRO DI OGGI: una sezione sola per le tre cose che l'app non può
+     sapere da sé. Sopra la notte, sotto i pasti e quello che hai fatto senza
+     scriverlo. Sono la stessa specie di domanda — «raccontami un pezzo di
+     giornata che io non ho visto» — e prima stavano in due rituali diversi,
+     uno dei quali (la review della sera) non le nomina nemmeno nel titolo. */
+  function ritualeRegistro(corpo) {
+    corpo.innerHTML = '<div class="card">' + bloccoNotte() + '</div>' +
+      '<div class="card">' + bloccoRecupero(true) + '</div>';
+    var bn = corpo.querySelector('#blocco-notte');
+    if (bn) wireNotte(bn, null);
+    var br = corpo.querySelector('#blocco-recupero');
+    if (br) wireRecupero(br, null);
+  }
+
   function popupGiornata(titolo, quale, html, wire, riapri) {
     var t = LM.todayKey();
     function allaChiusura() {
@@ -4584,15 +4767,23 @@
        niente con cui confrontare, e sarebbe un interrogatorio all'ingresso */
     if (!vistoPrima) return;
     var t = LM.todayKey();
-    var ora = new Date().getHours();
-    if (ora >= 5 && ora < 14 && !LM.giaChiesto(t, 'notte')) {
+    var d = new Date();
+    var min = d.getHours() * 60 + d.getMinutes();
+    /* LE FINESTRE LE DECIDE CHI RICEVE LE DOMANDE. Erano due numeri scritti
+       qui dentro — le cinque e le diciannove — e valevano per tutti: chi si
+       alza a mezzogiorno si sentiva chiedere della notte a metà pomeriggio, e
+       chi cena alle dieci riceveva la domanda sui pasti mentre stava ancora
+       cucinando. Adesso stanno in «Sonno e pasti», con l'interruttore per
+       spegnerle del tutto: spente, il registro resta comunque nei Rituali. */
+    var q = LM.chiediQuando();
+    if (q.notte.on && min >= LM.minutiDaOra(q.notte.da) && min < LM.minutiDaOra(q.notte.a) && !LM.giaChiesto(t, 'notte')) {
       /* il buco in cui la notte ci sta. Sotto le tre ore non è una notte:
          è la stessa giornata che continua, e chiedere «com'è andata la notte»
          a chi non è andato a dormire è la cosa più stupida che l'app possa
          fare. */
       if (Date.now() - vistoPrima >= 3 * 3600 * 1000) { apriChiestaNotte(); return; }
     }
-    if (ora >= 19 && !LM.giaChiesto(t, 'giorno')) { apriChiestaGiornata(); return; }
+    if (q.giorno.on && min >= LM.minutiDaOra(q.giorno.da) && !LM.giaChiesto(t, 'giorno')) { apriChiestaGiornata(); return; }
   }
 
   function ritualeMattina(corpo) {
@@ -4601,13 +4792,12 @@
     var piano = s.pianoMattina[t];
     var oggi = LM.azioniDiOggi();
 
-    /* La notte si racconta QUI, in cima al rituale del mattino: è la prima
-       cosa della giornata, e se il pop-up è stato scacciato la domanda deve
-       restare in un posto dove si sa di trovarla. Registrata o no, il blocco
-       c'è: quando c'è già una risposta si stringe in una riga con «cambia». */
-    var notte = '<div class="card">' + bloccoNotte() + '</div>';
-
-    corpo.innerHTML = notte + '<div class="card">' +
+    /* La notte non si racconta più qui: sta nel «Registro di oggi», insieme
+       ai pasti e alle cose fatte. Erano tre domande della stessa specie
+       sparse in due rituali diversi, e i pasti in particolare finivano dietro
+       la review della sera, dove nessuno andava a cercarli. Questo rituale fa
+       una cosa sola: scegliere le azioni di oggi. */
+    corpo.innerHTML = '<div class="card">' +
       /* Della riga sotto il titolo resta la sola cosa che non si vede: che
          la prima della lista è quella che conta. «Le scegli qui e le fai in
          Oggi. Ogni giorno riparte da capo.» era il funzionamento dell'app
@@ -4642,9 +4832,6 @@
          «Adesso», due centimetri sopra. */
       '<div class="riga-flex mt"><button class="btn btn-primario btn-grande" id="btn-salva-piano">' + ICO('save', 15) + (piano ? ' Aggiorna' : ' Salva e parti') + ' <small>+' + LM.XP_EVENTI.pianoMattina + ' XP</small></button></div>' +
       '</div>';
-
-    var bn = corpo.querySelector('#blocco-notte');
-    if (bn) wireNotte(bn, null);
 
     var lista = document.getElementById('piano-lista');
     lista.innerHTML = oggi.length
@@ -4909,26 +5096,42 @@
        E una fiamma accanto a uno zero è solo un rimprovero: se la serie non
        c'è si dice com'è, senza medaglia spenta. */
     function numeriAbitudine(serie, record, volte) {
-      var quanti = function (n, uno, tanti) { return n + ' ' + (n === 1 ? uno : tanti); };
-      var capo, sotto;
-      if (serie > 0) {
-        capo = ICO('flame', 18, 'fiamma') + ' <b>' + serie + '</b> ' +
-          (serie === 1 ? 'giorno di fila' : 'giorni di fila');
-        sotto = record > serie
-          ? 'ancora ' + quanti(record - serie, 'giorno', 'giorni') + ' e batti il tuo record di ' + record
-          : (record > 1 ? 'è il tuo record' : '');
-      } else if (record > 1) {
-        capo = 'Serie da riaprire';
-        sotto = 'il tuo record è ' + quanti(record, 'giorno', 'giorni') + ': si riparte da uno';
-      } else {
-        capo = 'Non è ancora partita';
-        sotto = 'la serie comincia il primo giorno che la segni';
-      }
-      return '<div class="abd-serie">' +
-        '<div class="abd-serie-capo">' + capo + '</div>' +
-        (sotto ? '<div class="abd-serie-sotto">' + sotto + '</div>' : '') +
-        (volte > 0 ? '<div class="abd-serie-tot">' + quanti(volte, 'volta', 'volte') + ' da quando l\u2019hai creata</div>' : '') +
-        '</div>';
+      /* La scala è larga quanto il record, e quanto ne è pieno è la serie di
+         adesso: dove sei, dove sei arrivato la volta migliore, e quanto manca
+         fra le due cose si vede senza contare. Il traguardo è il record e non
+         un numero tondo scelto da noi: una meta vicina e già raggiunta una
+         volta tira più di una medaglia lontana, ed è l'unica che l'app sa per
+         certo che questa persona può fare.
+         Quando il record è battuto la scala è piena e il traguardo si sposta
+         sulla serie stessa: non si può stare fuori dal proprio grafico. */
+      var meta = Math.max(record, serie, 1);
+      var quota = Math.max(0, Math.min(1, serie / meta));
+      var battuto = serie > 0 && serie >= record;
+      var manca = record - serie;
+      var detto = serie + (serie === 1 ? ' giorno di fila' : ' giorni di fila') +
+        ', il tuo record \u00e8 ' + Math.max(record, serie) +
+        (volte > 0 ? ', ' + volte + (volte === 1 ? ' volta' : ' volte') + ' in tutto' : '');
+      return '<div class="abd-scala' + (battuto ? ' record' : '') + (serie ? '' : ' spenta') +
+        '" role="img" aria-label="' + esc(detto) + '">' +
+        '<span class="abd-scala-lato">' +
+        '<b class="abd-scala-num">' + ICO('flame', 18, serie > 0 ? 'fiamma' : '') + serie + '</b>' +
+        '<small>' + (serie === 1 ? 'giorno di fila' : 'giorni di fila') + '</small></span>' +
+        /* la barra è un disegno: chi legge con un lettore di schermo riceve la
+           frase intera dall'aria-label qui sopra, e qui dentro non c'è niente
+           da annunciare */
+        '<span class="abd-scala-barra" aria-hidden="true"><i style="width:' + (quota * 100).toFixed(1) + '%"></i></span>' +
+        '<span class="abd-scala-lato abd-scala-meta">' +
+        '<b class="abd-scala-num">' + ICO(battuto ? 'star' : 'mirino', 15) + Math.max(record, serie) + '</b>' +
+        '<small>' + (battuto ? 'record tuo' : 'il tuo record') + '</small></span>' +
+        '</div>' +
+        /* quello che manca al passo dopo si dice una volta sola, piano, e solo
+           quando c'è davvero un passo dopo */
+        (manca > 0 && serie > 0
+          ? '<p class="abd-scala-nota">' + (manca === 1 ? 'Ancora un giorno' : 'Ancora ' + manca + ' giorni') + ' e sei al tuo record.</p>'
+          : serie === 0
+            ? '<p class="abd-scala-nota">' + (record > 1 ? 'La serie riparte dal primo giorno che la segni.' : 'La serie comincia il primo giorno che la segni.') + '</p>'
+            : '') +
+        (volte > 0 ? '<p class="abd-scala-tot">' + volte + (volte === 1 ? ' volta' : ' volte') + ' in tutto</p>' : '');
     }
 
     function corpoHtml() {
@@ -5220,14 +5423,11 @@
     var ordinate = areeAttive().slice().sort(function (a, b) { return (toccate[b.id] ? 1 : 0) - (toccate[a.id] ? 1 : 0); });
     var votiOggi = s.valutazioni[t] || {};
 
-    /* Prima di raccontare com'è andata, quello che è andato e non è stato
-       scritto: i pasti e le cose fatte senza aprire l'app. Se si chiedesse
-       dopo la review, la review parlerebbe di una giornata incompleta. E qui
-       il blocco resta anche dopo aver risposto: la sera si continua a fare
-       cose, e questo è il posto dove segnarle. */
-    var recupero = '<div class="card">' + bloccoRecupero() + '</div>';
-
-    corpo.innerHTML = recupero + '<div class="card">' +
+    /* I pasti e le cose fatte stavano qui in cima, e qui non si trovavano:
+       questa sezione si apre la sera e parla di com'è andata, non di cosa hai
+       mangiato. Adesso hanno una riga loro, «Il registro di oggi», due righe
+       più su in questa stessa pagina. */
+    corpo.innerHTML = '<div class="card">' +
       /* i campi qui sotto portano ognuno la sua domanda scritta sopra: la
          riga che riassumeva tutte e tre («Voto alle aree su cui hai lavorato,
          una cosa andata bene e un ostacolo») era l'indice di una pagina lunga
@@ -5258,9 +5458,6 @@
        niente è un tasto che non si tocca più */
     collegaTenutaLezione(corpo, 'sera-vittoria', 'sera-vitt-lez', 'si');
     collegaTenutaLezione(corpo, 'sera-blocco', 'sera-blocco-lez', 'no');
-
-    var br = corpo.querySelector('#blocco-recupero');
-    if (br) wireRecupero(br, null);
 
     corpo.querySelectorAll('.voto-area').forEach(function (riga) {
       riga.querySelectorAll('button').forEach(function (b) {

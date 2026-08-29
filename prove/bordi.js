@@ -12,7 +12,7 @@
    Li ha trovati l'occhio, uno per volta, su schermate diverse. Questa prova li
    cerca tutti insieme.
 
-   LE NOVE COSE CHE CERCA
+   LE UNDICI COSE CHE CERCA
    1. angolo tondo senza ritaglio      → è rimasto un arco di cerchio
    2. bordo con lo spessore e nessuno che lo dipinge → bordo sparito
    3. bordo dipinto DUE volte           → fianchi scuri e angoli chiari
@@ -22,6 +22,8 @@
    7. angolo più grande di quanto ci sta  → forma strozzata
    8. anello sullo pseudo-elemento di qualcun altro → quel disegno esce a pezzi
    9. un blocco più largo della pagina → prima si vedeva «tagliato»
+  10. un'ombra dura con lo spread al posto di un bordo → fessura negli angoli
+  11. l'anello dentro una cosa che scorre → il bordo se ne va a spasso
 
    node prove/bordi.js        (CHROMIUM=/percorso/di/chrome se serve)  */
 'use strict';
@@ -62,7 +64,7 @@ const CONTROLLA = `(function () {
     cache[v] = getComputedStyle(provino).color;
     return cache[v];
   };
-  var out = { ritagliati: 0, tondi: [], spariti: [], doppi: [], senzaForma: [], overflow: [], mangiati: [], strozzati: [], dueP: [], fuoriPagina: [] };
+  var out = { ritagliati: 0, tondi: [], spariti: [], doppi: [], senzaForma: [], overflow: [], mangiati: [], strozzati: [], dueP: [], fuoriPagina: [], ombreBordo: [], anelliCheScorrono: [] };
   document.querySelectorAll('body *').forEach(function (e) {
     var s = getComputedStyle(e), r = e.getBoundingClientRect();
     if (r.width < 4 || r.height < 4 || s.visibility === 'hidden' || s.display === 'none' || s.opacity === '0') return;
@@ -182,6 +184,69 @@ const CONTROLLA = `(function () {
       });
     }
 
+    /* 10. UN'OMBRA DURA USATA COME BORDO.
+           Un box-shadow di 0 0 0 2px non e' un'ombra, e' un bordo travestito, e un
+           bordo travestito la forma dell'angolo non la sa. L'ombra segue il
+           border-radius, che e' un arco di cerchio; quello che si vede
+           dell'elemento lo decide il ritaglio, che è la curva di Apple e passa
+           più interna. Fra le due resta una fessura, e negli angoli si vede
+           passare il fondo fra la cosa e il suo contorno: sulla casella di
+           oggi del calendario di un'abitudine erano quattro barrette viola coi
+           vertici mangiati invece di una cornice. Un'ombra SFOCATA no: la
+           fessura c'è lo stesso ma la sfocatura la copre, ed è per questo che
+           tutte le elevazioni dell'app (--e1, --e3) non danno nessun difetto.
+           Quindi si guarda solo quelle a sfocatura zero. */
+    if (clip && /-200px/.test(clip)) {
+      var ombra = s.boxShadow || '';
+      if (ombra && ombra !== 'none') {
+        /* le ombre si separano a mano e non con un'espressione regolare: qui
+           dentro siamo in un template literal, e ogni barra rovescia va
+           scritta doppia. E' gia' costata quattro volte una prova che non
+           parte, quindi qui non se ne usa nessuna. */
+        var pezzi = [], liv = 0, cur = '';
+        for (var ci = 0; ci < ombra.length; ci++) {
+          var ch = ombra.charAt(ci);
+          if (ch === '(') liv++;
+          else if (ch === ')') liv--;
+          if (ch === ',' && liv === 0) { pezzi.push(cur); cur = ''; } else cur += ch;
+        }
+        pezzi.push(cur);
+        pezzi.forEach(function (o) {
+          if (/inset/.test(o)) return;
+          var m4 = o.match(/(-?[0-9.]+)px +(-?[0-9.]+)px +(-?[0-9.]+)px +(-?[0-9.]+)px/);
+          if (!m4) return;
+          if (Math.abs(+m4[1]) > 0.6 || Math.abs(+m4[2]) > 0.6) return;   /* spostata: è un'ombra */
+          if (+m4[3] > 0.6) return;                                       /* sfocata: la fessura non si vede */
+          if (+m4[4] <= 0.4) return;                                      /* senza spread non è un contorno */
+          /* l'angolo dev'essere abbastanza grande da farsi vedere: sotto i sei
+             pixel di morso lo scarto fra la curva e l'arco sta sotto il mezzo
+             pixel, e lì il difetto non esiste */
+          var mm = clip.match(/min\\(([0-9.]+)px/);
+          if (!mm || +mm[1] < 6) return;
+          out.ombreBordo.push(nome(e) + '  ' + o.trim().slice(0, 44));
+        });
+      }
+    }
+
+    /* 11. L'ANELLO DENTRO UNA COSA CHE SCORRE.
+           Lo pseudo-elemento dell'anello è ASSOLUTO, e un elemento assoluto
+           dentro un contenitore che scorre scorre con il contenuto: il filo
+           del bordo si stacca dal suo riquadro e se ne va a spasso in mezzo
+           alle parole. È così che nel pannello si vedeva un arco d'angolo
+           appoggiato in mezzo al testo, una riga orizzontale che tagliava una
+           frase a metà, una cornice che non chiudeva. Sembrava che il
+           supercerchio fosse rotto, e invece era il bordo che scorreva via.
+           La cura non è un'altra regola di stile: è che a scorrere sia un
+           figlio, e il bordo stia su chi non si muove. */
+    if (/(auto|scroll)/.test(s.overflowY + ' ' + s.overflowX) && e.scrollHeight > e.clientHeight + 2) {
+      ['::before', '::after'].forEach(function (ps) {
+        var qq = getComputedStyle(e, ps);
+        if (!qq.content || qq.content === 'none') return;
+        if (!/^polygon\\(/.test(qq.clipPath || '') || /-200px/.test(qq.clipPath)) return;
+        out.anelliCheScorrono.push(nome(e) + ps + ' scorre di ' + Math.round(e.scrollHeight - e.clientHeight) + 'px');
+      });
+    }
+
     /* 7. l'angolo non ci sta: vuole 3.06 raggi di lato, se no si strozza */
     if (clip) {
       var m = clip.match(/min\\(([0-9.]+)px/);
@@ -196,6 +261,21 @@ const CONTROLLA = `(function () {
   return out;
 })()`;
 
+/* IL CODICE CHE VA IN PAGINA SI COMPILA PRIMA DI PARTIRE.
+   `CONTROLLA` è una stringa fra apici inversi, e là dentro ogni barra rovescia
+   va scritta DOPPIA: `/^polygon\\(/` nel sorgente diventa `/^polygon\(/` in
+   pagina. Chi ne scrive una sola ottiene un'espressione regolare rotta, e il
+   difetto non si vede qui: si vede come CENTOCINQUANTASEI scene che «hanno
+   sbagliato strada», tutte con lo stesso messaggio, e zero angoli misurati.
+   È già successo cinque volte, sempre con la stessa faccia. Questa riga lo
+   trasforma in una riga sola, detta prima di aprire il browser. */
+try { new Function('return ' + CONTROLLA); }
+catch (e) {
+  console.log('  KO  il codice da mandare in pagina non compila  → ' + e.message);
+  console.log('      (dentro CONTROLLA le barre rovesce vanno doppie)');
+  process.exit(1);
+}
+
 (async () => {
   const srv = http.createServer((q, r) => {
     let p = decodeURIComponent(q.url.split('?')[0]); if (p === '/') p = '/index.html';
@@ -208,7 +288,8 @@ const CONTROLLA = `(function () {
   const b = await chromium.launch({ executablePath: process.env.CHROMIUM || undefined });
 
   const tot = { tondi: new Map(), spariti: new Map(), doppi: new Map(), senzaForma: new Map(),
-    overflow: new Map(), mangiati: new Map(), strozzati: new Map(), dueP: new Map(), fuoriPagina: new Map() };
+    overflow: new Map(), mangiati: new Map(), strozzati: new Map(), dueP: new Map(), fuoriPagina: new Map(),
+    ombreBordo: new Map(), anelliCheScorrono: new Map() };
   let ritagliati = 0, viste = 0;
   const rotte = new Map();
   const VIE = [[320, true, 'light'], [390, true, 'light'], [390, true, 'dark'], [1280, false, 'light'], [1280, false, 'dark']];
@@ -264,6 +345,8 @@ const CONTROLLA = `(function () {
   mostra('nessun angolo è più grande di quanto ci sta', tot.strozzati);
   mostra('nessuno pseudo-elemento serve a due cose insieme', tot.dueP);
   mostra('niente esce dai lati della pagina', tot.fuoriPagina);
+  mostra('nessun bordo è fatto con un’ombra dura', tot.ombreBordo);
+  mostra('nessun anello scorre col contenuto', tot.anelliCheScorrono);
   mostra('nessuna scena ha sbagliato strada', rotte);
 
   console.log(guai ? '\n>>> ' + guai + ' PROBLEMI' : '\n>>> TUTTO A POSTO');

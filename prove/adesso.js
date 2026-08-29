@@ -80,7 +80,13 @@ const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  
       primario: prim ? prim.textContent.trim() : null,
       primarioId: prim ? prim.id : null,
       secondarie: [...document.querySelectorAll('.focus-secondarie button')].map(x => x.id),
-      didascalia: (document.querySelector('.fd-perche') || {}).textContent || null
+      didascalia: (document.querySelector('.fd-perche') || {}).textContent || null,
+      /* la specie non si legge più: si guarda. Qui si raccolgono i segni che
+         la dicono, e la parola che resta per chi usa un lettore di schermo. */
+      tessera: (document.querySelector('.fs-tipo') || {}).className || null,
+      ripete: !!document.querySelector('.focus-ripete'),
+      tipoNome: (document.querySelector('.fs-tipo-nome') || {}).textContent || null,
+      parolaNascosta: !!document.querySelector('.fs-parola.solo-lettori')
     };
   });
 
@@ -105,7 +111,11 @@ const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  
     const s = await scheda(p);
     ok('la stessa cosa, cinque ore prima, dice PIÙ TARDI',
       s.stato === 'programmata' && /Più tardi/i.test(s.parola || ''), s.parola);
-    ok('e dice anche quanto manca', /alle 15:00, fra 5 ore/.test(s.dett || ''), s.dett);
+    /* e dice l'ora, quanto dura e quanto manca: con una durata è un BLOCCO da
+       incastrare in una giornata, e «alle 15:00» da solo non basta a
+       deciderlo */
+    ok('e dice anche quanto dura e quanto manca',
+      /alle 15:00/.test(s.dett || '') && /60′/.test(s.dett || '') && /fra 5 ore/.test(s.dett || ''), s.dett);
     ok('la fascia è quella spenta, non quella accesa', /st-dopo/.test(s.classe || ''), s.classe);
     /* il punto di tutto: la schermata deve rispondere «e adesso?» */
     ok('e dice a chiare lettere che adesso non c’è niente',
@@ -143,10 +153,11 @@ const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  
     const s = await scheda(p);
     ok('quella senza ora dice QUANDO VUOI',
       s.stato === 'libera' && /quando vuoi/i.test(s.parola || ''), s.parola);
-    /* e non ripete la stessa cosa a fianco. La fascia diceva «QUANDO VUOI ·
-       nessun orario»: due modi di dire che un orario non c'è, uno accanto
-       all'altro nella stessa riga. */
-    ok('e non lo ripete nel dettaglio', !(s.dett || '').trim(), s.dett);
+    /* e non lo dice DUE VOLTE SULLO SCHERMO. La fascia mostrava «QUANDO VUOI ·
+       nessun orario»: due modi di dire la stessa cosa uno accanto all'altro.
+       Adesso la parola sta solo nel testo per il lettore di schermo — chi
+       guarda vede il binario tratteggiato e il dato accanto, una volta sola. */
+    ok('la parola resta solo per chi non vede la forma', s.parolaNascosta, '' + s.parolaNascosta);
     await ctx.close();
   }
   {
@@ -171,8 +182,13 @@ const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  
     ok('un’abitudine con l’ora diventa la cosa di adesso',
       s.tipo === 'abitudine' && /Corsa/.test(s.titolo || ''), JSON.stringify({ t: s.tipo, tit: s.titolo }));
     ok('e la fascia dice ADESSO', /Adesso/i.test(s.parola || ''), s.parola);
-    /* si deve capire che è un'abitudine: i comandi non sono gli stessi */
-    ok('la didascalia dice che è un’abitudine', /abitudine/i.test(s.didascalia || ''), s.didascalia);
+    /* si deve capire che è un'abitudine: i comandi non sono gli stessi. E lo
+       dicono due segni, non una parola scritta piccola in fondo a una riga —
+       la tessera del tipo e la settimana disegnata sotto il titolo. La parola
+       resta per chi usa un lettore di schermo. */
+    ok('la tessera dice che è un’abitudine', /fs-tipo-abitudine/.test(s.tessera || ''), s.tessera);
+    ok('e sotto il titolo c’è la sua settimana', s.ripete === true, '' + s.ripete);
+    ok('la parola resta per chi non vede i segni', /abitudine/i.test(s.tipoNome || ''), s.tipoNome);
     ok('e al posto di «Più tardi» c’è «Salta oggi»',
       s.secondarie.indexOf('btn-salta') >= 0 && s.secondarie.indexOf('btn-nonora') < 0, JSON.stringify(s.secondarie));
     /* «Fatto» spunta l'abitudine, non cerca un'azione che non esiste */
@@ -230,11 +246,26 @@ const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  
      prova non passa. */
   console.log('\nSI GUARDA, NON SI LEGGE');
   {
+    /* SEI CASI, non quattro: al «quando» si è aggiunto il «che cos'è».
+       La scheda deve distinguere due cose insieme — a che punto del tempo sta
+       questa cosa, e di che specie è — perché i comandi che offre cambiano
+       con la specie (un'abitudine si salta per oggi, una cosa di oggi si
+       rimanda a domani) e il momento in cui cominciarla cambia col tempo.
+       Qui si buttano via tutte le parole e si guardano solo le FORME: colore
+       del filo in cima, quanto è piena la barra, com'è fatta la barra (piena,
+       vuota, tratteggiata, un segno solo) e che tessera porta il tipo. Se due
+       casi diversi danno la stessa impronta, a occhio sono la stessa scheda. */
     const CASI = [
-      ['in corso', '2026-08-25T15:20:00', () => { LM.aggiungiAzione('Confrontare piani telefonici', 'finanze', { ora: '15:00', durata: 60 }); }],
+      ['in corso, con durata', '2026-08-25T15:20:00', () => { LM.aggiungiAzione('Confrontare piani telefonici', 'finanze', { ora: '15:00', durata: 60 }); }],
       ['in ritardo', '2026-08-25T17:30:00', () => { LM.aggiungiAzione('Confrontare piani telefonici', 'finanze', { ora: '15:00', durata: 60 }); }],
-      ['più tardi', '2026-08-25T10:00:00', () => { LM.aggiungiAzione('Confrontare piani telefonici', 'finanze', { ora: '15:00', durata: 60 }); }],
-      ['quando vuoi', '2026-08-25T11:00:00', () => { LM.aggiungiAzione('Sistemare la scrivania', 'altro', {}); }]
+      ['più tardi, con durata', '2026-08-25T10:00:00', () => { LM.aggiungiAzione('Confrontare piani telefonici', 'finanze', { ora: '15:00', durata: 60 }); }],
+      ['più tardi, senza durata', '2026-08-25T10:00:00', () => { LM.aggiungiAzione('Chiamare la banca', 'finanze', { ora: '15:00' }); }],
+      ['senza orario', '2026-08-25T11:00:00', () => { LM.aggiungiAzione('Sistemare la scrivania', 'altro', {}); }],
+      ['senza orario, la più importante', '2026-08-25T11:00:00', () => { LM.aggiungiAzione('Spedire la landing', 'founder', { mit: true }); }],
+      ['abitudine, in corso', '2026-08-25T07:20:00', () => {
+        const h = LM.aggiungiAbitudine('Corsa 5 km', 'salute', [0, 1, 2, 3, 4, 5, 6], { ora: '07:00', durata: 45 });
+        const s = LM.load(); s.abitudini.find(x => x.id === h.id).fatti = {}; LM.save();
+      }]
     ];
     const forme = [];
     for (const [nome, quando, prep] of CASI) {
@@ -245,29 +276,56 @@ const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  
         const filo = getComputedStyle(c, '::before').backgroundColor;
         const barra = c.querySelector('.fs-barra');
         const i = barra && barra.querySelector('i');
-        const quota = i && barra
-          ? Math.round((i.getBoundingClientRect().width / barra.getBoundingClientRect().width) * 100)
-          : -1;
-        return { classe: c.className, filo: filo, quota: quota, fondo: getComputedStyle(c).backgroundColor };
+        const bs = barra ? getComputedStyle(barra) : null;
+        const ir = i ? i.getBoundingClientRect() : null;
+        /* la quota è quanto della barra è pieno; per il «segno solo» la barra
+           non è un binario e il pieno è un trattino verticale, quindi si
+           guarda anche la forma del disegno */
+        const quota = ir && barra && barra.getBoundingClientRect().width
+          ? Math.round((ir.width / barra.getBoundingClientRect().width) * 100) : -1;
+        const tess = c.querySelector('.fs-tipo');
+        return {
+          classe: c.className,
+          filo: filo,
+          quota: quota,
+          fondo: getComputedStyle(c).backgroundColor,
+          disegno: bs ? (bs.backgroundImage === 'none' ? 'pieno' : 'tratteggio') : 'niente',
+          altoI: ir ? Math.round(ir.height) : -1,
+          tessera: tess ? getComputedStyle(tess).backgroundColor : 'niente',
+          ripete: !!c.querySelector('.focus-ripete')
+        };
       });
       forme.push([nome, f]);
       await ctx.close();
     }
     forme.forEach(([nome, f]) => {
       ok('«' + nome + '» ha una sua forma', !!f && /st-/.test(f.classe || ''),
-        f ? f.filo + ' · barra ' + f.quota + '%' : 'niente scheda');
+        f ? f.filo + ' · barra ' + f.quota + '% ' + f.disegno : 'niente scheda');
     });
-    /* il cuore della prova: quattro stati, quattro aspetti diversi */
-    const impronte = forme.map(([, f]) => (f ? f.filo + '|' + f.quota + '|' + f.fondo : 'x'));
+    /* il cuore della prova: casi diversi, aspetti diversi */
+    const impronte = forme.map(([, f]) => (f ? [f.filo, f.quota, f.fondo, f.disegno, f.altoI, f.tessera, f.ripete].join('|') : 'x'));
     const uniche = new Set(impronte);
-    ok('e nessuno stato ha lo stesso aspetto di un altro', uniche.size === forme.length,
+    ok('e nessun caso ha lo stesso aspetto di un altro', uniche.size === forme.length,
       uniche.size + ' aspetti diversi su ' + forme.length);
     /* e la barra del tempo dice davvero il tempo */
-    const q = (n) => (forme.find((x) => x[0] === n) || [, {}])[1].quota;
-    ok('in corso la barra è piena a metà strada, non tutta', q('in corso') > 5 && q('in corso') < 95, q('in corso') + '%');
-    ok('in ritardo è piena tutta', q('in ritardo') >= 99, q('in ritardo') + '%');
-    ok('più tardi è un binario vuoto', q('più tardi') >= 0 && q('più tardi') <= 5, q('più tardi') + '%');
-    ok('quando vuoi non ha barra: non c’è un tempo da mostrare', q('quando vuoi') === -1, '' + q('quando vuoi'));
+    const F = (n) => (forme.find((x) => x[0] === n) || [, {}])[1] || {};
+    ok('in corso la barra è piena a metà strada, non tutta', F('in corso, con durata').quota > 5 && F('in corso, con durata').quota < 95, F('in corso, con durata').quota + '%');
+    ok('in ritardo è piena tutta', F('in ritardo').quota >= 99, F('in ritardo').quota + '%');
+    ok('più tardi con una durata è un binario vuoto', F('più tardi, con durata').quota >= 0 && F('più tardi, con durata').quota <= 5, F('più tardi, con durata').quota + '%');
+    /* un'ora senza durata è un ISTANTE: il segno è alto più della barra, e la
+       barra non è un binario */
+    ok('più tardi senza durata è un segno, non un binario',
+      F('più tardi, senza durata').altoI > 6 && F('più tardi, senza durata').disegno === 'pieno',
+      'segno alto ' + F('più tardi, senza durata').altoI + 'px');
+    ok('senza orario la barra è tratteggiata: non ha confini',
+      F('senza orario').disegno === 'tratteggio', F('senza orario').disegno);
+    /* la specie si vede senza leggere */
+    ok('un\u2019abitudine porta la sua settimana disegnata, una cosa di oggi no',
+      F('abitudine, in corso').ripete === true && F('in corso, con durata').ripete === false,
+      'abitudine ' + F('abitudine, in corso').ripete + ' · attività ' + F('in corso, con durata').ripete);
+    ok('e la tessera del tipo non ha lo stesso colore nei due casi',
+      F('abitudine, in corso').tessera !== F('in corso, con durata').tessera,
+      F('abitudine, in corso').tessera + ' contro ' + F('in corso, con durata').tessera);
   }
 
   console.log('');

@@ -223,17 +223,21 @@ const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  
      velocità, ed è l'unico caso che la prova */
   await caso('colpo secco corto (70px, veloce)', async y => { await gesto(200, y + 220, 70, { passi: 5, raffica: true }); }, false);
 
+  /* a scorrere non è più il pannello: è il suo CORPO. Il pannello sta fermo,
+     con la maniglia e la testata, perché l'anello del bordo è uno pseudo-elemento
+     assoluto e dentro un contenitore che scorre se ne andava a spasso col
+     contenuto. Chi chiede «quanto sei scorso» deve chiederlo a chi scorre. */
   console.log('\nE IL DITO DEVE POTER ANCORA SCORRERE');
   await apri();
   {
     const y = await cima();
     await gesto(200, y + 400, -260);
-    const s1 = await p.evaluate(() => { const pan = document.querySelector('.sheet'); return { aperto: !document.getElementById('sheet-overlay').hidden, scroll: Math.round(pan.scrollTop) }; });
+    const s1 = await p.evaluate(() => { const pan = document.querySelector('.sheet-corpo'); return { aperto: !document.getElementById('sheet-overlay').hidden, scroll: Math.round(pan.scrollTop) }; });
     ok('scorrere in su dal corpo scorre e non congeda', s1.aperto && s1.scroll > 40, JSON.stringify(s1));
     /* col contenuto già scorso, tirare giù deve scorrere: lì sotto c'è
        ancora contenuto, e il gesto non deve rubarlo */
     await gesto(200, y + 400, 150);
-    const s2 = await p.evaluate(() => { const pan = document.querySelector('.sheet'); return { aperto: !document.getElementById('sheet-overlay').hidden, scroll: Math.round(pan ? pan.scrollTop : -1) }; });
+    const s2 = await p.evaluate(() => { const pan = document.querySelector('.sheet-corpo'); return { aperto: !document.getElementById('sheet-overlay').hidden, scroll: Math.round(pan ? pan.scrollTop : -1) }; });
     ok('col contenuto scorso, tirare giù scorre e non congeda', s2.aperto && s2.scroll < s1.scroll, JSON.stringify(s2));
     await p.evaluate(() => { const c = document.getElementById('sheet-chiudi'); if (c) c.click(); });
     await p.waitForTimeout(400);

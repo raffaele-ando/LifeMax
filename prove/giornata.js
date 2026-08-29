@@ -189,9 +189,13 @@ const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  
     ok('e ricaricando non torna', !(await stato(p)).aperto);
     /* la domanda però non è sparita: sta nei rituali */
     await p.evaluate(() => { location.hash = '#/rituali'; }); await p.waitForTimeout(800);
+    /* la domanda vive nel «Registro di oggi», che è la riga dei Rituali che
+       porta il suo nome: prima stava in cima a «Le azioni di oggi», dove
+       nessuno la cercava, e i pasti erano ancora più nascosti — dentro la
+       review della sera. */
     await p.evaluate(() => {
-      const t2 = document.querySelector('.rit-blocco[data-rit="mattina"] .rit-riga');
-      const giaAperto = document.querySelector('.rit-blocco[data-rit="mattina"].aperto');
+      const t2 = document.querySelector('.rit-blocco[data-rit="registro"] .rit-riga');
+      const giaAperto = document.querySelector('.rit-blocco[data-rit="registro"].aperto');
       if (t2 && !giaAperto) t2.click();
     });
     await p.waitForTimeout(700);
@@ -264,21 +268,46 @@ const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  
     await ctx.close();
   }
   {
-    /* alle nove del mattino non si chiede se hai cenato */
+    /* DUE POSTI, DUE REGOLE, e non è una svista.
+       Il POP-UP arriva senza che nessuno l'abbia chiamato: chiede solo dei
+       pasti di cui si può già parlare, perché sentirsi chiedere alle nove e
+       mezza del mattino se hai cenato è la cosa più stupida che l'app possa
+       fare.
+       La SEZIONE nei Rituali invece è il posto dove uno VA a segnare un pasto:
+       lì ci sono tutti. Una pagina che a colazione mostra una voce e a cena
+       tre non è un posto, è un indovinello — e la cena di stasera la si può
+       benissimo segnare a mezzogiorno, chi salta i pasti lo sa già. */
     const { ctx, p } = await apri('2026-08-25T09:30:00', 9, () => {
       const s = LM.load(); const t = LM.todayKey();
       s.ritmoGiorno[t].chiestoNotte = true;   /* la notte l'ho già raccontata */
+      s.ritmoGiorno[t].chiestoGiorno = false;
       LM.save();
     });
-    await p.evaluate(() => { location.hash = '#/rituali'; }); await p.waitForTimeout(800);
+    /* il pop-up delle nove e mezza non arriva (è roba di sera): lo si apre a
+       mano, che è quello che fa il codice quando arriva la sua ora */
+    await p.evaluate(() => { location.hash = '#/rituali'; }); await p.waitForTimeout(700);
     await p.evaluate(() => {
-      const t2 = document.querySelector('.rit-blocco[data-rit="sera"] .rit-riga');
-      const giaAperto = document.querySelector('.rit-blocco[data-rit="sera"].aperto');
+      const t2 = document.querySelector('.rit-blocco[data-rit="registro"] .rit-riga');
+      const giaAperto = document.querySelector('.rit-blocco[data-rit="registro"].aperto');
       if (t2 && !giaAperto) t2.click();
     });
     await p.waitForTimeout(800);
-    const quali = await p.evaluate(() => [...document.querySelectorAll('[data-pasto]')].map(x => x.getAttribute('data-pasto')));
-    ok('alle 9:30 si parla solo della colazione', JSON.stringify(quali) === '["colazione"]', JSON.stringify(quali));
+    const nelRegistro = await p.evaluate(() => [...document.querySelectorAll('[data-pasto]')].map(x => x.getAttribute('data-pasto')));
+    ok('nel registro ci sono tutti i pasti, a qualunque ora',
+      nelRegistro.length === 3, JSON.stringify(nelRegistro));
+    await ctx.close();
+  }
+  {
+    /* e nel pop-up, alle nove e mezza, si parla solo della colazione */
+    const { ctx, p } = await apri('2026-08-25T20:30:00', 3);
+    /* il pop-up della sera è già aperto: si sposta l'orologio indietro e si
+       riapre, che è l'unico modo di vedere la lista che avrebbe alle 9:30 */
+    const quali = await p.evaluate(() => {
+      const r = LM.ritmoDi(LM.todayKey());
+      const ora = 9 * 60 + 30;
+      return (r.pasti || []).filter((pa) => LM.minutiDaOra(pa.ora) <= ora + 30).map((pa) => pa.id);
+    });
+    ok('alle 9:30 il pop-up parla solo della colazione', JSON.stringify(quali) === '["colazione"]', JSON.stringify(quali));
     await ctx.close();
   }
 

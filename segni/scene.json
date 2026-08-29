@@ -355,5 +355,12 @@
   "tab": null,
   "poi": "(async () => {\n  const s = LM.load(); s.profilo.nav = 'tutte'; LM.save();\n  /* la barra si rifà al cambio di pagina: senza questo salto la tab bar\n     resta quella a tre porte e il tasto «Altro» non c'è */\n  location.hash = '#/plancia';\n  await new Promise((r) => setTimeout(r, 700));\n  const b = document.querySelector('.tabbar [data-menu]');\n  if (!b) throw new Error('manca il tasto Altro');\n  b.click();\n  await new Promise((r) => setTimeout(r, 700));\n})()",
   "prova": ".menu-lista, .sheet-corpo .imp-sezione"
+ },
+ {
+  "nome": "Rituali · registro di oggi",
+  "via": "rituali",
+  "tab": null,
+  "poi": "(async () => {\n  const sez = document.querySelector('#vista .rit-blocco[data-rit=\"registro\"]');\n  if (!sez) throw new Error('manca la riga: registro');\n  if (!sez.classList.contains('aperto')) {\n    sez.querySelector('.rit-riga').click();\n    await new Promise((r) => setTimeout(r, 700));\n  }\n})()",
+  "prova": "#blocco-recupero, #blocco-notte"
  }
 ]

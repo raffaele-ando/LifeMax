@@ -64,6 +64,12 @@ const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  
      rotto sbagliava, e l'unica che conta davvero */
   const chiRiceve = (p, sel) => p.evaluate((s) => {
     const e = document.querySelector(s); if (!e) return null;
+    /* prima si porta sotto gli occhi: `elementFromPoint` guarda le COORDINATE
+       della finestra, e un campo che sta sotto il bordo dello schermo dà
+       sempre «non lo riceve nessuno» — che è un guasto della prova, non
+       dell'app. Se ne è accorto il giorno in cui i pasti si sono spostati in
+       una sezione più lunga e la prima riga è finita fuori dalla vista. */
+    e.scrollIntoView({ block: 'center' });
     const r = e.getBoundingClientRect();
     const t = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
     /* «suo» anche se il tocco cade su un figlio (l'icona dentro il tasto):
@@ -76,7 +82,10 @@ const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  
   for (const W of [320, 390, 1280]) {
     const { ctx, p, err } = await apri(W, 'rituali');
     await p.evaluate(() => {
-      const s = document.querySelector('.rit-blocco[data-rit="sera"]');
+      /* i pasti stanno nel «Registro di oggi», non più dentro la review della
+         sera: là non li trovava nessuno, ed è la ragione per cui hanno una
+         riga loro */
+      const s = document.querySelector('.rit-blocco[data-rit="registro"]');
       if (s && !s.classList.contains('aperto')) s.querySelector('.rit-riga').click();
     });
     await p.waitForTimeout(600);

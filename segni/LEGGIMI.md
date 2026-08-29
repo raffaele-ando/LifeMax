@@ -447,3 +447,43 @@ tema. A occhio se ne erano visti tre o quattro; lei ne ha contati settanta.
     Adesso le scene dei rituali aprono la loro sezione SOLO se è chiusa, e il
     check-in ha una scena sua: quello che si misura non dipende più da che ora
     è quando lanci il comando.
+16. **L'anello dentro una cosa che scorre.** L'anello è uno pseudo-elemento
+    `position: absolute`, e un elemento assoluto dentro un contenitore che
+    scorre SCORRE COL CONTENUTO: si posiziona rispetto al riquadro interno,
+    che è agganciato al contenuto e non al riquadro visibile. Il pannello
+    (`.sheet`) scorreva tutto intero, quindi bastava scorrere di cento pixel
+    perché il suo bordo si staccasse e se ne andasse a spasso in mezzo al
+    testo. Le foto arrivate erano tre e sembravano tre difetti diversi: un
+    arco d'angolo appoggiato in mezzo alle parole, una riga orizzontale che
+    tagliava una frase a metà, una cornice che non chiudeva attorno a due
+    campi. Era sempre lo stesso bordo, fermo sul contenuto mentre il contenuto
+    passava.
+    Non si cura con un'altra regola di stile: si cura facendo scorrere un
+    FIGLIO. Adesso il pannello sta fermo — maniglia e testata comprese — e
+    scorre `.sheet-corpo`; la console del registro tecnico ha preso una
+    cornice sua, che non si muove. `prove/bordi.js` lo cerca dappertutto
+    (controllo 11), e la seconda volta che è girato ne ha trovato uno che
+    l'occhio non aveva visto.
+17. **Un `box-shadow` con lo spread non è un'ombra: è un bordo travestito.**
+    E un bordo travestito la forma dell'angolo non la sa. L'ombra segue il
+    `border-radius`, che resta un arco di cerchio; quello che si vede
+    dell'elemento lo decide il ritaglio, che è la curva di Apple e passa più
+    interna. Fra le due resta una fessura, e negli angoli si vede passare il
+    fondo fra la cosa e il suo contorno. Sulla casella di oggi nel calendario
+    di un'abitudine venivano fuori quattro barrette viola coi vertici mangiati
+    invece di una cornice — la foto che l'ha fatto trovare. Un'ombra SFOCATA
+    non dà nessun difetto: la fessura c'è lo stesso ma la sfocatura la copre,
+    ed è per questo che le elevazioni dell'app non si sono mai viste. La cura
+    è dichiarare un bordo vero e lasciare che l'anello lo ridisegni; il
+    controllo 10 di `prove/bordi.js` cerca solo le ombre a sfocatura zero.
+18. **Il contorno del fuoco su un contenitore che il fuoco se lo vede dare.**
+    Il pannello ha `tabindex="-1"` e riceve `focus()` da codice quando si
+    apre, per portarci dentro la tastiera e il lettore di schermo. Il browser
+    però gli disegna comunque il contorno di `:focus-visible` — due pixel
+    d'accento tutt'intorno — e siccome su un telefono il pannello sta
+    attaccato ai bordi dello schermo, di quel contorno se ne vedeva un lato
+    solo: una riga viola larga tutto lo schermo appoggiata al bordo di sopra
+    del foglio. Per settimane è stata cercata fra i supercerchi, ed era il
+    segno del fuoco. Adesso `[tabindex="-1"]:focus` non ha contorno: il fuoco
+    da tastiera continua a vedersi sui comandi, che è l'unico posto dove
+    serve saperlo.

@@ -235,9 +235,27 @@ genera le chiavi, in un browser vero).
   butta via le parole e guarda solo le FORME: il colore del filo in cima, il
   fondo, e quanto è piena la barra del tempo. Se due stati danno la stessa
   terna, a occhio non si distinguono, e la prova non passa. In più pretende che
-  la barra dica davvero il tempo: piena a metà mentre la cosa è in corso, piena
-  tutta quando è passata, un binario vuoto quando deve ancora cominciare, e
-  assente quando un orario non c'è.
+  la barra dica davvero il tempo.
+  Poi è arrivata la seconda metà della stessa richiesta — «la card deve avere
+  una ux differente ogni volta: abitudine, senza orario, con orario, con
+  durata, senza durata, attività» — e i casi sono diventati sette, perché le
+  domande sono due e non una: QUANDO sta questa cosa nel tempo, e CHE COS'È.
+  Il secondo canale non c'era proprio: un'abitudine e un'attività avevano la
+  stessa faccia e la differenza la faceva la parola «abitudine» scritta piccola
+  in fondo alla riga dell'area. Conta perché i comandi non sono gli stessi —
+  un'abitudine si salta per oggi, una cosa di oggi si rimanda a domani — e chi
+  non ha letto quella parola preme il tasto sbagliato.
+  L'impronta che la prova confronta è quindi più larga: colore del filo in
+  cima, fondo, quanto è piena la barra, COM'È FATTA la barra (piena, vuota,
+  tratteggiata, o un segno solo) e che tessera porta il tipo. Sette casi, sette
+  impronte diverse. E cinque forme di barra con un significato ciascuna: piena
+  a metà mentre la cosa è in corso, piena tutta quando è passata, un binario
+  vuoto quando il blocco deve ancora cominciare, un SEGNO solo quando c'è
+  un'ora ma non una durata (è un istante, non un pezzo di giornata), un binario
+  TRATTEGGIATO quando un orario non c'è. Quest'ultima è l'unica che cambia
+  rispetto a prima, dove «quando vuoi» non aveva nessuna barra: l'assenza però
+  non è un segno — sembrava solo una scheda con meno roba, e a parità di tutto
+  il resto le due schede erano identiche.
 - **campi.js** — i campi che si aprono col tocco: l'ora di un pasto, la
   scadenza di un'attività. Nasce da «non funziona il pulsante "a un'altra ora"
   quando indico i pasti della giornata in Rituali», ed è finita in tre puntate,
@@ -302,7 +320,7 @@ genera le chiavi, in un browser vero).
   Nasce da «quelli sono solo alcuni, ce ne sono in varie sezioni e pagine»: i
   difetti li aveva trovati l'occhio, tre o quattro per volta, e ogni volta la
   causa era un'altra con lo stesso aspetto — «il bordo sembra tagliato». Le
-  nove cause, tutte in una prova:
+  undici cause, tutte in una prova:
   1. un angolo tondo senza ritaglio (è rimasto un arco di cerchio);
   2. un bordo con lo spessore e nessuno che lo dipinge (bordo sparito);
   3. un bordo dipinto DUE volte, box e anello (fianchi scuri, angoli chiari);
@@ -324,6 +342,31 @@ genera le chiavi, in un browser vero).
      del mese era larghissimo per davvero — 1561 pixel in un riquadro da 955,
      perché `repeat(7, 1fr)` non fa scendere una colonna sotto il titolo più
      lungo che ha dentro — e due colonne su sette stavano fuori dalla pagina.
+ 10. un'ombra dura usata al posto di un bordo. `box-shadow: 0 0 0 2px` non è
+     un'ombra: è un bordo travestito, e un bordo travestito la forma
+     dell'angolo non la sa. L'ombra segue il `border-radius`, che è un arco di
+     cerchio; quello che si vede dell'elemento lo decide il ritaglio, che è la
+     curva di Apple e passa più interna. Fra le due resta una fessura, e negli
+     angoli si vede passare il fondo fra la cosa e il suo contorno. Sulla
+     casella di oggi nel calendario di un'abitudine erano quattro barrette
+     viola coi vertici mangiati invece di una cornice — la foto che l'ha fatta
+     trovare. Un'ombra SFOCATA no: la fessura c'è lo stesso ma la sfocatura la
+     copre, ed è per questo che le elevazioni dell'app non danno difetti;
+ 11. l'anello dentro una cosa che scorre. Lo pseudo-elemento dell'anello è
+     ASSOLUTO, e un elemento assoluto dentro un contenitore che scorre scorre
+     con il contenuto: il filo del bordo si stacca dal suo riquadro e se ne va
+     a spasso in mezzo alle parole. Nel pannello si vedeva un arco d'angolo
+     appoggiato sopra il testo, una riga orizzontale che tagliava una frase a
+     metà, una cornice che non chiudeva — tre foto diverse, un difetto solo.
+     La cura non è un'altra regola di stile: è che a scorrere sia un figlio, e
+     il bordo stia su chi non si muove.
+  E una riga prima di tutto il resto: il codice che va dentro la pagina si
+  COMPILA prima di aprire il browser. `CONTROLLA` è una stringa fra apici
+  inversi e là dentro ogni barra rovescia va scritta doppia; chi ne scrive una
+  sola non vede un errore di sintassi, vede centocinquantasei scene che «hanno
+  sbagliato strada» tutte con lo stesso messaggio, e zero angoli misurati. È
+  successo cinque volte con la stessa faccia: adesso è una riga sola, detta
+  subito.
   Alla prima passata: settanta casi, in pagine che a occhio non erano mai state
   guardate — «Scienza», «Backup», «Primi passi», il Design lab. Stampa
   TUTTI i casi, uno per riga, e non i primi sei: con l'elenco tagliato si

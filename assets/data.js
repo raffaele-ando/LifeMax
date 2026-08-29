@@ -119,6 +119,17 @@ var LM = (function () {
   /* Ritmo della giornata: sonno, sveglia e pasti. Serve alla timeline
      "La giornata", che rende visibile come è divisa la giornata (utile
      contro la difficoltà a percepire il tempo — Barkley 1997). */
+  /* QUANDO L'APP FA LE SUE DUE DOMANDE, e se le fa.
+     Sono le uniche due volte in cui l'app apre qualcosa senza che glielo si
+     sia chiesto, e per questo devono stare in mano a chi le riceve: c'è chi si
+     alza alle undici e chi cena alle dieci, e un pop-up che arriva nel momento
+     sbagliato non è un promemoria, è un'interruzione. `on` spegne la domanda
+     senza spegnere il posto dove si risponde: il registro resta nei Rituali,
+     dove sta di casa. */
+  var CHIEDI_DEFAULT = {
+    notte: { on: true, da: '05:00', a: '14:00' },
+    giorno: { on: true, da: '19:00' }
+  };
   var RITMO_DEFAULT = {
     sveglia: '07:30',
     sonno: '23:30',
@@ -137,7 +148,7 @@ var LM = (function () {
       demo: false,
       /* giornataPos: dove mostrare la timeline della giornata
          ('oggi-strip' | 'panoramica' | 'oggi-full' | 'menu') */
-      profilo: { nome: '', visione: '', skin: 'quiete', modo: 'auto', giornataPos: 'oggi-strip', ritmo: JSON.parse(JSON.stringify(RITMO_DEFAULT)) },
+      profilo: { nome: '', visione: '', skin: 'quiete', modo: 'auto', giornataPos: 'oggi-strip', ritmo: JSON.parse(JSON.stringify(RITMO_DEFAULT)), chiedi: JSON.parse(JSON.stringify(CHIEDI_DEFAULT)) },
       ritmoGiorno: {},   // ritmoGiorno[data] = {sveglia?, sonno?, prec?, pasti?, chiesto?} — registro di sonno e pasti del singolo giorno
       /* l'ultima volta che ti ho visto. Serve a una cosa sola, ed è
          importante: sapere se fra ieri e oggi c'è stato un BUCO in cui la
@@ -201,6 +212,14 @@ var LM = (function () {
     if (!s.profilo || typeof s.profilo !== 'object') s.profilo = vuoto.profilo;
     if (!s.profilo.giornataPos) s.profilo.giornataPos = 'oggi-strip';
     if (!s.profilo.ritmo || typeof s.profilo.ritmo !== 'object') s.profilo.ritmo = JSON.parse(JSON.stringify(RITMO_DEFAULT));
+    if (!s.profilo.chiedi || typeof s.profilo.chiedi !== 'object') s.profilo.chiedi = JSON.parse(JSON.stringify(CHIEDI_DEFAULT));
+    ['notte', 'giorno'].forEach(function (q) {
+      var c = s.profilo.chiedi[q];
+      if (!c || typeof c !== 'object') { s.profilo.chiedi[q] = JSON.parse(JSON.stringify(CHIEDI_DEFAULT[q])); return; }
+      if (typeof c.on !== 'boolean') c.on = true;
+      if (!/^\d\d:\d\d$/.test(c.da || '')) c.da = CHIEDI_DEFAULT[q].da;
+      if (q === 'notte' && !/^\d\d:\d\d$/.test(c.a || '')) c.a = CHIEDI_DEFAULT.notte.a;
+    });
     /* i promemoria: uno stato salvato prima che esistessero non ce li ha, e
        uno che arriva da un dispositivo aggiornato potrebbe averne solo una
        parte. Si riempie quello che manca senza toccare quello che c'è. */
@@ -906,6 +925,24 @@ var LM = (function () {
   /* ---------- ritmo della giornata e preferenza di visualizzazione ---------- */
 
   /* ritmo di BASE (vale per i giorni senza un registro loro) */
+  function impostaChiedi(patch) {
+    var s = load();
+    if (!s.profilo.chiedi) s.profilo.chiedi = JSON.parse(JSON.stringify(CHIEDI_DEFAULT));
+    ['notte', 'giorno'].forEach(function (q) {
+      if (!patch[q]) return;
+      var c = s.profilo.chiedi[q] || (s.profilo.chiedi[q] = JSON.parse(JSON.stringify(CHIEDI_DEFAULT[q])));
+      if (typeof patch[q].on === 'boolean') c.on = patch[q].on;
+      if (patch[q].da) c.da = patch[q].da;
+      if (patch[q].a) c.a = patch[q].a;
+    });
+    registra('impostazioni', 'Cambiato quando l\u2019app chiede del sonno e dei pasti', false);
+    save();
+  }
+  function chiediQuando() {
+    var c = load().profilo.chiedi || CHIEDI_DEFAULT;
+    return JSON.parse(JSON.stringify(c));
+  }
+
   function impostaRitmo(patch) {
     var s = load();
     if (!s.profilo.ritmo) s.profilo.ritmo = JSON.parse(JSON.stringify(RITMO_DEFAULT));
@@ -1597,8 +1634,13 @@ var LM = (function () {
       durata: a.durata, mit: !!a.mit, ifThen: a.ifThen || '' };
   }
   function voceAbitudine(h) {
+    /* `giorni` e `record` viaggiano con la voce perché la scheda di «Adesso»
+       ci disegna sopra la settimana dell'abitudine: quali giorni si ripete e
+       a che punto è la serie. Senza, la scheda dovrebbe ripescare l'abitudine
+       intera dallo stato per disegnare sette pallini. */
     return { tipo: 'abitudine', id: h.id, testo: h.testo, areaId: h.areaId, ora: h.ora,
-      durata: h.durata, mit: false, ifThen: '', serie: streakAbitudine(h) };
+      durata: h.durata, mit: false, ifThen: '', serie: streakAbitudine(h),
+      giorni: (h.giorni || []).slice(), record: recordAbitudine(h) };
   }
   function vociDiAdesso(k) {
     var s = load();
@@ -2450,6 +2492,7 @@ var LM = (function () {
     spostaAzione: spostaAzione, rimandaNonFatte: rimandaNonFatte, azioneInBacklog: azioneInBacklog,
     setOraAzione: setOraAzione, setDurataAzione: setDurataAzione, azioniDelGiorno: azioniDelGiorno,
     impostaRitmo: impostaRitmo, impostaGiornataPos: impostaGiornataPos, RITMO_DEFAULT: RITMO_DEFAULT,
+    impostaChiedi: impostaChiedi, chiediQuando: chiediQuando, CHIEDI_DEFAULT: CHIEDI_DEFAULT,
     promemoria: promemoria, impostaPromemoria: impostaPromemoria, PROMEMORIA_DEFAULT: PROMEMORIA_DEFAULT,
     ritmoDi: ritmoDi, setRitmoGiorno: setRitmoGiorno, azzeraRitmoGiorno: azzeraRitmoGiorno, minutiSonno: minutiSonno,
     aggiungiBacklog: aggiungiBacklog, modificaBacklog: modificaBacklog, cambiaAreaBacklog: cambiaAreaBacklog,

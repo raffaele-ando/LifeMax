@@ -407,8 +407,18 @@
  ".abd-g.fatto": {
   "angolo": true
  },
+ ".abd-g.oggi": {
+  "angolo": true
+ },
+ ".abd-scala": {
+  "corto": 58.7,
+  "angolo": true
+ },
+ ".abd-scala-barra": {
+  "corto": 10
+ },
  ".agg-riga": {
-  "corto": 46.6,
+  "corto": 47,
   "angolo": true
  },
  ".area-riga .icona-area": {
@@ -440,7 +450,7 @@
   "corto": 28
  },
  ".btn": {
-  "corto": 33.7,
+  "corto": 34,
   "angolo": true
  },
  ".btn-ghost": {
@@ -466,7 +476,7 @@
   "angolo": true
  },
  ".card": {
-  "corto": 79.5,
+  "corto": 79.4,
   "angolo": true
  },
  ".card-area .testata .icona-area": {
@@ -492,11 +502,11 @@
   "angolo": true
  },
  ".diario-annulla": {
-  "corto": 24.3,
+  "corto": 24.5,
   "angolo": true
  },
  ".diario-ico": {
-  "corto": 26.8
+  "corto": 27
  },
  ".evidenza": {
   "corto": 18
@@ -512,14 +522,14 @@
   "corto": 288,
   "angolo": true
  },
- ".focus-cuore.st-ritardo": {
-  "angolo": true
+ ".fr-pips i": {
+  "corto": 6
  },
  ".fs-barra": {
   "corto": 5
  },
- ".fs-barra i": {
-  "corto": 5
+ ".fs-tipo": {
+  "corto": 22
  },
  ".gio-so-corpo": {
   "corto": 35.5,
@@ -551,7 +561,7 @@
   "angolo": true
  },
  ".lista-azione": {
-  "corto": 25.8,
+  "corto": 26,
   "angolo": true
  },
  ".lista-azione.piena": {
@@ -571,7 +581,7 @@
   "angolo": true
  },
  ".lm-hbar-fill": {
-  "corto": 6
+  "corto": 6.1
  },
  ".lm-hbar-row": {
   "corto": 19.3
@@ -632,14 +642,14 @@
   "angolo": true
  },
  ".punto-vivo": {
-  "corto": 8
+  "corto": 10.1
  },
  ".q-chip": {
   "corto": 34,
   "angolo": true
  },
  ".riga-azione": {
-  "corto": 50,
+  "corto": 45,
   "angolo": true
  },
  ".riga-azione .spunta": {
@@ -652,7 +662,8 @@
  ".riga-azione.fatta .spunta": {
   "angolo": true
  },
- ".rit-corpo > .card:first-child": {
+ ".rit-corpo > .card": {
+  "corto": 266,
   "angolo": true
  },
  ".rit-gruppo": {
@@ -666,11 +677,11 @@
   "corto": 20.5
  },
  ".scala button": {
-  "corto": 45.2,
+  "corto": 40.8,
   "angolo": true
  },
  ".scienza-card .uso": {
-  "corto": 57
+  "corto": 56.5
  },
  ".seg-n": {
   "corto": 12.6
@@ -695,7 +706,7 @@
   "corto": 34
  },
  ".sel-area-azione": {
-  "corto": 19.6,
+  "corto": 19.8,
   "angolo": true
  },
  ".sheet": {
