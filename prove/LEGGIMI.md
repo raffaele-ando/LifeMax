@@ -148,29 +148,40 @@ genera le chiavi, in un browser vero).
   costante e all'attacco col lato salta a zero; quella di Apple, campionata sul
   proprio angolo (lungo 1.53 raggi, non uno), va da 0.88·R a 3.13·R e si
   appiattisce verso il lato, così l'attacco non esiste.
-  Poi la **distanza** fra la spezzata del `clip-path` e le Bézier vere, misurata
-  come area fra le due divisa per la lunghezza dell'arco: 0.03–0.05px a 8, 12,
-  18 e 26px di raggio.
-  Poi la cosa che mancava e che è costata caro: **ogni tracciato generato passa
-  per `CSS.supports`**. Un `calc(100% - 0)` — non valido, perché da una
-  percentuale non si può sottrarre uno zero senza unità — faceva buttare al
-  browser l'intera dichiarazione: il ritaglio diventava `none`, l'elemento
-  restava a spigoli e l'anello dipingeva un rettangolo pieno sopra tutta la
-  scheda. Nel foglio di stile il testo sembrava giusto. C'è anche la
-  controprova, che quel valore venga davvero rifiutato.
-  Poi l'app, su nove schermate: che ogni angolo abbia il ritaglio, che nessuno
-  sia rimasto un rettangolo arrotondato, che **ogni elemento col bordo abbia
-  l'anello ACCESO** (una riga `*::before { --sq-b: transparent }` lo aveva
-  spento su tutta l'app, lasciando il bordo rotto in ogni angolo), e che il
-  ritaglio non si mangi niente che sporge — figli o pseudo-elementi, e con loro
-  l'area del tocco, perché `clip-path` conta anche per il dito.
-  Poi il **bordo sui pixel** di un elemento vero, cercando il colore del bordo
-  lungo venti direzioni dell'angolo. Poi le **proporzioni**, perché una maschera
-  SVG stirata farebbe un'ellisse: l'angolo misura 27.5×27.3px identico su
-  300×90, su 90×300 e su 160×160. Poi che il blocco sia generato e stia dentro
-  un `@supports`. Poi l'**icona**, che deve avere esattamente il tracciato di
-  `segni/apple.mjs`, e le PNG che iOS e Android mascherano da sé, che devono
-  restare piene fino al bordo.
+  Poi la cosa che è costata cara: **ogni tracciato che finisce in pagina passa
+  per `CSS.supports`**, su otto misure scomode per sette raggi. Un `calc(100% -
+  0)` — non valido, perché da una percentuale non si può sottrarre uno zero
+  senza unità — faceva buttare al browser l'intera dichiarazione, e l'elemento
+  restava a spigoli. Nel foglio di stile il testo sembrava giusto. Oggi nel
+  tracciato non ci sono né percentuali né funzioni, solo numeri, e anche
+  QUESTO viene controllato invece che dato per buono. C'è la controprova, che
+  un valore rotto venga davvero rifiutato.
+  Poi le **proporzioni**, perché una maschera SVG stirata farebbe un'ellisse:
+  l'angolo misura 27.5×27.3px identico su 300×90, su 90×300 e su 160×160.
+  Poi che **la forma la faccia `assets/forma.js`**: che il blocco generato sia
+  sparito da `app.css`, che nessuna regola scritta a mano dia una forma col
+  ritaglio, che `forma.js` sia caricato prima di `app.js` (se arrivasse dopo,
+  il primo disegno della pagina avrebbe gli angoli tondi normali) e che le sue
+  costanti non siano divergute da `segni/apple.mjs`.
+  Poi — ed è la prova che l'utente ha chiesto guardando una fotografia
+  ingrandita, «non sono veri squircle di Apple» — **la curva che esce davvero**,
+  misurata sui pixel di un elemento vero disegnato da `forma.js` nell'app: la
+  distanza PERPENDICOLARE da ogni punto del contorno alla curva analitica.
+  0.10–0.19px su un raggio di 40. In perpendicolare, e non lungo una riga:
+  vicino al vertice la curva è quasi parallela al lato, e là un errore di un
+  decimo di pixel in verticale ne diventa uno intero in orizzontale — si
+  misurerebbe la pendenza invece della forma.
+  E con la sua rete, che è la parte istruttiva: un `border-radius` puro dista in
+  perpendicolare solo **0.7px** dalla curva di Apple, cioè una prova che
+  guardasse solo quella si farebbe ingannare da un arco di cerchio. Quello che
+  li separa senza ambiguità è **dove l'angolo si attacca al lato dritto**: un
+  raggio per l'arco, 1.528665 raggi per Apple. Le due misure si confrontano fra
+  loro, non col numero teorico, perché l'ultimo tratto della curva di Apple
+  rientra di meno di un sesto di pixel — meno di quanto uno scatto a sei volte
+  la risoluzione possa vedere.
+  Poi l'**icona**, che deve avere esattamente il tracciato di `segni/apple.mjs`,
+  e le PNG che iOS e Android mascherano da sé, che devono restare piene fino al
+  bordo.
   Le trappole che ha corretto su sé stessa: il riquadro di prova troppo piccolo
   (con un raggio da 120 in un box da 280 scatta il limite proporzionale e la
   curva di Apple usciva come una superellisse con n = 2.8); il lato «dritto»
@@ -311,55 +322,87 @@ genera le chiavi, in un browser vero).
   dell'account o un aggiornamento dal cloud — chi aveva scritto mezza domanda se
   la vedeva sparire senza aver toccato niente. Adesso quello che c'è scritto
   sopravvive al ridisegno, e la prova lo verifica forzando l'evento vero.
-- **bordi.js** — la stessa cosa, ma DAPPERTUTTO. La forma degli angoli la
-  misura `squircle.js` su nove schermate; questa guarda una cosa sola — che il
-  bordo sia dove deve essere, di un colore solo, dipinto una volta sola — e la
-  guarda su cinquantuno schermate, pannelli e stati (`segni/scene.json`) per
-  cinque combinazioni di larghezza e tema: 250 schermate, più di quattordicimila
-  angoli ritagliati.
+- **bordi.js** — la stessa cosa, ma DAPPERTUTTO. Guarda ogni elemento di
+  cinquantadue schermate, pannelli e stati (`segni/scene.json`) per cinque
+  combinazioni di larghezza e tema: 260 schermate, più di ventimila angoli.
   Nasce da «quelli sono solo alcuni, ce ne sono in varie sezioni e pagine»: i
   difetti li aveva trovati l'occhio, tre o quattro per volta, e ogni volta la
-  causa era un'altra con lo stesso aspetto — «il bordo sembra tagliato». Le
-  undici cause, tutte in una prova:
-  1. un angolo tondo senza ritaglio (è rimasto un arco di cerchio);
+  causa era un'altra con lo stesso aspetto — «il bordo sembra tagliato».
+
+  **Tre delle undici cause di allora non possono più esistere**, e non perché
+  siano state sistemate: perché non c'è più il pezzo che le produceva. Il bordo
+  era un ANELLO su uno pseudo-elemento, e da lì venivano «l'anello finito sullo
+  pseudo-elemento di qualcun altro», «l'anello mangiato dall'`overflow`» e
+  «l'anello che scorre col contenuto e finisce in mezzo alle parole». Adesso il
+  bordo è un'immagine di sfondo dello stesso elemento: non è posizionato, non è
+  uno pseudo-elemento, e uno sfondo non lo taglia l'`overflow` di chi taglia.
+  Al posto di tre controlli ne resta uno, che costa niente: che nessuno
+  pseudo-elemento porti un ritaglio.
+
+  Le nuove nascono tutte dallo stesso posto — **rileggere quello che abbiamo
+  scritto noi**. `forma.js` riscrive il raggio al 99% (serve all'ombra), spegne
+  il colore del bordo (lo ridisegna il filo) e mette il filo davanti allo
+  sfondo. Tutti e tre, riletti alla passata dopo, danno il valore NOSTRO invece
+  di quello del foglio di stile. Le cose che cerca:
+
+  1. un angolo tondo senza la curva (è rimasto un arco di cerchio);
   2. un bordo con lo spessore e nessuno che lo dipinge (bordo sparito);
-  3. un bordo dipinto DUE volte, box e anello (fianchi scuri, angoli chiari);
-  4. un anello che dipinge senza forma (un rettangolo pieno di colore);
-  5. un `overflow` che si mangia l'anello;
-  6. un ritaglio che mangia quello che sporge — figli, pseudo-elementi, e con
-     loro l'area del dito;
-  7. un angolo più grande di mezzo lato, che si strozza in una punta;
-  8. l'anello messo sullo pseudo-elemento di qualcun altro. `::before` è uno
-     per elemento: se lo usava già una barretta, un pallino o una freccia, le
-     due regole finiscono sullo stesso pezzo di schermo e quel disegno prende
-     addosso il ritaglio dell'anello. È successo alla barretta dell'accento
-     nella colonna di sinistra (`.nav-item.attivo::before`), che ne usciva a
-     trattini. Il generatore ora sa che `.nav-item` e `.nav-item.attivo` sono
-     lo stesso elemento in due momenti; la prova controlla il risultato;
-  9. un blocco più largo della pagina. Finché il ritaglio portava via tutto
-     quello che stava fuori dal riquadro, un blocco troppo largo non si vedeva
-     uscire: si vedeva TAGLIATO, e sembrava un difetto del bordo. Il calendario
-     del mese era larghissimo per davvero — 1561 pixel in un riquadro da 955,
-     perché `repeat(7, 1fr)` non fa scendere una colonna sotto il titolo più
-     lungo che ha dentro — e due colonne su sette stavano fuori dalla pagina.
- 10. un'ombra dura usata al posto di un bordo. `box-shadow: 0 0 0 2px` non è
-     un'ombra: è un bordo travestito, e un bordo travestito la forma
-     dell'angolo non la sa. L'ombra segue il `border-radius`, che è un arco di
-     cerchio; quello che si vede dell'elemento lo decide il ritaglio, che è la
-     curva di Apple e passa più interna. Fra le due resta una fessura, e negli
-     angoli si vede passare il fondo fra la cosa e il suo contorno. Sulla
-     casella di oggi nel calendario di un'abitudine erano quattro barrette
-     viola coi vertici mangiati invece di una cornice — la foto che l'ha fatta
-     trovare. Un'ombra SFOCATA no: la fessura c'è lo stesso ma la sfocatura la
-     copre, ed è per questo che le elevazioni dell'app non danno difetti;
- 11. l'anello dentro una cosa che scorre. Lo pseudo-elemento dell'anello è
-     ASSOLUTO, e un elemento assoluto dentro un contenitore che scorre scorre
-     con il contenuto: il filo del bordo si stacca dal suo riquadro e se ne va
-     a spasso in mezzo alle parole. Nel pannello si vedeva un arco d'angolo
-     appoggiato sopra il testo, una riga orizzontale che tagliava una frase a
-     metà, una cornice che non chiudeva — tre foto diverse, un difetto solo.
-     La cura non è un'altra regola di stile: è che a scorrere sia un figlio, e
-     il bordo stia su chi non si muove.
+  3. un bordo dipinto DUE volte (fianchi scuri, angoli chiari);
+  4. **il filo e il ritaglio che non dicono la stessa curva.** Sono la stessa
+     funzione con un rientro di mezzo spessore: si estraggono i quattro raggi
+     da tutti e due i tracciati e devono tornare;
+  5. **il filo disegnato su una misura vecchia.** Il colore del bordo, riletto
+     dopo che l'avevamo spento, torna «trasparente»: il filo non veniva più
+     ridisegnato e restava quello di prima, tarato su un'altra larghezza. Nella
+     barra in basso si vedeva come una seconda cornice, più piccola, in mezzo
+     alle icone. Si controlla che la larghezza dell'SVG sia quella di adesso;
+  6. **il raggio ristretto giro dopo giro.** Il 99% applicato al 99% del 99%:
+     la barra in basso, che è l'unico elemento che non viene mai ricreato,
+     dichiarava 18 pixel e ne disegnava 5.8 — centododici riduzioni una
+     sull'altra. E siccome ogni elemento ne subiva un numero diverso a seconda
+     di quanto era vissuto, l'app finiva con forme diverse in punti diversi:
+     era questo, e non la curva, a farle sembrare di famiglie diverse;
+  7. **le corsie dello sfondo scalate di un posto.** Un elenco di sfondi in CSS
+     è a più corsie: ripetizione, misura, posizione, origine e ritaglio sono
+     elenchi anche loro, letti in parallelo alle immagini. Mettendo il filo
+     davanti senza riportare dietro le regole di quello che c'era, ogni regola
+     scivola di un posto. Si è visto sul selettore dell'area nel Diario: la sua
+     freccina è «no-repeat, 12px, a destra», si è vista rubare quelle tre
+     regole e ha preso quello che restava — ripetuta, a grandezza naturale — e
+     nel riquadro comparivano cinque spuntoni grigi sopra il nome dell'area.
+     Da fuori sembrava un carattere rotto;
+  8. un ritaglio che sta DENTRO il riquadro e mangia quello che sporge. Quello
+     di `forma.js` comincia duecento pixel fuori da ogni lato e toglie solo le
+     quattro zone d'angolo, quindi non può mangiare niente — ed è per questo
+     che la barretta dell'accento della colonna, che sta quattordici pixel
+     FUORI dalla voce di menù, si vede;
+  9. un angolo più grande di mezzo lato, che si strozza in una punta;
+ 10. un ritaglio su uno pseudo-elemento: non deve più esistercene;
+ 11. un blocco più largo della pagina. Il calendario del mese era larghissimo
+     per davvero — 1561 pixel in un riquadro da 955, perché `repeat(7, 1fr)`
+     non fa scendere una colonna sotto il titolo più lungo che ha dentro — e
+     due colonne su sette stavano fuori dalla pagina;
+ 12. **un'ombra DURA usata al posto di un bordo, anche col fuoco addosso.**
+     `box-shadow: 0 0 0 2px` non è un'ombra: è un contorno travestito, e un
+     contorno segue il `border-radius`, che è un arco. Quello che si vede
+     dell'elemento lo decide il ritaglio, che è la curva di Apple: sui lati
+     dritti combaciano, sui quarantacinque gradi l'arco sporge, e negli angoli
+     resta una fessura. Un'ombra SFOCATA no: la fessura c'è lo stesso ma la
+     sfocatura la copre.
+     La parte «col fuoco addosso» è arrivata dopo, da una fotografia
+     ingrandita: l'alone viola dei campi era proprio questo, tre pixel e mezzo
+     di spread senza sfocatura, e attorno a un campo si vedeva un alone
+     squadrato attorno a una cosa che squadrata non è. Un alone esiste solo
+     mentre il campo è toccato, quindi guardando la pagina ferma non si vedeva
+     mai: la prova adesso tocca i campi uno per uno e guarda l'alone che
+     compare. Lo fa su una vista sola — l'alone non dipende dalla larghezza né
+     dal tema, e su cinque erano ventitremila messe a fuoco.
+
+  E una rete contro la prova che non prova niente: se il codice mandato in
+  pagina si rompe, ogni scena finisce fra le «rotte» e tutti gli altri elenchi
+  restano VUOTI, cioè la prova stampa dodici righe verdi che non vogliono dire
+  niente. Zero angoli misurati adesso è un fallimento a sé, detto per primo.
+
   E una riga prima di tutto il resto: il codice che va dentro la pagina si
   COMPILA prima di aprire il browser. `CONTROLLA` è una stringa fra apici
   inversi e là dentro ogni barra rovescia va scritta doppia; chi ne scrive una
@@ -443,7 +486,7 @@ genera le chiavi, in un browser vero).
     node prove/giornata.js
     node prove/adesso.js
     node prove/squircle.js
-    node prove/bordi.js      # 250 schermate, una decina di minuti
+    node prove/bordi.js      # 260 schermate, una decina di minuti
     node prove/stati.js      # 50 schermate × 4 stati × 2 vie
     node prove/promemoria.js
     node prove/doppioni.js   # qualche minuto

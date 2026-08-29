@@ -105,8 +105,24 @@ const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  
            tocco, e un orologio che ne riceve due si apre col primo e si
            chiude col secondo */
         dentroUnaEtichetta: !!pill,
-        /* e un bordo suo, come i campi dell'ora che hanno sempre funzionato */
+        /* E SENZA CORNICE, come i campi dell'ora di «stanotte» — che sono gli
+           unici che hanno sempre funzionato su Android. Qui la pretesa era
+           l'opposta («un bordo suo, come gli altri campi»), ed era la pretesa
+           sbagliata: un bordo vuol dire un angolo, un angolo vuol dire che
+           assets/forma.js gli riscrive lo stile (colore spento, filo, ritaglio),
+           e su Android l'orologio di sistema si richiude se l'elemento che
+           l'ha aperto viene rimaneggiato mentre è aperto. Era la terza volta
+           che questo campo si rompeva, e le prime due volte si era cercata la
+           causa nel `<label>`. */
         bordo: parseFloat(cs.borderTopWidth), fondo: cs.backgroundColor,
+        classi: i.className,
+        /* e la forma non deve avergli RIDISEGNATO IL BORDO. Il ritaglio da
+           solo è innocuo — ce l'ha anche quello di «stanotte», che funziona:
+           è una forma, non una riscrittura continua. Quello che rompeva
+           l'orologio è il resto del corredo che tocca a chi ha una cornice:
+           colore del bordo spento, filo disegnato come immagine di sfondo,
+           sei proprietà riscritte a ogni passata. */
+        filo: cs.backgroundImage, coloreTenuto: i.dataset.formaBordo,
         dentro: r.right <= innerWidth + 1 && r.left >= -1,
         /* niente tasti che «aprono» il campo: la strada che si è rotta due volte */
         tastiCheAprono: document.querySelectorAll('[data-pasto] [data-pora]').length
@@ -115,8 +131,11 @@ const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  
     ok('si vede e si tocca', st.opacita === '1' && st.puntatore !== 'none', JSON.stringify(st));
     ok('non ha nessuna etichetta attorno che gli rimandi un secondo tocco',
       st.dentroUnaEtichetta === false, JSON.stringify(st.dentroUnaEtichetta));
-    ok('ed è un campo come gli altri: bordo suo, fondo suo',
-      st.bordo > 0 && !/^(transparent|rgba\(0, 0, 0, 0\))$/.test(st.fondo), st.bordo + 'px · ' + st.fondo);
+    ok('è LO STESSO campo di «stanotte», senza cornice',
+      /\bsc-inline\b/.test(st.classi) && !(st.bordo > 0), st.classi + ' · bordo ' + st.bordo + 'px');
+    ok('e la forma non gli ridisegna il bordo, come a quello di «stanotte»',
+      (st.filo === 'none' || !st.filo) && !st.coloreTenuto,
+      'filo ' + String(st.filo).slice(0, 24) + ' · colore tenuto da parte «' + (st.coloreTenuto || '') + '»');
     /* pieno dell'ora solita, riscegliere quella stessa ora non farebbe
        scattare nessun evento: il tocco andrebbe perso */
     ok('parte vuoto', st.valore === '');

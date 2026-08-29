@@ -205,368 +205,78 @@ const CONTORNO = `(function (b64, R, dritto) {
       (gM[gM.length - 1] > 99 ? 'oltre 99' : gM[gM.length - 1].toFixed(2)) + '·R');
   }
 
-  /* ============ 3. il poligono sta sulle Bézier di Apple ============ */
-  console.log('\nIL POLIGONO STA SULLE BÉZIER DI APPLE');
-  /* La curvatura di una spezzata non si può misurare — è zero sui segmenti e
-     infinita sui vertici — ma la distanza dalla curva vera sì. Si misura come
-     AREA fra le due divisa per la lunghezza dell'arco: è lo scarto medio, e
-     non ha versi privilegiati. Riga per riga non si potrebbe: verso il lato la
-     curva è quasi orizzontale e mezzo pixel di differenza vera darebbe
-     centoventi pixel di scarto in x. */
+  /* ============ 3. il tracciato che forma.js emette è CSS valido ==========
+     Qui prima c'erano quattro sezioni — «il poligono sta sulle Bézier», «ogni
+     tracciato generato è CSS valido», «l'app: ogni angolo e l'anello del
+     bordo», «col mouse sopra il bordo non raddoppia» — e tutte e quattro
+     leggevano il blocco generato in fondo ad app.css, le variabili `--sq-N-p`
+     e l'anello sullo pseudo-elemento. Non esiste più niente di tutto questo:
+     il tracciato lo calcola forma.js in pagina, in pixel, e il bordo è
+     un'immagine di sfondo dello stesso elemento. Quello che facevano quelle
+     sezioni sull'app intera adesso lo fa prove/bordi.js, su cinquantadue
+     schermate e cinque viste, e lo fa meglio.
+     Resta da provare una cosa sola, ed è quella che è costata più cara: che
+     il valore che finisce nella pagina il browser lo ACCETTI. Un `calc(100% -
+     0)` — non valido, perché da una percentuale non si può sottrarre uno zero
+     senza unità — faceva buttare al browser l'intera dichiarazione, e
+     l'elemento restava un rettangolo a spigoli. Adesso nel tracciato non ci
+     sono né percentuali né funzioni: solo numeri. Ma «solo numeri» va
+     verificato, non dato per buono, e va verificato sulle misure storte —
+     quelle dove i conti danno decimali lunghi o zeri. */
+  console.log('\nIL TRACCIATO CHE forma.js EMETTE È CSS VALIDO, A OGNI MISURA');
   {
-    const MASCHERA = `(function (b64, R) {
-      return (async function () {
-        const img = new Image(); img.src = 'data:image/png;base64,' + b64; await img.decode();
-        const c = document.createElement('canvas'); c.width = img.width; c.height = img.height;
-        const x = c.getContext('2d', { willReadFrequently: true }); x.drawImage(img, 0, 0);
-        const d = x.getImageData(0, 0, R, R).data;
-        var m = [];
-        for (var j = 0; j < R; j++) for (var i = 0; i < R; i++) {
-          var k = (j * R + i) * 4;
-          m.push((d[k] + d[k+1] + d[k+2]) / 3 < 128 ? 1 : 0);
+    await p1.goto('http://localhost:' + PORTA + '/index.html');
+    await p1.waitForTimeout(400);
+    const esito = await p1.evaluate(() => {
+      const casi = [];
+      /* misure e raggi scelti per essere scomodi: numeri primi, mezzi pixel,
+         raggi più grandi di quanto ci sta, raggi a zero su qualche angolo */
+      const MIS = [[7, 7], [13, 41], [41, 13], [100, 100], [333, 47], [1, 200], [200.5, 60.5], [17, 17]];
+      const RAG = ['0', '1px', '6px', '18px', '999px', '12px 0 3px 40px', '50%'];
+      const host = document.createElement('div');
+      host.style.cssText = 'position:fixed;left:-9999px;top:0';
+      document.body.appendChild(host);
+      for (const [w, h] of MIS) for (const r of RAG) {
+        const e = document.createElement('div');
+        e.style.cssText = 'width:' + w + 'px;height:' + h + 'px;border:1px solid #888;border-radius:' + r;
+        host.appendChild(e);
+        casi.push({ e: e, w: w, h: h, r: r });
+      }
+      return new Promise((ris) => setTimeout(() => {
+        const rotti = [], senza = [], numeri = [];
+        for (const c of casi) {
+          const s = getComputedStyle(c.e);
+          const clip = s.clipPath || '';
+          if (clip === 'none' || !/^path\(/.test(clip)) {
+            /* legittimo solo se non c'è angolo da fare, o se è un tondo vero */
+            const rr = parseFloat(s.borderTopLeftRadius) || 0;
+            const tondo = rr >= Math.min(c.w, c.h) / 2 - 0.51 && Math.abs(c.w - c.h) <= 2;
+            if (c.r !== '0' && !tondo && c.w > 2 && c.h > 2) senza.push(c.w + 'x' + c.h + ' r=' + c.r);
+            continue;
+          }
+          if (!CSS.supports('clip-path', clip)) rotti.push(c.w + 'x' + c.h + ' r=' + c.r);
+          /* niente percentuali, niente funzioni: se ricompaiono, ricompare
+             anche la specie di guasto che ci era costata l'iPad */
+          if (/%|calc\(|min\(|max\(|var\(|NaN|Infinity/.test(clip)) numeri.push(c.w + 'x' + c.h + ' r=' + c.r);
+          /* e il filo, se c'è, dev'essere un'immagine che il browser prende */
+          const bg = s.backgroundImage || '';
+          if (bg.indexOf('svg') > 0 && !CSS.supports('background-image', bg.split(/,(?![^(]*\))/)[0]))
+            rotti.push('FILO ' + c.w + 'x' + c.h + ' r=' + c.r);
         }
-        return m;
-      })();
-    })`;
-    const maschera = async (css, R) => {
-      /* NIENTE `background:#000` qui: il colore di fondo copriva la maschera e
-         il riferimento veniva un rettangolo pieno. Il colore lo mette chi
-         chiama, o l'immagine. */
-      await p1.setContent('<body style="margin:10px;background:#fff">' +
-        '<div id="q" style="width:' + largo(R) + 'px;height:' + largo(R) + 'px;' + css + '"></div></body>');
-      await p1.waitForTimeout(50);
-      const png = await p1.locator('#q').screenshot();
-      return p1.evaluate(MASCHERA + '(' + JSON.stringify(png.toString('base64')) + ',' + (R * DPR) + ')');
-    };
-    /* la lunghezza dell'arco dell'angolo, in unità di raggio */
-    let L = 0;
-    const pp = A.puntiAngolo(1, 0.000005);
-    for (let i = 1; i < pp.length; i++) L += Math.hypot(pp[i][0] - pp[i - 1][0], pp[i][1] - pp[i - 1][1]);
-    for (const R of [8, 12, 18, 26]) {
-      /* il riferimento è il tracciato SVG, che ha le Bézier per quello che sono */
-      const lato = largo(R);
-      const d = A.tracciatoSvg(lato, lato, R);
-      const svg = "url('data:image/svg+xml," + encodeURIComponent(
-        '<svg xmlns="http://www.w3.org/2000/svg" width="' + lato + '" height="' + lato + '">' +
-        '<path d="' + d + '" fill="#000"/></svg>') + "')";
-      const mRif = await maschera('background-image:' + svg + ';background-size:100% 100%;background-repeat:no-repeat;', R);
-      const mNos = await maschera('background:#000;border-radius:0;clip-path:' + A.poligono([R, R, R, R], 0.2) + ';', R);
-      let diverse = 0;
-      for (let i = 0; i < mRif.length; i++) if (mRif[i] !== mNos[i]) diverse++;
-      const medio = diverse / (L * R * DPR) / DPR;
-      ok('a ' + R + 'px la spezzata sta sulle Bézier entro un decimo di pixel', medio < 0.1,
-        'scarto medio ' + medio.toFixed(3) + 'px (' + diverse + ' pixel di schermo di differenza)');
-    }
-  }
-
-  /* ============ 4. OGNI TRACCIATO GENERATO È CSS VALIDO ============ */
-  console.log('\nOGNI TRACCIATO GENERATO È CSS VALIDO');
-  /* La prova che mancava, e che è costata caro: un `calc(100% - 0)` — non
-     valido, perché da una percentuale non si può sottrarre uno zero senza
-     unità — faceva buttare al browser l'INTERA dichiarazione. Il ritaglio
-     diventava `none`: l'elemento restava un rettangolo a spigoli e l'anello,
-     senza più ritaglio, dipingeva un rettangolo pieno di colore sopra tutta la
-     scheda. Nel foglio di stile il testo sembrava giusto, e il difetto si
-     vedeva solo aprendo l'app. */
-  {
-    const css = fs.readFileSync(path.join(RADICE, 'assets/app.css'), 'utf8');
-    const tracciati = [...css.matchAll(/(--sq-\d+-[pa]):\s*(polygon\([^;]+\))/g)].map((m) => [m[1], m[2]]);
-    const rotti = await p1.evaluate((lista) => lista
-      .filter(([, v]) => !CSS.supports('clip-path', v)).map(([n]) => n), tracciati);
-    ok('i tracciati sono ' + tracciati.length + ', e il browser li accetta tutti', rotti.length === 0,
-      rotti.length ? 'ROTTI: ' + rotti.join(' ') : 'nessuno rifiutato');
-    ok('e ce n’è almeno uno per ogni raggio dell’app', tracciati.length >= 20,
-      tracciati.length + ' tracciati');
-    /* e la controprova: la prova sa vedere il difetto */
+        host.remove();
+        ris({ quanti: casi.length, rotti: rotti, senza: senza, numeri: numeri });
+      }, 350));
+    });
+    ok('i tracciati provati sono ' + esito.quanti + ', e il browser li accetta tutti',
+      esito.rotti.length === 0, esito.rotti.length ? 'RIFIUTATI: ' + esito.rotti.slice(0, 4).join(' | ') : 'nessuno rifiutato');
+    ok('e nessuna misura resta senza forma', esito.senza.length === 0,
+      esito.senza.length ? 'senza: ' + esito.senza.slice(0, 4).join(' | ') : 'tutte ritagliate');
+    ok('e dentro non c’è niente da calcolare: solo numeri', esito.numeri.length === 0,
+      esito.numeri.length ? 'con funzioni: ' + esito.numeri.slice(0, 3).join(' | ') : 'nessuna percentuale, nessun calc(), nessun min()');
+    /* e la controprova: la prova sa vedere un tracciato rotto */
     const finto = await p1.evaluate(() => CSS.supports('clip-path', 'polygon(0 0, calc(100% - 0) 0, 100% 100%)'));
     ok('la prova sa riconoscere un tracciato rotto', finto === false,
       'calc(100% - 0) viene rifiutato, come deve');
-  }
-
-  /* ============ 5. l'app: ogni angolo, e il bordo che c'è davvero ======== */
-  console.log('\nL’APP: OGNI ANGOLO RITAGLIATO, E IL BORDO SULLA CURVA');
-  const GUARDA = `(function () {
-    var out = { conRitaglio: 0, senza: [], nonPoligono: [], anelloSpento: [], mangiati: [], overflow: [] };
-    var nome = function (e) { return e.tagName.toLowerCase() +
-      (e.className && e.className.toString ? '.' + e.className.toString().trim().split(/\\s+/).slice(0, 2).join('.') : ''); };
-    document.querySelectorAll('body *').forEach(function (e) {
-      var s = getComputedStyle(e), r = e.getBoundingClientRect();
-      if (r.width < 3 || r.height < 3 || s.visibility === 'hidden' || s.display === 'none') return;
-      var raggi = ['borderTopLeftRadius','borderTopRightRadius','borderBottomLeftRadius','borderBottomRightRadius']
-        .map(function (k) { return parseFloat(s[k]) || 0; });
-      var rmax = Math.max.apply(null, raggi);
-      var clip = s.clipPath;
-      /* NESSUNA eccezione, pastiglie comprese. Erano rimaste archi di cerchio
-         perché un ritaglio non sa dire «metà del lato corto»: adesso le loro
-         altezze si MISURANO in pagina (segni/misure.mjs) e il raggio si ricava
-         da là. Se una resta indietro, va rilanciata quella misura. */
-      var capsula = rmax >= Math.min(r.width, r.height) / 2 - 0.6;
-      /* I CAMPI DI FORM sono l'unica eccezione, e non è una scelta: un input,
-         un select e una textarea non generano pseudo-elementi, quindi il bordo
-         lì lo può dipingere solo il box. Ritagliandoli, il bordo verrebbe tagliato
-         sulla curva e non ci sarebbe nessuno a ridisegnarlo: il campo resta
-         senza bordo del tutto. È già successo a ogni campo di testo dell'app. */
-      var campo = /^(input|select|textarea|progress|meter)$/.test(e.tagName.toLowerCase());
-      if (rmax >= 1 && !campo && (!clip || clip === 'none'))
-        { out.senza.push(nome(e) + ' (raggio ' + rmax + 'px' +
-          (capsula ? ', pastiglia: lancia node segni/misure.mjs' : '') + ')'); return; }
-      if (campo && (!clip || clip === 'none')) {
-        /* e il bordo devono averlo: se qualcuno glielo spegne, sparisce */
-        var bwc = parseFloat(s.borderTopWidth) || 0;
-        if (bwc > 0 && /^(transparent|rgba\(0, 0, 0, 0\))$/.test(s.borderTopColor))
-          out.senza.push(nome(e) + ' — CAMPO SENZA BORDO: colore spento e nessuno pseudo-elemento');
-        return;
-      }
-      if (!clip || clip === 'none') return;
-      out.conRitaglio++;
-      if (!/^polygon/.test(clip)) out.nonPoligono.push(nome(e) + ': ' + clip.slice(0, 30));
-      /* L'ANELLO. Il bordo del box viene tagliato proprio sulla curva, quindi
-         va ridisegnato: se il suo colore è trasparente mentre l'elemento ha un
-         bordo, il bordo NON C'È negli angoli. È il difetto che una riga
-         una regola sull'asterisco degli pseudo-elementi aveva prodotto su
-         tutta l'app. */
-      var bw = parseFloat(s.borderTopWidth) || 0;
-      /* il colore del bordo sta in --sq-b: sull'elemento è trasparente di
-         proposito, perché a dipingerlo è l'anello — dipingendolo entrambi, sui
-         lati dritti veniva doppio e sulla curva singolo, cioè fianchi scuri e
-         angoli chiari */
-      var bc = (s.getPropertyValue('--sq-b') || '').trim();
-      var opaco = bw > 0 && bc && !/^(transparent|rgba\\(0, 0, 0, 0\\))$/.test(bc);
-      if (opaco) {
-        var quale = null;
-        ['::before', '::after'].forEach(function (ps) {
-          var q = getComputedStyle(e, ps);
-          if (/^polygon\\(/.test(q.clipPath || '') && !/-200px/.test(q.clipPath || '')) quale = q;
-        });
-        if (!quale) out.anelloSpento.push(nome(e) + ' — nessun anello, bordo ' + bw + 'px ' + bc);
-        else if (/rgba\\(0, 0, 0, 0\\)|transparent/.test(quale.backgroundColor))
-          out.anelloSpento.push(nome(e) + ' — anello trasparente, bordo ' + bc);
-      }
-      /* L'OVERFLOW SI MANGIA L'ANELLO. Un overflow non visibile taglia al
-         riquadro INTERNO, e l'anello del bordo sta nell'area del bordo, cioè
-         fuori: veniva via tutto e quegli elementi restavano senza bordo. Si
-         vedeva sulla scheda di «Adesso» (restava solo il filo colorato
-         dell'area, tagliato) e sulla lista delle attività, dove il bordo del
-         contenitore spariva e restavano quelli delle righe, di un altro
-         colore. */
-      if (opaco && !/^visible/.test(s.overflow) && quale) {
-        /* conta solo se l'anello sta NELL'AREA DEL BORDO (inset negativo): là
-           l'overflow, che taglia al riquadro interno, se lo mangia. Per chi
-           scorre l'anello si disegna dentro, a inset 0, e allora va bene.
-           E non conta se chi taglia è un overflow «clip» con un margine di
-           ritaglio grande almeno quanto l'inset: quello sposta il taglio
-           esattamente dove sta l'anello, e i figli restano dentro come voleva
-           chi ha scritto il foglio. (Con «hidden» il margine non ha nessun
-           effetto: misurato. E i pixel dicono che così il bordo c'è tutto —
-           ventiquattro direzioni su ventiquattro, luminanza uguale.) */
-        var ins = parseFloat(quale.top);
-        var margine = /clip/.test(s.overflow) ? (parseFloat(s.overflowClipMargin) || 0) : 0;
-        if (!isNaN(ins) && ins < -0.01 && margine < -ins - 0.01)
-          out.overflow.push(nome(e) + ' — overflow ' + s.overflow + ' (margine ' +
-            margine + ') si mangia l’anello (inset ' + quale.top + ')');
-      }
-      /* e il ritaglio non deve mangiare quello che sporge */
-      if (/^visible/.test(s.overflow) && /^visible/.test(s.overflowY) && /^visible/.test(s.overflowX)) {
-        for (var i = 0; i < e.children.length; i++) {
-          var c = e.children[i], cs = getComputedStyle(c);
-          if (cs.position === 'fixed') continue;
-          var q2 = c.getBoundingClientRect();
-          if (q2.width < 1 || q2.height < 1) continue;
-          var fuori = Math.max(r.left - q2.left, r.top - q2.top, q2.right - r.right, q2.bottom - r.bottom);
-          if (fuori > 0.6) out.mangiati.push(nome(e) + ' ← ' + nome(c) + ' (' + Math.round(fuori) + 'px fuori)');
-        }
-        ['::before', '::after'].forEach(function (ps) {
-          var q3 = getComputedStyle(e, ps);
-          if (!q3.content || q3.content === 'none' || q3.content === 'normal') return;
-          if (q3.position !== 'absolute' && q3.position !== 'fixed') return;
-          var nn = function (k) { var v = parseFloat(q3[k]); return isNaN(v) ? 0 : v; };
-          var lati = [nn('top'), nn('left'), nn('right'), nn('bottom')];
-          if (Math.min.apply(null, lati) >= -0.01) return;
-          var anello = /^polygon\\(/.test(q3.clipPath || '') &&
-            lati.every(function (x) { return Math.abs(x - lati[0]) < 0.01; }) && lati[0] < 0;
-          if (anello) return;
-          /* arrivare al bordo ESTERNO non è essere mangiato: là passa la forma,
-             e quello che esce dalla forma è giusto che esca. Il filo dell'area
-             in cima alla scheda di «Adesso» sta così di proposito — partendo dal
-             riquadro interno restava sopra una striscia del colore del bordo, e
-             si leggeva come un bordo di due colori tagliato. */
-          if (Math.min.apply(null, lati) >= -(parseFloat(s.borderTopWidth) || 0) - 0.01) return;
-          out.mangiati.push(nome(e) + ps + ' sporge (' + q3.top + ' ' + q3.left + ')');
-        });
-      }
-    });
-    return out;
-  })()`;
-  const SCENE = [
-    ['Oggi', 'oggi', null], ['La giornata', 'giornata', null], ['Attività', 'inbox', null],
-    ['Rituali', 'rituali', null], ['Andamento', 'plancia', null], ['Esperimenti', 'esperimenti', null],
-    ['Impostazioni', 'plancia', () => { const b2 = (document.getElementById('fondo-impostazioni') || document.querySelector('[data-imp]')); if (b2) b2.click(); }],
-    ['Promemoria', 'plancia', () => { const b2 = (document.getElementById('fondo-impostazioni') || document.querySelector('[data-imp]')); if (b2) b2.click(); const c = document.getElementById('imp-prom-come'); if (c) c.click(); }],
-    ['Design lab', 'lab', null]
-  ];
-  const ps = await b.newPage({ viewport: { width: 390, height: 900 }, hasTouch: true, isMobile: true });
-  await ps.goto('http://localhost:' + PORTA + '/index.html'); await ps.waitForTimeout(400);
-  await ps.evaluate(() => { localStorage.clear(); LM.seedDemo(); });
-  let totClip = 0;
-  const senza = new Set(), nonPoly = new Set(), spenti = new Set(), mangiati = new Set(), overf = new Set();
-  for (const [nome, vai, poi] of SCENE) {
-    await ps.evaluate(v => { location.hash = '#/' + v; }, vai);
-    await ps.reload(); await ps.waitForTimeout(vai === 'lab' ? 1600 : 800);
-    if (poi) { await ps.evaluate(poi); await ps.waitForTimeout(500); }
-    const r = await ps.evaluate(GUARDA);
-    totClip += r.conRitaglio;
-    r.senza.forEach(x => senza.add(nome + ' — ' + x));
-    r.nonPoligono.forEach(x => nonPoly.add(x));
-    r.anelloSpento.forEach(x => spenti.add(nome + ' — ' + x));
-    r.mangiati.forEach(x => mangiati.add(nome + ' — ' + x));
-    r.overflow.forEach(x => overf.add(x));
-    console.log('      ' + nome.padEnd(16) + String(r.conRitaglio).padStart(4) + ' ritagliati' +
-      (r.senza.length ? '   ' + r.senza.length + ' RIMASTI INDIETRO' : '') +
-      (r.anelloSpento.length ? '   ' + r.anelloSpento.length + ' SENZA BORDO' : ''));
-  }
-  ok('nessun angolo rimasto un rettangolo arrotondato', senza.size === 0,
-    [...senza].slice(0, 5).join(' | ') || 'nessuno');
-  ok('e ogni ritaglio è un poligono', nonPoly.size === 0, [...nonPoly].slice(0, 3).join(' | ') || 'sì');
-  ok('gli angoli ritagliati sono tanti', totClip > 300, totClip + ' elementi ritagliati');
-  ok('e OGNI elemento col bordo ha l’anello acceso', spenti.size === 0,
-    [...spenti].slice(0, 5).join(' | ') || 'nessuno spento');
-  ok('e il ritaglio non si mangia niente che sporge', mangiati.size === 0,
-    [...mangiati].slice(0, 5).join(' | ') || 'nessun figlio, nessuno pseudo-elemento');
-  ok('e nessun overflow si mangia l’anello del bordo', overf.size === 0,
-    [...overf].slice(0, 5).join(' | ') || 'nessuno');
-
-  /* ============ 5b. col mouse sopra il bordo non raddoppia ============ */
-  console.log('\nCOL MOUSE SOPRA, IL BORDO NON CAMBIA PESO');
-  /* `.btn` dichiara il raggio e il bordo, `.btn:hover` dichiara solo un altro
-     colore di bordo: quella variante non era nella lista di quelli da spegnere,
-     quindi al passaggio del mouse il bordo del box si riaccendeva SOPRA
-     l'anello — doppio sui fianchi, singolo sulla curva. Si vedeva come un
-     bordo che si illumina in modo diverso a metà. */
-  {
-    const p2 = await b.newPage({ viewport: { width: 1280, height: 900 } });
-    await p2.goto('http://localhost:' + PORTA + '/index.html'); await p2.waitForTimeout(400);
-    await p2.evaluate(() => { localStorage.clear(); LM.seedDemo(); });
-    await p2.reload(); await p2.waitForTimeout(900);
-    const casi = [];
-    for (const sel of ['.btn', '.card-hover', '.cattura-cta', 'input[type="text"]']) {
-      const c = await p2.evaluate((sel) => {
-        const e = [...document.querySelectorAll(sel)].find((x) => {
-          const r = x.getBoundingClientRect(), s = getComputedStyle(x);
-          return r.width > 30 && r.height > 20 && /^polygon\(/.test(s.clipPath || '');
-        });
-        if (!e) return null;
-        e.setAttribute('data-sq-hover', '1');
-        return { prima: getComputedStyle(e).borderTopColor };
-      }, sel);
-      if (!c) continue;
-      await p2.hover('[data-sq-hover="1"]').catch(() => {});
-      await p2.waitForTimeout(200);
-      const d = await p2.evaluate(() => {
-        const e = document.querySelector('[data-sq-hover="1"]');
-        const s = getComputedStyle(e);
-        e.removeAttribute('data-sq-hover');
-        return { dopo: s.borderTopColor, sqb: (s.getPropertyValue('--sq-b') || '').trim() };
-      });
-      casi.push({ sel, prima: c.prima, dopo: d.dopo, sqb: d.sqb });
-    }
-    const cattivi = casi.filter((x) => !/rgba\(0, 0, 0, 0\)|transparent/.test(x.dopo));
-    ok('il bordo del box resta spento anche col mouse sopra', casi.length >= 2 && cattivi.length === 0,
-      cattivi.length ? cattivi.map((x) => x.sel + ' → ' + x.dopo).join(' | ')
-        : casi.length + ' comandi provati, tutti col bordo dipinto solo dall’anello');
-    const cambia = casi.filter((x) => x.sqb && !/^(transparent|rgba\(0, 0, 0, 0\))$/.test(x.sqb));
-    ok('e l’anello prende il colore dello stato', cambia.length > 0,
-      cambia.length + ' su ' + casi.length + ' cambiano colore col mouse sopra');
-    await p2.close();
-  }
-
-  /* ============ 6. il bordo, sui pixel di un elemento vero ============ */
-  console.log('\nIL BORDO, SUI PIXEL');
-  {
-    /* si torna su «Oggi»: il giro delle schermate lascia la pagina sull'ultima
-       (il Design lab), dove gli elementi da misurare non ci sono */
-    await ps.evaluate(() => { location.hash = '#/oggi'; });
-    await ps.reload(); await ps.waitForTimeout(900);
-    const info = await ps.evaluate(() => {
-      let e = null;
-      for (const sel of ['.giornata-strip', '.card', '.imp-sezione', '.riga-inbox',
-        '.btn-mini', '.cattura-cta', '.rit-gruppo']) {
-        e = [...document.querySelectorAll(sel)].find((x) => {
-          const r = x.getBoundingClientRect(), s = getComputedStyle(x);
-          /* il colore del bordo NON si chiede più all'elemento: là è
-             trasparente di proposito, perché a dipingerlo è l'anello. Si
-             guarda `--sq-b`, che è dove il colore sta adesso. */
-          const q = getComputedStyle(x, '::before');
-          return r.width > 120 && r.height > 40 && /^polygon\(/.test(s.clipPath || '') &&
-            (parseFloat(s.borderTopWidth) || 0) > 0 &&
-            /^polygon\(/.test(q.clipPath || '') && !/-200px/.test(q.clipPath || '') &&
-            !/rgba\(0, 0, 0, 0\)|transparent/.test(q.backgroundColor);
-        });
-        if (e) break;
-      }
-      if (!e) return null;
-      e.id = 'sq-bordo';
-      const cp = getComputedStyle(e).clipPath;
-      const q = cp.match(/min\(([0-9.]+)px/);
-      return { cls: (e.className || '').toString(), dpr: window.devicePixelRatio || 1,
-        raggio: q ? +q[1] / 1.528665 : null };
-    });
-    if (!info || !info.raggio) ok('c’è un elemento col bordo da misurare', false, 'non trovato');
-    else {
-      const png = await ps.locator('#sq-bordo').screenshot();
-      const m = await ps.evaluate((a) => {
-        const [b64, R] = a;
-        return (async function () {
-          const img = new Image(); img.src = 'data:image/png;base64,' + b64; await img.decode();
-          const c = document.createElement('canvas'); c.width = img.width; c.height = img.height;
-          const x = c.getContext('2d', { willReadFrequently: true }); x.drawImage(img, 0, 0);
-          const d = x.getImageData(0, 0, c.width, c.height).data;
-          /* lo screenshot di un elemento è appiattito su bianco: l'alfa non
-             dice niente, si guarda la LUCE. Dal centro del quadrato
-             dell'angolo verso fuori, il primo pixel non chiaro è l'inizio del
-             bordo, e subito dopo ci deve essere il bordo pieno. */
-          const luce = (i, j) => { const k = (j * c.width + i) * 4; return (d[k] + d[k+1] + d[k+2]) / 3; };
-          const fondo = luce(Math.round(c.width / 2), Math.round(c.height / 2));
-          let conBordo = 0, tot = 0;
-          const scuri = [];
-          for (let g = 6; g <= 84; g += 4) {
-            const a2 = g * Math.PI / 180;
-            const dove = (t) => [Math.round(R - Math.cos(a2) * t), Math.round(R - Math.sin(a2) * t)];
-            let buio = 255;
-            for (let t = 0; t < R * 1.6; t += 0.5) {
-              const [i, j] = dove(t);
-              if (i < 0 || j < 0) break;
-              buio = Math.min(buio, luce(i, j));
-            }
-            tot++;
-            scuri.push(buio);
-            if (buio < fondo - 8) conBordo++;
-          }
-          /* E QUANTO È SCURO, direzione per direzione. È il difetto che si
-             vedeva a occhio — «bordo scuro e poi un taglio chiaro» — e ha due
-             cause, entrambe misurabili qui: il bordo del box dipinto INSIEME
-             all'anello (sui lati dritti veniva doppio, e i bordi di quest'app
-             sono traslucidi) e il contorno esterno dell'anello sfumato due
-             volte, dal proprio ritaglio e da quello del padre. Le direzioni
-             quasi parallele ai lati sono «il fianco», quelle in mezzo «la
-             curva». */
-          const meta2 = scuri.length >> 1;
-          const vicinoAiLati = Math.min(scuri[0], scuri[scuri.length - 1]);
-          const inMezzo = scuri[meta2];
-          return { conBordo, tot, fondo: Math.round(fondo),
-            fianco: Math.round(vicinoAiLati), curva: Math.round(inMezzo) };
-        })();
-      /* R è la LUNGHEZZA DELL'ANGOLO in pixel d'immagine, non il raggio e non un
-         suo multiplo a caso: i raggi partono dal punto (R,R) e con un R tre
-         volte troppo grande partivano da dentro la scheda, sul testo, e
-         misuravano quanto è scuro il testo invece del bordo. */
-      }, [png.toString('base64'), Math.round(info.raggio * A.INIZIO * info.dpr)]);
-      ok('«' + info.cls.split(' ')[0] + '»: il bordo c’è su tutta la curva',
-        m.tot > 15 && m.conBordo === m.tot,
-        m.conBordo + ' direzioni su ' + m.tot + ' hanno il bordo');
-      ok('ed è scuro uguale sul fianco e sulla curva',
-        Math.abs(m.fianco - m.curva) <= 12,
-        'fianco ' + m.fianco + ' · curva ' + m.curva + ' (su 255; fondo ' + m.fondo + ')');
-    }
   }
 
   /* ============ 7. le proporzioni: l'angolo non si stira ============ */
@@ -609,51 +319,185 @@ const CONTORNO = `(function (b64, R, dritto) {
       stretto.scarto <= 1, 'scostamento del lato ' + stretto.scarto.toFixed(2) + 'px');
   }
 
-  /* ============ 8. il blocco è generato, non scritto a mano ============ */
-  console.log('\nIL BLOCCO È GENERATO, NON SCRITTO A MANO');
+  /* ============ 8. la forma la fa forma.js, e la fa davvero ============ */
+  console.log('\nLA FORMA LA FA assets/forma.js, A RUNTIME');
+  /* Fino a ieri qui si rigenerava il blocco di CSS e lo si confrontava con
+     quello sul disco. Quel blocco non esiste più: la forma la disegna
+     `assets/forma.js` in pixel, sulla misura vera di ogni elemento, quindi
+     non c'è niente da rigenerare e niente da confrontare. Le cose da
+     pretendere sono altre tre, e la terza è quella che conta. */
   {
-    const prima = fs.readFileSync(path.join(RADICE, 'assets/app.css'), 'utf8');
-    const { execFileSync } = require('child_process');
-    execFileSync(process.execPath, [path.join(RADICE, 'segni/squircle.mjs')], { stdio: 'ignore' });
-    const dopo = fs.readFileSync(path.join(RADICE, 'assets/app.css'), 'utf8');
-    ok('rigenerandolo viene identico', prima === dopo, prima === dopo ? '' : 'lancia: node segni/squircle.mjs');
-    ok('e c’è la rete: se il motore non sa fare il ritaglio, resta il raggio',
-      /@supports \(clip-path: polygon\(min\(/.test(dopo), 'il blocco sta dentro un @supports');
-    const fuori = [...dopo.split('/* ==== SUPERCERCHI')[0]
-      .replace(/\/\*[\s\S]*?\*\//g, '').matchAll(/clip-path\s*:\s*([^;}]+)/g)]
-      .map((m) => m[1].trim()).filter((v) => v !== 'inset(50%)');
-    ok('e fuori dal blocco nessuno dà una forma col ritaglio', fuori.length === 0,
-      fuori.slice(0, 2).join(' | ') || 'solo il testo per i lettori di schermo');
+    const css = fs.readFileSync(path.join(RADICE, 'assets/app.css'), 'utf8');
+    ok('il blocco generato è sparito dal foglio di stile',
+      css.indexOf('==== SUPERCERCHI') < 0, 'trecentoquattordici kilobyte in meno');
+    /* nessuna regola scritta a mano deve dare una forma col ritaglio: se ce
+       n'è una, quell'elemento ha DUE forme, la sua e quella di forma.js, e
+       vince la più piccola. `inset(50%)` non è una forma: è il modo di
+       nascondere il testo che leggono i lettori di schermo. */
+    const fuori = [...css.replace(/\/\*[\s\S]*?\*\//g, '').matchAll(/clip-path\s*:\s*([^;}]+)/g)]
+      .map((m) => m[1].trim()).filter((v) => v !== 'inset(50%)' && v !== 'none');
+    ok('e nessuna regola scritta a mano dà una forma col ritaglio', fuori.length === 0,
+      fuori.slice(0, 3).join(' | ') || 'solo il testo per i lettori di schermo');
 
-    /* IL TEST DEVE PROVARE TUTTO QUELLO CHE IL BLOCCO USA.
-       Il `@supports` provava `min()` e `calc()` dentro un `polygon()`, ma per
-       un po' ogni tracciato ha cominciato con `evenodd` — che è un'altra
-       funzione, e che WebKit dentro `polygon()` non fa. Su un iPad il test
-       passava, il blocco entrava, e ogni `clip-path` finiva invalido: un
-       valore che arriva da una `var()` e non è valido non fa cadere la
-       regola, la porta a `unset`. Via il ritaglio dell'elemento, e via quello
-       dell'anello — che senza il suo ritaglio smette di essere un anello e
-       diventa un rettangolo PIENO del colore del bordo. La rete c'era e non
-       serviva a niente, perché non provava la cosa giusta.
-       Qui si raccolgono i pezzi di sintassi che i tracciati usano davvero e
-       si pretende che la condizione del `@supports` li nomini tutti. */
-    const corpo = dopo.split('/* ==== SUPERCERCHI')[1] || '';
-    const condizione = (corpo.match(/@supports \(([^{]+)\) \{/) || [, ''])[1];
-    const usati = new Set();
-    [...corpo.matchAll(/polygon\(([^;]*?)\);/g)].forEach((m) => {
-      const t = m[1];
-      usati.add('polygon(');
-      if (/\bmin\(/.test(t)) usati.add('min(');
-      if (/\bmax\(/.test(t)) usati.add('max(');
-      if (/\bclamp\(/.test(t)) usati.add('clamp(');
-      if (/\bcalc\(/.test(t)) usati.add('calc(');
-      /* il riempimento: sta subito dopo la parentesi del poligono */
-      const f = t.match(/^\s*(evenodd|nonzero)\b/);
-      if (f) usati.add(f[1]);
+    const html = fs.readFileSync(path.join(RADICE, 'index.html'), 'utf8');
+    const iForma = html.indexOf('assets/forma.js');
+    const iApp = html.indexOf('assets/app.js');
+    ok('forma.js è caricato, e prima di app.js', iForma > 0 && iForma < iApp,
+      'se arrivasse dopo, il primo disegno della pagina avrebbe gli angoli tondi normali');
+
+    /* le costanti non possono divergere da segni/apple.mjs: sono la stessa
+       curva scritta due volte, una per il browser e una per gli strumenti */
+    const js = fs.readFileSync(path.join(RADICE, 'assets/forma.js'), 'utf8');
+    ok('e le costanti dell’angolo sono quelle di segni/apple.mjs',
+      js.indexOf(String(A.INIZIO)) > 0 && js.indexOf('1.08849296') > 0 && js.indexOf('0.07491139') > 0,
+      'INIZIO = ' + A.INIZIO);
+  }
+
+  /* ============ 8b. e la curva che esce è quella, misurata sui pixel ====
+     Questa è la prova che l'utente ha chiesto guardando una fotografia
+     ingrandita: «non sono veri squircle di Apple». Aveva ragione, e non si
+     poteva rispondere se non misurando. Allora lo scarto era 5.123 px su un
+     raggio di 40 — cioè esattamente il `border-radius` normale, perché il
+     morso dell'angolo in alto a sinistra girava nello stesso verso del
+     rettangolone e non toglieva niente.
+     LA DISTANZA SI MISURA IN PERPENDICOLARE, non lungo una riga. Vicino al
+     vertice la curva è quasi parallela al lato: là un errore di un decimo di
+     pixel in verticale diventa un errore di un pixel intero in orizzontale, e
+     quello che si misura è la pendenza invece della forma. È così che lo
+     stesso angolo, già a posto, sembrava sbagliato di 0.861 px.
+     Si guarda un elemento VERO dell'app, disegnato da forma.js in pagina, non
+     una forma di prova: quello che si misura è quello che si vede. */
+  console.log('\nE LA CURVA CHE ESCE È QUELLA DI APPLE, MISURATA SUI PIXEL');
+  {
+    const R = 40;
+    const p2 = await b.newPage({ viewport: { width: 420, height: 560 }, deviceScaleFactor: DPR });
+    await p2.goto('http://localhost:' + PORTA + '/index.html');
+    await p2.waitForTimeout(400);
+    await p2.evaluate((r) => {
+      /* un elemento come tutti gli altri: un bordo, un raggio, e forma.js che
+         se ne accorge da solo */
+      /* IL RIQUADRO DA FOTOGRAFARE È PIÙ GRANDE DELLA FORMA.
+         Fotografando l'elemento e basta, lo scatto comincia esattamente sul
+         suo bordo: per trovare dove passa il contorno bisogna partire da
+         FUORI, dal bianco, e fuori non c'è. Il primo giro dava zero su tutti
+         e quattro gli angoli — cioè «nessuno scarto», che è il modo più
+         subdolo che una misura ha di essere rotta: sembra un risultato
+         perfetto. Quaranta pixel di bianco attorno bastano. */
+      document.body.innerHTML = '<div id="foglio" style="padding:40px;background:#fff;width:280px">' +
+        '<div id="q" style="width:200px;height:200px;background:#000;border-radius:' + r + 'px"></div></div>';
+      document.documentElement.style.background = '#fff';
+    }, R);
+    await p2.waitForTimeout(400);
+    const haForma = await p2.evaluate(() => {
+      const s = getComputedStyle(document.getElementById('q')).clipPath || '';
+      return /^path\(/.test(s) && s.indexOf('-200') >= 0;
     });
-    const scoperti = [...usati].filter((x) => condizione.indexOf(x) < 0);
-    ok('e la rete prova TUTTO quello che i tracciati usano', scoperti.length === 0,
-      scoperti.length ? 'mai provati: ' + scoperti.join(', ') : [...usati].join(' '));
+    ok('l’elemento di prova ha preso la forma da forma.js', haForma,
+      haForma ? '' : 'senza il ritaglio la misura qui sotto non vuol dire niente');
+    const png = await p2.locator('#foglio').screenshot();
+    /* IL CONFRONTO, dentro la pagina: si campiona la curva analitica fitta e
+       per ogni punto del bordo trovato si prende la distanza al punto più
+       vicino della curva. */
+    const SCARTO = `(function (b64, R, S) {
+      return (async function () {
+        const img = new Image(); img.src = 'data:image/png;base64,' + b64; await img.decode();
+        const c = document.createElement('canvas'); c.width = img.width; c.height = img.height;
+        const x = c.getContext('2d', { willReadFrequently: true }); x.drawImage(img, 0, 0);
+        const d = x.getImageData(0, 0, c.width, c.height).data;
+        /* il riquadro della forma dentro lo scatto: quaranta pixel di
+           margine da ogni lato, il padding del foglio */
+        const M = 40, W = 200, H = 200;
+        const val = function (i, j) { const k = ((j | 0) * c.width + (i | 0)) * 4; return (d[k] + d[k+1] + d[k+2]) / 3; };
+        const INIZIO = 1.528665;
+        const CURVE = [{ c1: [1.08849296, 0], c2: [0.86840694, 0], p: [0.63149379, 0.07491139] },
+          { c1: [0.37282383, 0.16905956], c2: [0.16905956, 0.37282383], p: [0.07491139, 0.63149379] },
+          { c1: [0, 0.86840694], c2: [0, 1.08849296], p: [0, 1.528665] }];
+        const bez = function (p0, c1, c2, p3, t) { const u = 1 - t, a = u*u*u, b = 3*u*u*t, cc = 3*u*t*t, dd = t*t*t;
+          return [a*p0[0]+b*c1[0]+cc*c2[0]+dd*p3[0], a*p0[1]+b*c1[1]+cc*c2[1]+dd*p3[1]]; };
+        const pt = []; let p0 = [INIZIO, 0];
+        for (const q of CURVE) { for (let i = 0; i <= 3000; i++) { const v = bez(p0, q.c1, q.c2, q.p, i/3000); pt.push([v[0]*R, v[1]*R]); } p0 = q.p; }
+        const dist = function (px, py) { let m = 1e9;
+          for (let i = 0; i < pt.length; i++) { const a = pt[i][0]-px, b = pt[i][1]-py; const v = a*a+b*b; if (v < m) m = v; }
+          return Math.sqrt(m); };
+        /* il bordo lungo una riga, a mezzo pixel: si cerca il passaggio da
+           chiaro a scuro e si interpola */
+        const bordo = function (jy, da, a, passo) {
+          let prima = val(da, jy);
+          for (let i = da + passo; passo > 0 ? i < a : i > a; i += passo) {
+            const v = val(i, jy);
+            if (prima >= 128 && v < 128) { const t = (prima - 128) / (prima - v); return (i - passo + passo * t) / S; }
+            prima = v;
+          }
+          return null;
+        };
+        const L = INIZIO * R + 4;
+        const ANG = { tl: [M, M, 1, 1], tr: [M + W, M, -1, 1], br: [M + W, M + H, -1, -1], bl: [M, M + H, 1, -1] };
+        const out = {};
+        let peggio = 0, attacco = 0;
+        for (const k in ANG) {
+          const A2 = ANG[k]; let p = 0;
+          for (let t = 0.6; t < INIZIO * R + 8; t += 0.25) {
+            const jy = Math.round((A2[1] + A2[3] * t) * S);
+            if (jy < 1 || jy > c.height - 2) continue;
+            const da = Math.round((A2[0] - A2[2] * 12) * S), fin = Math.round((A2[0] + A2[2] * L) * S);
+            const xx = bordo(jy, da, fin, A2[2]);
+            if (xx === null) continue;
+            const rientro = Math.abs(xx - A2[0]);
+            /* DOVE L'ANGOLO SI ATTACCA AL LATO DRITTO. E' la misura che
+               separa le due forme senza ambiguita': l'arco di cerchio finisce
+               a un raggio dal vertice, quello di Apple a 1.528665 raggi. In
+               perpendicolare invece le due curve si somigliano parecchio —
+               meno di un pixel su un raggio di quaranta — quindi la sola
+               distanza non basterebbe a dire che forma e'. */
+            if (rientro > 0.15 && t > attacco) attacco = t;
+            if (t > INIZIO * R) continue;
+            const dd2 = dist(t, rientro);
+            if (dd2 > p) p = dd2;
+          }
+          out[k] = +p.toFixed(3);
+          if (p > peggio) peggio = p;
+        }
+        out.peggio = +peggio.toFixed(3);
+        out.attacco = +attacco.toFixed(2);
+        return out;
+      })();
+    })`;
+    const m = await p2.evaluate(SCARTO + '(' + JSON.stringify(png.toString('base64')) + ',' + R + ',' + DPR + ')');
+    ok('ogni angolo sta a meno di un quarto di pixel dalla curva di Apple', m.peggio < 0.25,
+      'tl ' + m.tl + ' · tr ' + m.tr + ' · br ' + m.br + ' · bl ' + m.bl +
+      ' → peggio ' + m.peggio + 'px su un raggio di ' + R);
+    /* LA RETE: un `border-radius` puro, cioè un arco di cerchio, deve
+       FALLIRE questa misura di brutto. Se passasse, vorrebbe dire che la
+       misura non distingue le due forme e non prova niente — ed è
+       esattamente lo stato in cui la forma è stata per un giorno intero
+       senza che nessuno se ne accorgesse.
+       Il riferimento si disegna in una pagina VUOTA, senza forma.js dentro:
+       spegnere il ritaglio sull'elemento dell'app non serve a niente, perché
+       alla passata dopo forma.js glielo rimette — e la rete misurerebbe di
+       nuovo il supercerchio, dicendo che va tutto bene. */
+    await p1.setContent('<body style="margin:0;background:#fff">' +
+      '<div id="foglio" style="padding:40px;background:#fff;width:280px">' +
+      '<div style="width:200px;height:200px;background:#000;border-radius:' + R + 'px"></div></div></body>');
+    await p1.waitForTimeout(80);
+    const png2 = await p1.locator('#foglio').screenshot();
+    const m2 = await p1.evaluate(SCARTO + '(' + JSON.stringify(png2.toString('base64')) + ',' + R + ',' + DPR + ')');
+    /* DOVE L'ANGOLO SI ATTACCA AL LATO. È la misura che separa le due forme
+       senza ambiguità: in perpendicolare si somigliano — meno di un pixel su
+       un raggio di quaranta, come dice il numero qui sotto — e una prova che
+       guardasse solo quella si farebbe ingannare da un `border-radius` puro.
+       L'arco finisce a un raggio dal vertice, quello di Apple a 1.528665.
+       Il confronto è FRA LE DUE MISURE, non con il numero teorico: la curva
+       di Apple si appiattisce così dolcemente che l'ultimo tratto rientra di
+       meno di un sesto di pixel, cioè meno di quanto uno scatto a sei volte
+       la risoluzione possa distinguere, e il valore assoluto esce sempre un
+       po' corto (48 invece di 61). La DIFFERENZA fra le due, misurata allo
+       stesso modo, resta netta. */
+    ok('e la misura sa distinguere un arco di cerchio (se no non prova niente)',
+      m2.peggio < 1.2 && m.attacco > m2.attacco + 8,
+      'in perpendicolare l’arco dista solo ' + m2.peggio + 'px — troppo poco per distinguerlo; ' +
+      'ma si attacca al lato a ' + m2.attacco + 'px mentre la nostra forma a ' + m.attacco +
+      'px (' + (m.attacco - m2.attacco).toFixed(1) + 'px di differenza)');
+    await p2.close();
   }
 
   /* ============ 9. l'icona dell'app ============ */

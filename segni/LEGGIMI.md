@@ -76,18 +76,23 @@ che non c'entra con i segni ma vive di formule come loro.
   di Apple in unità di raggio, la spezzata che le approssima (si infittisce da
   sé finché lo scarto dalla curva vera sta sotto la tolleranza), il contorno
   rientrato per il bordo, e il tracciato SVG per il logo e le icone.
-- **`squircle.mjs`** — riscrive il blocco alla fine di `assets/app.css`: legge
-  chi ha un angolo, raggruppa per raggio e spessore di bordo, azzera il
-  `border-radius` e mette la curva nel `clip-path`. Si rilancia con
-  `node segni/squircle.mjs` ogni volta che si cambia un raggio o si aggiunge un
-  elemento con l'angolo tondo.
-- **`misure.mjs`** — apre l'app e misura le due cose che dal foglio di stile non
-  si vedono: quanto è grande ogni elemento (il raggio non può superare un terzo
-  del lato corto) e se un selettore di bordo colpisce un elemento che ha anche
-  l'angolo. Scrive `misure.json`. Va lanciato PRIMA di `squircle.mjs`, e
-  rilanciato quando si cambia l'altezza di qualcosa.
-- **`scene.json`** — le cinquantuno schermate, pannelli e stati su cui girano
-  `misure.mjs`, `prove/bordi.js` e `prove/stati.js`: le pagine, i pannelli delle
+  Serve al logo, alle icone e alle prove: nell'app la stessa geometria vive in
+  `assets/forma.js`, scritta una seconda volta perché quella deve girare nel
+  browser senza moduli. Le costanti sono le stesse e `prove/squircle.js`
+  controlla che non divergano.
+- ~~`squircle.mjs`~~ e ~~`misure.mjs`~~ **sono in pensione**, e con loro
+  `misure.json`. Generavano trecentoquattordici kilobyte di `clip-path:
+  polygon(...)` in fondo ad `app.css` e la tabella delle altezze che serviva a
+  tagliare i raggi in anticipo — perché in un poligono le percentuali si
+  risolvono per asse, quindi non si può dire «metà del lato corto» senza aver
+  misurato l'app con un browser. **Adesso la forma la disegna
+  `assets/forma.js` a runtime**, in pixel, sulla misura vera di ogni elemento:
+  il limite si applica sul posto, non serve nessuna tabella, non c'è niente da
+  rigenerare, e i selettori mai apparsi in una scena non restano più indietro.
+  Non si tocca più niente qui quando si cambia un raggio: si cambia il
+  `border-radius` nel foglio di stile e basta.
+- **`scene.json`** — le cinquantadue schermate, pannelli e stati su cui girano
+  `prove/bordi.js` e `prove/stati.js`: le pagine, i pannelli delle
   impostazioni, la *Giornata* nei suoi quattro orizzonti, le due sezioni di
   *Scoperte*, la review della sera, la barra della ricerca, un avviso di
   conferma, il menu «Altro», il timer avviato, il toast con l'annulla, e le
@@ -103,8 +108,9 @@ che non c'entra con i segni ma vive di formule come loro.
 - **`icone.mjs`** — rifà l'icona dell'app, il logo dentro `icons.js` e tutte le
   PNG. `node segni/icone.mjs`.
 
-L'ordine è: `node segni/misure.mjs` → `node segni/squircle.mjs` →
-`node prove/bordi.js` e `node prove/squircle.js`.
+Non c'è più nessun ordine da rispettare: `node prove/bordi.js` e
+`node prove/squircle.js` si lanciano quando si vuole, e non c'è niente da
+rigenerare prima.
 
 ### Che cos'è, esattamente
 
@@ -157,14 +163,16 @@ numeri dentro invece si tengono in un posto solo.
 
 **Anche le pastiglie hanno l'angolo continuo, e per averlo si MISURANO.**
 `border-radius: 99px` vuol dire «tondo quanto basta» e il browser lo taglia da
-sé a metà del lato corto. Un `clip-path` no: in un poligono le percentuali si
-risolvono per asse, quindi non si può dire «metà del lato CORTO», e su una
-pastiglia da 300×54 il ritaglio darebbe una foglia con la punta da 151px invece
-di un angolo da 27. L'unico modo di dare anche a loro la curva è sapere quanto
-sono alte, e l'unico modo onesto di saperlo è aprire l'app e misurarle:
-`node segni/misure.mjs` gira le cinquantuno scene di `segni/scene.json` su tre
-combinazioni di larghezza e tema e scrive `segni/misure.json` col lato corto più
-piccolo che ogni selettore assume. Il raggio è quel lato diviso 3.057 —
+sé a metà del lato corto. Un poligono no: là dentro le percentuali si risolvono
+per asse, quindi non si può dire «metà del lato CORTO», e su una pastiglia da
+300×54 il ritaglio dava una foglia con la punta da 151px invece di un angolo da
+27. Per un anno l'unico modo di dare anche a loro la curva è stato misurare
+l'app con un browser e tenersi una tabella delle altezze.
+Adesso `assets/forma.js` la misura ce l'ha in mano — `offsetWidth` e
+`offsetHeight` di quell'elemento in quel momento — e il limite lo applica sul
+posto: niente tabella, niente selettori dimenticati, e le pastiglie che
+compaiono solo in uno stato raro hanno la curva come tutte le altre. Il raggio
+è il lato corto diviso 3.057 —
 l'angolo si mangia esattamente mezzo lato, cioè lo stesso caso limite
 dell'icona di iOS, una pastiglia con le estremità a supercerchio invece che a
 semicerchio.

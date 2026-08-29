@@ -264,9 +264,126 @@
       .map(function (k) { return parseFloat(s[k]) || 0; });
   }
 
-  function applica(e) {
+  /* ---------------------------------------------------------------
+     UNA PASSATA È IN TRE TEMPI, E NON SI MESCOLANO MAI.
+     Prima erano uno solo: per ogni elemento si leggeva (`offsetWidth`, lo
+     stile calcolato) e subito dopo si scriveva (il ritaglio, il raggio, il
+     filo). Scrivere invalida i conti del browser, quindi la lettura
+     dell'elemento DOPO li rifà da capo: con quattrocento elementi si
+     chiedono quattrocento ricalcoli invece di uno. È il difetto più vecchio
+     del mestiere — si chiama layout thrashing — e non si vede su un computer,
+     dove un ricalcolo costa un decimo di millisecondo. Si vede su un telefono
+     Android di fascia media, dove costa dieci volte tanto e la passata intera
+     supera il decimo di secondo: il filo principale resta occupato, il
+     compositore continua a mostrare le piastrelle vecchie, e la pagina si
+     disegna a fasce — un pezzo aggiornato e un pezzo di due schermate fa.
+     Le foto dell'utente su Android erano esattamente quelle fasce.
+     Adesso una passata è in quattro tempi, e i tempi non si mescolano mai:
+       1. si guarda A CHI va azzerato quello che avevamo scritto (solo letture);
+       2. si azzera (solo scritture);
+       3. si legge tutto e si prepara il piano (un ricalcolo solo);
+       4. si scrive tutto (nessuno legge più, quindi il browser rimanda i conti
+          alla fine, una volta).
+     Da N ricalcoli a due. */
+
+  /* TEMPO 1 — via quello che abbiamo scritto noi, così la lettura vede il
+     foglio di stile.
+     Serve solo a chi non ha ancora la sua roba da parte: capita una volta per
+     elemento, e ogni volta che gli cambia la faccia (una classe). Nessuna di
+     queste proprietà sposta niente, quindi azzerarle non costa un ricalcolo:
+     è per questo che possono stare tutte insieme, prima delle letture. */
+  /* LA POSIZIONE SI LEGGE E SI SCRIVE SUI DUE ASSI, non con la scorciatoia.
+     `background-position: right 6px center` — la forma a tre valori, quella
+     che serve a staccare la freccina dal bordo destro — Chrome la CALCOLA
+     come `right 6px 50%`, e quella stringa Chrome stesso la rifiuta se gliela
+     si riscrive: mescola una coppia parola-più-scarto con una percentuale
+     nuda, e la grammatica non lo prevede. Misurato: riscriverla dà
+     «rifiutata», e l'elemento resta con la posizione di prima — cioè quella
+     di una sola corsia su due immagini.
+     I due assi separati invece tornano `calc(100% - 6px)` e `50%`, che si
+     rimettono a posto tali e quali. */
+  var SFONDI = ['backgroundImage', 'backgroundRepeat', 'backgroundSize',
+                'backgroundPositionX', 'backgroundPositionY',
+                'backgroundOrigin', 'backgroundClip'];
+  /* DECIDERE E CANCELLARE SONO DUE COSE, E STANNO IN DUE TEMPI DIVERSI.
+     Cancellare quello che abbiamo scritto serve solo a chi poi lo RIscriverà.
+     Quando le due cose stavano insieme c'era un buco: si cancellava, e poi il
+     tempo 2 se ne andava senza un piano perché in quel momento l'elemento non
+     si poteva misurare — nascosto, alto zero pixel, dentro un pannello che si
+     sta aprendo. Restava col raggio del foglio di stile addosso e il ritaglio
+     VECCHIO ancora attaccato.
+     Il primo rimedio è stato spegnerlo del tutto, e si è rivelato una porta a
+     senso unico: la forma spariva e non tornava più, perché per tornare
+     serviva che qualcosa si muovesse, e non si muoveva niente. Aprendo un
+     avviso, tutta la schermata dietro perdeva gli angoli e restava così.
+     La cura giusta è non cancellare a chi non si può misurare. Chi decide
+     LEGGE soltanto, e sta prima di ogni scrittura; chi cancella SCRIVE
+     soltanto, e sta dopo che tutti hanno deciso. Un ricalcolo in più per
+     passata, non uno per elemento. */
+  function daAzzerare(e) {
+    if (inMano(e)) return false;
+    if (e.dataset.formaRaggi !== undefined && e.dataset.formaBordo !== undefined) return false;
+    /* SI CANCELLA SOLO QUELLO CHE ABBIAMO SCRITTO NOI.
+       Queste proprietà in linea non sono per forza nostre: possono esserci
+       state messe da chi ha scritto la pagina — uno `style` con dentro un
+       angolo è un modo legittimo di chiederlo. Azzerandole alla cieca gliele
+       si porta via, e l'elemento resta senza: nel foglio di stile non c'è
+       niente, quindi il raggio riletto è zero, quindi non gli si fa nessuna
+       forma. Da fuori: un elemento che chiede un angolo e non ce l'ha, per
+       sempre. L'ha trovata prove/squircle.js, che per misurare la curva si
+       costruisce un elemento con il raggio scritto in linea.
+       Il segno `formaScritto` non si butta mai via, nemmeno quando si buttano
+       i valori tenuti da parte: quelli si rileggono, questo no. */
+    if (e.dataset.formaScritto === undefined) return false;
+    /* e solo a chi in questo momento si può misurare, cioè a chi il tempo 2
+       saprà riscrivere */
     var s = getComputedStyle(e);
-    if (s.display === 'none' || s.visibility === 'hidden') return;
+    if (s.display === 'none' || s.visibility === 'hidden') return false;
+    return e.offsetWidth > 2 && e.offsetHeight > 2;
+  }
+  function azzeraOra(e) {
+    e.style.borderRadius = '';
+    e.style.borderColor = '';
+    for (var i = 0; i < SFONDI.length; i++) e.style[SFONDI[i]] = '';
+    delete e.dataset.forma;          /* la firma di prima non vale più */
+  }
+
+  /* CHI STA PARLANDO COL SISTEMA NON SI TOCCA.
+     Un `<input type="time">`, un `<input type="date">` e un `<select>` non
+     sono riquadri: sono una porta sull'orologio e sulla lista del sistema
+     operativo. Su Android quella porta si richiude se l'elemento che l'ha
+     aperta viene rimaneggiato mentre è aperta — e qui dentro un elemento col
+     bordo si rimaneggia parecchio: colore spento, sei proprietà di sfondo,
+     il ritaglio. Bastava una passata qualunque (ne parte una a ogni
+     ridisegno) per far comparire e sparire l'orologio nello stesso istante.
+     Il fuoco dice esattamente questo: «adesso questo elemento è in mano al
+     sistema». Si lascia stare finché ce l'ha, e lo si rifà quando lo perde —
+     `focusout` sale, quindi ne basta uno per tutta la pagina.
+     Non è un caso particolare del campo dell'ora: vale per ogni campo, e
+     toglie di mezzo tutta la specie. */
+  function inMano(e) {
+    /* «Già vestito» è parte della condizione. Un campo che il fuoco ce l'ha
+       dal primo istante — quello della cattura rapida, che si apre col
+       cursore già dentro — non ha ancora nessuna forma: saltarlo vuol dire
+       lasciarlo senza per tutto il tempo in cui uno ci scrive, e la
+       schermata più usata dell'app aveva il suo campo principale con
+       l'angolo tondo normale mentre tutto il resto era a supercerchio.
+       E un campo che non ha ancora una forma non può avere un orologio
+       aperto: l'orologio si apre toccandolo, e per essere toccato doveva già
+       essere lì disegnato. Il rischio esiste solo per chi è già a posto. */
+    return e.dataset.forma !== undefined &&
+      e === document.activeElement &&
+      (e.tagName === 'INPUT' || e.tagName === 'SELECT' || e.tagName === 'TEXTAREA');
+  }
+
+  /* TEMPO 2 — leggere, e basta. Torna il piano di cosa scrivere, o null. */
+  /* CHI NON SI PUÒ MISURARE SI LASCIA COM'È, e non gli si è cancellato
+     niente (vedi `daAzzerare`): la forma che ha addosso resta valida finché
+     non cambia misura, e quando cambia lo risveglia l'osservatore. */
+  function leggi(e) {
+    var s = getComputedStyle(e);
+    if (s.display === 'none' || s.visibility === 'hidden') return null;
+    if (inMano(e)) return null;
     /* LA MISURA SI CHIEDE AL LAYOUT, NON ALLO SCHERMO.
        `getBoundingClientRect()` restituisce il riquadro DIPINTO, cioè con
        dentro le trasformazioni: se un elemento viene misurato mentre la sua
@@ -277,42 +394,24 @@
        filo di fondo che sporgeva dall'angolo di qualche tasto, sempre di
        schermate diverse.
        `offsetWidth` invece è la misura di layout, e le trasformazioni non la
-       toccano. È un intero: mezzo pixel di scarto sposta la curva di un
-       quarto di pixel e allunga il filo dello 0.2 per cento. */
+       toccano. */
     var w = e.offsetWidth, h = e.offsetHeight;
     if (!(w > 2) || !(h > 2)) {
       /* NON HA ANCORA UNA MISURA, MA CE L'AVRÀ. Se ce ne andiamo e basta,
          quando crescerà non se ne accorgerà nessuno: l'osservatore delle
          misure lo attacchiamo in fondo, e in fondo non ci si arriva mai.
          Succedeva al telaio del Design lab, che nasce chiuso e poi si apre.
-         Ci si mette in ascolto solo se ha un angolo da fare: mettersi in
-         ascolto su tutto quello che in questo momento è alto zero pixel vuol
-         dire ascoltare mezza pagina. */
-      if ((parseFloat(s.borderTopLeftRadius) || 0) > 0.4) osserva(e);
-      return;
+         Ci si mette in ascolto solo se ha un angolo da fare. */
+      if ((parseFloat(s.borderTopLeftRadius) || 0) > 0.4) daOsservare.push(e);
+      return null;
     }
-    /* IL RAGGIO SI LEGGE SEMPRE DAL FOGLIO DI STILE, MAI DA QUELLO CHE
-       ABBIAMO SCRITTO NOI.
-       Poco più sotto il raggio lo riscriviamo al 99% (serve all'ombra, vedi
-       là). Se alla passata dopo si rileggesse quel valore, il 99% si
-       applicherebbe al 99% del 99%, e ogni giro l'angolo si smusserebbe di un
-       altro punto percentuale. Non è teoria: la barra in basso, che è l'unico
-       elemento che non viene mai ricreato, dichiarava un raggio da 18 pixel e
-       ne disegnava 5.8 — centododici riduzioni una sull'altra. E siccome ogni
-       elemento ne subiva un numero diverso a seconda di quanto a lungo era
-       vissuto, l'app finiva con forme diverse in punti diversi: era questo, e
-       non la curva, a farle sembrare di famiglie diverse.
-       La cura non è ricordarsi il valore in un attributo — un attributo si può
-       perdere, e infatti si perdeva a ogni cambio di tema. È azzerare quello
-       che abbiamo scritto noi e chiedere di nuovo al foglio di stile: quello
-       non cambia mai, e il conto riparte sempre dallo stesso numero. */
     /* ─────────────────────────────────────────────────────────────
        LEGGERE L'ORIGINALE, MAI QUELLO CHE ABBIAMO SCRITTO NOI.
        Qui dentro si scrivono tre cose sull'elemento: il raggio (ridotto al
        99%, serve all'ombra), il colore del bordo (spento, perché lo ridisegna
-       il filo) e l'immagine di sfondo (il filo). Tutte e tre, rilette alla
-       passata dopo, darebbero il valore NOSTRO e non quello del foglio di
-       stile — e da lì nascono due guasti che si sono visti tutti e due:
+       il filo) e lo sfondo (il filo, davanti a quello che c'era). Tutte e
+       tre, rilette alla passata dopo, darebbero il valore NOSTRO e non quello
+       del foglio di stile — e da lì nascono i guasti che si sono visti:
          · il raggio si riduceva del 99% del 99% del 99%… La barra in basso,
            che è l'unico elemento che non viene mai ricreato, dichiarava 18
            pixel e ne disegnava 5.8: centododici giri. E siccome ogni elemento
@@ -321,46 +420,80 @@
            sembrare di famiglie diverse, non la curva;
          · il colore del bordo, riletto dopo averlo spento, torna
            «trasparente»: il filo non veniva più ridisegnato e restava quello
-           vecchio, disegnato su una misura di prima. Nella barra in basso si
-           vedeva come una seconda cornice, più piccola, in mezzo alle icone.
-       Quindi: si legge una volta sola e si tiene da parte; e se quello che
-       avevamo tenuto da parte non c'è più, prima di rileggere si AZZERA tutto
-       quello che avevamo scritto. Costa un ricalcolo, e capita una volta per
-       elemento. */
+           vecchio, disegnato su una misura di prima.
+       Quindi si legge una volta sola e si tiene da parte; e se quello che
+       avevamo tenuto da parte non c'è più, prima di leggere si azzera (tempo
+       1). Costa un ricalcolo, e capita una volta per elemento. */
     var raggi, col, sotto;
     if (e.dataset.formaRaggi === undefined || e.dataset.formaBordo === undefined) {
-      e.style.borderRadius = '';
-      e.style.borderColor = '';
-      e.style.backgroundImage = '';
-      s = getComputedStyle(e);
       raggi = raggiDi(s);
       var spBase = parseFloat(s.borderTopWidth) || 0;
       col = (spBase > 0 && !vuoto(s.borderTopColor)) ? s.borderTopColor : '';
-      sotto = s.backgroundImage === 'none' ? '' : s.backgroundImage;
+      /* LO SFONDO DI SOTTO SI PORTA DIETRO TUTTE LE SUE REGOLE, non solo
+         l'immagine.
+         Il filo si mette DAVANTI a quello che c'era, e un elenco di sfondi in
+         CSS è a più corsie: `background-repeat`, `-size`, `-position`,
+         `-origin` e `-clip` sono elenchi anche loro, letti in parallelo alle
+         immagini. Mettendo davanti un'immagine e lasciando quegli elenchi
+         come stavano, ogni regola scala di un posto e finisce addosso
+         all'immagine sbagliata.
+         Si è visto sul selettore dell'area nel Diario: la sua freccina è
+         un'immagine di sfondo con `no-repeat`, `12px` e «a destra, sei pixel
+         dal bordo». Il filo le ha rubato quelle tre regole e a lei è toccato
+         quello che restava — ripetuta, a grandezza naturale — e nel riquadro
+         del menù comparivano cinque o sei spuntoni grigi sopra il nome
+         dell'area. Da fuori sembrava un carattere rotto.
+         Adesso le si tengono tutte e cinque, per intero, e davanti gli si
+         mette il valore del filo. */
+      sotto = s.backgroundImage === 'none' ? '' : SFONDI.map(function (k) { return s[k]; }).join('§');
       e.dataset.formaRaggi = raggi.join(',');
       e.dataset.formaBordo = col;
       e.dataset.formaSfondo = sotto;
-      delete e.dataset.forma;          /* la firma di prima non vale più */
     } else {
       raggi = e.dataset.formaRaggi.split(',').map(Number);
       col = e.dataset.formaBordo;
       sotto = e.dataset.formaSfondo || '';
     }
     var max = Math.max.apply(null, raggi);
-    if (max <= 0.4) { spegni(e); return; }
-    if (eTondo(max, w, h)) { spegni(e); return; }
+    if (max <= 0.4) return { e: e, via: 1 };
+    if (eTondo(max, w, h)) return { e: e, via: 1 };
 
     var ang = {
       tl: limita(raggi[0], w, h), tr: limita(raggi[1], w, h),
       br: limita(raggi[2], w, h), bl: limita(raggi[3], w, h)
     };
     var sp = parseFloat(s.borderTopWidth) || 0;
-
     var firma = w + 'x' + h + '|' + ang.tl + ',' + ang.tr + ',' + ang.br + ',' + ang.bl + '|' + sp + '|' + col;
-    if (e.dataset.forma === firma) return;
-    e.dataset.forma = firma;
+    if (e.dataset.forma === firma) return null;
+    return { e: e, w: w, h: h, ang: ang, sp: sp, col: col, sotto: sotto, firma: firma };
+  }
 
-    e.style.clipPath = 'path("' + ritaglio(w, h, ang) + '")';
+  /* TEMPO 3 — scrivere, e basta. Niente qui dentro legge l'impaginazione. */
+  function scrivi(p) {
+    var e = p.e;
+    if (p.via) { spegni(e); return; }
+    e.dataset.forma = p.firma;
+    e.dataset.formaScritto = '1';
+    /* SENZA SFUMARE, e non solo chi ha un bordo.
+       Questo pezzo stava più in basso, dentro il ramo di chi ha una cornice,
+       perché il difetto che l'ha fatto scrivere era il bordo doppio: spegnendo
+       il colore del bordo, quello non sparisce — ci mette un decimo di secondo
+       a sfumare, e in quel decimo di secondo il filo nuovo e il bordo vecchio
+       si vedono tutti e due.
+       Ma il RAGGIO lo riscriviamo a tutti, e `transition: all` non è raro (la
+       spunta di un'azione ce l'ha): il raggio si mette ad animare da 8 a 7.92,
+       e per un decimo di secondo l'ombra dell'elemento gira su un raggio che
+       non è né quello di prima né quello di dopo. È microscopico a occhio, ma
+       la prova dei bordi lo pescava a metà strada e diceva «raggio ristretto»
+       su un elemento diverso a ogni giro: sembrava un capriccio della prova,
+       ed era un'animazione vera che non doveva esserci.
+       Le transizioni si spengono con un attributo che noi non osserviamo (se
+       fosse una classe, l'osservatore degli attributi si risveglierebbe e il
+       giro non finirebbe), e si riaccendono in fondo alla passata, dopo un
+       ricalcolo solo. */
+    e.dataset.formaSecca = '1';
+    secchi.push(e);
+    e.style.clipPath = 'path("' + ritaglio(p.w, p.h, p.ang) + '")';
     /* IL `border-radius` RESTA, AL 99 PER CENTO. Non serve più a dare la
        forma — quella la fa il ritaglio — ma serve ancora all'OMBRA e al
        contorno del fuoco, che seguono lui e che un raggio a zero renderebbe
@@ -370,40 +503,30 @@
        della curva di Apple vince l'arco, e in quella fascia la forma torna
        ad avere lo scalino di curvatura che tutta questa storia esiste per
        togliere. Misurato: a raggio pieno l'arco entra dentro la curva per
-       0.1125 px; al 99% non entra mai più, in nessun punto. */
-    /* si scrive il raggio EFFETTIVO, non quello dichiarato: una pastiglia
+       0.1125 px; al 99% non entra mai più, in nessun punto.
+       Si scrive il raggio EFFETTIVO, non quello dichiarato: una pastiglia
        dichiara 999px, e lasciandoglielo l'ombra le girerebbe intorno a
-       semicerchio mentre la forma è un supercerchio — l'ombra sporgerebbe
-       dalle estremità. */
-    var giu = [ang.tl, ang.tr, ang.br, ang.bl].map(function (x) { return (x * 0.99).toFixed(2) + 'px'; });
-    e.style.borderRadius = giu[0] + ' ' + giu[1] + ' ' + giu[2] + ' ' + giu[3];
-    if (col) {
+       semicerchio mentre la forma è un supercerchio. */
+    var a = p.ang;
+    e.style.borderRadius = (a.tl * 0.99).toFixed(2) + 'px ' + (a.tr * 0.99).toFixed(2) + 'px ' +
+      (a.br * 0.99).toFixed(2) + 'px ' + (a.bl * 0.99).toFixed(2) + 'px';
+    if (p.col) {
       /* Il bordo del box si spegne QUI, sullo stesso elemento e nello stesso
          momento in cui compare il filo: non c'è nessun istante in cui uno dei
          due manca o ci sono tutti e due. Lo spessore resta, perché è misura:
          toglierlo sposterebbe il contenuto di due pixel. */
-      /* SENZA SFUMARE. Quasi tutti questi elementi hanno una transizione sul
-         colore del bordo (`.btn`, `.card`, i tasti degli stati): spegnendolo,
-         il colore non sparisce — ci mette un decimo di secondo a sfumare, e
-         in quel decimo di secondo il filo nuovo e il bordo vecchio si vedono
-         TUTTI E DUE. Su un ridisegno per volta è un lampo; su una schermata
-         che si ricostruisce mentre ci si muove dentro è il bordo doppio che
-         si vede nelle foto.
-         La transizione si spegne con un attributo che noi non osserviamo (se
-         fosse una classe, l'osservatore degli attributi si risveglierebbe e
-         il giro non finirebbe), e si riaccende dopo che il valore è stato
-         messo davvero — una sola volta per passata, in fondo. */
-      e.dataset.formaSecca = '1';
-      secchi.push(e);
       e.style.borderColor = 'transparent';
-      e.style.backgroundImage = filo(w, h, ang, sp, col) + (sotto ? ', ' + sotto : '');
-      e.style.backgroundRepeat = 'no-repeat' + (sotto ? ', repeat' : '');
-      e.style.backgroundSize = '100% 100%' + (sotto ? ', auto' : '');
-      e.style.backgroundOrigin = 'border-box' + (sotto ? ', padding-box' : '');
-      e.style.backgroundClip = 'border-box' + (sotto ? ', border-box' : '');
+      var giu = p.sotto ? p.sotto.split('§') : null;
+      var mio = [filo(p.w, p.h, p.ang, p.sp, p.col), 'no-repeat', '100% 100%', '0%', '0%', 'border-box', 'border-box'];
+      for (var i = 0; i < SFONDI.length; i++)
+        e.style[SFONDI[i]] = giu ? mio[i] + ', ' + giu[i] : mio[i];
     }
-    osserva(e);
+    daOsservare.push(e);
   }
+
+  /* la strada corta: un elemento solo (l'osservatore delle misure). I tre
+     tempi ci sono lo stesso, sono solo tutti sullo stesso elemento. */
+  function applica(e) { giroSu([e]); }
 
   /* un colore è «vuoto» se non si vede: conta l'ALFA, non quali siano i tre
      numeri davanti. `rgba(16, 17, 22, 0)` è invisibile quanto
@@ -417,15 +540,26 @@
     return p.length > 3 && parseFloat(p[3]) < 0.004;
   }
 
+  /* SPEGNERE VUOL DIRE TOGLIERE, ANCHE SE NON CI RICORDIAMO DI AVER ACCESO.
+     Qui la guardia era «se non ha la firma, esci», e c'era un buco: il tempo 2
+     cancella proprio quella firma, quindi un elemento azzerato e poi spento —
+     succede quando dopo l'azzeramento risulta senza angolo, o diventato un
+     tondo — usciva di qui senza che gli si togliesse niente. Il
+     `border-radius` tornava quello del foglio di stile e il RITAGLIO restava
+     addosso, quello vecchio: la forma diceva una cosa e il raggio un'altra.
+     Da fuori non si vedeva quasi mai, ma bastava a far dire alla prova
+     «raggio ristretto» su un elemento a caso, in una schermata diversa a ogni
+     giro — il tipo di difetto che si liquida come un capriccio della prova.
+     `formaScritto` non lo cancella nessuno, quindi risponde alla domanda
+     giusta: «qui dentro abbiamo scritto?». */
   function spegni(e) {
-    if (e.dataset.forma === undefined) return;
+    if (e.dataset.formaScritto === undefined) return;
     e.style.clipPath = '';
     e.style.borderRadius = '';
     if (e.dataset.formaBordo) {
       e.style.borderColor = '';
-      e.style.backgroundImage = e.dataset.formaSfondo || '';
-      e.style.backgroundRepeat = ''; e.style.backgroundSize = '';
-      e.style.backgroundOrigin = ''; e.style.backgroundClip = '';
+      var giu = e.dataset.formaSfondo ? e.dataset.formaSfondo.split('§') : null;
+      for (var i = 0; i < SFONDI.length; i++) e.style[SFONDI[i]] = giu ? giu[i] : '';
     }
     delete e.dataset.forma;
   }
@@ -455,6 +589,7 @@
   var mossi = [];
   var inCoda = false;
   var secchi = [];
+  var daOsservare = [];   /* chi va messo in ascolto delle misure, in fondo */
 
   function scordaUno(e) {
     delete e.dataset.formaRaggi;
@@ -474,16 +609,52 @@
     secchi = [];
   }
 
+  /* UNA PASSATA, NEI SUOI QUATTRO TEMPI.
+     Il ciclo non è più «per ogni elemento: leggi e scrivi», che costava un
+     ricalcolo dell'impaginazione a testa. Adesso sono quattro cicli, e nessuno
+     ne mescola due: si decide chi azzerare (leggendo), si azzera (scrivendo),
+     si legge tutto, si scrive tutto.
+     Su quattrocento elementi si passa da quattrocento ricalcoli a due.
+     La sicurezza contro le eccezioni sta in ogni tempo, non attorno al ciclo:
+     un elemento che scoppia non può portarsi via la forma di tutti quelli che
+     vengono dopo — è successo, ed è sparita mezza pagina. */
+  function giroSu(lista) {
+    var i, e;
+    var daPulire = [];
+    for (i = 0; i < lista.length; i++) {
+      e = lista[i];
+      if (e.nodeType !== 1 || VIETATI[e.tagName]) continue;
+      try { if (daAzzerare(e)) daPulire.push(e); } catch (err) { grida(err); }
+    }
+    for (i = 0; i < daPulire.length; i++) {
+      try { azzeraOra(daPulire[i]); } catch (err) { grida(err); }
+    }
+    var piani = [];
+    for (i = 0; i < lista.length; i++) {
+      e = lista[i];
+      if (e.nodeType !== 1 || VIETATI[e.tagName]) continue;
+      try { var p = leggi(e); if (p) piani.push(p); } catch (err) { grida(err); }
+    }
+    for (i = 0; i < piani.length; i++) {
+      try { scrivi(piani[i]); } catch (err) { grida(err); }
+    }
+    for (i = 0; i < daOsservare.length; i++) osserva(daOsservare[i]);
+    daOsservare = [];
+  }
+
   function passa() {
     var lista = mossi; mossi = [];
     /* oltre un certo numero di rami conviene rifare tutto: cercare i
        duplicati fra le sottochiome costa più che una passata sola */
     if (!lista.length || lista.length > 60) { tutti(); riaccendi(); return; }
+    var tuttiQuanti = [];
     lista.forEach(function (e) {
-      if (!e.isConnected) return;
-      tutti(e);
-      if (e.nodeType === 1 && !VIETATI[e.tagName]) prova(e);
+      if (!e.isConnected || e.nodeType !== 1) return;
+      tuttiQuanti.push(e);
+      var f = e.querySelectorAll('*');
+      for (var i = 0; i < f.length; i++) tuttiQuanti.push(f[i]);
     });
+    giroSu(tuttiQuanti);
     riaccendi();
   }
 
@@ -509,9 +680,14 @@
     setTimeout(giro, 32);
   }
   /* L'OSSERVATORE DELLE MISURE, uno solo per tutti: un elemento che cambia
-     misura cambia forma, e il tracciato è in pixel. */
+     misura cambia forma, e il tracciato è in pixel.
+     Le misure che arrivano insieme si fanno insieme, con gli stessi tre
+     tempi: quando cambia la larghezza della finestra ne arrivano trecento in
+     un colpo solo, e una per una sarebbero trecento ricalcoli. */
   var ro = typeof ResizeObserver === 'function' ? new ResizeObserver(function (voci) {
-    voci.forEach(function (v) { prova(v.target); });
+    var l = [];
+    for (var i = 0; i < voci.length; i++) l.push(voci[i].target);
+    giroSu(l); riaccendi();
   }) : null;
   function osserva(e) {
     if (!ro || e.dataset.formaOss) return;
@@ -525,23 +701,19 @@
      una funzione spostata durante una riscrittura, e con lei sono spariti gli
      angoli di ventisette caselle su ventisette e di tutto quello che veniva
      dopo. Il difetto non si vedeva dove nasceva: si vedeva ovunque. */
-  function prova(e) {
-    try { applica(e); }
-    catch (err) {
-      if (!prova.detto) { prova.detto = 1; if (window.LMLog) LMLog.errore('forma', String(err)); else console.error('forma', err); }
-    }
+  function grida(err) {
+    if (grida.detto) return;
+    grida.detto = 1;
+    if (window.LMLog) LMLog.errore('forma', String(err)); else console.error('forma', err);
   }
+  function prova(e) { giroSu([e]); }
 
   function tutti(radice) {
     var dove = radice || document.body;
     if (!dove) return;
-    var lista = dove.querySelectorAll('*');
-    for (var i = 0; i < lista.length; i++) {
-      var e = lista[i];
-      if (VIETATI[e.tagName]) continue;
-      prova(e);
-    }
-    if (!radice && document.body) prova(document.body);
+    var lista = [].slice.call(dove.querySelectorAll('*'));
+    if (!radice && document.body) lista.push(document.body);
+    giroSu(lista);
   }
 
   /* il cambio di tema cambia i colori dei bordi: si buttano via i colori
@@ -592,6 +764,17 @@
     }).observe(document.head, { childList: true });
     /* e una volta quando la pagina ha finito di caricare tutto */
     if (document.readyState !== 'complete') window.addEventListener('load', scorda);
+
+    /* QUANDO IL CAMPO TORNA NOSTRO.
+       Finché un campo ha il fuoco lo si lascia stare (vedi `inMano`), quindi
+       se in quel frattempo è cambiato — ha cambiato misura, gli è cambiata la
+       classe — la sua forma è rimasta indietro. Appena lo lascia, si rifà.
+       `focusout` sale fino a qui, quindi ne basta uno solo per tutta la
+       pagina, e non costa niente finché nessuno tocca un campo. */
+    document.addEventListener('focusout', function (ev) {
+      var e = ev.target;
+      if (e && e.nodeType === 1) { mossi.push(e); piano(); }
+    });
 
     tutti(); riaccendi();
     new MutationObserver(function (muta) {

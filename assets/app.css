@@ -694,10 +694,22 @@ input[type="number"], textarea, select {
 input[type="time"], input[type="date"] { max-width: 190px; }
 input[type="text"]:hover, input[type="url"]:hover, input[type="time"]:hover,
 input[type="date"]:hover, input[type="number"]:hover, textarea:hover, select:hover { border-color: var(--baseline); }
+/* L’ALONE DEL FUOCO È SFUMATO, E NON PER GUSTO.
+   Un’ombra con lo spread e la sfocatura a zero non è un alone: è un secondo
+   contorno, e un contorno segue il `border-radius` — che è un ARCO DI CERCHIO.
+   Quello che si vede dell’elemento invece lo decide il ritaglio, che è la
+   curva di Apple e passa diversamente: sui lati dritti i due combaciano, sui
+   quarantacinque gradi l’arco sporge. Con tre pixel e mezzo di spread e un
+   viola pieno, negli angoli si vedeva un alone squadrato attorno a una cosa
+   che squadrata non è — è la fotografia del campo «Cosa hai fatto».
+   Mezza sfocatura e la fascia sfuma prima di arrivare all’angolo: la
+   differenza fra le due curve finisce dentro il gradiente e non si vede più.
+   Vale la stessa regola dell’ombra dura usata come bordo, ed è controllata
+   in prove/bordi.js. */
 input[type="text"]:focus, input[type="url"]:focus, input[type="time"]:focus,
 input[type="date"]:focus, input[type="number"]:focus, textarea:focus, select:focus {
   outline: none; border-color: var(--accento);
-  box-shadow: 0 0 0 3.5px color-mix(in srgb, var(--accento) 18%, transparent);
+  box-shadow: 0 0 4px 2.5px color-mix(in srgb, var(--accento) 26%, transparent);
 }
 textarea { resize: vertical; min-height: 68px; }
 /* l'etichetta sta attaccata al suo campo e staccata da quello di sopra:
@@ -1648,7 +1660,7 @@ label.campo {
    minuscoli, qui sono un comando che si tocca col dito. E devono starci
    dentro anche scritti in dodici ore con AM/PM, che è come li scrive un
    telefono in inglese: a 92px «08:30 AM» finiva tagliato. */
-input.prom-ora, input.prom-t, input.rec-ora {
+input.prom-ora, input.prom-t {
   flex: none; width: auto; min-width: 118px;
   padding: 9px 10px; font-size: 14px;
   border: 1px solid var(--bordo-forte); border-radius: var(--r-2);
@@ -1660,9 +1672,9 @@ input.prom-ora, input.prom-t, input.rec-ora {
    diventare due campi da quaranta pixel dove non si legge l'ora. */
 .chiedi-ore { display: inline-flex; align-items: center; gap: 6px; flex: none; flex-wrap: wrap; justify-content: flex-end; }
 .chiedi-tratto { color: var(--inchiostro-muto); font-weight: 700; }
-input.prom-ora:focus, input.prom-t:focus, input.rec-ora:focus {
+input.prom-ora:focus, input.prom-t:focus {
   outline: none; border-color: var(--accento);
-  box-shadow: 0 0 0 3.5px color-mix(in srgb, var(--accento) 18%, transparent);
+  box-shadow: 0 0 4px 2.5px color-mix(in srgb, var(--accento) 26%, transparent);
 }
 input.prom-ora:disabled, input.prom-t:disabled { background: var(--superficie-2); }
 /* «l'ora di ognuna»: sta in cima e non in mezzo, perché quando il titolo va
@@ -2564,7 +2576,7 @@ input.sc-nascosta {
   border: 1px solid var(--bordo-forte); background-color: var(--superficie-1);
   transition: border-color var(--t-veloce), box-shadow var(--t-veloce);
 }
-.agg-riga:focus-within { border-color: var(--accento); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accento) 16%, transparent); }
+.agg-riga:focus-within { border-color: var(--accento); box-shadow: 0 0 4px 2px color-mix(in srgb, var(--accento) 24%, transparent); }
 /* tag + classe: `input[type="text"]` pesa più di una classe sola, e senza il
    tag il campo si teneva la sua cornice DENTRO la cornice della riga */
 input.agg-testo {
@@ -2794,7 +2806,16 @@ select.agg-sel-area { width: auto; max-width: 190px; flex: 0 1 auto; font-size: 
 
 /* ---------- la giornata: griglia oraria a blocchi ---------- */
 
+/* «Adesso 14:59 · poi fare per un'ora l'OFA sul sito alle 15:00» è una riga
+   che non ha una lunghezza: dipende da come si chiama la cosa dopo. Dentro un
+   `flex` un figlio non scende sotto la larghezza minima del suo contenuto se
+   non glielo si dice, e la larghezza minima di una riga che non va a capo è
+   tutta la riga: sporgeva dalla scheda e la si vedeva tagliata di netto da un
+   bordo verticale, con la «A» di «Adesso» mozzata a metà.
+   `min-width: 0` è il permesso di stringersi; il resto lo fa andare a capo. */
 .giornata .tl-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.giornata .tl-head > div { min-width: 0; flex: 1 1 auto; }
+.giornata .tl-head .sotto { overflow-wrap: anywhere; }
 .giornata .tl-head h2 { margin: 0; }
 .tl-grid { position: relative; margin-top: 12px; }
 .tl-lines { position: absolute; inset: 0; pointer-events: none; }
@@ -3465,6 +3486,14 @@ a:not(.btn):not(.nav-voce):not(.menu-voce):active { opacity: .55; }
    quelli dei promemoria e del ritmo di base, che hanno sempre funzionato:
    bordo suo, fondo suo, e niente sopra. */
 .rec-alt { display: inline-flex; align-items: center; gap: 8px; }
+/* IL CAMPO DELL’ORA DEL PASTO È SENZA CORNICE, come quelli di «stanotte».
+   Non è una scelta di gusto: una cornice vuol dire un bordo e un angolo, e
+   un bordo e un angolo vogliono dire che `assets/forma.js` gli riscrive lo
+   stile — e su Android l’orologio di sistema si richiude se l’elemento che
+   l’ha aperto cambia mentre è aperto. Senza cornice la forma non lo guarda
+   nemmeno. Resta largo abbastanza da leggerci dentro «08:30 AM», che è come
+   scrive l’ora un telefono in inglese. */
+input.rec-ora { min-width: 96px; text-align: left; font-weight: 650; }
 .rec-alt-eti { font-size: 13px; font-weight: 700; color: var(--inchiostro-2); }
 .rec-alt.on .rec-alt-eti { color: var(--accento-testo); }
 

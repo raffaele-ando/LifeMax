@@ -4611,20 +4611,25 @@
         /* LA TERZA RISPOSTA È IL CAMPO DELL’ORA, non un tasto che apre un
            campo dell’ora. Fra il dito e l’orologio del sistema non c’è
            niente di nostro: nessun ridisegno, nessuna richiesta di fuoco,
-           nessuna richiesta di aprire l’orologio. Le due versioni con
-           qualcosa in mezzo si sono rotte tutte e due — la prima non apriva
-           niente, la seconda apriva e richiudeva.
-           Ed è un campo COME GLI ALTRI dell’app: la stessa forma, lo stesso
-           bordo, la stessa regola di stile dei campi dell’ora dei promemoria
-           e del ritmo di base, che hanno sempre funzionato. Niente
-           `<label>` attorno — un’etichetta che avvolge il suo campo gli
-           rimanda addosso un secondo tocco, e un orologio che riceve due
-           tocchi si apre col primo e si chiude col secondo. Le parole stanno
-           accanto, non intorno.
+           nessuna richiesta di aprire l’orologio.
+           Ed è LO STESSO CAMPO di «A letto» e «Sveglio» qui sopra —
+           `.sc-inline`, dentro la sua riga, senza cornice — non uno somigliante.
+           Le tre versioni con una cornice propria si sono rotte tutte: la
+           prima non apriva niente, le altre due aprivano e richiudevano
+           subito. La differenza fra quelle e questa non era il `<label>`, era
+           il BORDO: un campo con la cornice se la vede ridisegnare da
+           `assets/forma.js` (colore spento, filo, ritaglio), e su Android
+           l’orologio di sistema si richiude se l’elemento che l’ha aperto
+           viene rimaneggiato mentre è aperto. `.sc-inline` non ha cornice né
+           angolo, quindi la forma non lo tocca mai — ed è esattamente per
+           questo che quello di «stanotte» ha sempre funzionato.
+           (La regola generale sta dall’altra parte: adesso la forma lascia in
+           pace qualunque campo abbia il fuoco. Questo qui è la cintura, quella
+           sono le bretelle.)
            Parte vuoto apposta: se ci trovasse dentro l’ora solita,
            riscegliere quella stessa ora non farebbe scattare nulla. */
         '<span class="rec-alt' + (altraOra ? ' on' : '') + '"><span class="rec-alt-eti">a un’altra ora</span>' +
-        '<input type="time" class="rec-ora" data-poraval="1" value="" aria-label="' + esc(pa.nome) + ' a un’altra ora"></span>' +
+        '<input type="time" class="sc-inline rec-ora" data-poraval="1" value="" aria-label="' + esc(pa.nome) + ' a un’altra ora"></span>' +
         '</span></div>';
     }).join('');
 
