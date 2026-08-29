@@ -3733,7 +3733,18 @@
          gli si taglierebbero via le punte e il pallino. */
       '<div class="strip-pista"><div class="strip-barra">' + marks + '</div>' + nowEl + '</div>' +
       '<div class="strip-estremi"><span>' + d.sveglia + '</span>' +
-      '<span class="strip-sotto">' + sotto + ' ' + ICO('arrowRight', 11) + '</span>' +
+      /* IL TESTO STA DENTRO UN SUO `span`, e non è un dettaglio di scrittura.
+         `.strip-sotto` ha `overflow: hidden` ed è CENTRATA, e una scritta più
+         lunga dello spazio in una scatola centrata non si taglia a destra: si
+         taglia da tutte e due le parti. «alle 14:30 fare per 1 ora l'OFA sul
+         sito» diventava «lle 14:30 fare per 1 ora l'ofa sul sito ·» — la «a»
+         di «alle» mangiata a sinistra e la fine mangiata a destra, senza
+         nemmeno i puntini a dire che continua.
+         La regola con i puntini c'era già ed era scritta per il figlio
+         (`.strip-sotto span`): mancava il figlio. Il nome della cosa da fare
+         lo scrive l'utente, quindi una lunghezza non ce l'ha, quindi questo
+         non è un caso limite: è il caso normale. */
+      '<span class="strip-sotto"><span>' + sotto + '</span> ' + ICO('arrowRight', 11) + '</span>' +
       '<span>' + d.sonnoRoutine + '</span></div>' +
       '</button>';
   }

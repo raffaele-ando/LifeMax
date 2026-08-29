@@ -122,7 +122,7 @@ const CONTROLLA = `(function (conFuoco) {
 
   var out = { ritagliati: 0, tondi: [], spariti: [], doppi: [], curveDiverse: [],
     filoVecchio: [], raggiRistretti: [], corsie: [], mangiati: [], strozzati: [],
-    pseudoRitagliati: [], fuoriPagina: [], ombreBordo: [] };
+    pseudoRitagliati: [], fuoriPagina: [], ombreBordo: [], tagliate: [] };
 
   var guarda = function (e, colFuoco) {
     var s = getComputedStyle(e), r = e.getBoundingClientRect();
@@ -165,6 +165,55 @@ const CONTROLLA = `(function (conFuoco) {
       }
     }
     if (colFuoco) return;   /* col fuoco si guarda solo l'alone: il resto è già stato guardato */
+
+    /* 13. UNA SCRITTA TAGLIATA DI NETTO.
+          Non è un difetto dei bordi, ma ha la stessa faccia — «si vede un
+          taglio dritto in mezzo a una cosa» — e si trova con la stessa
+          passata, quindi sta qui.
+          Tre fotografie diverse dell'utente erano questo: «Adess» con la A
+          mozzata a metà da un bordo verticale, «lle 14:30 fare per 1 ora
+          l'ofa sul sito» tagliato di qua e di là, e una riga della giornata
+          che finiva contro il fianco della scheda. Ogni volta la causa è la
+          stessa famiglia: una scritta che non ha una lunghezza prevedibile
+          (ci sta dentro il nome di una cosa scritta dall'utente) messa in un
+          contenitore che non la lascia andare a capo e che poi la taglia.
+          Un taglio con i puntini non è questo: quello è dichiarato, si legge
+          che continua, e chi lo ha scritto sapeva. Qui si cercano solo i
+          tagli MUTI. */
+    var testo = (e.textContent || '').trim();
+    if (testo.length > 3 && s.overflow !== 'visible') {
+      var soloTesto = true;
+      for (var ci = 0; ci < e.children.length; ci++) {
+        if ((e.children[ci].textContent || '').trim().length > 3) { soloTesto = false; break; }
+      }
+      if (soloTesto) {
+        /* LA MISURA SI PRENDE SUL TESTO, NON SUL CONTENITORE.
+           Il primo tentativo confrontava scrollWidth con clientWidth, e non
+           vedeva niente: dentro un contenitore flex il testo nudo sta in una
+           scatola anonima che il browser non conta in scrollWidth, quindi un
+           contenitore che taglia la sua scritta risulta grande esattamente
+           quanto il suo contenuto. La striscia della giornata — quella
+           tagliata nella fotografia, con la «a» di «alle» mangiata — passava
+           il controllo senza una piega.
+           Un Range sul contenuto misura il testo COM'E' IMPAGINATO, scatole
+           anonime comprese, e lo vede. (Verificato al contrario: rimesso il
+           difetto, questa riga diventa rossa. Un controllo che non si sa
+           vedere fallire non sta controllando niente.) */
+        var quanto = null;
+        try {
+          var rr = document.createRange();
+          rr.selectNodeContents(e);
+          quanto = rr.getBoundingClientRect();
+          rr.detach && rr.detach();
+        } catch (e5) { quanto = null; }
+        var tagliaX = quanto && /hidden|clip/.test(s.overflowX) && quanto.width > e.clientWidth + 1;
+        var tagliaY = quanto && /hidden|clip/.test(s.overflowY) && quanto.height > e.clientHeight + 1;
+        var coiPuntini = /ellipsis/.test(s.textOverflow) || (s.webkitLineClamp && s.webkitLineClamp !== 'none');
+        if ((tagliaX || tagliaY) && !coiPuntini)
+          out.tagliate.push(nome(e) + ' «' + testo.slice(0, 30) + '» ' +
+            (tagliaX ? Math.round(quanto.width - e.clientWidth) + 'px di larghezza' : Math.round(quanto.height - e.clientHeight) + 'px di altezza') + ' fuori');
+      }
+    }
 
     /* 11. QUALCOSA CHE ESCE DALLA PAGINA. */
     if (r.right > innerWidth + 2 || r.left < -2) {
@@ -350,18 +399,40 @@ catch (e) {
   const b = await chromium.launch({ executablePath: process.env.CHROMIUM || undefined });
 
   const CHIAVI = ['tondi', 'spariti', 'doppi', 'curveDiverse', 'filoVecchio', 'raggiRistretti',
-    'corsie', 'mangiati', 'strozzati', 'pseudoRitagliati', 'fuoriPagina', 'ombreBordo'];
+    'corsie', 'mangiati', 'strozzati', 'pseudoRitagliati', 'fuoriPagina', 'ombreBordo', 'tagliate'];
   const tot = {}; CHIAVI.forEach(k => { tot[k] = new Map(); });
   let ritagliati = 0, viste = 0;
   const rotte = new Map();
-  const VIE = [[320, true, 'light'], [390, true, 'light'], [390, true, 'dark'], [1280, false, 'light'], [1280, false, 'dark']];
-  for (const [largh, mob, tema] of VIE) {
+  /* UNA PASSATA CON I NOMI LUNGHI.
+     I dati di prova hanno nomi corti — «Leggere 20 pagine», «Palestra» — e con
+     quelli non si taglia mai niente. I nomi veri li scrive l'utente e non
+     hanno una lunghezza: «fare per 1 ora l'OFA sul sito», «Metà lezione della
+     seconda lezione di chimica». Tutte e tre le fotografie di scritte tagliate
+     arrivate finora erano su nomi veri, e nessuna prova poteva vederle perché
+     nessuna prova ne aveva mai visto uno lungo.
+     Quindi un giro si fa con i nomi allungati apposta. Non è un caso limite
+     inventato: è il caso normale di chi usa l'app. */
+  const VIE = [[320, true, 'light', 0], [390, true, 'light', 0], [390, true, 'dark', 0],
+    [1280, false, 'light', 0], [1280, false, 'dark', 0], [390, true, 'light', 1]];
+  const LUNGO = 'Metà lezione della seconda lezione di chimica organica del giovedì';
+  for (const [largh, mob, tema, lunghi] of VIE) {
     const ctx = await b.newContext({ viewport: { width: largh, height: 900 }, hasTouch: mob, isMobile: mob, colorScheme: tema });
     for (const { nome, via, tab, poi, prova } of SCENE) {
       const p = await ctx.newPage();
       try {
         await p.goto('http://localhost:' + PORTA + '/index.html'); await p.waitForTimeout(300);
-        await p.evaluate(() => { localStorage.clear(); LM.seedDemo(); });
+        await p.evaluate((opz) => {
+          localStorage.clear(); LM.seedDemo();
+          if (!opz.lunghi) return;
+          /* si allunga il NOME di tutto quello che ha un nome scritto da chi
+             usa l'app, e si lascia stare tutto il resto */
+          const s = LM.snapshot();
+          const allunga = (arr) => { if (Array.isArray(arr)) arr.forEach((x, i) => { if (x && typeof x.testo === 'string') x.testo = opz.lungo + ' n.' + i; }); };
+          [s.azioni, s.backlog, s.abitudini, s.inbox, s.lezioni].forEach(allunga);
+          if (Array.isArray(s.esperimenti)) s.esperimenti.forEach((e) => { if (e && e.nome) e.nome = opz.lungo; });
+          if (Array.isArray(s.aree)) s.aree.forEach((a) => { if (a && a.nome) a.nome = opz.lungo.slice(0, 34); });
+          LM.save();
+        }, { lunghi: lunghi, lungo: LUNGO });
         await p.evaluate((v) => { location.hash = '#/' + v; }, via);
         await p.reload(); await p.waitForTimeout(via === 'lab' ? 1400 : 700);
         if (tab !== null) {
@@ -420,14 +491,14 @@ catch (e) {
         }));
         const r = await p.evaluate(CONTROLLA + '(' + (largh === 390 && tema === 'light') + ')');
         ritagliati += r.ritagliati; viste++;
-        const dove = largh + 'px/' + tema + ' · ' + nome;
+        const dove = largh + 'px/' + tema + (lunghi ? '/lunghi' : '') + ' · ' + nome;
         CHIAVI.forEach((k) => r[k].forEach((x) => { if (!tot[k].has(x)) tot[k].set(x, dove); }));
       } catch (e) {
         rotte.set(nome + ' a ' + largh + 'px', String(e).split('\n')[0].replace(/^Error: /, '').slice(0, 80));
       } finally { await p.close(); }
     }
     await ctx.close();
-    console.log('  ' + largh + 'px ' + tema + ': fatto');
+    console.log('  ' + largh + 'px ' + tema + (lunghi ? ' (nomi lunghi)' : '') + ': fatto');
   }
   console.log('\n' + viste + ' schermate guardate, ' + ritagliati + ' angoli ritagliati in totale\n');
 
@@ -460,7 +531,38 @@ catch (e) {
   mostra('nessuno pseudo-elemento porta un ritaglio', tot.pseudoRitagliati);
   mostra('niente esce dai lati della pagina', tot.fuoriPagina);
   mostra('nessun contorno è fatto con un’ombra dura', tot.ombreBordo);
+  mostra('nessuna scritta viene tagliata di netto', tot.tagliate);
   mostra('nessuna scena ha sbagliato strada', rotte);
+
+  /* LA CONTROPROVA DEL CONTROLLO SULLE SCRITTE TAGLIATE.
+     Un controllo che non si sa vedere fallire non sta controllando niente — è
+     la lezione del `calc(100% - 0)` in prove/squircle.js, e vale qui uguale.
+     Il primo modo di misurare (scrollWidth contro clientWidth) sembrava
+     ragionevole e non vedeva NIENTE: dentro un contenitore flex il testo nudo
+     sta in una scatola anonima che scrollWidth non conta. Se non si fosse
+     provato a romperlo apposta, questa riga sarebbe rimasta verde per sempre
+     senza guardare niente.
+     Qui si mette in pagina una scritta tagliata per davvero e si pretende che
+     il controllo la trovi. */
+  {
+    const pg = await b.newPage({ viewport: { width: 390, height: 700 } });
+    await pg.goto('http://localhost:' + PORTA + '/index.html');
+    await pg.bringToFront(); await pg.waitForTimeout(500);
+    const trovata = await pg.evaluate((codice) => {
+      const d = document.createElement('div');
+      d.className = 'prova-tagliata';
+      d.style.cssText = 'width:80px;overflow:hidden;white-space:nowrap;font-size:14px';
+      d.textContent = 'una scritta molto piu larga della sua scatola, tagliata di netto';
+      document.body.appendChild(d);
+      // eslint-disable-next-line no-eval
+      const r = eval(codice + '(false)');
+      d.remove();
+      return r.tagliate.filter((x) => /prova-tagliata/.test(x));
+    }, CONTROLLA);
+    ok('e il controllo sa vedere una scritta tagliata, se ce n’è una',
+      trovata.length === 1, trovata.length ? trovata[0] : 'NON L’HA VISTA: il controllo è muto');
+    await pg.close();
+  }
 
   console.log(guai ? '\n>>> ' + guai + ' PROBLEMI' : '\n>>> TUTTO A POSTO');
   await b.close(); srv.close(); process.exit(guai ? 1 : 0);
