@@ -154,6 +154,46 @@ function opCede(che, a) {
       },
       signOut: async function () {
         try { await authMod.signOut(auth); } catch (e) { /* ignora */ }
+      },
+      /* LE COPIE CHE STANNO NEL CLOUD, per poterle guardare e riprendere.
+         Ogni volta che il documento remoto sta per essere toccato ne viene
+         messa da parte una copia in `users/{uid}/backups/{ts}` — succede da
+         mesi, e finora nessuno poteva vederle: erano una rete di sicurezza
+         invisibile, cioè metà rete. Quando i dati sono spariti da un
+         dispositivo e da lì sono saliti, la copia buona è ESATTAMENTE là. */
+      backups: async function () {
+        if (!currentUser) return [];
+        try {
+          const q = await fsMod.getDocs(fsMod.collection(db, 'users', currentUser.uid, 'backups'));
+          const out = [];
+          q.forEach(function (d) {
+            const v = d.data() || {};
+            let ricchezza = 0;
+            try { ricchezza = LM.ricchezza(JSON.parse(v.data)); } catch (e) { ricchezza = 0; }
+            out.push({ id: d.id, ts: v.updatedAt || +d.id || 0, salvato: v.salvato || 0, ricchezza: ricchezza });
+          });
+          return out.sort(function (a, b) { return (b.ts || 0) - (a.ts || 0); });
+        } catch (e) {
+          log('errore', 'non riesco a leggere le copie nel cloud', e && e.message);
+          return [];
+        }
+      },
+      /* riprende una copia dal cloud. Non sostituisce: UNISCE, come tutto il
+         resto — chi va a ripescare una copia vuole riavere quello che manca,
+         non buttare via quello che nel frattempo ha fatto. */
+      riprendiBackup: async function (id) {
+        if (!currentUser) return false;
+        try {
+          const d = await fsMod.getDoc(fsMod.doc(db, 'users', currentUser.uid, 'backups', String(id)));
+          if (!d.exists()) return false;
+          LM.backup('prima-di-riprendere-una-copia-dal-cloud');
+          applicaRemoto(d.data(), false);
+          await push(currentUser.uid);
+          return true;
+        } catch (e) {
+          log('errore', 'non riesco a riprendere la copia', e && e.message);
+          return false;
+        }
       }
     };
 
@@ -223,32 +263,27 @@ async function primaSincronizzazione(uid) {
     const remoteAt = snap.data().updatedAt || 0;
     log('info', 'confronto', 'qui ' + localR + ' elementi (' + quando(localAt) + ') · cloud ' + remoteR + ' elementi (' + quando(remoteAt) + ')');
 
-    if (remoteR === 0 && localR > 0) {
-      // Cloud VUOTO ma dispositivo PIENO: non adottare mai il vuoto (era il bug).
-      // Salva il documento remoto come backup, poi carica i dati locali.
-      log('avviso', 'cloud vuoto e dispositivo pieno: mando su i dati locali');
-      opCede('lettura iniziale', 'scrittura');
-      await backupRemoto(uid, snap.data());
-      await push(uid);
-    } else if (localR === 0) {
-      // Dispositivo vuoto → adotta il cloud (con backup locale per sicurezza).
-      log('info', 'dispositivo vuoto: adotto i dati del cloud');
-      LM.backup('prima-di-adottare-cloud');
-      applicaRemoto(snap.data(), false);
-      opFine('lettura iniziale', 'saved');
-    } else if (remoteAt >= localAt) {
-      // Entrambi pieni: tieni il più recente, ma salva SEMPRE l'altro lato
-      // come backup, così nessuna versione va persa.
-      log('info', 'il cloud è più recente: adotto i suoi dati');
-      LM.backup('questo-dispositivo-prima-di-adottare-cloud');
-      applicaRemoto(snap.data(), false);
-      opFine('lettura iniziale', 'saved');
-    } else {
-      log('info', 'questo dispositivo è più recente: mando su i dati locali');
-      opCede('lettura iniziale', 'scrittura');
-      await backupRemoto(uid, snap.data());
-      await push(uid);
-    }
+    /* NON SI SCEGLIE PIÙ UN VINCITORE: SI UNISCE.
+       Qui c'erano quattro rami e tre di questi ADOTTAVANO un documento intero,
+       buttando via l'altro. L'unica protezione era «non adottare mai il vuoto»,
+       e non bastava: basta che una copia sia più povera in UN punto — un
+       telefono con zero scoperte perché sono nate mentre lui era offline — e
+       alla prima cosa fatta su quel telefono il suo documento diventa il più
+       recente, sale, e le scoperte spariscono da tutte le parti. Il conto
+       totale restava alto, quindi la protezione contro il vuoto non scattava.
+       È così che il registro delle Scoperte si è svuotato.
+       `LM.unisci` tiene tutto quello che c'è da una parte sola e lascia
+       decidere al più recente solo dove le due dicono cose diverse sulla
+       STESSA riga. Poi si rimanda su il risultato, così anche il cloud ha
+       tutto. La copia del documento remoto si prende lo stesso, prima di
+       toccarlo: se anche la fusione sbagliasse, quello che c'era è ancora là. */
+    await backupRemoto(uid, snap.data());
+    LM.backup('prima-di-unire-col-cloud');
+    applicaRemoto(snap.data(), false);
+    const dopo = LM.ricchezza(LM.snapshot());
+    log('info', 'uniti', 'adesso ' + dopo + ' elementi (erano ' + localR + ' qui e ' + remoteR + ' nel cloud)');
+    opCede('lettura iniziale', 'scrittura');
+    await push(uid);
   } else {
     // Nessun documento cloud: carica ciò che c'è in locale.
     log('info', 'primo salvataggio per questo account');
@@ -279,23 +314,25 @@ function parseDoc(d) {
 function applicaRemoto(d, notifica) {
   const obj = parseDoc(d);
   if (!obj) return;
-  log('info', 'applico i dati ' + (notifica ? 'arrivati da un altro dispositivo' : 'del cloud'), LM.ricchezza(obj) + ' elementi');
-  if (notifica) {
-    // Aggiornamento in tempo reale: non svuotare MAI un dispositivo pieno
-    // con un remoto vuoto (protegge dal bug di perdita dati tra dispositivi).
-    if (LM.ricchezza(obj) === 0 && LM.ricchezza(LM.snapshot()) > 0) {
-      console.warn('LifeMax: ignorato un aggiornamento remoto vuoto per proteggere i dati di questo dispositivo.');
-      return;
-    }
-    LM.backup('prima-di-aggiornamento-da-altro-dispositivo');
-  }
+  const prima = LM.ricchezza(LM.snapshot());
+  log('info', 'unisco i dati ' + (notifica ? 'arrivati da un altro dispositivo' : 'del cloud'), LM.ricchezza(obj) + ' elementi');
+  if (notifica) LM.backup('prima-di-aggiornamento-da-altro-dispositivo');
   applyingRemote = true;
   lastWrittenAt = (d && d.updatedAt) || obj.updatedAt || 0;
   /* arrivano dati da un altro dispositivo: i punti a cui tornare parlavano di
      una storia diversa e tornarci mescolerebbe due timeline */
   if (LM.scordaPunti) LM.scordaPunti();
+  /* si UNISCE, non si sostituisce: vedi il commento lungo in
+     primaSincronizzazione, e LM.unisci in assets/data.js */
   LM.hydrate(obj);
   applyingRemote = false;
+  const dopo = LM.ricchezza(LM.snapshot());
+  if (dopo < prima) {
+    /* non deve poter succedere: la fusione toglie solo dove c'è una lapide o
+       un azzeramento dichiarato. Se succede lo stesso, si grida — e la copia
+       di sicurezza presa qui sopra è la via di uscita. */
+    log('errore', 'dopo la fusione ci sono MENO elementi di prima', prima + ' → ' + dopo);
+  }
   if (notifica) window.dispatchEvent(new CustomEvent('lm:remote'));
 }
 

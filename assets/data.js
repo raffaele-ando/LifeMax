@@ -178,22 +178,337 @@ var LM = (function () {
       xp: 0,
       xpPerGiorno: {},   // xpPerGiorno[data] = n
       log: [],           // (deprecato) eventi recenti per feedback immediato
-      registro: []       // {ts, cat, testo, imp} — storico di tutto ciò che fai (Diario)
+      registro: [],      // {ts, cat, testo, imp} — storico di tutto ciò che fai (Diario)
+      /* LE LAPIDI: {k, chiave, ts} per ogni riga tolta davvero. Servono alla
+         fusione fra dispositivi — senza, una riga cancellata qui tornerebbe
+         viva al primo scambio con un telefono che non lo sapeva ancora. Se le
+         scrive `save()` da sé, guardando cos'è sparito. */
+      cancellati: [],
+      /* quello che è arrivato storto e che invece di buttare si è messo da
+         parte: {campo: {quando, valore}} */
+      recuperati: {},
+      /* l'ora di un «Azzera tutto» dichiarato. È l'unica cosa che dà alla
+         fusione il permesso di togliere: senza, azzerare un dispositivo si
+         annullerebbe da sé alla prima sincronizzazione con l'altro. */
+      azzerato: 0
     };
+  }
+
+
+  /* ==================================================================
+     FONDERE DUE COPIE SENZA PERDERE NIENTE
+     ==================================================================
+     PERCHÉ ESISTE. Fino a ieri due dispositivi si scambiavano il documento
+     INTERO e vinceva il più recente. C'era una sola protezione: non adottare
+     mai un documento VUOTO. Non bastava, e si è visto: basta che una copia sia
+     più povera in UN punto — un iPad con otto scoperte e un telefono con zero,
+     perché quelle scoperte sono nate quando il telefono era offline — e alla
+     prima cosa fatta sul telefono il suo documento diventa il più recente,
+     sale, e le otto scoperte spariscono da tutte le parti. Il conto totale
+     degli elementi era alto (il telefono aveva un mucchio di azioni), quindi
+     la protezione contro il vuoto non scattava. Il registro delle Scoperte si
+     è svuotato così.
+     La cura non è un'altra soglia: è smettere di scegliere un vincitore.
+     Due copie si UNISCONO, riga per riga, e quello che c'è da una parte sola
+     resta. Vince il più recente solo dove le due dicono davvero cose diverse
+     sulla STESSA riga.
+
+     COME SI FA A NON DIMENTICARSENE DOMANI. La tabella qui sotto deve nominare
+     OGNI campo dello stato. Se domani se ne aggiunge uno e non lo si nomina,
+     `unisci` alza le mani e `prove/dati.js` diventa rosso con scritto quale
+     campo manca. Non è una convenzione da ricordare: è una prova che non passa.
+     ------------------------------------------------------------------ */
+
+  /* i modi in cui due valori si mettono insieme:
+       elenco   una lista di righe con una loro identità → unione per identità
+       insieme  una lista di parole → unione, senza doppioni
+       mappa    un oggetto usato come dizionario (per giorno, per area) → unione
+                delle chiavi, e dentro si scende
+       ramo     un oggetto con campi fissi (il profilo) → si scende nei campi
+       recente  vince la copia salvata per ultima
+       massimo  vince il numero più grande (contatori che solo salgono)
+       oppure   vero se è vero da una parte (non si torna indietro) */
+  var COME_UNIRE = {
+    versione: 'massimo',
+    updatedAt: 'massimo',
+    azzerato: 'massimo',
+    onboarded: 'oppure',
+    demo: 'recente',
+    profilo: 'ramo',
+    ritmoGiorno: 'mappa',
+    visto: 'massimo',
+    aree: 'elenco',
+    areeAttive: 'insieme',
+    azioni: 'elenco',
+    inbox: 'elenco',
+    backlog: 'elenco',
+    abitudini: 'elenco',
+    checkins: 'elenco',
+    valutazioni: 'mappa',
+    minuti: 'mappa',
+    pianoMattina: 'mappa',
+    reviewSera: 'mappa',
+    reviewSettimana: 'mappa',
+    esperimenti: 'elenco',
+    lezioni: 'elenco',
+    xp: 'massimo',
+    xpPerGiorno: 'mappa',
+    log: 'elenco',
+    registro: 'elenco',
+    cancellati: 'elenco',
+    recuperati: 'mappa'
+  };
+
+  function eMappa(v) {
+    return v && typeof v === 'object' && !Array.isArray(v);
+  }
+
+  /* L'IDENTITÀ DI UNA RIGA. Quasi tutte hanno un `id`. Quelle che non ce
+     l'hanno — il registro, i check-in — hanno un istante e un testo, e due
+     righe con lo stesso istante e lo stesso testo sono la stessa riga. Senza
+     questo, ogni fusione raddoppierebbe il diario. */
+  function chiaveRiga(r) {
+    if (!r || typeof r !== 'object') return 'v' + JSON.stringify(r);
+    if (r.id !== undefined && r.id !== null && r.id !== '') return 'i' + r.id;
+    if (r.ts !== undefined && r.ts !== null) return 't' + r.ts + '|' + (r.testo || r.cat || r.data || '');
+    if (r.data !== undefined && r.data !== null) return 'd' + r.data;
+    return 'v' + JSON.stringify(r);
+  }
+
+  /* QUANDO QUESTA RIGA È STATA TOCCATA L'ULTIMA VOLTA. Si guardano tutti i
+     campi che nell'app segnano un momento, e si prende il più recente. Se non
+     ne ha nessuno vale l'orologio del documento da cui viene. */
+  var CAMPI_MOMENTO = ['aggiornata', 'doneAt', 'ts', 'completatoAt', 'chiusoAt', 'creata'];
+  function momentoRiga(r, quandoDoc) {
+    var v = 0;
+    if (r && typeof r === 'object') {
+      for (var i = 0; i < CAMPI_MOMENTO.length; i++) {
+        var x = r[CAMPI_MOMENTO[i]];
+        if (typeof x === 'number' && x > v) v = x;
+      }
+    }
+    return v || quandoDoc || 0;
+  }
+
+  /* due dizionari: l'unione delle chiavi. Dove una chiave c'è da tutte e due
+     e i valori sono ancora dizionari si scende; se no vince il più recente. */
+  function unisciMappa(x, y, qx, qy) {
+    var out = {};
+    if (eMappa(x)) Object.keys(x).forEach(function (k) { out[k] = x[k]; });
+    if (eMappa(y)) Object.keys(y).forEach(function (k) {
+      if (!(k in out)) { out[k] = y[k]; return; }
+      if (eMappa(out[k]) && eMappa(y[k])) { out[k] = unisciMappa(out[k], y[k], qx, qy); return; }
+      if (qy >= qx) out[k] = y[k];
+    });
+    return out;
+  }
+
+  /* due versioni della STESSA riga. Vince la più recente campo per campo, ma
+     i dizionari dentro la riga si uniscono: le spunte di un'abitudine
+     (`fatti`, `salti`) sono un giorno per chiave, e prendere in blocco quelle
+     di una copia sola vuol dire buttare via le spunte messe sull'altro
+     dispositivo. */
+  function unisciRiga(x, y, qx, qy) {
+    if (!eMappa(x) || !eMappa(y)) return (qy >= qx) ? y : x;
+    var vecchia = (qy >= qx) ? x : y, nuova = (qy >= qx) ? y : x;
+    var out = {};
+    Object.keys(vecchia).forEach(function (k) { out[k] = vecchia[k]; });
+    Object.keys(nuova).forEach(function (k) { out[k] = nuova[k]; });
+    Object.keys(out).forEach(function (k) {
+      if (eMappa(x[k]) && eMappa(y[k])) out[k] = unisciMappa(x[k], y[k], qx, qy);
+    });
+    return out;
+  }
+
+  function unisciElenco(x, y, qx, qy) {
+    var out = [], indice = {};
+    var metti = function (arr, q) {
+      if (!Array.isArray(arr)) return;
+      for (var i = 0; i < arr.length; i++) {
+        var r = arr[i], k = chiaveRiga(r);
+        if (indice[k] === undefined) { indice[k] = out.length; out.push({ r: r, q: momentoRiga(r, q) }); continue; }
+        var g = out[indice[k]];
+        var qr = momentoRiga(r, q);
+        g.r = unisciRiga(g.r, r, g.q, qr);
+        g.q = Math.max(g.q, qr);
+      }
+    };
+    metti(x, qx); metti(y, qy);
+    return out.map(function (g) { return g.r; });
+  }
+
+  function unisciInsieme(x, y) {
+    var out = [], visti = {};
+    [x, y].forEach(function (arr) {
+      if (!Array.isArray(arr)) return;
+      arr.forEach(function (v) { var k = String(v); if (!visti[k]) { visti[k] = 1; out.push(v); } });
+    });
+    return out;
+  }
+
+  /* LE LAPIDI. Senza, una riga cancellata su un telefono tornerebbe viva alla
+     prima fusione con un dispositivo che non lo sapeva ancora. Non le scrive
+     nessuna delle venti funzioni che cancellano: le scrive `save()` da sé
+     confrontando com'era e com'è (vedi `segnaLapidi`), così una funzione che
+     cancella e che verrà scritta domani è già coperta. */
+  function applicaLapidi(s) {
+    if (!Array.isArray(s.cancellati) || !s.cancellati.length) return s;
+    var perCampo = {};
+    s.cancellati.forEach(function (t) {
+      if (!t || !t.k || !t.chiave) return;
+      if (!perCampo[t.k]) perCampo[t.k] = {};
+      var p = perCampo[t.k];
+      if (!p[t.chiave] || t.ts > p[t.chiave]) p[t.chiave] = t.ts;
+    });
+    Object.keys(perCampo).forEach(function (k) {
+      if (!Array.isArray(s[k])) return;
+      var p = perCampo[k];
+      s[k] = s[k].filter(function (r) {
+        var t = p[chiaveRiga(r)];
+        /* «maggiore O UGUALE», e non è un dettaglio: creare e cancellare la
+           stessa riga possono capitare nello stesso millesimo di secondo — la
+           prova lo fa, e un utente veloce pure — e con il confronto stretto la
+           lapide non contava niente e la riga tornava viva. Nel dubbio, fra
+           una cancellazione e una modifica dello stesso istante, vince la
+           cancellazione: è la sola delle due che qualcuno ha chiesto due
+           volte (togliere, e confermare). */
+        return !(t && t >= momentoRiga(r, 0));
+      });
+    });
+    /* le lapidi non si accumulano per sempre: dopo mezzo anno tutti i
+       dispositivi hanno saputo, e tenerle costa spazio a vuoto */
+    var soglia = Date.now() - 180 * 24 * 3600 * 1000;
+    s.cancellati = s.cancellati.filter(function (t) { return t && t.ts > soglia; }).slice(-3000);
+    return s;
+  }
+
+  /* IL PUNTO DI ENTRATA. `a` e `b` sono due stati interi; torna un terzo che
+     contiene tutto quello che c'era nei due. Non tocca né `a` né `b`. */
+  function unisci(a, b) {
+    if (!eMappa(a)) return b ? JSON.parse(JSON.stringify(b)) : null;
+    if (!eMappa(b)) return JSON.parse(JSON.stringify(a));
+    var qa = a.updatedAt || 0, qb = b.updatedAt || 0;
+    var out = {};
+    var chiavi = {};
+    Object.keys(a).forEach(function (k) { chiavi[k] = 1; });
+    Object.keys(b).forEach(function (k) { chiavi[k] = 1; });
+    Object.keys(statoVuoto()).forEach(function (k) { chiavi[k] = 1; });
+    var scoperti = [];
+    Object.keys(chiavi).forEach(function (k) {
+      var modo = COME_UNIRE[k];
+      var va = a[k], vb = b[k];
+      if (va === undefined) { out[k] = vb; if (!modo) scoperti.push(k); return; }
+      if (vb === undefined) { out[k] = va; if (!modo) scoperti.push(k); return; }
+      if (!modo) {
+        /* UN CAMPO CHE NESSUNO HA DICHIARATO. Non si tira a indovinare: si
+           tiene quello del documento più recente e si grida, perché è
+           esattamente il modo in cui un campo nuovo comincia a perdere dati in
+           silenzio. prove/dati.js fallisce su questo. */
+        scoperti.push(k);
+        out[k] = (qb >= qa) ? vb : va;
+        return;
+      }
+      switch (modo) {
+        case 'elenco':  out[k] = unisciElenco(va, vb, qa, qb); break;
+        case 'insieme': out[k] = unisciInsieme(va, vb); break;
+        case 'mappa':   out[k] = unisciMappa(va, vb, qa, qb); break;
+        case 'ramo':    out[k] = unisciRiga(va, vb, qa, qb); break;
+        case 'massimo': out[k] = Math.max(Number(va) || 0, Number(vb) || 0); break;
+        case 'oppure':  out[k] = !!(va || vb); break;
+        default:        out[k] = (qb >= qa) ? vb : va;
+      }
+    });
+    out.updatedAt = Math.max(qa, qb);
+    /* AZZERARE DEVE POTER FUNZIONARE. Con una fusione che non perde niente,
+       «Azzera tutto» su un dispositivo si annullerebbe da sé alla prima
+       sincronizzazione: l'altro rimanderebbe indietro tutto. L'unica cosa che
+       taglia è un azzeramento DICHIARATO, con la sua ora: tutto quello che è
+       più vecchio di quell'istante se ne va, il resto no. */
+    var taglio = out.azzerato || 0;
+    if (taglio) {
+      Object.keys(COME_UNIRE).forEach(function (k) {
+        if (COME_UNIRE[k] !== 'elenco' || !Array.isArray(out[k]) || k === 'cancellati') return;
+        out[k] = out[k].filter(function (r) { return momentoRiga(r, 0) >= taglio; });
+      });
+    }
+    applicaLapidi(out);
+    if (scoperti.length) {
+      out.recuperati = out.recuperati || {};
+      out.recuperati.campiSenzaRegola = scoperti.join(',');
+      if (window.LMLog) window.LMLog.errore('dati', 'campi senza regola di fusione: ' + scoperti.join(', '));
+    }
+    return out;
+  }
+
+  /* LE LAPIDI SE LE SCRIVE `save()`, NON CHI CANCELLA.
+     Ci sono una ventina di funzioni che tolgono qualcosa, e ne arriveranno
+     altre: chiedere a ognuna di ricordarsi anche di segnare la lapide è il
+     modo sicuro per averne una che se ne dimentica, e quel giorno la riga
+     cancellata tornerebbe viva al primo scambio con l'altro dispositivo.
+     Qui si guarda invece il risultato: cos'era salvato prima, cos'è salvato
+     adesso, e quello che non c'è più prende la sua lapide. Una funzione che
+     cancella e che verrà scritta l'anno prossimo è già coperta. */
+  function segnaLapidi(primaRaw, s) {
+    if (!primaRaw) return;
+    var prima;
+    try { prima = JSON.parse(primaRaw); } catch (e) { return; }
+    if (!eMappa(prima)) return;
+    var ora = Date.now();
+    var nate = s.cancellati || (s.cancellati = []);
+    Object.keys(COME_UNIRE).forEach(function (k) {
+      if (COME_UNIRE[k] !== 'elenco' || k === 'cancellati' || k === 'registro' || k === 'log') return;
+      if (!Array.isArray(prima[k]) || !Array.isArray(s[k])) return;
+      if (prima[k].length <= s[k].length) return;      /* niente è sparito */
+      var restano = {};
+      s[k].forEach(function (r) { restano[chiaveRiga(r)] = 1; });
+      prima[k].forEach(function (r) {
+        var c = chiaveRiga(r);
+        if (restano[c]) return;
+        nate.push({ k: k, chiave: c, ts: ora });
+      });
+    });
+    if (nate.length > 3000) s.cancellati = nate.slice(-3000);
   }
 
   var state = null;
 
+  /* IL SALVATAGGIO ILLEGGIBILE NON SI BUTTA VIA.
+     Qui c'era `catch { state = statoVuoto() }`, e basta: se il testo salvato
+     non si riusciva a leggere — un byte storto, un salvataggio interrotto a
+     metà, la memoria piena a metà scrittura — l'app ripartiva vuota, senza
+     dire niente, e al PRIMO salvataggio successivo scriveva lo stato vuoto
+     sopra a quello vero. Un solo carattere fuori posto, e tutto sparito per
+     sempre. Adesso il testo che non si legge viene messo da parte in un
+     contenitore suo, che nessuno tocca più, e l'app lo dice. */
+  var RECUPERO_PRE = 'lifemax.recupero.';
   function load() {
     if (state) return state;
-    try {
-      var raw = localStorage.getItem(STORAGE_KEY);
-      state = raw ? JSON.parse(raw) : statoVuoto();
-    } catch (e) {
-      state = statoVuoto();
+    var raw = null;
+    try { raw = localStorage.getItem(STORAGE_KEY); } catch (e) { raw = null; }
+    if (raw) {
+      try {
+        state = JSON.parse(raw);
+      } catch (e) {
+        state = null;
+        try { localStorage.setItem(RECUPERO_PRE + Date.now(), raw); } catch (e2) { /* pieno */ }
+        if (window.LMLog) window.LMLog.errore('dati', 'salvataggio illeggibile: messo da parte in ' + RECUPERO_PRE + '*, ' + raw.length + ' caratteri');
+        try { document.dispatchEvent(new CustomEvent('lm:dati-illeggibili')); } catch (e3) { /* niente */ }
+      }
     }
+    if (!state || typeof state !== 'object') state = statoVuoto();
     normalizza(state);
     return state;
+  }
+  /* i pezzi messi da parte, per poterli mostrare e riprovare a leggerli */
+  function recuperi() {
+    var out = [];
+    try {
+      for (var i = 0; i < localStorage.length; i++) {
+        var k = localStorage.key(i);
+        if (k && k.indexOf(RECUPERO_PRE) === 0) out.push({ chiave: k, ts: +k.slice(RECUPERO_PRE.length) || 0, testo: localStorage.getItem(k) });
+      }
+    } catch (e) { /* niente */ }
+    return out.sort(function (a, b) { return b.ts - a.ts; });
   }
 
   /* Riempie i campi mancanti negli stati salvati prima di un aggiornamento
@@ -203,9 +518,26 @@ var LM = (function () {
     Object.keys(vuoto).forEach(function (k) {
       if (s[k] === undefined || s[k] === null) s[k] = vuoto[k];
     });
-    if (!Array.isArray(s.backlog)) s.backlog = [];
-    if (!Array.isArray(s.abitudini)) s.abitudini = [];
-    if (!Array.isArray(s.lezioni)) s.lezioni = [];
+    /* UN CAMPO DEL TIPO SBAGLIATO NON SI BUTTA, SI METTE DA PARTE.
+       Qui c'erano righe come `if (!Array.isArray(s.lezioni)) s.lezioni = []`:
+       se per qualunque motivo quel campo arrivava storto, il suo contenuto
+       spariva in silenzio e non tornava più. Adesso quello che c'era finisce
+       in `recuperati`, che viaggia con lo stato e si può guardare dal
+       Registro tecnico. */
+    var salva = function (k, buono) {
+      if (buono(s[k])) return;
+      if (s[k] !== undefined && s[k] !== null) {
+        s.recuperati = s.recuperati || {};
+        s.recuperati[k] = { quando: Date.now(), valore: s[k] };
+        if (window.LMLog) window.LMLog.errore('dati', 'campo «' + k + '» del tipo sbagliato: messo da parte invece che buttato');
+      }
+      s[k] = vuoto[k] !== undefined ? JSON.parse(JSON.stringify(vuoto[k])) : [];
+    };
+    var eLista = function (v) { return Array.isArray(v); };
+    ['backlog', 'abitudini', 'lezioni', 'azioni', 'inbox', 'checkins', 'esperimenti',
+     'registro', 'log', 'aree', 'areeAttive', 'cancellati'].forEach(function (k) { salva(k, eLista); });
+    if (!s.recuperati || typeof s.recuperati !== 'object') s.recuperati = {};
+    if (typeof s.azzerato !== 'number') s.azzerato = 0;
     if (typeof s.visto !== 'number') s.visto = 0;
     if (!Array.isArray(s.aree) || !s.aree.length) s.aree = JSON.parse(JSON.stringify(AREE_DEFAULT));
     /* profilo e ritmo della giornata (stati vecchi o dal cloud) */
@@ -274,6 +606,11 @@ var LM = (function () {
      per un'app che serve a misurare. Avvisiamo una volta e proviamo a fare
      spazio buttando le voci più vecchie del registro. */
   var salvataggioRotto = false;
+  /* mentre si innesta uno stato intero (dal cloud, da un file, dai dati di
+     esempio) non si segnano lapidi: là non è sparito niente, è cambiato tutto
+     insieme — e segnarle vorrebbe dire mandare all'altro dispositivo l'ordine
+     di cancellare quello che ha. */
+  var senzaLapidi = 0;
   /* ---------- punti a cui tornare ----------
      Ogni cosa che finisce nel diario si può annullare da lì. Un gancio solo,
      invece di scriverne l'inverso in cinquantuno posti: prima di ogni
@@ -371,7 +708,9 @@ var LM = (function () {
     scriviIndice(resto);
     ultimoPuntoFino = resto.length ? resto[0].fino : 0;
     staTornandoIndietro = true;
-    hydrate(vecchio);
+    /* SOSTITUISCE. Vedi `ripristinaStato`: unire qui vorrebbe dire tenere sia
+       il prima sia il dopo, cioè non annullare niente. */
+    hydrate(vecchio, true);
     registra('dati', 'Annullato: «' + (etichetta || 'una cosa fatta') + '»', true);
     save();
     staTornandoIndietro = false;
@@ -464,21 +803,45 @@ var LM = (function () {
     if (!staTornandoIndietro) {
       try { prima = localStorage.getItem(STORAGE_KEY); } catch (e) { prima = null; }
     }
+    /* QUELLO CHE È SPARITO PRENDE LA SUA LAPIDE. Va fatto PRIMA di scrivere,
+       perché confronta il salvataggio vecchio con lo stato nuovo. Durante un
+       ritorno indietro non si segna niente: là le righe non sono cancellate,
+       sono tornate come stavano. */
+    if (!staTornandoIndietro && !senzaLapidi) segnaLapidi(prima, state);
     if (state) state.updatedAt = Date.now();
     var ok = true;
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     } catch (e) {
       ok = false;
-      /* secondo tentativo: registro ridotto (è la parte più voluminosa e meno
-         essenziale — le azioni, le abitudini e le misure restano intatte) */
-      try {
-        if (Array.isArray(state.registro) && state.registro.length > 100) {
-          state.registro = state.registro.slice(-100);
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-          ok = true;
-        }
-      } catch (e2) { /* niente da fare: i dati restano in memoria */ }
+      /* SPAZIO FINITO. Prima di toccare i dati veri si butta quello che si può
+         rifare: i punti a cui tornare (una copia intera dello stato ciascuno,
+         sono la cosa più voluminosa che ci sia) e le copie di sicurezza più
+         vecchie. Il registro è il diario dell'utente, e sfoltirlo in silenzio
+         è la cosa che qui non si vuole fare. */
+      try { scordaPunti(); localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); ok = true; }
+      catch (e2) { /* ancora niente */ }
+      if (!ok) {
+        try {
+          var bk = leggiBackups();
+          if (bk.length > 3) { scriviBackups(bk.slice(0, 3)); localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); ok = true; }
+        } catch (e3) { /* ancora niente */ }
+      }
+      if (!ok) {
+        /* ultima spiaggia: si sfoltisce il registro, ma lo si DICE — sia
+           nell'app (l'evento qui sotto) sia nel registro stesso, così resta
+           scritto che c'è un pezzo di storia che non c'è più */
+        try {
+          if (Array.isArray(state.registro) && state.registro.length > 400) {
+            var quanti = state.registro.length - 400;
+            state.registro = state.registro.slice(-400);
+            state.registro.push({ ts: Date.now(), cat: 'dati', imp: true,
+              testo: 'Spazio esaurito: tolte ' + quanti + ' righe vecchie dal diario per poter salvare.' });
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+            ok = true;
+          }
+        } catch (e4) { /* niente da fare: i dati restano in memoria */ }
+      }
     }
     if (!ok && !salvataggioRotto) {
       salvataggioRotto = true;
@@ -503,8 +866,15 @@ var LM = (function () {
     /* i punti a cui tornare parlavano di dati che non ci sono più */
     scordaPunti();
     state = statoVuoto();
+    /* L'AZZERAMENTO SI DICHIARA, con la sua ora. La fusione fra dispositivi
+       non toglie mai niente da sé — è il suo mestiere — quindi senza questo
+       segno «Azzera tutto» si disferebbe da solo appena l'altro dispositivo
+       rimanda indietro quello che ha. */
+    state.azzerato = Date.now();
     registra('dati', 'Dati azzerati (ripartenza da zero)', true);
+    senzaLapidi++;
     save();
+    senzaLapidi--;
   }
 
   /* ---------- backup, ricchezza, export/import ----------
@@ -540,9 +910,15 @@ var LM = (function () {
     if (!b) return false;
     backup('prima-del-ripristino');
     scordaPunti();
-    hydrate(safeParse(b.data));
+    /* RIPRISTINARE SOSTITUISCE, e qui è giusto: chi torna a una copia di
+       sicurezza sta dicendo «rivoglio esattamente com'era», non «aggiungi
+       quella roba a questa». È l'unico posto dell'app dove si sostituisce. La
+       copia di un istante fa l'abbiamo appena presa, due righe più su. */
+    hydrate(safeParse(b.data), true);
     registra('dati', 'Ripristinato un backup', true);
+    senzaLapidi++;
     save();
+    senzaLapidi--;
     return true;
   }
   function safeParse(t) { try { return JSON.parse(t); } catch (e) { return statoVuoto(); } }
@@ -567,9 +943,18 @@ var LM = (function () {
   /* Ripristino leggero, per l'annulla subito dopo un'azione: rimette lo
      stato com'era un attimo prima, senza backup e senza riga di diario —
      quello che è stato annullato non è mai successo. */
+  /* TORNARE INDIETRO SOSTITUISCE, non unisce.
+     `hydrate` adesso UNISCE — è la cura alla perdita di dati fra dispositivi —
+     e per un attimo l'ha usata anche l'annulla, che così non annullava
+     niente: la riga tolta rientrava, ma quella aggiunta restava, perché unire
+     due copie tiene tutto di tutte e due. Le prove `annulla` e `lezioni`
+     l'hanno detto subito.
+     Le due cose sono opposte per natura. Unire vuol dire «queste sono due
+     mezze verità della stessa storia»; tornare indietro vuol dire «questa
+     storia non è mai successa». */
   function ripristinaStato(obj) {
     if (!obj || typeof obj !== 'object') return false;
-    hydrate(obj);
+    hydrate(obj, true);
     save();
     return true;
   }
@@ -584,19 +969,41 @@ var LM = (function () {
     backup('prima-import');
     scordaPunti();
     st.updatedAt = Date.now();
+    /* IMPORTARE AGGIUNGE, NON SOSTITUISCE. Un file portato da un altro
+       dispositivo è una copia parziale della stessa vita, non una vita
+       diversa: sostituire vorrebbe dire buttare via tutto quello che c'è qui
+       e che nel file non c'è. La copia di sicurezza qui sopra resta comunque,
+       per chi voleva davvero ripartire da quel file: da Impostazioni →
+       Backup si torna a com'era un istante fa. */
+    var quanti = ricchezza(st);
     hydrate(st);
-    registra('dati', 'Dati importati da file (' + ricchezza(st) + ' elementi)', true);
+    registra('dati', 'Dati importati da file (' + quanti + ' elementi, uniti a quelli che c\u2019erano)', true);
+    senzaLapidi++;
     save();
-    return { ok: true, ricchezza: ricchezza(st) };
+    senzaLapidi--;
+    return { ok: true, ricchezza: quanti };
   }
 
-  /* Sostituisce l'intero stato con uno proveniente dal cloud.
-     Preserva updatedAt del documento remoto (non lo rigenera come save),
-     così la logica "l'ultima modifica vince" resta coerente tra dispositivi. */
-  function hydrate(obj) {
+  /* METTE DENTRO UNO STATO CHE ARRIVA DA FUORI (il cloud, un file).
+     Questa funzione SOSTITUIVA tutto, e da lì è nata la perdita: bastava che
+     il documento in arrivo fosse più povero in un punto solo — un telefono
+     con zero scoperte perché quelle scoperte erano nate mentre lui era
+     offline — e quel punto spariva anche di qua.
+     Adesso i due si UNISCONO: quello che c'è da una parte sola resta, e il
+     più recente vince solo dove le due dicono cose diverse sulla stessa riga.
+     `updatedAt` del documento remoto non si rigenera, così i dispositivi
+     continuano a capirsi su chi è più avanti. */
+  /* `sostituisci` è vero SOLO per le tre cose che vogliono dire «questa storia
+     non è mai successa»: annullare, tornare a un punto, ripristinare una copia
+     di sicurezza. Tutto il resto — il cloud, un file importato — unisce. */
+  function hydrate(obj, sostituisci) {
     if (!obj || typeof obj !== 'object') return;
-    state = normalizza(obj);
+    var fuso = sostituisci ? obj : unisci(load(), obj);
+    if (typeof obj.updatedAt === 'number') fuso.updatedAt = Math.max(fuso.updatedAt || 0, obj.updatedAt);
+    senzaLapidi++;
+    state = normalizza(fuso);
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) { /* ignora */ }
+    senzaLapidi--;
     document.dispatchEvent(new CustomEvent('lm:change'));
   }
 
@@ -2215,6 +2622,10 @@ var LM = (function () {
   function seedDemo() {
     reset();
     var s = state;
+    /* i dati di esempio non sono un azzeramento dichiarato: hanno una storia
+       di otto settimane, e il taglio messo da `reset()` li porterebbe via tutti
+       alla prima fusione (sono più vecchi dell'istante in cui li si carica) */
+    s.azzerato = 0;
     var rnd = mulberry32(20260719);
     var giorni = lastNDays(56); // 8 settimane
     var oggi = todayKey();
@@ -2479,6 +2890,7 @@ var LM = (function () {
     METRICHE_ESPERIMENTO: METRICHE_ESPERIMENTO,
     XP_EVENTI: XP_EVENTI,
     load: load, save: save, reset: reset, seedDemo: seedDemo, hydrate: hydrate, snapshot: snapshot,
+    unisci: unisci, recuperi: recuperi, COME_UNIRE: COME_UNIRE, statoVuoto: statoVuoto,
     backup: backup, listBackups: listBackups, restoreBackup: restoreBackup, ricchezza: ricchezza,
     exportJson: exportJson, importJson: importJson, ripristinaStato: ripristinaStato,
     puntoDiRitorno: puntoDiRitorno, puntiDiRitorno: puntiDiRitorno,

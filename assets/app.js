@@ -1631,7 +1631,10 @@
       'prima-del-ripristino': 'prima di un ripristino',
       'prima-di-adottare-cloud': 'prima di caricare dal cloud',
       'questo-dispositivo-prima-di-adottare-cloud': 'prima di caricare dal cloud',
-      'prima-di-aggiornamento-da-altro-dispositivo': 'prima di un aggiornamento da un altro dispositivo'
+      'prima-di-aggiornamento-da-altro-dispositivo': 'prima di un aggiornamento da un altro dispositivo',
+      'prima-di-unire-col-cloud': 'prima di unire con il cloud',
+      'prima-di-riprendere-una-copia-dal-cloud': 'prima di riprendere una copia dal cloud',
+      'prima-di-sfoltire-il-registro': 'prima di fare spazio'
     };
     var corpo;
     if (!lista.length) {
@@ -1643,7 +1646,53 @@
           '<button class="btn btn-mini" data-ts="' + b.ts + '">Ripristina</button></div>';
       }).join('') + '</div>';
     }
-    apriSheet('Backup e ripristino', '<div class="imp-nota" style="margin-top:0">Ogni voce è una copia salvata prima di una sostituzione dei dati. Ripristinandone una, lo stato attuale viene comunque salvato come nuovo backup.</div>' + corpo, function (r) {
+    /* LE COPIE NEL CLOUD, che c'erano da mesi e non si vedevano.
+       Ogni volta che il documento remoto sta per essere toccato ne viene messa
+       da parte una copia. Finché nessuno poteva guardarle era mezza rete di
+       sicurezza: quando i dati spariscono da un dispositivo e da lì salgono,
+       la copia buona è esattamente là e non c'era modo di arrivarci.
+       Si caricano dopo, perché passano dalla rete: il pannello si apre subito
+       con quelle locali e questa parte si riempie quando arriva. */
+    var cloudHtml = '<div id="bk-cloud"></div>';
+    apriSheet('Backup e ripristino', '<div class="imp-nota" style="margin-top:0">Ogni voce è una copia salvata prima di una sostituzione dei dati. Ripristinandone una, lo stato attuale viene comunque salvato come nuovo backup.</div>' +
+      etichetta('Su questo dispositivo', 'archivio', lista.length || null) + corpo + cloudHtml, function (r) {
+      var host = r.querySelector('#bk-cloud');
+      var c = window.LMCloud;
+      if (host && c && c.available && c.backups) {
+        host.innerHTML = etichetta('Nel cloud', 'cloudCheck') +
+          '<div class="imp-nota" style="margin:0">Sto guardando…</div>';
+        c.backups().then(function (arr) {
+          if (!host.isConnected) return;
+          if (!arr.length) {
+            host.innerHTML = etichetta('Nel cloud', 'cloudCheck') +
+              '<div class="imp-nota" style="margin:0">Nessuna copia online. Ne viene creata una ogni volta che il cloud sta per essere sovrascritto.</div>';
+            return;
+          }
+          host.innerHTML = etichetta('Nel cloud', 'cloudCheck', arr.length) +
+            '<div class="imp-nota" style="margin:0">Riprendere una copia AGGIUNGE quello che le manca: non toglie niente di quello che hai adesso.</div>' +
+            '<div class="backup-lista">' + arr.map(function (b) {
+              var data = b.ts ? new Date(b.ts).toLocaleString('it-IT', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'senza data';
+              return '<div class="backup-riga"><div><b>' + data + '</b><small>' + b.ricchezza + ' elementi</small></div>' +
+                '<button class="btn btn-mini" data-cloudbk="' + esc(String(b.id)) + '">Riprendi</button></div>';
+            }).join('') + '</div>';
+          host.querySelectorAll('[data-cloudbk]').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+              var id = btn.getAttribute('data-cloudbk');
+              avviso({
+                titolo: 'Riprendere questa copia?',
+                testo: 'Quello che le manca viene aggiunto a quello che hai adesso. Niente viene tolto.',
+                azione: 'Riprendi'
+              }, function () {
+                btn.disabled = true; btn.textContent = 'Sto riprendendo…';
+                c.riprendiBackup(id).then(function (fatto) {
+                  chiudiSheet(); render();
+                  toast(fatto ? 'Copia ripresa e unita.' : 'Non sono riuscito a riprenderla.', 0, fatto ? 'cloudCheck' : 'alert');
+                });
+              });
+            });
+          });
+        });
+      }
       r.querySelectorAll('[data-ts]').forEach(function (btn) {
         btn.addEventListener('click', function () {
           var ts = +btn.getAttribute('data-ts');
