@@ -618,6 +618,19 @@ small { color: var(--inchiostro-2); }
 @keyframes alzati {
   from { opacity: 0; transform: translateY(16px) scale(.992); }
 }
+/* LE DUE GIRATE. Per far ripartire un'animazione CSS bisogna che il browser
+   ne veda una DIVERSA: due nomi che si danno il cambio bastano, e non
+   costano niente — mentre togliere e rimettere la stessa classe obbliga a
+   rifare i conti dello stile o dell'impaginazione, che al ridisegno di una
+   schermata è il momento in cui costano di più. */
+@keyframes alzati-b { from { opacity: 0; transform: translateY(16px) scale(.992); } }
+@keyframes entra-da-destra-b { from { opacity: .35; transform: translateX(26px); } }
+@keyframes entra-da-sinistra-b { from { opacity: .35; transform: translateX(-26px); } }
+.anim-b.vista-enter > *,
+.anim-b.sez-enter > *:not(.topbar):not(.testa-porta) { animation-name: alzati-b; }
+.anim-b.vista-enter .griglia > *, .anim-b.sez-enter .griglia > * { animation-name: alzati-b; }
+.anim-b.sez-enter-dx > *:not(.topbar):not(.testa-porta) { animation-name: entra-da-destra-b; }
+.anim-b.sez-enter-sx > *:not(.topbar):not(.testa-porta) { animation-name: entra-da-sinistra-b; }
 /* le schede della griglia si animano solo all'ingresso della pagina: se lo
    facessero a ogni ridisegno, ogni spunta farebbe "sfarfallare" tutto */
 .vista-enter .griglia > * { animation: alzati .55s var(--ease-out) both; animation-delay: calc(var(--i, 0) * 55ms); }
@@ -1189,6 +1202,46 @@ select.sel-compatto {
 }
 .segmenti.sez-muro { animation: sez-muro-scatto .22s var(--ease-out); }
 
+/* DOVE TI RIESCE E DOVE NO: una riga per area, dalla peggiore.
+   La barra e' larga quanto la percentuale e del colore dell'area: si legge
+   senza leggere quale riga e' quella corta. Il numero grande e' la
+   percentuale, il piccolo e' il conto vero — perche' «20%» su cinque cose
+   non e' la stessa notizia di «20%» su cinquanta. */
+.bil-aree { display: flex; flex-direction: column; gap: 9px; margin-top: var(--s3); }
+.bil-riga { display: grid; grid-template-columns: minmax(88px, 1fr) 2fr auto; align-items: center; gap: 10px; }
+.bil-nome { font-size: 13px; font-weight: 650; color: var(--inchiostro-1); display: inline-flex; align-items: center; gap: 6px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bil-barra { height: 8px; border-radius: var(--r-tondo); background: var(--superficie-2); overflow: hidden; display: block; }
+.bil-barra i { display: block; height: 100%; background: var(--c-area, var(--accento)); border-radius: var(--r-tondo); }
+.bil-num { font-size: 12.5px; color: var(--inchiostro-2); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.bil-num b { color: var(--inchiostro-1); font-size: 14px; font-weight: 750; }
+.bil-num span { color: var(--inchiostro-muto); font-size: 11.5px; }
+.bil-motivo { margin-top: 2px; }
+
+/* L'ANELLO DEL BORDO, SENZA NESSUNA IMMAGINE.
+   Il filo era un SVG costruito al volo, uno per ogni elemento con una
+   cornice, rifatto a ogni cambio di misura — ed e' quello che su certi
+   telefoni manda in tilt la scheda grafica (provato sul campo: con le
+   immagini il disturbo c'e', senza sparisce).
+   Adesso e' un secondo ritaglio: un tracciato con due giri, quello di fuori e
+   quello rientrato di uno spessore, con la regola `evenodd` che riempie
+   quello che sta in mezzo. Stessa geometria del filo, disegnata da un colore
+   pieno: niente da rasterizzare, niente da tenere in memoria.
+   Si aggancia al riquadro di IMBOTTITURA, che e' piu' piccolo del riquadro
+   del bordo di uno spessore per lato: `--filo-sp` lo tira fuori di tanto. */
+[data-forma-filo]::after {
+  content: '';
+  position: absolute;
+  top: var(--filo-sp); right: var(--filo-sp); bottom: var(--filo-sp); left: var(--filo-sp);
+  background: var(--filo-c);
+  clip-path: var(--filo-d);
+  pointer-events: none;
+  /* NESSUN RAGGIO QUI. Lo sfondo di un elemento viene ritagliato dal suo
+     border-radius, e ereditando quello del padre l'anello si mangiava proprio
+     agli angoli — cioe' nel punto per cui esiste. La forma gliela da' solo il
+     tracciato. */
+  border-radius: 0;
+}
+
 /* ============================================================
    EFFETTI: PIENI · RIDOTTI · MINIMI
 
@@ -1199,17 +1252,21 @@ select.sel-compatto {
    riprodurre: la scheda grafica che sbaglia sta in mano a chi usa l'app.
 
    Quindi si fa scegliere, e ogni gradino toglie una famiglia precisa:
-     · ridotti  la stessa forma, ma NESSUNA IMMAGINE GENERATA. Il filo del
-                bordo e' un SVG costruito al volo, uno per ogni elemento con
-                una cornice, rifatto a ogni cambio di misura: e' l'unico
-                pezzo del sistema che produce immagini. A «ridotti» il bordo
-                lo disegna il browser, e la curva degli angoli resta quella
-                vera. Si perde mezzo pixel sullo spessore, e basta.
+     · ridotti  niente sfocature dietro ai pannelli e alla barra. Un
+                `backdrop-filter` obbliga il browser a fotografare e sfocare
+                tutto quello che sta dietro, e a rifarlo ogni volta che
+                dietro cambia qualcosa: e' il pezzo piu' caro che resta.
+                La forma degli angoli non cambia.
      · minimi   le forme spente del tutto: niente ritagli, niente immagini,
                 niente sfocature dietro ai pannelli, niente aurora. Raggi
                 nativi e bordi veri, come se questo sistema non ci fosse.
    Se il difetto sparisce a un gradino e non all'altro, si sa dove guardare.
    ============================================================ */
+:root[data-effetti="ridotti"] .sidebar,
+:root[data-effetti="ridotti"] .tabbar,
+:root[data-effetti="ridotti"] .overlay,
+:root[data-effetti="ridotti"] .sheet-overlay,
+:root[data-effetti="ridotti"] .avviso-ovl,
 :root[data-effetti="minimi"] .sidebar,
 :root[data-effetti="minimi"] .tabbar,
 :root[data-effetti="minimi"] .overlay,
@@ -1220,8 +1277,11 @@ select.sel-compatto {
 }
 /* senza la sfocatura dietro, il vetro deve tornare opaco: se no si legge il
    testo della pagina attraverso la barra */
+:root[data-effetti="ridotti"] .sidebar, :root[data-effetti="ridotti"] .tabbar,
 :root[data-effetti="minimi"] .sidebar, :root[data-effetti="minimi"] .tabbar { background: var(--superficie-1); }
+:root[data-effetti="ridotti"] .overlay,
 :root[data-effetti="minimi"] .overlay { background: color-mix(in srgb, var(--pagina) 82%, rgba(8, 8, 12, .55)); }
+:root[data-effetti="ridotti"] .sheet-overlay::before,
 :root[data-effetti="minimi"] .sheet-overlay::before { background: rgba(8, 8, 12, .78); }
 :root[data-effetti="minimi"] .aurora { display: none; }
 
@@ -1335,15 +1395,7 @@ select.sel-compatto {
 @keyframes toastIn { from { opacity: 0; transform: translateY(-10px) scale(.92); } }
 @keyframes toastOut { to { opacity: 0; transform: translateY(-8px) scale(.96); } }
 
-.coriandolo {
-  position: fixed; z-index: 400; pointer-events: none;
-  width: 8px; height: 12px; border-radius: var(--r-1);
-  animation: coriandolo .85s cubic-bezier(.15, .85, .45, 1) forwards;
-}
-@keyframes coriandolo {
-  60% { opacity: 1; }
-  to { transform: translate(var(--dx), var(--dy)) rotate(var(--rot)) scale(.7); opacity: 0; }
-}
+/* i coriandoli non sono piu' elementi: si disegnano sulla tela qui sotto */
 
 /* La PIOGGIA sta su una TELA, non su trentaquattro elementi. Trentaquattro
    animazioni di trasformazione sono trentaquattro strati nuovi sulla scheda

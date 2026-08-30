@@ -2176,6 +2176,93 @@ var LM = (function () {
   }
   function quanteReview() { return tutteLeReview().length; }
 
+  /* ---------- COME STA ANDANDO: numeri concreti, non punti ----------
+     I punti e i livelli non dicono niente di vero: sono una scala inventata
+     che sale comunque, e sale anche nei periodi in cui le cose non vanno.
+     Quello che funziona sono tre numeri di specie diversa:
+
+       · QUANTE ne hai fatte — un conto di cose vere, che sale e basta. È il
+         numero che risponde a «ho combinato qualcosa in questi mesi?», e a
+         quella domanda un livello non risponde.
+       · QUANTO TE NE RIESCE — di quelle che ti eri messo in un giorno,
+         quante ne hai fatte. È una percentuale onesta, quindi può anche
+         scendere: è l'unico dei tre che può dirti che stai peggiorando, ed è
+         per questo che serve.
+       · DOVE non ti riesce — la stessa percentuale spezzata per area, dalla
+         peggiore. È quella che dice cosa fare: non «impegnati di più», ma
+         «in Salute metti sei cose a settimana e ne fai una».
+
+     Il giorno di OGGI resta fuori dal conto della riuscita. Una giornata
+     appena cominciata è a zero per costruzione, e aprire l'app la mattina per
+     leggere che stai allo 0% è il modo migliore per non riaprirla. */
+  function chiuso(k) { return k < todayKey(); }
+
+  function bilancio(giorni) {
+    var s = load();
+    var da = giorni ? addDays(todayKey(), -giorni) : '0000-00-00';
+    var perArea = {};
+    var messe = 0, fatte = 0, mancate = 0;
+    function segna(areaId, fatta, persa) {
+      var a = perArea[areaId] || (perArea[areaId] = { areaId: areaId, messe: 0, fatte: 0, mancate: 0 });
+      a.messe++; messe++;
+      if (fatta) { a.fatte++; fatte++; }
+      if (persa) { a.mancate++; mancate++; }
+    }
+    s.azioni.forEach(function (a) {
+      if (!a.data || a.data < da || !chiuso(a.data)) return;
+      segna(a.areaId || 'altro', !!a.done, !!a.mancata);
+    });
+    /* le abitudini contano come le altre: un giorno in cui l'abitudine era
+       prevista è una cosa che ti eri messo */
+    s.abitudini.forEach(function (h) {
+      var k = da;
+      for (var g = 0; g < (giorni || 90); g++) {
+        var q = addDays(todayKey(), -(g + 1));
+        if (q < da) break;
+        if (!abitudinePrevista(h, q)) continue;
+        segna(h.areaId || 'altro', !!h.fatti[q], false);
+      }
+      void k;
+    });
+    var righe = Object.keys(perArea).map(function (id) {
+      var a = perArea[id];
+      a.tasso = a.messe ? a.fatte / a.messe : 0;
+      return a;
+    }).sort(function (x, y) { return x.tasso - y.tasso; });
+    return {
+      messe: messe, fatte: fatte, mancate: mancate,
+      tasso: messe ? fatte / messe : 0,
+      aree: righe
+    };
+  }
+
+  /* il numero che sale e basta: quante cose hai portato a termine, in tutto.
+     Le abitudini spuntate contano: sono cose fatte quanto le altre. */
+  function quanteFatte(giorni) {
+    var s = load();
+    var da = giorni ? addDays(todayKey(), -giorni) : '';
+    var n = 0;
+    s.azioni.forEach(function (a) { if (a.done && (!da || a.data >= da)) n++; });
+    s.abitudini.forEach(function (h) {
+      Object.keys(h.fatti || {}).forEach(function (k) { if (h.fatti[k] && (!da || k >= da)) n++; });
+    });
+    return n;
+  }
+
+  /* i motivi delle cose non riuscite, dal piu' frequente: e' la riga che
+     dice su cosa lavorare, e non si puo' sapere senza averli registrati */
+  function motiviMancate(giorni) {
+    var conta = {};
+    mancate(giorni).forEach(function (a) {
+      var q = (a.mancata && a.mancata.perche) || 'altro';
+      conta[q] = (conta[q] || 0) + 1;
+    });
+    return Object.keys(conta).map(function (k) {
+      var d = PERCHE_MANCATA.find(function (x) { return x.id === k; });
+      return { id: k, eti: d ? d.eti : k, n: conta[k] };
+    }).sort(function (a, b) { return b.n - a.n; });
+  }
+
   function registraMinuti(areaId, minuti, quando) {
     var s = load();
     var k = quando || todayKey();
@@ -3119,6 +3206,7 @@ var LM = (function () {
     registraCheckin: registraCheckin, salvaPianoMattina: salvaPianoMattina,
     valutaArea: valutaArea, registraMinuti: registraMinuti,
     tutteLeReview: tutteLeReview, quanteReview: quanteReview,
+    bilancio: bilancio, quanteFatte: quanteFatte, motiviMancate: motiviMancate,
     timerVivo: timerVivo, avviaTimerDati: avviaTimerDati, fermaTimerDati: fermaTimerDati, aggiornaTimerDati: aggiornaTimerDati,
     salvaReviewSera: salvaReviewSera, salvaReviewSettimana: salvaReviewSettimana,
     azioniDiOggi: azioniDiOggi, prossimaAzione: prossimaAzione, azioneAdesso: azioneAdesso,

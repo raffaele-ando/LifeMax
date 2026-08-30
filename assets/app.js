@@ -31,29 +31,22 @@
 
   var COLORI_FESTA = ['#7c5df0', '#4a7bf5', '#2ab8e8', '#0ca30c', '#eda100', '#e87ba4'];
 
+  /* LO SCOPPIO ATTORNO AL DITO: sulla stessa tela della pioggia.
+     Anche questo erano diciotto elementi aggiunti alla pagina, cioè diciotto
+     strati nuovi sulla scheda grafica — meno della pioggia, ma capita molto
+     più spesso: ogni riga spuntata. Era il resto del blocco che si sentiva
+     «anche da altre parti».
+     La tela è una sola e la sa disegnare `festa()`: qui si dice soltanto da
+     dove partono i pezzi e con che velocità. */
   function burst(x, y) {
-    if (RIDOTTO) return;
-    for (var i = 0; i < 18; i++) {
-      var s = document.createElement('i');
-      s.className = 'coriandolo';
-      var ang = Math.random() * Math.PI * 2;
-      var dist = 55 + Math.random() * 95;
-      s.style.left = x + 'px';
-      s.style.top = y + 'px';
-      s.style.background = COLORI_FESTA[i % COLORI_FESTA.length];
-      s.style.setProperty('--dx', (Math.cos(ang) * dist).toFixed(0) + 'px');
-      s.style.setProperty('--dy', (Math.sin(ang) * dist - 46).toFixed(0) + 'px');
-      s.style.setProperty('--rot', (Math.random() * 560 - 280).toFixed(0) + 'deg');
-      document.body.appendChild(s);
-      (function (n) { setTimeout(function () { n.remove(); }, 980); })(s);
-    }
+    festa({ da: 'punto', x: x, y: y, quanti: 18 });
   }
 
   function flyXp(x, y, punti) {
     if (RIDOTTO || !punti) return;
     var s = document.createElement('span');
     s.className = 'vola-xp';
-    s.textContent = '+' + punti + ' XP';
+    s.textContent = '+' + punti;
     s.style.left = (x - 20) + 'px';
     s.style.top = (y - 14) + 'px';
     document.body.appendChild(s);
@@ -489,6 +482,7 @@
      cara di un cambio di schermata, 107 ms su dodici cambi.
      `getAnimations()` fa la stessa cosa senza impaginare: annulla quelle che
      stanno girando, e la classe rimessa ne fa partire una nuova. */
+  var girata = 0;
   function animaIngresso(el, sezione, verso) {
     if (!el) return;
     /* DI LATO, SE DI LATO SI E' ANDATI.
@@ -510,10 +504,15 @@
     el.classList.remove('sez-enter-sx');
     el.classList.remove('vista-enter');
     el.classList.remove('sez-enter');
-    if (el.getAnimations) {
-      try { el.getAnimations().forEach(function (a) { a.cancel(); }); }
-      catch (e) { void el.offsetWidth; }
-    } else void el.offsetWidth;
+    /* PER FAR RIPARTIRE UN'ANIMAZIONE NON SERVE NÉ IMPAGINARE NÉ CHIEDERE.
+       `void offsetWidth` rifà l'impaginazione di tutto; `getAnimations()` non
+       impagina ma costringe lo stesso a rifare i conti dello stile — col
+       profilatore erano 72 ms su un'apertura di schermata. Basta cambiare
+       NOME all'animazione: due classi che si danno il cambio, e il browser ne
+       vede una nuova senza che nessuno gli abbia chiesto niente. */
+    girata = girata ? 0 : 1;
+    el.classList.remove('anim-a'); el.classList.remove('anim-b');
+    el.classList.add(girata ? 'anim-a' : 'anim-b');
     el.classList.add(cls);
     if (el.__timerAnim) clearTimeout(el.__timerAnim);
     el.__timerAnim = setTimeout(function () { el.classList.remove(cls); }, 900);
@@ -1272,7 +1271,7 @@
       rigaScelta('Vibrazione', '<span class="segmenti imp-seg" id="seg-vibra">' +
         segVi('si', 'Accesa') + segVi('no', 'Spenta') + '</span>') +
       '</div>' +
-      '<p class="lista-nota"><b>Effetti</b> serve se compaiono rettangoli grigi o neri a spigolo vivo in mezzo alle schermate, o se l’app va a scatti. <b>Ridotti</b> tiene la stessa forma ma non genera nessuna immagine: il bordo lo disegna il browser, e si perde mezzo pixel di spessore. <b>Minimi</b> spegne tutto — niente curva degli angoli, niente sfocature, niente fondo colorato. Se il difetto sparisce a un gradino e non all’altro, si sa da cosa dipende.</p>' +
+      '<p class="lista-nota"><b>Effetti</b> serve se compaiono rettangoli grigi o neri a spigolo vivo in mezzo alle schermate, o se l’app va a scatti. <b>Ridotti</b> toglie le sfocature dietro ai pannelli e alla barra, e la forma resta. <b>Minimi</b> spegne tutto — niente curva degli angoli, niente sfocature, niente fondo colorato. Se il difetto sparisce a un gradino e non all’altro, si sa da cosa dipende.</p>' +
       '<p class="lista-nota">Aurora è più sobrio, Arcade più acceso. Con <b>tre porte</b> le altre schermate stanno in una riga di linguette sotto al titolo; con <b>tutte le pagine</b> torna la barra lunga. In entrambi i casi ci sono tutte: cambia solo da dove ci si arriva. Con lo <b>scorrimento acceso</b> si passa da una schermata all’altra trascinando il dito di lato, come si sfoglia: le linguette restano dove sono.</p>' +
 
       /* --- I TUOI DATI: due cose che si fanno e una porta --- */
@@ -2839,7 +2838,7 @@
     if (el.closest('.spunta, [data-fa-fatto], [data-steptoggle]')) return 'spunta';
     if (el.closest('.icona-pericolo, [data-stepdel], .sc-pericolo')) return 'scarto';
     if (el.closest('.segmenti button, .segmenti a, .q-chip, .att-chip, .giorno-chip')) return 'segmento';
-    if (el.closest('.btn-primario, .btn-grande, .btn-ok, .fab')) return 'tastoPieno';
+    if (el.closest('.btn-primario, .btn-grande, .btn-ok, .btn-tinta, .fab')) return 'tastoPieno';
     if (el.closest('.lista-porta, .sc-porta, [data-bkapri], .rit-riga, .lista-eti-btn')) return 'apri';
     if (el.closest('button, a[href], [role="button"], summary')) return 'tocco';
     if (el.closest('label, input, select, textarea')) return 'campo';
@@ -2879,66 +2878,105 @@
      accelerazione, deriva laterale costante, rotazione propria, e lo spessore
      che si assottiglia col coseno — un rettangolo che gira su se stesso, che
      è quello che fa un coriandolo vero. */
-  var telaFesta = null, festaAttiva = 0;
-  function pioggiaCoriandoli() {
-    if (RIDOTTO) return;
+  var telaFesta = null, festaAttiva = 0, pezziFesta = [], telaCtx = null, telaW = 0, telaH = 0, dprFesta = 1;
+
+  /* UNA TELA SOLA PER TUTTE LE FESTE.
+     Prima ogni festa creava i suoi elementi: trentaquattro per la pioggia,
+     diciotto per lo scoppio attorno al dito. Ognuno con la sua animazione,
+     cioè uno strato nuovo sulla scheda grafica, tutti nello stesso istante —
+     e quell'istante è quello in cui hai appena fatto qualcosa, cioè quando
+     l'app deve sembrare svelta. Lo scoppio capita a ogni riga spuntata, molte
+     volte al giorno: era il pezzo che si sentiva più spesso.
+     Adesso c'è una tela, un ciclo, e i pezzi ci si disegnano dentro. Due
+     feste ravvicinate non si scavalcano: la seconda aggiunge i suoi pezzi a
+     quelli che stanno già cadendo. */
+  function preparaTela() {
     if (!telaFesta) {
       telaFesta = document.createElement('canvas');
       telaFesta.className = 'tela-festa';
       telaFesta.setAttribute('aria-hidden', 'true');
       document.body.appendChild(telaFesta);
     }
-    var dpr = Math.min(2, window.devicePixelRatio || 1);   /* a tre volte non si vede meglio e costa il doppio */
     var W = window.innerWidth, H = window.innerHeight;
-    telaFesta.width = Math.round(W * dpr);
-    telaFesta.height = Math.round(H * dpr);
-    telaFesta.style.display = 'block';
-    var cx = telaFesta.getContext('2d');
-    cx.setTransform(dpr, 0, 0, dpr, 0, 0);
-
-    var pezzi = [];
-    for (var i = 0; i < 40; i++) {
-      pezzi.push({
-        x: Math.random() * W,
-        y: -20 - Math.random() * H * 0.4,
-        vx: (Math.random() - 0.5) * 60,
-        vy: 220 + Math.random() * 260,
-        w: 5 + Math.random() * 4,
-        h: 9 + Math.random() * 6,
-        a: Math.random() * Math.PI * 2,
-        va: (Math.random() - 0.5) * 9,
-        col: COLORI_FESTA[i % COLORI_FESTA.length]
-      });
+    if (W !== telaW || H !== telaH || telaFesta.style.display === 'none') {
+      /* LA TELA STA A UNA VOLTA, NON A TRE. Un coriandolo e' un rettangolo da
+         sei pixel che gira mentre cade: la densita' dello schermo non gliela
+         vede nessuno, e ogni raddoppio quadruplica i pixel da pulire e
+         riempire a ogni fotogramma. Misurato con la CPU rallentata sei volte:
+         a due volte la festa girava a 43 fotogrammi, a una a sessanta. */
+      var dpr = 1;
+      dprFesta = dpr;
+      telaW = W; telaH = H;
+      telaFesta.width = Math.round(W * dpr);
+      telaFesta.height = Math.round(H * dpr);
+      telaCtx = telaFesta.getContext('2d');
+      telaCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
     }
-    var giro = ++festaAttiva;
-    var t0 = performance.now(), ultimo = t0;
+    telaFesta.style.display = 'block';
+  }
+
+  function festa(opt) {
+    if (RIDOTTO) return;
+    preparaTela();
+    var W = telaW, H = telaH, n = opt.quanti || 40;
+    for (var i = 0; i < n; i++) {
+      if (opt.da === 'punto') {
+        var ang = Math.random() * Math.PI * 2, forza = 170 + Math.random() * 280;
+        pezziFesta.push({
+          x: opt.x, y: opt.y,
+          vx: Math.cos(ang) * forza, vy: Math.sin(ang) * forza - 190,
+          w: 5 + Math.random() * 3, h: 8 + Math.random() * 5,
+          a: Math.random() * Math.PI * 2, va: (Math.random() - 0.5) * 11,
+          col: COLORI_FESTA[i % COLORI_FESTA.length], g: 900
+        });
+      } else {
+        pezziFesta.push({
+          x: Math.random() * W, y: -20 - Math.random() * H * 0.4,
+          vx: (Math.random() - 0.5) * 60, vy: 220 + Math.random() * 260,
+          w: 5 + Math.random() * 4, h: 9 + Math.random() * 6,
+          a: Math.random() * Math.PI * 2, va: (Math.random() - 0.5) * 9,
+          col: COLORI_FESTA[i % COLORI_FESTA.length], g: 620
+        });
+      }
+    }
+    if (festaAttiva) return;                 /* il ciclo gira già */
+    festaAttiva = 1;
+    var ultimo = performance.now();
     (function passo(ora) {
-      if (giro !== festaAttiva) return;              /* ne è partita un'altra */
       var dt = Math.min(0.05, (ora - ultimo) / 1000);
       ultimo = ora;
-      cx.clearRect(0, 0, W, H);
-      var vivi = 0;
-      for (var k = 0; k < pezzi.length; k++) {
-        var q = pezzi[k];
-        q.vy += 620 * dt;
-        q.x += q.vx * dt;
-        q.y += q.vy * dt;
-        q.a += q.va * dt;
-        if (q.y > H + 30) continue;
-        vivi++;
-        cx.save();
-        cx.translate(q.x, q.y);
-        cx.rotate(q.a);
-        cx.fillStyle = q.col;
+      telaCtx.setTransform(dprFesta, 0, 0, dprFesta, 0, 0);
+      telaCtx.clearRect(0, 0, telaW, telaH);
+      var vivi = [];
+      for (var k = 0; k < pezziFesta.length; k++) {
+        var q = pezziFesta[k];
+        q.vy += q.g * dt;
+        q.x += q.vx * dt; q.y += q.vy * dt; q.a += q.va * dt;
+        if (q.y > telaH + 30 || q.x < -60 || q.x > telaW + 60) continue;
+        vivi.push(q);
+        /* `setTransform` invece di save/translate/rotate/restore: quattro
+           chiamate diventano una, e a quaranta pezzi per sessanta fotogrammi
+           sono novemila chiamate al secondo risparmiate */
+        var co = Math.cos(q.a), si = Math.sin(q.a);
+        telaCtx.setTransform(co * dprFesta, si * dprFesta, -si * dprFesta, co * dprFesta,
+          q.x * dprFesta, q.y * dprFesta);
+        telaCtx.fillStyle = q.col;
         /* lo spessore che si assottiglia col coseno: è un rettangolo che gira
            su se stesso, e girando lo vedi di taglio */
-        cx.fillRect(-q.w / 2, -q.h / 2, q.w * Math.abs(Math.cos(q.a * 1.7)), q.h);
-        cx.restore();
+        telaCtx.fillRect(-q.w / 2, -q.h / 2, q.w * Math.abs(Math.cos(q.a * 1.7)), q.h);
       }
-      if (vivi && ora - t0 < 4000) requestAnimationFrame(passo);
-      else { cx.clearRect(0, 0, W, H); telaFesta.style.display = 'none'; }
-    })(t0);
+      pezziFesta = vivi;
+      if (vivi.length) requestAnimationFrame(passo);
+      else {
+        telaCtx.setTransform(dprFesta, 0, 0, dprFesta, 0, 0);
+        telaCtx.clearRect(0, 0, telaW, telaH);
+        telaFesta.style.display = 'none';
+        festaAttiva = 0;
+      }
+    })(ultimo);
   }
+
+  function pioggiaCoriandoli() { festa({ da: 'alto', quanti: 40 }); }
 
   /* "fuocoScelto": quando l'utente decide di fare un'altra cosa invece di
      quella suggerita dal piano, la fissa lui e resta finché non la finisce o
@@ -4743,20 +4781,47 @@
        due posti fissi, uguali su ogni schermata. */
     var html = topbar('Panoramica', '', '', 't-plancia', true);
 
-    /* eroe essenziale: anello + XP + tre indicatori come chip (niente
-       muro di didascalie: le spiegazioni stanno nei tooltip) */
+    /* ============================================================
+       DUE NUMERI VERI AL POSTO DEI PUNTI
+
+       Qui c'erano gli XP e il livello. Un livello sale comunque: sale anche
+       nei mesi in cui non combini niente, ed e' la stessa cosa detta in una
+       valuta inventata. Al loro posto due numeri di specie diversa, ed e'
+       proprio l'essere di specie diversa che li rende utili insieme:
+
+         · QUANTE ne hai fatte — un conto di cose vere, che sale e basta.
+           Risponde a «ho combinato qualcosa in questi mesi?», e a quella un
+           livello non risponde.
+         · QUANTO TE NE RIESCE — di quelle che ti eri messo in un giorno,
+           quante ne hai fatte. E' una percentuale onesta, quindi PUO'
+           SCENDERE: e' l'unico dei due che puo' dirti che stai peggiorando,
+           ed e' per questo che serve. L'anello, che prima diceva quanto
+           manca al livello, adesso dice questa.
+
+       Il giorno di oggi resta fuori dalla percentuale: una giornata appena
+       cominciata e' a zero per costruzione, e aprire l'app la mattina per
+       leggere che stai allo 0% e' il modo migliore per non riaprirla.
+       ============================================================ */
+    var bil = LM.bilancio(30);
+    var quante = LM.quanteFatte();
+    var quanteSett = LM.quanteFatte(7);
     function chip(ico, testo, cls, titolo) {
       return '<span class="chip"' + (titolo ? ' title="' + esc(titolo) + '"' : '') + '>' + ICO(ico, 15, cls) + ' ' + testo + '</span>';
     }
     html += '<div class="card eroe2">' +
-      '<div id="anello-livello" title="Progresso verso il prossimo livello"></div>' +
+      '<div id="anello-riuscita" title="Delle cose che ti eri messo in un giorno, quante ne hai fatte"></div>' +
       '<div class="eroe2-corpo">' +
-      '<div class="eroe2-xp"><span id="xp-contatore">0</span> <span class="eroe2-unita">XP</span></div>' +
-      '<div class="eroe2-sub">Livello ' + lvl.livello + ' · ancora ' + (lvl.prossimo - s.xp) + ' XP al livello ' + (lvl.livello + 1) + '</div>' +
+      '<div class="eroe2-xp"><span id="conta-fatte">0</span> <span class="eroe2-unita">' +
+      (quante === 1 ? 'cosa fatta' : 'cose fatte') + '</span></div>' +
+      '<div class="eroe2-sub">' +
+      (bil.messe
+        ? '<b>' + Math.round(bil.tasso * 100) + '%</b> ti riesce · ' + bil.fatte + ' su ' + bil.messe + ' negli ultimi 30 giorni'
+        : 'Ancora nessun giorno chiuso da contare.') +
+      '</div>' +
       '<div class="eroe2-chips">' +
-      chip('flame', '<b>' + st.corrente + '</b> giorni di fila', 'fiamma', 'Un giorno saltato non azzera la serie.') +
-      chip('check', '<b>' + fatte + '/' + oggi.length + '</b> azioni oggi') +
-      chip('polso', '<b>' + checkinOggi + '</b> check-in oggi') +
+      chip('flame', '<b>' + st.corrente + '</b> giorni di fila', 'fiamma', 'Un giorno saltato non azzera la serie.') +
+      chip('check', '<b>' + quanteSett + '</b> questa settimana') +
+      chip('target', '<b>' + fatte + '/' + oggi.length + '</b> oggi') +
       '</div></div>' +
       '<button class="btn btn-primario eroe2-cta" data-vai="oggi">' + ICO('target', 15) + ' Vai a Oggi</button>' +
       '</div>';
@@ -4776,8 +4841,12 @@
 
     $vista.innerHTML = html;
 
-    countUp(document.getElementById('xp-contatore'), s.xp);
-    LMCharts.ring(document.getElementById('anello-livello'), lvl.pct, { size: 96, centro: 'L' + lvl.livello, label: 'Livello ' + lvl.livello + ', ' + Math.round(lvl.pct * 100) + '% verso il prossimo' });
+    countUp(document.getElementById('conta-fatte'), quante);
+    LMCharts.ring(document.getElementById('anello-riuscita'), bil.tasso,
+      { size: 96, centro: bil.messe ? Math.round(bil.tasso * 100) + '%' : '—',
+        label: bil.messe
+          ? 'Ti riesce il ' + Math.round(bil.tasso * 100) + ' per cento: ' + bil.fatte + ' cose fatte su ' + bil.messe + ' che ti eri messo, negli ultimi trenta giorni'
+          : 'Non ci sono ancora giorni chiusi da contare' });
 
     document.getElementById('sez-plancia').querySelectorAll('[data-sez]').forEach(function (b) {
       b.addEventListener('click', function () { sezPlancia = b.getAttribute('data-sez'); disegnaSezione(); aggiornaSegP(); });
@@ -4834,7 +4903,52 @@
            guardare indietro si fa qui, accanto alla costanza e alle aree.
            In Rituali sarebbero state una porta verso il passato in mezzo alle
            cose da fare adesso. */
-        '<div class="card" style="--i:2"><h2>' + ICO('archivio', 15) + ' Le review di prima</h2>' +
+        /* ============================================================
+           DOVE TI RIESCE E DOVE NO
+
+           È la scheda che dice cosa fare, e le altre due no. «Ti riesce il
+           64%» è una diagnosi senza indirizzo; «in Salute ne metti sei a
+           settimana e ne fai una» è un indirizzo.
+           Ordinate dalla PEGGIORE, che è l'ordine che serve: le aree che
+           vanno bene non chiedono niente, e metterle in cima vuol dire far
+           scorrere per arrivare all'unica riga che conta.
+           E sotto, le cose che non sono riuscite davvero, con il motivo più
+           frequente. Stavano in fondo all'elenco delle Attività, che è il
+           posto dove si decide cosa fare adesso: lì erano un promemoria dei
+           fallimenti in mezzo al lavoro. Qui sono quello che sono, cioè dati
+           per rispondere a «cosa non funziona per me» — la stessa domanda di
+           Scoperte e degli Esperimenti.
+           ============================================================ */
+        '<div class="card" style="--i:2"><h2>' + ICO('aree', 15) + ' Dove ti riesce e dove no</h2>' +
+        '<div class="sotto">Ultimi 30 giorni, dalla peggiore. Il conto è: quante te n’eri messe, quante ne hai fatte.</div>' +
+        (bil.aree.length
+          ? '<div class="bil-aree">' + bil.aree.map(function (a) {
+              var ar = areaById(a.areaId);
+              return '<div class="bil-riga">' +
+                '<span class="bil-nome">' + segnoArea(ar, 13, 'tit-area') + esc(ar.nome) + '</span>' +
+                '<span class="bil-barra"><i style="width:' + Math.round(a.tasso * 100) + '%;--c-area:' + LM.coloreArea(ar) + '"></i></span>' +
+                '<span class="bil-num"><b>' + Math.round(a.tasso * 100) + '%</b> <span>' + a.fatte + '/' + a.messe + '</span></span>' +
+                '</div>';
+            }).join('') + '</div>'
+          : '<p class="lista-nota">Ancora nessun giorno chiuso da contare.</p>') +
+        (function () {
+          var perse = LM.mancate(90), motivi = LM.motiviMancate(90);
+          if (!perse.length) return '';
+          return '<div class="lista-eti mt">Non ci sono riuscito <span>' + perse.length + '</span></div>' +
+            (motivi.length ? '<p class="lista-nota bil-motivo">Più spesso: <b>' + esc(motivi[0].eti.toLowerCase()) + '</b>' +
+              (motivi.length > 1 ? ', poi ' + esc(motivi[1].eti.toLowerCase()) : '') + '.</p>' : '') +
+            '<div class="lista">' + perse.slice(0, 8).map(function (a) {
+              var ar = areaById(a.areaId);
+              var g = LM.QUANTO_FATTO.find(function (x) { return x.id === a.mancata.quanto; });
+              return '<div class="lista-riga mancata-riga">' +
+                '<span class="lista-azione mancata-segno">' + ICO('annulla', 15) + '</span>' +
+                '<span class="lista-corpo"><span class="lista-tit">' + segnoArea(ar, 13, 'tit-area') + esc(a.testo) + '</span>' +
+                '<span class="lista-sub">' + esc(g ? g.eti.toLowerCase() : 'non riuscita') + '</span></span></div>';
+            }).join('') + '</div>' +
+            (perse.length > 8 ? '<p class="lista-nota">e altre ' + (perse.length - 8) + '.</p>' : '');
+        })() +
+        '</div>' +
+        '<div class="card" style="--i:3"><h2>' + ICO('archivio', 15) + ' Le review di prima</h2>' +
         '<div class="sotto">Messe in fila dicono cose che una sera sola non dice.</div>' +
         '<div class="lista mt-s">' +
         rigaPorta('riep-review', 'archivio', 'Aprile tutte',
@@ -6684,13 +6798,11 @@
               '<div class="lista lista-parcheggio"' + (apertoParcheggio ? '' : ' hidden') + '>' +
               parch.map(function (x) { return attRigaHtml(x.b, { motivo: x.i && x.i.motivo }); }).join('') + '</div>'
             : '') +
-          (perse.length
-            ? '<button class="lista-eti lista-eti-btn" data-perse="1" aria-expanded="' + (!!backlogAperte.__perse) + '">' +
-              'Non riuscite <span>' + perse.length + '</span>' +
-              '<span class="lista-chev' + (backlogAperte.__perse ? ' aperta' : '') + '">' + ICO('chevronGiu', 15) + '</span></button>' +
-              '<div class="lista lista-perse"' + (backlogAperte.__perse ? '' : ' hidden') + '>' +
-              perse.map(function (x) { return attRigaHtml(x.b, { motivo: etichettaQuanto(x.b.mancata) }); }).join('') + '</div>'
-            : '');
+          /* le non riuscite non stanno più qui: questo è l'elenco di cosa
+             fare adesso, e un promemoria dei fallimenti in mezzo al lavoro
+             non aiuta nessuno a cominciare. Stanno in Panoramica, dentro
+             «Dove ti riesce e dove no», che è la domanda a cui servono. */
+          '';
 
         var bt = lista.querySelector('[data-tutte]');
         if (bt) bt.addEventListener('click', function () {
@@ -6703,16 +6815,6 @@
             if (delta) window.scrollBy(0, delta);
             nuovo.focus({ preventScroll: true });
           }
-        });
-        var bpe = lista.querySelector('[data-perse]');
-        if (bpe) bpe.addEventListener('click', function () {
-          var ap = !backlogAperte.__perse;
-          backlogAperte.__perse = ap;
-          var corpo = lista.querySelector('.lista-perse');
-          if (corpo) corpo.hidden = !ap;
-          bpe.setAttribute('aria-expanded', ap);
-          var ch = bpe.querySelector('.lista-chev');
-          if (ch) ch.classList.toggle('aperta', ap);
         });
         var bp = lista.querySelector('[data-parcheggio]');
         if (bp) bp.addEventListener('click', function () {

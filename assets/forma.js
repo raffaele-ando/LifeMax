@@ -242,12 +242,26 @@
      non e' quadrato, allora quadrato lo sei per caso, e la forma la prendi
      come lui. Guardati su tutte le schermate: gli unici quadrati con un
      fratello di misura diversa erano quelle due pastiglie. */
+  /* LA RISPOSTA SI RICORDA, PER PADRE E PER CLASSE.
+     Questa domanda è la stessa per tutti i fratelli che portano la stessa
+     classe, e rifarla per ognuno costa il quadrato: in una mappa di calore
+     con trecentosessantacinque quadratini sono centotrentamila letture di
+     misura per sapere una cosa sola. Col profilatore, su due anni di dati,
+     era la voce più cara di tutta l'apertura di una schermata — 630 ms su
+     tremila. Adesso si risponde una volta per gruppo, e il ricordo dura una
+     passata (dopo, le misure possono essere cambiate). */
+  var ricordoFratelli = null;
   function fratelliQuadri(e) {
     var pa = e.parentNode;
     if (!pa || pa.nodeType !== 1) return true;
     var mie = (typeof e.className === 'string' ? e.className : '').trim().split(/\s+/).filter(Boolean);
     if (!mie.length) return true;
-    var c = pa.children;
+    var chiave = e.tagName + '|' + mie[0];
+    if (!ricordoFratelli) ricordoFratelli = new WeakMap();
+    var perPadre = ricordoFratelli.get(pa);
+    if (!perPadre) { perPadre = Object.create(null); ricordoFratelli.set(pa, perPadre); }
+    if (chiave in perPadre) return perPadre[chiave];
+    var c = pa.children, esito = true;
     for (var i = 0; i < c.length; i++) {
       var o = c[i];
       if (o === e || o.tagName !== e.tagName) continue;
@@ -256,9 +270,10 @@
       for (var j = 0; j < mie.length; j++) if (sue.indexOf(mie[j]) >= 0) { insieme = true; break; }
       if (!insieme) continue;
       var ow = o.offsetWidth, oh = o.offsetHeight;
-      if (ow > 2 && oh > 2 && !eQuadro(ow, oh)) return false;
+      if (ow > 2 && oh > 2 && !eQuadro(ow, oh)) { esito = false; break; }
     }
-    return true;
+    perPadre[chiave] = esito;
+    return esito;
   }
   function eTondo(r, w, h, e) {
     return eCapsula(r, w, h) && eQuadro(w, h) && (!e || fratelliQuadri(e));
@@ -272,6 +287,22 @@
      DENTRO il riquadro. */
   var cache = Object.create(null);
   var quanti = 0;
+  /* L'ANELLO DEL BORDO, SENZA NESSUNA IMMAGINE.
+     Il filo era un SVG costruito al volo: uno per ogni elemento con una
+     cornice, rifatto a ogni cambio di misura. Su certi telefoni è quello che
+     manda in tilt la scheda grafica — provato sul campo, due volte: con le
+     immagini il disturbo c'è, senza sparisce.
+     Qui la stessa curva si ottiene con un secondo RITAGLIO: un tracciato con
+     due giri — quello di fuori e quello rientrato di uno spessore — e la
+     regola `evenodd`, che riempie quello che sta fra i due. È esattamente la
+     stessa geometria del filo, disegnata da un colore pieno invece che da
+     un'immagine, quindi non c'è niente da rasterizzare e niente da tenere in
+     memoria. Va addosso a uno pseudo-elemento perché il ritaglio
+     dell'elemento serve già a dargli la forma. */
+  function anello(w, h, ang, sp) {
+    return 'path(evenodd, "' + contorno(w, h, ang, 0) + contorno(w, h, ang, sp) + '")';
+  }
+
   function filo(w, h, ang, sp, colore) {
     var chiave = w + '|' + h + '|' + ang.tl + '|' + ang.tr + '|' + ang.br + '|' + ang.bl + '|' + sp + '|' + colore;
     if (cache[chiave]) return cache[chiave];
@@ -394,6 +425,10 @@
     return e.offsetWidth > 2 && e.offsetHeight > 2;
   }
   function azzeraOra(e) {
+    if (e.dataset.formaFilo !== undefined) {
+      e.style.removeProperty('--filo-d');
+      delete e.dataset.formaFilo;
+    }
     e.style.borderRadius = '';
     e.style.borderColor = '';
     for (var i = 0; i < SFONDI.length; i++) e.style[SFONDI[i]] = '';
@@ -521,9 +556,23 @@
        vengono dalle maschere o da qualcos'altro. Un tocco, e si sa. */
     var grande = (w > limiteW || h > limiteH) ||
       document.documentElement.getAttribute('data-effetti') === 'minimi';
+    /* LO PSEUDO-ELEMENTO DEV'ESSERE LIBERO. Quaranta elementi su ottocento
+       hanno già un `::after` che dice qualcosa: rubarglielo cancellerebbe
+       quello che disegna. Lì il bordo lo fa il browser, che è quello che
+       facevano tutti prima. */
+    /* Il nostro anello NON conta come occupato. Appena lo si mette, la regola
+       `[data-forma-filo]::after { content: '' }` fa risultare lo pseudo-elemento
+       pieno — di roba nostra — e alla passata dopo l'elemento sembrava già
+       preso da qualcun altro: l'anello non si aggiornava più, e restava
+       disegnato sulla misura di prima. L'ha trovato prove/bordi.js sulla
+       scheda di Panoramica, che cresce dopo essere stata disegnata (il numero
+       che sale e l'anello della riuscita la fanno diventare più alta). */
+    var suo = e.dataset.formaFilo !== undefined ? 'none' : getComputedStyle(e, '::after').content;
+    var liberoDopo = (suo === 'none' || suo === 'normal' || suo === '');
     var firma = w + 'x' + h + '|' + ang.tl + ',' + ang.tr + ',' + ang.br + ',' + ang.bl + '|' + sp + '|' + col + (grande ? '|G' : '');
     if (e.dataset.forma === firma) return null;
-    return { e: e, w: w, h: h, ang: ang, sp: sp, col: col, sotto: sotto, firma: firma, grande: grande };
+    return { e: e, w: w, h: h, ang: ang, sp: sp, col: col, sotto: sotto, firma: firma,
+             grande: grande, liberoDopo: liberoDopo, statico: s.position === 'static' };
   }
 
   /* TEMPO 3 — scrivere, e basta. Niente qui dentro legge l'impaginazione. */
@@ -580,16 +629,20 @@
     var q = p.grande ? 1 : 0.99;
     e.style.borderRadius = (a.tl * q).toFixed(2) + 'px ' + (a.tr * q).toFixed(2) + 'px ' +
       (a.br * q).toFixed(2) + 'px ' + (a.bl * q).toFixed(2) + 'px';
-    if (p.col && !p.grande && !senzaImmagini()) {
+    if (p.col && !p.grande && p.liberoDopo) {
       /* Il bordo del box si spegne QUI, sullo stesso elemento e nello stesso
-         momento in cui compare il filo: non c'è nessun istante in cui uno dei
+         momento in cui compare l'anello: non c'è nessun istante in cui uno dei
          due manca o ci sono tutti e due. Lo spessore resta, perché è misura:
          toglierlo sposterebbe il contenuto di due pixel. */
       e.style.borderColor = 'transparent';
-      var giu = p.sotto ? p.sotto.split('§') : null;
-      var mio = [filo(p.w, p.h, p.ang, p.sp, p.col), 'no-repeat', '100% 100%', '0%', '0%', 'border-box', 'border-box'];
-      for (var i = 0; i < SFONDI.length; i++)
-        e.style[SFONDI[i]] = giu ? mio[i] + ', ' + giu[i] : mio[i];
+      /* lo pseudo-elemento si aggancia al riquadro di IMBOTTITURA, che è più
+         piccolo del riquadro del bordo di uno spessore per lato: lo si tira
+         fuori di tanto, così l'anello combacia con la cornice vera */
+      if (p.statico) e.style.position = 'relative';
+      e.style.setProperty('--filo-c', p.col);
+      e.style.setProperty('--filo-sp', (-p.sp) + 'px');
+      e.style.setProperty('--filo-d', anello(p.w, p.h, p.ang, p.sp));
+      e.dataset.formaFilo = '1';
     }
     daOsservare.push(e);
   }
@@ -630,6 +683,13 @@
       e.style.borderColor = '';
       var giu = e.dataset.formaSfondo ? e.dataset.formaSfondo.split('§') : null;
       for (var i = 0; i < SFONDI.length; i++) e.style[SFONDI[i]] = giu ? giu[i] : '';
+    }
+    if (e.dataset.formaFilo !== undefined) {
+      e.style.removeProperty('--filo-c');
+      e.style.removeProperty('--filo-sp');
+      e.style.removeProperty('--filo-d');
+      e.style.position = '';
+      delete e.dataset.formaFilo;
     }
     delete e.dataset.forma;
   }
@@ -773,22 +833,13 @@
   function spentoDelTutto() {
     return document.documentElement.getAttribute('data-effetti') === 'minimi';
   }
-  /* «RIDOTTI» = LA STESSA FORMA, SENZA IMMAGINI GENERATE.
-     Il filo è l'unico pezzo di questo sistema che produce un'immagine: un SVG
-     costruito al volo, uno per ogni elemento con una cornice, rifatto a ogni
-     cambio di misura. Su certi telefoni è quello che manda in tilt la scheda
-     grafica, e da qui non si può riprodurre.
-     A «ridotti» il bordo lo disegna il browser come farebbe da sé, e la curva
-     degli angoli resta quella vera perché la fa il ritaglio. Quello che si
-     perde è mezzo pixel: il filo corre sul mezzo dello spessore, il bordo
-     nativo sta dentro il riquadro, e sui quarantacinque gradi l'arco passa
-     appena più interno della curva. Misurato pixel per pixel su sei
-     schermate, la differenza sta quasi tutta sotto 24 su 255 e non si vede
-     senza le due immagini affiancate. */
-  function senzaImmagini() {
-    var v = document.documentElement.getAttribute('data-effetti');
-    return v === 'ridotti' || v === 'minimi';
-  }
+  /* Questo gradino è servito a una cosa sola, e l'ha fatta: ha dimostrato,
+     su un telefono vero, che il difetto grafico veniva dalle immagini
+     generate. Adesso le immagini non ci sono più — il bordo è un anello
+     ritagliato — quindi non c'è più niente da togliere qui: «ridotti» è
+     tornato a voler dire quello che diceva prima, cioè niente sfocature
+     dietro ai pannelli, che resta un modo vero di alleggerire una macchina
+     lenta senza rinunciare alla forma. */
 
   function giroSu(lista) {
     var i, e;
@@ -811,6 +862,7 @@
       try { azzeraOra(daPulire[i]); } catch (err) { grida(err); }
     }
     var piani = [];
+    ricordoFratelli = null;      /* il ricordo dura una passata, non di più */
     for (i = 0; i < lista.length; i++) {
       e = lista[i];
       if (e.nodeType !== 1 || VIETATI[e.tagName]) continue;

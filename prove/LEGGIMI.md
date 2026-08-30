@@ -432,14 +432,14 @@ genera le chiavi, in un browser vero).
   fotogrammi al secondo; e che nessun titolo esca dal suo blocco nella
   giornata e nella settimana — il blocco è alto quanto DURA l'impegno, e tre
   righe fisse in trenta pixel tagliavano la seconda a metà altezza.
-  I tre gradini degli effetti si sono ristretti attorno alla cosa che li ha
-  fatti nascere. Sul telefono di chi la usa: con i fili SVG il disturbo
-  c'era, senza sparisce — due prove che dicono che il pezzo che genera
-  IMMAGINI è quello. Quindi «ridotti» adesso vuol dire «la stessa forma
-  senza nessuna immagine generata» (il bordo lo disegna il browser, la curva
-  resta perché la fa il ritaglio) e «minimi» vuol dire spento del tutto.
-  La differenza fra il filo e il bordo nativo è misurata pixel per pixel su
-  sei schermate: mezzo pixel di spessore, quasi tutto sotto 24 su 255.
+  I tre gradini degli effetti hanno fatto il loro mestiere: su un telefono
+  vero, con le immagini generate il disturbo c'era e senza spariva. Da lì è
+  nato l'ANELLO — il bordo disegnato con un secondo ritaglio invece che con
+  un SVG costruito al volo — e adesso l'app non genera nessuna immagine a
+  nessun gradino. Il confronto pixel per pixel con la vecchia strada dice che
+  il nuovo bordo è anche più nitido: l'SVG veniva rasterizzato alla
+  risoluzione CSS e poi ingrandito, quindi il colore del bordo non arrivava
+  mai pieno.
 
   Da oggi guarda anche LA FESTA e I SUONI. I coriandoli erano trentaquattro
   elementi animati aggiunti tutti insieme — cioè trentaquattro strati nuovi

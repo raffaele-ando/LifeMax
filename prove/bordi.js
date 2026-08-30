@@ -145,7 +145,15 @@ const CONTROLLA = `(function (conFuoco) {
     var rmax = Math.max.apply(null, raggi);
     var bw = parseFloat(s.borderTopWidth) || 0;
     var sfondi = corsie(s.backgroundImage === 'none' ? '' : s.backgroundImage);
-    var ilFilo = sfondi.length && /stroke%3D|stroke=/.test(sfondi[0]) ? sfondi[0] : '';
+    /* IL BORDO NON È PIÙ UN'IMMAGINE. Era un SVG generato al volo, e su certi
+       telefoni era lui a mandare in tilt la scheda grafica (provato sul campo).
+       Adesso è un ANELLO: un secondo ritaglio sullo pseudo-elemento, un
+       tracciato con due giri e la regola evenodd che riempie quello in mezzo.
+       Stessa geometria, nessuna immagine — e per giunta più nitido, perché
+       l'SVG veniva rasterizzato alla risoluzione CSS e poi ingrandito. */
+    var dopo = getComputedStyle(e, '::after');
+    var lAnello = /^path\\(evenodd/.test(dopo.clipPath || '') ? dopo.clipPath : '';
+    var ilFilo = lAnello;
 
     if (suoRitaglio) out.ritagliati++;
 
@@ -244,6 +252,9 @@ const CONTROLLA = `(function (conFuoco) {
     ['::before', '::after'].forEach(function (ps) {
       var q = getComputedStyle(e, ps);
       var c = q.clipPath || '';
+      /* l'anello del bordo è l'unico pseudo-elemento che DEVE avere un
+         ritaglio: è il suo mestiere, e si riconosce dalla regola evenodd */
+      if (ps === '::after' && e.dataset.formaFilo !== undefined && /^path\\(evenodd/.test(c)) return;
       if (/^(polygon|path)\\(/.test(c)) out.pseudoRitagliati.push(nome(e) + ps + ' ' + c.slice(0, 40));
     });
 
@@ -338,33 +349,32 @@ const CONTROLLA = `(function (conFuoco) {
       }
     }
 
-    if (!ilFilo) return;
-    var svg = decodeURIComponent(ilFilo);
+    if (!lAnello) return;
 
-    /* 5. IL FILO È DISEGNATO SULLA MISURA DI ADESSO. Se l'SVG è largo quanto
-          l'elemento era prima, la cornice si vede più piccola dentro, e in
-          mezzo restano due o tre pixel di fondo: era la seconda cornice nella
-          barra in basso. */
-    var wh = svg.match(/width="([\\d.]+)" height="([\\d.]+)"/);
-    if (wh && (Math.abs(+wh[1] - w) > 0.6 || Math.abs(+wh[2] - h) > 0.6))
-      out.filoVecchio.push(nome(e) + ' filo ' + wh[1] + 'x' + wh[2] + ', elemento ' + w + 'x' + h);
+    /* 5. L'ANELLO È DISEGNATO SULLA MISURA DI ADESSO. Il suo giro esterno deve
+          arrivare esattamente agli spigoli dell'elemento: se è di una misura
+          vecchia, la cornice si vede più piccola dentro e in mezzo restano due
+          o tre pixel di fondo — era la seconda cornice nella barra in basso. */
+    var nums = (lAnello.match(/-?[\\d.]+/g) || []).map(Number);
+    if (nums.length > 8) {
+      var maxX = 0, maxY = 0;
+      for (var q = 0; q < nums.length - 1; q += 2) {
+        if (nums[q] > maxX) maxX = nums[q];
+        if (nums[q + 1] > maxY) maxY = nums[q + 1];
+      }
+      if (Math.abs(maxX - w) > 1.2 || Math.abs(maxY - h) > 1.2)
+        out.filoVecchio.push(nome(e) + ' anello ' + maxX.toFixed(0) + 'x' + maxY.toFixed(0) + ', elemento ' + w + 'x' + h);
+    }
 
-    /* 4. IL FILO E IL RITAGLIO DEVONO DIRE LA STESSA CURVA. Sono la stessa
-          funzione con un rientro di mezzo spessore: se i raggi non tornano,
-          il contorno passa dove la forma non passa. */
-    var dd = svg.match(/ d="([^"]+)"/);
-    var sp = (svg.match(/stroke-width="([\\d.]+)"/) || [0, 0])[1];
-    if (dd && rc) {
-      var rf = raggiDelFilo(dd[1], w, h, +sp / 2);
-      /* il filo corre a mezzo spessore DENTRO il contorno, quindi il suo raggio
-         vale un mezzo spessore in meno — ma non sotto zero: un angolo che non
-         c'e' resta a zero anche rientrando. Senza il taglio a zero ogni forma
-         con un angolo vivo (il pannello, che è tondo sopra e squadrato sotto)
-         risultava «con due curve diverse» per mezzo pixel inventato. */
+    /* 4. L'ANELLO E IL RITAGLIO DEVONO DIRE LA STESSA CURVA. Il giro esterno
+          dell'anello È il contorno del ritaglio: se i raggi non tornano, la
+          cornice passa dove la forma non passa. */
+    var giroEsterno = (lAnello.match(/"([^"]+)"/) || [0, ''])[1].replace(/^(.*?)Z.*$/, '$1Z');
+    if (giroEsterno && rc) {
+      var rf = raggiDelFilo(giroEsterno, w, h, 0);
       if (rf) for (var j = 0; j < 4; j++) {
-        var atteso2 = Math.max(0, rc[j] - (+sp) / 2);
-        if (Math.abs(rf[j] - atteso2) > 0.08) {
-          out.curveDiverse.push(nome(e) + ' angolo ' + j + ': filo ' + rf[j].toFixed(2) + ', atteso ' + atteso2.toFixed(2) + ' (ritaglio ' + rc[j].toFixed(2) + ')');
+        if (Math.abs(rf[j] - rc[j]) > 0.08) {
+          out.curveDiverse.push(nome(e) + ' angolo ' + j + ': anello ' + rf[j].toFixed(2) + ', ritaglio ' + rc[j].toFixed(2));
           break;
         }
       }
@@ -592,8 +602,8 @@ catch (e) {
   mostra('e chi non ha la maschera si tiene il raggio', tot.spigoli);
   mostra('nessun bordo è sparito', tot.spariti);
   mostra('nessun bordo è dipinto due volte', tot.doppi);
-  mostra('il filo e il ritaglio dicono la stessa curva', tot.curveDiverse);
-  mostra('nessun filo è disegnato su una misura vecchia', tot.filoVecchio);
+  mostra('l’anello del bordo e il ritaglio dicono la stessa curva', tot.curveDiverse);
+  mostra('nessun anello è disegnato su una misura vecchia', tot.filoVecchio);
   mostra('nessun raggio si è ristretto giro dopo giro', tot.raggiRistretti);
   mostra('le corsie dello sfondo sono al loro posto', tot.corsie);
   mostra('nessun ritaglio mangia quello che sporge', tot.mangiati);
