@@ -553,6 +553,13 @@
     secchi.push(e);
     if (p.grande) e.style.clipPath = '';
     else e.style.clipPath = 'path("' + ritaglio(p.w, p.h, p.ang) + '")';
+    /* SENZA RITAGLIO NON SERVE NEMMENO IL FILO. Il filo esiste perché il
+       bordo vero del riquadro segue l'arco del `border-radius` mentre la
+       forma la fa il ritaglio: due curve diverse, e senza il filo il bordo
+       sporgerebbe. Dove il ritaglio non c'è, la forma LA FA il border-radius
+       — quindi il bordo nativo la segue esatta, e generare un'immagine SVG
+       per disegnare la stessa curva è lavoro buttato: una texture in più
+       sulla scheda grafica per ogni scheda alta della pagina. */
     /* IL `border-radius` RESTA, AL 99 PER CENTO. Non serve più a dare la
        forma — quella la fa il ritaglio — ma serve ancora all'OMBRA e al
        contorno del fuoco, che seguono lui e che un raggio a zero renderebbe
@@ -573,7 +580,7 @@
     var q = p.grande ? 1 : 0.99;
     e.style.borderRadius = (a.tl * q).toFixed(2) + 'px ' + (a.tr * q).toFixed(2) + 'px ' +
       (a.br * q).toFixed(2) + 'px ' + (a.bl * q).toFixed(2) + 'px';
-    if (p.col) {
+    if (p.col && !p.grande) {
       /* Il bordo del box si spegne QUI, sullo stesso elemento e nello stesso
          momento in cui compare il filo: non c'è nessun istante in cui uno dei
          due manca o ci sono tutti e due. Lo spessore resta, perché è misura:
@@ -752,9 +759,32 @@
     limiteH = (window.innerHeight || 768) / 2;
   }
 
+  /* «EFFETTI: MINIMI» VUOL DIRE SPENTO, non «un po' meno».
+     Prima toglieva il ritaglio e lasciava il FILO: e il filo è un'immagine
+     SVG generata al volo, una per ogni elemento con un bordo, ridisegnata a
+     ogni cambio di misura. Su una schermata sono una ventina di immagini
+     nuove — venti texture da tenere sulla scheda grafica, che si buttano via
+     e si rifanno a ogni ridisegno. Quindi il gradino «minimi» non spegneva
+     affatto il pezzo più caro del sistema, e chi lo provava per capire da
+     cosa dipendeva un difetto grafico riceveva una risposta falsa.
+     Adesso a «minimi» forma.js non tocca niente: raggi nativi, bordi veri,
+     nessuna immagine generata. È l'interruttore che dice davvero se il
+     problema è qui. */
+  function spentoDelTutto() {
+    return document.documentElement.getAttribute('data-effetti') === 'minimi';
+  }
+
   function giroSu(lista) {
     var i, e;
     var daPulire = [];
+    if (spentoDelTutto()) {
+      for (i = 0; i < lista.length; i++) {
+        e = lista[i];
+        if (e.nodeType !== 1 || VIETATI[e.tagName]) continue;
+        try { spegni(e); } catch (err) { grida(err); }
+      }
+      return;
+    }
     if (!limiteH) misuraLimite();
     for (i = 0; i < lista.length; i++) {
       e = lista[i];

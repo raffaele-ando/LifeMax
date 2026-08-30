@@ -289,16 +289,26 @@ const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  
   ok('c’è un blocco che si trascina su cui provare', !!cB, cB ? 'trovato' : 'nessuno');
   if (cB) await fermo('su un blocco che si trascina', () => dito(cB.x, cB.y, cB.x - 110, cB.y, 160));
 
-  /* su un campo: «Rituali» ne ha sempre uno */
-  await apri('rituali');
-  const cC = await p.evaluate(() => {
-    const i = [...document.querySelectorAll('#vista input, #vista textarea')]
-      .find(x => !x.hidden && x.type !== 'checkbox' && x.type !== 'radio' && x.offsetWidth > 40);
-    if (!i) return null;
-    i.scrollIntoView({ block: 'center' });
-    const r = i.getBoundingClientRect();
-    return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
-  });
+  /* su un campo: si cerca dove ce n'è uno, invece di fidarsi di una pagina
+     sola — quale rituale è aperto dipende dall'ora, e la prova non deve
+     dipendere dall'ora */
+  var cC = null;
+  for (const dove2 of ['inbox', 'rituali', 'oggi']) {
+    await apri(dove2, dove2 === 'inbox' ? () => {
+      const b = [...document.querySelectorAll('.segmenti button')].find(x => /da fare/i.test(x.textContent));
+      if (b) b.click();
+    } : null);
+    cC = await p.evaluate(() => {
+      const i = [...document.querySelectorAll('#vista input, #vista textarea')]
+        .find(x => !x.hidden && x.type !== 'checkbox' && x.type !== 'radio' && x.offsetWidth > 40);
+      if (!i) return null;
+      i.scrollIntoView({ block: 'center' });
+      const r = i.getBoundingClientRect();
+      return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+    });
+    if (cC) break;
+  }
+  await p.waitForTimeout(300);
   await p.waitForTimeout(400);
   ok('c’è un campo su cui provare', !!cC, cC ? 'trovato' : 'nessuno');
   if (cC) await fermo('dentro un campo di testo', () => dito(cC.x, cC.y, cC.x - 110, cC.y, 160));

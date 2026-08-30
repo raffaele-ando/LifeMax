@@ -2754,26 +2754,62 @@
      l'app e le persone intorno. E chi ha chiesto meno animazioni al sistema
      operativo non vede i coriandoli, senza doverlo dire di nuovo qui.
      ============================================================ */
+  /* ---------- I SUONI ----------
+     Il browser li genera, non sono file: nessun peso da scaricare, nessun
+     ritardo la prima volta, e partono nello stesso istante del tocco. Ogni
+     voce è una o più note con la sua forma d'onda, la sua durata e il suo
+     volume, e le altezze sono scelte in intervalli consonanti — mai due note
+     che stridono, perché un suono che si sente cento volte al giorno deve
+     poter passare inosservato.
+
+     Perché ogni cosa suoni DIVERSA: un ritorno uguale per gesti diversi non
+     dice niente in più di quanto già si vede. Diverso, invece, diventa una
+     conferma che arriva prima dello sguardo — sai di aver spuntato e non
+     cancellato senza guardare lo schermo. Per chi ha l'ADHD conta il doppio,
+     perché è un ritorno immediato su un gesto piccolo, che è esattamente il
+     tipo di ritorno che manca.
+
+     I volumi sono bassissimi apposta (da 0.02 a 0.13): un'app che si sente
+     dall'altra parte della stanza si mette in muto e non si riaccende più.
+
+     tipo:  sine = morbido, triangle = un po' più presente
+     salita/discesa: l'ordine delle note dice il verso della cosa — si apre e
+     si sale, si chiude e si scende, si annulla e si torna indietro. */
+  var SUONI = {
+    tocco:    { note: [660],            tipo: 'sine',     dur: 0.055, vol: 0.030 },
+    tastoPieno:{ note: [523.25, 659.25], tipo: 'triangle', dur: 0.085, vol: 0.055, passo: 0.045 },
+    segmento: { note: [784],            tipo: 'sine',     dur: 0.05,  vol: 0.035 },
+    campo:    { note: [523.25],         tipo: 'sine',     dur: 0.045, vol: 0.022 },
+    apri:     { note: [440, 587.33],    tipo: 'sine',     dur: 0.10,  vol: 0.045, passo: 0.055 },
+    chiudi:   { note: [587.33, 440],    tipo: 'sine',     dur: 0.10,  vol: 0.040, passo: 0.055 },
+    spunta:   { note: [659.25, 987.77], tipo: 'triangle', dur: 0.13,  vol: 0.070, passo: 0.070 },
+    finito:   { note: [523.25, 659.25, 783.99], tipo: 'triangle', dur: 0.20, vol: 0.100, passo: 0.080 },
+    avvio:    { note: [392, 523.25],    tipo: 'sine',     dur: 0.14,  vol: 0.060, passo: 0.075 },
+    fine:     { note: [783.99, 659.25, 523.25], tipo: 'sine', dur: 0.22, vol: 0.090, passo: 0.090 },
+    annulla:  { note: [523.25, 392],    tipo: 'sine',     dur: 0.12,  vol: 0.050, passo: 0.060 },
+    scarto:   { note: [349.23],         tipo: 'sine',     dur: 0.09,  vol: 0.040 },
+    guaio:    { note: [311.13, 293.66], tipo: 'triangle', dur: 0.16,  vol: 0.070, passo: 0.070 }
+  };
   var udio = null;
   function suona(che) {
     var p = LM.load().profilo || {};
     if (p.suono === 'no') return;
+    var V = SUONI[che] || SUONI.tocco;
     try {
       var AC = window.AudioContext || window.webkitAudioContext;
       if (!AC) return;
       if (!udio) udio = new AC();
       if (udio.state === 'suspended') udio.resume();
       var t0 = udio.currentTime;
-      var note = che === 'pieno' ? [523.25, 783.99] : [440, 587.33];
-      note.forEach(function (f, i) {
+      V.note.forEach(function (f, n) {
         var o = udio.createOscillator(), g = udio.createGain();
-        o.type = 'sine'; o.frequency.value = f;
-        var q = t0 + i * 0.085;
+        o.type = V.tipo; o.frequency.value = f;
+        var q = t0 + n * (V.passo || 0);
         g.gain.setValueAtTime(0.0001, q);
-        g.gain.exponentialRampToValueAtTime(che === 'pieno' ? 0.13 : 0.07, q + 0.012);
-        g.gain.exponentialRampToValueAtTime(0.0001, q + 0.28);
+        g.gain.exponentialRampToValueAtTime(V.vol, q + 0.008);
+        g.gain.exponentialRampToValueAtTime(0.0001, q + V.dur);
         o.connect(g); g.connect(udio.destination);
-        o.start(q); o.stop(q + 0.3);
+        o.start(q); o.stop(q + V.dur + 0.02);
       });
     } catch (e) {}
   }
@@ -2781,33 +2817,120 @@
     var p = LM.load().profilo || {};
     if (p.vibra === 'no') return;
     if (!navigator.vibrate) return;
-    try { navigator.vibrate(che === 'pieno' ? [14, 40, 22] : [12]); } catch (e) {}
+    var q = { pieno: [14, 40, 22], finito: [14, 40, 22], spunta: [10], leggero: [8], tocco: [6] }[che] || [8];
+    try { navigator.vibrate(q); } catch (e) {}
   }
+
+  /* OGNI COSA CHE PREMI HA IL SUO SUONO, e lo decide un posto solo.
+     Attaccarlo a mano su ogni comando vorrebbe dire dimenticarsene sul
+     prossimo che si scrive; qui si guarda che cosa è stato toccato e si
+     sceglie la voce. Chi vuole dire la sua mette `data-suono` addosso. */
+  function voceDi(el) {
+    if (!el) return null;
+    var esplicita = el.closest('[data-suono]');
+    if (esplicita) return esplicita.getAttribute('data-suono') || null;
+    if (el.closest('.spunta, [data-fa-fatto], [data-steptoggle]')) return 'spunta';
+    if (el.closest('.icona-pericolo, [data-stepdel], .sc-pericolo')) return 'scarto';
+    if (el.closest('.segmenti button, .segmenti a, .q-chip, .att-chip, .giorno-chip')) return 'segmento';
+    if (el.closest('.btn-primario, .btn-grande, .btn-ok, .fab')) return 'tastoPieno';
+    if (el.closest('.lista-porta, .sc-porta, [data-bkapri], .rit-riga, .lista-eti-btn')) return 'apri';
+    if (el.closest('button, a[href], [role="button"], summary')) return 'tocco';
+    if (el.closest('label, input, select, textarea')) return 'campo';
+    return null;
+  }
+  document.addEventListener('pointerdown', function (ev) {
+    /* al TOCCO, non al clic: il suono deve arrivare col dito, non dopo che il
+       browser ha deciso che era un clic — trecento millisecondi dopo un gesto
+       non sono più una conferma di quel gesto */
+    if (!(ev.target instanceof Element)) return;
+    var v = voceDi(ev.target);
+    if (!v) return;
+    suona(v);
+    vibra(v === 'spunta' ? 'spunta' : 'tocco');
+  }, true);
+
   function festeggia(che, x, y) {
-    if (che === 'pieno' && !RIDOTTO) pioggiaCoriandoli();
-    else if (x != null && y != null) burst(x, y);
-    suona(che); vibra(che);
+    if (che === 'pieno') { pioggiaCoriandoli(); suona('finito'); vibra('pieno'); return; }
+    if (x != null && y != null) burst(x, y);
+    suona(che === 'leggero' ? 'spunta' : che);
+    vibra('leggero');
   }
-  /* i coriandoli di una cosa finita cadono da sopra su tutto lo schermo: il
-     piccolo scoppio attorno al dito resta per le cose minori, così i due
-     momenti non si somigliano */
+
+  /* ---------- LA PIOGGIA DI CORIANDOLI, SU UNA TELA SOLA ----------
+     Prima erano trentaquattro elementi `position: fixed` aggiunti alla
+     pagina tutti insieme, ognuno con la sua animazione CSS. Trentaquattro
+     animazioni di trasformazione vogliono dire trentaquattro strati nuovi
+     sulla scheda grafica, creati nello stesso istante — e quell'istante è
+     proprio quello in cui hai appena finito qualcosa, cioè il momento in cui
+     l'app deve sembrare svelta. Su un telefono si vedeva come un blocco: la
+     festa arrivava con un ritardo lunghissimo, e la festa in ritardo non è
+     una festa, è un difetto.
+
+     Una tela sola è UNO strato, e i coriandoli ci si disegnano dentro. La
+     tela si toglie appena finiscono, così non resta niente in pagina.
+     La fisica è la più semplice che regge lo sguardo: caduta con
+     accelerazione, deriva laterale costante, rotazione propria, e lo spessore
+     che si assottiglia col coseno — un rettangolo che gira su se stesso, che
+     è quello che fa un coriandolo vero. */
+  var telaFesta = null, festaAttiva = 0;
   function pioggiaCoriandoli() {
     if (RIDOTTO) return;
-    var n = 34;
-    for (var i = 0; i < n; i++) {
-      var s = document.createElement('i');
-      s.className = 'coriandolo coriandolo-pioggia';
-      s.style.left = (Math.random() * 100).toFixed(1) + 'vw';
-      s.style.top = '-16px';
-      s.style.background = COLORI_FESTA[i % COLORI_FESTA.length];
-      s.style.setProperty('--dx', (Math.random() * 90 - 45).toFixed(0) + 'px');
-      s.style.setProperty('--dy', (window.innerHeight + 60).toFixed(0) + 'px');
-      s.style.setProperty('--rot', (Math.random() * 900 - 450).toFixed(0) + 'deg');
-      s.style.animationDelay = (Math.random() * 0.28).toFixed(2) + 's';
-      s.style.animationDuration = (1.1 + Math.random() * 0.7).toFixed(2) + 's';
-      document.body.appendChild(s);
-      (function (e) { setTimeout(function () { e.remove(); }, 2300); })(s);
+    if (!telaFesta) {
+      telaFesta = document.createElement('canvas');
+      telaFesta.className = 'tela-festa';
+      telaFesta.setAttribute('aria-hidden', 'true');
+      document.body.appendChild(telaFesta);
     }
+    var dpr = Math.min(2, window.devicePixelRatio || 1);   /* a tre volte non si vede meglio e costa il doppio */
+    var W = window.innerWidth, H = window.innerHeight;
+    telaFesta.width = Math.round(W * dpr);
+    telaFesta.height = Math.round(H * dpr);
+    telaFesta.style.display = 'block';
+    var cx = telaFesta.getContext('2d');
+    cx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    var pezzi = [];
+    for (var i = 0; i < 40; i++) {
+      pezzi.push({
+        x: Math.random() * W,
+        y: -20 - Math.random() * H * 0.4,
+        vx: (Math.random() - 0.5) * 60,
+        vy: 220 + Math.random() * 260,
+        w: 5 + Math.random() * 4,
+        h: 9 + Math.random() * 6,
+        a: Math.random() * Math.PI * 2,
+        va: (Math.random() - 0.5) * 9,
+        col: COLORI_FESTA[i % COLORI_FESTA.length]
+      });
+    }
+    var giro = ++festaAttiva;
+    var t0 = performance.now(), ultimo = t0;
+    (function passo(ora) {
+      if (giro !== festaAttiva) return;              /* ne è partita un'altra */
+      var dt = Math.min(0.05, (ora - ultimo) / 1000);
+      ultimo = ora;
+      cx.clearRect(0, 0, W, H);
+      var vivi = 0;
+      for (var k = 0; k < pezzi.length; k++) {
+        var q = pezzi[k];
+        q.vy += 620 * dt;
+        q.x += q.vx * dt;
+        q.y += q.vy * dt;
+        q.a += q.va * dt;
+        if (q.y > H + 30) continue;
+        vivi++;
+        cx.save();
+        cx.translate(q.x, q.y);
+        cx.rotate(q.a);
+        cx.fillStyle = q.col;
+        /* lo spessore che si assottiglia col coseno: è un rettangolo che gira
+           su se stesso, e girando lo vedi di taglio */
+        cx.fillRect(-q.w / 2, -q.h / 2, q.w * Math.abs(Math.cos(q.a * 1.7)), q.h);
+        cx.restore();
+      }
+      if (vivi && ora - t0 < 4000) requestAnimationFrame(passo);
+      else { cx.clearRect(0, 0, W, H); telaFesta.style.display = 'none'; }
+    })(t0);
   }
 
   /* "fuocoScelto": quando l'utente decide di fare un'altra cosa invece di

@@ -432,6 +432,18 @@ genera le chiavi, in un browser vero).
   fotogrammi al secondo; e che nessun titolo esca dal suo blocco nella
   giornata e nella settimana — il blocco è alto quanto DURA l'impegno, e tre
   righe fisse in trenta pixel tagliavano la seconda a metà altezza.
+  Da oggi guarda anche LA FESTA e I SUONI. I coriandoli erano trentaquattro
+  elementi animati aggiunti tutti insieme — cioè trentaquattro strati nuovi
+  sulla scheda grafica, creati proprio nell'istante in cui l'app deve sembrare
+  svelta. Misurato con la CPU rallentata sei volte: 601 ms al primo fotogramma
+  e 33 fps con gli elementi, 360 ms e 54 fps con una tela sola. La controprova
+  rimette i trentaquattro elementi e scende a 22 fps.
+  E i suoni: ogni cosa che si preme ne ha uno, e devono essere DIVERSI — un
+  ritorno uguale per gesti diversi non dice niente in più di quanto già si
+  vede, mentre diverso diventa una conferma che arriva prima dello sguardo.
+  La prova non fa rumore: intercetta l'oscillatore quando parte e legge le
+  frequenze, quindi non dipende dalla scheda audio della macchina.
+
   Le controprove sono tre, e una è nata da un errore: rimettere i due difetti
   del testo INSIEME nascondeva il secondo, perché `center` spartisce lo sbordo
   fra sopra e sotto e ogni lato restava sotto la tolleranza. Rimessi uno per

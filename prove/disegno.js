@@ -282,6 +282,129 @@ function cercaScritteFuori(toll) {
       [].concat(A.err, B.err, C.err).slice(0, 2).join(' · '));
   }
 
+  /* ============ LA FESTA NON DEVE COSTARE PIÙ DELLA COSA FESTEGGIATA ==== */
+  console.log('\nI CORIANDOLI');
+  console.log('  (trentaquattro elementi animati sono trentaquattro strati nuovi sulla');
+  console.log('   scheda grafica, creati proprio nell\u2019istante in cui l\u2019app deve sembrare svelta)');
+  {
+    const { ctx, p } = await apri('oggi', null);
+    const cdp = await ctx.newCDPSession(p);
+    await cdp.send('Emulation.setCPUThrottlingRate', { rate: 6 });
+    await p.waitForTimeout(400);
+    const r = await p.evaluate(() => new Promise((fine) => {
+      const b = document.getElementById('btn-fatto');
+      if (!b) return fine({ saltata: true });
+      b.click();
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        let n = 0; const t1 = performance.now();
+        (function g() {
+          n++;
+          if (performance.now() - t1 < 1200) requestAnimationFrame(g);
+          else fine({
+            fps: +(n / ((performance.now() - t1) / 1000)).toFixed(1),
+            tele: document.querySelectorAll('.tela-festa').length,
+            elementi: document.querySelectorAll('.coriandolo').length
+          });
+        })();
+      }));
+    }));
+    ok('c\u2019era un tasto da premere', !r.saltata, r.saltata ? 'nessun Fatto' : '');
+    if (!r.saltata) {
+      ok('la festa sta su UNA tela sola', r.tele === 1, r.tele + ' tele');
+      ok('e non aggiunge elementi alla pagina', r.elementi === 0, r.elementi + ' elementi');
+      ok('e mentre cade si resta sopra i ' + PAVIMENTO + ' fotogrammi', r.fps >= PAVIMENTO, r.fps + ' fps');
+    }
+    await ctx.close();
+  }
+
+  /* controprova: la vecchia strada, trentaquattro elementi, deve andare peggio */
+  {
+    const { ctx, p } = await apri('oggi', null);
+    const cdp = await ctx.newCDPSession(p);
+    await cdp.send('Emulation.setCPUThrottlingRate', { rate: 6 });
+    const v2 = await p.evaluate(() => new Promise((fine) => {
+      const st = document.createElement('style');
+      st.textContent = '.vc{position:fixed;z-index:400;pointer-events:none;width:7px;height:13px;border-radius:3px;animation:vc 1.6s cubic-bezier(.3,.1,.5,1) forwards}'
+        + '@keyframes vc{0%{opacity:1}85%{opacity:1}to{transform:translate(var(--dx),var(--dy)) rotate(var(--rot));opacity:0}}';
+      document.head.appendChild(st);
+      for (let i = 0; i < 34; i++) {
+        const e = document.createElement('i');
+        e.className = 'vc';
+        e.style.left = (Math.random() * 100).toFixed(1) + 'vw'; e.style.top = '-16px';
+        e.style.background = '#7c5df0';
+        e.style.setProperty('--dx', (Math.random() * 90 - 45).toFixed(0) + 'px');
+        e.style.setProperty('--dy', (innerHeight + 60) + 'px');
+        e.style.setProperty('--rot', (Math.random() * 900 - 450).toFixed(0) + 'deg');
+        document.body.appendChild(e);
+        setTimeout(() => e.remove(), 2300);
+      }
+      let n = 0; const t1 = performance.now();
+      (function g() {
+        n++;
+        if (performance.now() - t1 < 1200) requestAnimationFrame(g);
+        else fine(+(n / ((performance.now() - t1) / 1000)).toFixed(1));
+      })();
+    }));
+    ok('controprova: con trentaquattro elementi i fotogrammi crollano', v2 < PAVIMENTO, v2 + ' fps');
+    await ctx.close();
+  }
+
+  /* ============ OGNI COSA CHE SI PREME HA IL SUO SUONO ============ */
+  console.log('\nOGNI COSA CHE SI PREME HA IL SUO SUONO, E NON LO STESSO');
+  console.log('  (un ritorno uguale per gesti diversi non dice niente in piu\u0300 di quanto');
+  console.log('   gia\u0300 si vede; diverso diventa una conferma che arriva prima dello sguardo)');
+  {
+    /* con «le altre» aperte: le spunte di riga stanno lì dentro */
+    const { ctx, p } = await apri('oggi', () => {
+      const b = document.getElementById('btn-altre');
+      if (b) b.click();
+    });
+    /* si intercetta l'oscillatore al momento in cui parte, che e' quando la
+       frequenza e' gia' stata scritta: cosi' si sa che cosa suonerebbe senza
+       far rumore e senza dipendere dalla scheda audio della macchina */
+    await p.evaluate(() => {
+      window.__note = [];
+      const P = (window.AudioContext || window.webkitAudioContext).prototype;
+      const creaVero = P.createOscillator;
+      P.createOscillator = function () {
+        const o = creaVero.call(this);
+        const partiVero = o.start.bind(o);
+        o.start = function (q) { try { window.__note.push(Math.round(o.frequency.value)); } catch (e) {} return partiVero(q); };
+        return o;
+      };
+    });
+    const suonaSu = (sel) => p.evaluate((s2) => {
+      window.__note = [];
+      const el = document.querySelector(s2);
+      if (!el) return null;
+      el.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, isPrimary: true }));
+      return window.__note.slice();
+    }, sel);
+    const casi = [
+      ['la spunta di una riga', '.spunta'],
+      ['il tasto pieno', '#btn-fatto'],
+      ['una linguetta', '#vista .segmenti a, #vista .segmenti button'],
+      ['un tasto smorzato', '.btn-ghost'],
+      ['una porta che apre', '.lista-eti-btn']
+    ];
+    const voci = {};
+    for (const [nome, sel] of casi) {
+      const n2 = await suonaSu(sel);
+      if (n2 === null) { ok('c\u2019e\u0300 ' + nome + ' su cui provare', false, sel); continue; }
+      voci[nome] = n2.join('-');
+      ok(nome + ' suona', n2.length > 0, n2.join(' + ') + ' Hz');
+    }
+    const distinte = new Set(Object.values(voci));
+    ok('e le voci sono davvero diverse fra loro',
+      distinte.size === Object.keys(voci).length && distinte.size >= 3,
+      Object.keys(voci).map((k) => k + ': ' + voci[k]).join('  |  '));
+    /* da spento non deve suonare niente */
+    await p.evaluate(() => { const st = LM.load(); st.profilo.suono = 'no'; LM.save(); });
+    const muto = await suonaSu('#btn-fatto');
+    ok('e da spento non suona niente', muto && muto.length === 0, (muto || []).join(', ') || 'silenzio');
+    await ctx.close();
+  }
+
   /* ============ LE RETI: se non ho guardato niente, non ho provato niente ==== */
   console.log('\nLE PROVE HANNO GUARDATO QUALCOSA DAVVERO');
   ok('ho trovato elementi con un filtro su cui misurarmi', filtriVisti > 0, filtriVisti + ' elementi');

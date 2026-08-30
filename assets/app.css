@@ -1352,19 +1352,15 @@ select.sel-compatto {
   to { transform: translate(var(--dx), var(--dy)) rotate(var(--rot)) scale(.7); opacity: 0; }
 }
 
-/* La PIOGGIA: cade dall'alto su tutto lo schermo, e dura il doppio. Serve a
-   distinguere due momenti che non sono lo stesso — spuntare una riga in un
-   elenco e finire la cosa che stavi facendo. Se la festa fosse identica, la
-   seconda non varrebbe niente. */
-.coriandolo-pioggia {
-  width: 7px; height: 13px;
-  animation-name: coriandolo-giu;
-  animation-timing-function: cubic-bezier(.3, .1, .5, 1);
-}
-@keyframes coriandolo-giu {
-  0% { opacity: 1; }
-  85% { opacity: 1; }
-  to { transform: translate(var(--dx), var(--dy)) rotate(var(--rot)); opacity: 0; }
+/* La PIOGGIA sta su una TELA, non su trentaquattro elementi. Trentaquattro
+   animazioni di trasformazione sono trentaquattro strati nuovi sulla scheda
+   grafica creati nello stesso istante — e quell'istante e' quello in cui hai
+   appena finito qualcosa, cioe' il momento in cui l'app deve sembrare svelta.
+   Su un telefono si vedeva come un blocco lunghissimo, e una festa in ritardo
+   non e' una festa. Una tela sola e' uno strato. */
+.tela-festa {
+  position: fixed; inset: 0; z-index: 400; pointer-events: none;
+  display: none; width: 100%; height: 100%;
 }
 
 /* ============================================================
