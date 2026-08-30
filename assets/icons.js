@@ -106,6 +106,10 @@
     trash: '<path d="M3.6 6.4h16.8M8.6 6.4V5a1.8 1.8 0 0 1 1.8-1.8h3.2A1.8 1.8 0 0 1 15.4 5v1.4M18.6 6.4l-.9 12.7a2.2 2.2 0 0 1-2.2 2.1H8.5a2.2 2.2 0 0 1-2.2-2.1L5.4 6.4M10 10.6v6M14 10.6v6"/>',
     palette: '<path d="M12 3a9 9 0 1 0 .9 17.95c1.3-.13 1.75-1.3 1.2-2.3-.6-1.2.15-2.65 1.6-2.65H18a3.9 3.9 0 0 0 3.9-3.9C21.9 6.6 17.4 3 12 3z"/><circle cx="7.8" cy="10.2" r="1.05" fill="currentColor" stroke="none"/><circle cx="12" cy="7.4" r="1.05" fill="currentColor" stroke="none"/><circle cx="16.2" cy="10.2" r="1.05" fill="currentColor" stroke="none"/>',
     trendUp: '<path d="M3.4 17.4l5.4-5.4 3.6 3.6 8.2-8.2"/><path d="M15.4 7.4h5.2v5.2"/>',
+    /* lo stesso segno rovesciato: una percentuale che scende deve avere la
+       forma di una che scende, se no il colore è l'unica cosa che lo dice — e
+       il colore non lo vede tutti */
+    trendDown: '<path d="M3.4 6.6l5.4 5.4 3.6-3.6 8.2 8.2"/><path d="M15.4 16.6h5.2v-5.2"/>',
     calendar: '<rect x="3.4" y="4.8" width="17.2" height="16" rx="2.4"/><path d="M8 2.8v4M16 2.8v4M3.4 10h17.2"/>',
     lightbulb: '<path d="M9.2 18.2v-1.4c0-1-.6-1.8-1.3-2.6a6.4 6.4 0 1 1 8.2 0c-.7.8-1.3 1.6-1.3 2.6v1.4z"/><path d="M9.6 21.2h4.8"/>',
     shield: '<path d="M12 2.8s6.4 2.2 8 3.2c0 9.2-4.4 13.6-8 15.2-3.6-1.6-8-6-8-15.2 1.6-1 8-3.2 8-3.2z"/><path d="M8.8 12l2.4 2.4 4-4.8"/>',
@@ -271,6 +275,7 @@
     mirino: 'la concentrazione',
     smile: 'l’umore',
     trendUp: 'l’andamento nel tempo',
+    trendDown: 'in calo',
     solito: 'il tuo livello di solito',
     confronto: 'prima e dopo messi a confronto',
     flame: 'la serie di giorni di fila',

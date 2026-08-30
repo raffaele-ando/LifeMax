@@ -2197,9 +2197,16 @@ var LM = (function () {
      leggere che stai allo 0% è il modo migliore per non riaprirla. */
   function chiuso(k) { return k < todayKey(); }
 
-  function bilancio(giorni) {
+  /* `salta` sposta la finestra indietro: serve per confrontare gli ultimi
+     trenta giorni con i trenta di prima. Una percentuale da sola non si legge
+     — «66%» non dice se va bene — e l'unica cosa che la rende leggibile è
+     sapere da dove viene. */
+  function bilancio(giorni, salta) {
     var s = load();
-    var da = giorni ? addDays(todayKey(), -giorni) : '0000-00-00';
+    salta = salta || 0;
+    var a2 = addDays(todayKey(), -salta);
+    var da = giorni ? addDays(a2, -giorni) : '0000-00-00';
+    var fino = a2;
     var perArea = {};
     var messe = 0, fatte = 0, mancate = 0;
     function segna(areaId, fatta, persa) {
@@ -2209,20 +2216,18 @@ var LM = (function () {
       if (persa) { a.mancate++; mancate++; }
     }
     s.azioni.forEach(function (a) {
-      if (!a.data || a.data < da || !chiuso(a.data)) return;
+      if (!a.data || a.data < da || a.data >= fino || !chiuso(a.data)) return;
       segna(a.areaId || 'altro', !!a.done, !!a.mancata);
     });
     /* le abitudini contano come le altre: un giorno in cui l'abitudine era
        prevista è una cosa che ti eri messo */
     s.abitudini.forEach(function (h) {
-      var k = da;
       for (var g = 0; g < (giorni || 90); g++) {
-        var q = addDays(todayKey(), -(g + 1));
+        var q = addDays(fino, -(g + 1));
         if (q < da) break;
         if (!abitudinePrevista(h, q)) continue;
         segna(h.areaId || 'altro', !!h.fatti[q], false);
       }
-      void k;
     });
     var righe = Object.keys(perArea).map(function (id) {
       var a = perArea[id];
@@ -2234,6 +2239,38 @@ var LM = (function () {
       tasso: messe ? fatte / messe : 0,
       aree: righe
     };
+  }
+
+  /* LA RIUSCITA SETTIMANA PER SETTIMANA.
+     Una percentuale sola dice come stai; la sua forma nel tempo dice se la
+     cosa si muove — che è l'unica domanda a cui un numero da solo non può
+     rispondere. Le settimane senza niente in programma non fanno un punto a
+     zero: uno zero vuol dire «ci hai provato e non è andata», e una settimana
+     in cui non ti eri messo niente non è quello. */
+  function serieRiuscita(settimane) {
+    var s = load();
+    var n = settimane || 12;
+    var secchi = [];
+    for (var w = n - 1; w >= 0; w--) {
+      var fine = addDays(todayKey(), -(w * 7));
+      var inizio = addDays(fine, -7);
+      secchi.push({ da: inizio, a: fine, fatte: 0, messe: 0 });
+    }
+    function metti(k, fatta) {
+      for (var i = 0; i < secchi.length; i++) {
+        if (k >= secchi[i].da && k < secchi[i].a) { secchi[i].messe++; if (fatta) secchi[i].fatte++; return; }
+      }
+    }
+    s.azioni.forEach(function (a) { if (a.data && chiuso(a.data)) metti(a.data, !!a.done); });
+    s.abitudini.forEach(function (h) {
+      for (var g = 1; g <= n * 7; g++) {
+        var q = addDays(todayKey(), -g);
+        if (!abitudinePrevista(h, q)) continue;
+        metti(q, !!h.fatti[q]);
+      }
+    });
+    return secchi.filter(function (b) { return b.messe > 0; })
+      .map(function (b) { return { data: b.da, valore: Math.round(100 * b.fatte / b.messe) }; });
   }
 
   /* il numero che sale e basta: quante cose hai portato a termine, in tutto.
@@ -3207,6 +3244,7 @@ var LM = (function () {
     valutaArea: valutaArea, registraMinuti: registraMinuti,
     tutteLeReview: tutteLeReview, quanteReview: quanteReview,
     bilancio: bilancio, quanteFatte: quanteFatte, motiviMancate: motiviMancate,
+    serieRiuscita: serieRiuscita,
     timerVivo: timerVivo, avviaTimerDati: avviaTimerDati, fermaTimerDati: fermaTimerDati, aggiornaTimerDati: aggiornaTimerDati,
     salvaReviewSera: salvaReviewSera, salvaReviewSettimana: salvaReviewSettimana,
     azioniDiOggi: azioniDiOggi, prossimaAzione: prossimaAzione, azioneAdesso: azioneAdesso,

@@ -1202,6 +1202,82 @@ select.sel-compatto {
 }
 .segmenti.sez-muro { animation: sez-muro-scatto .22s var(--ease-out); }
 
+/* ============================================================
+   COME STA ANDANDO — la prima scheda di Panoramica
+
+   Una domanda sola, quindi una gerarchia sola: la cifra grande, e tutto il
+   resto piu' piccolo del gradino sotto. Prima qui c'erano sei numeri della
+   stessa misura, e sei numeri della stessa misura sono zero numeri — l'occhio
+   non sa dove posarsi e non ne legge nessuno.
+   La cifra e' tabulare perche' e' un numero che cambia: se le cifre cambiano
+   larghezza, il numero balla quando sale, e un movimento chiama l'occhio per
+   niente.
+   ============================================================ */
+.som { display: flex; flex-direction: column; gap: var(--s3); }
+.som-eti {
+  font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+  color: var(--inchiostro-muto);
+}
+/* due colonne che NON vanno a capo: la cifra a sinistra, l'andamento a
+   destra. Andando a capo l'andamento finiva su una riga sua, al centro, e da
+   lì non si legge piu' come «questa e' la storia di quel numero» — diventa un
+   grafico qualunque appoggiato sotto. */
+.som-riga { display: flex; align-items: center; gap: var(--s4); flex-wrap: nowrap; }
+/* la cifra, il verso e il nome stanno in un blocco solo: il nome deve andare
+   a capo SOTTO la cifra, non accanto, se no diventa un quarto elemento in
+   fila e la gerarchia si appiattisce di nuovo */
+.som-cifra { display: flex; align-items: baseline; gap: 4px; flex: 0 0 auto; flex-wrap: wrap; }
+.som-nome {
+  flex-basis: 100%; margin-top: 2px;
+  font-size: 13px; font-weight: 650; color: var(--inchiostro-2);
+}
+.som-cifra b {
+  font-size: clamp(40px, 13vw, 54px); font-weight: 800; letter-spacing: -0.04em;
+  line-height: 1; color: var(--inchiostro-1); font-variant-numeric: tabular-nums;
+}
+.som-pc { font-size: 21px; font-weight: 700; color: var(--inchiostro-2); }
+/* IL VERSO E' IL DATO. Una percentuale da sola non si legge: non si sa se e'
+   tanto o poco, e il primo riflesso di chiunque e' giudicarsi invece di
+   capire. Il confronto con se stessa e' l'unica cosa che la rende leggibile,
+   quindi sta accanto alla cifra e non in fondo. */
+.som-passo {
+  display: inline-flex; align-items: center; gap: 3px;
+  font-size: 13.5px; font-weight: 750; margin-left: 6px;
+  padding: 3px 8px; border-radius: var(--r-tondo);
+  font-variant-numeric: tabular-nums;
+}
+/* `--ok-testo` e non `--ok`: il verde brillante serve per linee e icone, e
+   su un fondo chiaro come testo sta a 2,9 contro 1 — sotto la soglia. Ce
+   n'e' uno apposta per le parole, ed e' quello che va usato quando il verde
+   deve essere LETTO. L'ha trovato prove/colori.js. */
+.som-passo.su { color: var(--ok-testo); background: color-mix(in srgb, var(--ok) 13%, transparent); }
+/* in calo NON e' rosso: e' un dato, non un allarme. Il rosso qui direbbe
+   «hai sbagliato», e una percentuale che scende e' una cosa da guardare, non
+   una colpa — e chi la vede in rosso smette di aprire la schermata. */
+.som-passo.giu { color: var(--inchiostro-2); background: var(--superficie-2); }
+/* la sparkline: un po' di respiro a destra, se no l'ultimo pallino — che è
+   quello che conta, perché è adesso — resta tagliato a metà dal bordo */
+/* `min-width: 0` e non 110: dentro un flex un figlio non scende mai sotto il
+   suo contenuto se non glielo si dice, e un SVG largo «100%» conta come
+   contenuto largo — la colonna della cifra ne usciva schiacciata.
+   E un tetto di trecento pixel: su un monitor la linea si allungava per
+   millequattrocento, e a quella distanza dalla cifra smette di leggersi come
+   «questa e' la storia di quel numero» — diventa un cartellone per conto suo. */
+.som-spark { flex: 0 1 300px; max-width: 300px; min-width: 0; padding-right: 5px; }
+.som-dice { font-size: 13px; color: var(--inchiostro-2); line-height: 1.5; }
+.som-dice b { color: var(--inchiostro-1); font-weight: 700; }
+.som-piede {
+  display: flex; flex-wrap: wrap; gap: var(--s3) var(--s4);
+  padding-top: var(--s3); border-top: 1px solid var(--bordo);
+}
+.som-voce { display: inline-flex; align-items: center; gap: 5px; font-size: 12.5px; color: var(--inchiostro-2); }
+.som-voce b { color: var(--inchiostro-1); font-weight: 750; font-variant-numeric: tabular-nums; }
+/* il totale sta in fondo e sottovoce: nei giorni brutti «qualcosa l'ho fatto»
+   e' vero e vale, ma non e' la notizia — sale comunque, come salivano i punti */
+.som-tutto { font-size: 11.5px; color: var(--inchiostro-muto); }
+.som-vuoto { font-size: 14px; line-height: 1.55; color: var(--inchiostro-2); }
+.som-vuoto b { color: var(--inchiostro-1); }
+
 /* DOVE TI RIESCE E DOVE NO: una riga per area, dalla peggiore.
    La barra e' larga quanto la percentuale e del colore dell'area: si legge
    senza leggere quale riga e' quella corta. Il numero grande e' la

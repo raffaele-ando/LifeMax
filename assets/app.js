@@ -4782,49 +4782,91 @@
     var html = topbar('Panoramica', '', '', 't-plancia', true);
 
     /* ============================================================
-       DUE NUMERI VERI AL POSTO DEI PUNTI
+       LA PRIMA SCHEDA DI PANORAMICA — UNA DOMANDA SOLA
 
-       Qui c'erano gli XP e il livello. Un livello sale comunque: sale anche
-       nei mesi in cui non combini niente, ed e' la stessa cosa detta in una
-       valuta inventata. Al loro posto due numeri di specie diversa, ed e'
-       proprio l'essere di specie diversa che li rende utili insieme:
+       Prima qui c'erano sei numeri: gli XP, il livello, quanto manca al
+       livello dopo, i giorni di fila, le azioni di oggi, i check-in. Sei
+       numeri in una scheda sono zero numeri: non c'è una gerarchia, quindi
+       l'occhio non sa dove posarsi e nessuno di loro viene letto davvero.
+       Poi ce ne ho messi altri, e il problema è rimasto lo stesso.
 
-         · QUANTE ne hai fatte — un conto di cose vere, che sale e basta.
-           Risponde a «ho combinato qualcosa in questi mesi?», e a quella un
-           livello non risponde.
-         · QUANTO TE NE RIESCE — di quelle che ti eri messo in un giorno,
-           quante ne hai fatte. E' una percentuale onesta, quindi PUO'
-           SCENDERE: e' l'unico dei due che puo' dirti che stai peggiorando,
-           ed e' per questo che serve. L'anello, che prima diceva quanto
-           manca al livello, adesso dice questa.
+       Questa scheda risponde a UNA domanda: sto andando avanti? Tutto quello
+       che non serve a rispondere è stato tolto o spostato più in basso.
 
-       Il giorno di oggi resta fuori dalla percentuale: una giornata appena
-       cominciata e' a zero per costruzione, e aprire l'app la mattina per
-       leggere che stai allo 0% e' il modo migliore per non riaprirla.
+       LA RISPOSTA È UNA PERCENTUALE CON UN VERSO.
+       «66%» da solo non si legge: non si sa se è tanto o poco, e il primo
+       riflesso di chiunque è giudicarsi invece di capire. Quello che rende
+       leggibile una percentuale è il confronto con se stessa — «+8 rispetto
+       ai trenta giorni prima» — e la sua forma nel tempo. Il verso è il dato,
+       il valore assoluto è il contorno.
+
+       PERCHÉ NON PIÙ UN TOTALE IN CIMA.
+       «110 cose fatte» sale comunque, come gli XP: è la stessa promessa
+       vuota con un'unità diversa. Resta, ma in fondo e sottovoce, perché nei
+       giorni brutti serve — «qualcosa l'ho fatto» è vero e vale — solo che
+       non è la notizia.
+
+       COSA SE N'È ANDATO. Il tasto «Vai a Oggi»: c'è una barra in basso che
+       fa quello, e un tasto di navigazione dentro una scheda di dati è un
+       invito ad andarsene dalla schermata che sei appena arrivato a leggere.
+       Il conteggio dei check-in: è un numero su un rituale, non sul come
+       stai andando, e sta nella sua schermata.
        ============================================================ */
     var bil = LM.bilancio(30);
+    var bilPrima = LM.bilancio(30, 30);
+    var serie = LM.serieRiuscita(12);
     var quante = LM.quanteFatte();
     var quanteSett = LM.quanteFatte(7);
-    function chip(ico, testo, cls, titolo) {
-      return '<span class="chip"' + (titolo ? ' title="' + esc(titolo) + '"' : '') + '>' + ICO(ico, 15, cls) + ' ' + testo + '</span>';
+    var pct = Math.round(bil.tasso * 100);
+    var pctPrima = bilPrima.messe ? Math.round(bilPrima.tasso * 100) : null;
+    var passo = pctPrima != null ? pct - pctPrima : null;
+
+    if (!bil.messe) {
+      /* ANCORA PRESTO. Un «—» al posto di un numero fa sembrare l'app rotta,
+         e uno zero è peggio: dice che hai fallito tutto quando non hai
+         ancora avuto un giorno chiuso. Si dice quello che c'è, e quanto
+         manca perché ci sia un conto. */
+      html += '<div class="card som som-vuota">' +
+        '<div class="som-eti">Come sta andando</div>' +
+        '<div class="som-vuoto"><b>Ancora presto per un conto.</b>' +
+        (quante ? '<br>Intanto hai fatto ' + quante + (quante === 1 ? ' cosa' : ' cose') + '. Il conto della riuscita comincia dal primo giorno chiuso.'
+                : '<br>Metti qualcosa in un giorno: da domani questo posto comincia a dirti come va.') +
+        '</div></div>';
+    } else {
+      html += '<div class="card som">' +
+        '<div class="som-eti">Ultimi 30 giorni</div>' +
+        '<div class="som-riga">' +
+        '<div class="som-cifra">' +
+        '<b id="som-pct">0</b><span class="som-pc">%</span>' +
+        (passo != null && passo !== 0
+          ? '<span class="som-passo ' + (passo > 0 ? 'su' : 'giu') + '">' +
+            ICO(passo > 0 ? 'trendUp' : 'trendDown', 13) + (passo > 0 ? '+' : '') + passo +
+            '</span>'
+          : '') +
+        /* IL NUMERO GRANDE HA UN NOME. Prima il nome glielo dava l'anello,
+           che aveva la percentuale al centro e la parola intorno; tolto
+           l'anello, restava un «66%» di niente. Chi legge fa sempre la stessa
+           domanda — sessantasei per cento DI COSA — e la risposta non può
+           stare tre righe più in basso. */
+        '<span class="som-nome">ti riesce</span>' +
+        '</div>' +
+        '<div class="som-spark" id="som-spark" aria-hidden="' + (serie.length < 3) + '"></div>' +
+        '</div>' +
+        '<div class="som-dice">' +
+        '<b>' + bil.fatte + ' fatte</b> su ' + bil.messe + ' che ti eri messo' +
+        (passo != null
+          ? ' · ' + (passo === 0 ? 'come nei 30 giorni prima'
+              : (passo > 0 ? 'meglio' : 'peggio') + ' dei 30 prima, che erano il ' + pctPrima + '%')
+          : '') +
+        '</div>' +
+        '<div class="som-piede">' +
+        '<span class="som-voce">' + ICO('flame', 13, 'fiamma') + '<b>' + st.corrente + '</b> giorni di fila</span>' +
+        '<span class="som-voce">' + ICO('check', 13) + '<b>' + quanteSett + '</b> questa settimana</span>' +
+        '<span class="som-voce">' + ICO('target', 13) + '<b>' + fatte + '/' + oggi.length + '</b> oggi</span>' +
+        '</div>' +
+        '<div class="som-tutto">In tutto, ' + quante + (quante === 1 ? ' cosa fatta' : ' cose fatte') + ' da quando hai cominciato.</div>' +
+        '</div>';
     }
-    html += '<div class="card eroe2">' +
-      '<div id="anello-riuscita" title="Delle cose che ti eri messo in un giorno, quante ne hai fatte"></div>' +
-      '<div class="eroe2-corpo">' +
-      '<div class="eroe2-xp"><span id="conta-fatte">0</span> <span class="eroe2-unita">' +
-      (quante === 1 ? 'cosa fatta' : 'cose fatte') + '</span></div>' +
-      '<div class="eroe2-sub">' +
-      (bil.messe
-        ? '<b>' + Math.round(bil.tasso * 100) + '%</b> ti riesce · ' + bil.fatte + ' su ' + bil.messe + ' negli ultimi 30 giorni'
-        : 'Ancora nessun giorno chiuso da contare.') +
-      '</div>' +
-      '<div class="eroe2-chips">' +
-      chip('flame', '<b>' + st.corrente + '</b> giorni di fila', 'fiamma', 'Un giorno saltato non azzera la serie.') +
-      chip('check', '<b>' + quanteSett + '</b> questa settimana') +
-      chip('target', '<b>' + fatte + '/' + oggi.length + '</b> oggi') +
-      '</div></div>' +
-      '<button class="btn btn-primario eroe2-cta" data-vai="oggi">' + ICO('target', 15) + ' Vai a Oggi</button>' +
-      '</div>';
 
     /* schede interne: si vede una sezione per volta */
     function segp(id, ico, et) {
@@ -4841,12 +4883,18 @@
 
     $vista.innerHTML = html;
 
-    countUp(document.getElementById('conta-fatte'), quante);
-    LMCharts.ring(document.getElementById('anello-riuscita'), bil.tasso,
-      { size: 96, centro: bil.messe ? Math.round(bil.tasso * 100) + '%' : '—',
-        label: bil.messe
-          ? 'Ti riesce il ' + Math.round(bil.tasso * 100) + ' per cento: ' + bil.fatte + ' cose fatte su ' + bil.messe + ' che ti eri messo, negli ultimi trenta giorni'
-          : 'Non ci sono ancora giorni chiusi da contare' });
+    var elPct = document.getElementById('som-pct');
+    if (elPct) countUp(elPct, pct);
+    var elSpark = document.getElementById('som-spark');
+    /* sotto i tre punti una linea non è un andamento, è un segmento: mostrarla
+       vorrebbe dire far leggere una tendenza a chi non ne ha ancora una */
+    if (elSpark && serie.length >= 3) {
+      LMCharts.sparkline(elSpark, serie, { h: 40, min: 0, max: 100,
+        colore: 'var(--accento)',
+        label: 'Com’è andata la riuscita nelle ultime ' + serie.length + ' settimane, da ' +
+          Math.min.apply(null, serie.map(function (x) { return x.valore; })) + '% a ' +
+          Math.max.apply(null, serie.map(function (x) { return x.valore; })) + '%' });
+    }
 
     document.getElementById('sez-plancia').querySelectorAll('[data-sez]').forEach(function (b) {
       b.addEventListener('click', function () { sezPlancia = b.getAttribute('data-sez'); disegnaSezione(); aggiornaSegP(); });
