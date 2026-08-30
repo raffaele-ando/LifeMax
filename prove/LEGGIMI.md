@@ -1,6 +1,6 @@
 # Prove
 
-Venticinque controlli automatici che guardano una cosa sola ciascuno, ma
+Ventisei controlli automatici che guardano una cosa sola ciascuno, ma
 quella cosa fa morire l'app — o la fa diventare illeggibile — quando si
 rompe. Sono nati da problemi veri.
 
@@ -636,6 +636,23 @@ genera le chiavi, in un browser vero).
   in pagina), che `forma.js` stia prima di `app.js`, e che il Design lab sia
   rimasto fuori — sono i 101 KB per cui il build esiste. Non serve Chromium.
 
+- **intestazioni.js** — LE INTESTAZIONI DELLA CACHE, PRIMA CHE FACCIANO DANNI.
+  `_headers` è un file che non si prova aprendo il sito: se è sbagliato, il
+  danno si vede fra un mese, su un telefono che non è il tuo, e da lì non si
+  ripara — perché il modo di riparare sarebbe dire al browser di riscaricare,
+  che è la cosa che quel file gli ha appena vietato. Le due trappole sono
+  tutte e due irreversibili. La prima: `immutable` su un file dal nome fisso.
+  `index.html` tiene dentro i nomi di tutti gli altri, è l'unico che deve
+  cambiare restando allo stesso indirizzo, e dirgli «tienitelo un anno» vuol
+  dire che chi ha aperto il sito una volta resta su quella versione per un
+  anno. La seconda: due regole che prendono lo stesso file. Cloudflare non
+  sceglie la più precisa, **unisce i valori con una virgola** — e il caso
+  peggiore è proprio quello che sembra prudente, una regola larga messa in
+  fondo, che trasforma la riga buona in `…, immutable, no-cache`. In più
+  pretende che chi promette «per sempre» su una cartella abbia l'impronta nel
+  nome di ogni file lì dentro. Non serve Chromium, e in coda si dà in pasto
+  tutte e due le trappole scritte a mano per far vedere che le riconosce.
+
 ## Come si lanciano
 
 **Prima si costruisce.** Le prove aprono `index.html`, che è generato: se il
@@ -644,7 +661,8 @@ pacco è vecchio, provano il codice di ieri e dicono che va tutto bene.
     npm install              # esbuild, per il build
     node costruisci.mjs      # e poi si ricostruisce
     npm install playwright
-    node prove/pacco.js      # solo Node: il pacco è quello dei sorgenti di adesso?
+    node prove/pacco.js         # solo Node: il pacco è quello dei sorgenti di adesso?
+    node prove/intestazioni.js  # solo Node: la cache di _headers non fa danni
     node prove/clic.js
     node prove/modalita.js
     node prove/segni.js      # solo Node, niente browser

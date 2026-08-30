@@ -75,6 +75,32 @@ qualcuno cambia il codice e dimentica di ricostruire, se ne accorge lì invece
 che in rete. **Le prove girano sul pacco**, non sui sorgenti — cioè su quello
 che gira davvero: si ricostruisce prima di lanciarle.
 
+### Dove sta ospitato, e cosa cambierebbe a spostarlo
+
+Oggi è su **GitHub Pages**: `git push` e in un minuto è online. Ogni risposta
+esce con `Cache-Control: max-age=600`, e non si può cambiare.
+
+C'è un `_headers` pronto per **Cloudflare Pages**, che quel limite non ce l'ha
+e che comprime in Brotli invece che in gzip. Quanto vale, misurato allo stesso
+modo di sopra:
+
+| | GitHub Pages | Cloudflare Pages |
+|---|---|---|
+| prima apertura | 1412 ms · 140 KB | **1314 ms · 119 KB** (Brotli) |
+| si torna entro dieci minuti | 398 ms | 398 ms |
+| si torna il giorno dopo | 677 ms | **576 ms** |
+
+Un decimo di secondo per parte. **Vale la pena perché costa niente, non
+perché cambia la vita** — e i 585 KB del build, quelli, valgono dieci volte
+tanto. Il passaggio sono due cose: collegare il repository su Cloudflare
+Pages senza comando di build (i file costruiti stanno già nel repository), e
+aggiungere il nuovo dominio ai **domini autorizzati** di Firebase, se no
+l'accesso con Google smette di funzionare.
+
+`_headers` ha una regola sola, e ci sono due motivi per cui deve restarne una
+sola — tutti e due irreparabili dal lato del server. `node
+prove/intestazioni.js` li tiene fermi; stanno scritti dentro il file.
+
 Tutto persiste in `localStorage` del browser. Al primo avvio parte l'onboarding
 (3 passi, <2 minuti) con l'opzione **"Parti con 8 settimane di dati demo"** per
 esplorare il prototipo pieno di dati realistici.

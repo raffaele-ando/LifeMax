@@ -1,0 +1,30 @@
+# LE INTESTAZIONI DELLA CACHE — le legge Cloudflare Pages.
+#
+# Su GitHub Pages questo file non fa niente: là ogni risposta esce con
+# `Cache-Control: max-age=600` e non si può cambiare. Passati dieci minuti, il
+# browser richiede di nuovo tutti e quattro i file per sapere se sono
+# cambiati. Non riscarica i byte — rispondono 304 — ma sono giri di rete
+# prima che compaia qualcosa: misurati su 4G lenta, 677 ms contro 576.
+#
+# Il nome dei file del pacco ha l'impronta del contenuto dentro
+# (pacco.fdad6673cc.js): se cambia una riga, cambia il nome. Quindi quel file
+# lì non cambierà mai, e si può dire al browser di tenerselo per un anno senza
+# chiedere più niente. È esattamente la cosa per cui `immutable` esiste.
+#
+# QUI SOTTO C'È UNA REGOLA SOLA, E DEVE RESTARE UNA SOLA.
+# Cloudflare, quando due blocchi prendono lo stesso file, non sceglie il più
+# preciso: unisce i due valori con una virgola. Un `/assets/*` in fondo, messo
+# con le migliori intenzioni, farebbe uscire
+#   Cache-Control: public, max-age=31536000, immutable, no-cache
+# cioè una riga che non vuol dire niente. Tutto il resto sta benissimo con
+# quello che Pages fa da sé — `max-age=0, must-revalidate`, si richiede
+# sempre — quindi non c'è niente da aggiungere.
+#
+# E L'HTML MAI. index.html tiene dentro i nomi degli altri: è l'unico file che
+# deve cambiare restando allo stesso indirizzo. Se finisse sotto `immutable`,
+# chi ha aperto il sito una volta resterebbe su quella versione per un anno e
+# non ci sarebbe modo di raggiungerlo — dal lato del server non si ripara.
+# prove/intestazioni.js si rifiuta di far passare un file che lo fa.
+
+/assets/pacco/*
+  Cache-Control: public, max-age=31536000, immutable
