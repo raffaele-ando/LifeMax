@@ -1272,7 +1272,7 @@
       rigaScelta('Vibrazione', '<span class="segmenti imp-seg" id="seg-vibra">' +
         segVi('si', 'Accesa') + segVi('no', 'Spenta') + '</span>') +
       '</div>' +
-      '<p class="lista-nota"><b>Effetti</b> serve se compaiono rettangoli grigi o neri a spigolo vivo in mezzo alle schermate, o se l’app va a scatti. <b>Ridotti</b> toglie le sfocature dietro ai pannelli e alla barra; <b>minimi</b> toglie anche il fondo colorato e la curva degli angoli. Se il difetto sparisce a un gradino e non all’altro, si sa da cosa dipende.</p>' +
+      '<p class="lista-nota"><b>Effetti</b> serve se compaiono rettangoli grigi o neri a spigolo vivo in mezzo alle schermate, o se l’app va a scatti. <b>Ridotti</b> tiene la stessa forma ma non genera nessuna immagine: il bordo lo disegna il browser, e si perde mezzo pixel di spessore. <b>Minimi</b> spegne tutto — niente curva degli angoli, niente sfocature, niente fondo colorato. Se il difetto sparisce a un gradino e non all’altro, si sa da cosa dipende.</p>' +
       '<p class="lista-nota">Aurora è più sobrio, Arcade più acceso. Con <b>tre porte</b> le altre schermate stanno in una riga di linguette sotto al titolo; con <b>tutte le pagine</b> torna la barra lunga. In entrambi i casi ci sono tutte: cambia solo da dove ci si arriva. Con lo <b>scorrimento acceso</b> si passa da una schermata all’altra trascinando il dito di lato, come si sfoglia: le linguette restano dove sono.</p>' +
 
       /* --- I TUOI DATI: due cose che si fanno e una porta --- */

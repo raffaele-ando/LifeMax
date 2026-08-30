@@ -580,7 +580,7 @@
     var q = p.grande ? 1 : 0.99;
     e.style.borderRadius = (a.tl * q).toFixed(2) + 'px ' + (a.tr * q).toFixed(2) + 'px ' +
       (a.br * q).toFixed(2) + 'px ' + (a.bl * q).toFixed(2) + 'px';
-    if (p.col && !p.grande) {
+    if (p.col && !p.grande && !senzaImmagini()) {
       /* Il bordo del box si spegne QUI, sullo stesso elemento e nello stesso
          momento in cui compare il filo: non c'è nessun istante in cui uno dei
          due manca o ci sono tutti e due. Lo spessore resta, perché è misura:
@@ -772,6 +772,22 @@
      problema è qui. */
   function spentoDelTutto() {
     return document.documentElement.getAttribute('data-effetti') === 'minimi';
+  }
+  /* «RIDOTTI» = LA STESSA FORMA, SENZA IMMAGINI GENERATE.
+     Il filo è l'unico pezzo di questo sistema che produce un'immagine: un SVG
+     costruito al volo, uno per ogni elemento con una cornice, rifatto a ogni
+     cambio di misura. Su certi telefoni è quello che manda in tilt la scheda
+     grafica, e da qui non si può riprodurre.
+     A «ridotti» il bordo lo disegna il browser come farebbe da sé, e la curva
+     degli angoli resta quella vera perché la fa il ritaglio. Quello che si
+     perde è mezzo pixel: il filo corre sul mezzo dello spessore, il bordo
+     nativo sta dentro il riquadro, e sui quarantacinque gradi l'arco passa
+     appena più interno della curva. Misurato pixel per pixel su sei
+     schermate, la differenza sta quasi tutta sotto 24 su 255 e non si vede
+     senza le due immagini affiancate. */
+  function senzaImmagini() {
+    var v = document.documentElement.getAttribute('data-effetti');
+    return v === 'ridotti' || v === 'minimi';
   }
 
   function giroSu(lista) {

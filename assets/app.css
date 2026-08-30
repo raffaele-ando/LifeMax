@@ -1198,21 +1198,18 @@ select.sel-compatto {
    non e' stata scritta e viene mostrata lo stesso. Da qui non si puo'
    riprodurre: la scheda grafica che sbaglia sta in mano a chi usa l'app.
 
-   Quindi si fa scegliere. Ogni gradino toglie una famiglia di cose care,
-   dalla piu' sospetta alla meno:
-     · ridotti  niente sfocature dietro ai pannelli e alla barra
-                (`backdrop-filter` obbliga il browser a fotografare e
-                sfocare tutto quello che sta dietro, e a rifarlo ogni volta
-                che dietro cambia qualcosa);
-     · minimi   in piu': niente aurora di fondo e nessun ritaglio degli
-                angoli — cioe' nessuna maschera sulla scheda grafica.
+   Quindi si fa scegliere, e ogni gradino toglie una famiglia precisa:
+     · ridotti  la stessa forma, ma NESSUNA IMMAGINE GENERATA. Il filo del
+                bordo e' un SVG costruito al volo, uno per ogni elemento con
+                una cornice, rifatto a ogni cambio di misura: e' l'unico
+                pezzo del sistema che produce immagini. A «ridotti» il bordo
+                lo disegna il browser, e la curva degli angoli resta quella
+                vera. Si perde mezzo pixel sullo spessore, e basta.
+     · minimi   le forme spente del tutto: niente ritagli, niente immagini,
+                niente sfocature dietro ai pannelli, niente aurora. Raggi
+                nativi e bordi veri, come se questo sistema non ci fosse.
    Se il difetto sparisce a un gradino e non all'altro, si sa dove guardare.
    ============================================================ */
-:root[data-effetti="ridotti"] .sidebar,
-:root[data-effetti="ridotti"] .tabbar,
-:root[data-effetti="ridotti"] .overlay,
-:root[data-effetti="ridotti"] .sheet-overlay,
-:root[data-effetti="ridotti"] .avviso-ovl,
 :root[data-effetti="minimi"] .sidebar,
 :root[data-effetti="minimi"] .tabbar,
 :root[data-effetti="minimi"] .overlay,
@@ -1223,11 +1220,8 @@ select.sel-compatto {
 }
 /* senza la sfocatura dietro, il vetro deve tornare opaco: se no si legge il
    testo della pagina attraverso la barra */
-:root[data-effetti="ridotti"] .sidebar, :root[data-effetti="ridotti"] .tabbar,
 :root[data-effetti="minimi"] .sidebar, :root[data-effetti="minimi"] .tabbar { background: var(--superficie-1); }
-:root[data-effetti="ridotti"] .overlay,
 :root[data-effetti="minimi"] .overlay { background: color-mix(in srgb, var(--pagina) 82%, rgba(8, 8, 12, .55)); }
-:root[data-effetti="ridotti"] .sheet-overlay::before,
 :root[data-effetti="minimi"] .sheet-overlay::before { background: rgba(8, 8, 12, .78); }
 :root[data-effetti="minimi"] .aurora { display: none; }
 

@@ -253,14 +253,15 @@ function cercaScritteFuori(toll) {
       await p.evaluate((l) => { localStorage.clear(); LM.seedDemo(); const s = LM.load(); s.profilo.effetti = l; LM.save(); location.hash = '#/giornata'; }, liv);
       await p.reload(); await p.waitForTimeout(1200); await p.bringToFront();
       const r = await p.evaluate(() => {
-        let sfoc = 0, masc = 0;
+        let sfoc = 0, masc = 0, fili = 0;
         document.querySelectorAll('*').forEach((e) => {
           const s = getComputedStyle(e);
           if (s.backdropFilter && s.backdropFilter !== 'none') sfoc++;
           if (s.clipPath && s.clipPath.indexOf('path(') === 0) masc++;
+          if (e.dataset.formaBordo !== undefined && (s.backgroundImage || '').indexOf('data:image/svg') >= 0) fili++;
         });
         const raggi = [...document.querySelectorAll('.card')].map((c) => parseFloat(getComputedStyle(c).borderTopLeftRadius) || 0);
-        return { sfoc: sfoc, masc: masc,
+        return { sfoc: sfoc, masc: masc, fili: fili,
           aurora: getComputedStyle(document.querySelector('.aurora')).display,
           raggio: raggi.length ? Math.max.apply(null, raggi) : 0 };
       });
@@ -268,13 +269,15 @@ function cercaScritteFuori(toll) {
       return { r: r, err: err };
     };
     const A = await misura('pieni'), B = await misura('ridotti'), C = await misura('minimi');
-    ok('a effetti PIENI ci sono sfocature e maschere (se no il resto è muto)',
-      A.r.sfoc > 0 && A.r.masc > 0, A.r.sfoc + ' sfocature, ' + A.r.masc + ' maschere');
-    ok('RIDOTTI toglie le sfocature e lascia le maschere',
-      B.r.sfoc === 0 && B.r.masc === A.r.masc, B.r.sfoc + ' sfocature, ' + B.r.masc + ' maschere');
-    ok('MINIMI toglie anche le maschere e l’aurora',
-      C.r.sfoc === 0 && C.r.masc === 0 && C.r.aurora === 'none',
-      C.r.sfoc + ' sfocature, ' + C.r.masc + ' maschere, aurora ' + C.r.aurora);
+    ok('a effetti PIENI ci sono sfocature, maschere e immagini generate (se no il resto è muto)',
+      A.r.sfoc > 0 && A.r.masc > 0 && A.r.fili > 0,
+      A.r.sfoc + ' sfocature, ' + A.r.masc + ' maschere, ' + A.r.fili + ' fili');
+    ok('RIDOTTI non genera più nessuna immagine, e la curva resta',
+      B.r.fili === 0 && B.r.masc === A.r.masc,
+      B.r.fili + ' fili, ' + B.r.masc + ' maschere');
+    ok('MINIMI spegne tutto: maschere, immagini, sfocature, aurora',
+      C.r.sfoc === 0 && C.r.masc === 0 && C.r.fili === 0 && C.r.aurora === 'none',
+      C.r.sfoc + ' sfocature, ' + C.r.masc + ' maschere, ' + C.r.fili + ' fili, aurora ' + C.r.aurora);
     ok('e a MINIMI le schede restano schede (il raggio non sparisce)',
       C.r.raggio > 4, 'raggio ' + C.r.raggio + 'px');
     ok('nessun errore in pagina a nessuno dei tre gradini',
