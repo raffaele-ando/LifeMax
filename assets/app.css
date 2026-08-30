@@ -1222,6 +1222,32 @@ select.sel-compatto {
 :root[data-effetti="minimi"] .sheet-overlay::before { background: rgba(8, 8, 12, .78); }
 :root[data-effetti="minimi"] .aurora { display: none; }
 
+/* «Non ci sono riuscito»: smorzato e col colore dell'avviso solo sul segno.
+   Va potuto dire in un tocco, e non va invitato — un tasto rosso pieno
+   accanto a «Fatto» inviterebbe a chiudere la giornata dichiarando sconfitte. */
+.btn-mancata { color: var(--inchiostro-muto); }
+.btn-mancata:hover { color: var(--avviso); }
+/* la riga di una cosa mancata, negli elenchi e nella giornata */
+.mancata-riga .lista-tit { color: var(--inchiostro-2); }
+.mancata-segno { color: var(--avviso); flex: none; }
+.tl-blk-att.mancata {
+  background: var(--superficie-2);
+  border-color: color-mix(in srgb, var(--avviso) 34%, transparent);
+  border-left-color: var(--avviso);
+}
+.tl-blk-att.mancata .tl-blk-t { color: var(--inchiostro-2); }
+
+/* L'archivio delle review: ogni riga porta dentro quello che avevi scritto,
+   perché una lista di date da aprire una per una non si scorre mai. */
+.rit-archivio { margin-top: var(--s5); }
+.rev-riga { align-items: flex-start; }
+.rev-ico { color: var(--inchiostro-2); }
+.rev-ico.rev-sera { color: var(--brand-a); }
+.rev-ico.rev-mattina { color: var(--avviso); }
+.rev-ico.rev-settimana { color: var(--brand-c); }
+.rev-campo { display: block; font-size: 12.5px; line-height: 1.45; color: var(--inchiostro-2); margin-top: 3px; overflow-wrap: anywhere; }
+.rev-campo b { color: var(--inchiostro-muto); font-weight: 700; font-size: 11px; letter-spacing: .03em; text-transform: uppercase; margin-right: 5px; }
+
 /* ---------- overlay cattura ---------- */
 
 .overlay {
@@ -1316,6 +1342,91 @@ select.sel-compatto {
   60% { opacity: 1; }
   to { transform: translate(var(--dx), var(--dy)) rotate(var(--rot)) scale(.7); opacity: 0; }
 }
+
+/* La PIOGGIA: cade dall'alto su tutto lo schermo, e dura il doppio. Serve a
+   distinguere due momenti che non sono lo stesso — spuntare una riga in un
+   elenco e finire la cosa che stavi facendo. Se la festa fosse identica, la
+   seconda non varrebbe niente. */
+.coriandolo-pioggia {
+  width: 7px; height: 13px;
+  animation-name: coriandolo-giu;
+  animation-timing-function: cubic-bezier(.3, .1, .5, 1);
+}
+@keyframes coriandolo-giu {
+  0% { opacity: 1; }
+  85% { opacity: 1; }
+  to { transform: translate(var(--dx), var(--dy)) rotate(var(--rot)); opacity: 0; }
+}
+
+/* ============================================================
+   CONCENTRAZIONE — lo schermo che non ha niente da dire
+
+   Mentre il timer gira, tutto il resto dell'app e' una distrazione con le
+   credenziali in regola: le altre cose di oggi, i contatori, la barra in
+   basso che porta altrove. Sono proprio le vie d'uscita legittime dalla cosa
+   che stai facendo. Qui restano tre cose: che cosa stai facendo, quanto
+   manca, e due comandi.
+   Fondo quasi nero e nessun vetro: meno luce vuol dire meno roba che chiede
+   attenzione, e di sera anche meno luce addosso mentre lavori. Le cifre sono
+   tabulari perche' un numero che cambia larghezza a ogni secondo e' un
+   movimento nel campo visivo, e un movimento chiama l'occhio.
+   ============================================================ */
+.concentra {
+  position: fixed; inset: 0; z-index: 500;
+  display: none; align-items: center; justify-content: center;
+  padding: 24px calc(20px + env(safe-area-inset-right)) calc(24px + env(safe-area-inset-bottom)) calc(20px + env(safe-area-inset-left));
+  background: #07070b;
+  color: #f2f2f6;
+  animation: sfuma .22s var(--ease-out);
+}
+body.in-concentrazione .concentra { display: flex; }
+body.in-concentrazione { overflow: hidden; }
+.conc-esci {
+  position: absolute; top: calc(10px + env(safe-area-inset-top)); right: 12px;
+  width: 44px; height: 44px; display: inline-flex; align-items: center; justify-content: center;
+  border-radius: var(--r-tondo); background: rgba(255, 255, 255, .06); color: #9c9cab;
+  border: none; cursor: pointer;
+}
+.conc-esci:hover { background: rgba(255, 255, 255, .12); color: #f2f2f6; }
+.conc-dentro { display: flex; flex-direction: column; align-items: center; gap: 22px; width: 100%; max-width: 420px; text-align: center; }
+.conc-tipo {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+  color: #7f7f92;
+}
+.conc-cosa { font-size: 21px; font-weight: 700; line-height: 1.25; margin: 0; overflow-wrap: anywhere; color: #e9e9f0; }
+.conc-anello {
+  --p: 0;
+  width: min(64vw, 260px); aspect-ratio: 1;
+  border-radius: var(--r-tondo);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+  background:
+    conic-gradient(#6f5bf0 calc(var(--p) * 360deg), rgba(255, 255, 255, .07) 0),
+    #07070b;
+  -webkit-mask: radial-gradient(circle, transparent 0 61%, #000 61.6%);
+  mask: radial-gradient(circle, transparent 0 61%, #000 61.6%);
+  position: relative;
+}
+/* le cifre stanno DENTRO al buco della maschera: la maschera si applica solo
+   allo sfondo dell'anello, quindi il contenuto va rimesso sopra a parte */
+.conc-anello { -webkit-mask: none; mask: none; }
+.conc-anello::before {
+  content: ''; position: absolute; inset: 13px;
+  border-radius: var(--r-tondo); background: #07070b;
+}
+.conc-cifre {
+  position: relative; z-index: 1;
+  font-size: clamp(40px, 15vw, 62px); font-weight: 800; letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+}
+.conc-eti { position: relative; z-index: 1; font-size: 12.5px; color: #7f7f92; font-weight: 600; }
+.conc-anello.in-pausa { background: conic-gradient(#0ca30c calc(var(--p) * 360deg), rgba(255, 255, 255, .07) 0), #07070b; }
+.conc-tasti { display: flex; flex-direction: column; gap: 10px; width: 100%; align-items: stretch; }
+.conc-tasti .btn-grande { width: 100%; }
+.conc-tasti .btn-ghost { color: #8a8a9a; }
+.conc-tasti .btn-ghost:hover { color: #e9e9f0; }
+/* la riga di scelta del timer: il segno a sinistra come in tutte le liste */
+.timer-scelta .ts-ico { color: var(--accento); }
 .vola-xp {
   position: fixed; z-index: 400; pointer-events: none;
   font-weight: 830; font-size: 15px; color: var(--accento);
@@ -1570,7 +1681,11 @@ body.sfondo-fermo { position: fixed; left: 0; right: 0; width: 100%; overflow: h
    diventare trasparente mentre lo tenevi in mano. */
 .sheet-overlay {
   position: fixed; inset: 0; z-index: 120;
-  backdrop-filter: blur(8px) saturate(.9); -webkit-backdrop-filter: blur(8px) saturate(.9);
+  /* la sfocatura è una variabile perché mentre trascini il foglio verso il
+     basso deve scendere con lui: a metà gesto la pagina dietro si legge già a
+     metà. Il valore di riposo è lo stesso di prima. */
+  --sfoca: 8px;
+  backdrop-filter: blur(var(--sfoca)) saturate(.9); -webkit-backdrop-filter: blur(var(--sfoca)) saturate(.9);
   display: flex; align-items: center; justify-content: center; padding: 20px;
   animation: sfuma .16s var(--ease-out);
 }

@@ -337,6 +337,13 @@ genera le chiavi, in un browser vero).
   che non torna viva; «Azzera tutto» che funziona lo stesso; un salvataggio
   illeggibile messo da parte invece che buttato; nove cose fatte nell'app che
   sopravvivono a un ricaricamento; e nessun elenco senza copertura.
+  Da oggi le lapidi sono provate su OGNI elenco e non su uno solo: si mette
+  una riga in ognuno, la si toglie, e si pretende che non torni viva — da
+  tutti e due i versi della fusione, perché «chi sono io e chi è l'altro»
+  cambia a ogni scambio. Con la controprova che senza lapide la riga torna
+  eccome, se no il controllo sarebbe verde perché la fusione non unisce
+  niente.
+
 - **cloud.js** — LA SINCRONIZZAZIONE, PROVATA CON UN FIREBASE FINTO. Firebase
   qui non c'è e non deve esserci: una prova che dipende dalla rete non è una
   prova. Le tre librerie vengono intercettate e servite da noi, e il finto sa
@@ -374,6 +381,24 @@ genera le chiavi, in un browser vero).
   niente, perché a quelle distanze quel clic non arriva. Al suo posto adesso
   c'è una misura: si cerca dove Chromium smette di sintetizzare il clic (a 12
   px sì, a 20 no) e si pretende che la soglia del colpo secco stia sopra.
+- **timer.js** — IL TIMER CHE VA AVANTI QUANDO NON LO GUARDI. Nasce da «se
+  faccio partire un timer e chiudo il telefono deve continuare, e su
+  qualsiasi dispositivo deve andare in tempo reale». Prima viveva in una
+  variabile della pagina: chiudevi il telefono e non era mai esistito.
+  Adesso sta nei dati, e quello che si salva è l'**ora di fine**, non i
+  minuti che restano — un istante assoluto lo legge uguale qualunque
+  dispositivo in qualunque momento, mentre un conto alla rovescia salvato
+  invecchia appena lo scrivi. Da lì viene tutto il resto gratis.
+  «L'altro dispositivo» qui è una seconda scheda del browser: due pagine
+  sullo stesso `localStorage` sono la stessa cosa di due telefoni sullo
+  stesso documento nella nuvola — quello che si vuole sapere è se l'app
+  RILEGGE quello stato invece di fidarsi della sua memoria.
+  Controlla anche i quattro tipi (e che quello per partire sia il più corto),
+  che il pomodoro vada in pausa da solo e che **lo dica** (una pausa che non
+  sai di avere è solo tempo perso), che uscire dallo schermo pieno non fermi
+  il timer, che ci si torni dentro se il telefono si è chiuso mentre eri lì,
+  e che un timer finito da quaranta ore non salti addosso a chi apre l'app la
+  mattina dopo.
 - **disegno.js** — QUANTO COSTA STARE FERMI. Nasce da «su android ci sono lag
   e bug continui rispetto all'iPad» e dalle foto con rettangoli grigi o neri a
   spigolo vivo in mezzo alle schermate e ai pannelli: erano la stessa cosa. Il

@@ -148,7 +148,7 @@ var LM = (function () {
       demo: false,
       /* giornataPos: dove mostrare la timeline della giornata
          ('oggi-strip' | 'panoramica' | 'oggi-full' | 'menu') */
-      profilo: { nome: '', visione: '', skin: 'quiete', modo: 'auto', scorri: 'si', effetti: 'pieni', giornataPos: 'oggi-strip', ritmo: JSON.parse(JSON.stringify(RITMO_DEFAULT)), chiedi: JSON.parse(JSON.stringify(CHIEDI_DEFAULT)) },
+      profilo: { nome: '', visione: '', skin: 'quiete', modo: 'auto', scorri: 'si', effetti: 'pieni', suono: 'si', vibra: 'si', giornataPos: 'oggi-strip', ritmo: JSON.parse(JSON.stringify(RITMO_DEFAULT)), chiedi: JSON.parse(JSON.stringify(CHIEDI_DEFAULT)) },
       ritmoGiorno: {},   // ritmoGiorno[data] = {sveglia?, sonno?, prec?, pasti?, chiesto?} — registro di sonno e pasti del singolo giorno
       /* l'ultima volta che ti ho visto. Serve a una cosa sola, ed è
          importante: sapere se fra ieri e oggi c'è stato un BUCO in cui la
@@ -184,6 +184,9 @@ var LM = (function () {
          viva al primo scambio con un telefono che non lo sapeva ancora. Se le
          scrive `save()` da sé, guardando cos'è sparito. */
       cancellati: [],
+      /* {azioneId, areaId, tipo, testo, inizio, fine, durata, ciclo, inPausa,
+          fermatoA} — null quando non c'è nessun timer in giro */
+      timer: null,
       /* quello che è arrivato storto e che invece di buttare si è messo da
          parte: {campo: {quando, valore}} */
       recuperati: {},
@@ -256,7 +259,19 @@ var LM = (function () {
     log: 'elenco',
     registro: 'elenco',
     cancellati: 'elenco',
-    recuperati: 'mappa'
+    recuperati: 'mappa',
+    /* IL TIMER STA NEI DATI, non nella memoria della pagina. Prima viveva in
+       una variabile: chiudevi il telefono e non era mai esistito, e su un
+       altro dispositivo non c'era. Adesso è un campo come gli altri, quindi
+       si salva, sopravvive a una ricarica e arriva agli altri dispositivi per
+       la strada che c'è già.
+       Quello che si salva è l'ORA DI FINE, non i minuti che restano: un
+       istante assoluto lo legge uguale qualunque dispositivo in qualunque
+       momento, mentre un conto alla rovescia salvato invecchia appena lo
+       scrivi. Vince la copia scritta per ultima — se fai partire un timer sul
+       telefono mentre sul portatile ne gira un altro, quello che conta è
+       l'ultimo che hai toccato. */
+    timer: 'recente'
   };
 
   function eMappa(v) {
@@ -1197,6 +1212,55 @@ var LM = (function () {
     save();
   }
 
+  /* ---------- «NON CI SONO RIUSCITO» ----------
+     Non è cancellare, e non è rimandare. È il terzo esito, e finora non
+     esisteva: una cosa che avevi deciso di fare si poteva solo finire,
+     spostare più in là, o far sparire.
+
+     Cancellandola sparisce anche dal registro di quello che è successo, e il
+     registro diventa un elenco delle sole cose andate bene — che è
+     esattamente il registro che non serve a niente, perché per capire cosa
+     funziona per te devi poter vedere anche cosa non ha funzionato. Le
+     Scoperte, gli Esperimenti e le lezioni di quest'app girano tutti intorno
+     a quella domanda: senza i mancati, rispondono guardando metà dei dati.
+
+     Non toglie XP e non rompe niente. Il senso di colpa non è un dato utile:
+     quello che serve è il fatto, insieme al perché se ti va di scriverlo. */
+  var PERCHE_MANCATA = [
+    { id: 'tempo',    eti: 'Non c\'era tempo' },
+    { id: 'energia',  eti: 'Non avevo energie' },
+    { id: 'grossa',   eti: 'Era troppo grossa' },
+    { id: 'vaga',     eti: 'Non sapevo da dove partire' },
+    { id: 'altro',    eti: 'Altro' }
+  ];
+  function segnaMancata(id, perche, nota) {
+    var s = load();
+    var a = s.azioni.find(function (x) { return x.id === id; });
+    if (!a) return false;
+    a.done = false;
+    a.doneAt = null;
+    a.mancata = { ts: Date.now(), perche: perche || 'altro', nota: nota || '' };
+    var q = (PERCHE_MANCATA.find(function (x) { return x.id === a.mancata.perche; }) || {}).eti || '';
+    registra('azione', 'Non ci sono riuscito: «' + a.testo + '»' + (q ? ' — ' + q.toLowerCase() : ''), false);
+    save();
+    return true;
+  }
+  function togliMancata(id) {
+    var s = load();
+    var a = s.azioni.find(function (x) { return x.id === id; });
+    if (!a || !a.mancata) return false;
+    delete a.mancata;
+    registra('azione', 'Rimessa fra le cose da fare: «' + a.testo + '»', false);
+    save();
+    return true;
+  }
+  function mancate(giorni) {
+    var s = load();
+    var limite = giorni ? Date.now() - giorni * 86400000 : 0;
+    return s.azioni.filter(function (a) { return a.mancata && a.mancata.ts >= limite; })
+      .sort(function (x, y) { return y.mancata.ts - x.mancata.ts; });
+  }
+
   function cattura(testo) {
     var s = load();
     var el = { id: uid(), testo: testo, creata: Date.now() };
@@ -1985,6 +2049,80 @@ var LM = (function () {
     save();
   }
 
+  /* ---------- IL TIMER, che sta nei dati ----------
+     Tutto quello che serve per sapere a che punto è sta qui dentro, e sono
+     istanti assoluti: qualunque dispositivo, in qualunque momento, ricava lo
+     stesso numero senza aver visto partire niente. Il conto alla rovescia non
+     si salva mai, perché un numero di minuti salvato invecchia. */
+  function timerVivo() {
+    var t = load().timer;
+    if (!t || !t.fine) return null;
+    /* un timer finito da più di sei ore è roba di ieri che nessuno ha chiuso:
+       non deve riapparire addosso a chi apre l'app la mattina dopo */
+    if (!t.inPausa && Date.now() - t.fine > 6 * 3600000) return null;
+    return t;
+  }
+  function avviaTimerDati(patch) {
+    var s = load();
+    s.timer = patch;
+    save();
+    return s.timer;
+  }
+  function fermaTimerDati() {
+    var s = load();
+    s.timer = null;
+    save();
+  }
+  function aggiornaTimerDati(patch) {
+    var s = load();
+    if (!s.timer) return null;
+    for (var k in patch) if (Object.prototype.hasOwnProperty.call(patch, k)) s.timer[k] = patch[k];
+    save();
+    return s.timer;
+  }
+
+  /* ---------- TUTTE LE REVIEW, in una fila sola ----------
+     Le tre specie messe insieme e ordinate dalla più recente: una review
+     serve confrontata con le altre, e finché ognuna sta chiusa nel suo
+     giorno quel confronto non lo fa nessuno.
+     Qui si scarta il vuoto: una review compilata senza scrivere niente non è
+     una riga da rileggere, è un giorno in cui si è premuto «salva». */
+  function tutteLeReview() {
+    var s = load();
+    var out = [];
+    function pulisci(campi) {
+      return campi.filter(function (c) { return c.val && String(c.val).trim(); })
+        .map(function (c) { return { eti: c.eti, val: String(c.val).trim() }; });
+    }
+    Object.keys(s.pianoMattina || {}).forEach(function (k) {
+      var v = s.pianoMattina[k] || {};
+      var campi = pulisci([{ eti: 'Intenzione', val: v.intenzione }]);
+      if (campi.length) out.push({ tipo: 'mattina', ico: 'sun', k: k, quando: 'Mattina · ' + k, campi: campi });
+    });
+    Object.keys(s.reviewSera || {}).forEach(function (k) {
+      var v = s.reviewSera[k] || {};
+      var campi = pulisci([
+        { eti: 'È andata bene', val: v.vittoria },
+        { eti: 'Mi ha bloccato', val: v.blocco },
+        { eti: 'Domani', val: v.shutdown }
+      ]);
+      if (campi.length) out.push({ tipo: 'sera', ico: 'moon', k: k, quando: 'Sera · ' + k, campi: campi });
+    });
+    Object.keys(s.reviewSettimana || {}).forEach(function (k) {
+      var v = s.reviewSettimana[k] || {};
+      var campi = pulisci([
+        { eti: 'Vittorie', val: v.vittorie },
+        { eti: 'Blocchi', val: v.blocchi },
+        { eti: 'Ho imparato', val: v.imparato },
+        { eti: 'La prossima', val: v.prossima }
+      ]);
+      if (campi.length) out.push({ tipo: 'settimana', ico: 'calendar', k: k, quando: 'Settimana del ' + k, campi: campi });
+    });
+    out.sort(function (a, b) { return a.k < b.k ? 1 : (a.k > b.k ? -1 : 0); });
+    return out;
+  }
+  function quanteReview() { return tutteLeReview().length; }
+
   function registraMinuti(areaId, minuti, quando) {
     var s = load();
     var k = quando || todayKey();
@@ -2038,7 +2176,7 @@ var LM = (function () {
      cosa di oggi si «rimanda», un'abitudine si «salta per oggi». */
   function voceAzione(a) {
     return { tipo: 'azione', id: a.id, testo: a.testo, areaId: a.areaId, ora: a.ora,
-      durata: a.durata, mit: !!a.mit, ifThen: a.ifThen || '' };
+      durata: a.durata, mit: !!a.mit, ifThen: a.ifThen || '', mancata: a.mancata || null };
   }
   function voceAbitudine(h) {
     /* `giorni` e `record` viaggiano con la voce perché la scheda di «Adesso»
@@ -2052,7 +2190,9 @@ var LM = (function () {
   function vociDiAdesso(k) {
     var s = load();
     k = k || todayKey();
-    var out = azioniDiOggi().filter(function (a) { return !a.done; }).map(voceAzione);
+    /* una cosa segnata «non ci sono riuscito» è chiusa per oggi: resta nel
+       registro e nella giornata, ma non torna a chiedere di essere fatta */
+    var out = azioniDiOggi().filter(function (a) { return !a.done && !a.mancata; }).map(voceAzione);
     s.abitudini.forEach(function (h) {
       if (!abitudinePrevista(h, k) || h.fatti[k]) return;
       out.push(voceAbitudine(h));
@@ -2899,6 +3039,7 @@ var LM = (function () {
     weekKey: weekKey, weekdayShort: weekdayShort, fmtShort: fmtShort, daysBetween: daysBetween,
     coloreArea: coloreArea, livelloDaXp: livelloDaXp,
     aggiungiAzione: aggiungiAzione, completaAzione: completaAzione, rimandaAzione: rimandaAzione,
+    segnaMancata: segnaMancata, togliMancata: togliMancata, mancate: mancate, PERCHE_MANCATA: PERCHE_MANCATA,
     cattura: cattura, triageInbox: triageInbox, modificaInbox: modificaInbox, cambiaAreaAzione: cambiaAreaAzione,
     modificaAzione: modificaAzione, rimuoviAzione: rimuoviAzione, serveMit: serveMit,
     spostaAzione: spostaAzione, rimandaNonFatte: rimandaNonFatte, azioneInBacklog: azioneInBacklog,
@@ -2923,6 +3064,8 @@ var LM = (function () {
     aggiungiArea: aggiungiArea, rimuoviArea: rimuoviArea, baselineCheckin: baselineCheckin,
     registraCheckin: registraCheckin, salvaPianoMattina: salvaPianoMattina,
     valutaArea: valutaArea, registraMinuti: registraMinuti,
+    tutteLeReview: tutteLeReview, quanteReview: quanteReview,
+    timerVivo: timerVivo, avviaTimerDati: avviaTimerDati, fermaTimerDati: fermaTimerDati, aggiornaTimerDati: aggiornaTimerDati,
     salvaReviewSera: salvaReviewSera, salvaReviewSettimana: salvaReviewSettimana,
     azioniDiOggi: azioniDiOggi, prossimaAzione: prossimaAzione, azioneAdesso: azioneAdesso,
     vociDiAdesso: vociDiAdesso,

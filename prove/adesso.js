@@ -208,10 +208,14 @@ const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  
       const h = LM.aggiungiAbitudine('Corsa 5 km', 'salute', [0, 1, 2, 3, 4, 5, 6], { ora: '07:00', durata: 45 });
       const s = LM.load(); s.abitudini.find(x => x.id === h.id).fatti = {}; LM.save();
     });
+    /* il timer adesso chiede prima CHE TIPO: si sceglie il blocco, e si ferma
+       dallo schermo della concentrazione, che è dove sta il comando */
     await p.evaluate(() => { document.getElementById('btn-timer').click(); });
-    await p.waitForTimeout(400);
+    await p.waitForTimeout(500);
+    await p.evaluate(() => { document.querySelector('[data-timer-tipo="blocco"]').click(); });
+    await p.waitForTimeout(600);
     /* si finge che il tempo sia passato: il timer registra i minuti trascorsi */
-    await p.evaluate(() => { document.getElementById('btn-stop-timer').click(); });
+    await p.evaluate(() => { document.getElementById('conc-ferma').click(); });
     await p.waitForTimeout(500);
     const min = await p.evaluate(() => (LM.load().minuti[LM.todayKey()] || {}));
     ok('il timer non perde i minuti di un’abitudine (registrati o zero, mai altrove)',

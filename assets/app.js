@@ -353,6 +353,10 @@
     if (xp > 0) {
       var r = ev.currentTarget.getBoundingClientRect();
       flyXp(r.left + r.width / 2, r.top, xp);
+      /* lo scoppio attorno al dito, non la pioggia: spuntare una riga in un
+         elenco è un gesto piccolo, e una festa grande su un gesto piccolo la
+         svaluta per quando servirà davvero */
+      festeggia('leggero', r.left + r.width / 2, r.top + r.height / 2);
       toast(doneMsg, xp, icona);
     } else if (xp < 0) {
       toast('Spunta tolta (' + xp + ' XP)', 0, 'annulla');
@@ -570,6 +574,7 @@
   }
   /* Tab gira dentro il pannello aperto invece di uscirne */
   document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && concentrazioneAperta()) { chiudiConcentrazione(); return; }
     if (e.key !== 'Tab') return;
     var pannello = avvisoAperto ? avvisoAperto.querySelector('.avviso')
       : (!$sheet.hidden ? $sheetPanel : (!$ovl.hidden ? $ovl.querySelector('.pannello-cattura') : null));
@@ -622,7 +627,20 @@
     function dalBasso() {
       return window.matchMedia && window.matchMedia('(max-width: 860px)').matches;
     }
-    function scriviVelo(k) { $sheet.style.setProperty('--velo', String(k)); }
+    /* IL VELO E LA SFOCATURA SCENDONO INSIEME.
+       Prima si schiariva solo il velo: tirando giù il foglio la pagina dietro
+       diventava più chiara ma restava sfocata fino all'ultimo istante, e poi
+       tornava a fuoco di colpo alla chiusura. Da fuori sembrava che il foglio
+       non stesse davvero andando via — il gesto diceva «sto tornando alla
+       pagina» e la pagina restava illeggibile.
+       Adesso la sfocatura scala con lo stesso numero: a metà gesto la pagina
+       dietro è a metà strada, e quello che stai per raggiungere si legge già.
+       È il gesto che mostra la sua destinazione mentre lo fai — la stessa
+       cosa che fa il pinch per chiudere un'app su iOS. */
+    function scriviVelo(k) {
+      $sheet.style.setProperty('--velo', String(k));
+      $sheet.style.setProperty('--sfoca', (8 * Math.max(0, Math.min(1, k))).toFixed(2) + 'px');
+    }
 
     /* qualunque cosa sia rimasta di un gesto interrotto */
     function pulisci() {
@@ -673,8 +691,8 @@
       if (e.cancelable) e.preventDefault();
       dy = Math.max(0, d);
       $sheetPanel.style.transform = 'translateY(' + dy.toFixed(1) + 'px)';
-      /* il velo si schiarisce, il foglio no */
-      scriviVelo(Math.max(0.12, 1 - dy / 420));
+      /* il velo e la sfocatura si schiariscono, il foglio no */
+      scriviVelo(Math.max(0.06, 1 - dy / 420));
       campioni.push({ t: e.timeStamp, y: t.clientY });
       if (campioni.length > 6) campioni.shift();
     }
@@ -1205,6 +1223,9 @@
     function segSc(v, et) { return '<button data-scorri="' + v + '" class="' + (scorri === v ? 'attivo' : '') + '">' + et + '</button>'; }
     var eff = s.profilo.effetti || 'pieni';
     function segEf(v, et) { return '<button data-eff="' + v + '" class="' + (eff === v ? 'attivo' : '') + '">' + et + '</button>'; }
+    var suo = s.profilo.suono || 'si', vib = s.profilo.vibra || 'si';
+    function segSu(v, et) { return '<button data-suono="' + v + '" class="' + (suo === v ? 'attivo' : '') + '">' + et + '</button>'; }
+    function segVi(v, et) { return '<button data-vibra="' + v + '" class="' + (vib === v ? 'attivo' : '') + '">' + et + '</button>'; }
 
     var r = s.profilo.ritmo || {};
     var pasti = (r.pasti || []).length;
@@ -1246,6 +1267,10 @@
         segSc('si', 'Acceso') + segSc('no', 'Spento') + '</span>') +
       rigaScelta('Effetti', '<span class="segmenti imp-seg" id="seg-eff">' +
         segEf('pieni', 'Pieni') + segEf('ridotti', 'Ridotti') + segEf('minimi', 'Minimi') + '</span>') +
+      rigaScelta('Suono', '<span class="segmenti imp-seg" id="seg-suono">' +
+        segSu('si', 'Acceso') + segSu('no', 'Muto') + '</span>') +
+      rigaScelta('Vibrazione', '<span class="segmenti imp-seg" id="seg-vibra">' +
+        segVi('si', 'Accesa') + segVi('no', 'Spenta') + '</span>') +
       '</div>' +
       '<p class="lista-nota"><b>Effetti</b> serve se compaiono rettangoli grigi o neri a spigolo vivo in mezzo alle schermate, o se l’app va a scatti. <b>Ridotti</b> toglie le sfocature dietro ai pannelli e alla barra; <b>minimi</b> toglie anche il fondo colorato e la curva degli angoli. Se il difetto sparisce a un gradino e non all’altro, si sa da cosa dipende.</p>' +
       '<p class="lista-nota">Aurora è più sobrio, Arcade più acceso. Con <b>tre porte</b> le altre schermate stanno in una riga di linguette sotto al titolo; con <b>tutte le pagine</b> torna la barra lunga. In entrambi i casi ci sono tutte: cambia solo da dove ci si arriva. Con lo <b>scorrimento acceso</b> si passa da una schermata all’altra trascinando il dito di lato, come si sfoglia: le linguette restano dove sono.</p>' +
@@ -1599,6 +1624,22 @@
   }
 
   function wireAspettoDati(root) {
+    root.querySelectorAll('#seg-suono [data-suono]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        root.querySelectorAll('#seg-suono [data-suono]').forEach(function (o) { o.classList.toggle('attivo', o === b); });
+        var st = LM.load(); st.profilo.suono = b.getAttribute('data-suono'); LM.save();
+        /* si prova subito: un interruttore del suono che non fa sentire il
+           suono che accende chiede di andare a cercarlo da qualche altra parte */
+        if (st.profilo.suono === 'si') suona('leggero');
+      });
+    });
+    root.querySelectorAll('#seg-vibra [data-vibra]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        root.querySelectorAll('#seg-vibra [data-vibra]').forEach(function (o) { o.classList.toggle('attivo', o === b); });
+        var st = LM.load(); st.profilo.vibra = b.getAttribute('data-vibra'); LM.save();
+        if (st.profilo.vibra === 'si') vibra('leggero');
+      });
+    });
     root.querySelectorAll('#seg-eff [data-eff]').forEach(function (b) {
       b.addEventListener('click', function () {
         root.querySelectorAll('#seg-eff [data-eff]').forEach(function (o) { o.classList.toggle('attivo', o === b); });
@@ -2300,55 +2341,434 @@
      VISTA: FOCUS
      ============================================================ */
 
-  var timer = { azioneId: null, fine: null, durata: 0, intervallo: null };
+  /* ============================================================
+     IL TIMER
 
-  function fermaTimer(registra) {
-    if (timer.intervallo) clearInterval(timer.intervallo);
-    if (registra && timer.azioneId) {
-      var trascorsi = Math.round((timer.durata * 60000 - Math.max(0, timer.fine - Date.now())) / 60000);
-      if (trascorsi >= 1) {
-        /* l'area la porta il timer: cercarla fra le azioni non funziona più da
-           quando qui può esserci anche un'abitudine, e i minuti sarebbero
-           finiti nel nulla */
-        var a = LM.load().azioni.find(function (x) { return x.id === timer.azioneId; });
-        var areaMin = timer.areaId || (a ? a.areaId : null);
-        if (areaMin) LM.registraMinuti(areaMin, trascorsi);
-      }
-    }
-    timer = { azioneId: null, areaId: null, fine: null, durata: 0, intervallo: null };
+     Quattro tipi, e non sono quattro durate: sono quattro modi diversi di
+     stare davanti a una cosa.
+
+       · avvio        cinque minuti. Non serve a fare la cosa, serve a
+                      COMINCIARLA. Quando il problema è che non si parte, la
+                      durata giusta è la più piccola che si riesca ad
+                      accettare — e una cosa cominciata tira a tornarci
+                      (Zeigarnik). Sul compito che si sta evitando è l'unica
+                      offerta sensata.
+       · blocco       la durata che la cosa ha già addosso, o venticinque.
+                      Un pezzo di tempo dichiarato, con una fine.
+       · pomodoro     blocchi con la pausa dentro. La pausa non è un premio,
+                      è il pezzo che rende ripetibile il blocco: senza, il
+                      secondo blocco non parte mai.
+       · libero       conta in avanti, senza traguardo. Per quando dire
+                      quanto durerà è già una decisione di troppo — che è
+                      esattamente il momento in cui un conto alla rovescia
+                      diventa un motivo per non cominciare.
+
+     Tutto quello che serve per sapere a che punto siamo sta nei DATI, in
+     istanti assoluti (`fine`, non «restano N minuti»). Quindi: chiudi il
+     telefono e va avanti, ricarichi la pagina e c'è ancora, apri un altro
+     dispositivo e trova lo stesso numero, senza che nessuno debba raccontare
+     niente a nessuno. Il conto alla rovescia non si salva mai, perché un
+     conto alla rovescia salvato invecchia appena lo scrivi.
+     ============================================================ */
+  var TIPI_TIMER = {
+    avvio:    { nome: 'Solo per partire', min: 5,  eti: '5′',  ico: 'play',
+                dice: 'Cinque minuti. Poi decidi tu se continuare.' },
+    blocco:   { nome: 'Un blocco',        min: 25, eti: '25′', ico: 'clock',
+                dice: 'Un pezzo di tempo con una fine.' },
+    pomodoro: { nome: 'Pomodoro',         min: 25, pausa: 5, ico: 'refresh',
+                dice: '25 minuti, poi 5 di pausa. E si ricomincia.' },
+    libero:   { nome: 'Senza fine',       min: 0,  ico: 'durata',
+                dice: 'Conta in avanti. Fermi tu quando vuoi.' }
+  };
+
+  var battitoTimer2 = null;
+
+  function timerOra() { return LM.timerVivo(); }
+  function timerDiQuesta(id) { var t = timerOra(); return t && t.azioneId === id ? t : null; }
+
+  /* quanti millisecondi mancano (o sono passati, per il libero) */
+  function timerResta(t) {
+    if (!t) return 0;
+    if (t.inPausa) return Math.max(0, (t.pausaFine || 0) - Date.now());
+    if (t.tipo === 'libero') return Date.now() - t.inizio;
+    return Math.max(0, t.fine - Date.now());
+  }
+  function fmtCrono(ms) {
+    var sec = Math.max(0, Math.round(ms / 1000));
+    var m = Math.floor(sec / 60), ss = ('0' + (sec % 60)).slice(-2);
+    if (m < 60) return m + ':' + ss;
+    return Math.floor(m / 60) + ':' + ('0' + (m % 60)).slice(-2) + ':' + ss;
   }
 
-  function avviaTimer(azioneId, minuti, areaId) {
-    fermaTimer(false);
-    timer.azioneId = azioneId;
-    timer.areaId = areaId || null;
-    timer.durata = minuti;
-    timer.fine = Date.now() + minuti * 60000;
-    timer.intervallo = setInterval(function () {
-      var resta = timer.fine - Date.now();
-      var eld = document.getElementById('timer-display');
-      var ela = document.getElementById('timer-anello');
-      if (eld) {
-        var sec = Math.max(0, Math.round(resta / 1000));
-        eld.textContent = Math.floor(sec / 60) + ':' + ('0' + sec % 60).slice(-2);
-      }
-      if (ela) ela.style.setProperty('--p', Math.min(1, 1 - resta / (timer.durata * 60000)).toFixed(4));
-      if (resta <= 0) {
-        var quale = LM.load().azioni.find(function (x) { return x.id === timer.azioneId; });
-        fermaTimer(true);
-        toast('Timer finito. Minuti registrati.', 0, 'durata');
-        /* un messaggio dentro l'app lo vedi solo se stai guardando l'app: il
-           timer serve proprio per andare a fare la cosa, quindi la fine deve
-           poter arrivare anche da fuori. È l'unica notifica che il web sa
-           dare senza un server, perché la pagina è ancora viva. */
-        if (window.LM_PROMEMORIA) {
-          LM_PROMEMORIA.locale('Tempo scaduto',
-            quale ? quale.testo : 'Il timer è finito.', '#/oggi');
-        }
-        render();
-      }
-    }, 250);
+  function avviaTimer(azioneId, minuti, areaId, tipo, testo) {
+    var T = TIPI_TIMER[tipo] || TIPI_TIMER.blocco;
+    var min = minuti != null ? minuti : T.min;
+    var ora = Date.now();
+    LM.avviaTimerDati({
+      azioneId: azioneId, areaId: areaId || null, tipo: tipo || 'blocco',
+      testo: testo || '', inizio: ora, durata: min,
+      fine: min > 0 ? ora + min * 60000 : 0,
+      ciclo: 1, inPausa: false, pausaFine: 0,
+      /* SE ERI DENTRO, CI TORNI. Riaprire lo schermo pieno a ogni
+         ricaricamento sarebbe prepotente; non riaprirlo mai vuol dire che
+         chiudere il telefono mentre stai lavorando ti riporta indietro alla
+         schermata da cui eri uscito apposta. Si segna dov'eri, e si torna lì. */
+      concentrato: true
+    });
+    battitoTimerAvvia();
+    apriConcentrazione();
     render();
+  }
+
+  /* i minuti che il timer ha davvero macinato, per il conto delle aree */
+  function minutiFatti(t) {
+    if (!t) return 0;
+    if (t.tipo === 'libero') return Math.round((Date.now() - t.inizio) / 60000);
+    return Math.round((t.durata * 60000 - Math.max(0, t.fine - Date.now())) / 60000);
+  }
+
+  function fermaTimer(registra) {
+    var t = timerOra();
+    if (battitoTimer2) { clearInterval(battitoTimer2); battitoTimer2 = null; }
+    if (t && registra) {
+      var fatti = minutiFatti(t);
+      if (fatti >= 1) {
+        var a = LM.load().azioni.find(function (x) { return x.id === t.azioneId; });
+        var areaMin = t.areaId || (a ? a.areaId : null);
+        if (areaMin) LM.registraMinuti(areaMin, fatti);
+      }
+    }
+    LM.fermaTimerDati();
+    chiudiConcentrazione();
+  }
+
+  /* IL BATTITO. Non ridisegna la pagina: scrive due numeri dove servono. Un
+     `render()` ogni secondo sarebbe la pagina rifatta sessanta volte al
+     minuto per far cambiare due cifre. */
+  function battitoTimerAvvia() {
+    if (battitoTimer2) return;
+    battitoTimer2 = setInterval(passoTimer, 250);
+  }
+  function passoTimer() {
+    var t = timerOra();
+    if (!t) { if (battitoTimer2) { clearInterval(battitoTimer2); battitoTimer2 = null; } return; }
+    var resta = timerResta(t);
+    var quota = t.tipo === 'libero' ? 0
+      : (t.inPausa
+        ? 1 - resta / Math.max(1, (TIPI_TIMER.pomodoro.pausa * 60000))
+        : Math.min(1, 1 - resta / Math.max(1, t.durata * 60000)));
+    document.querySelectorAll('[data-timer-cifre]').forEach(function (e) { e.textContent = fmtCrono(resta); });
+    document.querySelectorAll('[data-timer-anello]').forEach(function (e) { e.style.setProperty('--p', quota.toFixed(4)); });
+    if (t.tipo === 'libero') return;
+    if (resta > 0) return;
+    /* IL TEMPO È FINITO */
+    if (t.inPausa) {
+      /* la pausa è finita: riparte un blocco */
+      var ora = Date.now();
+      LM.aggiornaTimerDati({ inPausa: false, pausaFine: 0, inizio: ora,
+        fine: ora + t.durata * 60000, ciclo: (t.ciclo || 1) + 1 });
+      festeggia('leggero');
+      toast('Si ricomincia. Blocco ' + ((t.ciclo || 1) + 1) + '.', 0, 'refresh');
+      avvisoFuori('Pausa finita', 'Si ricomincia.');
+      render();
+      return;
+    }
+    if (t.tipo === 'pomodoro') {
+      var q = LM.load().azioni.find(function (x) { return x.id === t.azioneId; });
+      var fatti = minutiFatti(t);
+      var areaP = t.areaId || (q ? q.areaId : null);
+      if (fatti >= 1 && areaP) LM.registraMinuti(areaP, fatti);
+      LM.aggiornaTimerDati({ inPausa: true, pausaFine: Date.now() + TIPI_TIMER.pomodoro.pausa * 60000 });
+      festeggia('leggero');
+      toast('Blocco finito. Cinque minuti di pausa.', 0, 'durata');
+      avvisoFuori('Blocco finito', 'Cinque minuti di pausa.');
+      render();
+      return;
+    }
+    var quale = LM.load().azioni.find(function (x) { return x.id === t.azioneId; });
+    fermaTimer(true);
+    festeggia('pieno');
+    toast('Timer finito. Minuti registrati.', 0, 'durata');
+    avvisoFuori('Tempo scaduto', quale ? quale.testo : 'Il timer è finito.');
+    render();
+  }
+  function avvisoFuori(titolo, testo) {
+    /* un messaggio dentro l'app lo vedi solo se stai guardando l'app, e il
+       timer serve proprio per andare a fare la cosa: la fine deve poter
+       arrivare anche da fuori. È l'unica notifica che il web sa dare senza un
+       server, perché la pagina è ancora viva. */
+    if (window.LM_PROMEMORIA) LM_PROMEMORIA.locale(titolo, testo, '#/oggi');
+  }
+
+  /* ============================================================
+     L'ARCHIVIO DELLE REVIEW
+
+     Tutte in una lista sola, dalla più recente, con dentro quello che avevi
+     scritto — non un elenco di date da aprire una per una. Le review servono
+     messe in fila: «cosa mi ha bloccato» ripetuto per sei sere di seguito è
+     un'informazione che nessuna delle sei singole aveva.
+     Le tre specie stanno insieme e si distinguono dal segno, non da un
+     filtro: sono poche, e un filtro su poche cose è un comando in più per
+     guardare meno roba.
+     ============================================================ */
+  function apriArchivioReview() {
+    var righe = LM.tutteLeReview();
+    var corpo = righe.length
+      ? '<div class="lista">' + righe.map(function (r) {
+          return '<div class="lista-riga rev-riga">' +
+            '<span class="lista-azione rev-ico rev-' + r.tipo + '">' + ICO(r.ico, 15) + '</span>' +
+            '<span class="lista-corpo">' +
+            '<span class="lista-tit">' + esc(r.quando) + '</span>' +
+            r.campi.map(function (c) {
+              return '<span class="rev-campo"><b>' + esc(c.eti) + '</b> ' + esc(c.val) + '</span>';
+            }).join('') +
+            '</span></div>';
+        }).join('') + '</div>'
+      : '<div class="vuoto"><b>Non hai ancora scritto nessuna review.</b><br>Le trovi qui appena ne chiudi una.</div>';
+    apriSheet('Le review di prima', '<div class="sc">' + corpo +
+      (righe.length ? '<p class="lista-nota">Dalla più recente. Messe in fila dicono cose che una sera sola non dice: se «cosa mi ha bloccato» si ripete, quello è il posto da cui partire.</p>' : '') +
+      '</div>');
+  }
+
+  /* ============================================================
+     «NON CI SONO RIUSCITO»
+
+     Il perché si chiede, ma non si pretende: cinque risposte a un tocco e un
+     campo libero, e si può chiudere senza rispondere. Chiedere un perché
+     obbligatorio nel momento in cui una cosa è andata male è il modo più
+     rapido per far smettere di dirlo — e a quel punto si torna a cancellare,
+     che è la cosa che questo esito esiste per evitare.
+     Le cinque risposte non sono un questionario: sono le quattro cause che
+     l'app può fare qualcosa per te (tempo, energia, dimensione, vaghezza) più
+     «altro». Una cosa mancata perché «era troppo grossa» è una cosa da
+     spezzare, e prima o poi sarà l'app a poterlo dire.
+     ============================================================ */
+  function chiediMancata(id, testo) {
+    var chips = LM.PERCHE_MANCATA.map(function (x) {
+      return '<button class="q-chip" data-perche="' + x.id + '">' + x.eti + '</button>';
+    }).join('');
+    apriSheet('Non ci sono riuscito', '<div class="sc">' +
+      '<p class="sc-intro">' + esc(testo || '') + '</p>' +
+      etichetta('Cos’è successo', 'aiuto') +
+      '<div class="q-chips" id="mancata-perche">' + chips + '</div>' +
+      '<div class="sc-gruppo"><label class="sc-campo"><span>se vuoi, due parole</span>' +
+      '<input type="text" id="mancata-nota" placeholder="facoltativo…" maxlength="140"></label></div>' +
+      '<div class="imp-azioni"><button class="btn btn-primario btn-grande" id="mancata-ok">Segna e vai avanti</button></div>' +
+      '<p class="lista-nota">Resta nel registro e nella giornata, non toglie punti e non rompe nessuna serie. Serve a rispondere alla domanda «cosa non funziona per me», che senza queste righe non ha dati.</p>' +
+      '</div>', function (root) {
+      var scelto = '';
+      root.querySelectorAll('[data-perche]').forEach(function (b) {
+        b.addEventListener('click', function () {
+          scelto = b.getAttribute('data-perche');
+          root.querySelectorAll('[data-perche]').forEach(function (o) { o.classList.toggle('on', o === b); });
+        });
+      });
+      root.querySelector('#mancata-ok').addEventListener('click', function () {
+        var nota = (root.querySelector('#mancata-nota').value || '').trim();
+        LM.segnaMancata(id, scelto || 'altro', nota);
+        chiudiSheet();
+        if (fuocoScelto === id) fuocoScelto = null;
+        toast('Segnata. Non toglie niente.', 0, 'annulla');
+        render();
+      });
+    });
+  }
+
+  /* ============================================================
+     SCEGLIERE IL TIMER
+
+     Quattro voci, non quattro numeri. Un elenco di durate («5 · 10 · 25 ·
+     50») chiede di decidere quanto durerà una cosa che non è ancora
+     cominciata, che è una domanda a cui nel momento sbagliato non si sa
+     rispondere — e restarci sopra è un ottimo modo per non cominciare.
+     Quattro modi di stare davanti alla cosa si scelgono in un colpo, perché
+     uno dei quattro è come ti senti adesso.
+     Il minutaggio del blocco lo porta la cosa stessa (la durata che le hai
+     dato trascinandola nella Giornata); dove non c'è, venticinque.
+     ============================================================ */
+  function scegliTimer(azioneId, areaId, testo, minBlocco) {
+    var righe = ['avvio', 'blocco', 'pomodoro', 'libero'].map(function (k) {
+      var T = TIPI_TIMER[k];
+      var min = k === 'blocco' ? (minBlocco || T.min) : T.min;
+      var quanto = k === 'libero' ? 'senza fine' : (k === 'pomodoro' ? min + '′ + ' + T.pausa + '′' : min + '′');
+      return '<button class="lista-riga sc-porta timer-scelta" data-timer-tipo="' + k + '" data-min="' + min + '">' +
+        '<span class="lista-azione ts-ico">' + ICO(T.ico, 15) + '</span>' +
+        '<span class="lista-corpo"><span class="lista-tit">' + T.nome + '</span>' +
+        '<span class="lista-sub">' + T.dice + '</span></span>' +
+        '<span class="sc-val">' + quanto + '</span></button>';
+    }).join('');
+    apriSheet('Quanto ci stai', '<div class="sc">' +
+      '<div class="lista">' + righe + '</div>' +
+      '<p class="lista-nota">Mentre gira, lo schermo resta su una cosa sola. Il conto va avanti anche a telefono chiuso, e lo stesso timer si vede su tutti i tuoi dispositivi.</p>' +
+      '</div>', function (root) {
+      root.querySelectorAll('[data-timer-tipo]').forEach(function (b) {
+        b.addEventListener('click', function () {
+          var k = b.getAttribute('data-timer-tipo');
+          chiudiSheet();
+          avviaTimer(azioneId, +b.getAttribute('data-min'), areaId, k, testo || '');
+        });
+      });
+    });
+  }
+
+  /* ============================================================
+     CONCENTRAZIONE — lo schermo che non ha niente da dire
+
+     Mentre il timer gira, tutto il resto dell'app è una distrazione con le
+     credenziali in regola: le altre cose di oggi, il conteggio, la barra in
+     basso che porta altrove. Sono esattamente le cose che a una testa che
+     corre offrono una via d'uscita legittima dalla cosa che sta facendo.
+     Quindi restano: la frase di cosa stai facendo, il tempo, e due comandi.
+
+     Le scelte, una per una:
+       · fondo quasi nero, niente aurora, niente vetro. Meno luce vuol dire
+         meno cose che chiedono attenzione, e di sera vuol dire anche meno
+         luce blu addosso mentre lavori.
+       · il tempo è grandissimo e in cifre tabulari, così le cifre non
+         ballano di larghezza a ogni secondo. Un numero che si muove da solo
+         è un movimento nel campo visivo, e un movimento chiama l'occhio.
+       · l'anello si riempie: dice a che punto sei senza doverlo leggere.
+       · «Fatto» è il comando pieno, perché è quello che si spera di premere.
+         «Ferma» è smorzato e sta sotto: fermarsi va potuto fare in un tocco,
+         ma non va invitato.
+       · in pausa cambia colore e lo dice, perché una pausa in cui non sai di
+         essere in pausa è solo tempo perso.
+       · si esce anche con Esc e col tasto indietro del telefono, e uscendo
+         il timer NON si ferma: uscire dallo schermo e smettere sono due cose
+         diverse, e confonderle costa il lavoro fatto.
+     ============================================================ */
+  var $conc = null;
+  function apriConcentrazione() {
+    var t = timerOra();
+    if (!t) return;
+    if (!$conc) {
+      $conc = document.createElement('div');
+      $conc.className = 'concentra';
+      $conc.setAttribute('role', 'dialog');
+      $conc.setAttribute('aria-modal', 'true');
+      $conc.setAttribute('aria-label', 'Timer a schermo intero');
+      document.body.appendChild($conc);
+    }
+    disegnaConcentrazione();
+    document.body.classList.add('in-concentrazione');
+    if (!t.concentrato) LM.aggiornaTimerDati({ concentrato: true });
+    battitoTimerAvvia();
+  }
+  function disegnaConcentrazione() {
+    var t = timerOra();
+    if (!$conc || !t) return;
+    var T = TIPI_TIMER[t.tipo] || TIPI_TIMER.blocco;
+    var az = LM.load().azioni.find(function (x) { return x.id === t.azioneId; });
+    var titolo = (az && az.testo) || t.testo || 'Concentrazione';
+    $conc.innerHTML =
+      '<button class="conc-esci" id="conc-esci" aria-label="Torna all’app">' + ICO('x', 18) + '</button>' +
+      '<div class="conc-dentro">' +
+      '<div class="conc-tipo">' + ICO(T.ico, 13) + ' ' + (t.inPausa ? 'Pausa' : T.nome) +
+      (t.tipo === 'pomodoro' && !t.inPausa ? ' · blocco ' + (t.ciclo || 1) : '') + '</div>' +
+      '<h2 class="conc-cosa">' + esc(titolo) + '</h2>' +
+      '<div class="conc-anello' + (t.inPausa ? ' in-pausa' : '') + '" data-timer-anello style="--p:0">' +
+      '<div class="conc-cifre" data-timer-cifre>' + fmtCrono(timerResta(t)) + '</div>' +
+      '<div class="conc-eti">' + (t.tipo === 'libero' ? 'da quando hai cominciato' : (t.inPausa ? 'di pausa' : 'restano')) + '</div>' +
+      '</div>' +
+      '<div class="conc-tasti">' +
+      '<button class="btn btn-ok btn-grande" id="conc-fatto">' + ICO('check', 18) + ' Fatto</button>' +
+      '<button class="btn btn-mini btn-ghost" id="conc-ferma">' + ICO('pause', 15) + ' Ferma e registra i minuti</button>' +
+      '</div></div>';
+    $conc.querySelector('#conc-esci').addEventListener('click', chiudiConcentrazione);
+    $conc.querySelector('#conc-ferma').addEventListener('click', function () {
+      fermaTimer(true); toast('Minuti registrati.', 0, 'durata'); render();
+    });
+    $conc.querySelector('#conc-fatto').addEventListener('click', function () {
+      var id = t.azioneId;
+      fermaTimer(true);
+      var s = LM.load();
+      var ab = s.abitudini.some(function (h) { return h.id === id; });
+      var xp = ab ? LM.completaAbitudine(id) : LM.completaAzione(id);
+      festeggia('pieno');
+      toast(ab ? 'Abitudine spuntata.' : 'Azione completata.', xp, ab ? 'refresh' : 'check');
+      render();
+    });
+    passoTimer();
+  }
+  function chiudiConcentrazione() {
+    var era = document.body.classList.contains('in-concentrazione');
+    document.body.classList.remove('in-concentrazione');
+    if ($conc) { $conc.innerHTML = ''; }
+    /* uscire dallo schermo pieno e fermare il timer sono due cose diverse:
+       qui si segna solo che non ci sei più dentro */
+    if (era && LM.timerVivo()) LM.aggiornaTimerDati({ concentrato: false });
+  }
+  function concentrazioneAperta() { return document.body.classList.contains('in-concentrazione'); }
+
+  /* ============================================================
+     LA FESTA — coriandoli, un suono, una vibrazione
+
+     Tre canali per la stessa notizia, e non è ridondanza: nell'ADHD la
+     ricompensa conta se è IMMEDIATA e se si sente (Barkley: la sensibilità
+     alle conseguenze differite è quella che manca). Un contatore che sale in
+     un'altra schermata non è una ricompensa, è un dato.
+     Il suono è generato dal browser, non è un file: nessun peso da scaricare,
+     nessun ritardo alla prima volta, e parte nello stesso istante del tocco.
+     Due note che salgono, una quinta giusta — un intervallo consonante che
+     non suona come una notifica di sistema.
+     Tutto si spegne: chi lavora in silenzio non deve dover scegliere fra
+     l'app e le persone intorno. E chi ha chiesto meno animazioni al sistema
+     operativo non vede i coriandoli, senza doverlo dire di nuovo qui.
+     ============================================================ */
+  var udio = null;
+  function suona(che) {
+    var p = LM.load().profilo || {};
+    if (p.suono === 'no') return;
+    try {
+      var AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return;
+      if (!udio) udio = new AC();
+      if (udio.state === 'suspended') udio.resume();
+      var t0 = udio.currentTime;
+      var note = che === 'pieno' ? [523.25, 783.99] : [440, 587.33];
+      note.forEach(function (f, i) {
+        var o = udio.createOscillator(), g = udio.createGain();
+        o.type = 'sine'; o.frequency.value = f;
+        var q = t0 + i * 0.085;
+        g.gain.setValueAtTime(0.0001, q);
+        g.gain.exponentialRampToValueAtTime(che === 'pieno' ? 0.13 : 0.07, q + 0.012);
+        g.gain.exponentialRampToValueAtTime(0.0001, q + 0.28);
+        o.connect(g); g.connect(udio.destination);
+        o.start(q); o.stop(q + 0.3);
+      });
+    } catch (e) {}
+  }
+  function vibra(che) {
+    var p = LM.load().profilo || {};
+    if (p.vibra === 'no') return;
+    if (!navigator.vibrate) return;
+    try { navigator.vibrate(che === 'pieno' ? [14, 40, 22] : [12]); } catch (e) {}
+  }
+  function festeggia(che, x, y) {
+    if (che === 'pieno' && !RIDOTTO) pioggiaCoriandoli();
+    else if (x != null && y != null) burst(x, y);
+    suona(che); vibra(che);
+  }
+  /* i coriandoli di una cosa finita cadono da sopra su tutto lo schermo: il
+     piccolo scoppio attorno al dito resta per le cose minori, così i due
+     momenti non si somigliano */
+  function pioggiaCoriandoli() {
+    if (RIDOTTO) return;
+    var n = 34;
+    for (var i = 0; i < n; i++) {
+      var s = document.createElement('i');
+      s.className = 'coriandolo coriandolo-pioggia';
+      s.style.left = (Math.random() * 100).toFixed(1) + 'vw';
+      s.style.top = '-16px';
+      s.style.background = COLORI_FESTA[i % COLORI_FESTA.length];
+      s.style.setProperty('--dx', (Math.random() * 90 - 45).toFixed(0) + 'px');
+      s.style.setProperty('--dy', (window.innerHeight + 60).toFixed(0) + 'px');
+      s.style.setProperty('--rot', (Math.random() * 900 - 450).toFixed(0) + 'deg');
+      s.style.animationDelay = (Math.random() * 0.28).toFixed(2) + 's';
+      s.style.animationDuration = (1.1 + Math.random() * 0.7).toFixed(2) + 's';
+      document.body.appendChild(s);
+      (function (e) { setTimeout(function () { e.remove(); }, 2300); })(s);
+    }
   }
 
   /* "fuocoScelto": quando l'utente decide di fare un'altra cosa invece di
@@ -2454,7 +2874,7 @@
 
     var area = areaById(prossima.areaId);
     var colArea = LM.coloreArea(area);
-    var timerAttivo = timer.azioneId === prossima.id && timer.fine;
+    var timerAttivo = !!timerDiQuesta(prossima.id);
     var minTimer = Math.max(1, Math.min(180, +(prossima.durata || 0) || 25));
 
     /* Una riga sola sopra al titolo, e dice due cose che il titolo non dice:
@@ -2640,8 +3060,8 @@
       (perche ? '<span class="fd-sep">·</span><span class="fd-perche">' + perche + '</span>' : '') +
       '</div>' +
       (timerAttivo
-        ? '<div class="timer-anello" id="timer-anello" style="--p:0"><div class="timer-interno">' +
-          '<div class="timer-display" id="timer-display">–:––</div>' +
+        ? '<div class="timer-anello" data-timer-anello style="--p:0"><div class="timer-interno">' +
+          '<div class="timer-display" data-timer-cifre>' + fmtCrono(timerResta(timerOra())) + '</div>' +
           /* è un conto alla rovescia sui minuti che hai scelto tu, non il
              blocco della giornata: diceva la cosa sbagliata */
           '<div class="timer-eti">restano</div></div></div>'
@@ -2679,14 +3099,22 @@
       (adesso.stato === 'programmata'
         ? '<button class="btn btn-mini" id="btn-fatto">' + ICO('check', 15) + ' Fatto</button>'
         : (timerAttivo
-          ? '<button class="btn btn-mini" id="btn-stop-timer">' + ICO('pause', 15) + ' Ferma e registra</button>'
+          ? '<button class="btn btn-mini" id="btn-concentra">' + ICO('target', 15) + ' Torna al timer</button>'
           : '<button class="btn btn-mini" id="btn-timer" data-min="' + minTimer + '">' +
-            ICO('play', 15) + ' Timer ' + minTimer + '′</button>')) +
+            ICO('play', 15) + ' Timer</button>')) +
       /* un'abitudine non si rimanda a domani: domani c'è già. Si salta oggi,
          e la serie lo sa. */
       (prossima.tipo === 'abitudine'
         ? '<button class="btn btn-mini btn-ghost" id="btn-salta">Salta oggi ' + ICO('salta', 15) + '</button>'
         : '<button class="btn btn-mini btn-ghost" id="btn-nonora">Più tardi ' + ICO('rimanda', 15) + '</button>') +
+      /* IL TERZO ESITO. «Più tardi» dice che la farai; cancellare la fa
+         sparire dal registro di quello che è successo. Quello che manca in
+         mezzo — e che capita più spesso di tutti e due — è averci provato e
+         non esserci riuscito. Sta qui, smorzato: va potuto dire in un tocco,
+         e non va invitato. Per un'abitudine c'è già «Salta oggi», che è la
+         stessa cosa detta nel modo giusto per una cosa che torna. */
+      (prossima.tipo === 'abitudine' ? ''
+        : '<button class="btn btn-mini btn-ghost btn-mancata" id="btn-mancata">Non ci sono riuscito</button>') +
       '</div>' +
       /* Quante ne restano lo dice già il contatore in cima e il tasto delle
          altre. Qui resta solo la cosa che nessuno dei due dice: che dopo
@@ -2729,13 +3157,16 @@
     });
 
     document.getElementById('btn-fatto').addEventListener('click', function (ev) {
-      var eraTimer = timer.azioneId === prossima.id;
+      var eraTimer = !!timerDiQuesta(prossima.id);
       if (eraTimer) fermaTimer(true);
       var abitudine = prossima.tipo === 'abitudine';
       var xp = abitudine ? LM.completaAbitudine(prossima.id) : LM.completaAzione(prossima.id);
       var r = ev.currentTarget.getBoundingClientRect();
       flyXp(r.left + r.width / 2, r.top, xp);
-      if (prossima.mit) burst(r.left + r.width / 2, r.top + r.height / 2);
+      /* la pioggia di coriandoli per QUALUNQUE cosa finita, non solo per la
+         più importante: una cosa fatta è una cosa fatta, e il momento in cui
+         la ricompensa conta è questo, non un contatore da un'altra parte */
+      festeggia('pieno', r.left + r.width / 2, r.top + r.height / 2);
       toast(abitudine ? 'Abitudine spuntata.'
         : (prossima.mit ? 'Hai completato l’azione più importante di oggi.' : 'Azione completata.'),
         xp, abitudine ? 'refresh' : (prossima.mit ? 'star' : 'check'));
@@ -2764,16 +3195,14 @@
       toast('Saltata per oggi: la serie non si azzera.', 0, 'salta');
       render();
     });
-    if (timerAttivo) {
-      document.getElementById('btn-stop-timer').addEventListener('click', function () {
-        fermaTimer(true);
-        toast('Minuti registrati per ' + area.nome + '.', 0, 'durata');
-        render();
-      });
-    } else {
-      var bt = document.getElementById('btn-timer');
-      if (bt) bt.addEventListener('click', function () { avviaTimer(prossima.id, minTimer, prossima.areaId); });
-    }
+    var bm = document.getElementById('btn-mancata');
+    if (bm) bm.addEventListener('click', function () { chiediMancata(prossima.id, prossima.testo); });
+    var bc = document.getElementById('btn-concentra');
+    if (bc) bc.addEventListener('click', function () { apriConcentrazione(); });
+    var bt = document.getElementById('btn-timer');
+    if (bt) bt.addEventListener('click', function () {
+      scegliTimer(prossima.id, prossima.areaId, prossima.testo, minTimer);
+    });
   }
 
   /* la barra compatta della giornata è sempre in cima a Oggi */
@@ -2837,7 +3266,7 @@
       (e.min == null ? tray : placed).push(e);
     });
     LM.azioniDelGiorno(k).forEach(function (a) {
-      var e = { tipo: 'azione', min: minOf(a.ora), ora: a.ora, dur: a.durata || null, id: a.id, testo: a.testo, areaId: a.areaId, mit: a.mit, done: a.done };
+      var e = { tipo: 'azione', min: minOf(a.ora), ora: a.ora, dur: a.durata || null, id: a.id, testo: a.testo, areaId: a.areaId, mit: a.mit, done: a.done, mancata: a.mancata || null };
       (e.min == null ? tray : placed).push(e);
     });
     placed.sort(function (a, b) { return a.min - b.min; });
@@ -2965,7 +3394,7 @@
          Così col dito si prende subito, senza che il browser rubi il gesto
          per selezionare il testo. */
       if (e.tipo === 'azione') clic += ' data-drag-az="' + e.id + '"' + (opts.mini ? ' data-manico' : '');
-      return '<div class="tl-blk tl-blk-att' + (fatto ? ' fatta' : '') + (basso ? ' tl-blk-basso' : '') + (corto ? ' tl-blk-corto' : '') + (opts.interactive && !opts.mini ? ' tl-blk-clic' : '') + '"' + clic + ' style="' + pos + ';--c-area:' + col + '" title="' + esc(e.testo) + '">' +
+      return '<div class="tl-blk tl-blk-att' + (fatto ? ' fatta' : '') + (e.mancata ? ' mancata' : '') + (basso ? ' tl-blk-basso' : '') + (corto ? ' tl-blk-corto' : '') + (opts.interactive && !opts.mini ? ' tl-blk-clic' : '') + '"' + clic + ' style="' + pos + ';--c-area:' + col + '" title="' + esc(e.testo) + '">' +
         check + (e.tipo === 'azione' && !opts.mini && opts.interactive ? '<span class="manico" data-manico aria-hidden="true">' + ICO('presa', 13) + '</span>' : '') +
         (righe === 0 ? '' : '<span class="tl-blk-t">' + (e.mit ? ICO('star', 11) + ' ' : '') + esc(e.testo) + '</span>') +
         (!corto && !opts.mini ? '<span class="tl-blk-ora">' + e.ora + '–' + fmtMin(e.min + dur) + '</span>' : '') + '</div>';
@@ -4550,7 +4979,18 @@
       return '<div class="rit-eti">' + g.eti + '</div><div class="rit-gruppo">' + righe + '</div>';
     }).join('');
 
-    $vista.innerHTML = topbar('Rituali', '', '', '', true) + corpoHtml;
+    /* LE REVIEW DI PRIMA. Scrivere una review e non poterla più rileggere è
+       scrivere in un pozzo: l'unico motivo per fermarsi la sera a rispondere
+       «cosa ha funzionato oggi» è che quella risposta, messa in fila con le
+       altre, dice qualcosa che una sera sola non dice.
+       La porta sta QUI, dove le review si scrivono, e non in Andamento: è lì
+       che uno le va a cercare, perché è lì che le ha lasciate. */
+    var quante = LM.quanteReview();
+    $vista.innerHTML = topbar('Rituali', '', '', '', true) + corpoHtml +
+      '<div class="lista rit-archivio">' +
+      rigaPorta('rit-archivio', 'archivio', 'Le review di prima',
+        quante ? quante + (quante === 1 ? ' scritta' : ' scritte') : 'nessuna ancora') +
+      '</div>';
 
     /* disegna il contenuto di TUTTE le sezioni aperte */
     var disegna = {
@@ -4561,6 +5001,9 @@
       var c = document.getElementById('corpo-rit-' + id);
       if (c) disegna[id](c);
     });
+
+    var ba = document.getElementById('rit-archivio');
+    if (ba) ba.addEventListener('click', apriArchivioReview);
 
     $vista.querySelectorAll('.rit-riga').forEach(function (b) {
       b.addEventListener('click', function () {
@@ -7378,6 +7821,10 @@
     sottoNav(v);
     $vista.classList.toggle('vista-oggi', v === 'oggi');
     vistaMostrata = v;
+    /* lo schermo della concentrazione è una schermata anche lui: se è aperto
+       va ridisegnato con tutto il resto, se no resta a dire «blocco 1» mentre
+       il pomodoro è già passato alla pausa */
+    if (concentrazioneAperta()) disegnaConcentrazione();
     var postoOra = postoDi(v);
     var verso = (cambioSezione && postoSezione >= 0 && postoOra >= 0)
       ? (postoOra > postoSezione ? 1 : (postoOra < postoSezione ? -1 : 0)) : 0;
@@ -7468,7 +7915,7 @@
     var v = vistaCorrente();
     if (v === 'oggi') {
       montaOggiGiornata(); // la barra si muove sempre
-      var occupato = staDigitando() || !$sheet.hidden || timer.fine || fuocoScelto;
+      var occupato = staDigitando() || !$sheet.hidden || timerOra() || fuocoScelto;
       if (occupato) return;
       var a = LM.azioneAdesso();
       var key = (a.azione ? a.azione.id : '') + '|' + a.stato;
@@ -7494,10 +7941,33 @@
          ricarica la pagina, cioè quasi a nessuno. Tornare sull'app è
          esattamente il momento in cui la domanda ha senso. */
       vistoPrima = LM.segnaVisto();
+      /* tornando sull'app dopo averla chiusa, il timer va riagganciato: il
+         conto è andato avanti da sé (l'ora di fine è assoluta), ma il battito
+         che scrive le cifre a schermo era stato fermato per non consumare */
+      if (LM.timerVivo()) { battitoTimerAvvia(); passoTimer(); }
       setTimeout(forseChiedere, 400);
     }
   });
   avviaBattito();
+
+  /* IL TIMER CHE C'ERA GIA'. Sta nei dati, quindi al caricamento può già
+     esserci — perché l'hai lasciato girare chiudendo il telefono, o perché
+     l'hai fatto partire su un altro dispositivo e è arrivato qui dalla nuvola.
+     In tutti e due i casi non va «riavviato»: va solo ripreso a contare, che
+     è quello che ha continuato a fare da sé (l'ora di fine è un istante
+     assoluto). */
+  function riprendiTimer() {
+    var t = LM.timerVivo();
+    if (!t) { if (concentrazioneAperta()) chiudiConcentrazione(); return; }
+    battitoTimerAvvia();
+    if (t.concentrato && !concentrazioneAperta()) apriConcentrazione();
+    passoTimer();
+  }
+  riprendiTimer();
+  /* un timer arrivato da un altro dispositivo si vede subito, senza
+     ricaricare: `lm:remote` è l'evento che la nuvola manda quando cambia
+     qualcosa di là */
+  document.addEventListener('lm:remote', function () { riprendiTimer(); if (concentrazioneAperta()) disegnaConcentrazione(); });
 
   /* ============================================================
      SCORRERE DI LATO PER CAMBIARE SCHERMATA

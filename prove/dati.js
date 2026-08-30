@@ -227,6 +227,58 @@ const ok = (n, c, d) => { if (!c) guai++; console.log('  ' + (c ? 'ok  ' : 'KO  
       r.restano + ' scoperte dopo la fusione');
   }
 
+  /* ============ 6-bis. VALE PER OGNI ELENCO, NON SOLO PER LE SCOPERTE ====
+     Il caso raccontato dall'utente e' un'ATTIVITA' cancellata su un
+     dispositivo che torna viva dall'altro. Provarlo su una collezione sola
+     lascia scoperte tutte le altre, e la prossima che si aggiunge nasce
+     scoperta. Qui si mette una riga in OGNI elenco, la si toglie, e si
+     pretende che non torni — da tutte e due i versi della fusione, perche'
+     «chi sono io e chi e' l'altro» cambia a ogni scambio. */
+  console.log('\nE VALE PER OGNI ELENCO, NON SOLO PER LE SCOPERTE');
+  {
+    await p.evaluate(() => { localStorage.clear(); });
+    await p.reload(); await p.waitForTimeout(500);
+    const r = await p.evaluate(() => {
+      const vuoto = LM.statoVuoto();
+      const elenchi = Object.keys(LM.COME_UNIRE).filter((k) => LM.COME_UNIRE[k] === 'elenco');
+      const guai = [], provati = [];
+      elenchi.forEach((k) => {
+        if (k === 'cancellati') return;            /* le lapidi stesse non si cancellano */
+        /* uno stato con una riga sola in questo elenco */
+        const A = LM.statoVuoto();
+        A.updatedAt = 1000;
+        A[k] = [{ id: 'x1', testo: 'una riga di ' + k, creata: 500, ts: 500, data: '2026-08-01' }];
+        const vecchio = JSON.parse(JSON.stringify(A));   /* la copia dell'altro dispositivo */
+        /* qui la si toglie, con la lapide che scriverebbe save() */
+        const B = JSON.parse(JSON.stringify(A));
+        B.updatedAt = 2000;
+        B[k] = [];
+        B.cancellati = [{ k: k, chiave: 'ix1', ts: 1500 }];
+        provati.push(k);
+        const avanti = LM.unisci(B, vecchio);
+        const indietro = LM.unisci(vecchio, B);
+        if ((avanti[k] || []).length !== 0) guai.push(k + ' torna viva (avanti)');
+        if ((indietro[k] || []).length !== 0) guai.push(k + ' torna viva (indietro)');
+      });
+      return { guai: guai, provati: provati };
+    });
+    ok('gli elenchi provati sono tutti quelli che ci sono (se no la prova e muta)',
+      r.provati.length >= 8, r.provati.length + ': ' + r.provati.join(', '));
+    ok('nessuna riga cancellata torna viva, in nessuno dei due versi',
+      r.guai.length === 0, r.guai.join(' · '));
+    /* la controprova: senza la lapide la riga DEVE tornare, se no il
+       controllo qui sopra e verde perche' la fusione non unisce niente */
+    const c = await p.evaluate(() => {
+      const A = LM.statoVuoto(); A.updatedAt = 1000;
+      A.azioni = [{ id: 'x1', testo: 'una riga', creata: 500, data: '2026-08-01' }];
+      const vecchio = JSON.parse(JSON.stringify(A));
+      const B = JSON.parse(JSON.stringify(A)); B.updatedAt = 2000; B.azioni = [];
+      return LM.unisci(B, vecchio).azioni.length;      /* senza lapide */
+    });
+    ok('controprova: senza lapide la riga torna eccome', c === 1,
+      c + ' righe (se e 0, la fusione non stava unendo niente e il controllo sopra e muto)');
+  }
+
   /* ============ 7. azzerare funziona lo stesso ============ */
   console.log('\n«AZZERA TUTTO» FUNZIONA LO STESSO');
   {
