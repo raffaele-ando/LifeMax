@@ -29,6 +29,10 @@ let currentUser = null;
 let unsubDoc = null;
 let applyingRemote = false;   // stiamo scrivendo lo stato ricevuto dal cloud
 let lastWrittenAt = 0;        // updatedAt dell'ultima nostra scrittura (evita l'eco)
+let ascoltoAttivo = false;    // il listener degli altri dispositivi è vivo?
+let riprovaTimer = null;      // quando riprovare ad attaccarlo
+let attesaRiprova = 0;        // quanto aspettare la prossima volta
+let cadute = 0;               // quante volte è caduto in questa sessione
 let pushTimer = null;
 let pushInCorso = false;      // una setDoc è già in volo
 let pushPendente = false;     // sono arrivate modifiche mentre scrivevamo
@@ -38,7 +42,7 @@ function log(liv, msg, dati) {
 }
 
 function emitAuth(extra) {
-  window.LM_AUTH = Object.assign({ user: currentUser, available: true, syncing: false }, extra || {});
+  window.LM_AUTH = Object.assign({ user: currentUser, available: true, syncing: false, ascolto: ascoltoAttivo }, extra || {});
   window.dispatchEvent(new CustomEvent('lm:auth'));
 }
 
@@ -132,7 +136,25 @@ function opCede(che, a) {
 
     const app = appMod.initializeApp(firebaseConfig);
     auth = authMod.getAuth(app);
-    db = fsMod.getFirestore(app);
+    /* IL CANALE LUNGO, DICHIARATO INVECE CHE SPERATO.
+       `WebChannelConnection RPC 'Listen' stream transport errored` è la firma
+       di una rete che non digerisce lo streaming: dati mobili che cambiano
+       cella, un proxy, una VPN, certe reti aziendali. La cura documentata è
+       lasciare che Firestore si accorga da sé e ripieghi sul «long polling»,
+       che è più lento ma passa dappertutto.
+       Nelle versioni recenti dell'SDK questo riconoscimento è già acceso di
+       suo, quindi molto probabilmente questa riga non cambia niente OGGI.
+       Vale la pena scriverla lo stesso per una ragione sola: così è una scelta
+       nostra e non un valore predefinito che può cambiare sotto i piedi con
+       l'aggiornamento di una libreria. Se il nome dell'opzione non esiste più,
+       si ripiega sul modo normale invece di far cadere tutto il cloud. */
+    try {
+      db = fsMod.initializeFirestore(app, { experimentalAutoDetectLongPolling: true });
+      log('info', 'Firestore avviato', 'riconoscimento automatico del canale lungo attivo');
+    } catch (e) {
+      db = fsMod.getFirestore(app);
+      log('avviso', 'Firestore avviato nel modo normale', e && e.message);
+    }
     provider = new authMod.GoogleAuthProvider();
     provider.setCustomParameters({ prompt: 'select_account' });
 
@@ -209,17 +231,14 @@ function opCede(che, a) {
         log('info', 'accesso riscontrato, avvio la prima sincronizzazione', 'uid ' + u.uid.slice(0, 6) + '…');
         emitAuth({ syncing: true });
         await primaSincronizzazione(u.uid);
-        // ascolta i cambiamenti dagli altri dispositivi
-        unsubDoc = fsMod.onSnapshot(fsMod.doc(db, 'users', u.uid), function (snap) {
-          if (!snap.exists()) return;
-          const d = snap.data();
-          if (d && typeof d.updatedAt === 'number' && d.updatedAt === lastWrittenAt) return; // nostra scrittura
-          applicaRemoto(d, true);
-        }, function (err) { console.warn('LifeMax: ascolto cloud interrotto.', err && err.message); });
-        log('info', 'ascolto in tempo reale attivo');
+        // ascolta i cambiamenti dagli altri dispositivi, e riattaccalo se cade
+        ascolta(u.uid);
         emitAuth({ syncing: false });
       } else {
         currentUser = null;
+        ascoltoAttivo = false;
+        if (riprovaTimer) { clearTimeout(riprovaTimer); riprovaTimer = null; }
+        attesaRiprova = 0;
         log('info', 'nessun account connesso: i dati restano su questo dispositivo');
         emitAuth();
         emitSync('idle');
@@ -375,12 +394,102 @@ async function push(uid) {
   if (pushPendente) { pushPendente = false; return push(uid); }
 }
 
+/* ==================================================================
+   L'ASCOLTO DEGLI ALTRI DISPOSITIVI, E COSA SUCCEDE QUANDO CADE
+   ==================================================================
+   Nei registri comparivano righe come:
+     WebChannelConnection RPC 'Listen' stream 0x... transport errored
+   Quel messaggio da solo è quasi sempre rumore: è Firestore che dice «il
+   canale si è rotto» e se lo ripara da sé — succede a ogni passaggio fra wifi
+   e dati, a ogni galleria, a ogni proxy che non digerisce lo streaming. Ma
+   guardando come l'app lo trattava è saltato fuori un guasto vero.
+
+   `onSnapshot` prende due funzioni: una per i dati, una per gli errori. Quella
+   degli errori NON è una notifica di un intoppo passeggero: quando viene
+   chiamata, l'ascolto è FINITO e Firestore non lo riattacca. Qui dentro
+   faceva `console.warn` e basta. Cioè: al primo errore che arrivava fin lì,
+   questo dispositivo smetteva di ricevere qualunque cosa dagli altri per
+   tutto il resto della sessione — in silenzio, senza che niente cambiasse
+   sullo schermo, finché non si ricaricava la pagina. E un dispositivo sordo è
+   un dispositivo che si allontana dagli altri: è la condizione da cui è nata
+   la sparizione delle Scoperte.
+
+   Adesso: quando cade lo si dice (nel Registro tecnico, non solo in una
+   console che sul telefono non esiste), si riattacca da sé con attese che
+   raddoppiano fino a un minuto, e si riprova SUBITO quando torna la rete o
+   quando si torna sull'app — che sono i due momenti in cui ha davvero senso. */
+function ascolta(uid) {
+  if (!FSM || !db) return;
+  if (unsubDoc) { try { unsubDoc(); } catch (e) { /* niente */ } unsubDoc = null; }
+  if (riprovaTimer) { clearTimeout(riprovaTimer); riprovaTimer = null; }
+  try {
+    unsubDoc = FSM.onSnapshot(FSM.doc(db, 'users', uid), function (snap) {
+      /* L'ATTESA RIPARTE DA ZERO SOLO QUANDO ARRIVA QUALCOSA DAVVERO.
+         Prima ripartiva appena `onSnapshot` tornava senza lamentarsi — ma
+         quello vuol dire soltanto «ho registrato l'ascolto», non «il canale
+         funziona». Con un server irraggiungibile il giro diventava:
+         attacco, errore, due secondi, attacco, errore, due secondi… per
+         sempre, ogni due secondi, senza mai rallentare. Cioè il contrario di
+         quello che l'attesa che raddoppia serve a fare, e su dati mobili è un
+         modo eccellente di consumare la batteria.
+         Un dato ricevuto è l'unica prova che il canale è vivo. */
+      attesaRiprova = 0;
+      if (!ascoltoAttivo) { ascoltoAttivo = true; emitAuth(); }
+      if (!snap.exists()) return;
+      const d = snap.data();
+      if (d && typeof d.updatedAt === 'number' && d.updatedAt === lastWrittenAt) return; // nostra scrittura
+      applicaRemoto(d, true);
+    }, function (err) {
+      ascoltoAttivo = false;
+      unsubDoc = null;
+      cadute++;
+      log('errore', 'l\u2019ascolto degli altri dispositivi si \u00e8 interrotto (' + cadute + '\u00aa volta)',
+        (err && err.code ? err.code + ' \u00b7 ' : '') + ((err && err.message) || ''));
+      emitAuth();
+      riattacca(uid);
+    });
+    ascoltoAttivo = true;
+    log('info', 'ascolto in tempo reale attivo');
+    emitAuth();
+  } catch (e) {
+    ascoltoAttivo = false;
+    log('errore', 'non riesco a mettermi in ascolto', e && e.message);
+    emitAuth();
+    riattacca(uid);
+  }
+}
+
+function riattacca(uid) {
+  if (riprovaTimer) return;
+  /* si raddoppia fino a un minuto: se la rete è via per un'ora non ha senso
+     bussare ogni due secondi, e se è un intoppo di un attimo si riprende
+     subito */
+  attesaRiprova = attesaRiprova ? Math.min(attesaRiprova * 2, 60000) : 2000;
+  log('avviso', 'riprovo a mettermi in ascolto fra ' + Math.round(attesaRiprova / 1000) + ' secondi');
+  riprovaTimer = setTimeout(function () {
+    riprovaTimer = null;
+    if (currentUser && currentUser.uid === uid) ascolta(uid);
+  }, attesaRiprova);
+}
+
+/* i due momenti in cui vale la pena riprovare subito invece di aspettare */
+function riprovaSubito(perche) {
+  if (!currentUser || ascoltoAttivo) return;
+  log('info', 'riprovo l\u2019ascolto subito: ' + perche);
+  attesaRiprova = 0;
+  ascolta(currentUser.uid);
+}
+document.addEventListener('visibilitychange', function () {
+  if (!document.hidden) riprovaSubito('sei tornato sull\u2019app');
+});
+
 /* rete che va e viene: appena torna, riprova subito e aggiorna lo stato */
 window.addEventListener('offline', function () {
   if (currentUser) emitSync('attesa');
 });
 window.addEventListener('online', function () {
   if (currentUser) { log('info', 'rete tornata: riprovo il salvataggio'); programmaPush(); }
+  riprovaSubito('\u00e8 tornata la rete');
 });
 
 /* traduce i codici d'errore Firestore più comuni in messaggi utili */

@@ -1723,6 +1723,17 @@
     var locale = 'Sul telefono o computer che stai usando i dati sono salvati subito, sempre.';
     if (!a.available) return { cls: 'diag-ok', tit: 'Solo su questo dispositivo', txt: locale + ' Il cloud non è raggiungibile da qui, quindi non c’è copia online.' };
     if (!a.user) return { cls: 'diag-ok', tit: 'Solo su questo dispositivo', txt: locale + ' Accedi con Google per avere anche una copia nel cloud.' };
+    /* L'ASCOLTO È UNA COSA A PARTE DAL SALVATAGGIO, e va detta.
+       Si può stare salvando benissimo nel cloud e non SENTIRE più niente
+       dagli altri dispositivi: sono due canali diversi, e quello che ascolta
+       cade da solo (una galleria, un cambio di cella). Finché non lo si
+       scriveva da nessuna parte, un dispositivo diventato sordo aveva
+       esattamente lo stesso aspetto di uno a posto — e intanto si allontanava
+       dagli altri. */
+    if (a.user && a.ascolto === false) {
+      return { cls: 'diag-attesa', tit: 'Salva, ma non sente gli altri dispositivi',
+        txt: locale + ' Il canale che riceve le modifiche dagli altri dispositivi è caduto e si sta riattaccando da sé: le loro modifiche arriveranno con un po\u2019 di ritardo. Se sei sotto una galleria o senza campo, è normale.' };
+    }
     if (y.state === 'saved') return { cls: 'diag-ok', tit: 'Al sicuro anche nel cloud', txt: 'Ultima conferma dal server alle ' + oraDi(y.at) + '. ' + locale };
     if (y.state === 'saving') return { cls: 'diag-corso', tit: 'Salvataggio nel cloud in corso', txt: locale + ' Sta arrivando la conferma del server.' };
     if (y.state === 'attesa') return { cls: 'diag-attesa', tit: 'Salvato qui, in coda per il cloud', txt: locale + ' La copia online partirà appena c’è rete: non serve fare niente.' + (y.at ? ' Ultima copia nel cloud: ' + oraDi(y.at) + '.' : '') };

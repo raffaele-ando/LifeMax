@@ -322,6 +322,35 @@ genera le chiavi, in un browser vero).
   dell'account o un aggiornamento dal cloud — chi aveva scritto mezza domanda se
   la vedeva sparire senza aver toccato niente. Adesso quello che c'è scritto
   sopravvive al ridisegno, e la prova lo verifica forzando l'evento vero.
+- **dati.js** — NIENTE VA PERSO, MAI. Nasce dal registro delle Scoperte di un
+  utente che si è svuotato da solo. La parte che conta non è il controllo: è
+  che non si possa dimenticare. Quasi tutti i controlli sono GENERICI sulla
+  forma dei dati — girano su `LM.statoVuoto()` invece di nominare i campi —
+  quindi un campo aggiunto fra sei mesi rompe la prova finché non gli si dice
+  come si unisce, e un elenco nuovo che nessuna scena riempie viene segnalato
+  per nome. Dieci controlli: ogni campo ha una regola di fusione dichiarata;
+  quello che si salva si rilegge identico campo per campo; unire due copie non
+  perde niente (i due stati di prova se li costruisce da sé mettendo una riga
+  diversa in ogni elenco, così un campo nuovo entra da solo nel controllo); il
+  caso vero delle otto scoperte contro un telefono che non le ha; le spunte di
+  un'abitudine messe su due dispositivi che si sommano; una cancellazione vera
+  che non torna viva; «Azzera tutto» che funziona lo stesso; un salvataggio
+  illeggibile messo da parte invece che buttato; nove cose fatte nell'app che
+  sopravvivono a un ricaricamento; e nessun elenco senza copertura.
+- **cloud.js** — LA SINCRONIZZAZIONE, PROVATA CON UN FIREBASE FINTO. Firebase
+  qui non c'è e non deve esserci: una prova che dipende dalla rete non è una
+  prova. Le tre librerie vengono intercettate e servite da noi, e il finto sa
+  fare tre cose — dire che c'è un utente, consegnare un documento, e ROMPERSI
+  a comando. Da lì si guarda cosa fa l'app: che l'ascolto si attacchi, che
+  quando cade lo DICA invece di tacere, che si riattacchi da sé senza
+  ricaricare la pagina, che le attese raddoppino (2, 4, 8) e ripartano da capo
+  solo quando arriva un dato davvero, e che un ritorno sull'app riprovi subito.
+  Gli ultimi due controlli sono il caso dell'utente per intero, per la strada
+  vera: un documento remoto più povero che NON cancella le scoperte, e le
+  trenta azioni dell'altro dispositivo che arrivano lo stesso.
+  Le due controprove: rimettendo l'ascolto che non si riattacca diventano rosse
+  quattro righe; rimettendo il documento che sostituisce invece di unire, una
+  riga sola e dice tutto — «le scoperte che stavano solo qui: 9 → 0».
 - **bordi.js** — la stessa cosa, ma DAPPERTUTTO. Guarda ogni elemento di
   cinquantadue schermate, pannelli e stati (`segni/scene.json`) per cinque
   combinazioni di larghezza e tema: 260 schermate, più di ventimila angoli.
@@ -486,7 +515,9 @@ genera le chiavi, in un browser vero).
     node prove/giornata.js
     node prove/adesso.js
     node prove/squircle.js
-    node prove/bordi.js      # 260 schermate, una decina di minuti
+    node prove/dati.js       # niente va perso
+    node prove/cloud.js      # la sincronizzazione, con un Firebase finto
+    node prove/bordi.js      # 312 schermate, una ventina di minuti
     node prove/stati.js      # 50 schermate × 4 stati × 2 vie
     node prove/promemoria.js
     node prove/doppioni.js   # qualche minuto
