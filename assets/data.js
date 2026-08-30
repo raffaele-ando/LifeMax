@@ -2107,9 +2107,22 @@ var LM = (function () {
      istanti assoluti: qualunque dispositivo, in qualunque momento, ricava lo
      stesso numero senza aver visto partire niente. Il conto alla rovescia non
      si salva mai, perché un numero di minuti salvato invecchia. */
+  /* Il timer «senza fine» ha `fine` a zero: è il modo di dire che un traguardo
+     non c'è. Qui `!t.fine` lo scambiava per un timer rotto e lo buttava via,
+     quindi partiva, si salvava, e l'app non lo vedeva mai — premevi e non
+     succedeva niente. Da qui in giù «vivo» e «ha una fine» sono due domande
+     diverse. */
+  var SENZA_FINE_MAX = 12 * 3600000;
   function timerVivo() {
     var t = load().timer;
-    if (!t || !t.fine) return null;
+    if (!t || !t.inizio) return null;
+    if (!t.fine) {
+      /* Anche uno che conta in avanti a un certo punto è di ieri. Dodici ore
+         perché non è una sessione: è un telefono chiuso mentre girava. Sotto
+         non si taglia niente — una mattina intera di studio è una cosa vera e
+         non va cancellata a metà. */
+      return Date.now() - t.inizio > SENZA_FINE_MAX ? null : t;
+    }
     /* un timer finito da più di sei ore è roba di ieri che nessuno ha chiuso:
        non deve riapparire addosso a chi apre l'app la mattina dopo */
     if (!t.inPausa && Date.now() - t.fine > 6 * 3600000) return null;

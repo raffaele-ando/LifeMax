@@ -68,7 +68,56 @@ const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  
     scelte.find((x) => x.tipo === 'avvio').min < scelte.find((x) => x.tipo === 'blocco').min,
     'avvio ' + scelte.find((x) => x.tipo === 'avvio').min + '′ contro blocco ' + scelte.find((x) => x.tipo === 'blocco').min + '′');
 
+  console.log('\nTUTTI E QUATTRO PARTONO DAVVERO');
+  /* Questa sezione nasce da «il timer senza fine non funziona, clicco e non
+     succede nulla». Il difetto: «senza fine» salva `fine: 0` — è così che si
+     dice che un traguardo non c'è — e `timerVivo()` leggeva quello zero come
+     un timer rotto e lo buttava via. Partiva, si salvava, e l'app non lo
+     vedeva più.
+     La prova di prima guardava che i quattro tipi ci FOSSERO nell'elenco, e
+     poi ne premeva uno solo. Un elenco giusto con dentro un tasto morto
+     passava. Qui si premono tutti e quattro, uno per uno. */
+  for (const tipo of ['avvio', 'blocco', 'pomodoro', 'libero']) {
+    await p.evaluate(() => { LM.fermaTimerDati(); });
+    await p.reload(); await p.waitForTimeout(900);
+    await p.evaluate(() => document.getElementById('btn-timer').click());
+    await p.waitForTimeout(500);
+    await p.evaluate((k) => document.querySelector('[data-timer-tipo="' + k + '"]').click(), tipo);
+    await p.waitForTimeout(600);
+    const q = await p.evaluate(() => {
+      const t = LM.timerVivo();
+      const c = document.querySelector('[data-timer-cifre]');
+      return { vivo: !!t, tipo: t && t.tipo, schermo: document.body.classList.contains('in-concentrazione'),
+        cifre: c ? c.textContent.trim() : '' };
+    });
+    ok('«' + tipo + '» parte, e l’app lo vede', q.vivo && q.tipo === tipo,
+      q.vivo ? q.tipo : 'salvato ma timerVivo() dice di no');
+    ok('  e lo schermo pieno si apre col tempo scritto sopra',
+      q.schermo && /\d/.test(q.cifre), q.schermo ? q.cifre : 'lo schermo non si è aperto');
+  }
+  /* e quello senza fine conta all'INSÙ: è l'unico che non ha un traguardo,
+     e se contasse alla rovescia partirebbe da zero e resterebbe lì */
+  {
+    const a = await p.evaluate(() => document.querySelector('[data-timer-cifre]').textContent.trim());
+    await p.waitForTimeout(2300);
+    const b2 = await p.evaluate(() => document.querySelector('[data-timer-cifre]').textContent.trim());
+    ok('e «senza fine» conta in avanti', b2 > a, a + ' → ' + b2);
+  }
+  /* dodici ore dopo è un telefono rimasto chiuso, non una sessione */
+  await p.evaluate(() => {
+    const s = LM.load();
+    s.timer.inizio = Date.now() - 13 * 3600000;
+    LM.save();
+  });
+  ok('ma dopo mezza giornata non è più vivo nemmeno lui',
+    await p.evaluate(() => !LM.timerVivo()), 'tredici ore');
+  await p.evaluate(() => { LM.fermaTimerDati(); });
+  await p.reload(); await p.waitForTimeout(900);
+
   console.log('\nPARTE, E VA AVANTI ANCHE QUANDO NON LO GUARDI');
+  /* il pannello va riaperto: la sezione qui sopra l'ha chiuso premendo */
+  await p.evaluate(() => document.getElementById('btn-timer').click());
+  await p.waitForTimeout(500);
   await p.evaluate(() => document.querySelector('[data-timer-tipo="blocco"]').click());
   await p.waitForTimeout(700);
   ok('la concentrazione si apre da sola', await p.evaluate(() => document.body.classList.contains('in-concentrazione')));
