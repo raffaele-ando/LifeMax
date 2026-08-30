@@ -7861,27 +7861,58 @@
      #lab-scelta, quindi anche restando in memoria non può toccare
      niente fuori da questa stanza. */
 
-  var labCssChiesto = false;
-  function caricaCssLab() {
-    if (labCssChiesto) return;
-    labCssChiesto = true;
-    var l = document.createElement('link');
-    l.rel = 'stylesheet';
-    l.href = 'assets/lab.css';
-    l.id = 'lab-css';
-    document.head.appendChild(l);
+  /* IL LABORATORIO SI CARICA QUANDO LO APRI, NON PRIMA.
+     Sono sessantun kilobyte di codice e settantacinque di stile per una
+     schermata in cui non entra quasi nessuno, e finora venivano scaricati e
+     analizzati a ogni avvio dell'app — su un telefono, ogni volta, per
+     niente.
+     `window.LM_PACCO` lo scrive il build e porta i nomi veri dei file (che
+     hanno l'impronta del contenuto dentro). Senza build i nomi sono quelli
+     dei sorgenti, così lo stesso codice funziona in tutti e due i modi. */
+  var PEZZI = window.LM_PACCO || {};
+  var labChiesto = null;
+  function caricaLab() {
+    if (labChiesto) return labChiesto;
+    labChiesto = new Promise(function (ok, no) {
+      var l = document.createElement('link');
+      l.rel = 'stylesheet';
+      l.href = PEZZI.labCss || 'assets/lab.css';
+      l.id = 'lab-css';
+      document.head.appendChild(l);
+      if (window.LM_LAB) return ok();
+      var sc = document.createElement('script');
+      sc.src = PEZZI.lab || 'assets/lab.js';
+      sc.onload = function () { ok(); };
+      sc.onerror = function () {
+        /* se la rete è caduta a metà, la prossima volta si riprova: tenere
+           in mano una promessa rifiutata vorrebbe dire che il laboratorio
+           resta rotto fino a un ricarico della pagina */
+        labChiesto = null;
+        no(new Error('lab non caricato'));
+      };
+      document.head.appendChild(sc);
+    });
+    return labChiesto;
   }
 
   function vistaLab() {
-    caricaCssLab();
     $vista.innerHTML = topbar('Design lab', 'Scegli la base grafica del sito.') +
       '<div id="lab-radice"></div>';
     var radice = document.getElementById('lab-radice');
-    if (!window.LM_LAB) {
-      radice.innerHTML = '<div class="card vuoto">Il laboratorio non si è caricato. Ricarica la pagina.</div>';
-      return;
-    }
-    window.LM_LAB.montaIn(radice);
+    /* arriva da fuori: su una rete lenta questa attesa si vede, e uno
+       schermo bianco senza spiegazioni sembra un guasto */
+    if (!window.LM_LAB) radice.innerHTML = '<div class="card vuoto">Sto caricando il laboratorio…</div>';
+    caricaLab().then(function () {
+      /* la schermata può essere cambiata mentre il file arrivava: si scrive
+         solo se quel contenitore sta ancora in pagina */
+      if (!radice.isConnected) return;
+      if (!window.LM_LAB) throw new Error('lab caricato ma vuoto');
+      window.LM_LAB.montaIn(radice);
+    }).catch(function () {
+      if (radice.isConnected) {
+        radice.innerHTML = '<div class="card vuoto">Il laboratorio non si è caricato. Ricarica la pagina.</div>';
+      }
+    });
   }
 
   function vistaScienza() {

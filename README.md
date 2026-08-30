@@ -10,13 +10,59 @@ vista **Scienza** dentro l'app e la tabella sotto).
 
 ## Avvio
 
-Nessuna build, nessuna dipendenza. Due modi:
+Resta un sito statico: nessun server, nessun framework, nessuna compilazione
+per farlo partire.
 
 ```bash
 # 1) doppio click su index.html, oppure
 # 2) un server statico qualsiasi:
 python3 -m http.server 8080   # → http://localhost:8080
 ```
+
+## Il build
+
+`index.html` è **generato**. Il file scritto a mano è `index.sorgente.html`: si
+cambia quello, e poi si ricostruisce.
+
+```bash
+npm install          # una volta sola: serve esbuild, e basta quello
+node costruisci.mjs  # scrive assets/pacco/ e riscrive index.html
+```
+
+Cosa fa, e perché. Il browser, all'apertura, scaricava e analizzava 1,1 MB di
+codice, e per **1,9 secondi** lo schermo restava vuoto. Il 40% di quel
+megabyte erano commenti e spazi: nel sorgente valgono più del codice, nel
+browser sono peso morto. Il build li tiene dove servono.
+
+- unisce i sette script in **un** file solo, nell'ordine in cui stanno
+  nell'HTML — che conta, perché `forma.js` disegna già la prima schermata e
+  caricato dopo si vedrebbe un lampo di angoli tondi normali. Il nome del
+  sorgente resta scritto in cima a ogni pezzo, così un errore in produzione
+  può ancora dire da dove viene;
+- tiene **fuori il Design lab**: 101 KB fra codice e stile, analizzati a ogni
+  avvio per una pagina in cui non entra quasi nessuno. Adesso se li va a
+  prendere da sé quando la si apre;
+- lascia `cloud.js` per conto suo, perché è un modulo e importa Firebase da
+  fuori a runtime;
+- mette **l'impronta del contenuto nel nome** di ogni file. Serve soprattutto
+  al contrario di come sembra: appena una riga cambia, cambia il nome, e
+  nessuno si ritrova con mezza app vecchia in cache e mezza nuova. (Su GitHub
+  Pages la cache dura dieci minuti e non si può allungare; il giorno che il
+  sito sta dietro a un CDN configurabile, con questi nomi si può dire
+  «tienili per sempre» senza pensarci più.)
+
+Quanto pesa, misurato:
+
+| | prima | dopo |
+|---|---|---|
+| codice in tutto | 1168 KB | 583 KB |
+| **serve per il primo schermo** | **1032 KB** | **481 KB** |
+| primo disegno (telefono lento, CPU × 6) | 1944 ms | 1140 ms |
+
+`node prove/pacco.js` rifà i conti in memoria e li confronta col disco: se
+qualcuno cambia il codice e dimentica di ricostruire, se ne accorge lì invece
+che in rete. **Le prove girano sul pacco**, non sui sorgenti — cioè su quello
+che gira davvero: si ricostruisce prima di lanciarle.
 
 Tutto persiste in `localStorage` del browser. Al primo avvio parte l'onboarding
 (3 passi, <2 minuti) con l'opzione **"Parti con 8 settimane di dati demo"** per
@@ -260,7 +306,10 @@ errore) gli XP vengono **restituiti**, così il conteggio resta corretto.
 ## Struttura
 
 ```
-index.html          shell (nav, overlay cattura, toast)
+index.sorgente.html shell scritta a mano (nav, overlay cattura, toast)
+index.html          ← generato da costruisci.mjs: non si tocca
+costruisci.mjs      il build: un pacco solo, minificato, con l'impronta nel nome
+assets/pacco/       ← generato: quello che il browser scarica davvero
 assets/app.css      design system: token, 2 skin, chiaro/scuro, mobile
 assets/icons.js     iconografia SVG proprietaria + logo Google
 assets/data.js      stato, XP/streak/esperimenti, hydrate/snapshot, seed demo

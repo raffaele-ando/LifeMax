@@ -1,0 +1,12 @@
+{
+  "name": "lifemax",
+  "private": true,
+  "description": "Il sito è statico e non ha bisogno di npm per funzionare: si apre index.html e va. npm serve solo a costruire il pacco (esbuild) e a lanciare le prove (playwright, che sta installato di suo).",
+  "scripts": {
+    "build": "node costruisci.mjs",
+    "build:pulito": "node costruisci.mjs --pulisci"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2"
+  }
+}

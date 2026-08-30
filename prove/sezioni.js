@@ -18,6 +18,7 @@ await new Promise(r=>srv.listen(8751,r));
 const b=await chromium.launch({executablePath: process.env.CHROMIUM || undefined});
 const p=await b.newPage({viewport:{width:390,height:900},hasTouch:true,isMobile:true});
 const err=[];p.on('pageerror',e=>err.push(''+e));
+const chiesti=[];p.on('request',q=>chiesti.push(q.url()));
 await p.addInitScript(t=>{const D=Date;class F extends D{constructor(...a){if(!a.length)super(t);else super(...a);}static now(){return t;}}window.Date=F;}, new Date('2026-08-18T10:30:00').getTime());
 await p.goto('http://localhost:8751/index.html');await p.waitForTimeout(400);
 await p.evaluate(()=>{localStorage.clear();LM.seedDemo();});await p.reload();await p.waitForTimeout(800);
@@ -128,6 +129,22 @@ for (const v of ['oggi','giornata','inbox','rituali','plancia','esperimenti']) {
   })).forEach(x=>nude.push(v+': «'+x+'»'));
 }
 ok('nessuna voce senza icona', nude.length===0, nude.join(' | ')||'nessuna');
+
+console.log('\nIL DESIGN LAB SI CARICA SOLO QUANDO LO APRI');
+/* Centouno kilobyte fra codice e stile, per una schermata in cui non entra
+   quasi nessuno: prima venivano scaricati e analizzati a ogni avvio, su ogni
+   telefono, per niente. Basta che qualcuno rimetta un `<script>` nel sorgente
+   HTML e si torna lì senza che nessuno se ne accorga. */
+const primaDelLab = chiesti.filter(u=>/\/lab\.[^/]*\.(js|css)$/.test(u)).length;
+ok('finché non ci vai, non si scarica', primaDelLab===0, primaDelLab+' file');
+await p.evaluate(()=>{location.hash='#/lab';});await p.waitForTimeout(1500);
+const dopoIlLab = chiesti.filter(u=>/\/lab\.[^/]*\.(js|css)$/.test(u)).map(u=>u.split('/').pop());
+ok('e appena ci vai arrivano tutti e due', dopoIlLab.length===2, dopoIlLab.join(', ')||'niente');
+const montato = await p.evaluate(()=>{const r=document.getElementById('lab-radice');return r?r.children.length:-1;});
+ok('e il laboratorio si monta davvero', montato>0,
+  montato===0?'la schermata è rimasta vuota':(montato<0?'manca il contenitore':montato+' blocchi'));
+await p.evaluate(()=>{location.hash='#/oggi';});await p.waitForTimeout(600);
+
 ok('nessun errore JS', err.length===0, [...new Set(err)].join(' | '));
 console.log(fail?'\n>>> '+fail+' PROBLEMI':'\n>>> TUTTO A POSTO');
 await b.close();srv.close();process.exit(fail?1:0);})();

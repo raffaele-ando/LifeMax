@@ -334,12 +334,20 @@ const CONTORNO = `(function (b64, R, dritto) {
        n'è una, quell'elemento ha DUE forme, la sua e quella di forma.js, e
        vince la più piccola. `inset(50%)` non è una forma: è il modo di
        nascondere il testo che leggono i lettori di schermo. */
+    /* `var(--filo-...)` non è una forma scritta a mano: è il buco in cui
+       forma.js infila la sua, ed è così che si disegna l'anello del bordo.
+       Quello da vietare è il ritaglio con dentro dei numeri. */
     const fuori = [...css.replace(/\/\*[\s\S]*?\*\//g, '').matchAll(/clip-path\s*:\s*([^;}]+)/g)]
-      .map((m) => m[1].trim()).filter((v) => v !== 'inset(50%)' && v !== 'none');
+      .map((m) => m[1].trim())
+      .filter((v) => v !== 'inset(50%)' && v !== 'none' && !/^var\(--filo-/.test(v));
     ok('e nessuna regola scritta a mano dà una forma col ritaglio', fuori.length === 0,
       fuori.slice(0, 3).join(' | ') || 'solo il testo per i lettori di schermo');
 
-    const html = fs.readFileSync(path.join(RADICE, 'index.html'), 'utf8');
+    /* l'ordine si legge sul sorgente scritto a mano: index.html lo genera
+       il build, che i sette script se li mangia tutti in un pacco solo —
+       nello stesso ordine in cui stanno qui. */
+    const sorgHtml = path.join(RADICE, 'index.sorgente.html');
+    const html = fs.readFileSync(fs.existsSync(sorgHtml) ? sorgHtml : path.join(RADICE, 'index.html'), 'utf8');
     const iForma = html.indexOf('assets/forma.js');
     const iApp = html.indexOf('assets/app.js');
     ok('forma.js è caricato, e prima di app.js', iForma > 0 && iForma < iApp,

@@ -1,6 +1,6 @@
 # Prove
 
-Diciotto controlli automatici che guardano una cosa sola ciascuno, ma
+Venticinque controlli automatici che guardano una cosa sola ciascuno, ma
 quella cosa fa morire l'app — o la fa diventare illeggibile — quando si
 rompe. Sono nati da problemi veri.
 
@@ -80,6 +80,11 @@ genera le chiavi, in un browser vero).
   cambi sezione né quando spunti una cosa. Controlla anche che le barre di
   sezione abbiano tutte la stessa forma. Nasce da «se passo da una schermata
   all'altra deve ricaricare tutto».
+  In coda guarda una cosa che col build può tornare rotta in silenzio: che
+  il **Design lab non si scarichi finché non lo apri**. Sono centouno
+  kilobyte fra codice e stile per una schermata in cui non entra quasi
+  nessuno, e basta che qualcuno rimetta un `<script>` nel sorgente HTML per
+  tornare a scaricarli a ogni avvio senza che se ne accorga nessuno.
 
 - **annulla.js** — annullare dal diario, anche quello di mesi fa. Quasi ogni
   riga del diario è un dato salvato (una spunta, un check-in, una review, una
@@ -618,9 +623,28 @@ genera le chiavi, in un browser vero).
   Nasce da «c'è un bug con questi bottom sheet, si blocca tutto» e da «non si
   riesce a portare giù la tendina».
 
+- **pacco.js** — IL PACCO È QUELLO DEI SORGENTI DI ADESSO. Da quando c'è un
+  build, `index.html` e `assets/pacco/` sono roba generata, e un build ha un
+  solo modo di fare danni: qualcuno cambia il codice, prova aprendo i
+  sorgenti, non ricostruisce, e in rete resta la versione di ieri. Non se ne
+  accorge nessuno finché non lo usa qualcuno. Questa prova rifà i conti del
+  build **in memoria** — stesso codice, `piano()` dentro `costruisci.mjs` —
+  e li confronta con quello che c'è sul disco, file per file e byte per byte.
+  Poi guarda le tre cose che il build può rompere in silenzio: che nel pacco
+  ci siano ancora tutti e sette gli script (se un `<script>` sparisce dal
+  sorgente, il build non si lamenta: fa un pacco più piccolo e l'app si rompe
+  in pagina), che `forma.js` stia prima di `app.js`, e che il Design lab sia
+  rimasto fuori — sono i 101 KB per cui il build esiste. Non serve Chromium.
+
 ## Come si lanciano
 
+**Prima si costruisce.** Le prove aprono `index.html`, che è generato: se il
+pacco è vecchio, provano il codice di ieri e dicono che va tutto bene.
+
+    npm install              # esbuild, per il build
+    node costruisci.mjs      # e poi si ricostruisce
     npm install playwright
+    node prove/pacco.js      # solo Node: il pacco è quello dei sorgenti di adesso?
     node prove/clic.js
     node prove/modalita.js
     node prove/segni.js      # solo Node, niente browser
@@ -641,6 +665,10 @@ genera le chiavi, in un browser vero).
     node prove/colori.js
     node prove/spazi.js
     node prove/gesto.js
+    node prove/scorri.js
+    node prove/timer.js
+    node prove/disegno.js    # quanto costa stare fermi
+    node prove/lezioni.js
 
 Servono Node e Chromium (segni.js si accontenta di Node). Se Chromium sta in un posto suo:
 

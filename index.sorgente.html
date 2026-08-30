@@ -1,6 +1,4 @@
 <!DOCTYPE html>
-<!-- generato da costruisci.mjs — non si tocca a mano.
-     Il sorgente è index.sorgente.html: si cambia quello e si rifà il build. -->
 <html lang="it">
 <head>
 <meta charset="UTF-8">
@@ -24,7 +22,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="theme-color" content="#f6f6f8" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0a0a0d" media="(prefers-color-scheme: dark)">
-<link rel="stylesheet" href="assets/pacco/app.b56a2565bd.css">
+<link rel="stylesheet" href="assets/app.css">
 </head>
 <body>
 
@@ -97,22 +95,21 @@
 <div id="onboarding-root"></div>
 
 <!-- primo di tutti: così il registro cattura anche gli errori degli script che seguono -->
-<script>window.LM_PACCO={"lab":"assets/pacco/lab.187a215629.js","labCss":"assets/pacco/lab.ac1f96db55.css"};</script>
-<script src="assets/pacco/pacco.fdad6673cc.js"></script>
+<script src="assets/log.js"></script>
 <!-- LA FORMA DEGLI ANGOLI. Sta prima di tutto il resto perché la prima
      schermata la disegna già lui: caricato dopo, si vedrebbe un lampo di
      angoli tondi normali e poi lo scatto alla curva di Apple. -->
-
-
-
-
-
+<script src="assets/forma.js"></script>
+<script src="assets/icons.js"></script>
+<script src="assets/data.js"></script>
+<script src="assets/promemoria.js"></script>
+<script src="assets/charts.js"></script>
 <!-- il laboratorio dei dieci design: NON sta qui. Si carica da sé quando si
      apre quella pagina — sessantun kilobyte di codice e settantacinque di
      stile per una schermata in cui non entra quasi nessuno, e prima venivano
      analizzati a ogni avvio. Il build sa dov'è; senza build lo trova in
      assets/lab.js. -->
-
-<script type="module" src="assets/pacco/cloud.57855488a2.js"></script>
+<script src="assets/app.js"></script>
+<script type="module" src="assets/cloud.js"></script>
 </body>
 </html>
