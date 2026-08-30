@@ -122,7 +122,8 @@ const CONTROLLA = `(function (conFuoco) {
 
   var out = { ritagliati: 0, tondi: [], spariti: [], doppi: [], curveDiverse: [],
     filoVecchio: [], raggiRistretti: [], corsie: [], mangiati: [], strozzati: [],
-    pseudoRitagliati: [], fuoriPagina: [], ombreBordo: [], tagliate: [] };
+    pseudoRitagliati: [], fuoriPagina: [], ombreBordo: [], tagliate: [],
+    mascheroni: [], spigoli: [], esentati: 0 };
 
   var guarda = function (e, colFuoco) {
     var s = getComputedStyle(e), r = e.getBoundingClientRect();
@@ -239,11 +240,26 @@ const CONTROLLA = `(function (conFuoco) {
 
     /* 1. un angolo tondo senza la curva. Un TONDO vero non la vuole: un
           elemento quadrato che chiede mezzo lato di raggio sta chiedendo un
-          cerchio, e un cerchio è quello che è. */
+          cerchio, e un cerchio è quello che è.
+          E non la vuole nemmeno chi è PIÙ ALTO DI MEZZO SCHERMO: lì il
+          ritaglio è una maschera enorme sulla scheda grafica (la scheda della
+          Giornata, su un telefono, arrivava a 1074x4188 pixel veri — oltre il
+          limite di texture di 4096 di quasi tutte le schede grafiche dei
+          telefoni, e si vedeva come rettangoli di memoria non inizializzata
+          in mezzo alla pagina). Quell'esclusione va controllata nei DUE versi,
+          se no il primo elemento che sbaglia misura passa liscio. */
     var eCapsula = rmax >= Math.min(w, h) / 2 - 0.51;
     var eTondo = eCapsula && Math.abs(w - h) <= 2;
-    if (rmax >= 1 && !suoRitaglio && !eTondo)
+    var troppoAlto = h > innerHeight / 2 || w > innerWidth;
+    if (rmax >= 1 && !suoRitaglio && !eTondo && !troppoAlto)
       out.tondi.push(nome(e) + ' r=' + rmax.toFixed(1) + ' ' + w + 'x' + h);
+    /* il verso opposto: chi è troppo alto NON deve portarsi dietro la
+       maschera, e deve tenersi il raggio (se no resta uno spigolo vivo) */
+    if (troppoAlto && rmax >= 1) out.esentati++;
+    if (troppoAlto && suoRitaglio)
+      out.mascheroni.push(nome(e) + ' ' + w + 'x' + h + ' su uno schermo di ' + innerWidth + 'x' + innerHeight);
+    if (troppoAlto && rmax < 1 && e.dataset.formaRaggi && parseFloat(e.dataset.formaRaggi) >= 1)
+      out.spigoli.push(nome(e) + ' ' + w + 'x' + h + ' raggio ' + rmax.toFixed(1) + ', doveva essere ' + e.dataset.formaRaggi);
 
     /* 2. il bordo c'è come spessore e nessuno lo dipinge */
     var loDipingeIlBox = bw > 0 && !vuoto(s.borderTopColor);
@@ -399,9 +415,10 @@ catch (e) {
   const b = await chromium.launch({ executablePath: process.env.CHROMIUM || undefined });
 
   const CHIAVI = ['tondi', 'spariti', 'doppi', 'curveDiverse', 'filoVecchio', 'raggiRistretti',
-    'corsie', 'mangiati', 'strozzati', 'pseudoRitagliati', 'fuoriPagina', 'ombreBordo', 'tagliate'];
+    'corsie', 'mangiati', 'strozzati', 'pseudoRitagliati', 'fuoriPagina', 'ombreBordo', 'tagliate',
+    'mascheroni', 'spigoli'];
   const tot = {}; CHIAVI.forEach(k => { tot[k] = new Map(); });
-  let ritagliati = 0, viste = 0;
+  let ritagliati = 0, esentati = 0, viste = 0;
   const rotte = new Map();
   /* UNA PASSATA CON I NOMI LUNGHI.
      I dati di prova hanno nomi corti — «Leggere 20 pagine», «Palestra» — e con
@@ -490,7 +507,7 @@ catch (e) {
           setTimeout(guarda, 80);
         }));
         const r = await p.evaluate(CONTROLLA + '(' + (largh === 390 && tema === 'light') + ')');
-        ritagliati += r.ritagliati; viste++;
+        ritagliati += r.ritagliati; esentati += r.esentati; viste++;
         const dove = largh + 'px/' + tema + (lunghi ? '/lunghi' : '') + ' · ' + nome;
         CHIAVI.forEach((k) => r[k].forEach((x) => { if (!tot[k].has(x)) tot[k].set(x, dove); }));
       } catch (e) {
@@ -520,6 +537,11 @@ catch (e) {
     [...m.entries()].forEach(([k, v]) => console.log('        ' + k + '   [' + v + ']'));
   };
   mostra('nessun angolo tondo è rimasto senza la curva', tot.tondi);
+  ok('e l’esenzione è stata davvero esercitata', esentati > 0,
+    esentati + ' elementi più alti di mezzo schermo, tenuti fuori dalla maschera'
+    + (esentati ? '' : ' — senza nessuno, i due controlli qui sotto sono muti'));
+  mostra('nessuna maschera più alta di mezzo schermo', tot.mascheroni);
+  mostra('e chi non ha la maschera si tiene il raggio', tot.spigoli);
   mostra('nessun bordo è sparito', tot.spariti);
   mostra('nessun bordo è dipinto due volte', tot.doppi);
   mostra('il filo e il ritaglio dicono la stessa curva', tot.curveDiverse);

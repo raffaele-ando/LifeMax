@@ -351,6 +351,29 @@ genera le chiavi, in un browser vero).
   Le due controprove: rimettendo l'ascolto che non si riattacca diventano rosse
   quattro righe; rimettendo il documento che sostituisce invece di unire, una
   riga sola e dice tutto — «le scoperte che stavano solo qui: 9 → 0».
+- **scorri.js** — SFOGLIARE DI LATO FRA LE SCHERMATE. Di un gesto così la
+  parte facile è riconoscerlo; la parte che decide se l'app resta usabile è
+  NON riconoscerlo quando non c'è. Un'app che cambia schermata mentre provi a
+  scorrere in basso è inservibile, e chi la usa non pensa «ho fatto un gesto
+  storto»: pensa che l'app sia impazzita, perché ha perso il posto in cui era
+  senza aver chiesto niente. Quindi i controlli sono venti contro sei — che il
+  gesto non parta scorrendo in verticale, in diagonale, dentro le colonne
+  della settimana che scorrono già di lato, su un blocco che si trascina, in
+  un campo, dal bordo dello schermo (che è del browser, che ci fa indietro e
+  avanti), con un foglio aperto, col mouse, e da spento.
+  Il dito è vero (`CDP Input.dispatchTouchEvent`): `p.mouse` manda
+  `pointerType: mouse`, cioè proprio quello che il gesto rifiuta. E il punto
+  in cui si sfoglia non è fisso ma **scelto guardando la pagina**: su «La
+  giornata» metà schermo sono blocchi trascinabili, e provare lì misura la
+  fortuna invece del gesto.
+  Ha trovato due cose. La prima: il gesto scritto con gli eventi puntatore non
+  finiva mai, perché il browser manda `pointercancel` appena crede che il dito
+  stia scorrendo — la stessa cosa era già scritta con le stesse parole sopra
+  al trascinamento del foglio, e ci sono ricascato lo stesso. La seconda: un
+  ascoltatore che ingoiava il clic sintetizzato dopo il gesto non ingoiava
+  niente, perché a quelle distanze quel clic non arriva. Al suo posto adesso
+  c'è una misura: si cerca dove Chromium smette di sintetizzare il clic (a 12
+  px sì, a 20 no) e si pretende che la soglia del colpo secco stia sopra.
 - **disegno.js** — QUANTO COSTA STARE FERMI. Nasce da «su android ci sono lag
   e bug continui rispetto all'iPad» e dalle foto con rettangoli grigi o neri a
   spigolo vivo in mezzo alle schermate e ai pannelli: erano la stessa cosa. Il
@@ -373,6 +396,14 @@ genera le chiavi, in un browser vero).
   fra sopra e sotto e ogni lato restava sotto la tolleranza. Rimessi uno per
   volta: 18,1 fotogrammi al secondo col filtro, 1,13px di titolo tagliato con
   le tre righe fisse, 0,56px di sbordo in cima togliendo il `safe` al centro.
+  (La seconda metà di quella storia sta in **bordi.js**: i rettangoli grigi
+  non erano solo l'aurora. Un `clip-path` è una maschera, cioè una texture
+  grande quanto l'elemento per la densità dello schermo, e la scheda della
+  Giornata su un telefono arrivava a 1074x4188 pixel veri — oltre il limite
+  di 4096 di quasi tutte le schede grafiche dei telefoni. Sopra mezzo schermo
+  di altezza il ritaglio non si mette più: le maschere di una schermata sono
+  passate da 40 MB a 8, e `bordi.js` adesso controlla l'esenzione nei due
+  versi e conta quanti elementi la usano, se no i due controlli sono muti.)
 - **bordi.js** — la stessa cosa, ma DAPPERTUTTO. Guarda ogni elemento di
   cinquantadue schermate, pannelli e stati (`segni/scene.json`) per cinque
   combinazioni di larghezza e tema: 260 schermate, più di ventimila angoli.

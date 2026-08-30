@@ -148,6 +148,16 @@
     LM.registra('impostazioni', 'Navigazione impostata su ' + (v === 'tutte' ? 'tutte le pagine' : 'tre porte'), false);
     LM.save(); render();
   }
+  /* Lo sfoglio di lato si puo' spegnere. Un gesto che si scopre per sbaglio
+     e non si puo' togliere e' una trappola: chi lo trova fastidioso deve
+     poterlo chiudere senza cercare, non imparare a tenere il dito dritto. */
+  function setScorri(v) {
+    var s = LM.load();
+    if ((s.profilo.scorri || 'si') === v) return;
+    s.profilo.scorri = v;
+    LM.registra('impostazioni', 'Scorrimento fra le schermate ' + (v === 'no' ? 'spento' : 'acceso'), false);
+    LM.save(); render();
+  }
   function caricaDemo() {
     avviso({
       titolo: 'Sostituire i dati con quelli di esempio?',
@@ -1143,6 +1153,8 @@
     function segM(v, ico, et) { return '<button data-modo="' + v + '" class="' + (modo === v ? 'attivo' : '') + '">' + ICO(ico, 15) + et + '</button>'; }
     function segS(v, et) { return '<button data-skin="' + v + '" class="' + (skin === v ? 'attivo' : '') + '">' + et + '</button>'; }
     function segN(v, et) { return '<button data-nav="' + v + '" class="' + (nav === v ? 'attivo' : '') + '">' + et + '</button>'; }
+    var scorri = s.profilo.scorri || 'si';
+    function segSc(v, et) { return '<button data-scorri="' + v + '" class="' + (scorri === v ? 'attivo' : '') + '">' + et + '</button>'; }
 
     var r = s.profilo.ritmo || {};
     var pasti = (r.pasti || []).length;
@@ -1180,8 +1192,10 @@
         segS('quiete', 'Aurora') + segS('arcade', 'Arcade') + '</span>') +
       rigaScelta('Barra di navigazione', '<span class="segmenti imp-seg" id="seg-nav">' +
         segN('tre', 'Tre porte') + segN('tutte', 'Tutte le pagine') + '</span>') +
+      rigaScelta('Scorri fra le schermate', '<span class="segmenti imp-seg" id="seg-scorri">' +
+        segSc('si', 'Acceso') + segSc('no', 'Spento') + '</span>') +
       '</div>' +
-      '<p class="lista-nota">Aurora è più sobrio, Arcade più acceso. Con <b>tre porte</b> le altre schermate stanno in una riga di linguette sotto al titolo; con <b>tutte le pagine</b> torna la barra lunga. In entrambi i casi ci sono tutte: cambia solo da dove ci si arriva.</p>' +
+      '<p class="lista-nota">Aurora è più sobrio, Arcade più acceso. Con <b>tre porte</b> le altre schermate stanno in una riga di linguette sotto al titolo; con <b>tutte le pagine</b> torna la barra lunga. In entrambi i casi ci sono tutte: cambia solo da dove ci si arriva. Con lo <b>scorrimento acceso</b> si passa da una schermata all’altra trascinando il dito di lato, come si sfoglia: le linguette restano dove sono.</p>' +
 
       /* --- I TUOI DATI: due cose che si fanno e una porta --- */
       etichetta('I tuoi dati', 'dati') +
@@ -1532,6 +1546,12 @@
   }
 
   function wireAspettoDati(root) {
+    root.querySelectorAll('#seg-scorri [data-scorri]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        root.querySelectorAll('#seg-scorri [data-scorri]').forEach(function (o) { o.classList.toggle('attivo', o === b); });
+        setScorri(b.getAttribute('data-scorri'));
+      });
+    });
     root.querySelectorAll('#seg-nav [data-nav]').forEach(function (b) {
       b.addEventListener('click', function () {
         /* il pannello resta aperto: il segmento si aggiorna da sé, così si
@@ -7382,6 +7402,186 @@
     }
   });
   avviaBattito();
+
+  /* ============================================================
+     SCORRERE DI LATO PER CAMBIARE SCHERMATA
+
+     Il gesto non conosce nessuna schermata. Trova la riga di linguette della
+     pagina in cui sei — quella che c'e' sempre, `.segmenti.sez-nav` — e
+     preme la linguetta accanto a quella accesa. Cosi' vale per «Adesso · La
+     giornata · Rituali» come per «Da sistemare · Da fare · Abitudini», senza
+     sapere che le prime sono tre indirizzi e le seconde tre pannelli, e
+     continuera' a valere per quelle che verranno.
+
+     Il verso e' quello di tutti: il dito va a SINISTRA, il contenuto entra da
+     destra, si va avanti. Come sfogliare.
+
+     La parte difficile di un gesto cosi' non e' riconoscerlo: e' NON
+     riconoscerlo quando non c'e'. Un'app che cambia schermata mentre provi a
+     scorrere in basso diventa inservibile, e per una testa che corre e' peggio
+     che inutile — perdi il posto in cui eri e non sai perche'. Quindi qui si
+     rinuncia molto piu' spesso di quanto si accetti:
+
+       · solo col dito. Col mouse un trascinamento e' una selezione di testo,
+         e la barra delle linguette e' li' a un clic.
+       · mai se sotto il dito c'e' qualcosa che scorre di lato per conto suo
+         (le colonne della settimana, la griglia del mese, un grafico): quel
+         gesto e' gia' suo. Si guarda tutta la catena dei genitori.
+       · mai su un blocco che si trascina, su un campo, su un cursore.
+       · mai con un pannello, un foglio o un avviso aperto: li' il gesto che
+         conta e' quello che chiude.
+       · mai partendo dai ventiquattro pixel del bordo: quelli sono del
+         browser, che li usa per indietro e avanti. Litigarci vuol dire
+         perdere tutte e due le volte.
+       · e appena il dito scende piu' di quanto vada di lato, il gesto e'
+         finito: era uno scorrimento, e non torna piu' a essere uno sfoglio.
+         Questo e' il controllo che conta piu' di tutti gli altri.
+
+     Le soglie: sessanta pixel di lato (un sesto di uno schermo da 390) con
+     l'orizzontale che vale almeno una volta e mezza il verticale, oppure un
+     colpo secco — venticinque pixel a piu' di mezzo pixel per millesimo di
+     secondo. Il colpo secco serve perche' chi sfoglia in fretta non arriva mai
+     a sessanta pixel: si ferma a trenta e stacca. Senza, il gesto sembra
+     rotto proprio a chi lo usa di piu'.
+     ============================================================ */
+  var SCORRI = {
+    bordo: 24,      /* px dal bordo dello schermo che sono del browser */
+    passo: 60,      /* px di lato perche' valga come sfoglio */
+    /* VENTICINQUE E NON MENO. Sotto una certa distanza il browser considera
+       il tocco ancora un tocco, e dopo `touchend` sintetizza un clic su
+       quello che c'era sotto il dito: sfogliando sopra al tasto «Fatto» si
+       cambierebbe schermata E si spunterebbe la cosa. Misurato su Chromium
+       (`prove/scorri.js`): il clic arriva fino a 12px di spostamento e a 20
+       non arriva piu'. Stando sopra quella soglia il problema non esiste e
+       non serve nessuno che ingoi i clic — c'era, e non serviva a niente. */
+    colpo: 25,      /* px, se e' un colpo secco */
+    velocita: 0.5,  /* px al millisecondo perche' sia un colpo secco */
+    quota: 1.5,     /* quante volte l'orizzontale deve battere il verticale */
+    resa: 26,       /* px in verticale oltre i quali si rinuncia */
+    tempo: 1000     /* ms: piu' lento di cosi' e' un trascinamento, non uno sfoglio */
+  };
+
+  function scorriAcceso() { return (LM.load().profilo || {}).scorri !== 'no'; }
+
+  /* la riga di linguette della pagina di adesso, e dove siamo dentro */
+  function lingueDiPagina() {
+    var bar = document.querySelector('#vista .segmenti.sez-nav');
+    if (!bar) return null;
+    var voci = [];
+    for (var i = 0; i < bar.children.length; i++) {
+      var c = bar.children[i];
+      if (c.nodeType !== 1) continue;
+      if (c.tagName !== 'A' && c.tagName !== 'BUTTON') continue;
+      if (c.hidden || c.disabled) continue;
+      voci.push(c);
+    }
+    if (voci.length < 2) return null;
+    var qui = voci.findIndex(function (x) { return x.classList.contains('attivo'); });
+    if (qui < 0) return null;
+    return { voci: voci, qui: qui };
+  }
+
+  /* qualcuno qui sotto scorre gia' di lato per conto suo? */
+  function scorreDiLato(el) {
+    var n = el;
+    while (n && n !== document.body) {
+      if (n.nodeType === 1 && n.scrollWidth > n.clientWidth + 2) {
+        var ox = getComputedStyle(n).overflowX;
+        if (ox === 'auto' || ox === 'scroll') return true;
+      }
+      n = n.parentNode;
+    }
+    return false;
+  }
+
+  function qualcosaSopra() {
+    if (!$sheet.hidden) return true;
+    if ($ovl && !$ovl.hidden) return true;
+    if (document.querySelector('.avviso-ovl')) return true;
+    if (document.getElementById('onboarding-root').innerHTML) return true;
+    return false;
+  }
+
+  /* CON GLI EVENTI TOUCH, NON CON QUELLI PUNTATORE. Non e' una preferenza:
+     appena il browser capisce che il dito si muove dentro qualcosa che puo'
+     scorrere, si prende il gesto e manda `pointercancel` — e da li' in poi
+     `pointerup` non arriva piu'. Un gesto che finisce solo quando il browser
+     e' d'accordo non finisce mai. La stessa cosa era gia' scritta, con le
+     stesse parole, sopra al trascinamento del foglio: e ci sono ricascato
+     lo stesso, e l'ha trovato la prova. Gli ascoltatori restano passivi:
+     qui non c'e' niente da scorrere di lato, quindi non c'e' niente da
+     impedire al browser, e un ascoltatore non passivo su `touchmove`
+     rallenterebbe ogni scorrimento della pagina per un gesto raro. */
+  var sw = null;
+
+  document.addEventListener('touchstart', function (ev) {
+    sw = null;
+    if (ev.touches.length !== 1) return;
+    if (!scorriAcceso() || qualcosaSopra()) return;
+    var d = ev.touches[0];
+    if (d.clientX < SCORRI.bordo || d.clientX > innerWidth - SCORRI.bordo) return;
+    var t = ev.target;
+    if (!(t instanceof Element)) return;
+    if (!t.closest('#vista')) return;
+    if (t.closest('input, textarea, select, [contenteditable="true"], [data-drag-az], [data-drag-ab], [data-manico], .segmenti')) return;
+    if (scorreDiLato(t)) return;
+    if (!lingueDiPagina()) return;
+    /* L'ORA DELL'EVENTO, NON QUELLA DEL GESTORE. `ev.timeStamp` e' il momento
+       in cui il browser ha generato il tocco; `performance.now()` e' il
+       momento in cui il gestore e' riuscito a girare, che con il thread
+       principale occupato arriva anche cento millisecondi dopo. Misurando
+       con il secondo, un colpo secco vero risulta lento e viene buttato via —
+       e succede proprio quando la pagina e' impegnata, cioe' quando il gesto
+       serve di piu'. */
+    sw = { x: d.clientX, y: d.clientY, t: ev.timeStamp || performance.now(), vivo: true };
+  }, { passive: true });
+
+  document.addEventListener('touchmove', function (ev) {
+    if (!sw || !sw.vivo) return;
+    /* due dita non sono uno sfoglio: e' una pinzata */
+    if (ev.touches.length !== 1) { sw.vivo = false; return; }
+    var d = ev.touches[0];
+    var dx = d.clientX - sw.x, dy = d.clientY - sw.y;
+    /* IL DITO SCENDE: era uno scorrimento. Da qui in poi non si torna piu'
+       indietro, nemmeno se dopo va tutto di lato — un gesto che comincia a
+       scorrere e finisce sfogliando e' proprio quello che fa perdere il
+       posto in cui si era. */
+    if (Math.abs(dy) > SCORRI.resa && Math.abs(dy) > Math.abs(dx)) sw.vivo = false;
+  }, { passive: true });
+
+  document.addEventListener('touchend', function (ev) {
+    var g = sw; sw = null;
+    if (!g || !g.vivo) return;
+    if (ev.touches.length) return;                 /* un dito e' rimasto giu' */
+    if (qualcosaSopra()) return;
+    var d = ev.changedTouches && ev.changedTouches[0];
+    if (!d) return;
+    var dx = d.clientX - g.x, dy = d.clientY - g.y;
+    var quanto = Math.abs(dx), quando = (ev.timeStamp || performance.now()) - g.t;
+    if (!(quando > 0)) quando = 1;
+    if (quando > SCORRI.tempo) return;
+    if (quanto < Math.abs(dy) * SCORRI.quota) return;
+    var colpoSecco = quanto >= SCORRI.colpo && (quanto / Math.max(1, quando)) >= SCORRI.velocita;
+    if (quanto < SCORRI.passo && !colpoSecco) return;
+    var l = lingueDiPagina();
+    if (!l) return;
+    /* dito a sinistra (dx negativo) = avanti, come sfogliare */
+    var dove = l.qui + (dx < 0 ? 1 : -1);
+    if (dove < 0 || dove >= l.voci.length) {
+      /* IL MURO SI DEVE SENTIRE. Senza niente, uno sfoglio in fondo alla fila
+         e uno sfoglio non riconosciuto sono la stessa cosa: non succede
+         niente, e non si impara mai quale dei due era. */
+      var bar = l.voci[0].parentNode;
+      bar.classList.remove('sez-muro');
+      void bar.offsetWidth;
+      bar.classList.add('sez-muro');
+      return;
+    }
+    l.voci[dove].click();
+  }, { passive: true });
+
+  document.addEventListener('touchcancel', function () { sw = null; }, { passive: true });
+
 
   /* IL FONDO DI QUELLO CHE SI VEDE.
      `position: fixed` si aggancia al riquadro di IMPIANTO della pagina, che

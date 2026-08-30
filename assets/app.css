@@ -1142,6 +1142,19 @@ select.sel-compatto {
    della loro misura, in fila da sinistra. */
 @media (pointer: coarse) { select.sel-compatto { min-height: 44px; } }
 
+/* IL MURO IN FONDO ALLA FILA. Sfogliando oltre l'ultima linguetta non c'e'
+   niente da mostrare, e senza un segno quel gesto e' identico a un gesto non
+   riconosciuto: non succede niente, e non si impara mai quale dei due era.
+   La riga si sposta di tre pixel e torna — il movimento piu' corto che dice
+   «di la' non c'e' niente» senza far credere che sia successo qualcosa. */
+@keyframes sez-muro-scatto {
+  0%   { transform: translateX(0); }
+  35%  { transform: translateX(-3px); }
+  70%  { transform: translateX(2px); }
+  100% { transform: translateX(0); }
+}
+.segmenti.sez-muro { animation: sez-muro-scatto .22s var(--ease-out); }
+
 /* ---------- overlay cattura ---------- */
 
 .overlay {

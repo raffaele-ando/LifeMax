@@ -463,9 +463,10 @@
       br: limita(raggi[2], w, h), bl: limita(raggi[3], w, h)
     };
     var sp = parseFloat(s.borderTopWidth) || 0;
-    var firma = w + 'x' + h + '|' + ang.tl + ',' + ang.tr + ',' + ang.br + ',' + ang.bl + '|' + sp + '|' + col;
+    var grande = (w > limiteW || h > limiteH);
+    var firma = w + 'x' + h + '|' + ang.tl + ',' + ang.tr + ',' + ang.br + ',' + ang.bl + '|' + sp + '|' + col + (grande ? '|G' : '');
     if (e.dataset.forma === firma) return null;
-    return { e: e, w: w, h: h, ang: ang, sp: sp, col: col, sotto: sotto, firma: firma };
+    return { e: e, w: w, h: h, ang: ang, sp: sp, col: col, sotto: sotto, firma: firma, grande: grande };
   }
 
   /* TEMPO 3 — scrivere, e basta. Niente qui dentro legge l'impaginazione. */
@@ -493,7 +494,8 @@
        ricalcolo solo. */
     e.dataset.formaSecca = '1';
     secchi.push(e);
-    e.style.clipPath = 'path("' + ritaglio(p.w, p.h, p.ang) + '")';
+    if (p.grande) e.style.clipPath = '';
+    else e.style.clipPath = 'path("' + ritaglio(p.w, p.h, p.ang) + '")';
     /* IL `border-radius` RESTA, AL 99 PER CENTO. Non serve più a dare la
        forma — quella la fa il ritaglio — ma serve ancora all'OMBRA e al
        contorno del fuoco, che seguono lui e che un raggio a zero renderebbe
@@ -508,8 +510,12 @@
        dichiara 999px, e lasciandoglielo l'ombra le girerebbe intorno a
        semicerchio mentre la forma è un supercerchio. */
     var a = p.ang;
-    e.style.borderRadius = (a.tl * 0.99).toFixed(2) + 'px ' + (a.tr * 0.99).toFixed(2) + 'px ' +
-      (a.br * 0.99).toFixed(2) + 'px ' + (a.bl * 0.99).toFixed(2) + 'px';
+    /* il 99% serve a non far entrare l'arco DENTRO il ritaglio. Senza
+       ritaglio non c'e' niente in cui entrare, e il raggio va pieno: e'
+       lui a dare la forma. */
+    var q = p.grande ? 1 : 0.99;
+    e.style.borderRadius = (a.tl * q).toFixed(2) + 'px ' + (a.tr * q).toFixed(2) + 'px ' +
+      (a.br * q).toFixed(2) + 'px ' + (a.bl * q).toFixed(2) + 'px';
     if (p.col) {
       /* Il bordo del box si spegne QUI, sullo stesso elemento e nello stesso
          momento in cui compare il filo: non c'è nessun istante in cui uno dei
@@ -618,9 +624,51 @@
      La sicurezza contro le eccezioni sta in ogni tempo, non attorno al ciclo:
      un elemento che scoppia non può portarsi via la forma di tutti quelli che
      vengono dopo — è successo, ed è sparita mezza pagina. */
+  /* PIU' GRANDE DELLO SCHERMO: NIENTE RITAGLIO.
+     Un `clip-path: path(...)` e' una MASCHERA, e una maschera e' una texture
+     sulla scheda grafica, grande quanto l'elemento moltiplicato per la
+     densita' dello schermo. La scheda della Giornata, su un telefono a 390
+     pixel con densita' 3, e' 1074 x 4188 pixel veri: oltre il limite di
+     texture di 4096 che quasi tutte le schede grafiche dei telefoni hanno.
+     Sopra quel limite l'allocazione fallisce, e quello che si vede al posto
+     dell'elemento e' memoria non inizializzata — rettangoli grigi, neri o di
+     rumore colorato a spigolo vivo. E anche restando sotto il limite, le
+     maschere di una schermata sola sommavano 40 MB.
+
+     Sopra la misura dello schermo il ritaglio non si mette. Quello che si
+     perde e' 0,7 px di curvatura su quattro angoli di una scheda alta
+     millequattrocento — la differenza fra la curva di Apple e l'arco del
+     `border-radius`, misurata in `prove/squircle.js`. Quello che si guadagna
+     e' che la scheda si disegni. Il filo (lo sfondo SVG) continua a
+     descrivere la curva vera, quindi il contorno che si vede non cambia.
+
+     Un elemento piu' alto dello schermo non lo si vede mai tutto insieme: i
+     suoi quattro angoli non stanno nello stesso sguardo, e non c'e' nessun
+     confronto da fare fra loro. E' anche il motivo per cui la soglia e' la
+     misura della finestra e non un numero scelto a mano. */
+  var limiteW = 0, limiteH = 0;
+  function misuraLimite() {
+    /* La misura che conta e' l'ALTEZZA, e la soglia e' mezzo schermo. Un
+       elemento piu' alto di cosi' non lo si tiene nell'occhio come una forma
+       sola: si scorre accanto, e i suoi due capi non si incontrano mai nello
+       stesso sguardo. Non c'e' nessun confronto da fare fra i suoi angoli,
+       che e' l'unica cosa per cui la curva continua esiste. Con lo schermo
+       intero come soglia le sette colonne della settimana passavano tutte, e
+       da sole facevano 22 MB di maschere.
+       Sulla LARGHEZZA la soglia resta lo schermo pieno: una scheda larga
+       quanto la pagina e alta trecento pixel si vede benissimo tutta intera,
+       e i suoi angoli si guardano. A meta' schermo anche la barra in basso e
+       la scheda di «Adesso» perdevano il ritaglio, che e' il contrario di
+       quello che serve. Piu' larga dello schermo puo' essere solo una
+       griglia che scorre di lato, e quella e' proprio il caso caro. */
+    limiteW = (window.innerWidth || 1024);
+    limiteH = (window.innerHeight || 768) / 2;
+  }
+
   function giroSu(lista) {
     var i, e;
     var daPulire = [];
+    misuraLimite();
     for (i = 0; i < lista.length; i++) {
       e = lista[i];
       if (e.nodeType !== 1 || VIETATI[e.tagName]) continue;

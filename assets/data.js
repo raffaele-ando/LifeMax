@@ -148,7 +148,7 @@ var LM = (function () {
       demo: false,
       /* giornataPos: dove mostrare la timeline della giornata
          ('oggi-strip' | 'panoramica' | 'oggi-full' | 'menu') */
-      profilo: { nome: '', visione: '', skin: 'quiete', modo: 'auto', giornataPos: 'oggi-strip', ritmo: JSON.parse(JSON.stringify(RITMO_DEFAULT)), chiedi: JSON.parse(JSON.stringify(CHIEDI_DEFAULT)) },
+      profilo: { nome: '', visione: '', skin: 'quiete', modo: 'auto', scorri: 'si', giornataPos: 'oggi-strip', ritmo: JSON.parse(JSON.stringify(RITMO_DEFAULT)), chiedi: JSON.parse(JSON.stringify(CHIEDI_DEFAULT)) },
       ritmoGiorno: {},   // ritmoGiorno[data] = {sveglia?, sonno?, prec?, pasti?, chiesto?} — registro di sonno e pasti del singolo giorno
       /* l'ultima volta che ti ho visto. Serve a una cosa sola, ed è
          importante: sapere se fra ieri e oggi c'è stato un BUCO in cui la
