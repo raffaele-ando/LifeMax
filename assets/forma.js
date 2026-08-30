@@ -500,7 +500,12 @@
       br: limita(raggi[2], w, h), bl: limita(raggi[3], w, h)
     };
     var sp = parseFloat(s.borderTopWidth) || 0;
-    var grande = (w > limiteW || h > limiteH);
+    /* «Effetti: minimi» toglie il ritaglio a tutti, non solo ai grandi. E' lo
+       strumento con cui si risponde a una domanda che da qui non si puo'
+       misurare: se i rettangoli di memoria sporca su un telefono vero
+       vengono dalle maschere o da qualcos'altro. Un tocco, e si sa. */
+    var grande = (w > limiteW || h > limiteH) ||
+      document.documentElement.getAttribute('data-effetti') === 'minimi';
     var firma = w + 'x' + h + '|' + ang.tl + ',' + ang.tr + ',' + ang.br + ',' + ang.bl + '|' + sp + '|' + col + (grande ? '|G' : '');
     if (e.dataset.forma === firma) return null;
     return { e: e, w: w, h: h, ang: ang, sp: sp, col: col, sotto: sotto, firma: firma, grande: grande };

@@ -240,6 +240,48 @@ function cercaScritteFuori(toll) {
       'col safe ' + conSafe.peggioSopra + 'px sopra, senza safe ' + senzaSafe.peggioSopra + 'px sopra');
   }
 
+  /* ============ I TRE GRADINI DEGLI EFFETTI ============ */
+  console.log('\nGLI EFFETTI: PIENI · RIDOTTI · MINIMI');
+  console.log('  (uno strumento di misura, non una preferenza: serve a sapere da che cosa');
+  console.log('   dipendono i rettangoli di memoria sporca su un telefono che non ho)');
+  {
+    const misura = async (liv) => {
+      const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 3, hasTouch: true, isMobile: true });
+      const p = await ctx.newPage();
+      const err = []; p.on('pageerror', (e) => err.push('' + e));
+      await p.goto('http://localhost:' + PORTA + '/index.html'); await p.waitForTimeout(300);
+      await p.evaluate((l) => { localStorage.clear(); LM.seedDemo(); const s = LM.load(); s.profilo.effetti = l; LM.save(); location.hash = '#/giornata'; }, liv);
+      await p.reload(); await p.waitForTimeout(1200); await p.bringToFront();
+      const r = await p.evaluate(() => {
+        let sfoc = 0, masc = 0;
+        document.querySelectorAll('*').forEach((e) => {
+          const s = getComputedStyle(e);
+          if (s.backdropFilter && s.backdropFilter !== 'none') sfoc++;
+          if (s.clipPath && s.clipPath.indexOf('path(') === 0) masc++;
+        });
+        const raggi = [...document.querySelectorAll('.card')].map((c) => parseFloat(getComputedStyle(c).borderTopLeftRadius) || 0);
+        return { sfoc: sfoc, masc: masc,
+          aurora: getComputedStyle(document.querySelector('.aurora')).display,
+          raggio: raggi.length ? Math.max.apply(null, raggi) : 0 };
+      });
+      await ctx.close();
+      return { r: r, err: err };
+    };
+    const A = await misura('pieni'), B = await misura('ridotti'), C = await misura('minimi');
+    ok('a effetti PIENI ci sono sfocature e maschere (se no il resto è muto)',
+      A.r.sfoc > 0 && A.r.masc > 0, A.r.sfoc + ' sfocature, ' + A.r.masc + ' maschere');
+    ok('RIDOTTI toglie le sfocature e lascia le maschere',
+      B.r.sfoc === 0 && B.r.masc === A.r.masc, B.r.sfoc + ' sfocature, ' + B.r.masc + ' maschere');
+    ok('MINIMI toglie anche le maschere e l’aurora',
+      C.r.sfoc === 0 && C.r.masc === 0 && C.r.aurora === 'none',
+      C.r.sfoc + ' sfocature, ' + C.r.masc + ' maschere, aurora ' + C.r.aurora);
+    ok('e a MINIMI le schede restano schede (il raggio non sparisce)',
+      C.r.raggio > 4, 'raggio ' + C.r.raggio + 'px');
+    ok('nessun errore in pagina a nessuno dei tre gradini',
+      !A.err.length && !B.err.length && !C.err.length,
+      [].concat(A.err, B.err, C.err).slice(0, 2).join(' · '));
+  }
+
   /* ============ LE RETI: se non ho guardato niente, non ho provato niente ==== */
   console.log('\nLE PROVE HANNO GUARDATO QUALCOSA DAVVERO');
   ok('ho trovato elementi con un filtro su cui misurarmi', filtriVisti > 0, filtriVisti + ' elementi');

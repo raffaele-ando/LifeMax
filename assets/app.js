@@ -120,6 +120,11 @@
     var scuro = modo === 'dark' || (modo === 'auto' && scuroOS);
     document.documentElement.setAttribute('data-mode', scuro ? 'dark' : 'light');
     document.documentElement.setAttribute('data-skin', s.profilo.skin || 'quiete');
+    /* gli effetti viaggiano con il tema: sono tutti e due «come si vede»,
+       e tutti e due devono valere dal primo disegno, non dal secondo */
+    var eff = s.profilo.effetti || 'pieni';
+    if (eff === 'pieni') document.documentElement.removeAttribute('data-effetti');
+    else document.documentElement.setAttribute('data-effetti', eff);
   }
 
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function () {
@@ -151,6 +156,21 @@
   /* Lo sfoglio di lato si puo' spegnere. Un gesto che si scopre per sbaglio
      e non si puo' togliere e' una trappola: chi lo trova fastidioso deve
      poterlo chiudere senza cercare, non imparare a tenere il dito dritto. */
+  /* Gli effetti: uno strumento di misura, non una preferenza di gusto. Vedi
+     il commento lungo in app.css. Cambiandoli va rifatta la forma di tutto,
+     perché «minimi» toglie i ritagli e «pieni» li rimette. */
+  function setEffetti(v) {
+    var s = LM.load();
+    if ((s.profilo.effetti || 'pieni') === v) return;
+    s.profilo.effetti = v;
+    LM.registra('impostazioni', 'Effetti impostati su ' + v, false);
+    LM.save();
+    applicaTema();
+    /* «minimi» toglie i ritagli e «pieni» li rimette: la forma va rifatta da
+       capo, se no restano quelli di prima finché non si ricarica */
+    if (window.LM_FORMA && LM_FORMA.scorda) LM_FORMA.scorda();
+    render();
+  }
   function setScorri(v) {
     var s = LM.load();
     if ((s.profilo.scorri || 'si') === v) return;
@@ -1183,6 +1203,8 @@
     function segN(v, et) { return '<button data-nav="' + v + '" class="' + (nav === v ? 'attivo' : '') + '">' + et + '</button>'; }
     var scorri = s.profilo.scorri || 'si';
     function segSc(v, et) { return '<button data-scorri="' + v + '" class="' + (scorri === v ? 'attivo' : '') + '">' + et + '</button>'; }
+    var eff = s.profilo.effetti || 'pieni';
+    function segEf(v, et) { return '<button data-eff="' + v + '" class="' + (eff === v ? 'attivo' : '') + '">' + et + '</button>'; }
 
     var r = s.profilo.ritmo || {};
     var pasti = (r.pasti || []).length;
@@ -1222,7 +1244,10 @@
         segN('tre', 'Tre porte') + segN('tutte', 'Tutte le pagine') + '</span>') +
       rigaScelta('Scorri fra le schermate', '<span class="segmenti imp-seg" id="seg-scorri">' +
         segSc('si', 'Acceso') + segSc('no', 'Spento') + '</span>') +
+      rigaScelta('Effetti', '<span class="segmenti imp-seg" id="seg-eff">' +
+        segEf('pieni', 'Pieni') + segEf('ridotti', 'Ridotti') + segEf('minimi', 'Minimi') + '</span>') +
       '</div>' +
+      '<p class="lista-nota"><b>Effetti</b> serve se compaiono rettangoli grigi o neri a spigolo vivo in mezzo alle schermate, o se l’app va a scatti. <b>Ridotti</b> toglie le sfocature dietro ai pannelli e alla barra; <b>minimi</b> toglie anche il fondo colorato e la curva degli angoli. Se il difetto sparisce a un gradino e non all’altro, si sa da cosa dipende.</p>' +
       '<p class="lista-nota">Aurora è più sobrio, Arcade più acceso. Con <b>tre porte</b> le altre schermate stanno in una riga di linguette sotto al titolo; con <b>tutte le pagine</b> torna la barra lunga. In entrambi i casi ci sono tutte: cambia solo da dove ci si arriva. Con lo <b>scorrimento acceso</b> si passa da una schermata all’altra trascinando il dito di lato, come si sfoglia: le linguette restano dove sono.</p>' +
 
       /* --- I TUOI DATI: due cose che si fanno e una porta --- */
@@ -1574,6 +1599,12 @@
   }
 
   function wireAspettoDati(root) {
+    root.querySelectorAll('#seg-eff [data-eff]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        root.querySelectorAll('#seg-eff [data-eff]').forEach(function (o) { o.classList.toggle('attivo', o === b); });
+        setEffetti(b.getAttribute('data-eff'));
+      });
+    });
     root.querySelectorAll('#seg-scorri [data-scorri]').forEach(function (b) {
       b.addEventListener('click', function () {
         root.querySelectorAll('#seg-scorri [data-scorri]').forEach(function (o) { o.classList.toggle('attivo', o === b); });
