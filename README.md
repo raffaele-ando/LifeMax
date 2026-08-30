@@ -29,10 +29,11 @@ npm install          # una volta sola: serve esbuild, e basta quello
 node costruisci.mjs  # scrive assets/pacco/ e riscrive index.html
 ```
 
-Cosa fa, e perché. Il browser, all'apertura, scaricava e analizzava 1,1 MB di
-codice, e per **1,9 secondi** lo schermo restava vuoto. Il 40% di quel
-megabyte erano commenti e spazi: nel sorgente valgono più del codice, nel
-browser sono peso morto. Il build li tiene dove servono.
+Cosa fa, e perché. Il browser, all'apertura, si scaricava **1,1 MB di codice**
+— 323 KB compressi — e su un telefono in giro per la città lo schermo restava
+vuoto per oltre due secondi. Il 40% di quel megabyte erano commenti e spazi:
+nel sorgente valgono più del codice, nel browser sono peso morto. Il build li
+tiene dove servono.
 
 - unisce i sette script in **un** file solo, nell'ordine in cui stanno
   nell'HTML — che conta, perché `forma.js` disegna già la prima schermata e
@@ -51,13 +52,23 @@ browser sono peso morto. Il build li tiene dove servono.
   sito sta dietro a un CDN configurabile, con questi nomi si può dire
   «tienili per sempre» senza pensarci più.)
 
-Quanto pesa, misurato:
+Quanto pesa, misurato — con la compressione accesa, che è come i file
+arrivano davvero:
 
 | | prima | dopo |
 |---|---|---|
 | codice in tutto | 1168 KB | 583 KB |
-| **serve per il primo schermo** | **1032 KB** | **481 KB** |
-| primo disegno (telefono lento, CPU × 6) | 1944 ms | 1140 ms |
+| **scaricato per il primo schermo** (gzip) | **323 KB** | **140 KB** |
+| primo schermo, telefono lento su 4G lenta | 2278 ms | **1417 ms** |
+| primo schermo, telefono lento in locale | 513 ms | 494 ms |
+
+Le ultime due righe dicono la stessa cosa da due lati, e vale la pena
+leggerle insieme: **il guadagno è nei byte, non nella CPU.** Se i file sono
+già lì — sul computer, in locale — togliere commenti e spazi non cambia
+niente: 513 ms contro 494. È quando devono attraversare una rete che mezzo
+megabyte in meno si sente, e allora l'attesa si dimezza. Misurato con la CPU
+rallentata sei volte, «4G lenta» (1,6 Mbps, 150 ms di latenza), cinque
+aperture a freddo per lato, mediana.
 
 `node prove/pacco.js` rifà i conti in memoria e li confronta col disco: se
 qualcuno cambia il codice e dimentica di ricostruire, se ne accorge lì invece
