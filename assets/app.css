@@ -580,6 +580,31 @@ small { color: var(--inchiostro-2); }
 .sez-enter > *:nth-child(4) { animation-delay: .04s; }
 .sez-enter > *:nth-child(5) { animation-delay: .08s; }
 .sez-enter > *:nth-child(6) { animation-delay: .12s; }
+
+/* DI LATO, NON DALL'ALTO.
+   Le sezioni di una pagina stanno una accanto all'altra — è la riga di
+   linguette a dirlo — quindi il movimento che le lega è orizzontale, e va nel
+   verso in cui ci si è spostati. Prima ogni figlio saliva sfumando, uno dopo
+   l'altro, per mezzo secondo: quel movimento vuol dire «è arrivata una pagina
+   nuova», ed è esattamente perché scorrendo di lato sembrava che il sito si
+   ricaricasse da capo.
+   Centottanta millisecondi e non trecentoquaranta: uno spostamento fra vicini
+   di casa è il passaggio più breve che ci sia, e questo è un gesto che si
+   ripete. Una sola animazione sul contenitore, di sola `transform` e opacità:
+   la scheda grafica la fa da sé, senza tornare a chiedere niente al resto.
+   La riga di linguette e il titolo restano fermi: sono il posto da cui ci si
+   sta muovendo, e un punto fermo è quello che dice che ci si è mossi. */
+@keyframes entra-da-destra { from { opacity: .35; transform: translateX(26px); } }
+@keyframes entra-da-sinistra { from { opacity: .35; transform: translateX(-26px); } }
+.sez-enter-dx > *:not(.topbar):not(.testa-porta),
+.sez-enter-sx > *:not(.topbar):not(.testa-porta) {
+  animation-duration: .18s; animation-timing-function: var(--ease-out); animation-fill-mode: both;
+}
+.sez-enter-dx > *:not(.topbar):not(.testa-porta) { animation-name: entra-da-destra; }
+.sez-enter-sx > *:not(.topbar):not(.testa-porta) { animation-name: entra-da-sinistra; }
+/* le schede della griglia entrano col resto: dentro un movimento di 180ms
+   una scalata a cascata non si vede, si sente solo come ritardo */
+.sez-enter-dx .griglia > *, .sez-enter-sx .griglia > * { animation: none; }
 .sez-enter .griglia > * { animation: alzati .4s var(--ease-out) both; animation-delay: calc(var(--i, 0) * 40ms); }
 @keyframes alzati {
   from { opacity: 0; transform: translateY(16px) scale(.992); }

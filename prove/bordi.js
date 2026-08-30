@@ -123,7 +123,7 @@ const CONTROLLA = `(function (conFuoco) {
   var out = { ritagliati: 0, tondi: [], spariti: [], doppi: [], curveDiverse: [],
     filoVecchio: [], raggiRistretti: [], corsie: [], mangiati: [], strozzati: [],
     pseudoRitagliati: [], fuoriPagina: [], ombreBordo: [], tagliate: [],
-    mascheroni: [], spigoli: [], esentati: 0 };
+    mascheroni: [], spigoli: [], formeDiscordi: [], esentati: 0 };
 
   var guarda = function (e, colFuoco) {
     var s = getComputedStyle(e), r = e.getBoundingClientRect();
@@ -249,7 +249,36 @@ const CONTROLLA = `(function (conFuoco) {
           in mezzo alla pagina). Quell'esclusione va controllata nei DUE versi,
           se no il primo elemento che sbaglia misura passa liscio. */
     var eCapsula = rmax >= Math.min(w, h) / 2 - 0.51;
-    var eTondo = eCapsula && Math.abs(w - h) <= 2;
+    /* quadrato per come sei fatto, o quadrato per caso? Lo dicono i fratelli
+       che portano la stessa classe: se uno di loro quadrato non e', quadrato
+       lo sei per via di quante lettere hai dentro. Vedi fratelliQuadri in
+       forma.js: e' la stessa regola, scritta due volte apposta. */
+    var fratelliQuadri = (function () {
+      var pa = e.parentNode;
+      if (!pa || pa.nodeType !== 1) return true;
+      var mie = (typeof e.className === 'string' ? e.className : '').trim().split(/\s+/).filter(Boolean);
+      if (!mie.length) return true;
+      var cc = pa.children;
+      for (var i = 0; i < cc.length; i++) {
+        var o = cc[i];
+        if (o === e || o.tagName !== e.tagName) continue;
+        var sue = (typeof o.className === 'string' ? o.className : '').trim().split(/\s+/);
+        var insieme = false;
+        for (var j = 0; j < mie.length; j++) if (sue.indexOf(mie[j]) >= 0) { insieme = true; break; }
+        if (!insieme) continue;
+        var ow = o.offsetWidth, oh = o.offsetHeight;
+        if (ow > 2 && oh > 2 && Math.abs(ow - oh) > 2) return false;
+      }
+      return true;
+    })();
+    var eTondo = eCapsula && Math.abs(w - h) <= 2 && fratelliQuadri;
+
+    /* 1-bis. DUE FAMIGLIE DI FORME NELLO STESSO POSTO. Un elemento tondo
+       accanto a un fratello uguale che tondo non e' — «sì» cerchio e «no»
+       rettangolo arrotondato, stessa classe, tre pixel di differenza. Chi
+       guarda non vede una regola al limite: vede uno sbaglio. */
+    if (rmax >= 1 && !suoRitaglio && eCapsula && Math.abs(w - h) <= 2 && !fratelliQuadri)
+      out.formeDiscordi.push(nome(e) + ' ' + w + 'x' + h + ' resta un cerchio accanto a un fratello che tondo non e');
     var troppoAlto = h > innerHeight / 2 || w > innerWidth;
     if (rmax >= 1 && !suoRitaglio && !eTondo && !troppoAlto)
       out.tondi.push(nome(e) + ' r=' + rmax.toFixed(1) + ' ' + w + 'x' + h);
@@ -416,7 +445,7 @@ catch (e) {
 
   const CHIAVI = ['tondi', 'spariti', 'doppi', 'curveDiverse', 'filoVecchio', 'raggiRistretti',
     'corsie', 'mangiati', 'strozzati', 'pseudoRitagliati', 'fuoriPagina', 'ombreBordo', 'tagliate',
-    'mascheroni', 'spigoli'];
+    'mascheroni', 'spigoli', 'formeDiscordi'];
   const tot = {}; CHIAVI.forEach(k => { tot[k] = new Map(); });
   let ritagliati = 0, esentati = 0, viste = 0;
   const rotte = new Map();
@@ -537,6 +566,7 @@ catch (e) {
     [...m.entries()].forEach(([k, v]) => console.log('        ' + k + '   [' + v + ']'));
   };
   mostra('nessun angolo tondo è rimasto senza la curva', tot.tondi);
+  mostra('nessun cerchio accanto a un fratello che cerchio non è', tot.formeDiscordi);
   ok('e l’esenzione è stata davvero esercitata', esentati > 0,
     esentati + ' elementi più alti di mezzo schermo, tenuti fuori dalla maschera'
     + (esentati ? '' : ' — senza nessuno, i due controlli qui sotto sono muti'));

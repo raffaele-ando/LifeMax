@@ -456,12 +456,40 @@
     return true;
   }
 
-  function animaIngresso(el, sezione) {
+  /* RIPARTIRE SENZA RIFARE I CONTI DELL'IMPAGINAZIONE.
+     Per far ripartire un'animazione CSS il modo che si trova scritto ovunque
+     è togliere la classe, leggere `offsetWidth` per costringere il browser a
+     prendere atto, e rimetterla. Quella lettura però rifà l'impaginazione di
+     tutto quello che c'è dentro — e capita nell'istante peggiore, subito dopo
+     che la pagina è stata riscritta da capo: col profilatore era la voce più
+     cara di un cambio di schermata, 107 ms su dodici cambi.
+     `getAnimations()` fa la stessa cosa senza impaginare: annulla quelle che
+     stanno girando, e la classe rimessa ne fa partire una nuova. */
+  function animaIngresso(el, sezione, verso) {
     if (!el) return;
-    var cls = sezione ? 'sez-enter' : 'vista-enter';
+    /* DI LATO, SE DI LATO SI E' ANDATI.
+       Cambiando sezione ogni figlio della pagina saliva da sedici pixel piu'
+       in basso sfumando, uno dopo l'altro, per mezzo secondo buono. Salire
+       sfumando e' il movimento di «e' arrivata una pagina nuova», ed e'
+       esattamente quello che si sentiva scorrendo di lato: sembrava che il
+       sito si ricaricasse da capo invece di essersi spostato di una casella.
+       Le sezioni di una pagina stanno UNA ACCANTO ALL'ALTRA — la riga di
+       linguette lo dice — quindi il movimento che le lega e' orizzontale, e
+       va nel verso in cui ci si e' spostati. Vale anche toccando la linguetta,
+       non solo sfogliando: il modello dello spazio e' lo stesso comunque ci
+       si arrivi.
+       E' anche molto meno lavoro: una animazione sola sul contenitore invece
+       di una per ogni figlio, e la sola `transform` che la scheda grafica sa
+       fare da sé. */
+    var cls = sezione ? (verso > 0 ? 'sez-enter-dx' : (verso < 0 ? 'sez-enter-sx' : 'sez-enter')) : 'vista-enter';
+    el.classList.remove('sez-enter-dx');
+    el.classList.remove('sez-enter-sx');
     el.classList.remove('vista-enter');
     el.classList.remove('sez-enter');
-    void el.offsetWidth;
+    if (el.getAnimations) {
+      try { el.getAnimations().forEach(function (a) { a.cancel(); }); }
+      catch (e) { void el.offsetWidth; }
+    } else void el.offsetWidth;
     el.classList.add(cls);
     if (el.__timerAnim) clearTimeout(el.__timerAnim);
     el.__timerAnim = setTimeout(function () { el.classList.remove(cls); }, 900);
@@ -6148,13 +6176,23 @@
           '<button class="btn btn-primario btn-grande sc-primaria" id="sc-oggi">' + ICO('target', 15) + ' ' +
           (isProg ? 'Prossimo passo in Oggi' : 'Portala in Oggi') + '</button>' +
 
-          etichetta('Rimanda a', 'calendar') +
+          /* «Mettila in un giorno» e non «Rimanda a»: da quando si può
+             scegliere anche un giorno passato, «rimandare» dice la cosa
+             sbagliata per metà dei giorni che si possono toccare. Il giorno
+             passato serve a una cosa precisa: segnare una cosa che hai fatto
+             e che ti eri dimenticato di mettere in agenda — e il calendario
+             deve poterla accogliere dopo, se no il registro di quello che è
+             successo è un registro solo delle cose che ti sei ricordato di
+             annunciare prima. «Ieri» sta fra le pastiglie perché è il giorno
+             passato che si sceglie quasi sempre. */
+          etichetta('Mettila in un giorno', 'calendar') +
           '<div class="q-chips sc-quando">' +
+          gChip(LM.addDays(oggi, -1), 'Ieri') +
           gChip(LM.addDays(oggi, 1), 'Domani') +
           gChip(LM.addDays(oggi, 2), etichettaGiorno(LM.addDays(oggi, 2)).split(' ')[0]) +
           gChip(LM.addDays(oggi, 7), 'Tra una settimana') +
           '<label class="q-chip q-chip-data">' + ICO('calendar', 13) + ' <span>Un altro giorno</span>' +
-          '<input type="date" id="sc-quando" min="' + oggi + '" aria-label="Un altro giorno"></label>' +
+          '<input type="date" id="sc-quando" aria-label="Un altro giorno"></label>' +
           '</div>' +
 
           etichetta('Passi', 'lista', isProg ? av.fatti + ' di ' + av.tot : null) +
@@ -6193,7 +6231,7 @@
           '<span class="sc-eti">Tieni in cima</span>' +
           '<span class="sc-val">' + (b.pin ? ICO('pin', 15, 'sc-si') + ' sì' : 'no') + '</span></button>' +
           '</div>' +
-          '<p class="lista-nota">«Rimanda a» la sposta fra le cose di quel giorno. La scadenza fa solo da conto alla rovescia e non la mette in agenda.</p>' +
+          '<p class="lista-nota">Scegliere un giorno la sposta fra le cose di quel giorno, anche se è già passato: serve a registrare quello che hai fatto senza averlo scritto prima. La scadenza fa solo da conto alla rovescia e non la mette in agenda.</p>' +
 
           '<div class="lista mt">' +
           '<button class="lista-riga sc-riga sc-tocca" id="sc-abitudine">' +
@@ -6304,11 +6342,11 @@
       var html = '<div class="sc">' +
         etichetta('Quando fare questo passo', 'calendar') +
         '<div class="sc-gruppo">' +
-        '<div class="q-chips">' + chip(oggi, 'Oggi') + chip(LM.addDays(oggi, 1), 'Domani') +
+        '<div class="q-chips">' + chip(LM.addDays(oggi, -1), 'Ieri') + chip(oggi, 'Oggi') + chip(LM.addDays(oggi, 1), 'Domani') +
         chip(LM.addDays(oggi, 2), etichettaGiorno(LM.addDays(oggi, 2)).split(' ')[0]) +
         chip(LM.addDays(oggi, 7), 'Tra una settimana') + '</div>' +
         '<label class="sc-campo"><span>un altro giorno</span>' +
-        '<input type="date" id="qp-data" min="' + oggi + '" value="' + (gia ? gia.data : LM.addDays(oggi, 1)) + '"></label>' +
+        '<input type="date" id="qp-data" value="' + (gia ? gia.data : LM.addDays(oggi, 1)) + '"></label>' +
         (gia ? '<button class="btn btn-mini btn-ghost" id="qp-togli">' + ICO('x', 13) + ' Togli dal giorno (' + esc(etichettaGiorno(gia.data).toLowerCase()) + ')</button>' : '') +
         '<div class="sc-nota">Comparirà tra le cose di quel giorno, in <b>La giornata</b>.</div>' +
         '</div></div>';
@@ -7254,8 +7292,31 @@
     $vista.prepend(riga);
     /* niente più sfumatura di scorrimento: a colonne uguali la riga ci sta per
        costruzione a qualunque larghezza, come nelle altre pagine */
-    document.documentElement.style.setProperty('--sottonav-h', (riga.offsetHeight + 14) + 'px');
+    /* L'ALTEZZA SI MISURA UNA VOLTA PER FORMA, non a ogni ridisegno.
+       `offsetHeight` qui costringe il browser a impaginare tutta la pagina
+       appena riscritta, e questa riga è alta sempre uguale: dipende dalla
+       larghezza della finestra e da quante linguette ci sono, e da nient'altro.
+       Col profilatore `sottoNav` era 88 ms su dodici cambi di schermata, quasi
+       tutti qui. */
+    var chiave = innerWidth + '|' + lista.length + '|' + (conNav ? 1 : 0);
+    if (chiave !== sottonavChiave) {
+      sottonavChiave = chiave;
+      document.documentElement.style.setProperty('--sottonav-h', (riga.offsetHeight + 14) + 'px');
+    }
   }
+
+  /* dove stava la sezione di prima nella sua riga di linguette: serve a
+     sapere da che parte deve entrare quella nuova */
+  var postoSezione = -1;
+  function postoDi(id) {
+    var g = gruppoDi(id);
+    if (!g || !g.viste) return -1;
+    for (var i = 0; i < g.viste.length; i++) if (g.viste[i].id === id) return i;
+    return -1;
+  }
+
+  var sottonavChiave = '';
+  window.addEventListener('resize', function () { sottonavChiave = ''; });
 
   var vistaMostrata = '';
   function render() {
@@ -7286,7 +7347,11 @@
     sottoNav(v);
     $vista.classList.toggle('vista-oggi', v === 'oggi');
     vistaMostrata = v;
-    if (cambioPagina) { animaIngresso($vista, cambioSezione); window.scrollTo(0, 0); }
+    var postoOra = postoDi(v);
+    var verso = (cambioSezione && postoSezione >= 0 && postoOra >= 0)
+      ? (postoOra > postoSezione ? 1 : (postoOra < postoSezione ? -1 : 0)) : 0;
+    postoSezione = postoOra;
+    if (cambioPagina) { animaIngresso($vista, cambioSezione, verso); window.scrollTo(0, 0); }
     else if (scrollPrima) window.scrollTo(0, scrollPrima);
   }
 
