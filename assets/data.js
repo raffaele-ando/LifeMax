@@ -1262,9 +1262,17 @@ var LM = (function () {
     { id: 'vaga',     eti: 'Non sapevo da dove partire' },
     { id: 'altro',    eti: 'Altro' }
   ];
+  /* vale sia per una cosa messa in un giorno sia per una che sta ancora
+     nell'elenco «Da fare»: fallire una cosa non richiede di averla prima
+     messa in agenda, e chiedere di programmarla per poter dire che non è
+     andata sarebbe un giro assurdo */
+  function trovaCosa(s, id) {
+    return s.azioni.find(function (x) { return x.id === id; }) ||
+      s.backlog.find(function (x) { return x.id === id; }) || null;
+  }
   function segnaMancata(id, perche, nota, quanto) {
     var s = load();
-    var a = s.azioni.find(function (x) { return x.id === id; });
+    var a = trovaCosa(s, id);
     if (!a) return 0;
     var G = QUANTO_FATTO.find(function (x) { return x.id === quanto; }) || QUANTO_FATTO[0];
     a.done = false;
@@ -1286,7 +1294,7 @@ var LM = (function () {
   }
   function togliMancata(id) {
     var s = load();
-    var a = s.azioni.find(function (x) { return x.id === id; });
+    var a = trovaCosa(s, id);
     if (!a || !a.mancata) return false;
     /* gli XP del pezzo fatto tornano indietro con lui */
     if (a.mancata.quota > 0) {
@@ -1301,7 +1309,8 @@ var LM = (function () {
   function mancate(giorni) {
     var s = load();
     var limite = giorni ? Date.now() - giorni * 86400000 : 0;
-    return s.azioni.filter(function (a) { return a.mancata && a.mancata.ts >= limite; })
+    return s.azioni.concat(s.backlog)
+      .filter(function (a) { return a.mancata && a.mancata.ts >= limite; })
       .sort(function (x, y) { return y.mancata.ts - x.mancata.ts; });
   }
 

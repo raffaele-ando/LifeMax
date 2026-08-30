@@ -204,9 +204,9 @@
  },
  {
   "nome": "Le review di prima",
-  "via": "rituali",
+  "via": "plancia",
   "tab": null,
-  "poi": "document.getElementById('rit-archivio') && document.getElementById('rit-archivio').click()",
+  "poi": "document.getElementById('riep-review') && document.getElementById('riep-review').click()",
   "prova": "#sheet-corpo .sc"
  },
  {

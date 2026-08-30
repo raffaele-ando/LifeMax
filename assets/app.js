@@ -2566,7 +2566,13 @@
      «altro». Una cosa mancata perché «era troppo grossa» è una cosa da
      spezzare, e prima o poi sarà l'app a poterlo dire.
      ============================================================ */
-  function chiediMancata(id, testo) {
+  /* «quanto» in parole, per le righe che lo mostrano */
+  function etichettaQuanto(m) {
+    if (!m) return '';
+    var g = LM.QUANTO_FATTO.find(function (x) { return x.id === m.quanto; });
+    return g ? g.eti.toLowerCase() : 'non riuscita';
+  }
+  function chiediMancata(id, testo, dopo) {
     var quanti = LM.QUANTO_FATTO.map(function (x) {
       return '<button class="q-chip" data-quanto="' + x.id + '">' + x.eti + '</button>';
     }).join('');
@@ -2606,6 +2612,7 @@
         if (fuocoScelto === id) fuocoScelto = null;
         if (xp > 0) { festeggia('leggero'); toast('Segnato quello che hai fatto.', xp, 'check'); }
         else toast('Segnata. Non toglie niente.', 0, 'annulla');
+        if (dopo) dopo();
         render();
       });
     });
@@ -4821,7 +4828,19 @@
         '</div></div>' +
         '<div class="card" style="--i:1"><h2>' + ICO('trendUp', 15) + ' Costanza</h2>' +
         '<div class="sotto">XP di ogni giorno, nelle ultime 12 settimane.</div>' +
-        '<div id="heatmap"></div></div></div>';
+        '<div id="heatmap"></div></div>' +
+        /* LE REVIEW DI PRIMA, in Panoramica. Si scrivono in Rituali, ma
+           rileggerle è un'altra cosa dallo scriverle: è guardare indietro, e
+           guardare indietro si fa qui, accanto alla costanza e alle aree.
+           In Rituali sarebbero state una porta verso il passato in mezzo alle
+           cose da fare adesso. */
+        '<div class="card" style="--i:2"><h2>' + ICO('archivio', 15) + ' Le review di prima</h2>' +
+        '<div class="sotto">Messe in fila dicono cose che una sera sola non dice.</div>' +
+        '<div class="lista mt-s">' +
+        rigaPorta('riep-review', 'archivio', 'Aprile tutte',
+          (function () { var q = LM.quanteReview(); return q ? q + (q === 1 ? ' scritta' : ' scritte') : 'nessuna ancora'; })()) +
+        '</div></div>' +
+        '</div>';
 
       LMCharts.heatmap(document.getElementById('heatmap'), LM.heatmapConsistenza(12));
 
@@ -4844,6 +4863,8 @@
           });
         });
       }
+      var bRev = document.getElementById('riep-review');
+      if (bRev) bRev.addEventListener('click', apriArchivioReview);
       wireRigaAggiunta(c, 'agg-riep', function (testo, opz) {
         var sel = opz && opz.querySelector('select');
         LM.aggiungiAzione(testo, sel ? sel.value : 'altro', { mit: LM.serveMit() });
@@ -5141,18 +5162,7 @@
       return '<div class="rit-eti">' + g.eti + '</div><div class="rit-gruppo">' + righe + '</div>';
     }).join('');
 
-    /* LE REVIEW DI PRIMA. Scrivere una review e non poterla più rileggere è
-       scrivere in un pozzo: l'unico motivo per fermarsi la sera a rispondere
-       «cosa ha funzionato oggi» è che quella risposta, messa in fila con le
-       altre, dice qualcosa che una sera sola non dice.
-       La porta sta QUI, dove le review si scrivono, e non in Andamento: è lì
-       che uno le va a cercare, perché è lì che le ha lasciate. */
-    var quante = LM.quanteReview();
-    $vista.innerHTML = topbar('Rituali', '', '', '', true) + corpoHtml +
-      '<div class="lista rit-archivio">' +
-      rigaPorta('rit-archivio', 'archivio', 'Le review di prima',
-        quante ? quante + (quante === 1 ? ' scritta' : ' scritte') : 'nessuna ancora') +
-      '</div>';
+    $vista.innerHTML = topbar('Rituali', '', '', '', true) + corpoHtml;
 
     /* disegna il contenuto di TUTTE le sezioni aperte */
     var disegna = {
@@ -5163,9 +5173,6 @@
       var c = document.getElementById('corpo-rit-' + id);
       if (c) disegna[id](c);
     });
-
-    var ba = document.getElementById('rit-archivio');
-    if (ba) ba.addEventListener('click', apriArchivioReview);
 
     $vista.querySelectorAll('.rit-riga').forEach(function (b) {
       b.addEventListener('click', function () {
@@ -6651,10 +6658,18 @@
           wireLista(lista); return;
         }
         var g = LM.backlogPerImportanza({ areaId: areaFiltro() || 'tutte', tetto: 3 });
-        var ora = g.ora.filter(function (x) { return passaFiltro(x.b); });
-        var poi = g.poi.filter(function (x) { return passaFiltro(x.b); });
-        var parch = g.parcheggio.filter(function (x) { return passaFiltro(x.b); });
-        if (!ora.length && !poi.length && !parch.length) {
+        /* le non riuscite escono dalle tre file e vanno in fondo, in un
+           gruppo loro chiuso: hanno un esito, quindi non chiedono più niente
+           — ma restano dove le si può ritrovare, che è tutta la differenza
+           con l'averle cancellate */
+        var senzaEsito = function (x) { return passaFiltro(x.b) && !x.b.mancata; };
+        var ora = g.ora.filter(senzaEsito);
+        var poi = g.poi.filter(senzaEsito);
+        var parch = g.parcheggio.filter(senzaEsito);
+        var perse = g.ora.concat(g.poi, g.parcheggio)
+          .filter(function (x) { return passaFiltro(x.b) && x.b.mancata; })
+          .sort(function (a, b2) { return (b2.b.mancata.ts || 0) - (a.b.mancata.ts || 0); });
+        if (!ora.length && !poi.length && !parch.length && !perse.length) {
           lista.innerHTML = '<p class="lista-nota">Niente in «' + esc(nomeFiltro()) + '».</p>';
           return;
         }
@@ -6668,6 +6683,13 @@
               '<span class="lista-chev' + (apertoParcheggio ? ' aperta' : '') + '">' + ICO('chevronGiu', 15) + '</span></button>' +
               '<div class="lista lista-parcheggio"' + (apertoParcheggio ? '' : ' hidden') + '>' +
               parch.map(function (x) { return attRigaHtml(x.b, { motivo: x.i && x.i.motivo }); }).join('') + '</div>'
+            : '') +
+          (perse.length
+            ? '<button class="lista-eti lista-eti-btn" data-perse="1" aria-expanded="' + (!!backlogAperte.__perse) + '">' +
+              'Non riuscite <span>' + perse.length + '</span>' +
+              '<span class="lista-chev' + (backlogAperte.__perse ? ' aperta' : '') + '">' + ICO('chevronGiu', 15) + '</span></button>' +
+              '<div class="lista lista-perse"' + (backlogAperte.__perse ? '' : ' hidden') + '>' +
+              perse.map(function (x) { return attRigaHtml(x.b, { motivo: etichettaQuanto(x.b.mancata) }); }).join('') + '</div>'
             : '');
 
         var bt = lista.querySelector('[data-tutte]');
@@ -6681,6 +6703,16 @@
             if (delta) window.scrollBy(0, delta);
             nuovo.focus({ preventScroll: true });
           }
+        });
+        var bpe = lista.querySelector('[data-perse]');
+        if (bpe) bpe.addEventListener('click', function () {
+          var ap = !backlogAperte.__perse;
+          backlogAperte.__perse = ap;
+          var corpo = lista.querySelector('.lista-perse');
+          if (corpo) corpo.hidden = !ap;
+          bpe.setAttribute('aria-expanded', ap);
+          var ch = bpe.querySelector('.lista-chev');
+          if (ch) ch.classList.toggle('aperta', ap);
         });
         var bp = lista.querySelector('[data-parcheggio]');
         if (bp) bp.addEventListener('click', function () {
@@ -6725,7 +6757,7 @@
       }
 
       var pieno = !!(opts && opts.primo);
-      return '<div class="lista-riga att-riga" data-bid="' + b.id + '">' +
+      return '<div class="lista-riga att-riga' + (b.mancata ? ' mancata-riga' : '') + '" data-bid="' + b.id + '">' +
         '<button class="lista-azione' + (pieno ? ' piena' : '') + '" data-bkoggi="' + b.id + '"' +
         ' aria-label="' + (isProg ? 'Porta in Oggi il prossimo passo di ' : 'Porta in Oggi ') + esc(b.testo) + '"' +
         ' title="' + (isProg ? 'Porta in Oggi il prossimo passo' : 'Porta in Oggi') + '">' + ICO('target', 15) + '</button>' +
@@ -6873,6 +6905,19 @@
           '<button class="lista-riga sc-riga sc-tocca" id="sc-abitudine">' +
           '<span class="sc-eti">' + ICO('refresh', 15) + ' Diventa un’abitudine</span>' +
           '<span class="lista-chev">' + ICO('chevronGiu', 15) + '</span></button>' +
+          /* «Non ci sono riuscito» STA SOPRA «elimina», e non è rosso.
+             Sono due cose diverse e devono sembrarlo: eliminare fa sparire la
+             riga dal registro di quello che è successo, questo la chiude
+             dicendo com'è andata. Se stessero alla pari, chi vuole solo
+             togliersela davanti sceglierebbe la prima che vede — e finora la
+             prima che vedeva era «elimina». */
+          (b.mancata
+            ? '<button class="lista-riga sc-riga sc-tocca" id="sc-rimetti">' +
+              '<span class="sc-eti">' + ICO('riprova', 15) + ' Rimettila fra le cose da fare</span>' +
+              '<span class="sc-val">' + esc(etichettaQuanto(b.mancata)) + '</span></button>'
+            : '<button class="lista-riga sc-riga sc-tocca" id="sc-mancata">' +
+              '<span class="sc-eti">' + ICO('annulla', 15) + ' Non ci sono riuscito</span>' +
+              '<span class="lista-chev">' + ICO('chevronGiu', 15) + '</span></button>') +
           '<button class="lista-riga sc-riga sc-tocca sc-pericolo" id="sc-del">' +
           '<span class="sc-eti">' + ICO('trash', 15) + ' Elimina l’attività</span></button>' +
           '</div>' +
@@ -6961,6 +7006,14 @@
           ridisegnaScheda();
         });
         root.querySelector('#sc-abitudine').addEventListener('click', function () { apriDaAbitudine(trova()); });
+        var bM = root.querySelector('#sc-mancata');
+        if (bM) bM.addEventListener('click', function () { chiediMancata(b.id, trova().testo, ridisegna); });
+        var bR = root.querySelector('#sc-rimetti');
+        if (bR) bR.addEventListener('click', function () {
+          LM.togliMancata(b.id);
+          toast('Rimessa fra le cose da fare.', 0, 'riprova');
+          ridisegnaScheda(); ridisegna();
+        });
         root.querySelector('#sc-del').addEventListener('click', function () {
           conAnnulla('Attività eliminata.', 'trash', function () { LM.rimuoviBacklog(b.id); chiudiSheet(); ridisegna(); });
         });

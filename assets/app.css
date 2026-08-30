@@ -1248,7 +1248,6 @@ select.sel-compatto {
 
 /* L'archivio delle review: ogni riga porta dentro quello che avevi scritto,
    perché una lista di date da aprire una per una non si scorre mai. */
-.rit-archivio { margin-top: var(--s5); }
 .rev-riga { align-items: flex-start; }
 .rev-ico { color: var(--inchiostro-2); }
 .rev-ico.rev-sera { color: var(--brand-a); }
