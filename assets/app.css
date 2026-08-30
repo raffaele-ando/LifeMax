@@ -268,15 +268,35 @@ small { color: var(--inchiostro-2); }
 
 /* ---------- aurora di sfondo ---------- */
 
+/* Qui c'era `filter: blur(70px) saturate(1.15)`, e costava all'app due terzi
+   di ogni fotogramma, su ogni schermata, per sempre.
+
+   Il motivo non e' il blur in se': e' dove stava. Un `filter` sul padre
+   impedisce al browser di far correre sulla scheda grafica le animazioni dei
+   figli, perche' il risultato sfocato va rifatto da capo ogni volta che
+   dentro si muove qualcosa. E dentro si muove sempre qualcosa: i tre aloni
+   hanno animazioni `infinite`. Quindi un rettangolo di 140vw x 140vh veniva
+   ridisegnato e risfocato dal thread principale sessanta volte al secondo,
+   anche a schermo fermo, anche con un pannello aperto sopra.
+   Misurato a 390x844 con la CPU rallentata sei volte (un telefono di fascia
+   media): 18,7 fotogrammi al secondo con l'aurora, 60,8 senza. E 55 ricalcoli
+   di stile in tre secondi contro zero.
+
+   E il blur non si vedeva. Sfocare di 70px una sfumatura radiale che gia'
+   svanisce nel nulla al 68% non la cambia: confrontando le due immagini pixel
+   per pixel, differenza massima 3 su 255 e nemmeno un pixel sopra 3, a 390 e
+   a 1280. Si pagava tutto quello per niente.
+
+   Senza il filtro i tre aloni tornano a essere strati indipendenti: le loro
+   animazioni sono di sola `transform` e girano sulla scheda grafica, dove il
+   thread principale non le vede nemmeno. Il disegno resta identico. */
 .aurora {
   position: fixed; inset: -20%;
   z-index: 0; pointer-events: none;
   opacity: var(--aurora-opacita);
-  filter: blur(70px) saturate(1.15);
 }
 .aurora i {
   position: absolute; border-radius: var(--r-tondo); display: block;
-  mix-blend-mode: normal;
 }
 .aurora i:nth-child(1) {
   width: 44vw; height: 44vw; left: -6vw; top: -10vh;
@@ -2826,7 +2846,12 @@ select.agg-sel-area { width: auto; max-width: 190px; flex: 0 1 auto; font-size: 
 /* niente opacità sul contenitore: schiarirebbe anche il testo dentro.
    La trama tratteggiata è già abbastanza discreta da sola. */
 .tl-sleep { position: absolute; left: 0; right: 0; background: repeating-linear-gradient(45deg, var(--superficie-2), var(--superficie-2) 6px, transparent 6px, transparent 12px); border-radius: var(--r-1); }
-.tl-blk { position: absolute; border-radius: var(--r-1); padding: 3px 8px; overflow: hidden; display: flex; flex-direction: column; justify-content: center; gap: 1px; box-shadow: var(--e1); }
+/* `safe center` e non `center`: quando il testo e' piu' alto del blocco,
+   `center` lo fa uscire da sopra E da sotto, e il ritaglio mozza per il lungo
+   sia la prima riga sia l'ultima — mezze lettere in cima e mezze in fondo.
+   `safe` dice al browser: centra finche' ci sta, altrimenti appoggia in alto.
+   Cosi' l'inizio del titolo si legge sempre e il taglio resta uno solo. */
+.tl-blk { position: absolute; border-radius: var(--r-1); padding: 3px 8px; overflow: hidden; display: flex; flex-direction: column; justify-content: center; justify-content: safe center; gap: 1px; box-shadow: var(--e1); }
 .tl-blk-pasto { background: var(--superficie-2); color: var(--inchiostro-2); border: 1px solid var(--griglia); flex-direction: row; align-items: center; gap: 6px; }
 .tl-blk-att { background: color-mix(in srgb, var(--c-area) 14%, var(--superficie-1)); border: 1px solid color-mix(in srgb, var(--c-area) 40%, transparent); border-left: 3px solid var(--c-area); }
 .tl-blk-att.fatta { background: var(--superficie-2); border-color: var(--bordo); border-left-color: color-mix(in srgb, var(--c-area) 55%, transparent); }
@@ -3022,7 +3047,12 @@ body.sto-trascinando { cursor: grabbing; user-select: none; -webkit-user-select:
 .wk-col .tl-blk { box-shadow: none; padding: 2px 5px; }
 /* nella settimana il testo va a capo (fino a 2 righe) invece di essere
    tagliato di brutto; il blocco più alto ospita più righe */
-.tl-grid-mini .tl-blk-t { white-space: normal; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; line-clamp: 3; overflow: hidden; font-size: 11px; line-height: 1.12; font-weight: 600; }
+/* Il numero di righe non e' tre: e' quante ne tiene QUESTO blocco, che e'
+   alto quanto dura l'impegno. Con un tre fisso un blocco da mezz'ora lasciava
+   passare tre righe in uno spazio che ne teneva una e mezza, e la seconda
+   veniva tagliata a meta' altezza. `--righe` lo calcola chi disegna il
+   blocco, che l'altezza in pixel ce l'ha in mano. */
+.tl-grid-mini .tl-blk-t { white-space: normal; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: var(--righe, 3); line-clamp: var(--righe, 3); overflow: hidden; font-size: 11px; line-height: 1.12; font-weight: 600; }
 .tl-grid-mini .tl-blk { align-items: stretch; }
 
 /* mese: calendario a "calore" + mattoncini per area */

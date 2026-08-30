@@ -2830,6 +2830,23 @@
       var top = y(em(e.min)), hgt = Math.max(opts.mini ? 15 : 24, dur / 60 * pxh - 2);
       var w = 100 / it.ncols, left = it.col * w;
       var pos = 'top:' + top + 'px;height:' + hgt + 'px;left:calc(' + left + '% + 1px);width:calc(' + w + '% - 3px)';
+      /* QUANTE RIGHE CI STANNO DAVVERO. Nella settimana il titolo va a capo, e
+         il numero di righe permesse era tre per tutti — ma il blocco e' alto
+         quanto DURA l'impegno, e mezz'ora puo' valere trenta pixel. Tre righe
+         in trenta pixel non ci stanno: la seconda restava tagliata a meta'
+         altezza, e con il contenuto centrato usciva anche da sopra.
+         Il conto lo puo' fare solo chi l'altezza ce l'ha in mano:
+           · 11px di corpo per 1.12 di interlinea = 12.32px a riga;
+           · 6px se ne vanno in cornice — 1+1 di bordo e 2+2 di imbottitura
+             (nella colonna della settimana l'imbottitura resta anche sui
+             blocchi bassi: `.wk-col .tl-blk` batte `.tl-blk-corto`).
+         Se non ne sta dentro nemmeno una, il titolo non si scrive affatto:
+         nove pixel di lettere tagliate sotto la linea di base si leggono
+         peggio di una barra colorata, e il nome resta comunque nel
+         suggerimento e toccando il giorno. `prove/disegno.js` tiene fermi
+         questi numeri: se cambia il corpo o l'interlinea, va rosso. */
+      var righe = opts.mini ? Math.floor((hgt - 6) / 12.32) : -1;
+      if (righe >= 1) pos += ';--righe:' + righe;
       if (e.tipo === 'pasto') {
         return '<div class="tl-blk tl-blk-pasto' + (e.fatto === false ? ' saltato' : '') + '" style="' + pos + '"' +
           (e.fatto === false ? ' title="' + esc(e.nome) + ': saltato"' : '') + '>' +
@@ -2871,7 +2888,7 @@
       if (e.tipo === 'azione') clic += ' data-drag-az="' + e.id + '"' + (opts.mini ? ' data-manico' : '');
       return '<div class="tl-blk tl-blk-att' + (fatto ? ' fatta' : '') + (basso ? ' tl-blk-basso' : '') + (corto ? ' tl-blk-corto' : '') + (opts.interactive && !opts.mini ? ' tl-blk-clic' : '') + '"' + clic + ' style="' + pos + ';--c-area:' + col + '" title="' + esc(e.testo) + '">' +
         check + (e.tipo === 'azione' && !opts.mini && opts.interactive ? '<span class="manico" data-manico aria-hidden="true">' + ICO('presa', 13) + '</span>' : '') +
-        '<span class="tl-blk-t">' + (e.mit ? ICO('star', 11) + ' ' : '') + esc(e.testo) + '</span>' +
+        (righe === 0 ? '' : '<span class="tl-blk-t">' + (e.mit ? ICO('star', 11) + ' ' : '') + esc(e.testo) + '</span>') +
         (!corto && !opts.mini ? '<span class="tl-blk-ora">' + e.ora + '–' + fmtMin(e.min + dur) + '</span>' : '') + '</div>';
     }).join('');
     var now = '';

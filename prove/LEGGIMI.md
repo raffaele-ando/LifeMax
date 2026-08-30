@@ -351,6 +351,28 @@ genera le chiavi, in un browser vero).
   Le due controprove: rimettendo l'ascolto che non si riattacca diventano rosse
   quattro righe; rimettendo il documento che sostituisce invece di unire, una
   riga sola e dice tutto — «le scoperte che stavano solo qui: 9 → 0».
+- **disegno.js** — QUANTO COSTA STARE FERMI. Nasce da «su android ci sono lag
+  e bug continui rispetto all'iPad» e dalle foto con rettangoli grigi o neri a
+  spigolo vivo in mezzo alle schermate e ai pannelli: erano la stessa cosa. Il
+  fondo dell'app — l'aurora, tre aloni che si muovono piano — aveva il blur
+  sul contenitore e le animazioni sui figli. Un `filter` sul padre toglie ai
+  figli la scheda grafica: il risultato sfocato va rifatto da capo ogni volta
+  che dentro si muove qualcosa, e lì dentro qualcosa si muove sempre. Un
+  rettangolo di 140vw x 140vh risfocato dal thread principale sessanta volte
+  al secondo, a schermo fermo, su ogni pagina. Quando la memoria della scheda
+  grafica finisce, le tessere non disegnate restano del colore di riempimento:
+  i rettangoli delle foto.
+  Tre reti: che niente si muova dentro un `filter` (la regola strutturale, che
+  non dipende da quanto è veloce la macchina che fa girare la prova); che a
+  schermo fermo, con la CPU rallentata sei volte, si stia sopra i 45
+  fotogrammi al secondo; e che nessun titolo esca dal suo blocco nella
+  giornata e nella settimana — il blocco è alto quanto DURA l'impegno, e tre
+  righe fisse in trenta pixel tagliavano la seconda a metà altezza.
+  Le controprove sono tre, e una è nata da un errore: rimettere i due difetti
+  del testo INSIEME nascondeva il secondo, perché `center` spartisce lo sbordo
+  fra sopra e sotto e ogni lato restava sotto la tolleranza. Rimessi uno per
+  volta: 18,1 fotogrammi al secondo col filtro, 1,13px di titolo tagliato con
+  le tre righe fisse, 0,56px di sbordo in cima togliendo il `safe` al centro.
 - **bordi.js** — la stessa cosa, ma DAPPERTUTTO. Guarda ogni elemento di
   cinquantadue schermate, pannelli e stati (`segni/scene.json`) per cinque
   combinazioni di larghezza e tema: 260 schermate, più di ventimila angoli.
