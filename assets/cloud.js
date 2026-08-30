@@ -355,13 +355,24 @@ function applicaRemoto(d, notifica) {
   if (notifica) window.dispatchEvent(new CustomEvent('lm:remote'));
 }
 
+let ultimaPartenza = 0;
 function programmaPush() {
   clearTimeout(pushTimer);
   /* ADHD: si tocca tanto e in fretta. Un debounce raccoglie la raffica in
-     una sola scrittura invece di bombardare il server (e la batteria). */
+     una sola scrittura invece di bombardare il server (e la batteria).
+
+     Ma l'attesa serve SOLO dentro una raffica. Un gesto isolato — far
+     partire un timer, spuntare una cosa — aspettava sette decimi di secondo
+     per niente, e quei sette decimi si sommano alla rete e al giro
+     dell'altro dispositivo: da fuori sembra che il sito ci pensi su. Se
+     l'ultima scrittura è vecchia di più di due secondi, questa è la prima di
+     una raffica che forse non ci sarà: parte subito, e se poi la raffica
+     arriva davvero le successive tornano ad aspettare. */
+  const soli = Date.now() - ultimaPartenza > 2000;
   pushTimer = setTimeout(function () {
+    ultimaPartenza = Date.now();
     if (currentUser) push(currentUser.uid);
-  }, 700);
+  }, soli ? 0 : 700);
 }
 
 /* Le scritture non si sovrappongono: Firestore non garantisce l'ordine di

@@ -282,6 +282,87 @@ export function onSnapshot(ref, suDati, suErrore) {
       r.arrivate + ' azioni arrivate');
   }
 
+  /* ============================================================
+     IN TEMPO REALE VUOL DIRE SULLO SCHERMO, NON NEI DATI
+     Un aggiornamento che arriva, entra nello stato e non compare non è
+     arrivato: chi guarda vede la schermata di prima e ricarica la pagina,
+     che è proprio la cosa che non deve servire.
+     ============================================================ */
+  console.log('\nQUELLO CHE ARRIVA SI VEDE, SENZA RICARICARE');
+  {
+    /* «Da fare» è un elenco vero, che mostra tutte le righe: «Da sistemare»
+       ne fa vedere una per volta, e provarci misurava la schermata sbagliata */
+    await p.evaluate(() => { location.hash = '#/inbox'; });
+    await p.waitForTimeout(800);
+    await p.evaluate(() => {
+      const b = [...document.querySelectorAll('.segmenti button')].find((x) => /da fare/i.test(x.textContent));
+      if (b) b.click();
+    });
+    await p.waitForTimeout(600);
+    const prima = await p.evaluate(() => document.body.innerText.indexOf('venuta da un altro telefono') >= 0);
+    const r = await p.evaluate(async () => {
+      const mio = LM.snapshot();
+      const altro = JSON.parse(JSON.stringify(mio));
+      altro.updatedAt = Date.now() + 5000;
+      altro.backlog = (altro.backlog || []).concat([{ id: 'remota-1', testo: 'venuta da un altro telefono', areaId: 'altro', creata: Date.now() }]);
+      window.__fb.consegna({ data: JSON.stringify(altro), updatedAt: altro.updatedAt });
+      await new Promise((r2) => setTimeout(r2, 700));
+      return {
+        neiDati: LM.snapshot().backlog.some((x) => x.id === 'remota-1'),
+        sulloSchermo: document.body.innerText.indexOf('venuta da un altro telefono') >= 0
+      };
+    });
+    ok('prima non c\u2019era (se no la prova \u00e8 muta)', prima === false, '');
+    ok('la riga arrivata entra nei dati', r.neiDati);
+    ok('e si vede sullo schermo senza ricaricare niente', r.sulloSchermo);
+  }
+
+  console.log('\nMENTRE SCRIVI NON SI RIDISEGNA, MA NON SI DIMENTICA');
+  {
+    const r = await p.evaluate(async () => {
+      const campo = [...document.querySelectorAll('#vista input, #vista textarea')]
+        .find((x) => !x.hidden && x.type !== 'checkbox' && x.type !== 'radio' && x.offsetWidth > 40);
+      if (!campo) return { saltata: true };
+      campo.focus();
+      const mio = LM.snapshot();
+      const altro = JSON.parse(JSON.stringify(mio));
+      altro.updatedAt = Date.now() + 9000;
+      altro.backlog = (altro.backlog || []).concat([{ id: 'remota-2', testo: 'arrivata mentre scrivevo', areaId: 'altro', creata: Date.now() }]);
+      window.__fb.consegna({ data: JSON.stringify(altro), updatedAt: altro.updatedAt });
+      await new Promise((r2) => setTimeout(r2, 500));
+      const durante = document.body.innerText.indexOf('arrivata mentre scrivevo') >= 0;
+      campo.blur();
+      await new Promise((r2) => setTimeout(r2, 700));
+      const dopo = document.body.innerText.indexOf('arrivata mentre scrivevo') >= 0;
+      return { durante: durante, dopo: dopo, neiDati: LM.snapshot().backlog.some((x) => x.id === 'remota-2') };
+    });
+    if (r.saltata) ok('c\u2019\u00e8 un campo su cui provare', false, 'nessun campo in pagina');
+    else {
+      ok('l\u2019aggiornamento \u00e8 comunque entrato nei dati', r.neiDati);
+      ok('mentre il campo ha il fuoco lo schermo non si rif\u00e0 sotto le dita', r.durante === false);
+      ok('ma appena lo lasci, quello che era arrivato compare', r.dopo === true);
+    }
+  }
+
+  console.log('\nUN GESTO ISOLATO PARTE SUBITO');
+  {
+    const r = await p.evaluate(async () => {
+      const quante = () => window.__fb.scritture.length;
+      await new Promise((r2) => setTimeout(r2, 2500));   /* niente scritture da un po' */
+      const a = quante();
+      LM.cattura('una cosa sola');
+      await new Promise((r2) => setTimeout(r2, 250));    /* meno del vecchio ritardo di 700ms */
+      const b2 = quante();
+      /* e adesso una raffica: deve raccoglierla in poche scritture */
+      const c = quante();
+      for (let i = 0; i < 8; i++) { LM.cattura('raffica ' + i); await new Promise((r3) => setTimeout(r3, 40)); }
+      await new Promise((r2) => setTimeout(r2, 1400));
+      return { subito: b2 - a, raffica: quante() - c };
+    });
+    ok('un gesto solo è già partito dopo 250ms', r.subito >= 1, r.subito + ' scritture');
+    ok('e otto gesti di fila non fanno otto scritture', r.raffica <= 4, r.raffica + ' scritture per 8 gesti');
+  }
+
   ok('nessun errore in pagina', errori.length === 0, errori.slice(0, 3).join(' | '));
   console.log(guai ? '\n>>> ' + guai + ' PROBLEMI' : '\n>>> TUTTO A POSTO');
   await b.close(); srv.close(); process.exit(guai ? 1 : 0);

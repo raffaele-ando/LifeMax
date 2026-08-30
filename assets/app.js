@@ -7856,10 +7856,27 @@
   });
 
   /* aggiornamento arrivato da un altro dispositivo */
+  var remotoInAttesa = false;
   window.addEventListener('lm:remote', function () {
-    if (staDigitando()) return;
+    /* MENTRE SCRIVI NON SI RIDISEGNA — MA NON SI DIMENTICA.
+       Ridisegnare sotto le dita butterebbe via quello che stai scrivendo.
+       Prima però il ridisegno si perdeva e basta: la modifica arrivata da un
+       altro dispositivo restava nei dati e non compariva sullo schermo
+       finché non succedeva qualcos'altro. Fino a una ricarica, esattamente
+       la cosa che non deve servire. Adesso si tiene da parte e si fa appena
+       il campo perde il fuoco. */
+    if (staDigitando()) { remotoInAttesa = true; return; }
     render();
     toast('Dati aggiornati da un altro dispositivo.', 0, 'cloudCheck');
+  });
+  document.addEventListener('focusout', function () {
+    if (!remotoInAttesa) return;
+    setTimeout(function () {
+      if (staDigitando() || !remotoInAttesa) return;
+      remotoInAttesa = false;
+      render();
+      toast('Dati aggiornati da un altro dispositivo.', 0, 'cloudCheck');
+    }, 120);
   });
 
   /* cambio area di un'azione (da Focus o dal Diario), anche a distanza

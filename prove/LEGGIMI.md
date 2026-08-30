@@ -355,6 +355,13 @@ genera le chiavi, in un browser vero).
   Gli ultimi due controlli sono il caso dell'utente per intero, per la strada
   vera: un documento remoto più povero che NON cancella le scoperte, e le
   trenta azioni dell'altro dispositivo che arrivano lo stesso.
+  Da oggi guarda anche la parte che l'utente vede: che un aggiornamento
+  arrivato dall'altro dispositivo **compaia sullo schermo** senza ricaricare
+  (uno che entra nei dati e non si vede non è arrivato: chi guarda ricarica
+  la pagina, che è proprio la cosa che non deve servire), che MENTRE SCRIVI
+  lo schermo non si rifaccia sotto le dita ma che quello arrivato compaia
+  appena lasci il campo, e che un gesto isolato parta subito mentre otto
+  gesti di fila restano una scrittura sola.
   Le due controprove: rimettendo l'ascolto che non si riattacca diventano rosse
   quattro righe; rimettendo il documento che sostituisce invece di unire, una
   riga sola e dice tutto — «le scoperte che stavano solo qui: 9 → 0».
