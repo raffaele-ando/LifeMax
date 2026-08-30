@@ -3008,6 +3008,38 @@
     return ', fra ' + (ore === 1 ? 'un’ora' : ore + ' ore');
   }
 
+  /* ============================================================
+     IL REGISTRO DEGLI SCHERMI
+
+     Qui c'era una catena di `if`: `render()` nominava una per una tutte e
+     otto le viste. Sembra la cosa più semplice del mondo, e per due anni lo
+     è stata. Poi ho misurato il grafo delle dipendenze di questo file e
+     quella catena è saltata fuori come UNICA causa di una cosa grossa.
+
+     Ogni vista, quando cambia qualcosa, chiama `render()`. E `render()`
+     chiamava ogni vista. Due archi, e il grafo diventa un anello solo: da
+     «Adesso» si arriva a «Attività» passando per `render`, quindi «Adesso»
+     dipende da «Attività», quindi le due non si possono separare. E siccome
+     vale per tutte, non se ne può separare nessuna. Misurato: la chiusura di
+     ogni vista era di 444 KB, cioè tutto il file, e la parte «solo sua» era
+     zero per tutte e sette.
+
+     Tagliando quel solo arco — le viste si iscrivono, `render` le cerca —
+     resta questo:
+
+       tronco condiviso fra due o più viste   187 KB
+       private di una vista sola              134 KB   ← si possono caricare a parte
+       fuori da ogni vista (avvio, router)     65 KB
+
+     Cioè da qui in poi il pacco SI PUÒ dividere per schermata. Il registro
+     non fa niente di più di quella catena di `if`, e non è un'astrazione
+     messa lì per bellezza: è l'unico modo di scriverla che non incolla ogni
+     schermata a tutte le altre.
+     ============================================================ */
+  var SCHERMI = {};
+  function schermo(id, disegna) { SCHERMI[id] = disegna; }
+
+  schermo('oggi', vistaFocus);
   function vistaFocus() {
     var adesso;
     if (fuocoScelto) {
@@ -4610,6 +4642,7 @@
       });
   }
 
+  schermo('giornata', vistaGiornata);
   function vistaGiornata() {
     if (!giornataAncora) giornataAncora = LM.todayKey();
     function orizz(id, ico, et) {
@@ -4765,6 +4798,7 @@
       annulla + '<span class="diario-ora">' + oraDi(ev.ts) + '</span></div>';
   }
 
+  schermo('plancia', vistaPlancia);
   function vistaPlancia() {
     var s = LM.load();
     var lvl = LM.livelloDaXp(s.xp);
@@ -5283,6 +5317,7 @@
     return s.reviewSettimana[wk] ? { fatto: true, testo: 'fatto' } : { fatto: false, testo: 'da fare' };
   }
 
+  schermo('rituali', vistaRituali);
   function vistaRituali() {
     var adesso = ritualeDellOra();
     /* alla prima apertura è aperto quello dell'ora; dopo vale quello che hai
@@ -6501,6 +6536,7 @@
      dove si sistemano le cose (giorno, scadenza, passi, area, nome).
      ============================================================ */
 
+  schermo('inbox', vistaInbox);
   function vistaInbox() {
     var s = LM.load();
     var nInbox = s.inbox.length;
@@ -7510,6 +7546,7 @@
      problema che questa divisione risolve. */
   var sezScoperte = 'registro';
 
+  schermo('esperimenti', vistaEsperimenti);
   function vistaEsperimenti() {
     var s = LM.load();
 
@@ -7895,6 +7932,7 @@
     return labChiesto;
   }
 
+  schermo('lab', vistaLab);
   function vistaLab() {
     $vista.innerHTML = topbar('Design lab', 'Scegli la base grafica del sito.') +
       '<div id="lab-radice"></div>';
@@ -7915,6 +7953,7 @@
     });
   }
 
+  schermo('scienza', vistaScienza);
   function vistaScienza() {
     var html = topbar('Perché l’app è fatta così', 'Le ricerche dietro ogni funzione, con le fonti.') +
       '<div class="card"><div class="sotto" style="margin:0">Le etichette dicono quanto è solida ogni prova: <span class="evidenza evidenza-alta">evidenza alta</span> significa meta-analisi o studi clinici controllati; <span class="evidenza evidenza-media">media</span> significa studi solidi ma non conclusivi; <span class="evidenza evidenza-euristica">euristica</span> significa pratica clinica ragionevole, non ancora dimostrata. La verifica finale spetta comunque a te, e serve a questo la pagina <b>Scoperte</b>.</div></div>' +
@@ -8206,14 +8245,8 @@
     var cambioSezione = cambioPagina && vistaMostrata &&
       gruppoDi(v).id === gruppoDi(vistaMostrata).id;
     var scrollPrima = cambioPagina ? 0 : (window.scrollY || document.documentElement.scrollTop || 0);
-    if (v === 'oggi') vistaFocus();
-    else if (v === 'giornata') vistaGiornata();
-    else if (v === 'plancia') vistaPlancia();
-    else if (v === 'rituali') vistaRituali();
-    else if (v === 'inbox') vistaInbox();
-    else if (v === 'esperimenti') vistaEsperimenti();
-    else if (v === 'scienza') vistaScienza();
-    else if (v === 'lab') vistaLab();
+    var disegna = SCHERMI[v];
+    if (disegna) disegna();
     sottoNav(v);
     $vista.classList.toggle('vista-oggi', v === 'oggi');
     vistaMostrata = v;

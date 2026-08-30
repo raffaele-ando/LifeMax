@@ -75,6 +75,52 @@ qualcuno cambia il codice e dimentica di ricostruire, se ne accorge lì invece
 che in rete. **Le prove girano sul pacco**, non sui sorgenti — cioè su quello
 che gira davvero: si ricostruisce prima di lanciarle.
 
+### Il registro degli schermi, e perché il pacco non si divideva
+
+Il build ha fatto la metà facile: togliere commenti e spazi, e cacciare fuori
+il Design lab. La metà difficile — **caricare una schermata per volta** — non
+si poteva fare, e il motivo era una riga sola.
+
+`render()` nominava una per una tutte e otto le viste, in una catena di `if`.
+E ogni vista, quando cambia qualcosa, chiama `render()`. Due archi, e il grafo
+delle dipendenze diventa **un anello solo**: da «Adesso» si arriva ad
+«Attività» passando per `render`, quindi «Adesso» dipende da «Attività»,
+quindi non si possono separare — e siccome vale per tutte, non se ne separa
+nessuna. Misurato: la chiusura di ogni vista era **444 KB**, cioè tutto il
+file, e la parte «solo sua» era **zero** per tutte e sette.
+
+Adesso le viste si iscrivono (`schermo('inbox', vistaInbox)`) e `render` le
+cerca. Il registro non fa niente di più di quella catena di `if`: è solo
+l'unico modo di scriverla che non incolla ogni schermata a tutte le altre.
+
+**E il numero che ne esce è più piccolo di quanto sembrasse.** Tagliato
+l'anello, `app.js` si divide così:
+
+| | |
+|---|---|
+| tronco condiviso fra due o più viste | 300 KB |
+| private di una vista sola | **141 KB** |
+| fuori da ogni vista (avvio, router, pannelli, timer) | 43 KB |
+
+Dividere per schermata sposta fuori dal primo caricamento **141 KB dei 444**,
+non molto di più: le sette schermate sono costruite con gli stessi pezzi — le
+righe di elenco, i pannelli, le pastiglie, i grafici — e quei pezzi servono
+dappertutto. Vale la pena farlo, ma è il secondo ordine di grandezza, non il
+primo.
+
+Per confronto, quanto codice viene davvero eseguito girando **tutte** le
+schermate, in chiaro e in scuro, su telefono e su desktop:
+
+| | nel pacco | acceso almeno una volta |
+|---|---|---|
+| JavaScript | 360 KB | 119 KB (33%) |
+| CSS | 121 KB | 48 KB (40%) |
+
+Il 33% del JavaScript va letto con prudenza — «mai eseguito» non vuol dire
+«mai servito»: buona parte sono i gestori che partono quando tocchi qualcosa,
+e un giro automatico non tocca niente. I **73 KB di CSS che non si accendono
+mai**, invece, sono più solidi: quelli sono regole che non trovano nessuno.
+
 ### Dove sta ospitato, e cosa cambierebbe a spostarlo
 
 Oggi è su **GitHub Pages**: `git push` e in un minuto è online. Ogni risposta
