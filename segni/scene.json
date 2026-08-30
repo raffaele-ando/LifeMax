@@ -182,6 +182,34 @@
   "prova": ".toast"
  },
  {
+  "nome": "Concentrazione",
+  "via": "oggi",
+  "tab": null,
+  "poi": "(function(){var b=document.getElementById('btn-timer');if(b)b.click();setTimeout(function(){var t=document.querySelector('[data-timer-tipo=\"blocco\"]');if(t)t.click();},250);})()",
+  "prova": ".conc-anello"
+ },
+ {
+  "nome": "Quanto ci stai",
+  "via": "oggi",
+  "tab": null,
+  "poi": "document.getElementById('btn-timer') && document.getElementById('btn-timer').click()",
+  "prova": ".timer-scelta"
+ },
+ {
+  "nome": "Non del tutto",
+  "via": "oggi",
+  "tab": null,
+  "poi": "(async function(){var s=LM.load();s.abitudini.forEach(function(h){h.fatti[LM.todayKey()]=true;});LM.save();location.hash='#/inbox';await new Promise(function(r){setTimeout(r,200);});location.hash='#/oggi';await new Promise(function(r){setTimeout(r,350);});var m=document.getElementById('btn-mancata');if(m)m.click();await new Promise(function(r){setTimeout(r,350);});})()",
+  "prova": "[data-quanto]"
+ },
+ {
+  "nome": "Le review di prima",
+  "via": "rituali",
+  "tab": null,
+  "poi": "document.getElementById('rit-archivio') && document.getElementById('rit-archivio').click()",
+  "prova": "#sheet-corpo .sc"
+ },
+ {
   "nome": "Design lab · 1",
   "via": "lab",
   "tab": null,

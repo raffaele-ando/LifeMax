@@ -160,6 +160,72 @@ const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  
   ok('e la concentrazione si chiude da sé',
     await p.evaluate(() => !document.body.classList.contains('in-concentrazione')));
 
+  console.log('\nI CINQUE MINUTI NON SI FERMANO: VANNO AVANTI DA SOLI');
+  await p.evaluate(() => { LM.fermaTimerDati(); });
+  await vai(p);
+  await p.evaluate(() => document.getElementById('btn-timer').click());
+  await p.waitForTimeout(500);
+  await p.evaluate(() => document.querySelector('[data-timer-tipo="avvio"]').click());
+  await p.waitForTimeout(700);
+  const cinque = await p.evaluate(() => { const t = LM.timerVivo(); return t && { tipo: t.tipo, durata: t.durata }; });
+  ok('parte da cinque minuti', !!cinque && cinque.tipo === 'avvio' && cinque.durata === 5, JSON.stringify(cinque));
+  await p.evaluate(() => { const s = LM.load(); s.timer.inizio = Date.now() - 5 * 60000; s.timer.fine = Date.now() + 250; LM.save(); });
+  await p.waitForTimeout(1600);
+  const dopo5 = await p.evaluate(() => { const t = LM.timerVivo(); return t && { tipo: t.tipo, durata: t.durata, daAvvio: !!t.daAvvio }; });
+  ok('allo scadere NON si ferma', !!dopo5, dopo5 ? JSON.stringify(dopo5) : 'fermato');
+  ok('riparte da solo con un blocco intero', !!dopo5 && dopo5.tipo === 'blocco' && dopo5.durata >= 20, JSON.stringify(dopo5));
+  ok('e lo schermo dice che sta andando avanti',
+    /vado avanti/i.test(await p.evaluate(() => { const e = document.querySelector('.conc-tipo'); return e ? e.textContent : ''; })),
+    await p.evaluate(() => { const e = document.querySelector('.conc-tipo'); return e ? e.textContent.trim() : '(chiuso)'; }));
+  ok('e il comando per smettere dice «basta così»',
+    /basta/i.test(await p.evaluate(() => { const e = document.getElementById('conc-ferma'); return e ? e.textContent : ''; })),
+    await p.evaluate(() => { const e = document.getElementById('conc-ferma'); return e ? e.textContent.trim() : '(niente)'; }));
+  ok('e i cinque minuti fatti sono già stati contati',
+    await p.evaluate(() => { const m = LM.load().minuti[LM.todayKey()] || {}; return Object.values(m).some((v) => v >= 5); }),
+    JSON.stringify(await p.evaluate(() => LM.load().minuti[LM.todayKey()] || {})));
+
+  console.log('\nQUANTO NE HAI FATTO DAVVERO');
+  await p.evaluate(() => { LM.fermaTimerDati(); });
+  /* una cosa di oggi, non un'abitudine: un'abitudine ha «Salta oggi», che è
+     la stessa cosa detta nel modo giusto per una cosa che torna */
+  await p.evaluate(() => {
+    const s = LM.load();
+    s.azioni.forEach((a) => { if (a.data === LM.todayKey()) a.done = true; });
+    s.abitudini.forEach((h) => { h.fatti[LM.todayKey()] = true; });
+    LM.save();
+    LM.aggiungiAzione('Una cosa lasciata a metà', 'studio', {});
+  });
+  await vai(p);
+  {
+    const r = await p.evaluate(async () => {
+      const xpPrima = LM.load().xp;
+      const b = document.getElementById('btn-mancata');
+      if (!b) return { saltata: true };
+      b.click();
+      await new Promise((r2) => setTimeout(r2, 700));
+      const quanti = [...document.querySelectorAll('[data-quanto]')].map((x) => x.textContent.trim());
+      const perche = [...document.querySelectorAll('[data-perche]')].map((x) => x.textContent.trim());
+      const q = document.querySelector('[data-quanto="meta"]');
+      if (q) q.click();
+      const w = document.querySelector('[data-perche="tempo"]');
+      if (w) w.click();
+      document.getElementById('mancata-ok').click();
+      await new Promise((r2) => setTimeout(r2, 700));
+      const a = LM.load().azioni.find((x) => x.mancata);
+      return { quanti: quanti, perche: perche, xpPrima: xpPrima, xpDopo: LM.load().xp,
+        quanto: a && a.mancata.quanto, quota: a && a.mancata.quota, chiusa: !a.done };
+    });
+    if (r.saltata) ok('c’è il tasto per dirlo', false, 'nessun tasto');
+    else {
+      ok('la prima domanda è QUANTO, con quattro gradini', r.quanti.length === 4, r.quanti.join(' · '));
+      ok('e poi il perché, facoltativo', r.perche.length >= 4, r.perche.join(' · '));
+      ok('quello che hai fatto viene registrato', r.quanto === 'meta' && r.quota === 0.5,
+        r.quanto + ' (' + r.quota + ')');
+      ok('e il pezzo fatto vale i suoi punti', r.xpDopo > r.xpPrima, r.xpPrima + ' → ' + r.xpDopo);
+      ok('ma la cosa non risulta finita', r.chiusa === true);
+    }
+  }
+
   console.log('\nUN TIMER DI IERI NON TI SALTA ADDOSSO STAMATTINA');
   await p.evaluate(() => {
     const s = LM.load();

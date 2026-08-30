@@ -292,13 +292,28 @@
      --------------------------------------------------------------- */
   var VIETATI = { BR: 1, HR: 1, IMG: 1, SVG: 1, PATH: 1, CANVAS: 1, OPTION: 1 };
 
-  function raggiDi(s) {
+  function raggiDi(s, w, h) {
     /* `border-top-left-radius` può essere ellittico («8px 12px»): si prende il
        primo numero, che è quello orizzontale — nell'app non ce ne sono di
        ellittici, e se ne comparisse uno è meglio una curva sola che una forma
-       sbagliata */
+       sbagliata.
+
+       E PUÒ ESSERE UNA PERCENTUALE. Lo stile calcolato di `border-radius: 50%`
+       resta «50%», non diventa pixel: `parseFloat` ne cavava 50, e cinquanta
+       pixel su un elemento da duecentocinquanta non sono un cerchio, sono un
+       rettangolo con gli angoli tondi. L'anello del timer veniva fuori così —
+       un supercerchio con la fetta dell'avanzamento che sporgeva in cima come
+       una linguetta squadrata — e la stessa cosa sarebbe successa a qualunque
+       cerchio scritto in percentuale. La percentuale si risolve sulla misura
+       giusta: la larghezza per gli angoli orizzontali, e siccome qui il raggio
+       è uno scalare si prende il lato più corto, che è quello che comanda. */
     return ['borderTopLeftRadius', 'borderTopRightRadius', 'borderBottomRightRadius', 'borderBottomLeftRadius']
-      .map(function (k) { return parseFloat(s[k]) || 0; });
+      .map(function (k) {
+        var v = String(s[k] || '').trim().split(/\s+/)[0];
+        var n = parseFloat(v) || 0;
+        if (v.indexOf('%') >= 0) n = n / 100 * Math.min(w || 0, h || 0);
+        return n;
+      });
   }
 
   /* ---------------------------------------------------------------
@@ -463,7 +478,7 @@
        1). Costa un ricalcolo, e capita una volta per elemento. */
     var raggi, col, sotto;
     if (e.dataset.formaRaggi === undefined || e.dataset.formaBordo === undefined) {
-      raggi = raggiDi(s);
+      raggi = raggiDi(s, w, h);
       var spBase = parseFloat(s.borderTopWidth) || 0;
       col = (spBase > 0 && !vuoto(s.borderTopColor)) ? s.borderTopColor : '';
       /* LO SFONDO DI SOTTO SI PORTA DIETRO TUTTE LE SUE REGOLE, non solo

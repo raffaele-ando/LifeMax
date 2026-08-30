@@ -1038,6 +1038,16 @@ var LM = (function () {
     s.xpPerGiorno[k] = (s.xpPerGiorno[k] || 0) + punti;
     return punti;
   }
+  /* XP in una misura che non sta nella tabella degli eventi: serve per il
+     pezzo di una cosa lasciata a metà, che vale in proporzione a quanto ne
+     hai fatto e non un valore fisso */
+  function dammiXp(punti, quando) {
+    var s = load();
+    var k = quando || todayKey();
+    s.xp += punti;
+    s.xpPerGiorno[k] = (s.xpPerGiorno[k] || 0) + punti;
+    return punti;
+  }
   /* toglie XP già assegnati (es. quando si toglie la spunta a una task) */
   function togliXp(punti, quando) {
     var s = load();
@@ -1226,6 +1236,25 @@ var LM = (function () {
 
      Non toglie XP e non rompe niente. Il senso di colpa non è un dato utile:
      quello che serve è il fatto, insieme al perché se ti va di scriverlo. */
+  /* QUANTO NE HAI FATTO DAVVERO.
+     «Fatto» e «non fatto» sono due caselle per una cosa che quasi mai sta in
+     una delle due: le cose si lasciano a metà, e chiamare «niente» un'ora di
+     lavoro perché non è finita è falso due volte — falso nei dati, e falso
+     addosso a chi l'ha fatta.
+     Quattro gradini e non un cursore da zero a cento: un cursore chiede di
+     stabilire una cifra su una cosa che una cifra non ce l'ha, e nel momento
+     in cui hai appena mollato è una domanda a cui non si vuole rispondere.
+     Quattro parole si toccano senza pensarci.
+     Gli XP vanno in proporzione, con il minimo di uno per chi ha fatto
+     qualcosa: premiare il pezzo fatto è il punto (il progresso, per piccolo
+     che sia, è il motore più forte che c'è), e dare zero a chi ha lavorato
+     mezz'ora insegna che vale la pena solo finire. */
+  var QUANTO_FATTO = [
+    { id: 'niente',  eti: 'Niente',      quota: 0 },
+    { id: 'pezzo',   eti: 'Un pezzo',    quota: 0.25 },
+    { id: 'meta',    eti: 'Circa metà',  quota: 0.5 },
+    { id: 'quasi',   eti: 'Quasi tutta', quota: 0.8 }
+  ];
   var PERCHE_MANCATA = [
     { id: 'tempo',    eti: 'Non c\'era tempo' },
     { id: 'energia',  eti: 'Non avevo energie' },
@@ -1233,22 +1262,37 @@ var LM = (function () {
     { id: 'vaga',     eti: 'Non sapevo da dove partire' },
     { id: 'altro',    eti: 'Altro' }
   ];
-  function segnaMancata(id, perche, nota) {
+  function segnaMancata(id, perche, nota, quanto) {
     var s = load();
     var a = s.azioni.find(function (x) { return x.id === id; });
-    if (!a) return false;
+    if (!a) return 0;
+    var G = QUANTO_FATTO.find(function (x) { return x.id === quanto; }) || QUANTO_FATTO[0];
     a.done = false;
     a.doneAt = null;
-    a.mancata = { ts: Date.now(), perche: perche || 'altro', nota: nota || '' };
+    a.mancata = { ts: Date.now(), perche: perche || 'altro', nota: nota || '', quanto: G.id, quota: G.quota };
+    var punti = 0;
+    if (G.quota > 0) {
+      /* gli XP del pezzo fatto, arrotondati per eccesso e almeno uno */
+      var pieni = a.mit ? XP_EVENTI.mit : XP_EVENTI.azione;
+      punti = Math.max(1, Math.round(pieni * G.quota));
+      dammiXp(punti, a.data);
+    }
     var q = (PERCHE_MANCATA.find(function (x) { return x.id === a.mancata.perche; }) || {}).eti || '';
-    registra('azione', 'Non ci sono riuscito: «' + a.testo + '»' + (q ? ' — ' + q.toLowerCase() : ''), false);
+    registra('azione',
+      (G.quota > 0 ? G.eti.toLowerCase() + ' di «' + a.testo + '»' : 'Non ci sono riuscito: «' + a.testo + '»') +
+      (q ? ' — ' + q.toLowerCase() : '') + (punti ? ' (+' + punti + ' XP)' : ''), false);
     save();
-    return true;
+    return punti;
   }
   function togliMancata(id) {
     var s = load();
     var a = s.azioni.find(function (x) { return x.id === id; });
     if (!a || !a.mancata) return false;
+    /* gli XP del pezzo fatto tornano indietro con lui */
+    if (a.mancata.quota > 0) {
+      var pieni = a.mit ? XP_EVENTI.mit : XP_EVENTI.azione;
+      togliXp(Math.max(1, Math.round(pieni * a.mancata.quota)), a.data);
+    }
     delete a.mancata;
     registra('azione', 'Rimessa fra le cose da fare: «' + a.testo + '»', false);
     save();
@@ -3039,7 +3083,8 @@ var LM = (function () {
     weekKey: weekKey, weekdayShort: weekdayShort, fmtShort: fmtShort, daysBetween: daysBetween,
     coloreArea: coloreArea, livelloDaXp: livelloDaXp,
     aggiungiAzione: aggiungiAzione, completaAzione: completaAzione, rimandaAzione: rimandaAzione,
-    segnaMancata: segnaMancata, togliMancata: togliMancata, mancate: mancate, PERCHE_MANCATA: PERCHE_MANCATA,
+    segnaMancata: segnaMancata, togliMancata: togliMancata, mancate: mancate,
+    PERCHE_MANCATA: PERCHE_MANCATA, QUANTO_FATTO: QUANTO_FATTO,
     cattura: cattura, triageInbox: triageInbox, modificaInbox: modificaInbox, cambiaAreaAzione: cambiaAreaAzione,
     modificaAzione: modificaAzione, rimuoviAzione: rimuoviAzione, serveMit: serveMit,
     spostaAzione: spostaAzione, rimandaNonFatte: rimandaNonFatte, azioneInBacklog: azioneInBacklog,

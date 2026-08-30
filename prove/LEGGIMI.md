@@ -406,6 +406,15 @@ genera le chiavi, in un browser vero).
   il timer, che ci si torni dentro se il telefono si è chiuso mentre eri lì,
   e che un timer finito da quaranta ore non salti addosso a chi apre l'app la
   mattina dopo.
+  Controlla anche i cinque minuti che NON si fermano: «solo per partire»
+  esiste per superare l'avvio, e quando ci riesce fermarsi allo scadere è la
+  cosa peggiore che possa succedere — per continuare bisognerebbe tirare
+  fuori il telefono, e tirare fuori il telefono mentre stai finalmente
+  lavorando è il modo più affidabile di smettere. Quindi registra i cinque
+  minuti fatti e riparte da solo con un blocco intero, dicendolo.
+  E «quanto ne hai fatto davvero»: quattro gradini invece di due caselle, con
+  gli XP in proporzione al pezzo fatto — dare zero a chi ha lavorato mezz'ora
+  insegna che vale la pena solo finire.
 - **disegno.js** — QUANTO COSTA STARE FERMI. Nasce da «su android ci sono lag
   e bug continui rispetto all'iPad» e dalle foto con rettangoli grigi o neri a
   spigolo vivo in mezzo alle schermate e ai pannelli: erano la stessa cosa. Il

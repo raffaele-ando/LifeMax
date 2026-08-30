@@ -290,8 +290,17 @@ small { color: var(--inchiostro-2); }
    Senza il filtro i tre aloni tornano a essere strati indipendenti: le loro
    animazioni sono di sola `transform` e girano sulla scheda grafica, dove il
    thread principale non le vede nemmeno. Il disegno resta identico. */
+/* GRANDE QUANTO LO SCHERMO, NON IL DOPPIO.
+   Qui c'era `inset: -20%`, cioe' un riquadro di 140vw x 140vh: quasi il
+   doppio dell'area della finestra, fisso, sempre presente, e composito da se'
+   per via dell'opacita'. Su un telefono a 390x844 con densita' 3 sono 23 MB
+   di strato permanente contro 12. I tre aloni erano gia' abbondantemente
+   fuori dai bordi per conto loro — sono sfumature che svaniscono nel nulla —
+   quindi quel margine in piu' non teneva dentro niente: le loro posizioni
+   sono state riportate al riquadro nuovo una per una, e l'immagine e'
+   identica pixel per pixel. */
 .aurora {
-  position: fixed; inset: -20%;
+  position: fixed; inset: 0;
   z-index: 0; pointer-events: none;
   opacity: var(--aurora-opacita);
 }
@@ -299,17 +308,17 @@ small { color: var(--inchiostro-2); }
   position: absolute; border-radius: var(--r-tondo); display: block;
 }
 .aurora i:nth-child(1) {
-  width: 44vw; height: 44vw; left: -6vw; top: -10vh;
+  width: 44vw; height: 44vw; left: -26vw; top: -30vh;
   background: radial-gradient(circle at 40% 40%, color-mix(in srgb, var(--brand-a) 26%, transparent), transparent 68%);
   animation: deriva1 46s ease-in-out infinite alternate;
 }
 .aurora i:nth-child(2) {
-  width: 40vw; height: 40vw; right: -8vw; top: 4vh;
+  width: 40vw; height: 40vw; right: -28vw; top: -16vh;
   background: radial-gradient(circle at 60% 40%, color-mix(in srgb, var(--brand-c) 20%, transparent), transparent 68%);
   animation: deriva2 58s ease-in-out infinite alternate;
 }
 .aurora i:nth-child(3) {
-  width: 36vw; height: 36vw; left: 28vw; bottom: -18vh;
+  width: 36vw; height: 36vw; left: 8vw; bottom: -38vh;
   background: radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--brand-b) 16%, transparent), transparent 70%);
   animation: deriva1 64s ease-in-out infinite alternate-reverse;
 }
@@ -1398,10 +1407,21 @@ body.in-concentrazione { overflow: hidden; }
 .conc-anello {
   --p: 0;
   width: min(64vw, 260px); aspect-ratio: 1;
-  border-radius: var(--r-tondo);
+  /* 50% E NON `--r-tondo`. `--r-tondo` vale 99px: abbastanza per qualunque
+     pastiglia, e su un cerchio da 250 pixel serve almeno 125. Sotto quella
+     misura non è più un cerchio ma un rettangolo con gli angoli molto tondi,
+     e forma.js — che guarda il raggio, non le intenzioni — gli dava la curva
+     continua al raggio più grande che ci sta: veniva fuori un supercerchio,
+     con la fetta di avanzamento del gradiente conico che sporgeva in cima
+     come una linguetta squadrata. `50%` è un cerchio a qualunque misura, e
+     nessuno deve ricordarsi di alzare un numero quando un elemento cresce. */
+  border-radius: 50%;
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+  /* `from -90deg`: un gradiente conico comincia a ore 3, e un tempo che parte
+     dal fianco non si legge come un orologio. Ruotare il contenitore avrebbe
+     ruotato anche le cifre dentro. */
   background:
-    conic-gradient(#6f5bf0 calc(var(--p) * 360deg), rgba(255, 255, 255, .07) 0),
+    conic-gradient(from -90deg, #6f5bf0 calc(var(--p) * 360deg), rgba(255, 255, 255, .07) 0),
     #07070b;
   -webkit-mask: radial-gradient(circle, transparent 0 61%, #000 61.6%);
   mask: radial-gradient(circle, transparent 0 61%, #000 61.6%);
@@ -1412,7 +1432,7 @@ body.in-concentrazione { overflow: hidden; }
 .conc-anello { -webkit-mask: none; mask: none; }
 .conc-anello::before {
   content: ''; position: absolute; inset: 13px;
-  border-radius: var(--r-tondo); background: #07070b;
+  border-radius: 50%; background: #07070b;
 }
 .conc-cifre {
   position: relative; z-index: 1;
@@ -1420,7 +1440,8 @@ body.in-concentrazione { overflow: hidden; }
   font-variant-numeric: tabular-nums;
 }
 .conc-eti { position: relative; z-index: 1; font-size: 12.5px; color: #7f7f92; font-weight: 600; }
-.conc-anello.in-pausa { background: conic-gradient(#0ca30c calc(var(--p) * 360deg), rgba(255, 255, 255, .07) 0), #07070b; }
+.conc-anello.in-pausa { background: conic-gradient(from -90deg, #0ca30c calc(var(--p) * 360deg), rgba(255, 255, 255, .07) 0), #07070b; }
+
 .conc-tasti { display: flex; flex-direction: column; gap: 10px; width: 100%; align-items: stretch; }
 .conc-tasti .btn-grande { width: 100%; }
 .conc-tasti .btn-ghost { color: #8a8a9a; }

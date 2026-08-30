@@ -123,7 +123,7 @@ const CONTROLLA = `(function (conFuoco) {
   var out = { ritagliati: 0, tondi: [], spariti: [], doppi: [], curveDiverse: [],
     filoVecchio: [], raggiRistretti: [], corsie: [], mangiati: [], strozzati: [],
     pseudoRitagliati: [], fuoriPagina: [], ombreBordo: [], tagliate: [],
-    mascheroni: [], spigoli: [], formeDiscordi: [], esentati: 0 };
+    mascheroni: [], spigoli: [], formeDiscordi: [], cerchiRitagliati: [], esentati: 0 };
 
   var guarda = function (e, colFuoco) {
     var s = getComputedStyle(e), r = e.getBoundingClientRect();
@@ -131,8 +131,17 @@ const CONTROLLA = `(function (conFuoco) {
     var w = e.offsetWidth, h = e.offsetHeight;
     var clip = (s.clipPath && s.clipPath !== 'none') ? s.clipPath : '';
     var suoRitaglio = /^path\\(/.test(clip) && clip.indexOf('-200') >= 0;
+    /* la percentuale va risolta: lo stile calcolato di border-radius: 50%
+       resta «50%», e leggerlo come 50 pixel su un elemento da 250 dice che
+       non è un cerchio quando invece lo è. È il difetto dell'anello del
+       timer, e sarebbe successo a qualunque cerchio scritto in percentuale. */
     var raggi = ['borderTopLeftRadius','borderTopRightRadius','borderBottomRightRadius','borderBottomLeftRadius']
-      .map(function (k) { return parseFloat(s[k]) || 0; });
+      .map(function (k) {
+        var v = String(s[k] || '').trim().split(/\s+/)[0];
+        var n2 = parseFloat(v) || 0;
+        if (v.indexOf('%') >= 0) n2 = n2 / 100 * Math.min(w, h);
+        return n2;
+      });
     var rmax = Math.max.apply(null, raggi);
     var bw = parseFloat(s.borderTopWidth) || 0;
     var sfondi = corsie(s.backgroundImage === 'none' ? '' : s.backgroundImage);
@@ -284,6 +293,14 @@ const CONTROLLA = `(function (conFuoco) {
       out.tondi.push(nome(e) + ' r=' + rmax.toFixed(1) + ' ' + w + 'x' + h);
     /* il verso opposto: chi è troppo alto NON deve portarsi dietro la
        maschera, e deve tenersi il raggio (se no resta uno spigolo vivo) */
+    /* 1-ter. UN CERCHIO CHE HA PRESO IL RITAGLIO. Un elemento quadrato che
+       chiede mezzo lato di raggio e un cerchio, e un cerchio non e una forma
+       della famiglia: il ritaglio glielo deforma. Succedeva all'anello del
+       timer perché il raggio era scritto in percentuale e veniva letto come
+       pixel — 50 invece di 125 — e la fetta dell'avanzamento sporgeva in cima
+       come una linguetta squadrata. */
+    if (suoRitaglio && eCapsula && Math.abs(w - h) <= 2 && fratelliQuadri)
+      out.cerchiRitagliati.push(nome(e) + ' ' + w + 'x' + h + ' r=' + rmax.toFixed(1) + ' (dichiarato ' + s.borderTopLeftRadius + ')');
     if (troppoAlto && rmax >= 1) out.esentati++;
     if (troppoAlto && suoRitaglio)
       out.mascheroni.push(nome(e) + ' ' + w + 'x' + h + ' su uno schermo di ' + innerWidth + 'x' + innerHeight);
@@ -445,7 +462,7 @@ catch (e) {
 
   const CHIAVI = ['tondi', 'spariti', 'doppi', 'curveDiverse', 'filoVecchio', 'raggiRistretti',
     'corsie', 'mangiati', 'strozzati', 'pseudoRitagliati', 'fuoriPagina', 'ombreBordo', 'tagliate',
-    'mascheroni', 'spigoli', 'formeDiscordi'];
+    'mascheroni', 'spigoli', 'formeDiscordi', 'cerchiRitagliati'];
   const tot = {}; CHIAVI.forEach(k => { tot[k] = new Map(); });
   let ritagliati = 0, esentati = 0, viste = 0;
   const rotte = new Map();
@@ -567,6 +584,7 @@ catch (e) {
   };
   mostra('nessun angolo tondo è rimasto senza la curva', tot.tondi);
   mostra('nessun cerchio accanto a un fratello che cerchio non è', tot.formeDiscordi);
+  mostra('nessun cerchio si è preso il ritaglio', tot.cerchiRitagliati);
   ok('e l’esenzione è stata davvero esercitata', esentati > 0,
     esentati + ' elementi più alti di mezzo schermo, tenuti fuori dalla maschera'
     + (esentati ? '' : ' — senza nessuno, i due controlli qui sotto sono muti'));

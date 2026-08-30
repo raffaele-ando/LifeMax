@@ -2371,8 +2371,8 @@
      conto alla rovescia salvato invecchia appena lo scrivi.
      ============================================================ */
   var TIPI_TIMER = {
-    avvio:    { nome: 'Solo per partire', min: 5,  eti: '5′',  ico: 'play',
-                dice: 'Cinque minuti. Poi decidi tu se continuare.' },
+    avvio:    { nome: 'Solo per partire', min: 5,  eti: '5′',  ico: 'play', poi: 25,
+                dice: 'Cinque minuti, poi va avanti da solo di 25.' },
     blocco:   { nome: 'Un blocco',        min: 25, eti: '25′', ico: 'clock',
                 dice: 'Un pezzo di tempo con una fine.' },
     pomodoro: { nome: 'Pomodoro',         min: 25, pausa: 5, ico: 'refresh',
@@ -2485,6 +2485,29 @@
       render();
       return;
     }
+    /* I CINQUE MINUTI CHE NON SI FERMANO.
+       «Solo per partire» esiste per superare l'avvio, e quando ci riesce il
+       problema è finito: a quel punto fermarsi allo scadere è la cosa
+       peggiore che possa succedere, perché per continuare bisogna tirare
+       fuori il telefono — e tirare fuori il telefono, mentre stai finalmente
+       lavorando, è il modo più affidabile di smettere. Quindi non si ferma:
+       registra i cinque minuti fatti e riparte da solo con un blocco intero,
+       dicendolo. Chi voleva davvero smettere ha «Basta così» sotto le cifre,
+       e chi non guarda continua a lavorare. */
+    if (t.tipo === 'avvio' && TIPI_TIMER.avvio.poi) {
+      var qA = LM.load().azioni.find(function (x) { return x.id === t.azioneId; });
+      var fattiA = minutiFatti(t);
+      var areaA = t.areaId || (qA ? qA.areaId : null);
+      if (fattiA >= 1 && areaA) LM.registraMinuti(areaA, fattiA);
+      var oraA = Date.now(), pezzo = TIPI_TIMER.avvio.poi;
+      LM.aggiornaTimerDati({ tipo: 'blocco', inizio: oraA, durata: pezzo,
+        fine: oraA + pezzo * 60000, ciclo: (t.ciclo || 1) + 1, daAvvio: true });
+      festeggia('leggero');
+      toast('Cinque minuti fatti. Vado avanti di ' + pezzo + ' — fermami quando vuoi.', 0, 'play');
+      avvisoFuori('Sei partito', 'Vado avanti di ' + pezzo + ' minuti. Fermami quando vuoi.');
+      render();
+      return;
+    }
     var quale = LM.load().azioni.find(function (x) { return x.id === t.azioneId; });
     fermaTimer(true);
     festeggia('pieno');
@@ -2544,31 +2567,45 @@
      spezzare, e prima o poi sarà l'app a poterlo dire.
      ============================================================ */
   function chiediMancata(id, testo) {
+    var quanti = LM.QUANTO_FATTO.map(function (x) {
+      return '<button class="q-chip" data-quanto="' + x.id + '">' + x.eti + '</button>';
+    }).join('');
     var chips = LM.PERCHE_MANCATA.map(function (x) {
       return '<button class="q-chip" data-perche="' + x.id + '">' + x.eti + '</button>';
     }).join('');
-    apriSheet('Non ci sono riuscito', '<div class="sc">' +
+    apriSheet('Non del tutto', '<div class="sc">' +
       '<p class="sc-intro">' + esc(testo || '') + '</p>' +
+      /* LA PRIMA DOMANDA È QUANTO, NON PERCHÉ. Chi arriva qui ha appena
+         mollato qualcosa: la prima cosa che l'app gli dice deve riconoscere
+         il pezzo che ha fatto, non chiedergli conto di quello che manca. */
+      etichetta('Quanto ne hai fatto', 'durata') +
+      '<div class="q-chips" id="mancata-quanto">' + quanti + '</div>' +
       etichetta('Cos’è successo', 'aiuto') +
       '<div class="q-chips" id="mancata-perche">' + chips + '</div>' +
       '<div class="sc-gruppo"><label class="sc-campo"><span>se vuoi, due parole</span>' +
       '<input type="text" id="mancata-nota" placeholder="facoltativo…" maxlength="140"></label></div>' +
       '<div class="imp-azioni"><button class="btn btn-primario btn-grande" id="mancata-ok">Segna e vai avanti</button></div>' +
-      '<p class="lista-nota">Resta nel registro e nella giornata, non toglie punti e non rompe nessuna serie. Serve a rispondere alla domanda «cosa non funziona per me», che senza queste righe non ha dati.</p>' +
+      '<p class="lista-nota">Il pezzo che hai fatto vale i suoi punti. Resta nel registro e nella giornata, non rompe nessuna serie, e risponde alla domanda «cosa non funziona per me» — che senza queste righe non ha dati.</p>' +
       '</div>', function (root) {
-      var scelto = '';
-      root.querySelectorAll('[data-perche]').forEach(function (b) {
-        b.addEventListener('click', function () {
-          scelto = b.getAttribute('data-perche');
-          root.querySelectorAll('[data-perche]').forEach(function (o) { o.classList.toggle('on', o === b); });
+      var scelto = '', quanto = 'niente';
+      function segmento(attributo, quale) {
+        var sel = '[' + attributo + ']';
+        root.querySelectorAll(sel).forEach(function (b) {
+          b.addEventListener('click', function () {
+            quale(b.getAttribute(attributo));
+            root.querySelectorAll(sel).forEach(function (o) { o.classList.toggle('on', o === b); });
+          });
         });
-      });
+      }
+      segmento('data-quanto', function (v) { quanto = v; });
+      segmento('data-perche', function (v) { scelto = v; });
       root.querySelector('#mancata-ok').addEventListener('click', function () {
         var nota = (root.querySelector('#mancata-nota').value || '').trim();
-        LM.segnaMancata(id, scelto || 'altro', nota);
+        var xp = LM.segnaMancata(id, scelto || 'altro', nota, quanto);
         chiudiSheet();
         if (fuocoScelto === id) fuocoScelto = null;
-        toast('Segnata. Non toglie niente.', 0, 'annulla');
+        if (xp > 0) { festeggia('leggero'); toast('Segnato quello che hai fatto.', xp, 'check'); }
+        else toast('Segnata. Non toglie niente.', 0, 'annulla');
         render();
       });
     });
@@ -2663,7 +2700,8 @@
     $conc.innerHTML =
       '<button class="conc-esci" id="conc-esci" aria-label="Torna all’app">' + ICO('x', 18) + '</button>' +
       '<div class="conc-dentro">' +
-      '<div class="conc-tipo">' + ICO(T.ico, 13) + ' ' + (t.inPausa ? 'Pausa' : T.nome) +
+      '<div class="conc-tipo">' + ICO(T.ico, 13) + ' ' +
+      (t.inPausa ? 'Pausa' : (t.daAvvio ? 'Sei partito, vado avanti' : T.nome)) +
       (t.tipo === 'pomodoro' && !t.inPausa ? ' · blocco ' + (t.ciclo || 1) : '') + '</div>' +
       '<h2 class="conc-cosa">' + esc(titolo) + '</h2>' +
       '<div class="conc-anello' + (t.inPausa ? ' in-pausa' : '') + '" data-timer-anello style="--p:0">' +
@@ -2672,7 +2710,8 @@
       '</div>' +
       '<div class="conc-tasti">' +
       '<button class="btn btn-ok btn-grande" id="conc-fatto">' + ICO('check', 18) + ' Fatto</button>' +
-      '<button class="btn btn-mini btn-ghost" id="conc-ferma">' + ICO('pause', 15) + ' Ferma e registra i minuti</button>' +
+      '<button class="btn btn-mini btn-ghost" id="conc-ferma">' + ICO('pause', 15) + ' ' +
+      (t.daAvvio ? 'Basta così' : 'Ferma e registra i minuti') + '</button>' +
       '</div></div>';
     $conc.querySelector('#conc-esci').addEventListener('click', chiudiConcentrazione);
     $conc.querySelector('#conc-ferma').addEventListener('click', function () {
@@ -3114,7 +3153,7 @@
          e non va invitato. Per un'abitudine c'è già «Salta oggi», che è la
          stessa cosa detta nel modo giusto per una cosa che torna. */
       (prossima.tipo === 'abitudine' ? ''
-        : '<button class="btn btn-mini btn-ghost btn-mancata" id="btn-mancata">Non ci sono riuscito</button>') +
+        : '<button class="btn btn-mini btn-ghost btn-mancata" id="btn-mancata">Non del tutto…</button>') +
       '</div>' +
       /* Quante ne restano lo dice già il contatore in cima e il tasto delle
          altre. Qui resta solo la cosa che nessuno dei due dice: che dopo
