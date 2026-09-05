@@ -653,6 +653,26 @@ genera le chiavi, in un browser vero).
   nome di ogni file lì dentro. Non serve Chromium, e in coda si dà in pasto
   tutte e due le trappole scritte a mano per far vedere che le riconosce.
 
+## E uno che non è una prova
+
+- **audit.js** — non dice sì o no, **stampa un rapporto**. Gira tutte le scene
+  in chiaro e in scuro, su telefono e su desktop, e conta quanti valori
+  diversi usa il sistema: corpi e pesi del testo, raggi, ombre, colori,
+  superfici. Poi cerca le quattro cose che le prove non guardano — più di un
+  comando principale visibile insieme, righe più lunghe di 78 caratteri,
+  ultime righe con una parola sola, testo che esce dal suo contenitore. Le
+  voci vengono dal playbook «polish» di anti-ui-slop; spaziature, icone,
+  contrasto, stati e bordi non si rifanno perché li tengono già le prove qui
+  sopra. Il Design lab sta fuori dai conti: sono dieci interfacce diverse per
+  scelta, e contarle vorrebbe dire chiamare «incoerenza» proprio la cosa che
+  quella schermata esiste per mostrare — con dentro faceva il 70% del rumore.
+
+  Una cosa imparata scrivendolo, che vale più di metà del suo codice: il primo
+  giro diceva «41 raggi diversi, sistema incoerente». Falso. Tutte e 152 le
+  regole del foglio usano un token, e la dispersione la fa `forma.js`, che
+  riscrive il raggio al 99% perché l'arco resti dentro al ritaglio. **Un
+  numero grosso non è una diagnosi.**
+
 ## Come si lanciano
 
 **Prima si costruisce.** Le prove aprono `index.html`, che è generato: se il
@@ -663,6 +683,7 @@ pacco è vecchio, provano il codice di ieri e dicono che va tutto bene.
     npm install playwright
     node prove/pacco.js         # solo Node: il pacco è quello dei sorgenti di adesso?
     node prove/intestazioni.js  # solo Node: la cache di _headers non fa danni
+    node prove/audit.js         # non è una prova: stampa un rapporto da leggere
     node prove/clic.js
     node prove/modalita.js
     node prove/segni.js      # solo Node, niente browser
