@@ -65,11 +65,22 @@ const RILEVA = `(function () {
       out.testo.push(px + '/' + s.fontWeight);
       out.colori.push(s.color);
       /* righe troppo lunghe: si contano i caratteri per riga, non i pixel */
+      /* QUANTI CARATTERI STANNO SU UNA RIGA. Dividere il testo per l'altezza
+         del blocco è una stima, e sbagliava: sul diario diceva 84 caratteri
+         su un blocco largo 390px, dove ce ne stanno sessantasette. Le righe
+         vere le dà un Range — un rettangolo per riga — e da lì il conto è
+         una divisione onesta invece che una proporzione sperata. */
       var t = (e.textContent || '').trim();
-      var r = e.getBoundingClientRect();
-      var righe = Math.max(1, Math.round(r.height / (parseFloat(s.lineHeight) || px * 1.4)));
-      if (righe > 1 && t.length / righe > 78) {
-        out.righeLunghe.push(nome(e) + ' ~' + Math.round(t.length / righe) + ' caratteri per riga');
+      if (e.childNodes.length === 1 && e.firstChild.nodeType === 3 && t.length > 40) {
+        try {
+          var rgL = document.createRange();
+          rgL.selectNodeContents(e);
+          var rL = [].slice.call(rgL.getClientRects()).filter(function (x) { return x.width > 0; });
+          if (rL.length && t.length / rL.length > 78) {
+            out.righeLunghe.push(nome(e) + ' ' + Math.round(t.length / rL.length) + ' caratteri su ' +
+              rL.length + ' righe, larghe ' + Math.round(rL[0].width) + 'px');
+          }
+        } catch (er) {}
       }
       /* orfane: l'ultima riga con una parola sola e corta */
       /* ORFANE, MISURATE. Contare le parole non basta: quasi ogni testo di

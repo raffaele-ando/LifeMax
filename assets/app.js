@@ -4586,7 +4586,7 @@
       rigaChiedi('notte', 'Il sonno di stanotte', 'La mattina, se sono passate almeno tre ore dall\u2019ultima volta.', q.notte) +
       rigaChiedi('giorno', 'Pasti e cose fatte', 'A fine giornata, una volta sola.', q.giorno) +
       '<p class="lista-nota">Spente, le due domande non arrivano pi\u00f9 da sole. Il posto dove rispondere resta: \u00e8 il <b>Registro di oggi</b>, nei Rituali.</p></div>' +
-      '<div class="riga-flex mt"><button class="btn btn-primario btn-grande" id="ritmo-salva">' + ICO('save', 15) + ' Salva</button></div>',
+      '<div class="riga-flex mt"><button class="btn btn-tonale btn-grande" id="ritmo-salva">' + ICO('save', 15) + ' Salva</button></div>',
       function (root) {
         root.querySelectorAll('[data-chint]').forEach(function (b) {
           b.addEventListener('click', function () {
@@ -5472,7 +5472,7 @@
          campi che dicevano lo stesso. Resta il permesso di non saperlo, che
          nessun campo può dare. */
       '<p class="rituale-intro">Se non lo sai al minuto va bene comunque.</p>' +
-      '<button class="btn btn-primario btn-grande btn-due-righe" id="notte-solito">' + ICO('bed', 15) +
+      '<button class="btn btn-tonale btn-grande btn-due-righe" id="notte-solito">' + ICO('bed', 15) +
       ' Come sempre <small>a letto ' + esc(r.sonnoRoutine) + ', sveglio ' + esc(r.svegliaRoutine) + '</small></button>' +
       '<div class="lista mt-s">' +
       '<div class="lista-riga sc-riga"><span class="sc-eti">' + ICO('bed', 15) + ' A letto</span>' +
@@ -5485,7 +5485,7 @@
       '<button class="q-chip' + (prec === 'preciso' ? ' on' : '') + '" data-prec="preciso">precisi</button>' +
       '</span></div>' +
       '</div>' +
-      '<div class="riga-flex mt"><button class="btn btn-primario" id="notte-salva">' + ICO('save', 15) + ' Salva</button>' +
+      '<div class="riga-flex mt"><button class="btn btn-tonale" id="notte-salva">' + ICO('save', 15) + ' Salva</button>' +
       '<button class="btn btn-ghost" id="notte-boh">Non me lo ricordo</button></div>' +
       '<p class="lista-nota">Gli orari «più o meno» restano segnati come tali e non fanno da misura. Se chiudi senza rispondere la domanda non torna oggi: resta nei <b>Rituali</b>.</p>' +
       '</div>';
@@ -5637,7 +5637,7 @@
             '</div>';
         }).join('') + '</div>'
         : '<p class="lista-nota">Per esempio: «camminata di mezz’ora», «chiamato mio fratello». Vale come una cosa fatta oggi, con i suoi XP: che l’abbia scritta prima o dopo non cambia niente.</p>') +
-      '<div class="riga-flex mt"><button class="btn btn-primario" id="rec-fine">' + ICO('check', 15) + ' Ho finito</button></div>' +
+      '<div class="riga-flex mt"><button class="btn btn-tonale" id="rec-fine">' + ICO('check', 15) + ' Ho finito</button></div>' +
       '</div>';
   }
 
@@ -6318,7 +6318,7 @@
       scala('energia', 'batteria', 'Quanta energia hai?') +
       scala('focus', 'mirino', 'Quanto riesci a concentrarti?') +
       scala('umore', 'smile', 'Come ti senti?') +
-      '<div class="riga-flex mt"><button class="btn btn-primario btn-grande" id="btn-salva-checkin" disabled>' + ICO('save', 15) + ' Registra <small>+' + LM.XP_EVENTI.checkin + ' XP</small></button></div>' +
+      '<div class="riga-flex mt"><button class="btn btn-tonale btn-grande" id="btn-salva-checkin" disabled>' + ICO('save', 15) + ' Registra <small>+' + LM.XP_EVENTI.checkin + ' XP</small></button></div>' +
       '</div><div class="card mt"><h2>' + ICO('trendUp', 15) + ' Andamento degli ultimi 14 giorni</h2><div id="mini-trend"></div></div>';
 
     function scala(campo, icona, nome) {
