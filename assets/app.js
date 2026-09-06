@@ -3116,6 +3116,11 @@
       apriDettaglioAbitudine: apriDettaglioAbitudine,
       feedbackSpunta: feedbackSpunta,
       wireRigaAggiunta: wireRigaAggiunta,
+      PRINCIPI: PRINCIPI,
+      /* Scoperte */
+      disegnaScoperte: disegnaScoperte,
+      get sezScoperte() { return sezScoperte; },
+      set sezScoperte(v) { sezScoperte = v; },
       toast: toast,
       aggiornaNav: aggiornaNav,
       render: render,

@@ -13,7 +13,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { usaLM } from '../usaLM.js';
-import { Segno } from '../pezzi.jsx';
+import { Segno, Testa } from '../pezzi.jsx';
 
 const A = () => window.LM_APP;
 const html = (s) => ({ dangerouslySetInnerHTML: { __html: s } });
@@ -478,9 +478,7 @@ export default function Attivita({ fila }) {
         <Linguetta id="abitudini" ico="refresh" eti="Abitudini" n={nAb}
           attiva={quale === 'abitudini'} onScegli={setTab} />
       </>, fila)}
-      {/* `topbar` con questi argomenti restituisce un <h1> e basta: niente
-          contenitore attorno, se no l'albero ha un livello in più */}
-      <h1 className="solo-lettori">Attività</h1>
+      <Testa titolo="Attività" giaNellaNav />
       <div id="att-corpo" ref={corpo}>
         {quale === 'sistemare' && nInbox ? <Smista st={s} /> : null}
         {quale === 'dafare' ? <DaFare st={s} /> : null}

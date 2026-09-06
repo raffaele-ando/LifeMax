@@ -182,6 +182,34 @@ export function Niente({ titolo, dice, piu, children }) {
 }
 
 const TONO = { normale: '', attenzione: 'nota-attenzione', pericolo: 'nota-pericolo' };
+/* ------------------------------------------------------------------ LA TESTA
+   La riga in cima a una schermata, identica a `topbar()` di app.js.
+
+   Tre forme, e la differenza conta perché cambia l'albero:
+     · se il nome sta già nella navigazione e non c'è altro, esce SOLO un
+       <h1> per i lettori di schermo — niente contenitore;
+     · se c'è un comando a destra ma il nome sta nella navigazione, la riga è
+       una barra di strumenti, non una testa: `topbar-nuda`, respira meno;
+     · se no titolo e sottotitolo dentro al loro <div>.
+   Avvolgerla in un elemento in più è l'errore che prove/gemelle.js ha
+   trovato per primo, due volte di fila. */
+export function Testa({ titolo, sottotitolo, destra, piu, giaNellaNav }) {
+  const h1 = <h1 className={giaNellaNav ? 'solo-lettori' : undefined}>{titolo}</h1>;
+  if (giaNellaNav && !destra && !sottotitolo) return h1;
+  return (
+    <div className={cl('topbar', giaNellaNav && 'topbar-nuda', piu)}>
+      {giaNellaNav ? h1 : (
+        <div>
+          {h1}
+          {sottotitolo ? <div className="sottotitolo">{sottotitolo}</div> : null}
+        </div>
+      )}
+      <div className="spazio" />
+      {destra}
+    </div>
+  );
+}
+
 export function Nota({ piu, tono = 'normale', children }) {
   return <p className={cl('lista-nota', TONO[tono], piu)}>{children}</p>;
 }

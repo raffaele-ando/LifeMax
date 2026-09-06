@@ -114,8 +114,22 @@ const IMPRONTA = `(function (radice) {
   /* UNA SCHERMATA NON È UNO SCHERMO SOLO. Attività ha tre linguette, e una
      sola confrontata vorrebbe dire due terzi non guardati. Si toccano tutte,
      di qua e di là, e si confronta ognuna. */
-  const stati = async () => p.evaluate(() =>
-    [...document.querySelectorAll('#att-tabs [data-att]')].map((b) => b.getAttribute('data-att')));
+  /* Le sotto-sezioni di una schermata: qualunque fila di segmenti dentro a
+     #vista che NON sia quella delle porte (che è del router, non della
+     schermata). Si prende il nome dell'attributo `data-` e il suo valore, e
+     ci si torna sopra di qua e di là. */
+  const stati = async () => p.evaluate(() => {
+    const fuori = [];
+    document.querySelectorAll('#vista .segmenti:not(.porta-nav) button').forEach((b) => {
+      for (const a of b.attributes) {
+        if (a.name.indexOf('data-') === 0 && a.name !== 'data-forma') {
+          fuori.push(a.name + '=' + a.value);
+          return;
+        }
+      }
+    });
+    return [...new Set(fuori)];
+  });
 
   const disegna = async (via, react, tab) => {
     await p.evaluate((r) => { const s = LM.load(); s.profilo.react = r; LM.save(); }, react);
@@ -123,7 +137,8 @@ const IMPRONTA = `(function (radice) {
     await p.reload(); await p.waitForTimeout(react ? 1400 : 900);
     if (tab) {
       await p.evaluate((t) => {
-        const b = document.querySelector('#att-tabs [data-att="' + t + '"]');
+        const i = t.indexOf('=');
+        const b = document.querySelector('#vista [' + t.slice(0, i) + '="' + t.slice(i + 1) + '"]');
         if (b) b.click();
       }, tab);
       await p.waitForTimeout(700);
@@ -139,7 +154,7 @@ const IMPRONTA = `(function (radice) {
     const giri = tabs.length ? tabs : [null];
 
     for (const tab of giri) {
-    console.log('\nSCHERMATA «' + via + (tab ? ' · ' + tab : '') + '»');
+    console.log('\nSCHERMATA «' + via + (tab ? ' · ' + tab.split('=')[1] : '') + '»');
     const vecchia = await disegna(via, false, tab);
     const nuova = await disegna(via, true, tab);
 

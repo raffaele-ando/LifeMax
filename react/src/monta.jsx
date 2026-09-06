@@ -27,8 +27,10 @@ import { StrictMode } from 'react';
    Ci avevo messo una versione «mia» di Attività, con altre linguette e altro
    contenuto. Era sbagliato e l'ho tolta. */
 import Attivita from './schermi/Attivita.jsx';
+import Scienza from './schermi/Scienza.jsx';
+import Scoperte from './schermi/Scoperte.jsx';
 
-const SCHERMI = { inbox: Attivita };
+const SCHERMI = { inbox: Attivita, scienza: Scienza, esperimenti: Scoperte };
 
 /* una radice per contenitore: React vuole tenersela fra un disegno e
    l'altro, e ricrearla a ogni giro butterebbe via lo stato dei componenti
