@@ -3076,6 +3076,29 @@
      l'impostazione dell'app, oppure il fatto che l'isola non si sia caricata.
      Il terzo non è una svista: se la rete cade a metà, la schermata la
      disegna il codice di prima invece di restare bianca. */
+  /* LA CUCITURA. Quello che l'isola può chiamare, e nient'altro: un elenco
+     corto e scritto, invece di lasciare che React vada a pescare in giro per
+     `app.js`. Se un giorno una schermata React ha bisogno di qualcosa che non
+     è qui, si aggiunge qui — e si vede nel diff. */
+  function cuci() {
+    window.LM_APP = {
+      ICO: ICO,
+      topbar: topbar,
+      etichetta: etichetta,
+      selectAree: selectAree,
+      areeAttive: areeAttive,
+      toast: toast,
+      aggiornaNav: aggiornaNav,
+      render: render,
+      animaIngresso: animaIngresso,
+      esc: esc,
+      /* la linguetta aperta in Attività: la tengono tutt'e due, se no
+         tornando al codice di prima si riparte da un'altra */
+      get attTab() { return attTab; },
+      set attTab(v) { attTab = v; }
+    };
+  }
+
   var isolaChiesta = null;
   function reactVoluto() {
     if (/[?&]classico=1/.test(location.search)) return false;
@@ -3083,6 +3106,7 @@
   }
   function caricaIsola() {
     if (isolaChiesta) return isolaChiesta;
+    cuci();
     isolaChiesta = new Promise(function (ok, no) {
       if (window.LM_REACT) return ok();
       var sc = document.createElement('script');

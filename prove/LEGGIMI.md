@@ -1,6 +1,6 @@
 # Prove
 
-Ventisette controlli automatici che guardano una cosa sola ciascuno, ma
+Ventotto controlli automatici che guardano una cosa sola ciascuno, ma
 quella cosa fa morire l'app — o la fa diventare illeggibile — quando si
 rompe. Sono nati da problemi veri.
 
@@ -692,6 +692,25 @@ genera le chiavi, in un browser vero).
   pezzo esiste di là e non di qua, la promessa «il lavoro si fa una volta
   sola» è già rotta. Non serve Chromium.
 
+- **gemelle.js** — LA SCHERMATA DI REACT È IDENTICA A QUELLA DI PRIMA? Non
+  guarda se React «funziona»: guarda se si vede la stessa cosa. Disegna la
+  schermata col codice di prima e si prende l'albero del DOM; la ridisegna con
+  React e riprende l'albero; confronta elemento per elemento — tag, classi,
+  testo, id e i `data-` da cui dipendono i comandi. Gli stili calcolati no:
+  vengono dalle classi, e se le classi combaciano vengono uguali per
+  costruzione. I `data-forma-*` nemmeno: sono gli appunti che si prende
+  forma.js mentre lavora, e cambiano a seconda di quando gira, non di che cosa
+  è stato disegnato.
+  Serve uno strumento e non un'occhiata perché una classe di differenza su una
+  riga di elenco in una fotografia non si vede — ma il giorno che qualcuno
+  cambia il CSS quella riga si comporta diversamente da tutte le altre.
+  **«Identica» deve essere una misura.** Stampa solo le prime tre differenze:
+  di solito le altre sono la loro eco, e un elenco di trecento righe non lo
+  legge nessuno. Portando Attività ha trovato, una per volta: un `<div>` di
+  troppo attorno alla testa, la fila delle linguette che non arrivava dove
+  `sottoNav` la cerca, un contenitore in più attorno all'etichetta di gruppo,
+  e l'animazione d'ingresso che al primo disegno non partiva.
+
 ## Come si lanciano
 
 **Prima si costruisce.** Le prove aprono `index.html`, che è generato: se il
@@ -703,6 +722,7 @@ pacco è vecchio, provano il codice di ieri e dicono che va tutto bene.
     node prove/pacco.js         # solo Node: il pacco è quello dei sorgenti di adesso?
     node prove/intestazioni.js  # solo Node: la cache di _headers non fa danni
     node prove/pezzi.js         # solo Node: il cricchetto delle forme
+    node prove/gemelle.js       # React disegna la stessa cosa di prima?
     node prove/audit.js         # non è una prova: stampa un rapporto da leggere
     node prove/clic.js
     node prove/modalita.js

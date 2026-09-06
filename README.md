@@ -165,6 +165,21 @@ qui sopra servivano a farla con qualcosa in mano invece che a occhio. Chi non
 accende l'interruttore non scarica niente lo stesso: l'isola sta fuori dal
 pacco, come il Design lab.
 
+**La prima schermata convertita è Attività**, e «identica» non è una parola:
+`prove/gemelle.js` disegna la schermata col codice di prima, si prende
+l'albero del DOM, la ridisegna con React e confronta elemento per elemento.
+**61 elementi su 61, tutti uguali.**
+
+Portandola sono venute fuori quattro differenze, una alla volta, e la più
+istruttiva è la seconda: `sottoNav()` **sposta** il nodo delle linguette della
+vista dentro a una riga nuova, dopo che la pagina si è disegnata. Per il
+codice di prima è una furbizia che funziona; per React è un figlio portato via
+dall'albero, e al ridisegno dopo `insertBefore` lo cerca in un padre in cui
+non c'è più. La soluzione è un **portale**: il contenitore delle linguette lo
+crea `monta()` a mano come figlio diretto di `#vista`, e React ci disegna
+dentro — il nodo può finire dove vuole, di un portale gli importa il
+contenitore e non dove sta appeso.
+
 **Portare in React non è ridisegnare.** Una schermata entra fra le convertite
 solo quando è *identica* a quella di prima — stesso markup, stesse classi,
 stesso comportamento. È un cambio di motore, e chi guarda non se ne deve
