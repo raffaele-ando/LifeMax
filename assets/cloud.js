@@ -149,6 +149,18 @@ function opCede(che, a) {
        l'aggiornamento di una libreria. Se il nome dell'opzione non esiste più,
        si ripiega sul modo normale invece di far cadere tutto il cloud. */
     try {
+      /* NIENTE `localCache`, ED È UNA SCELTA.
+         Firestore sa tenersi una cache persistente su IndexedDB
+         (`persistentLocalCache`) che mette in coda le scritture fatte offline
+         e le manda quando la rete torna. Qui non si usa, e non è una
+         dimenticanza: LifeMax quella coda ce l'ha già. Lo stato vero sta in
+         localStorage, la fusione la fa `COME_UNIRE` in data.js con le sue
+         lapidi per le cancellazioni, e quel pezzo è costato un bug vero — le
+         cose cancellate che tornavano vive.
+         Accendere la cache di Firestore vorrebbe dire avere DUE code offline
+         che riconciliano gli stessi dati, ognuna con le sue regole. Verificato
+         sulla documentazione del v12: l'API è quella giusta e non è
+         deprecata; è il nostro caso che non la vuole. */
       db = fsMod.initializeFirestore(app, { experimentalAutoDetectLongPolling: true });
       log('info', 'Firestore avviato', 'riconoscimento automatico del canale lungo attivo');
     } catch (e) {
