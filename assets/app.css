@@ -168,7 +168,31 @@
   --font: ui-sans-serif, -apple-system, "SF Pro Display", "Segoe UI Variable Display", "Segoe UI", Inter, Roboto, sans-serif;
   --ease-out: cubic-bezier(.22, 1, .36, 1);
   --ease-spring: cubic-bezier(.34, 1.45, .5, 1);
-  --t-veloce: .16s var(--ease-out);
+  /* ============================================================
+     LA SCALA DEI TEMPI
+
+     Presa dalla scala di transitions.dev, e non tradotta a caso: la regola è
+     «si sceglie il tempo in base a COSA FA il movimento, mai al numero più
+     vicino». Un cambio di pagina è un cambio di pagina e dura 250ms, che il
+     numero di prima fosse 380 o 240.
+
+     E una cosa era già giusta prima di guardarla: `--ease-out` qui vale
+     `cubic-bezier(.22, 1, .36, 1)`, che è alla virgola la curva che quella
+     scala chiama `--ease-smooth-out` e usa come predefinita. Ci si era
+     arrivati per un'altra strada.
+
+     Cosa non ho preso, e perché. La scala vuole una velatura di 3px sotto a
+     un cambio di pagina. No: le sfocature su questo progetto sono la cosa che
+     mandava l'app a 18,7 fps e riempiva la memoria delle texture su Android.
+     Una regola di stile non batte una misura. */
+  --d-scatto: 40ms;    /* lo sfalsamento fra un elemento e il successivo */
+  --d-svelto: .15s;    /* si chiude un pannello, si scambia una scritta */
+  --d-cambio: .25s;    /* si cambia pagina o sezione, scorrono le linguette */
+  --d-esce: .35s;      /* un pannello si chiude, un avviso se ne va */
+  --d-entra: .4s;      /* un pannello si apre */
+  --d-momento: .5s;    /* il momento che vale: l'anello del timer che parte */
+
+  --t-veloce: var(--d-svelto) var(--ease-out);
   --t-media: .32s var(--ease-out);
 
   --aurora-opacita: .55;
@@ -654,17 +678,17 @@ kbd { margin-left: auto; }
    schermata stesse ferma. Su una pagina che si cambia venti volte al giorno
    è un'attesa che si sente. Adesso l'ultimo blocco si posa a mezzo secondo,
    e la scala resta la stessa. */
-.vista-enter > * { animation: alzati .38s var(--ease-out) both; }
-.vista-enter > *:nth-child(2) { animation-delay: .03s; }
-.vista-enter > *:nth-child(3) { animation-delay: .06s; }
-.vista-enter > *:nth-child(4) { animation-delay: .09s; }
-.vista-enter > *:nth-child(5) { animation-delay: .12s; }
-.vista-enter > *:nth-child(6) { animation-delay: .15s; }
+.vista-enter > * { animation: alzati var(--d-cambio) var(--ease-out) both; }
+.vista-enter > *:nth-child(2) { animation-delay: 40ms; }
+.vista-enter > *:nth-child(3) { animation-delay: 80ms; }
+.vista-enter > *:nth-child(4) { animation-delay: 120ms; }
+.vista-enter > *:nth-child(5) { animation-delay: 160ms; }
+.vista-enter > *:nth-child(6) { animation-delay: 200ms; }
 /* cambio di SEZIONE dentro la stessa porta: il titolo e la riga di linguette
    restano immobili — la riga è il comando che hai in mano, e vederla sparire e
    tornare è la cosa che fa sembrare tutto ricaricato. Si muove solo quello che
    è davvero cambiato, e più in fretta. */
-.sez-enter > *:not(.topbar):not(.testa-porta) { animation: alzati .34s var(--ease-out) both; }
+.sez-enter > *:not(.topbar):not(.testa-porta) { animation: alzati var(--d-cambio) var(--ease-out) both; }
 .sez-enter > *:nth-child(4) { animation-delay: .04s; }
 .sez-enter > *:nth-child(5) { animation-delay: .08s; }
 .sez-enter > *:nth-child(6) { animation-delay: .12s; }
@@ -693,7 +717,7 @@ kbd { margin-left: auto; }
 /* le schede della griglia entrano col resto: dentro un movimento di 180ms
    una scalata a cascata non si vede, si sente solo come ritardo */
 .sez-enter-dx .griglia > *, .sez-enter-sx .griglia > * { animation: none; }
-.sez-enter .griglia > * { animation: alzati .4s var(--ease-out) both; animation-delay: calc(var(--i, 0) * 40ms); }
+.sez-enter .griglia > * { animation: alzati var(--d-cambio) var(--ease-out) both; animation-delay: calc(var(--i, 0) * var(--d-scatto)); }
 @keyframes alzati {
   from { opacity: 0; transform: translateY(16px) scale(.992); }
 }
@@ -712,7 +736,7 @@ kbd { margin-left: auto; }
 .anim-b.sez-enter-sx > *:not(.topbar):not(.testa-porta) { animation-name: entra-da-sinistra-b; }
 /* le schede della griglia si animano solo all'ingresso della pagina: se lo
    facessero a ogni ridisegno, ogni spunta farebbe "sfarfallare" tutto */
-.vista-enter .griglia > * { animation: alzati .55s var(--ease-out) both; animation-delay: calc(var(--i, 0) * 55ms); }
+.vista-enter .griglia > * { animation: alzati var(--d-cambio) var(--ease-out) both; animation-delay: calc(var(--i, 0) * var(--d-scatto)); }
 
 /* ---------- componenti base ---------- */
 
@@ -1167,7 +1191,7 @@ label.campo { display: block; margin: var(--s4) 0 var(--s2); }
   box-shadow: var(--e2);
   transition: background .25s linear;
 }
-.vista-enter .timer-anello { animation: alzati .5s var(--ease-spring) both; }
+.vista-enter .timer-anello { animation: alzati var(--d-momento) var(--ease-spring) both; }
 .timer-anello .timer-interno {
   width: 100%; height: 100%; border-radius: var(--r-tondo);
   background: var(--superficie-1);
@@ -2031,7 +2055,7 @@ body.sfondo-fermo { position: fixed; left: 0; right: 0; width: 100%; overflow: h
    `sheet-molla` è il ritorno al suo posto, `sheet-via` è il congedo. */
 .sheet-trascina { transition: none !important; animation: none !important; will-change: transform; }
 .sheet-molla { transition: transform .3s var(--ease-spring); }
-.sheet-via { transition: transform .24s var(--ease-out); }
+.sheet-via { transition: transform var(--d-esce) var(--ease-out); }
 /* il titolo del pannello, quando si può cambiare: stessa faccia del titolo,
    nessuna cornice, si scrive dentro */
 textarea.sheet-titolo-inp {

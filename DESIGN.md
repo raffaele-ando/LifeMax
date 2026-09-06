@@ -138,6 +138,32 @@ rituale.
   settantasei, che è il punto oltre il quale l'occhio non ritrova più da solo
   l'inizio della riga dopo.
 
+## I tempi del movimento
+
+    --d-scatto    40ms   lo sfalsamento fra un elemento e il successivo
+    --d-svelto   150ms   si chiude un pannello, si scambia una scritta
+    --d-cambio   250ms   si cambia pagina o sezione, scorrono le linguette
+    --d-esce     350ms   un pannello si chiude, un avviso se ne va
+    --d-entra    400ms   un pannello si apre
+    --d-momento  500ms   il momento che vale: l'anello del timer che parte
+
+La regola per sceglierli: **si guarda cosa fa il movimento, mai quale numero è
+più vicino.** Un cambio di pagina è un cambio di pagina e dura 250ms, che il
+numero di prima fosse 380 o 240. Se un valore non corrisponde a nessun uso
+della scala, si lascia stare.
+
+**Chi apre ci mette più di chi chiude.** Aprire è un invito, chiudere è
+togliersi di mezzo. Il pannello entra in 400ms e se ne va in 350.
+
+Erano lenti i cambi di schermata: 380ms per una pagina, 340 per una sezione, e
+la griglia 550ms con 55 di sfalsamento — l'ultima scheda si posava dopo
+**825ms**. In un'app che si apre venti volte al giorno, e per una testa che
+corre, è un pedaggio pagato venti volte. Adesso l'ultima si posa a **450ms**.
+
+Una cosa era già giusta prima di andarla a guardare: `--ease-out` qui vale
+`cubic-bezier(.22, 1, .36, 1)`, che è alla virgola la curva che quella scala
+chiama `--ease-smooth-out` e usa come predefinita.
+
 ## Il movimento
 
 Si muove solo quello che dice qualcosa. Ogni animazione è stata misurata, non
@@ -152,6 +178,9 @@ Le regole che ne restano, tutte pagate con un bug vero:
   finiva la memoria delle texture e mostrava rettangoli di memoria sporca
 - niente maschere più alte di mezzo schermo, per lo stesso motivo
 - niente letture del layout in mezzo a un'animazione
+- **niente velature sotto ai cambi di pagina**, che la scala dei tempi
+  suggerisce: è la cosa che mandava l'app a 18,7 fps. Una regola di stile non
+  batte una misura.
 - «Effetti» ha tre gradini fino a **minimi**, che spegne tutto. Non è
   un'impostazione di comodo: è lo strumento con cui si è trovata la causa dei
   rettangoli grigi, e resta lì per la prossima volta.

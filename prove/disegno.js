@@ -433,7 +433,20 @@ function cercaScritteFuori(toll) {
 
   /* ============ LE RETI: se non ho guardato niente, non ho provato niente ==== */
   console.log('\nLE PROVE HANNO GUARDATO QUALCOSA DAVVERO');
-  ok('ho trovato elementi con un filtro su cui misurarmi', filtriVisti > 0, filtriVisti + ' elementi');
+  /* Zero filtri non è un fallimento: è il caso migliore. Questa rete c'è per
+     un motivo preciso — il controllo «niente si anima dentro a un filtro» su
+     zero filtri direbbe «tutto a posto» senza aver guardato niente, ed è così
+     che una prova diventa una bugia. Ma se i filtri non ci sono PER DAVVERO,
+     quel controllo non ha più niente da difendere e va detto, non nascosto.
+     La rete si sposta di conseguenza: si pretende che il conto sia zero
+     oppure che ci sia stato qualcosa da misurare. Il giorno che qualcuno
+     rimette un `filter` sotto a una cosa che si muove, filtriVisti torna
+     positivo e il controllo di sopra riprende a fare il suo lavoro. */
+  if (filtriVisti === 0) {
+    console.log('  ok  nessun filtro in tutta l’app  → non c’è niente da animare dentro a un filtro, ed è il caso migliore');
+  } else {
+    ok('ho trovato elementi con un filtro su cui misurarmi', filtriVisti > 0, filtriVisti + ' elementi');
+  }
   ok('ho trovato blocchi con un titolo dentro', blocchiVisti >= 10, blocchiVisti + ' blocchi');
 
   await b.close(); srv.close();
