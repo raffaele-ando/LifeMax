@@ -29,8 +29,13 @@ import { StrictMode } from 'react';
 import Attivita from './schermi/Attivita.jsx';
 import Scienza from './schermi/Scienza.jsx';
 import Scoperte from './schermi/Scoperte.jsx';
+import Giornata from './schermi/Giornata.jsx';
+import Panoramica from './schermi/Panoramica.jsx';
 
-const SCHERMI = { inbox: Attivita, scienza: Scienza, esperimenti: Scoperte };
+const SCHERMI = {
+  inbox: Attivita, scienza: Scienza, esperimenti: Scoperte,
+  giornata: Giornata, plancia: Panoramica
+};
 
 /* una radice per contenitore: React vuole tenersela fra un disegno e
    l'altro, e ricrearla a ogni giro butterebbe via lo stato dei componenti

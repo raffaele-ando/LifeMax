@@ -3119,6 +3119,19 @@
       PRINCIPI: PRINCIPI,
       /* Scoperte */
       disegnaScoperte: disegnaScoperte,
+      /* Panoramica */
+      eroePlancia: eroePlancia,
+      eroePlanciaHtml: eroePlanciaHtml,
+      wireEroePlancia: wireEroePlancia,
+      disegnaSezPlancia: disegnaSezione,
+      get sezPlancia() { return sezPlancia; },
+      set sezPlancia(v) { sezPlancia = v; },
+      /* La giornata */
+      disegnaOrizzonte: disegnaOrizzonte,
+      setOrizzonte: setOrizzonte,
+      get giornataOrizzonte() { return giornataOrizzonte; },
+      get giornataAncora() { return giornataAncora; },
+      set giornataAncora(v) { giornataAncora = v; },
       get sezScoperte() { return sezScoperte; },
       set sezScoperte(v) { sezScoperte = v; },
       toast: toast,
@@ -4923,6 +4936,347 @@
   }
 
   schermo('plancia', vistaPlancia);
+
+  /* ============================================================
+     LE SEZIONI DI PANORAMICA, fuori da vistaPlancia.
+
+     Stessa ragione degli aiutanti di Attività: nessuna di loro chiude su
+     quella chiamata, e da fuori le deve poter chiamare anche la versione
+     React della schermata. Riscriverle di là vorrebbe dire due sorgenti per
+     le stesse schede.
+     ============================================================ */
+
+  function disegnaSezione() {
+    var c = document.getElementById('sez-corpo');
+    var cambio = sezPlancia !== sezMostrata;
+    if (sezPlancia === 'riepilogo') sezRiepilogo(c);
+    else if (sezPlancia === 'diario') sezDiario(c);
+    else if (sezPlancia === 'aree') sezAree(c);
+    else sezAndamento(c);
+    sezMostrata = sezPlancia;
+    if (cambio) animaIngresso(c);
+  }
+
+  /* --- Riepilogo: azioni di oggi + costanza --- */
+  function sezRiepilogo(c) {
+    /* i conti che prima le arrivavano da `vistaPlancia`: uscendo se li fa da
+       sé. Sono le stesse chiamate, quindi gli stessi numeri. */
+    var s = LM.load();
+    var t = LM.todayKey();
+    var lvl = LM.livelloDaXp(s.xp);
+    var st = LM.streak();
+    var oggi = LM.azioniDiOggi();
+    var fatte = oggi.filter(function (a) { return a.done; }).length;
+    var checkinOggi = s.checkins.filter(function (c2) { return c2.data === t; }).length;
+    var bil = LM.bilancio(30);
+    c.innerHTML = '<div class="griglia griglia-2">' +
+      '<div class="card" style="--i:0"><h2>' + ICO('target', 15) + ' Le azioni di oggi</h2>' +
+      /* «Oggi» non è più un link: il pulsante pieno «Vai a Oggi» sta due
+         riquadri sopra, nella stessa schermata, e portava esattamente allo
+         stesso posto. «Rituali» resta, da questa scheda non si raggiunge
+         altrimenti. */
+      /* Il paragrafo che stava qui («Scelte in Rituali, fatte una per volta
+   in Oggi. Qui sono tutte insieme.») spiegava l'architettura dell'app
+   sopra una lista di due righe che si legge da sé. Il titolo dice cosa
+   sono, le spunte dicono come si usano: la mappa del sito non serve. */
+      '<div class="lista-azioni" id="lista-oggi"></div>' +
+      /* la stessa riga d'aggiunta di tutte le altre: era la terza variante
+         in tre schermate — qui campo, tendina e tasto in fila; in Rituali
+         gli stessi tre su tre righe; in «Da fare» e nelle abitudini quella
+         giusta. Ora è una sola, e l'area si apre solo quando serve. */
+      '<div class="mt-s">' +
+      rigaAggiunta('agg-riep', 'Aggiungi un’altra cosa a oggi…',
+        '<label class="agg-area"><span class="agg-eti">in</span>' + selectAree('agg-riep-area') + '</label>') +
+      '</div></div>' +
+      '<div class="card" style="--i:1"><h2>' + ICO('trendUp', 15) + ' Costanza</h2>' +
+      '<div class="sotto">XP di ogni giorno, nelle ultime 12 settimane.</div>' +
+      '<div id="heatmap"></div></div>' +
+      /* LE REVIEW DI PRIMA, in Panoramica. Si scrivono in Rituali, ma
+         rileggerle è un'altra cosa dallo scriverle: è guardare indietro, e
+         guardare indietro si fa qui, accanto alla costanza e alle aree.
+         In Rituali sarebbero state una porta verso il passato in mezzo alle
+         cose da fare adesso. */
+      /* ============================================================
+         DOVE TI RIESCE E DOVE NO
+
+         È la scheda che dice cosa fare, e le altre due no. «Ti riesce il
+         64%» è una diagnosi senza indirizzo; «in Salute ne metti sei a
+         settimana e ne fai una» è un indirizzo.
+         Ordinate dalla PEGGIORE, che è l'ordine che serve: le aree che
+         vanno bene non chiedono niente, e metterle in cima vuol dire far
+         scorrere per arrivare all'unica riga che conta.
+         E sotto, le cose che non sono riuscite davvero, con il motivo più
+         frequente. Stavano in fondo all'elenco delle Attività, che è il
+         posto dove si decide cosa fare adesso: lì erano un promemoria dei
+         fallimenti in mezzo al lavoro. Qui sono quello che sono, cioè dati
+         per rispondere a «cosa non funziona per me» — la stessa domanda di
+         Scoperte e degli Esperimenti.
+         ============================================================ */
+      '<div class="card" style="--i:2"><h2>' + ICO('aree', 15) + ' Dove ti riesce e dove no</h2>' +
+      '<div class="sotto">Ultimi 30 giorni, dalla peggiore. Il conto è: quante te n’eri messe, quante ne hai fatte.</div>' +
+      (bil.aree.length
+        ? '<div class="bil-aree">' + bil.aree.map(function (a) {
+            var ar = areaById(a.areaId);
+            return '<div class="bil-riga">' +
+              '<span class="bil-nome">' + segnoArea(ar, 13, 'tit-area') + esc(ar.nome) + '</span>' +
+              '<span class="bil-barra"><i style="width:' + Math.round(a.tasso * 100) + '%;--c-area:' + LM.coloreArea(ar) + '"></i></span>' +
+              '<span class="bil-num"><b>' + Math.round(a.tasso * 100) + '%</b> <span>' + a.fatte + '/' + a.messe + '</span></span>' +
+              '</div>';
+          }).join('') + '</div>'
+        : '<p class="lista-nota">Ancora nessun giorno chiuso da contare.</p>') +
+      (function () {
+        var perse = LM.mancate(90), motivi = LM.motiviMancate(90);
+        if (!perse.length) return '';
+        return '<div class="lista-eti mt">Non ci sono riuscito <span>' + perse.length + '</span></div>' +
+          (motivi.length ? '<p class="lista-nota bil-motivo">Più spesso: <b>' + esc(motivi[0].eti.toLowerCase()) + '</b>' +
+            (motivi.length > 1 ? ', poi ' + esc(motivi[1].eti.toLowerCase()) : '') + '.</p>' : '') +
+          '<div class="lista">' + perse.slice(0, 8).map(function (a) {
+            var ar = areaById(a.areaId);
+            var g = LM.QUANTO_FATTO.find(function (x) { return x.id === a.mancata.quanto; });
+            return '<div class="lista-riga mancata-riga">' +
+              '<span class="lista-azione mancata-segno">' + ICO('annulla', 15) + '</span>' +
+              '<span class="lista-corpo"><span class="lista-tit">' + segnoArea(ar, 13, 'tit-area') + esc(a.testo) + '</span>' +
+              '<span class="lista-sub">' + esc(g ? g.eti.toLowerCase() : 'non riuscita') + '</span></span></div>';
+          }).join('') + '</div>' +
+          (perse.length > 8 ? '<p class="lista-nota">e altre ' + (perse.length - 8) + '.</p>' : '');
+      })() +
+      '</div>' +
+      '<div class="card" style="--i:3"><h2>' + ICO('archivio', 15) + ' Le review di prima</h2>' +
+      '<div class="sotto">Messe in fila dicono cose che una sera sola non dice.</div>' +
+      '<div class="lista mt-s">' +
+      rigaPorta('riep-review', 'archivio', 'Aprile tutte',
+        (function () { var q = LM.quanteReview(); return q ? q + (q === 1 ? ' scritta' : ' scritte') : 'nessuna ancora'; })()) +
+      '</div></div>' +
+      '</div>';
+
+    LMCharts.heatmap(document.getElementById('heatmap'), LM.heatmapConsistenza(12));
+
+    var lista = document.getElementById('lista-oggi');
+    if (!oggi.length) {
+      lista.innerHTML = '<div class="vuoto" style="padding:16px 8px">Nessuna azione scelta per oggi.<br><a href="#/rituali">Scegline in Rituali</a>.</div>';
+    } else {
+      lista.innerHTML = oggi.map(function (a) {
+        var ar = areaById(a.areaId);
+        return '<div class="riga-azione' + (a.done ? ' fatta' : '') + '">' +
+          '<button class="spunta" data-id="' + a.id + '" aria-label="Completa">' + ICO('check', 13) + '</button>' +
+          '<span class="testo">' + esc(a.testo) + '</span>' +
+          (a.mit ? '<span class="tag-mit">' + ICO('star', 11) + 'Priorità</span>' : '') +
+          segnoArea(ar, 15, 'tag-area') + '</div>';
+      }).join('');
+      lista.querySelectorAll('.spunta').forEach(function (b) {
+        b.addEventListener('click', function (ev) {
+          feedbackSpunta(ev, LM.completaAzione(b.getAttribute('data-id')), 'Azione completata.', 'check');
+          render();
+        });
+      });
+    }
+    var bRev = document.getElementById('riep-review');
+    if (bRev) bRev.addEventListener('click', apriArchivioReview);
+    wireRigaAggiunta(c, 'agg-riep', function (testo, opz) {
+      var sel = opz && opz.querySelector('select');
+      LM.aggiungiAzione(testo, sel ? sel.value : 'altro', { mit: LM.serveMit() });
+      render();
+    });
+  }
+
+  /* --- Aree: griglia delle aree di vita --- */
+  function sezAree(c) {
+    c.innerHTML = '<div class="griglia griglia-aree" id="griglia-aree"></div>';
+    var ga = document.getElementById('griglia-aree');
+    ga.innerHTML = areeAttive().map(function (a, i) {
+      var media = LM.mediaValutazioneArea(a.id, 7);
+      var min7 = LM.serieMinuti(a.id, 7).reduce(function (x, p) { return x + p.valore; }, 0);
+      return '<div class="card card-area card-hover" style="--i:' + i + ';--c-area:' + LM.coloreArea(a) + '">' +
+        '<div class="testata"><span class="icona-area">' + ICO(a.icona, 15) + '</span>' + esc(a.nome) + '</div>' +
+        '<div id="spark-' + a.id + '"></div>' +
+        '<div class="area-metriche"><div><b>' + (media ? LMCharts.fmtNum(media) : '—') + '</b><span>voto medio 7g</span></div>' +
+        '<div><b>' + min7 + '</b><span>minuti 7g</span></div></div>' +
+        '<div class="sistema-nota">' + esc(a.sistema) + '</div></div>';
+    }).join('');
+    areeAttive().forEach(function (a) {
+      LMCharts.sparkline(document.getElementById('spark-' + a.id), LM.serieValutazioni(a.id, 14),
+        { min: 1, max: 5, colore: LM.coloreArea(a), label: 'Auto-valutazione ' + a.nome + ', 14 giorni', unita: '/5' });
+    });
+  }
+
+  /* --- Andamento: check-in nel tempo + minuti per area --- */
+  function sezAndamento(c) {
+    var dark = document.documentElement.getAttribute('data-mode') === 'dark';
+    c.innerHTML = '<div class="card" style="--i:0"><div class="card-testa"><h2>' + ICO('polso', 15) + ' Energia, focus e umore</h2>' +
+      '<div class="segmenti mini-seg" id="seg-periodo">' +
+      '<button data-g="14" class="' + (periodoTrend === 14 ? 'attivo' : '') + '">14 giorni</button>' +
+      '<button data-g="30" class="' + (periodoTrend === 30 ? 'attivo' : '') + '">30 giorni</button></div></div>' +
+      '<div class="sotto">Media dei check-in, da 1 a 5.</div><div id="trend-checkin"></div></div>' +
+      '<div class="card mt" style="--i:1"><h2>' + ICO('tempospeso', 15) + ' Come hai speso il tempo</h2>' +
+      '<div class="sotto">Minuti per area, negli ultimi 7 giorni.</div><div id="hbar-minuti"></div></div>';
+
+    LMCharts.trend(document.getElementById('trend-checkin'), [
+      { nome: 'Energia', colore: dark ? '#c98500' : '#eda100', punti: LM.serieCheckin('energia', periodoTrend) },
+      { nome: 'Focus',   colore: dark ? '#3987e5' : '#2a78d6', punti: LM.serieCheckin('focus', periodoTrend) },
+      { nome: 'Umore',   colore: dark ? '#199e70' : '#1baf7a', punti: LM.serieCheckin('umore', periodoTrend) }
+    ], { min: 1, max: 5, label: 'Andamento di energia, focus e umore' });
+
+    LMCharts.hbar(document.getElementById('hbar-minuti'),
+      LM.minutiSettimanaPerArea().sort(function (a, b) { return b.minuti - a.minuti; })
+        .map(function (r) { return { label: r.area.nome, icona: ICO(r.area.icona, 15), value: r.minuti, colore: LM.coloreArea(r.area) }; }),
+      { unita: 'min' });
+
+    document.getElementById('seg-periodo').querySelectorAll('[data-g]').forEach(function (b) {
+      b.addEventListener('click', function () { periodoTrend = +b.getAttribute('data-g'); disegnaSezione(); });
+    });
+  }
+
+  /* --- Diario: cronologia di ciò che hai fatto e scritto --- */
+  function sezDiario(c) {
+    var giorni = LM.diario(diarioGiorni, diarioTutto);
+    annullaPadroni = padroniAnnulla(giorni);
+    var filtro = '<div class="segmenti mini-seg" id="diario-filtro">' +
+      '<button data-tutto="0" class="' + (!diarioTutto ? 'attivo' : '') + '">Cose importanti</button>' +
+      '<button data-tutto="1" class="' + (diarioTutto ? 'attivo' : '') + '">Tutto</button></div>';
+    var html;
+    if (!giorni.length) {
+      html = '<div class="card diario"><div class="card-testa">' + filtro + '</div>' +
+        '<div class="vuoto" style="padding:20px 8px">' + ICO('quaderno', 26) + '<br><b>Ancora niente da mostrare.</b><br>Appena fai qualcosa comparirà qui, giorno per giorno.</div></div>';
+    } else {
+      /* la riga sotto il filtro dice SOLO quello che il filtro non dice da
+         sé: cosa resta fuori. Prima ci stava anche «la storia di tutto ciò
+         che fai — azioni, note, scelte, impostazioni», che è la definizione
+         della parola «diario» scritta sotto la parola «Diario». */
+      html = '<div class="card diario"><div class="card-testa">' + filtro +
+        (diarioTutto ? '' : '<div class="sotto" style="margin:0">Con «Tutto» compaiono anche le modifiche minori.</div>') + '</div>';
+      giorni.forEach(function (g) {
+        html += '<div class="diario-giorno">' +
+          '<div class="diario-data">' + etichettaGiorno(g.data) + '</div>' +
+          '<div class="diario-eventi">' + g.eventi.map(eventoDiarioHtml).join('') + '</div></div>';
+      });
+      html += '</div>';
+      var totGiorni = LM.giorniConAttivita();
+      if (totGiorni > giorni.length) {
+        html += '<div style="text-align:center" class="mt"><button class="btn" id="diario-altro">' + ICO('chevronGiu', 15) + ' Mostra altri giorni</button></div>';
+      }
+    }
+    c.innerHTML = html;
+    var b = document.getElementById('diario-altro');
+    if (b) b.addEventListener('click', function () { diarioGiorni += 30; disegnaSezione(); });
+    document.getElementById('diario-filtro').querySelectorAll('[data-tutto]').forEach(function (bt) {
+      bt.addEventListener('click', function () { diarioTutto = bt.getAttribute('data-tutto') === '1'; disegnaSezione(); });
+    });
+    c.querySelectorAll('[data-annulla]').forEach(function (bt) {
+      bt.addEventListener('click', function () {
+        /* l'etichetta è il testo della riga stessa: è quello che l'utente
+           sta guardando, e finisce nella riga «Annullato: …» */
+        var riga = bt.closest('.diario-evento');
+        var eti = riga ? (riga.querySelector('.diario-testo') || {}).textContent : '';
+        annullaDalDiario(+bt.getAttribute('data-annulla'), (eti || '').replace(/\s+/g, ' ').trim().slice(0, 60),
+          bt.getAttribute('data-tipo'), bt.getAttribute('data-chiave'));
+      });
+    });
+  }
+
+  /* ============================================================
+     L'EROE DI PANORAMICA — la scheda che risponde a una domanda sola.
+
+     Stava scritto dentro a `vistaPlancia`. È uscito per la stessa ragione
+     degli aiutanti di Attività: da fuori lo può chiamare anche la versione
+     React della schermata, e dev'essere LA STESSA scheda, non una copia che
+     le somiglia. `wireEroePlancia()` fa quello che va fatto dopo, quando gli
+     elementi sono in pagina: il numero che sale e la linea dell'andamento.
+     ============================================================ */
+  /* quello che va fatto DOPO, quando gli elementi sono in pagina */
+  function wireEroePlancia() {
+    var pct = Math.round(LM.bilancio(30).tasso * 100);
+    var serie = LM.serieRiuscita(12);
+    var elPct = document.getElementById('som-pct');
+    if (elPct) countUp(elPct, pct);
+    var elSpark = document.getElementById('som-spark');
+    /* sotto i tre punti una linea non è un andamento, è un segmento: mostrarla
+       vorrebbe dire far leggere una tendenza a chi non ne ha ancora una */
+    if (elSpark && serie.length >= 3) {
+      LMCharts.sparkline(elSpark, serie, { h: 40, min: 0, max: 100,
+        colore: 'var(--accento)',
+        label: 'Com’è andata la riuscita nelle ultime ' + serie.length + ' settimane, da ' +
+          Math.min.apply(null, serie.map(function (x) { return x.valore; })) + '% a ' +
+          Math.max.apply(null, serie.map(function (x) { return x.valore; })) + '%' });
+    }
+  }
+
+  /* Restituisce il DENTRO e le classi, non un blocco già avvolto: chi lo usa
+     disegna il contenitore. Serve a React, che se avvolge un pezzo di HTML
+     già completo si ritrova un elemento in più nell'albero — ed è l'errore
+     che prove/gemelle.js ha trovato quattro volte di fila. */
+  function eroePlancia() {
+    var html = '';
+    var classi = '';
+    /* i tre numeri di contorno: stavano fra i conti di `vistaPlancia`, e
+       uscendo la scheda se li porta dietro */
+    var st = LM.streak();
+    var oggi = LM.azioniDiOggi();
+    var fatte = oggi.filter(function (a) { return a.done; }).length;
+    var bil = LM.bilancio(30);
+    var bilPrima = LM.bilancio(30, 30);
+    var serie = LM.serieRiuscita(12);
+    var quante = LM.quanteFatte();
+    var quanteSett = LM.quanteFatte(7);
+    var pct = Math.round(bil.tasso * 100);
+    var pctPrima = bilPrima.messe ? Math.round(bilPrima.tasso * 100) : null;
+    var passo = pctPrima != null ? pct - pctPrima : null;
+  
+    if (!bil.messe) {
+      /* ANCORA PRESTO. Un «—» al posto di un numero fa sembrare l'app rotta,
+         e uno zero è peggio: dice che hai fallito tutto quando non hai
+         ancora avuto un giorno chiuso. Si dice quello che c'è, e quanto
+         manca perché ci sia un conto. */
+      classi = 'card som som-vuota';
+      html +=
+        '<div class="som-eti">Come sta andando</div>' +
+        '<div class="som-vuoto"><b>Ancora presto per un conto.</b>' +
+        (quante ? '<br>Intanto hai fatto ' + quante + (quante === 1 ? ' cosa' : ' cose') + '. Il conto della riuscita comincia dal primo giorno chiuso.'
+                : '<br>Metti qualcosa in un giorno: da domani questo posto comincia a dirti come va.') +
+        '</div>';
+    } else {
+      classi = 'card som';
+      html +=
+        '<div class="som-eti">Ultimi 30 giorni</div>' +
+        '<div class="som-riga">' +
+        '<div class="som-cifra">' +
+        '<b id="som-pct">0</b><span class="som-pc">%</span>' +
+        (passo != null && passo !== 0
+          ? '<span class="som-passo ' + (passo > 0 ? 'su' : 'giu') + '">' +
+            ICO(passo > 0 ? 'trendUp' : 'trendDown', 13) + (passo > 0 ? '+' : '') + passo +
+            '</span>'
+          : '') +
+        /* IL NUMERO GRANDE HA UN NOME. Prima il nome glielo dava l'anello,
+           che aveva la percentuale al centro e la parola intorno; tolto
+           l'anello, restava un «66%» di niente. Chi legge fa sempre la stessa
+           domanda — sessantasei per cento DI COSA — e la risposta non può
+           stare tre righe più in basso. */
+        '<span class="som-nome">ti riesce</span>' +
+        '</div>' +
+        '<div class="som-spark" id="som-spark" aria-hidden="' + (serie.length < 3) + '"></div>' +
+        '</div>' +
+        '<div class="som-dice">' +
+        '<b>' + bil.fatte + ' fatte</b> su ' + bil.messe + ' che ti eri messo' +
+        (passo != null
+          ? ' · ' + (passo === 0 ? 'come nei 30 giorni prima'
+              : (passo > 0 ? 'meglio' : 'peggio') + ' dei 30 prima, che erano il ' + pctPrima + '%')
+          : '') +
+        '</div>' +
+        '<div class="som-piede">' +
+        '<span class="som-voce">' + ICO('flame', 13, 'fiamma') + '<b>' + st.corrente + '</b> giorni di fila</span>' +
+        '<span class="som-voce">' + ICO('check', 13) + '<b>' + quanteSett + '</b> questa settimana</span>' +
+        '<span class="som-voce">' + ICO('target', 13) + '<b>' + fatte + '/' + oggi.length + '</b> oggi</span>' +
+        '</div>' +
+        '<div class="som-tutto">In tutto, ' + quante + (quante === 1 ? ' cosa fatta' : ' cose fatte') + ' da quando hai cominciato.</div>';
+    }
+    return { classi: classi, dentro: html };
+  }
+
+  /* per il codice di prima, che scrive stringhe: lo stesso pezzo già avvolto */
+  function eroePlanciaHtml() {
+    var e = eroePlancia();
+    return '<div class="' + e.classi + '">' + e.dentro + '</div>';
+  }
+
   function vistaPlancia() {
     var s = LM.load();
     var lvl = LM.livelloDaXp(s.xp);
@@ -4970,61 +5324,7 @@
        Il conteggio dei check-in: è un numero su un rituale, non sul come
        stai andando, e sta nella sua schermata.
        ============================================================ */
-    var bil = LM.bilancio(30);
-    var bilPrima = LM.bilancio(30, 30);
-    var serie = LM.serieRiuscita(12);
-    var quante = LM.quanteFatte();
-    var quanteSett = LM.quanteFatte(7);
-    var pct = Math.round(bil.tasso * 100);
-    var pctPrima = bilPrima.messe ? Math.round(bilPrima.tasso * 100) : null;
-    var passo = pctPrima != null ? pct - pctPrima : null;
-
-    if (!bil.messe) {
-      /* ANCORA PRESTO. Un «—» al posto di un numero fa sembrare l'app rotta,
-         e uno zero è peggio: dice che hai fallito tutto quando non hai
-         ancora avuto un giorno chiuso. Si dice quello che c'è, e quanto
-         manca perché ci sia un conto. */
-      html += '<div class="card som som-vuota">' +
-        '<div class="som-eti">Come sta andando</div>' +
-        '<div class="som-vuoto"><b>Ancora presto per un conto.</b>' +
-        (quante ? '<br>Intanto hai fatto ' + quante + (quante === 1 ? ' cosa' : ' cose') + '. Il conto della riuscita comincia dal primo giorno chiuso.'
-                : '<br>Metti qualcosa in un giorno: da domani questo posto comincia a dirti come va.') +
-        '</div></div>';
-    } else {
-      html += '<div class="card som">' +
-        '<div class="som-eti">Ultimi 30 giorni</div>' +
-        '<div class="som-riga">' +
-        '<div class="som-cifra">' +
-        '<b id="som-pct">0</b><span class="som-pc">%</span>' +
-        (passo != null && passo !== 0
-          ? '<span class="som-passo ' + (passo > 0 ? 'su' : 'giu') + '">' +
-            ICO(passo > 0 ? 'trendUp' : 'trendDown', 13) + (passo > 0 ? '+' : '') + passo +
-            '</span>'
-          : '') +
-        /* IL NUMERO GRANDE HA UN NOME. Prima il nome glielo dava l'anello,
-           che aveva la percentuale al centro e la parola intorno; tolto
-           l'anello, restava un «66%» di niente. Chi legge fa sempre la stessa
-           domanda — sessantasei per cento DI COSA — e la risposta non può
-           stare tre righe più in basso. */
-        '<span class="som-nome">ti riesce</span>' +
-        '</div>' +
-        '<div class="som-spark" id="som-spark" aria-hidden="' + (serie.length < 3) + '"></div>' +
-        '</div>' +
-        '<div class="som-dice">' +
-        '<b>' + bil.fatte + ' fatte</b> su ' + bil.messe + ' che ti eri messo' +
-        (passo != null
-          ? ' · ' + (passo === 0 ? 'come nei 30 giorni prima'
-              : (passo > 0 ? 'meglio' : 'peggio') + ' dei 30 prima, che erano il ' + pctPrima + '%')
-          : '') +
-        '</div>' +
-        '<div class="som-piede">' +
-        '<span class="som-voce">' + ICO('flame', 13, 'fiamma') + '<b>' + st.corrente + '</b> giorni di fila</span>' +
-        '<span class="som-voce">' + ICO('check', 13) + '<b>' + quanteSett + '</b> questa settimana</span>' +
-        '<span class="som-voce">' + ICO('target', 13) + '<b>' + fatte + '/' + oggi.length + '</b> oggi</span>' +
-        '</div>' +
-        '<div class="som-tutto">In tutto, ' + quante + (quante === 1 ? ' cosa fatta' : ' cose fatte') + ' da quando hai cominciato.</div>' +
-        '</div>';
-    }
+    html += eroePlanciaHtml();
 
     /* schede interne: si vede una sezione per volta */
     function segp(id, ico, et) {
@@ -5041,18 +5341,7 @@
 
     $vista.innerHTML = html;
 
-    var elPct = document.getElementById('som-pct');
-    if (elPct) countUp(elPct, pct);
-    var elSpark = document.getElementById('som-spark');
-    /* sotto i tre punti una linea non è un andamento, è un segmento: mostrarla
-       vorrebbe dire far leggere una tendenza a chi non ne ha ancora una */
-    if (elSpark && serie.length >= 3) {
-      LMCharts.sparkline(elSpark, serie, { h: 40, min: 0, max: 100,
-        colore: 'var(--accento)',
-        label: 'Com’è andata la riuscita nelle ultime ' + serie.length + ' settimane, da ' +
-          Math.min.apply(null, serie.map(function (x) { return x.valore; })) + '% a ' +
-          Math.max.apply(null, serie.map(function (x) { return x.valore; })) + '%' });
-    }
+    wireEroePlancia();
 
     document.getElementById('sez-plancia').querySelectorAll('[data-sez]').forEach(function (b) {
       b.addEventListener('click', function () { sezPlancia = b.getAttribute('data-sez'); disegnaSezione(); aggiornaSegP(); });
@@ -5069,222 +5358,6 @@
       });
     }
 
-    function disegnaSezione() {
-      var c = document.getElementById('sez-corpo');
-      var cambio = sezPlancia !== sezMostrata;
-      if (sezPlancia === 'riepilogo') sezRiepilogo(c);
-      else if (sezPlancia === 'diario') sezDiario(c);
-      else if (sezPlancia === 'aree') sezAree(c);
-      else sezAndamento(c);
-      sezMostrata = sezPlancia;
-      if (cambio) animaIngresso(c);
-    }
-
-    /* --- Riepilogo: azioni di oggi + costanza --- */
-    function sezRiepilogo(c) {
-      c.innerHTML = '<div class="griglia griglia-2">' +
-        '<div class="card" style="--i:0"><h2>' + ICO('target', 15) + ' Le azioni di oggi</h2>' +
-        /* «Oggi» non è più un link: il pulsante pieno «Vai a Oggi» sta due
-           riquadri sopra, nella stessa schermata, e portava esattamente allo
-           stesso posto. «Rituali» resta, da questa scheda non si raggiunge
-           altrimenti. */
-        /* Il paragrafo che stava qui («Scelte in Rituali, fatte una per volta
-     in Oggi. Qui sono tutte insieme.») spiegava l'architettura dell'app
-     sopra una lista di due righe che si legge da sé. Il titolo dice cosa
-     sono, le spunte dicono come si usano: la mappa del sito non serve. */
-        '<div class="lista-azioni" id="lista-oggi"></div>' +
-        /* la stessa riga d'aggiunta di tutte le altre: era la terza variante
-           in tre schermate — qui campo, tendina e tasto in fila; in Rituali
-           gli stessi tre su tre righe; in «Da fare» e nelle abitudini quella
-           giusta. Ora è una sola, e l'area si apre solo quando serve. */
-        '<div class="mt-s">' +
-        rigaAggiunta('agg-riep', 'Aggiungi un’altra cosa a oggi…',
-          '<label class="agg-area"><span class="agg-eti">in</span>' + selectAree('agg-riep-area') + '</label>') +
-        '</div></div>' +
-        '<div class="card" style="--i:1"><h2>' + ICO('trendUp', 15) + ' Costanza</h2>' +
-        '<div class="sotto">XP di ogni giorno, nelle ultime 12 settimane.</div>' +
-        '<div id="heatmap"></div></div>' +
-        /* LE REVIEW DI PRIMA, in Panoramica. Si scrivono in Rituali, ma
-           rileggerle è un'altra cosa dallo scriverle: è guardare indietro, e
-           guardare indietro si fa qui, accanto alla costanza e alle aree.
-           In Rituali sarebbero state una porta verso il passato in mezzo alle
-           cose da fare adesso. */
-        /* ============================================================
-           DOVE TI RIESCE E DOVE NO
-
-           È la scheda che dice cosa fare, e le altre due no. «Ti riesce il
-           64%» è una diagnosi senza indirizzo; «in Salute ne metti sei a
-           settimana e ne fai una» è un indirizzo.
-           Ordinate dalla PEGGIORE, che è l'ordine che serve: le aree che
-           vanno bene non chiedono niente, e metterle in cima vuol dire far
-           scorrere per arrivare all'unica riga che conta.
-           E sotto, le cose che non sono riuscite davvero, con il motivo più
-           frequente. Stavano in fondo all'elenco delle Attività, che è il
-           posto dove si decide cosa fare adesso: lì erano un promemoria dei
-           fallimenti in mezzo al lavoro. Qui sono quello che sono, cioè dati
-           per rispondere a «cosa non funziona per me» — la stessa domanda di
-           Scoperte e degli Esperimenti.
-           ============================================================ */
-        '<div class="card" style="--i:2"><h2>' + ICO('aree', 15) + ' Dove ti riesce e dove no</h2>' +
-        '<div class="sotto">Ultimi 30 giorni, dalla peggiore. Il conto è: quante te n’eri messe, quante ne hai fatte.</div>' +
-        (bil.aree.length
-          ? '<div class="bil-aree">' + bil.aree.map(function (a) {
-              var ar = areaById(a.areaId);
-              return '<div class="bil-riga">' +
-                '<span class="bil-nome">' + segnoArea(ar, 13, 'tit-area') + esc(ar.nome) + '</span>' +
-                '<span class="bil-barra"><i style="width:' + Math.round(a.tasso * 100) + '%;--c-area:' + LM.coloreArea(ar) + '"></i></span>' +
-                '<span class="bil-num"><b>' + Math.round(a.tasso * 100) + '%</b> <span>' + a.fatte + '/' + a.messe + '</span></span>' +
-                '</div>';
-            }).join('') + '</div>'
-          : '<p class="lista-nota">Ancora nessun giorno chiuso da contare.</p>') +
-        (function () {
-          var perse = LM.mancate(90), motivi = LM.motiviMancate(90);
-          if (!perse.length) return '';
-          return '<div class="lista-eti mt">Non ci sono riuscito <span>' + perse.length + '</span></div>' +
-            (motivi.length ? '<p class="lista-nota bil-motivo">Più spesso: <b>' + esc(motivi[0].eti.toLowerCase()) + '</b>' +
-              (motivi.length > 1 ? ', poi ' + esc(motivi[1].eti.toLowerCase()) : '') + '.</p>' : '') +
-            '<div class="lista">' + perse.slice(0, 8).map(function (a) {
-              var ar = areaById(a.areaId);
-              var g = LM.QUANTO_FATTO.find(function (x) { return x.id === a.mancata.quanto; });
-              return '<div class="lista-riga mancata-riga">' +
-                '<span class="lista-azione mancata-segno">' + ICO('annulla', 15) + '</span>' +
-                '<span class="lista-corpo"><span class="lista-tit">' + segnoArea(ar, 13, 'tit-area') + esc(a.testo) + '</span>' +
-                '<span class="lista-sub">' + esc(g ? g.eti.toLowerCase() : 'non riuscita') + '</span></span></div>';
-            }).join('') + '</div>' +
-            (perse.length > 8 ? '<p class="lista-nota">e altre ' + (perse.length - 8) + '.</p>' : '');
-        })() +
-        '</div>' +
-        '<div class="card" style="--i:3"><h2>' + ICO('archivio', 15) + ' Le review di prima</h2>' +
-        '<div class="sotto">Messe in fila dicono cose che una sera sola non dice.</div>' +
-        '<div class="lista mt-s">' +
-        rigaPorta('riep-review', 'archivio', 'Aprile tutte',
-          (function () { var q = LM.quanteReview(); return q ? q + (q === 1 ? ' scritta' : ' scritte') : 'nessuna ancora'; })()) +
-        '</div></div>' +
-        '</div>';
-
-      LMCharts.heatmap(document.getElementById('heatmap'), LM.heatmapConsistenza(12));
-
-      var lista = document.getElementById('lista-oggi');
-      if (!oggi.length) {
-        lista.innerHTML = '<div class="vuoto" style="padding:16px 8px">Nessuna azione scelta per oggi.<br><a href="#/rituali">Scegline in Rituali</a>.</div>';
-      } else {
-        lista.innerHTML = oggi.map(function (a) {
-          var ar = areaById(a.areaId);
-          return '<div class="riga-azione' + (a.done ? ' fatta' : '') + '">' +
-            '<button class="spunta" data-id="' + a.id + '" aria-label="Completa">' + ICO('check', 13) + '</button>' +
-            '<span class="testo">' + esc(a.testo) + '</span>' +
-            (a.mit ? '<span class="tag-mit">' + ICO('star', 11) + 'Priorità</span>' : '') +
-            segnoArea(ar, 15, 'tag-area') + '</div>';
-        }).join('');
-        lista.querySelectorAll('.spunta').forEach(function (b) {
-          b.addEventListener('click', function (ev) {
-            feedbackSpunta(ev, LM.completaAzione(b.getAttribute('data-id')), 'Azione completata.', 'check');
-            render();
-          });
-        });
-      }
-      var bRev = document.getElementById('riep-review');
-      if (bRev) bRev.addEventListener('click', apriArchivioReview);
-      wireRigaAggiunta(c, 'agg-riep', function (testo, opz) {
-        var sel = opz && opz.querySelector('select');
-        LM.aggiungiAzione(testo, sel ? sel.value : 'altro', { mit: LM.serveMit() });
-        render();
-      });
-    }
-
-    /* --- Aree: griglia delle aree di vita --- */
-    function sezAree(c) {
-      c.innerHTML = '<div class="griglia griglia-aree" id="griglia-aree"></div>';
-      var ga = document.getElementById('griglia-aree');
-      ga.innerHTML = areeAttive().map(function (a, i) {
-        var media = LM.mediaValutazioneArea(a.id, 7);
-        var min7 = LM.serieMinuti(a.id, 7).reduce(function (x, p) { return x + p.valore; }, 0);
-        return '<div class="card card-area card-hover" style="--i:' + i + ';--c-area:' + LM.coloreArea(a) + '">' +
-          '<div class="testata"><span class="icona-area">' + ICO(a.icona, 15) + '</span>' + esc(a.nome) + '</div>' +
-          '<div id="spark-' + a.id + '"></div>' +
-          '<div class="area-metriche"><div><b>' + (media ? LMCharts.fmtNum(media) : '—') + '</b><span>voto medio 7g</span></div>' +
-          '<div><b>' + min7 + '</b><span>minuti 7g</span></div></div>' +
-          '<div class="sistema-nota">' + esc(a.sistema) + '</div></div>';
-      }).join('');
-      areeAttive().forEach(function (a) {
-        LMCharts.sparkline(document.getElementById('spark-' + a.id), LM.serieValutazioni(a.id, 14),
-          { min: 1, max: 5, colore: LM.coloreArea(a), label: 'Auto-valutazione ' + a.nome + ', 14 giorni', unita: '/5' });
-      });
-    }
-
-    /* --- Andamento: check-in nel tempo + minuti per area --- */
-    function sezAndamento(c) {
-      var dark = document.documentElement.getAttribute('data-mode') === 'dark';
-      c.innerHTML = '<div class="card" style="--i:0"><div class="card-testa"><h2>' + ICO('polso', 15) + ' Energia, focus e umore</h2>' +
-        '<div class="segmenti mini-seg" id="seg-periodo">' +
-        '<button data-g="14" class="' + (periodoTrend === 14 ? 'attivo' : '') + '">14 giorni</button>' +
-        '<button data-g="30" class="' + (periodoTrend === 30 ? 'attivo' : '') + '">30 giorni</button></div></div>' +
-        '<div class="sotto">Media dei check-in, da 1 a 5.</div><div id="trend-checkin"></div></div>' +
-        '<div class="card mt" style="--i:1"><h2>' + ICO('tempospeso', 15) + ' Come hai speso il tempo</h2>' +
-        '<div class="sotto">Minuti per area, negli ultimi 7 giorni.</div><div id="hbar-minuti"></div></div>';
-
-      LMCharts.trend(document.getElementById('trend-checkin'), [
-        { nome: 'Energia', colore: dark ? '#c98500' : '#eda100', punti: LM.serieCheckin('energia', periodoTrend) },
-        { nome: 'Focus',   colore: dark ? '#3987e5' : '#2a78d6', punti: LM.serieCheckin('focus', periodoTrend) },
-        { nome: 'Umore',   colore: dark ? '#199e70' : '#1baf7a', punti: LM.serieCheckin('umore', periodoTrend) }
-      ], { min: 1, max: 5, label: 'Andamento di energia, focus e umore' });
-
-      LMCharts.hbar(document.getElementById('hbar-minuti'),
-        LM.minutiSettimanaPerArea().sort(function (a, b) { return b.minuti - a.minuti; })
-          .map(function (r) { return { label: r.area.nome, icona: ICO(r.area.icona, 15), value: r.minuti, colore: LM.coloreArea(r.area) }; }),
-        { unita: 'min' });
-
-      document.getElementById('seg-periodo').querySelectorAll('[data-g]').forEach(function (b) {
-        b.addEventListener('click', function () { periodoTrend = +b.getAttribute('data-g'); disegnaSezione(); });
-      });
-    }
-
-    /* --- Diario: cronologia di ciò che hai fatto e scritto --- */
-    function sezDiario(c) {
-      var giorni = LM.diario(diarioGiorni, diarioTutto);
-      annullaPadroni = padroniAnnulla(giorni);
-      var filtro = '<div class="segmenti mini-seg" id="diario-filtro">' +
-        '<button data-tutto="0" class="' + (!diarioTutto ? 'attivo' : '') + '">Cose importanti</button>' +
-        '<button data-tutto="1" class="' + (diarioTutto ? 'attivo' : '') + '">Tutto</button></div>';
-      var html;
-      if (!giorni.length) {
-        html = '<div class="card diario"><div class="card-testa">' + filtro + '</div>' +
-          '<div class="vuoto" style="padding:20px 8px">' + ICO('quaderno', 26) + '<br><b>Ancora niente da mostrare.</b><br>Appena fai qualcosa comparirà qui, giorno per giorno.</div></div>';
-      } else {
-        /* la riga sotto il filtro dice SOLO quello che il filtro non dice da
-           sé: cosa resta fuori. Prima ci stava anche «la storia di tutto ciò
-           che fai — azioni, note, scelte, impostazioni», che è la definizione
-           della parola «diario» scritta sotto la parola «Diario». */
-        html = '<div class="card diario"><div class="card-testa">' + filtro +
-          (diarioTutto ? '' : '<div class="sotto" style="margin:0">Con «Tutto» compaiono anche le modifiche minori.</div>') + '</div>';
-        giorni.forEach(function (g) {
-          html += '<div class="diario-giorno">' +
-            '<div class="diario-data">' + etichettaGiorno(g.data) + '</div>' +
-            '<div class="diario-eventi">' + g.eventi.map(eventoDiarioHtml).join('') + '</div></div>';
-        });
-        html += '</div>';
-        var totGiorni = LM.giorniConAttivita();
-        if (totGiorni > giorni.length) {
-          html += '<div style="text-align:center" class="mt"><button class="btn" id="diario-altro">' + ICO('chevronGiu', 15) + ' Mostra altri giorni</button></div>';
-        }
-      }
-      c.innerHTML = html;
-      var b = document.getElementById('diario-altro');
-      if (b) b.addEventListener('click', function () { diarioGiorni += 30; disegnaSezione(); });
-      document.getElementById('diario-filtro').querySelectorAll('[data-tutto]').forEach(function (bt) {
-        bt.addEventListener('click', function () { diarioTutto = bt.getAttribute('data-tutto') === '1'; disegnaSezione(); });
-      });
-      c.querySelectorAll('[data-annulla]').forEach(function (bt) {
-        bt.addEventListener('click', function () {
-          /* l'etichetta è il testo della riga stessa: è quello che l'utente
-             sta guardando, e finisce nella riga «Annullato: …» */
-          var riga = bt.closest('.diario-evento');
-          var eti = riga ? (riga.querySelector('.diario-testo') || {}).textContent : '';
-          annullaDalDiario(+bt.getAttribute('data-annulla'), (eti || '').replace(/\s+/g, ' ').trim().slice(0, 60),
-            bt.getAttribute('data-tipo'), bt.getAttribute('data-chiave'));
-        });
-      });
-    }
   }
 
   /* Annullare dal diario, per qualunque riga e a qualunque distanza di tempo.
@@ -5306,6 +5379,7 @@
         toast('Rimesso com’era.', 0, 'check');
       } });
     }
+
     if (tipo && chiave) {
       conRimetti(function () { return LM.annullaRecord(tipo, chiave); });
       return;

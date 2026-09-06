@@ -51,8 +51,17 @@ const IMPRONTA = `(function (radice) {
        la stessa animazione, e servono a farla ripartire senza costringere il
        browser a impaginare. Quale dei due tocchi dipende da quanti disegni ci
        sono stati prima, non da cosa è stato disegnato. */
-    var cl = (e.getAttribute('class') || '').trim().split(/\\s+/).filter(Boolean)
-      .map(function (c) { return (c === 'anim-a' || c === 'anim-b') ? 'anim' : c; })
+    /* Le classi che segnano un'ENTRATA sono appunti di runtime, non markup:
+       animaIngresso le mette prima e le toglie quando l'animazione finisce,
+       quindi ci sono o non ci sono a seconda dell'istante in cui guardi.
+       (anim-a e anim-b poi si alternano APPOSTA a ogni disegno: sono due nomi
+       per la stessa animazione, e servono a farla ripartire senza costringere
+       il browser a impaginare.)
+       Che l'entrata ci sia quando deve esserci lo tiene prove/sezioni.js, che
+       guarda le animazioni vive invece delle classi. */
+    var TRANSITORIE = /^(anim-a|anim-b|anim|vista-enter|sez-enter(-dx|-sx)?)$/;
+    var cl = (e.getAttribute('class') || '').trim().split(/\\s+/)
+      .filter(function (c) { return c && !TRANSITORIE.test(c); })
       .sort().join('.');
     var dati = [];
     for (var i = 0; i < e.attributes.length; i++) {
@@ -131,6 +140,34 @@ const IMPRONTA = `(function (radice) {
     return [...new Set(fuori)];
   });
 
+  /* SI ASPETTA CHE LE COSE SI FERMINO.
+     Il numero grande di Panoramica sale da zero fino al suo valore: fotografato
+     a metà corsa dice 41 di qua e 65 di là, e sembra una differenza mentre è
+     solo un istante diverso. Si aspetta che non ci sia più niente in
+     movimento, con un tetto perché un'animazione infinita non deve bloccare. */
+  const ferme = async () => {
+    for (let i = 0; i < 30; i++) {
+      const quante = await p.evaluate(() =>
+        document.getAnimations().filter((a) => a.playState === 'running' && a.effect &&
+          (a.effect.getTiming().iterations || 1) !== Infinity).length);
+      if (!quante) break;
+      await p.waitForTimeout(100);
+    }
+    /* countUp non è un'animazione del browser: è un rAF che scrive del testo.
+       Dargli «abbastanza tempo» è una scommessa; si guarda invece finché il
+       testo della pagina smette di cambiare. */
+    let prima = null;
+    for (let i = 0; i < 25; i++) {
+      const ora = await p.evaluate(() => {
+        const e = document.getElementById('vista');
+        return e ? e.textContent.length + '|' + (document.getElementById('som-pct') || {}).textContent : '';
+      });
+      if (ora === prima) break;
+      prima = ora;
+      await p.waitForTimeout(120);
+    }
+  };
+
   const disegna = async (via, react, tab) => {
     await p.evaluate((r) => { const s = LM.load(); s.profilo.react = r; LM.save(); }, react);
     await p.evaluate((v) => { location.hash = '#/' + v; }, via);
@@ -143,6 +180,7 @@ const IMPRONTA = `(function (radice) {
       }, tab);
       await p.waitForTimeout(700);
     }
+    await ferme();
     return p.evaluate(IMPRONTA);
   };
 
