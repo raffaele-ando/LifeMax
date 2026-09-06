@@ -24,8 +24,6 @@ export default defineConfig({
      583 KB per questo motivo. È l'errore classico di `build.lib`, e non fa
      rumore: funziona tutto, costa solo il doppio. */
   define: { 'process.env.NODE_ENV': '"production"' },
-  resolve: { alias: { react: 'preact/compat', 'react-dom': 'preact/compat',
-    'react-dom/client': 'preact/compat', 'react/jsx-runtime': 'preact/jsx-runtime' } },
   build: {
     outDir: resolve(QUI, '..', 'assets', 'react'),
     emptyOutDir: true,

@@ -19,13 +19,13 @@
    ha scritto il markup.  */
 import { createRoot } from 'react-dom/client';
 import { StrictMode } from 'react';
-import Attivita from './schermi/Attivita.jsx';
-
-/* le schermate convertite. Finché una non è qui dentro, la disegna il codice
-   di prima — che resta al suo posto, intatto. */
-const SCHERMI = {
-  inbox: Attivita
-};
+/* LE SCHERMATE CONVERTITE. Vuoto, e per una regola precisa: qui dentro entra
+   una schermata solo quando è IDENTICA a quella di prima — stesso markup,
+   stesse classi, stesso comportamento. Passare a React non è l'occasione per
+   ridisegnare: è un cambio di motore, e chi guarda non se ne deve accorgere.
+   Ci avevo messo una versione «mia» di Attività, con altre linguette e altro
+   contenuto. Era sbagliato e l'ho tolta. */
+const SCHERMI = {};
 
 /* una radice per contenitore: React vuole tenersela fra un disegno e
    l'altro, e ricrearla a ogni giro butterebbe via lo stato dei componenti

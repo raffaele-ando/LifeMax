@@ -1,6 +1,6 @@
 # Prove
 
-Ventisei controlli automatici che guardano una cosa sola ciascuno, ma
+Ventisette controlli automatici che guardano una cosa sola ciascuno, ma
 quella cosa fa morire l'app — o la fa diventare illeggibile — quando si
 rompe. Sono nati da problemi veri.
 
@@ -673,6 +673,25 @@ genera le chiavi, in un browser vero).
   riscrive il raggio al 99% perché l'arco resti dentro al ritaglio. **Un
   numero grosso non è una diagnosi.**
 
+- **pezzi.js** — LE FORME SI SCRIVONO UNA VOLTA SOLA, ed è un **cricchetto**.
+  Nel markup generato da `app.js` ci sono 544 classi diverse e 1630 usi, e
+  sotto ci sono molte meno forme di quante sembrino: sette nomi diversi per
+  «una nota sotto a qualcosa», otto per «l'etichetta di una riga», sette per
+  «una riga di elenco». Nessuno aveva sbagliato — ogni volta serviva una nota
+  e ogni volta il posto più vicino non ce l'aveva, così se ne faceva una.
+  Migrare cinquecentosessantasei punti in un colpo non si fa: si sbaglia.
+  Quindi questa prova non pretende zero, pretende che il numero **non salga**,
+  e ogni volta che scende si abbassa il tetto. Il debito si paga a rate e
+  nessuno può aggiungerne senza accorgersene. Poi esegue davvero
+  `assets/pezzi.js` — un modulo che non si carica passerebbe il conteggio
+  senza fare niente — e controlla le cose che i pezzi devono garantire: che un
+  tasto tonale non si dichiari anche principale, che una riga che porta
+  altrove abbia la freccetta e una che fa una cosa adesso no, che il testo che
+  arriva da fuori venga scappato anche dentro a un attributo. In coda tiene
+  allineati i **due gemelli**, `assets/pezzi.js` e `react/src/pezzi.jsx`: se un
+  pezzo esiste di là e non di qua, la promessa «il lavoro si fa una volta
+  sola» è già rotta. Non serve Chromium.
+
 ## Come si lanciano
 
 **Prima si costruisce.** Le prove aprono `index.html`, che è generato: se il
@@ -683,6 +702,7 @@ pacco è vecchio, provano il codice di ieri e dicono che va tutto bene.
     npm install playwright
     node prove/pacco.js         # solo Node: il pacco è quello dei sorgenti di adesso?
     node prove/intestazioni.js  # solo Node: la cache di _headers non fa danni
+    node prove/pezzi.js         # solo Node: il cricchetto delle forme
     node prove/audit.js         # non è una prova: stampa un rapporto da leggere
     node prove/clic.js
     node prove/modalita.js

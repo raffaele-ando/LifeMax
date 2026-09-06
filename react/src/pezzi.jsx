@@ -153,6 +153,55 @@ export function Niente({ titolo, dice, piu, children }) {
   );
 }
 
-export function Nota({ piu, children }) {
-  return <p className={cl('lista-nota', piu)}>{children}</p>;
+const TONO = { normale: '', attenzione: 'nota-attenzione', pericolo: 'nota-pericolo' };
+export function Nota({ piu, tono = 'normale', children }) {
+  return <p className={cl('lista-nota', TONO[tono], piu)}>{children}</p>;
+}
+
+/* ==================================================================
+   I MATTONI — le forme più piccole. Nel codice di prima lo stesso
+   mestiere girava sotto fino a otto nomi diversi; l'elenco di cosa
+   assorbe ciascuno sta in COMPONENTI.md.
+   ================================================================== */
+
+/* seg-ico · diario-ico · sm-porta-ico · rev-ico · fs-ico · lista-azione */
+export function Icona({ nome, dim, piu }) {
+  return <span className={cl('pz-segno', piu)}><Segno nome={nome} dim={dim} /></span>;
+}
+
+/* sc-eti · lista-eti · imp-eti · agg-eti · stat-eti · som-eti · seg-eti · conc-eti */
+export function Etichetta({ testo, ico, per, piu, children }) {
+  const dentro = <>{ico && <Segno nome={ico} />}{ico ? ' ' : ''}{testo}{children}</>;
+  return per
+    ? <label className={cl('sc-eti', piu)} htmlFor={per}>{dentro}</label>
+    : <span className={cl('sc-eti', piu)}>{dentro}</span>;
+}
+
+/* sc-val · lista-val · stat-val · som-pc */
+export function Valore({ testo, forte, piu, children }) {
+  return <span className={cl('sc-val', forte && 'sc-val-forte', piu)}>{testo}{children}</span>;
+}
+
+/* lista-tit · sm-titolo · som-nome · bil-nome · ob-titolo */
+export function Titolo({ testo, fatta, piu }) {
+  return <span className={cl('lista-tit', fatta && 'fatta', piu)}>{testo}</span>;
+}
+
+/* riga-flex · exp-testa · focus-azioni-riga · abd-periodo — le prime due
+   dichiaravano proprietà identiche al 100%: erano lo stesso pezzo due volte */
+const SPAZIO = { fra: '', inizio: 'rf-inizio', fine: 'rf-fine' };
+export function Fila({ spaziatura = 'fra', sopra, id, piu, children }) {
+  return <div className={cl('riga-flex', SPAZIO[spaziatura], sopra, piu)} id={id}>{children}</div>;
+}
+
+/* fs-barra · bil-barra · ab-prog-barra */
+export function Barra({ quota = 0, colore, alta, etichetta, piu }) {
+  const q = Math.max(0, Math.min(1, Number(quota) || 0));
+  return (
+    <span className={cl('fs-barra', alta && 'fs-barra-alta', piu)}
+      role="progressbar" aria-valuenow={Math.round(q * 100)} aria-valuemin={0} aria-valuemax={100}
+      aria-label={etichetta}>
+      <i style={{ width: (q * 100).toFixed(1) + '%', background: colore || undefined }} />
+    </span>
+  );
 }

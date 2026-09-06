@@ -89,5 +89,30 @@ if (PZ) {
   ok('un attributo vuoto non viene scritto', !/id=/.test(PZ.tasto({ testo: 'x' })), 'niente id=""');
 }
 
+console.log('\nI DUE GEMELLI HANNO GLI STESSI PEZZI');
+/* `assets/pezzi.js` e `react/src/pezzi.jsx` devono restare la stessa cosa
+   scritta due volte. Se in React ne compare uno che in vanilla non c'è (o
+   viceversa), la promessa «il lavoro si fa una volta sola» è già rotta: chi
+   converte una schermata trova un pezzo che di là non esiste e se lo
+   riscrive, e siamo daccapo. */
+{
+  const viaReact = path.join(RADICE, 'react', 'src', 'pezzi.jsx');
+  if (!fs.existsSync(viaReact)) {
+    console.log('  --  non c’è ancora l’isola React: niente da confrontare');
+  } else {
+    const jsx = fs.readFileSync(viaReact, 'utf8');
+    const inReact = [...jsx.matchAll(/export function ([A-Z]\w*)/g)].map((m) => m[1].toLowerCase());
+    /* `Segno` in React è interno (lo usano gli altri pezzi), in vanilla è la
+       funzione `icona`: sono la stessa cosa con due nomi di comodo */
+    const inVanilla = PZ ? Object.keys(PZ).filter((k) => !['esc', 'att', 'classi'].includes(k)) : [];
+    const soloReact = inReact.filter((k) => inVanilla.indexOf(k) < 0 && k !== 'segno');
+    const soloVanilla = inVanilla.filter((k) => inReact.indexOf(k) < 0);
+    ok('nessun pezzo esiste solo in React', soloReact.length === 0, soloReact.join(', ') || 'nessuno');
+    ok('e nessuno esiste solo in vanilla', soloVanilla.length === 0, soloVanilla.join(', ') || 'nessuno');
+    ok('e sono lo stesso numero', inReact.length - (inReact.indexOf('segno') >= 0 ? 1 : 0) === inVanilla.length,
+      inReact.length + ' in React, ' + inVanilla.length + ' in vanilla');
+  }
+}
+
 console.log(guai ? '\n>>> ' + guai + (guai === 1 ? ' PROBLEMA' : ' PROBLEMI') : '\n>>> TUTTO A POSTO');
 process.exit(guai ? 1 : 0);

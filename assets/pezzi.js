@@ -207,16 +207,79 @@
   }
 
   /* -------------------------------------------------------------- LA NOTA */
+  var TONO = { normale: '', attenzione: 'nota-attenzione', pericolo: 'nota-pericolo' };
   function nota(o) {
     if (typeof o === 'string') o = { dice: o };
     o = o || {};
-    return '<p class="' + classi('lista-nota', o.piu) + '">' + (o.html || esc(o.dice)) + '</p>';
+    return '<p class="' + classi('lista-nota', TONO[o.tono] || '', o.piu) + '">' +
+      (o.html || esc(o.dice)) + '</p>';
+  }
+
+  /* ================================================================
+     I MATTONI — le forme più piccole, quelle che dentro ai blocchi si
+     ripetevano sotto sette nomi diversi. L'elenco di cosa assorbe ciascuno
+     sta in COMPONENTI.md.
+     ================================================================ */
+
+  /* un'icona accanto a del testo: seg-ico, diario-ico, sm-porta-ico,
+     rev-ico, fs-ico, lista-azione erano sei nomi per questo */
+  function icona(o) {
+    if (typeof o === 'string') o = { nome: o };
+    o = o || {};
+    return '<span class="' + classi('pz-segno', o.piu) + '">' + segno(o.nome, o.dim) + '</span>';
+  }
+
+  /* il nome di una cosa dentro a una riga: otto nomi diventano questo */
+  function etichetta(o) {
+    if (typeof o === 'string') o = { testo: o };
+    o = o || {};
+    var dentro = segno(o.ico) + (o.ico ? ' ' : '') + (o.html || esc(o.testo));
+    if (o.per) return '<label class="' + classi('sc-eti', o.piu) + '"' + att('for', o.per) + '>' + dentro + '</label>';
+    return '<span class="' + classi('sc-eti', o.piu) + '">' + dentro + '</span>';
+  }
+
+  /* quanto vale adesso quella cosa: sc-val, lista-val, stat-val, som-pc */
+  function valore(o) {
+    if (typeof o === 'string') o = { testo: o };
+    o = o || {};
+    return '<span class="' + classi('sc-val', o.forte ? 'sc-val-forte' : '', o.piu) + '">' +
+      (o.html || esc(o.testo)) + '</span>';
+  }
+
+  /* il titolo di una riga di elenco: lista-tit, sm-titolo, som-nome, bil-nome */
+  function titolo(o) {
+    if (typeof o === 'string') o = { testo: o };
+    o = o || {};
+    return '<span class="' + classi('lista-tit', o.fatta ? 'fatta' : '', o.piu) + '">' +
+      esc(o.testo) + '</span>';
+  }
+
+  /* due o tre cose in fila. `riga-flex` e `exp-testa` dichiaravano proprietà
+     identiche al 100%: erano lo stesso pezzo scritto due volte. */
+  var SPAZIO = { fra: '', inizio: 'rf-inizio', fine: 'rf-fine' };
+  function fila(o) {
+    o = o || {};
+    return '<div class="' + classi('riga-flex', SPAZIO[o.spaziatura] || '', o.sopra, o.piu) + '"' +
+      att('id', o.id) + '>' + (o.dentro || '') + '</div>';
+  }
+
+  /* quanto sei arrivato: fs-barra, bil-barra, ab-prog-barra */
+  function barra(o) {
+    o = o || {};
+    var q = Math.max(0, Math.min(1, Number(o.quota) || 0));
+    return '<span class="' + classi('fs-barra', o.alta ? 'fs-barra-alta' : '', o.piu) + '"' +
+      ' role="progressbar" aria-valuenow="' + Math.round(q * 100) + '" aria-valuemin="0" aria-valuemax="100"' +
+      att('aria-label', o.etichetta) + '>' +
+      '<i style="width:' + (q * 100).toFixed(1) + '%' +
+      (o.colore ? ';background:' + o.colore : '') + '"></i></span>';
   }
 
   window.PZ = {
     tasto: tasto, scheda: scheda, elenco: elenco, riga: riga, campo: campo,
     pastiglie: pastiglie, segmenti: segmenti, statistica: statistica,
     niente: niente, nota: nota,
+    icona: icona, etichetta: etichetta, valore: valore, titolo: titolo,
+    fila: fila, barra: barra,
     /* utili anche fuori: chi compone a mano un caso che non è un pezzo */
     esc: esc, att: att, classi: classi
   };

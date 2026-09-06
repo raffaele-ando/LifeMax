@@ -139,6 +139,9 @@ nel codice invece che nelle teste.
 numero non salga. Ogni volta che scende si abbassa il tetto. Il debito si paga
 a rate e nessuno può aggiungerne senza accorgersene.
 
+Il catalogo completo — tutte le forme, i doppioni che ciascuna assorbe e
+l'ordine in cui migrarle — sta in **`COMPONENTI.md`**.
+
 **L'isola React** (`react/`, costruita con Vite). La migrazione è a fico
 strangolatore: si converte una schermata per volta e finché non è finita
 convivono le due. Nel router c'è **un `if`**, e l'interruttore sta in
@@ -157,10 +160,16 @@ percorre fino in fondo:
 | React 19 + ReactDOM, versione di produzione | **61 KB** |
 | **Preact con `preact/compat`, stesso JSX** | **9 KB** |
 
-Si è scelto **Preact**: la stessa API, non una riga di JSX cambiata, e nove
-kilobyte invece di sessantuno su un primo schermo che ne pesa 140. E chi non
-accende l'interruttore non scarica niente: l'isola sta fuori dal pacco, come
-il Design lab.
+Si è scelto **React**, non Preact: la scelta è di chi usa l'app, e i numeri
+qui sopra servivano a farla con qualcosa in mano invece che a occhio. Chi non
+accende l'interruttore non scarica niente lo stesso: l'isola sta fuori dal
+pacco, come il Design lab.
+
+**Portare in React non è ridisegnare.** Una schermata entra fra le convertite
+solo quando è *identica* a quella di prima — stesso markup, stesse classi,
+stesso comportamento. È un cambio di motore, e chi guarda non se ne deve
+accorgere. (Il primo tentativo qui era una versione «mia» di Attività, con
+altre linguette e altro contenuto. Era sbagliato ed è stato tolto.)
 
 (I 176 KB della prima riga non sono un refuso: in modalità libreria Vite non
 sostituisce `process.env.NODE_ENV`, e senza una riga di configurazione nel
