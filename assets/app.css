@@ -10,15 +10,57 @@
 /* ---------- token ---------- */
 
 :root {
-  /* brand */
-  --brand-a: #7c5df0;
-  --brand-b: #4a7bf5;
-  --brand-c: #2ab8e8;
-  --grad-brand: linear-gradient(118deg, var(--brand-a), var(--brand-b) 55%, var(--brand-c));
-  --accento: #5a5fe0;
+  /* ============================================================
+     L'ACCENTO È INCHIOSTRO, E NON È UN GRADIENTE
+
+     Qui c'era `linear-gradient(118deg, #7c5df0, #4a7bf5, #2ab8e8)`: viola →
+     blu → ciano. È l'impronta digitale più riconoscibile di un'interfaccia
+     fatta da una macchina, e non lo dico io — due delle skill di design la
+     nominano per nome, una la chiama «the most common AI design fingerprint».
+     Sul tasto «+» in basso a destra si vedeva a occhio nudo.
+
+     Perché INCHIOSTRO e non un altro colore. Le otto aree della vita
+     occupano già tutta la ruota dei colori, e sono scelte per restare
+     distinguibili anche a chi ha una carenza cromatica: un accento a mezza
+     saturazione, di qualunque tinta, sembrerebbe una nona area. E questo non
+     è un prodotto che vende: è uno strumento che si legge. Su uno strumento i
+     colori appartengono ai DATI; l'ago e le cifre sono inchiostro.
+
+     Quindi il colore qui non lo fa la tinta, lo fa il contrasto — che è anche
+     l'unica cosa che si legge sempre, di corsa, con una mano sola, al sole.
+     ============================================================ */
+  /* Restano definiti perché li citano l'aurora di sfondo e la pelle
+     «arcade», che è uno stile alternativo dichiarato. Ma nella pelle normale
+     non sono più tre tinte da mescolare: sono l'inchiostro, appena schiarito.
+     Un fondo che cambia colore da un angolo all'altro è decorazione, e la
+     decorazione qui non serve a nessuno. */
+  /* ============================================================
+     LE CIFRE HANNO UN CARATTERE LORO
+
+     «Spend your boldness in one place»: qui è nelle cifre, perché misurare è
+     quello che questa app fa. Il resto sta zitto.
+
+     È un graziato di sistema, quindi non si scarica niente — zero byte in più
+     su un progetto dove questa settimana ne ho tolti seicentododici. New York
+     sugli Apple, Cambria o Georgia su Windows, Noto Serif su Android. Dove non
+     c'è nessuno dei tre si torna al sans e non è successo niente.
+
+     `tabular-nums` perché un numero che si aggiorna da solo — il timer, i
+     minuti, le percentuali — non deve ballare di larghezza a ogni cifra: un
+     movimento nel campo visivo chiama l'occhio, ed è esattamente quello che
+     una testa che corre non deve ricevere mentre lavora. */
+  --font-cifre: "New York", "Iowan Old Style", Cambria, Georgia, "Noto Serif", serif;
+
+  --brand-a: #17323f;
+  --brand-b: #17323f;
+  --brand-c: #17323f;
+  --accento: #17323f;              /* inchiostro di petrolio */
   --accento-ink: #ffffff;
-  --accento-pieno: var(--accento); /* sfondo per superfici accento con testo sopra */
-  --accento-testo: #4a4fd0; /* variante scura del brand: testo accento su superfici chiare, AA */
+  --accento-pieno: var(--accento);
+  --accento-testo: #17323f;
+  /* resta per compatibilità con chi lo cita: è una tinta piatta, non più un
+     gradiente. Un fondo pieno è un fondo pieno. */
+  --grad-brand: var(--accento);
 
   /* superfici e inchiostro — chiaro */
   --pagina: #f6f6f8;
@@ -134,9 +176,16 @@
 }
 
 :root[data-mode="dark"] {
-  --accento: #8a8ef8;
-  --accento-ink: #0e0e1a;
-  --accento-testo: #8a8ef8; /* su scuro l'accento chiaro passa già AA */
+  /* Sullo scuro l'inchiostro non si vede: si ribalta. L'accento resta la
+     stessa idea — il contrasto massimo contro il fondo — solo dall'altra
+     parte. Una punta di verde-azzurro perché non sia bianco puro, che sullo
+     scuro abbaglia. */
+  --accento: #d7e6e9;
+  --accento-ink: #10222b;
+  --accento-testo: #d7e6e9;
+  --brand-a: #d7e6e9;
+  --brand-b: #d7e6e9;
+  --brand-c: #d7e6e9;
   --critico: #e85c56;
   --critico-testo: #ff9d97;
   --critico-pieno: #b3342c;
@@ -363,13 +412,12 @@ small { color: var(--inchiostro-2); }
   padding: 2px 8px 18px;
   font-weight: var(--peso-display); font-size: 18.5px; letter-spacing: -0.03em;
 }
-.logo svg { filter: drop-shadow(0 3px 8px color-mix(in srgb, var(--brand-b) 40%, transparent)); }
+.logo svg { filter: none; }   /* l'alone colorato sotto al logo era un effetto, non un'informazione */
 .logo .logo-tag {
   margin-left: auto; font-size: 11px; font-weight: var(--peso-display); letter-spacing: .1em;
   color: var(--accento-testo); border: 1px solid color-mix(in srgb, var(--accento) 35%, transparent);
   background: color-mix(in srgb, var(--accento) 8%, transparent);
-  padding: 2px 7px; border-radius: var(--r-tondo); text-transform: uppercase;
-}
+  padding: 2px 7px; border-radius: var(--r-tondo); }
 
 .nav-item {
   position: relative;
@@ -441,7 +489,23 @@ small { color: var(--inchiostro-2); }
 .cattura-cta:hover { transform: translateY(-1px); box-shadow: var(--e2); border-color: color-mix(in srgb, var(--accento) 40%, var(--bordo-forte)); }
 .cattura-cta .cattura-cta-testo { flex: 1; display: inline-flex; align-items: center; gap: 8px; }
 .cattura-cta .cattura-cta-testo .ico { color: var(--accento); }
-.cattura-cta kbd { margin-left: auto; }
+.cattura-cta /* ============================================================
+   LE CIFRE — l'unico posto in cui questa interfaccia alza la voce.
+
+   Il tempo del timer, i numeri grandi dell'andamento, la percentuale del
+   riepilogo, il titolo di una schermata. Non tutte le cifre dell'app: quelle
+   dentro a un elenco restano nel sans, se no non è più un accento, è un tema.
+   ============================================================ */
+.conc-cifre, .timer-display, .stat .stat-val, .eroe2-xp,
+.som-cifra b, .som-pc, .topbar h1 {
+  font-family: var(--font-cifre);
+  font-variant-numeric: tabular-nums;
+  /* un graziato ha già il suo peso: caricarlo oltre lo impasta */
+  font-weight: var(--peso-forte);
+  letter-spacing: 0;
+}
+
+kbd { margin-left: auto; }
 
 /* footer sidebar: account + impostazioni */
 .sidebar-fondo { margin-top: auto; padding: 12px 2px 0; border-top: 1px solid var(--bordo); display: flex; flex-direction: column; gap: 8px; }
@@ -652,13 +716,22 @@ small { color: var(--inchiostro-2); }
 
 /* ---------- componenti base ---------- */
 
+/* UNA SCHEDA NON GALLEGGIA. `--e2` è l'ombra di una cosa staccata dalla
+   pagina — un pannello, un menù, una cosa che si è aperta sopra al resto — e
+   metterla sotto a ogni scheda voleva dire che tutto galleggiava allo stesso
+   modo, cioè che niente galleggiava. È il «kit di schede SaaS»: contenuto
+   tagliato in riquadri identici, stesso raggio su tutto, stessa ombra grigia
+   sotto a ognuno.
+   Una scheda sta SULLA pagina: la separa un filo, non un'ombra. L'ombra resta
+   dov'è un'informazione — questa cosa sta sopra a quell'altra, e sotto ci
+   torni. */
 .card {
   position: relative;
   background: var(--superficie-1);
   border: 1px solid var(--bordo);
   border-radius: var(--r-3);
   padding: 20px;
-  box-shadow: var(--e2);
+  box-shadow: var(--e1);
   transition: box-shadow var(--t-media), transform var(--t-media), border-color var(--t-media);
 }
 :root[data-mode="dark"] .card { box-shadow: var(--e2), inset 0 1px 0 rgba(255, 255, 255, .04); }
@@ -1105,7 +1178,7 @@ label.campo { display: block; margin: var(--s4) 0 var(--s2); }
   font-size: 27px; font-weight: var(--peso-display); letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums; line-height: 1;
 }
-.timer-eti { font-size: 9.5px; font-weight: var(--peso-titolo); letter-spacing: .12em; text-transform: uppercase; color: var(--inchiostro-muto); margin-top: 3px; }
+.timer-eti { font-size: 9.5px; font-weight: var(--peso-titolo); letter-spacing: .12em; color: var(--inchiostro-muto); margin-top: 3px; }
 /* mentre il timer corre l'azione resta l'azione: cala di un soffio, non di
    metà, e tiene il suo peso */
 .timer-attivo .focus-azione { font-size: clamp(24px, 3.6vw, 38px); }
@@ -1178,10 +1251,9 @@ kbd {
 
 .eroe {
   display: grid; grid-template-columns: auto 1fr auto; gap: 26px; align-items: center;
-  background:
-    radial-gradient(120% 180% at 0% 0%, color-mix(in srgb, var(--brand-a) 7%, transparent), transparent 45%),
-    radial-gradient(120% 180% at 100% 0%, color-mix(in srgb, var(--brand-c) 6%, transparent), transparent 45%),
-    var(--superficie-1);
+  /* due lavate di colore agli angoli: erano decorazione, e la decorazione
+     addosso a una scheda che porta dei numeri li rende solo meno leggibili */
+  background: var(--superficie-1);
 }
 @media (max-width: 860px) { .eroe { grid-template-columns: 1fr; text-align: center; justify-items: center; } }
 .eroe-statistiche { display: flex; gap: 0; flex-wrap: wrap; }
@@ -1240,8 +1312,7 @@ kbd {
 .riga-azione .testo { flex: 1; font-weight: var(--peso-forte); font-size: 14px; }
 .riga-azione .tag-mit {
   display: inline-flex; align-items: center; gap: 4px;
-  font-size: 11px; font-weight: var(--peso-display); letter-spacing: .09em;
-  background: var(--accento-pieno); color: var(--accento-ink);
+  font-size: 11px; font-weight: var(--peso-display); background: var(--accento-pieno); color: var(--accento-ink);
   padding: 3px 8px; border-radius: var(--r-tondo);
   box-shadow: var(--e1);
 }
@@ -1298,8 +1369,7 @@ select.sel-compatto {
    ============================================================ */
 .som { display: flex; flex-direction: column; gap: var(--s3); }
 .som-eti {
-  font-size: 11px; font-weight: var(--peso-titolo); letter-spacing: .06em; text-transform: uppercase;
-  color: var(--inchiostro-muto);
+  font-size: 11px; font-weight: var(--peso-titolo); color: var(--inchiostro-muto);
 }
 /* due colonne che NON vanno a capo: la cifra a sinistra, l'andamento a
    destra. Andando a capo l'andamento finiva su una riga sua, al centro, e da
@@ -1315,7 +1385,7 @@ select.sel-compatto {
   font-size: 13px; font-weight: var(--peso-forte); color: var(--inchiostro-2);
 }
 .som-cifra b {
-  font-size: clamp(40px, 13vw, 54px); font-weight: var(--peso-display); letter-spacing: -0.04em;
+  font-size: clamp(40px, 13vw, 54px); font-weight: var(--peso-display); letter-spacing: -0.01em;
   line-height: 1; color: var(--inchiostro-1); font-variant-numeric: tabular-nums;
 }
 .som-pc { font-size: 21px; font-weight: var(--peso-titolo); color: var(--inchiostro-2); }
@@ -1467,7 +1537,7 @@ select.sel-compatto {
 .rev-ico.rev-mattina { color: var(--avviso); }
 .rev-ico.rev-settimana { color: var(--brand-c); }
 .rev-campo { display: block; font-size: 12.5px; line-height: 1.45; color: var(--inchiostro-2); margin-top: 3px; overflow-wrap: anywhere; }
-.rev-campo b { color: var(--inchiostro-muto); font-weight: var(--peso-titolo); font-size: 11px; letter-spacing: .03em; text-transform: uppercase; margin-right: 5px; }
+.rev-campo b { color: var(--inchiostro-muto); font-weight: var(--peso-titolo); font-size: 11px; letter-spacing: .03em; margin-right: 5px; }
 
 /* ---------- overlay cattura ---------- */
 
@@ -1600,8 +1670,7 @@ body.in-concentrazione { overflow: hidden; }
 .conc-dentro { display: flex; flex-direction: column; align-items: center; gap: 22px; width: 100%; max-width: 420px; text-align: center; }
 .conc-tipo {
   display: inline-flex; align-items: center; gap: 6px;
-  font-size: 12px; font-weight: var(--peso-titolo); letter-spacing: .06em; text-transform: uppercase;
-  color: #7f7f92;
+  font-size: 12px; font-weight: var(--peso-titolo); color: #7f7f92;
 }
 .conc-cosa { font-size: 21px; font-weight: var(--peso-titolo); line-height: 1.25; margin: 0; overflow-wrap: anywhere; color: #e9e9f0; }
 .conc-anello {
@@ -1767,7 +1836,7 @@ body.in-concentrazione { overflow: hidden; }
 }
 .scienza-card .fonte { font-size: 12px; color: var(--inchiostro-muto); display: flex; gap: 7px; }
 .scienza-card .fonte .ico { flex: none; margin-top: 2px; }
-.evidenza { font-size: 11px; font-weight: var(--peso-display); letter-spacing: .08em; padding: 3px 9px; border-radius: var(--r-tondo); text-transform: uppercase; flex: none; }
+.evidenza { font-size: 11px; font-weight: var(--peso-display); padding: 3px 9px; border-radius: var(--r-tondo); flex: none; }
 .evidenza-alta { background: var(--ok-pieno); color: #fff; box-shadow: var(--e1); }
 .evidenza-media { background: var(--avviso); color: #3a2600; }
 .evidenza-euristica { background: var(--superficie-2); color: var(--inchiostro-2); border: 1px solid var(--bordo-forte); }
@@ -2004,7 +2073,7 @@ textarea.sheet-titolo-inp:focus { box-shadow: none; outline: 2px solid var(--acc
    2) etichetta di CAMPO: frase normale sopra un comando («Quanta energia
       hai?»). In maiuscoletto una domanda sembra urlata. */
 .imp-eti {
-  font-size: 11px; font-weight: var(--peso-display); letter-spacing: .08em; text-transform: uppercase; color: var(--inchiostro-2);
+  font-size: 11px; font-weight: var(--peso-display); color: var(--inchiostro-2);
 }
 label.campo {
   font-size: 12.5px; font-weight: var(--peso-titolo); letter-spacing: 0; text-transform: none; color: var(--inchiostro-2);
@@ -2567,8 +2636,7 @@ button.attivo .seg-n, a.attivo .seg-n { background: var(--superficie-2); color: 
    ============================================================ */
 .lista-eti {
   display: flex; align-items: center; gap: 7px; width: 100%;
-  font-size: 11px; font-weight: var(--peso-display); letter-spacing: .08em; text-transform: uppercase;
-  /* allineata al blocco che etichetta (i 2px la tenevano fuori squadra da
+  font-size: 11px; font-weight: var(--peso-display); /* allineata al blocco che etichetta (i 2px la tenevano fuori squadra da
      tutto il resto), e più vicina a lui che al gruppo di sopra */
   color: var(--inchiostro-2); margin: var(--s5) 0 var(--s2);
 }
@@ -3028,7 +3096,7 @@ input.agg-testo:focus { box-shadow: none; }
   padding: 11px 12px 3px;
 }
 .agg-opz[hidden] { display: none; }
-.agg-eti { font-size: 11.5px; font-weight: var(--peso-titolo); color: var(--inchiostro-2); text-transform: uppercase; letter-spacing: .05em; }
+.agg-eti { font-size: 11.5px; font-weight: var(--peso-titolo); color: var(--inchiostro-2); letter-spacing: .05em; }
 .agg-nota { font-size: 11.5px; color: var(--inchiostro-muto); }
 .agg-quando, .agg-giorni { display: flex; gap: 6px; flex-wrap: wrap; }
 .agg-opz { align-items: center; }
@@ -3160,8 +3228,7 @@ select.agg-sel-area { width: auto; max-width: 190px; flex: 0 1 auto; font-size: 
    aprirne una non chiude le altre, e quello che apri resta aperto.
    ============================================================ */
 .rit-eti {
-  font-size: 11px; font-weight: var(--peso-display); letter-spacing: .08em; text-transform: uppercase;
-  /* stessi numeri dell'altra etichetta di gruppo: erano 22/2/8 qui e
+  font-size: 11px; font-weight: var(--peso-display); /* stessi numeri dell'altra etichetta di gruppo: erano 22/2/8 qui e
      18/2/7 là, per lo stesso mestiere */
   color: var(--inchiostro-2); margin: var(--s5) 0 var(--s2);
 }
@@ -3440,7 +3507,7 @@ body.sto-trascinando { cursor: grabbing; user-select: none; -webkit-user-select:
 .giornata > .orizz-barra .orizz-eti { font-size: 15px; font-weight: var(--peso-display); }
 .orizz-eti { flex: 1; min-width: 0; font-size: 16px; font-weight: var(--peso-display); letter-spacing: -0.015em; text-transform: capitalize; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 /* quanto sei lontano da oggi: rende evidente che la freccia ha fatto effetto */
-.orizz-dist { flex: none; font-size: 11px; font-weight: var(--peso-display); letter-spacing: .04em; text-transform: uppercase; padding: 2px 9px; border-radius: var(--r-tondo); }
+.orizz-dist { flex: none; font-size: 11px; font-weight: var(--peso-display); letter-spacing: .04em; padding: 2px 9px; border-radius: var(--r-tondo); }
 .orizz-dist.futuro { color: var(--accento-testo); background: color-mix(in srgb, var(--accento) 14%, transparent); }
 .orizz-dist.passato { color: var(--inchiostro-2); background: var(--superficie-3); }
 .orizz-barra.via-da-oggi { padding: 6px 8px; margin: 0 -8px 12px; border-radius: var(--r-2); background: color-mix(in srgb, var(--accento) 6%, transparent); }

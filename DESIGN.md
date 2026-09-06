@@ -61,6 +61,41 @@ degli angoli è la **curva continua di Apple**, disegnata in pixel da
 al 99% perché l'arco resti dentro al ritaglio. Più lo schiacciamento che fa il
 browser sugli elementi troppo piccoli per il loro raggio.
 
+## L'identità visiva
+
+Il difetto di partenza l'ha detto chi la usa: **«la UI di questo sito è troppo
+AI slop»**. Aveva ragione, e le skill di design lo dicono con dei nomi:
+
+| il «tell» | dove stava |
+|---|---|
+| il gradiente viola→blu, *«the most common AI design fingerprint»* | il tasto «+», il logo, ogni tasto pieno |
+| il kit di schede SaaS: riquadri identici, stessa ombra sotto a ognuno | tutte le schede |
+| l'etichetta in MAIUSCOLETTO SPAZIATO sopra a ogni titolo | undici punti |
+| le lavate di gradiente come decorazione | la scheda dell'andamento |
+| l'alone colorato sotto al logo | la barra laterale |
+
+**L'accento è inchiostro.** `#17323f` in chiaro, il suo ribaltamento in scuro.
+Piatto, senza gradiente. Il perché non è gusto: le otto aree della vita
+occupano già tutta la ruota dei colori, e un accento a mezza saturazione, di
+qualunque tinta, sembrerebbe una nona area. E questo non è un prodotto che
+vende: è uno strumento che si legge. Su uno strumento i colori appartengono ai
+**dati**; l'ago e le cifre sono inchiostro.
+
+**Le cifre hanno un carattere loro.** Un graziato di sistema — New York sugli
+Apple, Cambria o Georgia su Windows, Noto Serif su Android — sul tempo del
+timer, sui numeri grandi, sui titoli di schermata. Zero byte scaricati, su un
+progetto dove questa settimana ne ho tolti seicentododici.
+
+È l'unico posto in cui questa interfaccia alza la voce, ed è il posto giusto:
+misurare è quello che fa. Non su tutte le cifre — quelle dentro a un elenco
+restano nel sans, se no non è più un accento, è un tema.
+
+**Una scheda non galleggia.** L'ombra `--e2` è di una cosa staccata dalla
+pagina; sotto a ogni scheda voleva dire che tutto galleggiava allo stesso
+modo, cioè che niente galleggiava. Una scheda sta *sulla* pagina: la separa un
+filo. L'ombra resta dov'è un'informazione — questa cosa sta sopra a quella, e
+sotto ci torni.
+
 ## Il colore
 
 Un accento solo, e vive in due varianti che non sono intercambiabili:
