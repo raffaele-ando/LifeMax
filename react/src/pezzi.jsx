@@ -15,11 +15,39 @@
    `tipo` resta il RUOLO e mai il colore. La regola di DESIGN.md — uno pieno
    per schermata — vive qui dentro come vive in pezzi.js.  */
 
-/* l'icona la disegna ancora icons.js, che non si porta dentro React: è una
-   funzione pura che restituisce dell'SVG, e va benissimo dov'è */
-function Segno({ nome, dim = 15 }) {
+/* L'ICONA, SENZA NIENTE ATTORNO.
+
+   `icons.js` non si porta dentro React: è una funzione pura che restituisce
+   dell'SVG, e sta benissimo dov'è. Ma infilare quell'SVG in pagina richiede
+   un elemento che lo contenga, e uno <span> in più cambia l'albero: il codice
+   di prima mette l'<svg> come FIGLIO DIRETTO del bottone, e prove/gemelle.js
+   se ne accorge subito.
+
+   Quindi si smonta la stringa una volta sola — gli attributi del tag <svg> e
+   quello che ha dentro — e si ridisegna un <svg> vero con gli stessi
+   attributi. Fuori esce esattamente lo stesso elemento, senza involucro.
+   Il conto si tiene: `ICO` per un nome e una misura dà sempre la stessa cosa. */
+const ATTRIBUTO = { class: 'className', 'stroke-width': 'strokeWidth', 'stroke-linecap': 'strokeLinecap', 'stroke-linejoin': 'strokeLinejoin', 'fill-rule': 'fillRule', 'clip-rule': 'clipRule', 'aria-hidden': 'aria-hidden' };
+const smontati = new Map();
+function smonta(testo) {
+  if (smontati.has(testo)) return smontati.get(testo);
+  const m = /^<svg([^>]*)>([\s\S]*)<\/svg>$/.exec(testo.trim());
+  const fuori = m
+    ? {
+        attributi: [...m[1].matchAll(/([\w-]+)="([^"]*)"/g)]
+          .reduce((o, a) => { o[ATTRIBUTO[a[1]] || a[1]] = a[2]; return o; }, {}),
+        dentro: m[2]
+      }
+    : null;
+  smontati.set(testo, fuori);
+  return fuori;
+}
+
+export function Segno({ nome, dim = 15 }) {
   if (!nome || typeof window.ICO !== 'function') return null;
-  return <span className="pz-ico" dangerouslySetInnerHTML={{ __html: window.ICO(nome, dim) }} />;
+  const p = smonta(window.ICO(nome, dim));
+  if (!p) return null;
+  return <svg {...p.attributi} dangerouslySetInnerHTML={{ __html: p.dentro }} />;
 }
 
 const RUOLO = {
@@ -168,6 +196,7 @@ export function Nota({ piu, tono = 'normale', children }) {
 export function Icona({ nome, dim, piu }) {
   return <span className={cl('pz-segno', piu)}><Segno nome={nome} dim={dim} /></span>;
 }
+/* e `Segno` da solo, per quando l'SVG deve stare lì nudo */
 
 /* sc-eti · lista-eti · imp-eti · agg-eti · stat-eti · som-eti · seg-eti · conc-eti */
 export function Etichetta({ testo, ico, per, piu, children }) {

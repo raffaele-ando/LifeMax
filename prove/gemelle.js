@@ -47,7 +47,13 @@ const IMPRONTA = `(function (radice) {
     /* dentro a un <svg> non si guarda: i disegni li fa icons.js, che è lo
        stesso di qua e di là, e i suoi nodi interni sono decine per icona */
     var tag = e.tagName.toLowerCase();
-    var cl = (e.getAttribute('class') || '').trim().split(/\\s+/).filter(Boolean).sort().join('.');
+    /* anim-a e anim-b si alternano APPOSTA a ogni disegno: sono due nomi per
+       la stessa animazione, e servono a farla ripartire senza costringere il
+       browser a impaginare. Quale dei due tocchi dipende da quanti disegni ci
+       sono stati prima, non da cosa è stato disegnato. */
+    var cl = (e.getAttribute('class') || '').trim().split(/\\s+/).filter(Boolean)
+      .map(function (c) { return (c === 'anim-a' || c === 'anim-b') ? 'anim' : c; })
+      .sort().join('.');
     var dati = [];
     for (var i = 0; i < e.attributes.length; i++) {
       var a = e.attributes[i];
@@ -105,18 +111,37 @@ const IMPRONTA = `(function (radice) {
     await b.close(); srv.close(); process.exit(0);
   }
 
+  /* UNA SCHERMATA NON È UNO SCHERMO SOLO. Attività ha tre linguette, e una
+     sola confrontata vorrebbe dire due terzi non guardati. Si toccano tutte,
+     di qua e di là, e si confronta ognuna. */
+  const stati = async () => p.evaluate(() =>
+    [...document.querySelectorAll('#att-tabs [data-att]')].map((b) => b.getAttribute('data-att')));
+
+  const disegna = async (via, react, tab) => {
+    await p.evaluate((r) => { const s = LM.load(); s.profilo.react = r; LM.save(); }, react);
+    await p.evaluate((v) => { location.hash = '#/' + v; }, via);
+    await p.reload(); await p.waitForTimeout(react ? 1400 : 900);
+    if (tab) {
+      await p.evaluate((t) => {
+        const b = document.querySelector('#att-tabs [data-att="' + t + '"]');
+        if (b) b.click();
+      }, tab);
+      await p.waitForTimeout(700);
+    }
+    return p.evaluate(IMPRONTA);
+  };
+
   for (const via of quali) {
-    console.log('\nSCHERMATA «' + via + '»');
-    /* --- il giro col codice di prima --- */
     await p.evaluate(() => { const s = LM.load(); s.profilo.react = false; LM.save(); });
     await p.evaluate((v) => { location.hash = '#/' + v; }, via);
     await p.reload(); await p.waitForTimeout(900);
-    const vecchia = await p.evaluate(IMPRONTA);
+    const tabs = await stati();
+    const giri = tabs.length ? tabs : [null];
 
-    /* --- e quello con React --- */
-    await p.evaluate(() => { const s = LM.load(); s.profilo.react = true; LM.save(); });
-    await p.reload(); await p.waitForTimeout(1400);
-    const nuova = await p.evaluate(IMPRONTA);
+    for (const tab of giri) {
+    console.log('\nSCHERMATA «' + via + (tab ? ' · ' + tab : '') + '»');
+    const vecchia = await disegna(via, false, tab);
+    const nuova = await disegna(via, true, tab);
 
     ok('l’albero ha lo stesso numero di elementi', vecchia.length === nuova.length,
       vecchia.length + ' prima, ' + nuova.length + ' dopo');
@@ -139,6 +164,7 @@ const IMPRONTA = `(function (radice) {
         console.log('      e ' + (piu === vecchia ? 'di là' : 'di qua') + ' ce ne sono altre, la prima è:');
         console.log('        ' + piu[quante]);
       }
+    }
     }
   }
   ok('nessun errore in pagina', err.length === 0, [...new Set(err)].slice(0, 2).join(' · '));

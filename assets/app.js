@@ -3087,6 +3087,35 @@
       etichetta: etichetta,
       selectAree: selectAree,
       areeAttive: areeAttive,
+      /* gli aiutanti di Attività: React li chiama invece di ricopiarli, così
+         la riga che esce è la stessa riga, non una che le somiglia */
+      attRigaHtml: attRigaHtml,
+      opzDaFare: opzDaFare,
+      nomeFiltro: nomeFiltro,
+      areaFiltro: areaFiltro,
+      passaFiltro: passaFiltro,
+      apriScheda: apriScheda,
+      rigaAggiunta: rigaAggiunta,
+      wireAggiunta: wireAggiunta,
+      wireLista: wireLista,
+      illoInbox: illoInbox,
+      apriSheet: apriSheet,
+      chiudiSheet: chiudiSheet,
+      areaById: areaById,
+      MURO: MURO,
+      get attArea() { return attArea; },
+      set attArea(v) { attArea = v; },
+      get attQuery() { return attQuery; },
+      set attQuery(v) { attQuery = v; },
+      backlogAperte: backlogAperte,
+      /* e quelli di «Abitudini» */
+      rigaAbitudine: rigaAbitudine,
+      chipsGiorni: chipsGiorni,
+      leggiGiorni: leggiGiorni,
+      riepilogoGiorni: riepilogoGiorni,
+      apriDettaglioAbitudine: apriDettaglioAbitudine,
+      feedbackSpunta: feedbackSpunta,
+      wireRigaAggiunta: wireRigaAggiunta,
       toast: toast,
       aggiornaNav: aggiornaNav,
       render: render,
@@ -6662,6 +6691,7 @@
         ridisegna();
       });
     });
+    ridisegnaAtt = ridisegna;
     ridisegna();
 
     function ridisegna() {
@@ -6795,573 +6825,591 @@
       });
     }
 
-    /* ---------- Da fare: una lista, una fila di filtri ---------- */
-    var MURO = 12;
+  }
 
-    /* Le opzioni compaiono mentre scrivi, su una riga sola: prima c'era
-       «QUANDO?» sopra le pastiglie e «in» davanti all'area — due etichette
-       per due cose che si capiscono da sole. */
-    function opzDaFare() {
-      var oggiK = LM.todayKey();
-      return '<button type="button" class="q-chip" data-nuovoq="' + oggiK + '">Oggi</button>' +
-        '<button type="button" class="q-chip" data-nuovoq="' + LM.addDays(oggiK, 1) + '">Domani</button>' +
-        '<button type="button" class="q-chip on" data-nuovoq="">Senza data</button>' +
-        selectAree('agg-bk-area', areaFiltro() || 'altro', 'Area', 'agg-sel-area');
+  /* ============================================================
+     GLI AIUTANTI DI ATTIVITÀ, fuori da vistaInbox.
+
+     Stavano dentro per abitudine, non per necessità: nessuno di loro chiude
+     su qualcosa di quella chiamata. Da fuori li può chiamare anche la
+     versione React della schermata, che è il motivo per cui sono usciti —
+     `attRigaHtml` deve produrre la stessa identica riga di prima, e l’unico
+     modo di esserne certi è che sia la stessa funzione invece di una copia.
+
+     L’unico filo tagliato è `ridisegna()`, che era la funzione locale di
+     vistaInbox: adesso passa da `ridisegnaAtt`, un gancio che punta a chi sta
+     disegnando in questo momento. Col codice di prima è quella; con React non
+     serve, perché LM.save() manda `lm:change` e React si ridisegna da sé.
+     ============================================================ */
+  var ridisegnaAtt = function () {};
+  /* ---------- Da fare: una lista, una fila di filtri ---------- */
+  /* quante ne mostra il gruppo «Altre» prima di chiedere se vuoi le altre */
+  var MURO = 12;
+
+  /* Le opzioni compaiono mentre scrivi, su una riga sola: prima c'era
+     «QUANDO?» sopra le pastiglie e «in» davanti all'area — due etichette
+     per due cose che si capiscono da sole. */
+
+  function opzDaFare() {
+    var oggiK = LM.todayKey();
+    return '<button type="button" class="q-chip" data-nuovoq="' + oggiK + '">Oggi</button>' +
+      '<button type="button" class="q-chip" data-nuovoq="' + LM.addDays(oggiK, 1) + '">Domani</button>' +
+      '<button type="button" class="q-chip on" data-nuovoq="">Senza data</button>' +
+      selectAree('agg-bk-area', areaFiltro() || 'altro', 'Area', 'agg-sel-area');
+  }
+
+  function wireAggiunta(box) {
+    wireRigaAggiunta(box, 'agg-bk', function (v, opz) {
+      var sel = opz.querySelector('[data-nuovoq].on');
+      var giorno = sel ? sel.getAttribute('data-nuovoq') : '';
+      var selArea = opz.querySelector('#agg-bk-area');
+      var nb = LM.aggiungiBacklog(v, selArea ? selArea.value : 'altro');
+      if (giorno) {
+        LM.backlogInOggi(nb.id, giorno);
+        toast('«' + v + '» messa ' + etichettaGiorno(giorno).toLowerCase() + '.', 0, 'calendar');
+      } else {
+        toast('«' + v + '» aggiunta a «Da fare».', 0, 'lista');
+      }
+      opz.querySelectorAll('[data-nuovoq]').forEach(function (c) { c.classList.toggle('on', !c.getAttribute('data-nuovoq')); });
+      aggiornaNav(); ridisegnaAtt();
+    });
+  }
+
+  /* i due filtri che non sono aree */
+  function areaFiltro() { return (attArea === 'tutte' || attArea === 'data' || attArea === 'progetti') ? null : attArea; }
+  function passaFiltro(b) {
+    if (attArea === 'data') return !!b.scadenza;
+    if (attArea === 'progetti') return !!(b.steps && b.steps.length);
+    return true;
+  }
+  function nomeFiltro() {
+    if (attArea === 'data') return 'Con una data';
+    if (attArea === 'progetti') return 'Progetti';
+    if (attArea === 'tutte') return 'Tutte';
+    return areaById(attArea).nome;
+  }
+
+  function disegnaDaFare(box) {
+    var st = LM.load();
+    var totale = st.backlog.length;
+    var conData = st.backlog.filter(function (b) { return b.scadenza; }).length;
+    var nProg = st.backlog.filter(function (b) { return b.steps && b.steps.length; }).length;
+
+    if (!totale) {
+      box.innerHTML = rigaAggiunta('agg-bk', 'Aggiungi una cosa da fare…', opzDaFare()) +
+        '<div class="vuoto" style="padding:22px 8px 6px">' + illoInbox() + '<b>Nessuna attività.</b><br>Aggiungine una qui sopra' +
+        (st.inbox.length ? ', o sistema le note in «Da sistemare».' : '.') + '</div>';
+      wireAggiunta(box);
+      return;
     }
 
-    function wireAggiunta(box) {
-      wireRigaAggiunta(box, 'agg-bk', function (v, opz) {
-        var sel = opz.querySelector('[data-nuovoq].on');
-        var giorno = sel ? sel.getAttribute('data-nuovoq') : '';
-        var selArea = opz.querySelector('#agg-bk-area');
-        var nb = LM.aggiungiBacklog(v, selArea ? selArea.value : 'altro');
-        if (giorno) {
-          LM.backlogInOggi(nb.id, giorno);
-          toast('«' + v + '» messa ' + etichettaGiorno(giorno).toLowerCase() + '.', 0, 'calendar');
-        } else {
-          toast('«' + v + '» aggiunta a «Da fare».', 0, 'lista');
-        }
-        opz.querySelectorAll('[data-nuovoq]').forEach(function (c) { c.classList.toggle('on', !c.getAttribute('data-nuovoq')); });
-        aggiornaNav(); ridisegna();
+    /* I modi di guardare la lista stanno dietro UN comando che dice già
+       quale è attivo. Erano una fila di pastiglie — con le due viste che
+       prima erano linguette, più un'area per ogni area — e su un telefono
+       diventavano cinque righe: duecento pixel di filtri sopra la cosa che
+       si è venuti a leggere. Il filtro si cambia di rado; l'ordine per
+       importanza è la strada principale. */
+    /* Scrivere una cosa nuova e cercarne una vecchia sono due lavori
+       opposti, e prima erano due campi identici affiancati dentro la
+       stessa card, uno sopra l'altro nella stessa cornice. Adesso: il
+       campo per aggiungere sta da solo in cima (è un'azione), e sopra la
+       lista c'è una barra sottile con la lente e il filtro (sono modi di
+       guardare quello che c'è già). Nessuna card intorno: una cornice in
+       meno per ogni cosa. */
+    var cerca = (totale >= 10 || attQuery)
+      ? '<label class="att-cerca">' + ICO('lente', 15) +
+        '<input type="text" id="att-q" placeholder="Cerca…" value="' + esc(attQuery) + '" aria-label="Cerca un’attività"></label>'
+      : '';
+
+    box.innerHTML =
+      rigaAggiunta('agg-bk', 'Aggiungi una cosa da fare…', opzDaFare()) +
+      '<div class="att-barra">' + cerca +
+      '<button class="att-filtro' + (attArea === 'tutte' ? '' : ' on') + '" id="att-filtro" aria-haspopup="dialog">' +
+      ICO('imbuto', 15) + '<span>' + esc(nomeFiltro()) + '</span>' +
+      '<span class="lista-chev">' + ICO('chevronGiu', 15) + '</span></button>' +
+      '</div>' +
+      '<div id="dafare-lista"></div>';
+    wireAggiunta(box);
+    var q = box.querySelector('#att-q');
+    if (q) q.addEventListener('input', function () { attQuery = q.value; renderLista(); });
+    box.querySelector('#att-filtro').addEventListener('click', apriFiltri);
+    renderLista();
+
+    /* la scelta del filtro è un elenco, come tutti gli altri elenchi */
+    function apriFiltri() {
+      function voce(id, ico, eti, n) {
+        return '<div class="lista-riga">' +
+          '<button class="lista-apri" data-filtro="' + id + '">' +
+          '<span class="lista-vuoto">' + (attArea === id ? ICO('scelto', 15) : '') + '</span>' +
+          '<span class="lista-corpo"><span class="lista-tit">' +
+          (ico ? '<span class="tit-area"' + (ico === 'area' ? ' style="--c-area:' + LM.coloreArea(areaById(id)) + '"' : '') + '>' +
+            ICO(ico === 'area' ? areaById(id).icona : ico, 13) + '</span>' : '') +
+          esc(eti) + '</span></span>' +
+          '<span class="lista-val">' + n + '</span></button></div>';
+      }
+      var html = '<div class="sc">' +
+        '<div class="lista-eti">Tutto</div><div class="lista">' + voce('tutte', 'lista', 'Tutte le attività', totale) + '</div>' +
+        ((conData || nProg)
+          ? '<div class="lista-eti">Per come sono fatte</div><div class="lista">' +
+            (conData ? voce('data', 'calendar', 'Con una data', conData) : '') +
+            (nProg ? voce('progetti', 'rocket', 'Divise in passi', nProg) : '') + '</div>'
+          : '') +
+        etichetta('Per area', 'aree') + '<div class="lista">' +
+        LM.backlogPerArea().filter(function (g) { return g.items.length; })
+          .map(function (g) { return voce(g.area.id, 'area', g.area.nome, g.items.length); }).join('') +
+        '</div></div>';
+      apriSheet('Guarda solo', html, function (root) {
+        root.querySelectorAll('[data-filtro]').forEach(function (t) {
+          t.addEventListener('click', function () {
+            attArea = t.getAttribute('data-filtro');
+            chiudiSheet();
+            disegnaDaFare(box);
+          });
+        });
       });
     }
 
-    /* i due filtri che non sono aree */
-    function areaFiltro() { return (attArea === 'tutte' || attArea === 'data' || attArea === 'progetti') ? null : attArea; }
-    function passaFiltro(b) {
-      if (attArea === 'data') return !!b.scadenza;
-      if (attArea === 'progetti') return !!(b.steps && b.steps.length);
-      return true;
-    }
-    function nomeFiltro() {
-      if (attArea === 'data') return 'Con una data';
-      if (attArea === 'progetti') return 'Progetti';
-      if (attArea === 'tutte') return 'Tutte';
-      return areaById(attArea).nome;
+    function gruppo(titolo, voci, cls, opts) {
+      if (!voci.length) return '';
+      var lunga = (opts && opts.taglia) && voci.length > MURO;
+      var tutte = !!backlogAperte.__tutte;
+      var taglia = lunga && !tutte;
+      var mostrate = taglia ? voci.slice(0, MURO) : voci;
+      return '<div class="lista-eti">' + titolo + (voci.length > 1 ? ' <span>' + voci.length + '</span>' : '') + '</div>' +
+        '<div class="lista lista-' + cls + '">' +
+        mostrate.map(function (x, i) { return attRigaHtml(x.b, { primo: cls === 'ora' && i === 0, motivo: x.i && x.i.motivo, da: x.i && x.i.da }); }).join('') +
+        '</div>' +
+        (lunga ? '<button class="lista-altre' + (tutte ? ' aperto' : '') + '" data-tutte="1" aria-expanded="' + tutte + '">' +
+          ICO('chevronGiu', 15) + (taglia ? ' Mostra le altre ' + (voci.length - MURO) : ' Mostra solo le prime ' + MURO) + '</button>' : '');
     }
 
-    function disegnaDaFare(box) {
-      var st = LM.load();
-      var totale = st.backlog.length;
-      var conData = st.backlog.filter(function (b) { return b.scadenza; }).length;
-      var nProg = st.backlog.filter(function (b) { return b.steps && b.steps.length; }).length;
-
-      if (!totale) {
-        box.innerHTML = rigaAggiunta('agg-bk', 'Aggiungi una cosa da fare…', opzDaFare()) +
-          '<div class="vuoto" style="padding:22px 8px 6px">' + illoInbox() + '<b>Nessuna attività.</b><br>Aggiungine una qui sopra' +
-          (st.inbox.length ? ', o sistema le note in «Da sistemare».' : '.') + '</div>';
-        wireAggiunta(box);
+    function renderLista() {
+      var lista = box.querySelector('#dafare-lista');
+      var query = attQuery.trim().toLowerCase();
+      if (query) {
+        var ris = LM.load().backlog.filter(function (b) { return b.testo.toLowerCase().indexOf(query) >= 0; });
+        lista.innerHTML = '<div class="lista-eti">' + ris.length + (ris.length === 1 ? ' risultato' : ' risultati') + '</div>' +
+          (ris.length
+            ? '<div class="lista">' + ris.map(function (b) { return attRigaHtml(b, {}); }).join('') + '</div>'
+            : '<p class="lista-nota">Nessuna corrispondenza per «' + esc(attQuery.trim()) + '».</p>');
+        wireLista(lista); return;
+      }
+      var g = LM.backlogPerImportanza({ areaId: areaFiltro() || 'tutte', tetto: 3 });
+      /* le non riuscite escono dalle tre file e vanno in fondo, in un
+         gruppo loro chiuso: hanno un esito, quindi non chiedono più niente
+         — ma restano dove le si può ritrovare, che è tutta la differenza
+         con l'averle cancellate */
+      var senzaEsito = function (x) { return passaFiltro(x.b) && !x.b.mancata; };
+      var ora = g.ora.filter(senzaEsito);
+      var poi = g.poi.filter(senzaEsito);
+      var parch = g.parcheggio.filter(senzaEsito);
+      var perse = g.ora.concat(g.poi, g.parcheggio)
+        .filter(function (x) { return passaFiltro(x.b) && x.b.mancata; })
+        .sort(function (a, b2) { return (b2.b.mancata.ts || 0) - (a.b.mancata.ts || 0); });
+      if (!ora.length && !poi.length && !parch.length && !perse.length) {
+        lista.innerHTML = '<p class="lista-nota">Niente in «' + esc(nomeFiltro()) + '».</p>';
         return;
       }
+      var apertoParcheggio = !!backlogAperte.__parcheggio;
+      lista.innerHTML =
+        gruppo('Importanti', ora, 'ora') +
+        gruppo('Altre', poi, 'poi', { taglia: true }) +
+        (parch.length
+          ? '<button class="lista-eti lista-eti-btn" data-parcheggio="1" aria-expanded="' + apertoParcheggio + '">' +
+            'Inattive <span>' + parch.length + '</span>' +
+            '<span class="lista-chev' + (apertoParcheggio ? ' aperta' : '') + '">' + ICO('chevronGiu', 15) + '</span></button>' +
+            '<div class="lista lista-parcheggio"' + (apertoParcheggio ? '' : ' hidden') + '>' +
+            parch.map(function (x) { return attRigaHtml(x.b, { motivo: x.i && x.i.motivo }); }).join('') + '</div>'
+          : '') +
+        /* le non riuscite non stanno più qui: questo è l'elenco di cosa
+           fare adesso, e un promemoria dei fallimenti in mezzo al lavoro
+           non aiuta nessuno a cominciare. Stanno in Panoramica, dentro
+           «Dove ti riesce e dove no», che è la domanda a cui servono. */
+        '';
 
-      /* I modi di guardare la lista stanno dietro UN comando che dice già
-         quale è attivo. Erano una fila di pastiglie — con le due viste che
-         prima erano linguette, più un'area per ogni area — e su un telefono
-         diventavano cinque righe: duecento pixel di filtri sopra la cosa che
-         si è venuti a leggere. Il filtro si cambia di rado; l'ordine per
-         importanza è la strada principale. */
-      /* Scrivere una cosa nuova e cercarne una vecchia sono due lavori
-         opposti, e prima erano due campi identici affiancati dentro la
-         stessa card, uno sopra l'altro nella stessa cornice. Adesso: il
-         campo per aggiungere sta da solo in cima (è un'azione), e sopra la
-         lista c'è una barra sottile con la lente e il filtro (sono modi di
-         guardare quello che c'è già). Nessuna card intorno: una cornice in
-         meno per ogni cosa. */
-      var cerca = (totale >= 10 || attQuery)
-        ? '<label class="att-cerca">' + ICO('lente', 15) +
-          '<input type="text" id="att-q" placeholder="Cerca…" value="' + esc(attQuery) + '" aria-label="Cerca un’attività"></label>'
-        : '';
-
-      box.innerHTML =
-        rigaAggiunta('agg-bk', 'Aggiungi una cosa da fare…', opzDaFare()) +
-        '<div class="att-barra">' + cerca +
-        '<button class="att-filtro' + (attArea === 'tutte' ? '' : ' on') + '" id="att-filtro" aria-haspopup="dialog">' +
-        ICO('imbuto', 15) + '<span>' + esc(nomeFiltro()) + '</span>' +
-        '<span class="lista-chev">' + ICO('chevronGiu', 15) + '</span></button>' +
-        '</div>' +
-        '<div id="dafare-lista"></div>';
-      wireAggiunta(box);
-      var q = box.querySelector('#att-q');
-      if (q) q.addEventListener('input', function () { attQuery = q.value; renderLista(); });
-      box.querySelector('#att-filtro').addEventListener('click', apriFiltri);
-      renderLista();
-
-      /* la scelta del filtro è un elenco, come tutti gli altri elenchi */
-      function apriFiltri() {
-        function voce(id, ico, eti, n) {
-          return '<div class="lista-riga">' +
-            '<button class="lista-apri" data-filtro="' + id + '">' +
-            '<span class="lista-vuoto">' + (attArea === id ? ICO('scelto', 15) : '') + '</span>' +
-            '<span class="lista-corpo"><span class="lista-tit">' +
-            (ico ? '<span class="tit-area"' + (ico === 'area' ? ' style="--c-area:' + LM.coloreArea(areaById(id)) + '"' : '') + '>' +
-              ICO(ico === 'area' ? areaById(id).icona : ico, 13) + '</span>' : '') +
-            esc(eti) + '</span></span>' +
-            '<span class="lista-val">' + n + '</span></button></div>';
+      var bt = lista.querySelector('[data-tutte]');
+      if (bt) bt.addEventListener('click', function () {
+        var primaY = bt.getBoundingClientRect().top;
+        backlogAperte.__tutte = !backlogAperte.__tutte;
+        renderLista();
+        var nuovo = lista.querySelector('[data-tutte]');
+        if (nuovo) {
+          var delta = nuovo.getBoundingClientRect().top - primaY;
+          if (delta) window.scrollBy(0, delta);
+          nuovo.focus({ preventScroll: true });
         }
-        var html = '<div class="sc">' +
-          '<div class="lista-eti">Tutto</div><div class="lista">' + voce('tutte', 'lista', 'Tutte le attività', totale) + '</div>' +
-          ((conData || nProg)
-            ? '<div class="lista-eti">Per come sono fatte</div><div class="lista">' +
-              (conData ? voce('data', 'calendar', 'Con una data', conData) : '') +
-              (nProg ? voce('progetti', 'rocket', 'Divise in passi', nProg) : '') + '</div>'
-            : '') +
-          etichetta('Per area', 'aree') + '<div class="lista">' +
-          LM.backlogPerArea().filter(function (g) { return g.items.length; })
-            .map(function (g) { return voce(g.area.id, 'area', g.area.nome, g.items.length); }).join('') +
-          '</div></div>';
-        apriSheet('Guarda solo', html, function (root) {
-          root.querySelectorAll('[data-filtro]').forEach(function (t) {
-            t.addEventListener('click', function () {
-              attArea = t.getAttribute('data-filtro');
-              chiudiSheet();
-              disegnaDaFare(box);
-            });
-          });
-        });
-      }
+      });
+      var bp = lista.querySelector('[data-parcheggio]');
+      if (bp) bp.addEventListener('click', function () {
+        var ap = !backlogAperte.__parcheggio;
+        backlogAperte.__parcheggio = ap;
+        var corpo = lista.querySelector('.lista-parcheggio');
+        if (corpo) corpo.hidden = !ap;
+        bp.setAttribute('aria-expanded', ap);
+        var ch = bp.querySelector('.lista-chev');
+        if (ch) ch.classList.toggle('aperta', ap);
+      });
+      wireLista(lista);
+    }
+  }
 
-      function gruppo(titolo, voci, cls, opts) {
-        if (!voci.length) return '';
-        var lunga = (opts && opts.taglia) && voci.length > MURO;
-        var tutte = !!backlogAperte.__tutte;
-        var taglia = lunga && !tutte;
-        var mostrate = taglia ? voci.slice(0, MURO) : voci;
-        return '<div class="lista-eti">' + titolo + (voci.length > 1 ? ' <span>' + voci.length + '</span>' : '') + '</div>' +
-          '<div class="lista lista-' + cls + '">' +
-          mostrate.map(function (x, i) { return attRigaHtml(x.b, { primo: cls === 'ora' && i === 0, motivo: x.i && x.i.motivo, da: x.i && x.i.da }); }).join('') +
-          '</div>' +
-          (lunga ? '<button class="lista-altre' + (tutte ? ' aperto' : '') + '" data-tutte="1" aria-expanded="' + tutte + '">' +
-            ICO('chevronGiu', 15) + (taglia ? ' Mostra le altre ' + (voci.length - MURO) : ' Mostra solo le prime ' + MURO) + '</button>' : '');
-      }
+  /* ---------- la riga, una sola in tutta l'app ----------
+     comando a sinistra, titolo (più una riga sotto solo se ha qualcosa da
+     dire), valore a destra, freccina. Niente tre densità, niente striscia
+     di colore sul fianco: l'area la dice la sua icona davanti al titolo. */
+  function attRigaHtml(b, opts) {
+    var isProg = !!(b.steps && b.steps.length);
+    var av = isProg ? LM.avanzamentoProgetto(b) : null;
+    var ar = areaById(b.areaId);
+    var inAgenda = LM.snapshot().azioni.filter(function (a) {
+      return !a.done && a.data >= LM.todayKey() && (isProg ? (a.passoDi && a.passoDi.b === b.id) : a.passoDi === null && a.testo === b.testo);
+    }).sort(function (x, y) { return x.data < y.data ? -1 : 1; });
 
-      function renderLista() {
-        var lista = box.querySelector('#dafare-lista');
-        var query = attQuery.trim().toLowerCase();
-        if (query) {
-          var ris = LM.load().backlog.filter(function (b) { return b.testo.toLowerCase().indexOf(query) >= 0; });
-          lista.innerHTML = '<div class="lista-eti">' + ris.length + (ris.length === 1 ? ' risultato' : ' risultati') + '</div>' +
-            (ris.length
-              ? '<div class="lista">' + ris.map(function (b) { return attRigaHtml(b, {}); }).join('') + '</div>'
-              : '<p class="lista-nota">Nessuna corrispondenza per «' + esc(attQuery.trim()) + '».</p>');
-          wireLista(lista); return;
-        }
-        var g = LM.backlogPerImportanza({ areaId: areaFiltro() || 'tutte', tetto: 3 });
-        /* le non riuscite escono dalle tre file e vanno in fondo, in un
-           gruppo loro chiuso: hanno un esito, quindi non chiedono più niente
-           — ma restano dove le si può ritrovare, che è tutta la differenza
-           con l'averle cancellate */
-        var senzaEsito = function (x) { return passaFiltro(x.b) && !x.b.mancata; };
-        var ora = g.ora.filter(senzaEsito);
-        var poi = g.poi.filter(senzaEsito);
-        var parch = g.parcheggio.filter(senzaEsito);
-        var perse = g.ora.concat(g.poi, g.parcheggio)
-          .filter(function (x) { return passaFiltro(x.b) && x.b.mancata; })
-          .sort(function (a, b2) { return (b2.b.mancata.ts || 0) - (a.b.mancata.ts || 0); });
-        if (!ora.length && !poi.length && !parch.length && !perse.length) {
-          lista.innerHTML = '<p class="lista-nota">Niente in «' + esc(nomeFiltro()) + '».</p>';
-          return;
-        }
-        var apertoParcheggio = !!backlogAperte.__parcheggio;
-        lista.innerHTML =
-          gruppo('Importanti', ora, 'ora') +
-          gruppo('Altre', poi, 'poi', { taglia: true }) +
-          (parch.length
-            ? '<button class="lista-eti lista-eti-btn" data-parcheggio="1" aria-expanded="' + apertoParcheggio + '">' +
-              'Inattive <span>' + parch.length + '</span>' +
-              '<span class="lista-chev' + (apertoParcheggio ? ' aperta' : '') + '">' + ICO('chevronGiu', 15) + '</span></button>' +
-              '<div class="lista lista-parcheggio"' + (apertoParcheggio ? '' : ' hidden') + '>' +
-              parch.map(function (x) { return attRigaHtml(x.b, { motivo: x.i && x.i.motivo }); }).join('') + '</div>'
-            : '') +
-          /* le non riuscite non stanno più qui: questo è l'elenco di cosa
-             fare adesso, e un promemoria dei fallimenti in mezzo al lavoro
-             non aiuta nessuno a cominciare. Stanno in Panoramica, dentro
-             «Dove ti riesce e dove no», che è la domanda a cui servono. */
-          '';
-
-        var bt = lista.querySelector('[data-tutte]');
-        if (bt) bt.addEventListener('click', function () {
-          var primaY = bt.getBoundingClientRect().top;
-          backlogAperte.__tutte = !backlogAperte.__tutte;
-          renderLista();
-          var nuovo = lista.querySelector('[data-tutte]');
-          if (nuovo) {
-            var delta = nuovo.getBoundingClientRect().top - primaY;
-            if (delta) window.scrollBy(0, delta);
-            nuovo.focus({ preventScroll: true });
-          }
-        });
-        var bp = lista.querySelector('[data-parcheggio]');
-        if (bp) bp.addEventListener('click', function () {
-          var ap = !backlogAperte.__parcheggio;
-          backlogAperte.__parcheggio = ap;
-          var corpo = lista.querySelector('.lista-parcheggio');
-          if (corpo) corpo.hidden = !ap;
-          bp.setAttribute('aria-expanded', ap);
-          var ch = bp.querySelector('.lista-chev');
-          if (ch) ch.classList.toggle('aperta', ap);
-        });
-        wireLista(lista);
-      }
+    var sotto = [];
+    if (b.scadenza) {
+      var si = scadInfo(b.scadenza);
+      sotto.push('<span class="sub-scad ' + si.cls + '">' + (si.d < 0 ? 'scaduta ' + si.testo : 'entro ' + si.testo) + '</span>');
+    }
+    if (inAgenda.length) {
+      sotto.push('<span class="sub-agenda">' + (isProg && inAgenda.length > 1
+        ? inAgenda.length + ' passi in agenda'
+        : 'in agenda ' + etichettaGiorno(inAgenda[0].data).toLowerCase()) + '</span>');
+    }
+    /* il motivo si scrive solo se dice qualcosa che la riga non dice già:
+       «iniziata, 1 di 3» accanto a «1 di 3» in coda è la stessa cosa due volte */
+    if (!sotto.length && opts && opts.motivo && !isProg && !(opts.da === 'scadenza' && b.scadenza)) {
+      sotto.push('<span>' + esc(opts.motivo) + '</span>');
     }
 
-    /* ---------- la riga, una sola in tutta l'app ----------
-       comando a sinistra, titolo (più una riga sotto solo se ha qualcosa da
-       dire), valore a destra, freccina. Niente tre densità, niente striscia
-       di colore sul fianco: l'area la dice la sua icona davanti al titolo. */
-    function attRigaHtml(b, opts) {
+    var pieno = !!(opts && opts.primo);
+    return '<div class="lista-riga att-riga' + (b.mancata ? ' mancata-riga' : '') + '" data-bid="' + b.id + '">' +
+      '<button class="lista-azione' + (pieno ? ' piena' : '') + '" data-bkoggi="' + b.id + '"' +
+      ' aria-label="' + (isProg ? 'Porta in Oggi il prossimo passo di ' : 'Porta in Oggi ') + esc(b.testo) + '"' +
+      ' title="' + (isProg ? 'Porta in Oggi il prossimo passo' : 'Porta in Oggi') + '">' + ICO('target', 15) + '</button>' +
+      '<button class="lista-apri" data-bkapri="' + b.id + '" aria-label="Apri ' + esc(b.testo) + '">' +
+      '<span class="lista-corpo">' +
+      '<span class="lista-tit">' +
+      (b.pin ? '<span class="tit-pin" title="Tenuta in cima">' + ICO('pin', 11) + '</span>' : '') +
+      segnoArea(ar, 13, 'tit-area') +
+      esc(b.testo) + '</span>' +
+      (sotto.length ? '<span class="lista-sub">' + sotto.join(' · ') + '</span>' : '') +
+      '</span>' +
+      (isProg ? '<span class="lista-val">' + av.fatti + ' di ' + av.tot + '</span>' : '') +
+      '<span class="lista-chev">' + ICO('chevronGiu', 15) + '</span></button>' +
+      '</div>';
+  }
+
+  function wireLista(scope) {
+    scope.querySelectorAll('[data-bkoggi]').forEach(function (t) {
+      t.addEventListener('click', function () {
+        var id = t.getAttribute('data-bkoggi');
+        var it = LM.load().backlog.find(function (x) { return x.id === id; });
+        if (!it) return;
+        if (it.steps && it.steps.length) {
+          var passo = LM.prossimoPassoInOggi(id);
+          toast(passo ? 'Prossimo passo portato in Oggi.' : 'Nessun passo da fare: sono tutti in agenda o completati.', 0, passo ? 'arrowRight' : 'check');
+        } else {
+          LM.backlogInOggi(id);
+          toast('Portata tra le cose di oggi.', 0, 'arrowRight');
+        }
+        aggiornaNav(); ridisegnaAtt();
+      });
+    });
+    scope.querySelectorAll('[data-bkapri]').forEach(function (t) {
+      t.addEventListener('click', function () {
+        var it = LM.load().backlog.find(function (x) { return x.id === t.getAttribute('data-bkapri'); });
+        if (it) apriScheda(it.id);
+      });
+    });
+  }
+
+  /* ---------- la scheda di un'attività ----------
+     L'unico posto dove si sistema una cosa. Prima erano quattro cassetti
+     grigi dentro il foglio, ognuno col titolo in maiuscolo DENTRO la
+     scatola e una freccina: scatole dentro scatole, e per dare un giorno
+     tre modi diversi nello stesso cassetto. Adesso è piatta: le sezioni
+     sono etichette sopra il gruppo, come negli elenchi di iOS, e si
+     scorre invece di aprire. */
+  function apriScheda(id) {
+    function trova() { return LM.load().backlog.find(function (x) { return x.id === id; }); }
+    if (!trova()) return;
+
+    function corpoHtml() {
+      var b = trova();
+      if (!b) return '';
       var isProg = !!(b.steps && b.steps.length);
-      var av = isProg ? LM.avanzamentoProgetto(b) : null;
-      var ar = areaById(b.areaId);
-      var inAgenda = LM.snapshot().azioni.filter(function (a) {
-        return !a.done && a.data >= LM.todayKey() && (isProg ? (a.passoDi && a.passoDi.b === b.id) : a.passoDi === null && a.testo === b.testo);
-      }).sort(function (x, y) { return x.data < y.data ? -1 : 1; });
-
-      var sotto = [];
-      if (b.scadenza) {
-        var si = scadInfo(b.scadenza);
-        sotto.push('<span class="sub-scad ' + si.cls + '">' + (si.d < 0 ? 'scaduta ' + si.testo : 'entro ' + si.testo) + '</span>');
-      }
-      if (inAgenda.length) {
-        sotto.push('<span class="sub-agenda">' + (isProg && inAgenda.length > 1
-          ? inAgenda.length + ' passi in agenda'
-          : 'in agenda ' + etichettaGiorno(inAgenda[0].data).toLowerCase()) + '</span>');
-      }
-      /* il motivo si scrive solo se dice qualcosa che la riga non dice già:
-         «iniziata, 1 di 3» accanto a «1 di 3» in coda è la stessa cosa due volte */
-      if (!sotto.length && opts && opts.motivo && !isProg && !(opts.da === 'scadenza' && b.scadenza)) {
-        sotto.push('<span>' + esc(opts.motivo) + '</span>');
-      }
-
-      var pieno = !!(opts && opts.primo);
-      return '<div class="lista-riga att-riga' + (b.mancata ? ' mancata-riga' : '') + '" data-bid="' + b.id + '">' +
-        '<button class="lista-azione' + (pieno ? ' piena' : '') + '" data-bkoggi="' + b.id + '"' +
-        ' aria-label="' + (isProg ? 'Porta in Oggi il prossimo passo di ' : 'Porta in Oggi ') + esc(b.testo) + '"' +
-        ' title="' + (isProg ? 'Porta in Oggi il prossimo passo' : 'Porta in Oggi') + '">' + ICO('target', 15) + '</button>' +
-        '<button class="lista-apri" data-bkapri="' + b.id + '" aria-label="Apri ' + esc(b.testo) + '">' +
-        '<span class="lista-corpo">' +
-        '<span class="lista-tit">' +
-        (b.pin ? '<span class="tit-pin" title="Tenuta in cima">' + ICO('pin', 11) + '</span>' : '') +
-        segnoArea(ar, 13, 'tit-area') +
-        esc(b.testo) + '</span>' +
-        (sotto.length ? '<span class="lista-sub">' + sotto.join(' · ') + '</span>' : '') +
-        '</span>' +
-        (isProg ? '<span class="lista-val">' + av.fatti + ' di ' + av.tot + '</span>' : '') +
-        '<span class="lista-chev">' + ICO('chevronGiu', 15) + '</span></button>' +
-        '</div>';
-    }
-
-    function wireLista(scope) {
-      scope.querySelectorAll('[data-bkoggi]').forEach(function (t) {
-        t.addEventListener('click', function () {
-          var id = t.getAttribute('data-bkoggi');
-          var it = LM.load().backlog.find(function (x) { return x.id === id; });
-          if (!it) return;
-          if (it.steps && it.steps.length) {
-            var passo = LM.prossimoPassoInOggi(id);
-            toast(passo ? 'Prossimo passo portato in Oggi.' : 'Nessun passo da fare: sono tutti in agenda o completati.', 0, passo ? 'arrowRight' : 'check');
-          } else {
-            LM.backlogInOggi(id);
-            toast('Portata tra le cose di oggi.', 0, 'arrowRight');
-          }
-          aggiornaNav(); ridisegna();
-        });
-      });
-      scope.querySelectorAll('[data-bkapri]').forEach(function (t) {
-        t.addEventListener('click', function () {
-          var it = LM.load().backlog.find(function (x) { return x.id === t.getAttribute('data-bkapri'); });
-          if (it) apriScheda(it.id);
-        });
-      });
-    }
-
-    /* ---------- la scheda di un'attività ----------
-       L'unico posto dove si sistema una cosa. Prima erano quattro cassetti
-       grigi dentro il foglio, ognuno col titolo in maiuscolo DENTRO la
-       scatola e una freccina: scatole dentro scatole, e per dare un giorno
-       tre modi diversi nello stesso cassetto. Adesso è piatta: le sezioni
-       sono etichette sopra il gruppo, come negli elenchi di iOS, e si
-       scorre invece di aprire. */
-    function apriScheda(id) {
-      function trova() { return LM.load().backlog.find(function (x) { return x.id === id; }); }
-      if (!trova()) return;
-
-      function corpoHtml() {
-        var b = trova();
-        if (!b) return '';
-        var isProg = !!(b.steps && b.steps.length);
-        var oggi = LM.todayKey();
-        var av = isProg ? LM.avanzamentoProgetto(b) : null;
-        var aperti = (b.steps || []).filter(function (st) { return !st.done; }).length;
-        var ar = areaById(b.areaId);
-
-        function gChip(k, et) { return '<button class="q-chip" data-quando="' + k + '">' + et + '</button>'; }
-
-        /* una riga per attributo, valore a destra: è la forma degli elenchi
-           di iOS, e sostituisce tre riquadri che contenevano altri riquadri */
-        function riga(eti, valore, attrib, cls) {
-          return '<div class="lista-riga sc-riga' + (cls ? ' ' + cls : '') + '"' + (attrib || '') + '>' +
-            '<span class="sc-eti">' + eti + '</span>' + valore + '</div>';
-        }
-
-        var passi = (b.steps || []).map(function (st) {
-          var inAg = LM.snapshot().azioni.find(function (a) { return !a.done && a.passoDi && a.passoDi.b === b.id && a.passoDi.s === st.id; });
-          return '<div class="lista-riga sc-passo' + (st.done ? ' fatta' : '') + '">' +
-            '<button class="lista-azione spunta" data-steptoggle="' + st.id + '" aria-pressed="' + (st.done ? 'true' : 'false') +
-            '" aria-label="' + esc(st.testo) + (st.done ? ', fatto' : ', segna come fatto') + '">' + ICO('check', 13) + '</button>' +
-            '<span class="lista-corpo"><span class="lista-tit">' + esc(st.testo) + '</span>' +
-            (inAg ? '<span class="lista-sub">in agenda ' + esc(etichettaGiorno(inAg.data).toLowerCase()) + '</span>' : '') + '</span>' +
-            (st.done ? '' : '<button class="icona-btn" data-stepquando="' + st.id + '" title="Mettilo in un giorno" aria-label="Metti «' + esc(st.testo) + '» in un giorno">' + ICO('calendar', 15) + '</button>') +
-            '<button class="icona-btn icona-pericolo" data-stepdel="' + st.id + '" title="Rimuovi" aria-label="Rimuovi «' + esc(st.testo) + '»">' + ICO('trash', 15) + '</button>' +
-            '</div>';
-        }).join('');
-
-        return '<div class="sc">' +
-          /* l'azione: una sola, e la pastiglia «Oggi» non la ripete più */
-          '<button class="btn btn-primario btn-grande sc-primaria" id="sc-oggi">' + ICO('target', 15) + ' ' +
-          (isProg ? 'Prossimo passo in Oggi' : 'Portala in Oggi') + '</button>' +
-
-          /* «Mettila in un giorno» e non «Rimanda a»: da quando si può
-             scegliere anche un giorno passato, «rimandare» dice la cosa
-             sbagliata per metà dei giorni che si possono toccare. Il giorno
-             passato serve a una cosa precisa: segnare una cosa che hai fatto
-             e che ti eri dimenticato di mettere in agenda — e il calendario
-             deve poterla accogliere dopo, se no il registro di quello che è
-             successo è un registro solo delle cose che ti sei ricordato di
-             annunciare prima. «Ieri» sta fra le pastiglie perché è il giorno
-             passato che si sceglie quasi sempre. */
-          etichetta('Mettila in un giorno', 'calendar') +
-          '<div class="q-chips sc-quando">' +
-          gChip(LM.addDays(oggi, -1), 'Ieri') +
-          gChip(LM.addDays(oggi, 1), 'Domani') +
-          gChip(LM.addDays(oggi, 2), etichettaGiorno(LM.addDays(oggi, 2)).split(' ')[0]) +
-          gChip(LM.addDays(oggi, 7), 'Tra una settimana') +
-          '<label class="q-chip q-chip-data">' + ICO('calendar', 13) + ' <span>Un altro giorno</span>' +
-          '<input type="date" id="sc-quando" aria-label="Un altro giorno"></label>' +
-          '</div>' +
-
-          etichetta('Passi', 'lista', isProg ? av.fatti + ' di ' + av.tot : null) +
-          '<div class="lista">' + passi +
-          '<form class="lista-riga sc-agg" id="sc-passo-add">' +
-          '<span class="lista-vuoto">' + ICO('plus', 15) + '</span>' +
-          '<input type="text" placeholder="' + (isProg ? 'Aggiungi un passo…' : 'Dividila in passi: scrivi il primo…') + '" aria-label="Aggiungi un passo">' +
-          /* il «più» sta già in testa alla riga, dove si allinea alle spunte
-             dei passi sopra: qui la parola basta, e il colore è quello di
-             tutti gli altri «Aggiungi» dell'app. Due segni «più» nella
-             stessa riga per la stessa azione erano uno di troppo. */
-          '<button class="btn btn-mini btn-tinta" type="submit">Aggiungi</button></form>' +
-          (isProg && aperti > 1
-            ? riga('Spalma i passi aperti',
-              '<span class="sc-val q-chips">' +
-              '<button class="q-chip" data-distrib="1">ogni giorno</button>' +
-              '<button class="q-chip" data-distrib="2">ogni 2</button>' +
-              '<button class="q-chip" data-distrib="7">ogni settimana</button></span>', '', 'sc-riga-alta')
-            : '') +
-          '</div>' +
-
-          etichetta('Dettagli', 'ingranaggio') +
-          '<div class="lista">' +
-          riga('Area', '<span class="sc-val">' + selectAree('sc-area', b.areaId, 'Area', 'sc-inline') + '</span>') +
-          /* senza scadenza la riga dice «nessuna» e il campo compare al
-             tocco: un «mm/gg/aaaa» vuoto in una riga di valori è l'unica
-             cosa che si legge, e non dice niente */
-          (b.scadenza
-            ? riga('Scadenza', '<span class="sc-val">' + LM.fmtShort(b.scadenza) + ' · ' + scadInfo(b.scadenza).testo +
-              '</span><button class="icona-btn" id="sc-scad-x" title="Togli la scadenza" aria-label="Togli la scadenza">' + ICO('x', 13) + '</button>' +
-              '<input type="date" class="sc-nascosta" id="sc-scad" value="' + b.scadenza + '" aria-label="Scadenza">', ' data-apri-scad="1"', 'sc-tocca')
-            : riga('Scadenza', '<span class="sc-val">nessuna</span>' +
-              '<span class="lista-chev">' + ICO('chevronGiu', 15) + '</span>' +
-              '<input type="date" class="sc-nascosta" id="sc-scad" aria-label="Scadenza">', ' data-apri-scad="1"', 'sc-tocca')) +
-          '<button class="lista-riga sc-riga sc-tocca" id="sc-pin">' +
-          '<span class="sc-eti">Tieni in cima</span>' +
-          '<span class="sc-val">' + (b.pin ? ICO('pin', 15, 'sc-si') + ' sì' : 'no') + '</span></button>' +
-          '</div>' +
-          '<p class="lista-nota">Scegliere un giorno la sposta fra le cose di quel giorno, anche se è già passato: serve a registrare quello che hai fatto senza averlo scritto prima. La scadenza fa solo da conto alla rovescia e non la mette in agenda.</p>' +
-
-          '<div class="lista mt">' +
-          '<button class="lista-riga sc-riga sc-tocca" id="sc-abitudine">' +
-          '<span class="sc-eti">' + ICO('refresh', 15) + ' Diventa un’abitudine</span>' +
-          '<span class="lista-chev">' + ICO('chevronGiu', 15) + '</span></button>' +
-          /* «Non ci sono riuscito» STA SOPRA «elimina», e non è rosso.
-             Sono due cose diverse e devono sembrarlo: eliminare fa sparire la
-             riga dal registro di quello che è successo, questo la chiude
-             dicendo com'è andata. Se stessero alla pari, chi vuole solo
-             togliersela davanti sceglierebbe la prima che vede — e finora la
-             prima che vedeva era «elimina». */
-          (b.mancata
-            ? '<button class="lista-riga sc-riga sc-tocca" id="sc-rimetti">' +
-              '<span class="sc-eti">' + ICO('riprova', 15) + ' Rimettila fra le cose da fare</span>' +
-              '<span class="sc-val">' + esc(etichettaQuanto(b.mancata)) + '</span></button>'
-            : '<button class="lista-riga sc-riga sc-tocca" id="sc-mancata">' +
-              '<span class="sc-eti">' + ICO('annulla', 15) + ' Non ci sono riuscito</span>' +
-              '<span class="lista-chev">' + ICO('chevronGiu', 15) + '</span></button>') +
-          '<button class="lista-riga sc-riga sc-tocca sc-pericolo" id="sc-del">' +
-          '<span class="sc-eti">' + ICO('trash', 15) + ' Elimina l’attività</span></button>' +
-          '</div>' +
-          '</div>';
-      }
-
-      function ridisegnaScheda() {
-        var root = document.getElementById('sheet-corpo');
-        if (!root) return;
-        root.innerHTML = corpoHtml();
-        collega(root);
-        ridisegna();
-      }
-
-      function collega(root) {
-        var b = trova();
-        if (!b) { chiudiSheet(); ridisegna(); return; }
-        var isProg = !!(b.steps && b.steps.length);
-
-        function pianifica(k) {
-          if (!k) return;
-          var fatto = isProg ? LM.prossimoPassoInOggi(b.id, k) : LM.backlogInOggi(b.id, k);
-          if (!fatto) { toast('Nessun passo da pianificare: sono tutti in agenda o completati.', 0, 'check'); return; }
-          toast(k === LM.todayKey() ? 'Messa tra le cose di oggi.' : 'Pianificata per ' + etichettaGiorno(k).toLowerCase() + '.', 0, 'calendar');
-          chiudiSheet(); aggiornaNav(); ridisegna();
-        }
-        root.querySelector('#sc-oggi').addEventListener('click', function () { pianifica(LM.todayKey()); });
-        root.querySelectorAll('[data-quando]').forEach(function (c) {
-          c.addEventListener('click', function () { pianifica(c.getAttribute('data-quando')); });
-        });
-        var quandoData = root.querySelector('#sc-quando');
-        quandoData.addEventListener('change', function () { pianifica(this.value); });
-        root.querySelectorAll('[data-distrib]').forEach(function (c) {
-          c.addEventListener('click', function () {
-            var n = LM.distribuisciPassi(b.id, LM.todayKey(), +c.getAttribute('data-distrib'));
-            toast(n ? n + (n === 1 ? ' passo messo in agenda.' : ' passi messi in agenda, uno per volta.') : 'Nessun passo da distribuire.', 0, n ? 'calendar' : 'check');
-            chiudiSheet(); aggiornaNav(); ridisegna();
-          });
-        });
-        var scad = root.querySelector('#sc-scad');
-        scad.addEventListener('change', function () {
-          LM.impostaScadenzaBacklog(b.id, this.value || null); ridisegnaScheda();
-        });
-        /* la riga è il bersaglio: il campo VERO ci sta steso sopra,
-           trasparente e grande quanto lei, così il tocco arriva al calendario
-           del sistema senza passare da noi. Aprirlo a mano su un campo alto
-           un pixel e senza eventi del puntatore non apriva niente. */
-        /* «spalma» sta in una riga di attributo, non più in un cassetto */
-        var sx = root.querySelector('#sc-scad-x');
-        if (sx) sx.addEventListener('click', function () { LM.impostaScadenzaBacklog(b.id, null); ridisegnaScheda(); });
-
-        root.querySelectorAll('[data-steptoggle]').forEach(function (t) {
-          t.addEventListener('click', function (ev) {
-            feedbackSpunta(ev, LM.togglePasso(b.id, t.getAttribute('data-steptoggle')), 'Passo fatto.', 'check');
-            ridisegnaScheda();
-          });
-        });
-        root.querySelectorAll('[data-stepdel]').forEach(function (t) {
-          t.addEventListener('click', function () {
-            var sid = t.getAttribute('data-stepdel');
-            conAnnulla('Passo rimosso.', 'trash', function () { LM.rimuoviPasso(b.id, sid); ridisegnaScheda(); });
-          });
-        });
-        root.querySelectorAll('[data-stepquando]').forEach(function (t) {
-          t.addEventListener('click', function () {
-            var st = (trova().steps || []).find(function (x) { return x.id === t.getAttribute('data-stepquando'); });
-            if (st) apriQuandoPasso(trova(), st);
-          });
-        });
-        root.querySelector('#sc-passo-add').addEventListener('submit', function (e) {
-          e.preventDefault();
-          var inp = this.querySelector('input');
-          var v = inp.value.trim();
-          if (!v) return;
-          LM.aggiungiPasso(b.id, v);
-          inp.value = '';
-          ridisegnaScheda();
-          var nuovo = document.querySelector('#sc-passo-add input');
-          if (nuovo) nuovo.focus({ preventScroll: true });
-        });
-
-
-        root.querySelector('#sc-area').addEventListener('change', function () { LM.cambiaAreaBacklog(b.id, this.value); ridisegna(); });
-        root.querySelector('#sc-pin').addEventListener('click', function () {
-          LM.appuntaBacklog(b.id);
-          ridisegnaScheda();
-        });
-        root.querySelector('#sc-abitudine').addEventListener('click', function () { apriDaAbitudine(trova()); });
-        var bM = root.querySelector('#sc-mancata');
-        if (bM) bM.addEventListener('click', function () { chiediMancata(b.id, trova().testo, ridisegna); });
-        var bR = root.querySelector('#sc-rimetti');
-        if (bR) bR.addEventListener('click', function () {
-          LM.togliMancata(b.id);
-          toast('Rimessa fra le cose da fare.', 0, 'riprova');
-          ridisegnaScheda(); ridisegna();
-        });
-        root.querySelector('#sc-del').addEventListener('click', function () {
-          conAnnulla('Attività eliminata.', 'trash', function () { LM.rimuoviBacklog(b.id); chiudiSheet(); ridisegna(); });
-        });
-      }
-
-      apriSheet(trova().testo, corpoHtml(), collega);
-      titoloSheetModificabile(trova().testo, function (v) { LM.modificaBacklog(id, v); ridisegna(); });
-    }
-
-    /* Quando fare UN passo: gli stessi tasti-giorno della scheda. */
-    function apriQuandoPasso(prog, passo) {
       var oggi = LM.todayKey();
-      var gia = LM.snapshot().azioni.find(function (a) { return !a.done && a.passoDi && a.passoDi.b === prog.id && a.passoDi.s === passo.id; });
-      function chip(k, et) { return '<button class="q-chip' + (gia && gia.data === k ? ' on' : '') + '" data-qp="' + k + '">' + et + '</button>'; }
-      var html = '<div class="sc">' +
-        etichetta('Quando fare questo passo', 'calendar') +
-        '<div class="sc-gruppo">' +
-        '<div class="q-chips">' + chip(LM.addDays(oggi, -1), 'Ieri') + chip(oggi, 'Oggi') + chip(LM.addDays(oggi, 1), 'Domani') +
-        chip(LM.addDays(oggi, 2), etichettaGiorno(LM.addDays(oggi, 2)).split(' ')[0]) +
-        chip(LM.addDays(oggi, 7), 'Tra una settimana') + '</div>' +
-        '<label class="sc-campo"><span>un altro giorno</span>' +
-        '<input type="date" id="qp-data" value="' + (gia ? gia.data : LM.addDays(oggi, 1)) + '"></label>' +
-        (gia ? '<button class="btn btn-mini btn-ghost" id="qp-togli">' + ICO('x', 13) + ' Togli dal giorno (' + esc(etichettaGiorno(gia.data).toLowerCase()) + ')</button>' : '') +
-        '<div class="sc-nota">Comparirà tra le cose di quel giorno, in <b>La giornata</b>.</div>' +
-        '</div></div>';
-      apriSheet(passo.testo, html, function (root) {
-        function metti(k) {
-          if (!k) return;
-          LM.pianificaPasso(prog.id, passo.id, k);
-          toast('Passo messo ' + etichettaGiorno(k).toLowerCase() + '.', 0, 'calendar');
-          chiudiSheet(); aggiornaNav(); ridisegna();
-        }
-        root.querySelectorAll('[data-qp]').forEach(function (c) { c.addEventListener('click', function () { metti(c.getAttribute('data-qp')); }); });
-        root.querySelector('#qp-data').addEventListener('change', function () { metti(this.value); });
-        var tg = root.querySelector('#qp-togli');
-        if (tg) tg.addEventListener('click', function () {
-          LM.azioneInBacklog(gia.id);
-          toast('Passo tolto dal giorno.', 0, 'lista');
-          chiudiSheet(); aggiornaNav(); ridisegna();
+      var av = isProg ? LM.avanzamentoProgetto(b) : null;
+      var aperti = (b.steps || []).filter(function (st) { return !st.done; }).length;
+      var ar = areaById(b.areaId);
+
+      function gChip(k, et) { return '<button class="q-chip" data-quando="' + k + '">' + et + '</button>'; }
+
+      /* una riga per attributo, valore a destra: è la forma degli elenchi
+         di iOS, e sostituisce tre riquadri che contenevano altri riquadri */
+      function riga(eti, valore, attrib, cls) {
+        return '<div class="lista-riga sc-riga' + (cls ? ' ' + cls : '') + '"' + (attrib || '') + '>' +
+          '<span class="sc-eti">' + eti + '</span>' + valore + '</div>';
+      }
+
+      var passi = (b.steps || []).map(function (st) {
+        var inAg = LM.snapshot().azioni.find(function (a) { return !a.done && a.passoDi && a.passoDi.b === b.id && a.passoDi.s === st.id; });
+        return '<div class="lista-riga sc-passo' + (st.done ? ' fatta' : '') + '">' +
+          '<button class="lista-azione spunta" data-steptoggle="' + st.id + '" aria-pressed="' + (st.done ? 'true' : 'false') +
+          '" aria-label="' + esc(st.testo) + (st.done ? ', fatto' : ', segna come fatto') + '">' + ICO('check', 13) + '</button>' +
+          '<span class="lista-corpo"><span class="lista-tit">' + esc(st.testo) + '</span>' +
+          (inAg ? '<span class="lista-sub">in agenda ' + esc(etichettaGiorno(inAg.data).toLowerCase()) + '</span>' : '') + '</span>' +
+          (st.done ? '' : '<button class="icona-btn" data-stepquando="' + st.id + '" title="Mettilo in un giorno" aria-label="Metti «' + esc(st.testo) + '» in un giorno">' + ICO('calendar', 15) + '</button>') +
+          '<button class="icona-btn icona-pericolo" data-stepdel="' + st.id + '" title="Rimuovi" aria-label="Rimuovi «' + esc(st.testo) + '»">' + ICO('trash', 15) + '</button>' +
+          '</div>';
+      }).join('');
+
+      return '<div class="sc">' +
+        /* l'azione: una sola, e la pastiglia «Oggi» non la ripete più */
+        '<button class="btn btn-primario btn-grande sc-primaria" id="sc-oggi">' + ICO('target', 15) + ' ' +
+        (isProg ? 'Prossimo passo in Oggi' : 'Portala in Oggi') + '</button>' +
+
+        /* «Mettila in un giorno» e non «Rimanda a»: da quando si può
+           scegliere anche un giorno passato, «rimandare» dice la cosa
+           sbagliata per metà dei giorni che si possono toccare. Il giorno
+           passato serve a una cosa precisa: segnare una cosa che hai fatto
+           e che ti eri dimenticato di mettere in agenda — e il calendario
+           deve poterla accogliere dopo, se no il registro di quello che è
+           successo è un registro solo delle cose che ti sei ricordato di
+           annunciare prima. «Ieri» sta fra le pastiglie perché è il giorno
+           passato che si sceglie quasi sempre. */
+        etichetta('Mettila in un giorno', 'calendar') +
+        '<div class="q-chips sc-quando">' +
+        gChip(LM.addDays(oggi, -1), 'Ieri') +
+        gChip(LM.addDays(oggi, 1), 'Domani') +
+        gChip(LM.addDays(oggi, 2), etichettaGiorno(LM.addDays(oggi, 2)).split(' ')[0]) +
+        gChip(LM.addDays(oggi, 7), 'Tra una settimana') +
+        '<label class="q-chip q-chip-data">' + ICO('calendar', 13) + ' <span>Un altro giorno</span>' +
+        '<input type="date" id="sc-quando" aria-label="Un altro giorno"></label>' +
+        '</div>' +
+
+        etichetta('Passi', 'lista', isProg ? av.fatti + ' di ' + av.tot : null) +
+        '<div class="lista">' + passi +
+        '<form class="lista-riga sc-agg" id="sc-passo-add">' +
+        '<span class="lista-vuoto">' + ICO('plus', 15) + '</span>' +
+        '<input type="text" placeholder="' + (isProg ? 'Aggiungi un passo…' : 'Dividila in passi: scrivi il primo…') + '" aria-label="Aggiungi un passo">' +
+        /* il «più» sta già in testa alla riga, dove si allinea alle spunte
+           dei passi sopra: qui la parola basta, e il colore è quello di
+           tutti gli altri «Aggiungi» dell'app. Due segni «più» nella
+           stessa riga per la stessa azione erano uno di troppo. */
+        '<button class="btn btn-mini btn-tinta" type="submit">Aggiungi</button></form>' +
+        (isProg && aperti > 1
+          ? riga('Spalma i passi aperti',
+            '<span class="sc-val q-chips">' +
+            '<button class="q-chip" data-distrib="1">ogni giorno</button>' +
+            '<button class="q-chip" data-distrib="2">ogni 2</button>' +
+            '<button class="q-chip" data-distrib="7">ogni settimana</button></span>', '', 'sc-riga-alta')
+          : '') +
+        '</div>' +
+
+        etichetta('Dettagli', 'ingranaggio') +
+        '<div class="lista">' +
+        riga('Area', '<span class="sc-val">' + selectAree('sc-area', b.areaId, 'Area', 'sc-inline') + '</span>') +
+        /* senza scadenza la riga dice «nessuna» e il campo compare al
+           tocco: un «mm/gg/aaaa» vuoto in una riga di valori è l'unica
+           cosa che si legge, e non dice niente */
+        (b.scadenza
+          ? riga('Scadenza', '<span class="sc-val">' + LM.fmtShort(b.scadenza) + ' · ' + scadInfo(b.scadenza).testo +
+            '</span><button class="icona-btn" id="sc-scad-x" title="Togli la scadenza" aria-label="Togli la scadenza">' + ICO('x', 13) + '</button>' +
+            '<input type="date" class="sc-nascosta" id="sc-scad" value="' + b.scadenza + '" aria-label="Scadenza">', ' data-apri-scad="1"', 'sc-tocca')
+          : riga('Scadenza', '<span class="sc-val">nessuna</span>' +
+            '<span class="lista-chev">' + ICO('chevronGiu', 15) + '</span>' +
+            '<input type="date" class="sc-nascosta" id="sc-scad" aria-label="Scadenza">', ' data-apri-scad="1"', 'sc-tocca')) +
+        '<button class="lista-riga sc-riga sc-tocca" id="sc-pin">' +
+        '<span class="sc-eti">Tieni in cima</span>' +
+        '<span class="sc-val">' + (b.pin ? ICO('pin', 15, 'sc-si') + ' sì' : 'no') + '</span></button>' +
+        '</div>' +
+        '<p class="lista-nota">Scegliere un giorno la sposta fra le cose di quel giorno, anche se è già passato: serve a registrare quello che hai fatto senza averlo scritto prima. La scadenza fa solo da conto alla rovescia e non la mette in agenda.</p>' +
+
+        '<div class="lista mt">' +
+        '<button class="lista-riga sc-riga sc-tocca" id="sc-abitudine">' +
+        '<span class="sc-eti">' + ICO('refresh', 15) + ' Diventa un’abitudine</span>' +
+        '<span class="lista-chev">' + ICO('chevronGiu', 15) + '</span></button>' +
+        /* «Non ci sono riuscito» STA SOPRA «elimina», e non è rosso.
+           Sono due cose diverse e devono sembrarlo: eliminare fa sparire la
+           riga dal registro di quello che è successo, questo la chiude
+           dicendo com'è andata. Se stessero alla pari, chi vuole solo
+           togliersela davanti sceglierebbe la prima che vede — e finora la
+           prima che vedeva era «elimina». */
+        (b.mancata
+          ? '<button class="lista-riga sc-riga sc-tocca" id="sc-rimetti">' +
+            '<span class="sc-eti">' + ICO('riprova', 15) + ' Rimettila fra le cose da fare</span>' +
+            '<span class="sc-val">' + esc(etichettaQuanto(b.mancata)) + '</span></button>'
+          : '<button class="lista-riga sc-riga sc-tocca" id="sc-mancata">' +
+            '<span class="sc-eti">' + ICO('annulla', 15) + ' Non ci sono riuscito</span>' +
+            '<span class="lista-chev">' + ICO('chevronGiu', 15) + '</span></button>') +
+        '<button class="lista-riga sc-riga sc-tocca sc-pericolo" id="sc-del">' +
+        '<span class="sc-eti">' + ICO('trash', 15) + ' Elimina l’attività</span></button>' +
+        '</div>' +
+        '</div>';
+    }
+
+    function ridisegnaScheda() {
+      var root = document.getElementById('sheet-corpo');
+      if (!root) return;
+      root.innerHTML = corpoHtml();
+      collega(root);
+      ridisegnaAtt();
+    }
+
+    function collega(root) {
+      var b = trova();
+      if (!b) { chiudiSheet(); ridisegnaAtt(); return; }
+      var isProg = !!(b.steps && b.steps.length);
+
+      function pianifica(k) {
+        if (!k) return;
+        var fatto = isProg ? LM.prossimoPassoInOggi(b.id, k) : LM.backlogInOggi(b.id, k);
+        if (!fatto) { toast('Nessun passo da pianificare: sono tutti in agenda o completati.', 0, 'check'); return; }
+        toast(k === LM.todayKey() ? 'Messa tra le cose di oggi.' : 'Pianificata per ' + etichettaGiorno(k).toLowerCase() + '.', 0, 'calendar');
+        chiudiSheet(); aggiornaNav(); ridisegnaAtt();
+      }
+      root.querySelector('#sc-oggi').addEventListener('click', function () { pianifica(LM.todayKey()); });
+      root.querySelectorAll('[data-quando]').forEach(function (c) {
+        c.addEventListener('click', function () { pianifica(c.getAttribute('data-quando')); });
+      });
+      var quandoData = root.querySelector('#sc-quando');
+      quandoData.addEventListener('change', function () { pianifica(this.value); });
+      root.querySelectorAll('[data-distrib]').forEach(function (c) {
+        c.addEventListener('click', function () {
+          var n = LM.distribuisciPassi(b.id, LM.todayKey(), +c.getAttribute('data-distrib'));
+          toast(n ? n + (n === 1 ? ' passo messo in agenda.' : ' passi messi in agenda, uno per volta.') : 'Nessun passo da distribuire.', 0, n ? 'calendar' : 'check');
+          chiudiSheet(); aggiornaNav(); ridisegnaAtt();
         });
+      });
+      var scad = root.querySelector('#sc-scad');
+      scad.addEventListener('change', function () {
+        LM.impostaScadenzaBacklog(b.id, this.value || null); ridisegnaScheda();
+      });
+      /* la riga è il bersaglio: il campo VERO ci sta steso sopra,
+         trasparente e grande quanto lei, così il tocco arriva al calendario
+         del sistema senza passare da noi. Aprirlo a mano su un campo alto
+         un pixel e senza eventi del puntatore non apriva niente. */
+      /* «spalma» sta in una riga di attributo, non più in un cassetto */
+      var sx = root.querySelector('#sc-scad-x');
+      if (sx) sx.addEventListener('click', function () { LM.impostaScadenzaBacklog(b.id, null); ridisegnaScheda(); });
+
+      root.querySelectorAll('[data-steptoggle]').forEach(function (t) {
+        t.addEventListener('click', function (ev) {
+          feedbackSpunta(ev, LM.togglePasso(b.id, t.getAttribute('data-steptoggle')), 'Passo fatto.', 'check');
+          ridisegnaScheda();
+        });
+      });
+      root.querySelectorAll('[data-stepdel]').forEach(function (t) {
+        t.addEventListener('click', function () {
+          var sid = t.getAttribute('data-stepdel');
+          conAnnulla('Passo rimosso.', 'trash', function () { LM.rimuoviPasso(b.id, sid); ridisegnaScheda(); });
+        });
+      });
+      root.querySelectorAll('[data-stepquando]').forEach(function (t) {
+        t.addEventListener('click', function () {
+          var st = (trova().steps || []).find(function (x) { return x.id === t.getAttribute('data-stepquando'); });
+          if (st) apriQuandoPasso(trova(), st);
+        });
+      });
+      root.querySelector('#sc-passo-add').addEventListener('submit', function (e) {
+        e.preventDefault();
+        var inp = this.querySelector('input');
+        var v = inp.value.trim();
+        if (!v) return;
+        LM.aggiungiPasso(b.id, v);
+        inp.value = '';
+        ridisegnaScheda();
+        var nuovo = document.querySelector('#sc-passo-add input');
+        if (nuovo) nuovo.focus({ preventScroll: true });
+      });
+
+
+      root.querySelector('#sc-area').addEventListener('change', function () { LM.cambiaAreaBacklog(b.id, this.value); ridisegnaAtt(); });
+      root.querySelector('#sc-pin').addEventListener('click', function () {
+        LM.appuntaBacklog(b.id);
+        ridisegnaScheda();
+      });
+      root.querySelector('#sc-abitudine').addEventListener('click', function () { apriDaAbitudine(trova()); });
+      var bM = root.querySelector('#sc-mancata');
+      if (bM) bM.addEventListener('click', function () { chiediMancata(b.id, trova().testo, ridisegna); });
+      var bR = root.querySelector('#sc-rimetti');
+      if (bR) bR.addEventListener('click', function () {
+        LM.togliMancata(b.id);
+        toast('Rimessa fra le cose da fare.', 0, 'riprova');
+        ridisegnaScheda(); ridisegnaAtt();
+      });
+      root.querySelector('#sc-del').addEventListener('click', function () {
+        conAnnulla('Attività eliminata.', 'trash', function () { LM.rimuoviBacklog(b.id); chiudiSheet(); ridisegnaAtt(); });
       });
     }
 
-    /* Da cosa-da-fare a abitudine: si scelgono i giorni e (se serve) l'ora. */
-    function apriDaAbitudine(b) {
-      var html = '<div class="sc">' +
-        etichetta('In che giorni', 'calendar') +
-        '<div class="sc-gruppo">' +
-        '<div id="ab-giorni">' + chipsGiorni([1, 2, 3, 4, 5, 6, 0]) + '</div>' +
-        '<label class="sc-campo"><span>a che ora</span>' +
-        '<input type="time" class="tl-time" id="ab-ora"></label>' +
-        '<label class="sc-campo"><span>quanto dura</span>' +
-        '<select class="tl-dur" id="ab-dur">' + DURATE.map(function (o) { return '<option value="' + o.v + '">' + o.t + '</option>'; }).join('') + '</select></label>' +
-        '<div class="sc-nota">Vuoti vanno bene: l’abitudine resta senza orario fisso.</div>' +
-        '</div>' +
-        '<button class="btn btn-primario btn-grande sc-primaria" id="ab-crea">' + ICO('plus', 15) + ' Crea l’abitudine</button>' +
-        '<div class="sc-nota" style="text-align:center">Esce da «Da fare» e la ritrovi in <b>Attività → Abitudini</b>.</div>' +
-        '</div>';
-      apriSheet(b.testo, html, function (root) {
-        root.querySelectorAll('#ab-giorni .giorno-chip').forEach(function (c) {
-          c.addEventListener('click', function () { c.classList.toggle('sel'); });
-        });
-        root.querySelector('#ab-crea').addEventListener('click', function () {
-          var giorni = leggiGiorni(root.querySelector('#ab-giorni'));
-          var ora = root.querySelector('#ab-ora').value || null;
-          var dur = root.querySelector('#ab-dur').value;
-          LM.backlogInAbitudine(b.id, giorni, { ora: ora, durata: dur ? +dur : null });
-          toast('Diventata un’abitudine: la trovi fra le Abitudini.', 0, 'refresh');
-          chiudiSheet(); aggiornaNav(); ridisegna();
-        });
+    apriSheet(trova().testo, corpoHtml(), collega);
+    titoloSheetModificabile(trova().testo, function (v) { LM.modificaBacklog(id, v); ridisegnaAtt(); });
+  }
+
+  /* Quando fare UN passo: gli stessi tasti-giorno della scheda. */
+  function apriQuandoPasso(prog, passo) {
+    var oggi = LM.todayKey();
+    var gia = LM.snapshot().azioni.find(function (a) { return !a.done && a.passoDi && a.passoDi.b === prog.id && a.passoDi.s === passo.id; });
+    function chip(k, et) { return '<button class="q-chip' + (gia && gia.data === k ? ' on' : '') + '" data-qp="' + k + '">' + et + '</button>'; }
+    var html = '<div class="sc">' +
+      etichetta('Quando fare questo passo', 'calendar') +
+      '<div class="sc-gruppo">' +
+      '<div class="q-chips">' + chip(LM.addDays(oggi, -1), 'Ieri') + chip(oggi, 'Oggi') + chip(LM.addDays(oggi, 1), 'Domani') +
+      chip(LM.addDays(oggi, 2), etichettaGiorno(LM.addDays(oggi, 2)).split(' ')[0]) +
+      chip(LM.addDays(oggi, 7), 'Tra una settimana') + '</div>' +
+      '<label class="sc-campo"><span>un altro giorno</span>' +
+      '<input type="date" id="qp-data" value="' + (gia ? gia.data : LM.addDays(oggi, 1)) + '"></label>' +
+      (gia ? '<button class="btn btn-mini btn-ghost" id="qp-togli">' + ICO('x', 13) + ' Togli dal giorno (' + esc(etichettaGiorno(gia.data).toLowerCase()) + ')</button>' : '') +
+      '<div class="sc-nota">Comparirà tra le cose di quel giorno, in <b>La giornata</b>.</div>' +
+      '</div></div>';
+    apriSheet(passo.testo, html, function (root) {
+      function metti(k) {
+        if (!k) return;
+        LM.pianificaPasso(prog.id, passo.id, k);
+        toast('Passo messo ' + etichettaGiorno(k).toLowerCase() + '.', 0, 'calendar');
+        chiudiSheet(); aggiornaNav(); ridisegnaAtt();
+      }
+      root.querySelectorAll('[data-qp]').forEach(function (c) { c.addEventListener('click', function () { metti(c.getAttribute('data-qp')); }); });
+      root.querySelector('#qp-data').addEventListener('change', function () { metti(this.value); });
+      var tg = root.querySelector('#qp-togli');
+      if (tg) tg.addEventListener('click', function () {
+        LM.azioneInBacklog(gia.id);
+        toast('Passo tolto dal giorno.', 0, 'lista');
+        chiudiSheet(); aggiornaNav(); ridisegnaAtt();
       });
-    }
+    });
+  }
+
+  /* Da cosa-da-fare a abitudine: si scelgono i giorni e (se serve) l'ora. */
+  function apriDaAbitudine(b) {
+    var html = '<div class="sc">' +
+      etichetta('In che giorni', 'calendar') +
+      '<div class="sc-gruppo">' +
+      '<div id="ab-giorni">' + chipsGiorni([1, 2, 3, 4, 5, 6, 0]) + '</div>' +
+      '<label class="sc-campo"><span>a che ora</span>' +
+      '<input type="time" class="tl-time" id="ab-ora"></label>' +
+      '<label class="sc-campo"><span>quanto dura</span>' +
+      '<select class="tl-dur" id="ab-dur">' + DURATE.map(function (o) { return '<option value="' + o.v + '">' + o.t + '</option>'; }).join('') + '</select></label>' +
+      '<div class="sc-nota">Vuoti vanno bene: l’abitudine resta senza orario fisso.</div>' +
+      '</div>' +
+      '<button class="btn btn-primario btn-grande sc-primaria" id="ab-crea">' + ICO('plus', 15) + ' Crea l’abitudine</button>' +
+      '<div class="sc-nota" style="text-align:center">Esce da «Da fare» e la ritrovi in <b>Attività → Abitudini</b>.</div>' +
+      '</div>';
+    apriSheet(b.testo, html, function (root) {
+      root.querySelectorAll('#ab-giorni .giorno-chip').forEach(function (c) {
+        c.addEventListener('click', function () { c.classList.toggle('sel'); });
+      });
+      root.querySelector('#ab-crea').addEventListener('click', function () {
+        var giorni = leggiGiorni(root.querySelector('#ab-giorni'));
+        var ora = root.querySelector('#ab-ora').value || null;
+        var dur = root.querySelector('#ab-dur').value;
+        LM.backlogInAbitudine(b.id, giorni, { ora: ora, durata: dur ? +dur : null });
+        toast('Diventata un’abitudine: la trovi fra le Abitudini.', 0, 'refresh');
+        chiudiSheet(); aggiornaNav(); ridisegnaAtt();
+      });
+    });
   }
 
   /* ============================================================
@@ -7562,7 +7610,7 @@
 
     function collega(root) {
       var l = trova();
-      if (!l) { chiudiSheet(); ridisegna(); return; }
+      if (!l) { chiudiSheet(); ridisegnaAtt(); return; }
       var ta = root.querySelector('#lez-testo');
       /* si salva uscendo dal campo, come le altre schede: un tasto «salva» per
          una riga di testo è un tasto che si dimentica di premere */
@@ -8348,7 +8396,13 @@
        qualcosa non va, alle otto di mattina, senza aspettare un rilascio. */
     var conReact = reactPer(v);
     if (conReact) {
-      $vista.innerHTML = '';
+      /* NIENTE `innerHTML = ''` QUI. Sembra la cosa prudente — si pulisce e
+         si ridisegna — ed è invece il modo di rompere React in silenzio:
+         quei nodi li possiede lui, e svuotarli glieli porta via mentre crede
+         ancora di averli. Al primo montaggio non si vede niente (ci pensa
+         `createRoot`, che il contenitore lo pulisce da sé); dal secondo giro
+         in poi React riconcilia contro nodi che non esistono più e disegna
+         nel vuoto. Era la linguetta «Da fare» che restava bianca. */
       window.LM_REACT.monta(v, $vista);
     } else {
       /* tornando a una schermata vecchia React deve lasciare il contenitore

@@ -65,9 +65,19 @@ const filaDi = new WeakMap();
 function fila(dove, chiede) {
   if (!chiede) return null;
   let f = filaDi.get(dove);
-  /* se sta ancora appesa da qualche parte va bene: sottoNav l'ha spostata,
-     non buttata. Se non c'è più (siamo tornati e ripartiti) se ne fa una. */
-  if (f && f.isConnected) { f.className = chiede.classi; return f; }
+  /* LA FILA VA RIPORTATA A CASA PRIMA DI OGNI DISEGNO.
+     `sottoNav()` comincia con `$vista.querySelector('.testa-porta').remove()`:
+     cancella la riga del giro prima — e dentro a quella riga c'è la nostra
+     fila, perché ce l'ha messa lui. Al secondo `render()` sparirebbe, e
+     `sottoNav` non trovando nessun `.sez-nav` marcherebbe la riga come
+     «testa-porta-sola»: le linguette scomparivano dalla schermata.
+     Basta pretendere che sia figlia DIRETTA del contenitore: se sta dentro a
+     una testa-porta, si riprende prima che quella venga buttata. */
+  if (f) {
+    f.className = chiede.classi;
+    if (f.parentNode !== dove) dove.appendChild(f);
+    return f;
+  }
   f = document.createElement('div');
   f.className = chiede.classi;
   if (chiede.id) f.id = chiede.id;
