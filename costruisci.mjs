@@ -50,7 +50,7 @@ const A_PARTE = {
 /* e questi non stanno nemmeno nell'HTML: se li va a prendere l'app quando
    servono. Il build deve conoscerli lo stesso, perché il nome che finisce in
    pagina è quello con l'impronta dentro. */
-const A_RICHIESTA = ['assets/lab.js', 'assets/lab.css'];
+const A_RICHIESTA = ['assets/lab.js', 'assets/lab.css', 'assets/react/isola.js'];
 
 function impronta(testo) {
   return createHash('sha256').update(testo).digest('hex').slice(0, 10);
@@ -153,7 +153,7 @@ export async function piano() {
     pesoRichiesta += Buffer.byteLength(t);
     const m = via.endsWith('.css') ? await minCss(t, via) : await minJs(t, via, false);
     const est = via.endsWith('.css') ? '.css' : '.js';
-    const n = via.replace('assets/', '').replace(est, '') + '.' + impronta(m) + est;
+    const n = via.replace('assets/', '').replace('react/', '').replace(est, '') + '.' + impronta(m) + est;
     dentro[via] = 'assets/pacco/' + n;
     file.push({
       nome: n, testo: m,
@@ -171,7 +171,8 @@ export async function piano() {
   fuori.forEach((s) => { out = out.replace(s.tag, '<script type="module" src="' + dentro[s.via] + '"></script>'); });
   /* la mappa dei file, per chi si carica da solo (il Design lab) */
   const mappa = '<script>window.LM_PACCO=' + JSON.stringify({
-    lab: dentro['assets/lab.js'], labCss: dentro['assets/lab.css']
+    lab: dentro['assets/lab.js'], labCss: dentro['assets/lab.css'],
+    react: dentro['assets/react/isola.js']
   }) + ';</script>\n';
   out = out.replace('<script src="assets/pacco/' + nomeUnito + '"></script>',
     mappa + '<script src="assets/pacco/' + nomeUnito + '"></script>');

@@ -1155,23 +1155,26 @@
 
   /* una riga che APRE una schermata: freccetta a destra, e il valore di adesso
      accanto — così la risposta si legge senza entrare */
+  /* Da qui in giù la forma non sta più scritta qui: sta in `assets/pezzi.js`,
+     che è il posto dove ogni forma dell'interfaccia è scritta UNA volta. Qui
+     resta il nome del mestiere — «porta», «fa», «scelta» — che è la cosa che
+     serve a chi legge questa parte. */
   function rigaPorta(id, ico, eti, val) {
-    return '<button class="lista-riga sc-riga sc-tocca" id="' + id + '">' +
-      '<span class="sc-eti">' + ICO(ico, 15) + ' ' + eti + '</span>' +
-      (val ? '<span class="sc-val">' + val + '</span>' : '') +
-      '<span class="lista-chev">' + ICO('chevronGiu', 15) + '</span></button>';
+    return PZ.riga({ mestiere: 'porta', id: id, ico: ico, eti: eti, valore: val });
   }
   /* una riga che FA una cosa adesso: nessuna freccetta, perché non si va da
      nessuna parte. La differenza fra le due forme è tutta qui, e prima non
      c'era: «Esporta» e «Gestisci le aree» erano la stessa pastiglia. */
   function rigaFa(id, ico, eti, cls) {
-    return '<button class="lista-riga sc-riga sc-tocca' + (cls ? ' ' + cls : '') + '" id="' + id + '">' +
-      '<span class="sc-eti">' + ICO(ico, 15) + ' ' + eti + '</span></button>';
+    return PZ.riga({ mestiere: 'fa', id: id, ico: ico, eti: eti, piu: cls });
   }
   /* una riga con una scelta che vale subito: l'etichetta sopra, i segmenti
      larghi quanto la riga sotto (su un telefono un segmento da tre voci e
      un'etichetta sulla stessa riga non ci stanno) */
   function rigaScelta(eti, dentro) {
+    /* `eti` e `dentro` qui arrivano già come HTML (ci stanno dentro un'icona e
+       un segmento), quindi si compone con `PZ` invece di passare dal pezzo,
+       che scappa il testo — ma le classi restano quelle di un pezzo solo. */
     return '<div class="lista-riga sc-riga sc-riga-alta">' +
       '<span class="sc-eti">' + eti + '</span>' +
       '<span class="sc-val">' + dentro + '</span></div>';
@@ -1270,7 +1273,16 @@
         segSu('si', 'Acceso') + segSu('no', 'Muto') + '</span>') +
       rigaScelta('Vibrazione', '<span class="segmenti imp-seg" id="seg-vibra">' +
         segVi('si', 'Accesa') + segVi('no', 'Spenta') + '</span>') +
+      /* L'INTERRUTTORE DEL DISEGNO NUOVO. Sta qui e non nascosto in un menù
+         da smanettoni perché è la via d'uscita: se il disegno nuovo si rompe
+         sul telefono la mattina, si spegne in due tocchi. */
+      rigaScelta('Schermate nuove', PZ.segmenti({
+        id: 'seg-react', piu: 'imp-seg', chiave: 'react', scelta: String(!!s.profilo.react),
+        etichetta: 'Schermate nuove',
+        voci: [{ val: 'true', eti: 'Accese' }, { val: 'false', eti: 'Spente' }]
+      })) +
       '</div>' +
+      PZ.nota({ html: '<b>Schermate nuove</b> riscrive «Attività» con un motore diverso, che ridisegna solo quello che è cambiato invece di rifare tutta la pagina. Le altre schermate restano come sono. Se qualcosa va storto si spegne da qui, oppure aggiungendo <b>?classico=1</b> all’indirizzo — che funziona anche se l’app non risponde più.' }) +
       '<p class="lista-nota"><b>Effetti</b> serve se compaiono rettangoli grigi o neri a spigolo vivo in mezzo alle schermate, o se l’app va a scatti. <b>Ridotti</b> toglie le sfocature dietro ai pannelli e alla barra, e la forma resta. <b>Minimi</b> spegne tutto — niente curva degli angoli, niente sfocature, niente fondo colorato. Se il difetto sparisce a un gradino e non all’altro, si sa da cosa dipende.</p>' +
       '<p class="lista-nota">Aurora è più sobrio, Arcade più acceso. Con <b>tre porte</b> le altre schermate stanno in una riga di linguette sotto al titolo; con <b>tutte le pagine</b> torna la barra lunga. In entrambi i casi ci sono tutte: cambia solo da dove ci si arriva. Con lo <b>scorrimento acceso</b> si passa da una schermata all’altra trascinando il dito di lato, come si sfoglia: le linguette restano dove sono.</p>' +
 
@@ -1637,6 +1649,20 @@
         root.querySelectorAll('#seg-vibra [data-vibra]').forEach(function (o) { o.classList.toggle('attivo', o === b); });
         var st = LM.load(); st.profilo.vibra = b.getAttribute('data-vibra'); LM.save();
         if (st.profilo.vibra === 'si') vibra('leggero');
+      });
+    });
+    root.querySelectorAll('#seg-react [data-react]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        root.querySelectorAll('#seg-react [data-react]').forEach(function (o) { o.classList.toggle('attivo', o === b); });
+        var st = LM.load();
+        st.profilo.react = b.getAttribute('data-react') === 'true';
+        LM.save();
+        LM.registra('impostazioni', 'Schermate nuove ' + (st.profilo.react ? 'accese' : 'spente'), false);
+        /* Accendendolo l'isola non è ancora in memoria: il router se ne
+           accorge, la chiede, e quando arriva ridisegna da sé. Qui basta
+           chiudere il pannello e far ripartire un giro. */
+        chiudiSheet();
+        render();
       });
     });
     root.querySelectorAll('#seg-eff [data-eff]').forEach(function (b) {
@@ -3038,6 +3064,46 @@
      ============================================================ */
   var SCHERMI = {};
   function schermo(id, disegna) { SCHERMI[id] = disegna; }
+
+  /* ---------------------------------------------------------------- REACT
+     L'interruttore, e il caricamento a richiesta dell'isola.
+
+     Chi non lo accende non scarica niente: sono nove kilobyte compressi
+     (Preact, che ha la stessa API di React), e restano fuori dal pacco come
+     il Design lab.
+
+     Tre modi di spegnerlo, dal più veloce: `?classico=1` nell'indirizzo,
+     l'impostazione dell'app, oppure il fatto che l'isola non si sia caricata.
+     Il terzo non è una svista: se la rete cade a metà, la schermata la
+     disegna il codice di prima invece di restare bianca. */
+  var isolaChiesta = null;
+  function reactVoluto() {
+    if (/[?&]classico=1/.test(location.search)) return false;
+    try { return !!(LM.load().profilo || {}).react; } catch (e) { return false; }
+  }
+  function caricaIsola() {
+    if (isolaChiesta) return isolaChiesta;
+    isolaChiesta = new Promise(function (ok, no) {
+      if (window.LM_REACT) return ok();
+      var sc = document.createElement('script');
+      sc.src = (window.LM_PACCO || {}).react || 'assets/react/isola.js';
+      sc.onload = function () { ok(); };
+      sc.onerror = function () { isolaChiesta = null; no(new Error('isola non caricata')); };
+      document.head.appendChild(sc);
+    });
+    return isolaChiesta;
+  }
+  /* Sincrona apposta: `render()` non può aspettare, se no la schermata
+     sfarfalla. Se l'isola non è ancora in memoria si disegna la vecchia e si
+     chiede il file; quando arriva, un `render()` lo rimette a posto. */
+  function reactPer(v) {
+    if (!reactVoluto()) return false;
+    if (!window.LM_REACT) {
+      caricaIsola().then(function () { render(); }).catch(function () { /* resta la vecchia */ });
+      return false;
+    }
+    return window.LM_REACT.conosce(v);
+  }
 
   schermo('oggi', vistaFocus);
   function vistaFocus() {
@@ -8245,8 +8311,28 @@
     var cambioSezione = cambioPagina && vistaMostrata &&
       gruppoDi(v).id === gruppoDi(vistaMostrata).id;
     var scrollPrima = cambioPagina ? 0 : (window.scrollY || document.documentElement.scrollTop || 0);
-    var disegna = SCHERMI[v];
-    if (disegna) disegna();
+    /* ============================================================
+       IL RAMO PER REACT — un `if`, ed è tutta la convivenza.
+
+       Se questa schermata è fra quelle convertite E l'interruttore è acceso,
+       la disegna React. Se no la disegna il codice di prima, che resta al suo
+       posto intatto. Non si riscrive tutto e poi si spera: si converte una
+       schermata per volta, e finché non è finita convivono le due.
+
+       `?classico=1` nell'indirizzo spegne tutto, subito, senza toccare le
+       impostazioni: è la via d'uscita da usare col telefono in mano quando
+       qualcosa non va, alle otto di mattina, senza aspettare un rilascio. */
+    var conReact = reactPer(v);
+    if (conReact) {
+      $vista.innerHTML = '';
+      window.LM_REACT.monta(v, $vista);
+    } else {
+      /* tornando a una schermata vecchia React deve lasciare il contenitore
+         pulito, se no il codice di prima ci scrive dentro sopra */
+      if (window.LM_REACT) window.LM_REACT.smonta($vista);
+      var disegna = SCHERMI[v];
+      if (disegna) disegna();
+    }
     sottoNav(v);
     $vista.classList.toggle('vista-oggi', v === 'oggi');
     vistaMostrata = v;

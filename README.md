@@ -121,6 +121,52 @@ Il 33% del JavaScript va letto con prudenza — «mai eseguito» non vuol dire
 e un giro automatico non tocca niente. I **73 KB di CSS che non si accendono
 mai**, invece, sono più solidi: quelli sono regole che non trovano nessuno.
 
+### I pezzi, e l'isola React
+
+**I pezzi** (`assets/pezzi.js`). In `app.js` c'erano **566 punti** in cui una
+forma che esiste già veniva riscritta a mano come stringa: 86 tasti, 35
+schede, 31 righe di elenco, 30 campi. Riscrivere una forma a mano non è più
+lento — è più **fragile**: la differenza fra due righe scritte in due punti
+diversi non si vede finché qualcuno non cambia il CSS, e allora si rompe in
+una schermata sola. È così che sono nati quasi tutti i difetti dell'audit.
+
+Ogni pezzo è una funzione pura: `PZ.tasto({ testo, ico, tipo, misura })`.
+Le proprietà dicono il **ruolo** e mai l'aspetto — `tipo: 'pieno'` e non
+`tipo: 'blu'` — così la regola di `DESIGN.md` («uno pieno per schermata») vive
+nel codice invece che nelle teste.
+
+`prove/pezzi.js` è un **cricchetto**: non pretende zero, pretende che il
+numero non salga. Ogni volta che scende si abbassa il tetto. Il debito si paga
+a rate e nessuno può aggiungerne senza accorgersene.
+
+**L'isola React** (`react/`, costruita con Vite). La migrazione è a fico
+strangolatore: si converte una schermata per volta e finché non è finita
+convivono le due. Nel router c'è **un `if`**, e l'interruttore sta in
+*Impostazioni → Schermate nuove*. Se si rompe, `?classico=1` nell'indirizzo
+spegne tutto **anche se l'app non risponde più**.
+
+    npm run build:react     # costruisce l'isola in assets/react/
+    npm run build           # e poi il pacco, che se la prende da lì
+
+Quanto costa, misurato — ed è il numero che decide se questa strada si
+percorre fino in fondo:
+
+| | compresso |
+|---|---|
+| React 19 + ReactDOM, versione di sviluppo | 176 KB |
+| React 19 + ReactDOM, versione di produzione | **61 KB** |
+| **Preact con `preact/compat`, stesso JSX** | **9 KB** |
+
+Si è scelto **Preact**: la stessa API, non una riga di JSX cambiata, e nove
+kilobyte invece di sessantuno su un primo schermo che ne pesa 140. E chi non
+accende l'interruttore non scarica niente: l'isola sta fuori dal pacco, come
+il Design lab.
+
+(I 176 KB della prima riga non sono un refuso: in modalità libreria Vite non
+sostituisce `process.env.NODE_ENV`, e senza una riga di configurazione nel
+pacco finisce la versione di sviluppo. Funziona tutto, costa il doppio, e non
+fa rumore.)
+
 ### Dove sta ospitato, e cosa cambierebbe a spostarlo
 
 Oggi è su **GitHub Pages**: `git push` e in un minuto è online. Ogni risposta

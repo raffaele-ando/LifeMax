@@ -1,2 +1,6 @@
 node_modules
 node_modules/
+# l'isola React esce da Vite in assets/react/ e da lì la prende costruisci.mjs,
+# che ne mette una copia con l'impronta nel nome dentro assets/pacco/. Quella
+# serve, questa no: è un passaggio intermedio.
+assets/react/
