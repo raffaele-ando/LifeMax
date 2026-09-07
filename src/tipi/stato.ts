@@ -111,7 +111,10 @@ export interface Abitudine {
   creata: number;
   fatti: Record<string, boolean>;
   salti: Record<string, boolean>;
-  da: Giorno;
+  /* da quando vale, e fino a quando. Tutt'e due possono mancare: `da` lo
+     riempie `normalizza` col giorno in cui l'abitudine è nata, ma uno stato
+     vecchio può arrivare senza. */
+  da: Giorno | null;
   a: Giorno | null;
 }
 

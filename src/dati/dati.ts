@@ -22,9 +22,9 @@ import type {
   Stato, Area, Azione, Nota, Attivita, Abitudine, Checkin, Lezione, Esperimento,
   Ritmo, Chiedi, Pasto, Timer, Lapide, VoceRegistro, Profilo, Slot,
   Giorno, Ora, GiornoSettimana, Verso, ModoFusione, Passo, PassoDi, Mancata,
-  RegistroGiorno, GiornataPos
+  RegistroGiorno, GiornataPos, Promemoria, VocePromemoria
 } from '../tipi/stato';
-import { COME_UNIRE } from '../tipi/stato';
+import { COME_UNIRE, giorno } from '../tipi/stato';
 
 function creaLM() {
 
@@ -420,20 +420,24 @@ function creaLM() {
   function applicaLapidi(s: Stato): Stato {
     if (!Array.isArray(s.cancellati) || !s.cancellati.length) return s;
     var perCampo: Record<string, Record<string, number>> = {};
+    /* la stessa cosa vista per chiave: questo giro passa su campi che non
+       sa quali sono, e li tratta tutti allo stesso modo */
+    var perChiave = s as unknown as Record<string, unknown>;
     s.cancellati.forEach(function (t) {
       if (!t || !t.k || !t.chiave) return;
-      if (!perCampo[t.k]) perCampo[t.k] = {};
-      var p = perCampo[t.k];
+      var p = perCampo[t.k] || (perCampo[t.k] = {});
       /* letta una volta e messa in una variabile: scritta tre volte era
          anche tre occasioni di sbagliarne una */
       var pre = p[t.chiave];
       if (pre === undefined || t.ts > pre) p[t.chiave] = t.ts;
     });
     Object.keys(perCampo).forEach(function (k) {
-      if (!Array.isArray(s[k])) return;
+      var lista = perChiave[k];
       var p = perCampo[k];
-      s[k] = s[k].filter(function (r) {
-        var t = p[chiaveRiga(r)];
+      if (!Array.isArray(lista) || !p) return;
+      var lapidi = p;
+      perChiave[k] = lista.filter(function (r: unknown) {
+        var t = lapidi[chiaveRiga(r)];
         /* «maggiore O UGUALE», e non è un dettaglio: creare e cancellare la
            stessa riga possono capitare nello stesso millesimo di secondo — la
            prova lo fa, e un utente veloce pure — e con il confronto stretto la
@@ -463,8 +467,12 @@ function creaLM() {
     Object.keys(b).forEach(function (k) { chiavi[k] = 1; });
     Object.keys(statoVuoto()).forEach(function (k) { chiavi[k] = 1; });
     var scoperti: string[] = [];
+    /* la tabella delle regole vista per chiave: `Object.keys` dà stringhe
+       qualunque, e qui si passa su tutte — comprese quelle che nella tabella
+       non ci sono, che è tutto il punto di `scoperti` */
+    var regole = COME_UNIRE as unknown as Record<string, ModoFusione | undefined>;
     Object.keys(chiavi).forEach(function (k) {
-      var modo = COME_UNIRE[k];
+      var modo = regole[k];
       var va = a[k], vb = b[k];
       if (va === undefined) { out[k] = vb; if (!modo) scoperti.push(k); return; }
       if (vb === undefined) { out[k] = va; if (!modo) scoperti.push(k); return; }
@@ -484,29 +492,33 @@ function creaLM() {
         case 'ramo':    out[k] = unisciRiga(va, vb, qa, qb); break;
         case 'massimo': out[k] = Math.max(Number(va) || 0, Number(vb) || 0); break;
         case 'oppure':  out[k] = !!(va || vb); break;
+        case 'recente': out[k] = (qb >= qa) ? vb : va; break;
         default:        out[k] = (qb >= qa) ? vb : va;
       }
     });
-    out.updatedAt = Math.max(qa, qb);
+    out['updatedAt'] = Math.max(qa, qb);
     /* AZZERARE DEVE POTER FUNZIONARE. Con una fusione che non perde niente,
        «Azzera tutto» su un dispositivo si annullerebbe da sé alla prima
        sincronizzazione: l'altro rimanderebbe indietro tutto. L'unica cosa che
        taglia è un azzeramento DICHIARATO, con la sua ora: tutto quello che è
        più vecchio di quell'istante se ne va, il resto no. */
-    var taglio = out.azzerato || 0;
+    var taglio = Number(out['azzerato']) || 0;
     if (taglio) {
-      Object.keys(COME_UNIRE).forEach(function (k) {
-        if (COME_UNIRE[k] !== 'elenco' || !Array.isArray(out[k]) || k === 'cancellati') return;
-        out[k] = out[k].filter(function (r) { return momentoRiga(r, 0) >= taglio; });
+      Object.keys(regole).forEach(function (k) {
+        var lista = out[k];
+        if (regole[k] !== 'elenco' || !Array.isArray(lista) || k === 'cancellati') return;
+        out[k] = lista.filter(function (r: unknown) { return momentoRiga(r, 0) >= taglio; });
       });
     }
-    applicaLapidi(out);
+    var fuso = out as unknown as Stato;
+    applicaLapidi(fuso);
     if (scoperti.length) {
-      out.recuperati = out.recuperati || {};
-      out.recuperati.campiSenzaRegola = scoperti.join(',');
+      var rec = eMappa(out['recuperati']) ? out['recuperati'] as Record<string, unknown> : {};
+      rec['campiSenzaRegola'] = scoperti.join(',');
+      out['recuperati'] = rec;
       if (window.LMLog) window.LMLog.errore('dati', 'campi senza regola di fusione: ' + scoperti.join(', '));
     }
-    return out;
+    return fuso;
   }
 
   /* LE LAPIDI SE LE SCRIVE `save()`, NON CHI CANCELLA.
@@ -519,18 +531,22 @@ function creaLM() {
      cancella e che verrà scritta l'anno prossimo è già coperta. */
   function segnaLapidi(primaRaw: string | null, s: Stato) {
     if (!primaRaw) return;
-    var prima;
-    try { prima = JSON.parse(primaRaw); } catch (e) { return; }
-    if (!eMappa(prima)) return;
+    var grezzo: unknown;
+    try { grezzo = JSON.parse(primaRaw); } catch (e) { return; }
+    if (!eMappa(grezzo)) return;
+    var prima = grezzo;
+    var adesso = s as unknown as Record<string, unknown>;
+    var regole = COME_UNIRE as unknown as Record<string, ModoFusione | undefined>;
     var ora = Date.now();
     var nate = s.cancellati || (s.cancellati = []);
-    Object.keys(COME_UNIRE).forEach(function (k) {
-      if (COME_UNIRE[k] !== 'elenco' || k === 'cancellati' || k === 'registro' || k === 'log') return;
-      if (!Array.isArray(prima[k]) || !Array.isArray(s[k])) return;
-      if (prima[k].length <= s[k].length) return;      /* niente è sparito */
+    Object.keys(regole).forEach(function (k) {
+      if (regole[k] !== 'elenco' || k === 'cancellati' || k === 'registro' || k === 'log') return;
+      var era = prima[k], ce = adesso[k];
+      if (!Array.isArray(era) || !Array.isArray(ce)) return;
+      if (era.length <= ce.length) return;             /* niente è sparito */
       var restano: Record<string, 1> = {};
-      s[k].forEach(function (r) { restano[chiaveRiga(r)] = 1; });
-      prima[k].forEach(function (r) {
+      ce.forEach(function (r: unknown) { restano[chiaveRiga(r)] = 1; });
+      era.forEach(function (r: unknown) {
         var c = chiaveRiga(r);
         if (restano[c]) return;
         nate.push({ k: k, chiave: c, ts: ora });
@@ -817,7 +833,11 @@ function creaLM() {
      Restano fuori le righe di registro, che raccontano un cambiamento senza
      esserlo: quelle si annullano col punto di ritorno, quando c'è — a meno
      che la riga si porti dietro il suo inverso (`disfa`, vedi registra). */
-  function annullaRecord(tipo: string, chiave: string) {
+  /* `chiave` arriva da `Object.keys` di un dizionario indicizzato per
+     giorno: per il compilatore è una stringa qualunque, e `giorno()` è il
+     punto in cui si dichiara che è un giorno. Una riga, non trenta. */
+  function annullaRecord(tipo: string, chiaveGrezza: string) {
+    var chiave = giorno(chiaveGrezza);
     var s = load();
     /* la riga «Annullato…» dice anche QUANDO, se non è oggi: annullare la
        review di una sera di tre settimane fa e leggere solo «Annullata la
@@ -1015,16 +1035,20 @@ function creaLM() {
 
   /* Quanto è "pieno" uno stato: serve a non far mai sovrascrivere dati
      reali da uno stato vuoto (la causa del bug di perdita dati). */
-  function ricchezza(s: unknown): number {
-    if (!s || typeof s !== 'object') return 0;
-    return (s.azioni ? s.azioni.length : 0) +
-      (s.checkins ? s.checkins.length : 0) +
-      (s.inbox ? s.inbox.length : 0) +
-      (s.valutazioni ? Object.keys(s.valutazioni).length : 0) +
-      (s.reviewSera ? Object.keys(s.reviewSera).length : 0) +
-      (s.reviewSettimana ? Object.keys(s.reviewSettimana).length : 0) +
-      (s.esperimenti ? s.esperimenti.length : 0) +
-      (s.lezioni ? s.lezioni.length : 0);
+  /* QUANTA ROBA C'È DENTRO. Si chiama su documenti che possono essere
+     incompleti — uno che arriva dalla nuvola, uno letto da una copia di
+     sicurezza — quindi la firma dice `Partial<Stato>` e non `Stato`: mentire
+     qui vorrebbe dire leggere campi che possono non esserci.
+     Serve a una cosa sola e importante: confrontare due copie prima di
+     toccarle, e gridare se dopo una fusione ce n'è MENO di prima. */
+  function ricchezza(grezzo: unknown): number {
+    if (!eMappa(grezzo)) return 0;
+    var s = grezzo as Partial<Stato>;
+    var quanti = function (v: unknown) { return Array.isArray(v) ? v.length : 0; };
+    var chiavi = function (v: unknown) { return eMappa(v) ? Object.keys(v).length : 0; };
+    return quanti(s.azioni) + quanti(s.checkins) + quanti(s.inbox) +
+      chiavi(s.valutazioni) + chiavi(s.reviewSera) + chiavi(s.reviewSettimana) +
+      quanti(s.esperimenti) + quanti(s.lezioni);
   }
 
   function exportJson() {
@@ -1363,9 +1387,13 @@ function creaLM() {
     var punti = 0;
     if (G.quota > 0) {
       /* gli XP del pezzo fatto, arrotondati per eccesso e almeno uno */
-      var pieni = a.mit ? XP_EVENTI.mit : XP_EVENTI.azione;
+      /* «non ci sono riuscito» si dice sia di una cosa di oggi sia di una da
+         fare, e solo la prima ha una priorità e un giorno: si guarda invece
+         di dare per scontato che ci siano */
+      var eAzione = 'data' in a;
+      var pieni = (eAzione && (a as Azione).mit) ? XP_EVENTI.mit : XP_EVENTI.azione;
       punti = Math.max(1, Math.round(pieni * G.quota));
-      dammiXp(punti, a.data);
+      dammiXp(punti, eAzione ? (a as Azione).data : todayKey());
     }
     var motivo = a.mancata ? a.mancata.perche : 'altro';
     var q = (PERCHE_MANCATA.find(function (x) { return x.id === motivo; }) || { eti: '' }).eti || '';
@@ -1508,21 +1536,27 @@ function creaLM() {
      promemoria che non parte mai senza che nessuno capisca perché. */
   function impostaPromemoria(patch: Record<string, unknown>) {
     var c = promemoria();
-    if (patch.server != null) c.server = String(patch.server).trim().replace(/\/+$/, '');
-    if (patch.chiave != null) c.chiave = String(patch.chiave).trim();
-    if (patch.fissa != null) c.fissa = !!patch.fissa;
-    if (patch.voci) {
-      Object.keys(patch.voci).forEach(function (k) {
-        if (!c.voci[k]) return;                       /* niente voci inventate */
-        var v = patch.voci[k];
-        if (v.on != null) c.voci[k].on = !!v.on;
-        if (v.ora != null && ORA_VALIDA.test(v.ora) && c.voci[k].ora != null) c.voci[k].ora = v.ora;
+    if (patch['server'] != null) c.server = String(patch['server']).trim().replace(/\/+$/, '');
+    if (patch['chiave'] != null) c.chiave = String(patch['chiave']).trim();
+    if (patch['fissa'] != null) c.fissa = !!patch['fissa'];
+    var vociPatch = eMappa(patch['voci']) ? patch['voci'] as Record<string, unknown> : null;
+    if (vociPatch) {
+      var mie = c.voci as unknown as Record<string, VocePromemoria | undefined>;
+      Object.keys(vociPatch).forEach(function (k) {
+        var mia = mie[k];
+        if (!mia) return;                             /* niente voci inventate */
+        var v = eMappa(vociPatch[k]) ? vociPatch[k] as Record<string, unknown> : null;
+        if (!v) return;
+        if (v['on'] != null) mia.on = !!v['on'];
+        var oraNuova = v['ora'];
+        if (oraNuova != null && ORA_VALIDA.test(String(oraNuova)) && mia.ora != null) mia.ora = oraNuova as Ora;
       });
     }
-    if (patch.silenzio) {
-      if (patch.silenzio.on != null) c.silenzio.on = !!patch.silenzio.on;
-      if (ORA_VALIDA.test(patch.silenzio.da || '')) c.silenzio.da = patch.silenzio.da;
-      if (ORA_VALIDA.test(patch.silenzio.a || '')) c.silenzio.a = patch.silenzio.a;
+    var sil = eMappa(patch['silenzio']) ? patch['silenzio'] as Record<string, unknown> : null;
+    if (sil) {
+      if (sil['on'] != null) c.silenzio.on = !!sil['on'];
+      if (ORA_VALIDA.test(String(sil['da'] || ''))) c.silenzio.da = sil['da'] as Ora;
+      if (ORA_VALIDA.test(String(sil['a'] || ''))) c.silenzio.a = sil['a'] as Ora;
     }
     registra('impostazioni', 'Cambiate le impostazioni dei promemoria', false);
     save();
