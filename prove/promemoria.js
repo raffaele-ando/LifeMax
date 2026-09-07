@@ -11,6 +11,17 @@
    node prove/promemoria.js        (CHROMIUM=/percorso/di/chrome se serve)  */
 const http = require('http'), fs = require('fs'), path = require('path'), { chromium } = require('playwright');
 const { SERVITO: RADICE, RAMO } = require('./dove');
+
+/* DA DOVE SI ENTRA. I promemoria si guidano da dentro alla pagina — il piano
+   di oggi, quante ne restano, il testo della nota fissa — perché una notifica
+   che non arriva non lascia traccia sullo schermo: dall'interfaccia non c'è
+   niente da guardare. Il modulo però da fuori non si raggiunge, e un pacco
+   costruito non esporta niente.
+   `main.tsx` apre una porta che si chiama `window.__PROVE__`, e il perché sta
+   scritto là. Qui basta sapere che è quella, e che dentro a `src/` non la usa
+   nessuno: se la usasse smetterebbe di essere una porta per le prove e
+   diventerebbe un globale — cioè la cosa da cui viene tutto questo lavoro.
+   Lo controlla `prove/pezzi.js`. */
 const T = { '.html': 'text/html', '.css': 'text/css', '.js': 'text/javascript', '.json': 'application/json', '.webmanifest': 'application/manifest+json', '.svg': 'image/svg+xml', '.png': 'image/png' };
 let fail = 0;
 const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  ') + n + (d ? '  → ' + d : '')); };
@@ -115,7 +126,7 @@ const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  
   ok('e nessuna notifica è comparsa', (await p.evaluate(() => window.__notifiche.length)) === 0);
 
   console.log('\nIL PIANO DI OGGI');
-  const piano = () => p.evaluate(() => LM_PROMEMORIA.piano());
+  const piano = () => p.evaluate(() => window.__PROVE__.promemoria.piano());
   let pl = await piano();
   console.log('  ' + JSON.stringify(pl.map(v => v.ora + ' ' + v.id)));
   ok('è in ordine di ora', pl.every((v, i) => i === 0 || pl[i - 1].ora <= v.ora), JSON.stringify(pl.map(v => v.ora)));
@@ -173,8 +184,8 @@ const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  
     JSON.stringify((await piano()).map(v => v.titolo)));
 
   console.log('\nSENZA SERVER SI FA SOLO QUELLO CHE SI PUÒ');
-  ok('il pannello lo sa', await p.evaluate(() => LM_PROMEMORIA.configurato()) === false);
-  ok('e non prova a mandare niente', await p.evaluate(() => LM_PROMEMORIA.mandaPiano(true)) === false);
+  ok('il pannello lo sa', await p.evaluate(() => window.__PROVE__.promemoria.configurato()) === false);
+  ok('e non prova a mandare niente', await p.evaluate(() => window.__PROVE__.promemoria.mandaPiano(true)) === false);
 
   console.log('\nIL PANNELLO IN IMPOSTAZIONI');
   /* Nelle impostazioni rifatte i promemoria sono una RIGA dentro «Le tue
@@ -220,7 +231,7 @@ const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  
   await p.reload(); await p.waitForTimeout(900);
   ok('il permesso c’è', await p.evaluate(() => Notification.permission) === 'granted',
     await p.evaluate(() => Notification.permission));
-  const mostrata = await p.evaluate(() => LM_PROMEMORIA.locale('Tempo scaduto', 'Venti minuti su «prova».', '#/oggi'));
+  const mostrata = await p.evaluate(() => window.__PROVE__.promemoria.locale('Tempo scaduto', 'Venti minuti su «prova».', '#/oggi'));
   ok('una notifica locale parte', mostrata === true, String(mostrata));
   const n = await p.evaluate(() => window.__notifiche[window.__notifiche.length - 1] || null);
   ok('col titolo giusto', n && n.titolo === 'Tempo scaduto', n ? n.titolo : 'nessuna');
@@ -236,28 +247,28 @@ const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  
      restava a metà. Adesso il pezzo condiviso sta da solo e non ha versi. */
   const senzaEsplodere = () => p.evaluate(() => {
     try {
-      LM_PROMEMORIA.fissa(true);
-      const a = LM_PROMEMORIA.piano().length;
-      const b = LM_PROMEMORIA.restano().n;
-      const c = LM_PROMEMORIA.testoFissa();
-      LM_PROMEMORIA.fissa(false);
+      window.__PROVE__.promemoria.fissa(true);
+      const a = window.__PROVE__.promemoria.piano().length;
+      const b = window.__PROVE__.promemoria.restano().n;
+      const c = window.__PROVE__.promemoria.testoFissa();
+      window.__PROVE__.promemoria.fissa(false);
       return { ok: true, piano: a, restano: b, titolo: c.titolo };
     } catch (e) { return { ok: false, err: '' + e }; }
   });
   let ric = await senzaEsplodere();
   ok('col piano acceso non va in ricorsione', ric.ok === true, ric.ok ? JSON.stringify(ric) : ric.err);
   ok('e il piano contiene la voce «stato»',
-    await p.evaluate(() => { LM_PROMEMORIA.fissa(true); const v = LM_PROMEMORIA.piano().some(x => x.id === 'stato'); LM_PROMEMORIA.fissa(false); return v; }));
+    await p.evaluate(() => { window.__PROVE__.promemoria.fissa(true); const v = window.__PROVE__.promemoria.piano().some(x => x.id === 'stato'); window.__PROVE__.promemoria.fissa(false); return v; }));
   ok('che è del tipo giusto e ripete ogni giorno',
-    await p.evaluate(() => { LM_PROMEMORIA.fissa(true);
-      const v = LM_PROMEMORIA.piano().find(x => x.id === 'stato') || {}; LM_PROMEMORIA.fissa(false);
+    await p.evaluate(() => { window.__PROVE__.promemoria.fissa(true);
+      const v = window.__PROVE__.promemoria.piano().find(x => x.id === 'stato') || {}; window.__PROVE__.promemoria.fissa(false);
       return v.tipo === 'stato' && v.ripete === true; }));
 
   console.log('\nIL NUMERO SULL’ICONA');
   await p.evaluate(() => { localStorage.clear(); LM.seedDemo(); });
   await p.reload(); await p.waitForTimeout(900);
   const badge = () => p.evaluate(() => window.__badge);
-  const conto = () => p.evaluate(() => LM_PROMEMORIA.restano());
+  const conto = () => p.evaluate(() => window.__PROVE__.promemoria.restano());
   let b1 = await badge(), r1 = await conto();
   console.log('  ' + JSON.stringify(r1));
   ok('è messo appena si apre l’app', typeof b1 === 'number' && b1 > 0, String(b1));
@@ -282,8 +293,8 @@ const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  
   await p.evaluate(() => { localStorage.clear(); LM.seedDemo(); });
   await p.reload(); await p.waitForTimeout(900);
   ok('parte spenta: una notifica che resta lì non si mette senza chiedere',
-    (await p.evaluate(() => LM_PROMEMORIA.fissaAccesa())) === false);
-  await p.evaluate(() => { window.__notifiche.length = 0; LM_PROMEMORIA.fissa(true); });
+    (await p.evaluate(() => window.__PROVE__.promemoria.fissaAccesa())) === false);
+  await p.evaluate(() => { window.__notifiche.length = 0; window.__PROVE__.promemoria.fissa(true); });
   await p.waitForTimeout(300);
   const nf = await p.evaluate(() => window.__notifiche[window.__notifiche.length - 1] || null);
   ok('accendendola compare', !!nf, nf ? nf.titolo : 'nessuna');
@@ -305,12 +316,12 @@ const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  
   const ultima = await p.evaluate(() => { const l = window.__notifiche.filter(n => n.opz.tag === 'lifemax-stato'); return l[l.length - 1]; });
   ok('e tutte le volte con lo stesso tag: una sola notifica, non una pila',
     ultima.opz.tag === 'lifemax-stato');
-  await p.evaluate(() => { window.__chiuse = []; LM_PROMEMORIA.fissa(false); });
+  await p.evaluate(() => { window.__chiuse = []; window.__PROVE__.promemoria.fissa(false); });
   await p.waitForTimeout(300);
   ok('spegnendola la notifica viene chiusa',
     (await p.evaluate(() => (window.__chiuse || []).indexOf('lifemax-stato') >= 0)) === true);
-  ok('e non ne compaiono di nuove', (await p.evaluate(() => LM_PROMEMORIA.fissaAccesa())) === false);
-  await p.evaluate(() => { window.__badge = null; LM_PROMEMORIA.spegni(); });
+  ok('e non ne compaiono di nuove', (await p.evaluate(() => window.__PROVE__.promemoria.fissaAccesa())) === false);
+  await p.evaluate(() => { window.__badge = null; window.__PROVE__.promemoria.spegni(); });
   await p.waitForTimeout(300);
   ok('spegnendo tutto il pallino si toglie', (await badge()) === 0, String(await badge()));
 
@@ -330,7 +341,7 @@ const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  
       return !!(j.profilo && j.profilo.promemoria); }));
 
   console.log('\nSPEGNERE UNA VOCE');
-  const idPiano = () => p.evaluate(() => LM_PROMEMORIA.piano().map(v => v.id));
+  const idPiano = () => p.evaluate(() => window.__PROVE__.promemoria.piano().map(v => v.id));
   ok('prima c’è la sera', (await idPiano()).includes('sera'), JSON.stringify(await idPiano()));
   const apertePrima = (await conto()).n;
   await p.evaluate(() => LM.impostaPromemoria({ voci: { sera: { on: false } } }));
@@ -344,7 +355,7 @@ const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  
   await p.evaluate(() => LM.impostaPromemoria({ voci: { mattina: { ora: '06:45' } } }));
   await p.waitForTimeout(200);
   ok('il piano usa l’ora nuova',
-    (await p.evaluate(() => (LM_PROMEMORIA.piano().find(v => v.id === 'mattina') || {}).ora)) === '06:45');
+    (await p.evaluate(() => (window.__PROVE__.promemoria.piano().find(v => v.id === 'mattina') || {}).ora)) === '06:45');
   await p.evaluate(() => LM.impostaPromemoria({ voci: { mattina: { ora: '25:99' } } }));
   ok('un’ora impossibile non passa', (await cfg()).voci.mattina.ora === '06:45', (await cfg()).voci.mattina.ora);
   await p.evaluate(() => LM.impostaPromemoria({ voci: { mattina: { ora: '' } } }));
@@ -375,8 +386,8 @@ const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  
   await p.evaluate(k => LM.impostaPromemoria({ server: 'https://prova.workers.dev/', chiave: k }), chiaveVera);
   c = await cfg();
   ok('l’indirizzo perde la barra finale', c.server === 'https://prova.workers.dev', c.server);
-  ok('e da lì lo legge il modulo', (await p.evaluate(() => LM_PROMEMORIA.cfg().server)) === 'https://prova.workers.dev');
-  ok('ora si dice configurato', (await p.evaluate(() => LM_PROMEMORIA.configurato())) === true);
+  ok('e da lì lo legge il modulo', (await p.evaluate(() => window.__PROVE__.promemoria.cfg().server)) === 'https://prova.workers.dev');
+  ok('ora si dice configurato', (await p.evaluate(() => window.__PROVE__.promemoria.configurato())) === true);
   await p.evaluate(() => LM.impostaPromemoria({ server: '', chiave: '' }));
 
   console.log('\nCAMBIANDO LA CHIAVE, L’ISCRIZIONE SI RIFÀ');
@@ -389,13 +400,13 @@ const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  
      alla fine, e senza indirizzo `iscrivi()` non prova nemmeno */
   await p.evaluate(k => LM.impostaPromemoria({ server: 'https://prova.workers.dev', chiave: k }), chiaveVera);
   /* l'iscrizione si fa quando il piano parte, non quando si scrive la chiave */
-  await p.evaluate(() => LM_PROMEMORIA.mandaPiano(true));
+  await p.evaluate(() => window.__PROVE__.promemoria.mandaPiano(true));
   await p.waitForTimeout(600);
   ok('si è iscritta con la chiave che le hai dato',
     (await p.evaluate(() => window.__push.iscrizioni[0])) === chiaveVera,
     (await p.evaluate(() => (window.__push.iscrizioni[0] || '').slice(0, 12))) + '…');
   ok('e si ricorda con quale',
-    (await p.evaluate(() => LM_PROMEMORIA.chiaveIscritta())) === chiaveVera);
+    (await p.evaluate(() => window.__PROVE__.promemoria.chiaveIscritta())) === chiaveVera);
   const chiaveDue = await p.evaluate(async () => {
     const c = await crypto.subtle.generateKey({ name: 'ECDSA', namedCurve: 'P-256' }, true, ['sign', 'verify']);
     const u = new Uint8Array(await crypto.subtle.exportKey('raw', c.publicKey));
@@ -403,7 +414,7 @@ const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  
     return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
   });
   await p.evaluate(k => LM.impostaPromemoria({ chiave: k }), chiaveDue);
-  await p.evaluate(() => LM_PROMEMORIA.mandaPiano(true));
+  await p.evaluate(() => window.__PROVE__.promemoria.mandaPiano(true));
   await p.waitForTimeout(500);
   ok('la vecchia iscrizione viene buttata',
     (await p.evaluate(() => window.__push.disiscritte)) === 1, String(await p.evaluate(() => window.__push.disiscritte)));
@@ -411,7 +422,7 @@ const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  
     (await p.evaluate(() => window.__push.iscrizioni[1])) === chiaveDue,
     (await p.evaluate(() => (window.__push.iscrizioni[1] || '').slice(0, 12))) + '…');
   ok('l’app si ricorda quella nuova',
-    (await p.evaluate(() => LM_PROMEMORIA.chiaveIscritta())) === chiaveDue);
+    (await p.evaluate(() => window.__PROVE__.promemoria.chiaveIscritta())) === chiaveDue);
 
   console.log('\nUNA CHIAVE CHE SEMBRA GIUSTA MA NON LO È');
   /* Il caso peggiore: la lunghezza è quella, quindi passa il controllo del
@@ -419,7 +430,7 @@ const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  
      senza catturarlo l'errore finiva in console mentre l'app diceva «accesi».
      Chi configura da solo non ha nessun modo di scoprirlo. */
   await p.evaluate(() => LM.impostaPromemoria({ server: 'https://prova.workers.dev', chiave: 'B'.repeat(87) }));
-  const esitoFinto = await p.evaluate(() => LM_PROMEMORIA.accendi());
+  const esitoFinto = await p.evaluate(() => window.__PROVE__.promemoria.accendi());
   ok('l’app dice che è la chiave, invece di dire «accesi»', esitoFinto === 'chiave', String(esitoFinto));
   ok('e non lascia un errore per terra', err.filter(e => /applicationServerKey/.test(e)).length === 0,
     err.join(' | ') || 'nessuno');
@@ -573,9 +584,37 @@ const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  
   ok('arriva ai rituali', /#\/rituali/.test(await p.evaluate(() => location.hash)), await p.evaluate(() => location.hash));
 
   console.log('\nIL TIMER CHE FINISCE AVVISA');
-  ok('la fine del timer chiama la notifica',
-    /LM_PROMEMORIA[\s\S]{0,80}locale\(/.test(fs.readFileSync(path.join(RAMO, 'src', 'app', 'app.ts'), 'utf8')
-      .split('\n').filter(l => /LM_PROMEMORIA/.test(l)).join('\n')));
+  /* SI FA FINIRE UN TIMER DAVVERO, non si legge il codice.
+     Prima questa riga cercava nel sorgente una chiamata a `locale(` sulla
+     stessa riga del modulo dei promemoria: passava anche quando quella
+     chiamata era diventata irraggiungibile, e smetteva di passare quando
+     qualcuno rinominava una variabile. Un controllo che guarda il testo del
+     codice invece di quello che il codice fa è un controllo che dice di sì
+     alla domanda sbagliata.
+     Qui si avvia un timer di un minuto, gli si sposta la fine nel passato —
+     è il campo che il battito legge — e si aspetta che il battito passi. La
+     notifica arriva o non arriva. */
+  {
+    /* IL CASO VERO È QUESTO: il timer l'hai lasciato girare e hai chiuso il
+       telefono. L'ora di fine è un istante assoluto, quindi il conto è andato
+       avanti da sé; riaprendo, `riprendiTimer()` lo riaggancia e si accorge
+       che il tempo è scaduto. Si scrive un timer già finito nei dati e si
+       ricarica la pagina — che è la stessa cosa, fatta apposta. */
+    await p.evaluate(() => {
+      const az = window.LM.azioniDiOggi()[0];
+      window.LM.avviaTimerDati({
+        azioneId: az ? az.id : null, areaId: null, tipo: 'blocco', testo: 'prova',
+        inizio: Date.now() - 61000, durata: 1, fine: Date.now() - 1000,
+        ciclo: 1, inPausa: false, pausaFine: 0, fermatoA: 0
+      });
+      location.hash = '#/oggi';
+    });
+    await p.reload();
+    await p.waitForTimeout(1600);
+    const n = await p.evaluate(() => window.__notifiche[window.__notifiche.length - 1] || null);
+    ok('la fine del timer fa comparire una notifica', !!n, n ? n.titolo : 'nessuna');
+    ok('e dice che il tempo è scaduto', !!n && /scaduto/i.test(n.titolo), n ? n.titolo : '');
+  }
 
   ok('nessun errore JS', err.length === 0, [...new Set(err)].join(' | '));
   console.log(fail ? '\n>>> ' + fail + ' PROBLEMI' : '\n>>> TUTTO A POSTO');

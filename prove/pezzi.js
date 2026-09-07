@@ -194,5 +194,37 @@ const FERMI = [
   }
 }
 
+/* ============================================================
+   LA PORTA PER LE PROVE RESTA UNA PORTA PER LE PROVE
+
+   `main.tsx` mette in pagina `window.__PROVE__`, e ci sono venti righe là
+   che spiegano perché: `prove/promemoria.js` guida i promemoria da dentro
+   alla pagina, e da fuori un modulo non si raggiunge.
+
+   Una porta del genere ha un solo modo di marcire: che l'app cominci a
+   usarla. Il giorno che dentro a `src/` qualcuno scrive
+   `window.__PROVE__.promemoria.qualcosa()` perché è più corto che
+   importarlo, quella non è più una porta per le prove — è un globale, cioè
+   esattamente la cosa da cui viene tutto questo lavoro. Si conta che sia
+   nominata UNA volta sola, dove viene aperta.
+   ============================================================ */
+console.log('\nLA PORTA PER LE PROVE NON LA USA L’APP');
+{
+  /* i `.d.ts` non contano: dichiarare che una cosa esiste non è usarla, ed è
+     anzi il modo di farla esistere per il compilatore. Quello che si conta
+     sono gli USI, e devono essere uno: l'assegnazione in `main.tsx`. */
+  const codice = (function raccogli(dir) {
+    return fs.readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
+      const v = path.join(dir, e.name);
+      if (e.isDirectory()) return raccogli(v);
+      if (/\.d\.ts$/.test(e.name)) return [];
+      return /\.(ts|tsx)$/.test(e.name) ? [fs.readFileSync(v, 'utf8')] : [];
+    });
+  })(path.join(RAMO, 'src')).join('\n');
+  const usi = (codice.match(/__PROVE__/g) || []).length;
+  ok('`window.__PROVE__` è nominata una volta sola, dove si apre',
+    usi === 1, usi === 1 ? 'solo in main.tsx' : usi + ' volte in src/ — l’app la sta usando');
+}
+
 console.log(guai ? '\n>>> ' + guai + (guai === 1 ? ' PROBLEMA' : ' PROBLEMI') : '\n>>> TUTTO A POSTO');
 process.exit(guai ? 1 : 0);

@@ -25,6 +25,7 @@
 import type { ApiLM } from '../dati/dati';
 import type { Registro, Riga as RigaRegistro } from '../registro/registro';
 import type { StatoAuth, StatoSync, ApiCloud, DettaglioEsempio } from '../nuvola/nuvola';
+import type { Promemoria } from '../promemoria/promemoria';
 
 declare global {
   interface Window {
@@ -35,6 +36,11 @@ declare global {
     LM_AUTH?: StatoAuth;
     LM_SYNC?: StatoSync;
     LMCloud?: ApiCloud;
+    /* LA PORTA PER LE PROVE. La apre `main.tsx`, e il perché sta scritto
+       là. Dentro a `src/` non la nomina nessuno: `prove/pezzi.js` lo
+       controlla, perché una porta per le prove che l'app comincia a usare
+       smette di essere una porta e diventa un globale. */
+    __PROVE__?: { promemoria: Promemoria };
   }
 }
 
