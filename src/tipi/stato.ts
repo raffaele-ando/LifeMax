@@ -178,8 +178,38 @@ export interface RegistroGiorno {
   sveglia?: Ora;
   sonno?: Ora;
   prec?: Ora;
+  precisione?: 'preciso' | 'circa';
   pasti?: Pasto[];
-  chiesto?: Record<string, boolean>;
+  /* le due domande dell'app, segnate una per una: chiedere due volte la
+     stessa cosa nello stesso giorno è il modo di farsi spegnere */
+  chiestoNotte?: boolean;
+  chiestoGiorno?: boolean;
+}
+
+/* ------------------------------------------------------------ i promemoria
+   Stavano nei dati e non in nessun tipo: è la stessa specie di buco di
+   `demoChiusa`, e questa volta l'ha trovato il compilatore invece di un
+   registro incollato in chat.
+   LA CHIAVE PRIVATA NON STA QUI, e non ci deve stare: `chiave` è quella
+   PUBBLICA. Quella privata vive solo come segreto del Worker — se un campo
+   te la chiede, è il campo sbagliato. */
+export interface VocePromemoria { on: boolean; ora?: Ora }
+
+export interface Promemoria {
+  server: string;
+  chiave: string;
+  fissa: boolean;
+  voci: {
+    mattina: VocePromemoria;
+    checkin: VocePromemoria;
+    mit: VocePromemoria;
+    sera: VocePromemoria;
+    /* le abitudini non hanno un'ora qui: ognuna ha la sua */
+    abitudini: VocePromemoria;
+  };
+  /* la fascia in cui non arriva niente. Un promemoria alle due di notte non
+     si legge: sveglia, e insegna a spegnere tutto. */
+  silenzio: { on: boolean; da: Ora; a: Ora };
 }
 
 /* ------------------------------------------------------------- il profilo */
@@ -203,6 +233,7 @@ export interface Profilo {
   ritmo: Ritmo;
   chiedi: Chiedi;
   nav?: Nav;
+  promemoria?: Promemoria;
   /* L'INTERRUTTORE DELLE SCHERMATE NUOVE STA ANCORA QUI, ed è l'ultima
      parola per chi ce l'aveva già messo — ma la scelta vera vive in
      localStorage, perché `profilo` si sincronizza e una via d'uscita che un
@@ -234,11 +265,18 @@ export interface Lapide {
   ts: number;
 }
 
+/* COME SI TORNA INDIETRO DA QUESTA RIGA. Non tutte le righe del diario si
+   possono disfare, e quelle che si possono se lo portano scritto dietro:
+   `disfa` dice di che tipo è e su quale chiave agisce. Il resto non ce l'ha,
+   e per questo è facoltativo. */
+export interface Disfa { t: string; k: string }
+
 export interface VoceRegistro {
   ts: number;
   cat: string;
   testo: string;
   imp: boolean;
+  disfa?: Disfa;
 }
 
 /* ============================================================== LO STATO */
@@ -264,9 +302,9 @@ export interface Stato {
   checkins: Checkin[];
   valutazioni: Record<string, Record<string, number>>;
   minuti: Record<string, Record<string, number>>;
-  pianoMattina: Record<string, { compilato: boolean; intenzione: string }>;
-  reviewSera: Record<string, { vittoria: string; blocco: string; shutdown: boolean }>;
-  reviewSettimana: Record<string, { vittorie: string; blocchi: string; imparato: string; prossima: string }>;
+  pianoMattina: Record<string, { compilato: boolean; intenzione: string; ts?: number }>;
+  reviewSera: Record<string, { vittoria: string; blocco: string; shutdown: boolean; ts?: number }>;
+  reviewSettimana: Record<string, { vittorie: string; blocchi: string; imparato: string; prossima: string; ts?: number }>;
   esperimenti: Esperimento[];
   lezioni: Lezione[];
   xp: number;

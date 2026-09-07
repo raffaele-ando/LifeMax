@@ -22,58 +22,92 @@ import type {
   Stato, Area, Azione, Nota, Attivita, Abitudine, Checkin, Lezione, Esperimento,
   Ritmo, Chiedi, Pasto, Timer, Lapide, VoceRegistro, Profilo, Slot,
   Giorno, Ora, GiornoSettimana, Verso, ModoFusione, Passo, PassoDi, Mancata,
-  RegistroGiorno
+  RegistroGiorno, GiornataPos
 } from '../tipi/stato';
 import { COME_UNIRE } from '../tipi/stato';
 
 function creaLM() {
+
+  /* ---------------------------------------------------------------------
+     TRE FORME CHE VIVONO SOLO QUI DENTRO. Non stanno in `tipi/stato.ts`
+     perché nessuna vista le vede mai: sono attrezzi del livello dati.
+     --------------------------------------------------------------------- */
+
+  /* un punto a cui tornare: la finestra di tempo che copre, e la copia dello
+     stato di prima messa da parte sotto la sua chiave */
+  interface PuntoRitorno { id: string; da: number; fino: number }
+
+  /* una copia di sicurezza locale: quando, perché, e lo stato per intero */
+  interface CopiaSalvata { ts: number; motivo: string; data: string }
+
+  /* quello che si può dire in più mettendo giù un'azione. Tutto facoltativo:
+     la strada normale è scrivere il testo e basta, e ogni campo qui è una
+     cosa che qualcuno ha voluto aggiungere DOPO aver scritto. */
+  interface OpzAzione {
+    data?: Giorno;
+    ifThen?: string;
+    mit?: boolean;
+    ora?: Ora | null;
+    durata?: number | null;
+    passoDi?: PassoDi | null;
+    interna?: boolean;
+  }
 
 
   var STORAGE_KEY = 'lifemax.v2';
 
   /* ---------- date utils (sempre timezone locale) ---------- */
 
-  function pad(n) { return (n < 10 ? '0' : '') + n; }
+  function pad(n: number): string { return (n < 10 ? '0' : '') + n; }
 
-  function dayKey(d) {
-    return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+  /* IL SOLO POSTO DOVE UNA STRINGA DIVENTA UN «GIORNO».
+     Il marchio su `Giorno` esiste per una ragione vista dal vero: un giorno
+     ('2026-09-07') e un'ora ('07:30') erano entrambi stringhe, e scambiarli
+     passava liscio. Qui c'è l'unico punto in cui un giorno si costruisce da
+     zero, quindi qui c'è l'unica conversione — da tutte le altre parti il
+     tipo si porta dietro da sé. */
+  function dayKey(d: Date): Giorno {
+    return (d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate())) as Giorno;
   }
 
-  function parseKey(k) {
+  function parseKey(k: Giorno): Date {
     var p = k.split('-');
-    return new Date(+p[0], +p[1] - 1, +p[2]);
+    return new Date(+(p[0] || 0), +(p[1] || 1) - 1, +(p[2] || 1));
   }
 
-  function todayKey() { return dayKey(new Date()); }
+  function todayKey(): Giorno { return dayKey(new Date()); }
 
-  function addDays(k, n) {
+  function addDays(k: Giorno, n: number): Giorno {
     var d = parseKey(k);
     d.setDate(d.getDate() + n);
     return dayKey(d);
   }
 
-  function daysBetween(a, b) {
-    return Math.round((parseKey(b) - parseKey(a)) / 86400000);
+  /* `.getTime()` e non due Date sottratte: in JavaScript funzionava per
+     conversione implicita, ed è il genere di riga che si legge due volte */
+  function daysBetween(a: Giorno, b: Giorno): number {
+    return Math.round((parseKey(b).getTime() - parseKey(a).getTime()) / 86400000);
   }
 
-  function lastNDays(n) {
-    var out = [], t = todayKey();
+  function lastNDays(n: number): Giorno[] {
+    var out: Giorno[] = [], t = todayKey();
     for (var i = n - 1; i >= 0; i--) out.push(addDays(t, -i));
     return out;
   }
 
-  function weekdayShort(k) {
-    return ['dom', 'lun', 'mar', 'mer', 'gio', 'ven', 'sab'][parseKey(k).getDay()];
+  var GIORNI_BREVI = ['dom', 'lun', 'mar', 'mer', 'gio', 'ven', 'sab'] as const;
+  function weekdayShort(k: Giorno): string {
+    return GIORNI_BREVI[parseKey(k).getDay()] || '';
   }
 
-  function fmtShort(k) {
+  var MESI_BREVI = ['gen', 'feb', 'mar', 'apr', 'mag', 'giu', 'lug', 'ago', 'set', 'ott', 'nov', 'dic'] as const;
+  function fmtShort(k: Giorno): string {
     var d = parseKey(k);
-    var mesi = ['gen', 'feb', 'mar', 'apr', 'mag', 'giu', 'lug', 'ago', 'set', 'ott', 'nov', 'dic'];
-    return d.getDate() + ' ' + mesi[d.getMonth()];
+    return d.getDate() + ' ' + (MESI_BREVI[d.getMonth()] || '');
   }
 
   /* Lunedì della settimana di k — chiave per le review settimanali */
-  function weekKey(k) {
+  function weekKey(k: Giorno): Giorno {
     var d = parseKey(k);
     var dow = (d.getDay() + 6) % 7; // 0 = lunedì
     d.setDate(d.getDate() - dow);
@@ -84,7 +118,7 @@ function creaLM() {
   /* Lo slot colore segue l'entità, mai il rango: la mappatura non cambia
      se un'area viene filtrata o riordinata in una vista. */
 
-  var AREE_DEFAULT = [
+  var AREE_DEFAULT: Area[] = [
     { id: 'studio',       nome: 'Studio / Università', icona: 'book',      slot: 1, sistema: 'Sessioni di studio profondo pianificate la sera prima' },
     { id: 'salute',       nome: 'Salute & Sport',      icona: 'heart',     slot: 2, sistema: 'Allenamento o camminata prima delle 10:00' },
     { id: 'relazioni',    nome: 'Relazioni & Sociale', icona: 'users',     slot: 3, sistema: 'Un contatto significativo al giorno' },
@@ -98,7 +132,7 @@ function creaLM() {
   /* Palette categorica di riferimento (validata: vedi README).
      slot → [light, dark]. Il colore non porta mai il significato da solo:
      ogni uso è accompagnato da icona + etichetta. */
-  var SLOT_COLORI = {
+  var SLOT_COLORI: Record<Slot, readonly [string, string]> = {
     1: ['#2a78d6', '#3987e5'],
     2: ['#008300', '#008300'],
     3: ['#e87ba4', '#d55181'],
@@ -109,7 +143,7 @@ function creaLM() {
     8: ['#e34948', '#e66767']
   };
 
-  function coloreArea(area) {
+  function coloreArea(area: Area): string {
     var dark = document.documentElement.getAttribute('data-mode') === 'dark';
     return SLOT_COLORI[area.slot][dark ? 1 : 0];
   }
@@ -128,7 +162,7 @@ function creaLM() {
     abitudine: 8      // completare un'abitudine ricorrente del giorno
   };
 
-  function livelloDaXp(xp) {
+  function livelloDaXp(xp: number) {
     var lvl = Math.floor(Math.sqrt(Math.max(0, xp) / 50)) + 1;
     var base = 50 * (lvl - 1) * (lvl - 1);
     var next = 50 * lvl * lvl;
@@ -258,31 +292,43 @@ function creaLM() {
      I modi — elenco, insieme, mappa, ramo, recente, massimo, oppure — sono
      spiegati uno per uno là, accanto al tipo `ModoFusione`. */
 
-  function eMappa(v) {
-    return v && typeof v === 'object' && !Array.isArray(v);
+  /* IL TIPO ONESTO DELLA MACCHINA DELLA FUSIONE.
+     Da qui alla fine di `unisci` il codice cammina su chiavi qualunque di
+     oggetti qualunque: non sa — e non deve sapere — se sta guardando
+     un'azione o un'abitudine. Il tipo giusto non è `Stato`: è «un dizionario
+     di cui non conosco il contenuto», e ogni volta che si scende dentro si
+     controlla invece di fidarsi. Dare `Stato` a queste funzioni vorrebbe dire
+     mentire, e mentire al compilatore costa più che tacergli qualcosa. */
+  type Mappa = Record<string, unknown>;
+
+  function eMappa(v: unknown): v is Mappa {
+    return !!v && typeof v === 'object' && !Array.isArray(v);
   }
 
   /* L'IDENTITÀ DI UNA RIGA. Quasi tutte hanno un `id`. Quelle che non ce
      l'hanno — il registro, i check-in — hanno un istante e un testo, e due
      righe con lo stesso istante e lo stesso testo sono la stessa riga. Senza
      questo, ogni fusione raddoppierebbe il diario. */
-  function chiaveRiga(r) {
-    if (!r || typeof r !== 'object') return 'v' + JSON.stringify(r);
-    if (r.id !== undefined && r.id !== null && r.id !== '') return 'i' + r.id;
-    if (r.ts !== undefined && r.ts !== null) return 't' + r.ts + '|' + (r.testo || r.cat || r.data || '');
-    if (r.data !== undefined && r.data !== null) return 'd' + r.data;
+  function chiaveRiga(r: unknown): string {
+    if (!eMappa(r)) return 'v' + JSON.stringify(r);
+    if (r['id'] !== undefined && r['id'] !== null && r['id'] !== '') return 'i' + String(r['id']);
+    if (r['ts'] !== undefined && r['ts'] !== null) {
+      return 't' + String(r['ts']) + '|' + String(r['testo'] || r['cat'] || r['data'] || '');
+    }
+    if (r['data'] !== undefined && r['data'] !== null) return 'd' + String(r['data']);
     return 'v' + JSON.stringify(r);
   }
 
   /* QUANDO QUESTA RIGA È STATA TOCCATA L'ULTIMA VOLTA. Si guardano tutti i
      campi che nell'app segnano un momento, e si prende il più recente. Se non
      ne ha nessuno vale l'orologio del documento da cui viene. */
-  var CAMPI_MOMENTO = ['aggiornata', 'doneAt', 'ts', 'completatoAt', 'chiusoAt', 'creata'];
-  function momentoRiga(r, quandoDoc) {
+  var CAMPI_MOMENTO = ['aggiornata', 'doneAt', 'ts', 'completatoAt', 'chiusoAt', 'creata'] as const;
+  function momentoRiga(r: unknown, quandoDoc: number): number {
     var v = 0;
-    if (r && typeof r === 'object') {
+    if (eMappa(r)) {
       for (var i = 0; i < CAMPI_MOMENTO.length; i++) {
-        var x = r[CAMPI_MOMENTO[i]];
+        var nome = CAMPI_MOMENTO[i];
+        var x = nome === undefined ? undefined : r[nome];
         if (typeof x === 'number' && x > v) v = x;
       }
     }
@@ -291,14 +337,17 @@ function creaLM() {
 
   /* due dizionari: l'unione delle chiavi. Dove una chiave c'è da tutte e due
      e i valori sono ancora dizionari si scende; se no vince il più recente. */
-  function unisciMappa(x, y, qx, qy) {
-    var out = {};
+  function unisciMappa(x: unknown, y: unknown, qx: number, qy: number): Mappa {
+    var out: Mappa = {};
     if (eMappa(x)) Object.keys(x).forEach(function (k) { out[k] = x[k]; });
-    if (eMappa(y)) Object.keys(y).forEach(function (k) {
-      if (!(k in out)) { out[k] = y[k]; return; }
-      if (eMappa(out[k]) && eMappa(y[k])) { out[k] = unisciMappa(out[k], y[k], qx, qy); return; }
-      if (qy >= qx) out[k] = y[k];
-    });
+    if (eMappa(y)) {
+      var dy = y;
+      Object.keys(dy).forEach(function (k) {
+        if (!(k in out)) { out[k] = dy[k]; return; }
+        if (eMappa(out[k]) && eMappa(dy[k])) { out[k] = unisciMappa(out[k], dy[k], qx, qy); return; }
+        if (qy >= qx) out[k] = dy[k];
+      });
+    }
     return out;
   }
 
@@ -307,26 +356,30 @@ function creaLM() {
      (`fatti`, `salti`) sono un giorno per chiave, e prendere in blocco quelle
      di una copia sola vuol dire buttare via le spunte messe sull'altro
      dispositivo. */
-  function unisciRiga(x, y, qx, qy) {
+  function unisciRiga(x: unknown, y: unknown, qx: number, qy: number): unknown {
     if (!eMappa(x) || !eMappa(y)) return (qy >= qx) ? y : x;
-    var vecchia = (qy >= qx) ? x : y, nuova = (qy >= qx) ? y : x;
-    var out = {};
+    var dx = x, dy = y;
+    var vecchia = (qy >= qx) ? dx : dy, nuova = (qy >= qx) ? dy : dx;
+    var out: Mappa = {};
     Object.keys(vecchia).forEach(function (k) { out[k] = vecchia[k]; });
     Object.keys(nuova).forEach(function (k) { out[k] = nuova[k]; });
     Object.keys(out).forEach(function (k) {
-      if (eMappa(x[k]) && eMappa(y[k])) out[k] = unisciMappa(x[k], y[k], qx, qy);
+      if (eMappa(dx[k]) && eMappa(dy[k])) out[k] = unisciMappa(dx[k], dy[k], qx, qy);
     });
     return out;
   }
 
-  function unisciElenco(x, y, qx, qy) {
-    var out = [], indice = {};
-    var metti = function (arr, q) {
+  function unisciElenco(x: unknown, y: unknown, qx: number, qy: number): unknown[] {
+    var out: { r: unknown; q: number }[] = [];
+    var indice: Record<string, number> = {};
+    var metti = function (arr: unknown, q: number) {
       if (!Array.isArray(arr)) return;
       for (var i = 0; i < arr.length; i++) {
-        var r = arr[i], k = chiaveRiga(r);
-        if (indice[k] === undefined) { indice[k] = out.length; out.push({ r: r, q: momentoRiga(r, q) }); continue; }
-        var g = out[indice[k]];
+        var r: unknown = arr[i], k = chiaveRiga(r);
+        var dove = indice[k];
+        if (dove === undefined) { indice[k] = out.length; out.push({ r: r, q: momentoRiga(r, q) }); continue; }
+        var g = out[dove];
+        if (!g) continue;
         var qr = momentoRiga(r, q);
         g.r = unisciRiga(g.r, r, g.q, qr);
         g.q = Math.max(g.q, qr);
@@ -336,11 +389,15 @@ function creaLM() {
     return out.map(function (g) { return g.r; });
   }
 
-  function unisciInsieme(x, y) {
-    var out = [], visti = {};
+  function unisciInsieme(x: unknown, y: unknown): unknown[] {
+    var out: unknown[] = [];
+    var visti: Record<string, boolean> = {};
     [x, y].forEach(function (arr) {
       if (!Array.isArray(arr)) return;
-      arr.forEach(function (v) { var k = String(v); if (!visti[k]) { visti[k] = 1; out.push(v); } });
+      arr.forEach(function (v: unknown) {
+        var k = String(v);
+        if (!visti[k]) { visti[k] = true; out.push(v); }
+      });
     });
     return out;
   }
@@ -350,9 +407,9 @@ function creaLM() {
      nessuna delle venti funzioni che cancellano: le scrive `save()` da sé
      confrontando com'era e com'è (vedi `segnaLapidi`), così una funzione che
      cancella e che verrà scritta domani è già coperta. */
-  function applicaLapidi(s) {
+  function applicaLapidi(s: Stato): Stato {
     if (!Array.isArray(s.cancellati) || !s.cancellati.length) return s;
-    var perCampo = {};
+    var perCampo: Record<string, Record<string, number>> = {};
     s.cancellati.forEach(function (t) {
       if (!t || !t.k || !t.chiave) return;
       if (!perCampo[t.k]) perCampo[t.k] = {};
@@ -383,16 +440,16 @@ function creaLM() {
 
   /* IL PUNTO DI ENTRATA. `a` e `b` sono due stati interi; torna un terzo che
      contiene tutto quello che c'era nei due. Non tocca né `a` né `b`. */
-  function unisci(a, b) {
+  function unisci(a: unknown, b: unknown): Stato | null {
     if (!eMappa(a)) return b ? JSON.parse(JSON.stringify(b)) : null;
     if (!eMappa(b)) return JSON.parse(JSON.stringify(a));
     var qa = a.updatedAt || 0, qb = b.updatedAt || 0;
-    var out = {};
-    var chiavi = {};
+    var out: Mappa = {};
+    var chiavi: Record<string, 1> = {};
     Object.keys(a).forEach(function (k) { chiavi[k] = 1; });
     Object.keys(b).forEach(function (k) { chiavi[k] = 1; });
     Object.keys(statoVuoto()).forEach(function (k) { chiavi[k] = 1; });
-    var scoperti = [];
+    var scoperti: string[] = [];
     Object.keys(chiavi).forEach(function (k) {
       var modo = COME_UNIRE[k];
       var va = a[k], vb = b[k];
@@ -447,7 +504,7 @@ function creaLM() {
      Qui si guarda invece il risultato: cos'era salvato prima, cos'è salvato
      adesso, e quello che non c'è più prende la sua lapide. Una funzione che
      cancella e che verrà scritta l'anno prossimo è già coperta. */
-  function segnaLapidi(primaRaw, s) {
+  function segnaLapidi(primaRaw: string | null, s: Stato) {
     if (!primaRaw) return;
     var prima;
     try { prima = JSON.parse(primaRaw); } catch (e) { return; }
@@ -458,7 +515,7 @@ function creaLM() {
       if (COME_UNIRE[k] !== 'elenco' || k === 'cancellati' || k === 'registro' || k === 'log') return;
       if (!Array.isArray(prima[k]) || !Array.isArray(s[k])) return;
       if (prima[k].length <= s[k].length) return;      /* niente è sparito */
-      var restano = {};
+      var restano: Record<string, 1> = {};
       s[k].forEach(function (r) { restano[chiaveRiga(r)] = 1; });
       prima[k].forEach(function (r) {
         var c = chiaveRiga(r);
@@ -500,7 +557,7 @@ function creaLM() {
   }
   /* i pezzi messi da parte, per poterli mostrare e riprovare a leggerli */
   function recuperi() {
-    var out = [];
+    var out: string[] = [];
     try {
       for (var i = 0; i < localStorage.length; i++) {
         var k = localStorage.key(i);
@@ -512,7 +569,7 @@ function creaLM() {
 
   /* Riempie i campi mancanti negli stati salvati prima di un aggiornamento
      (o arrivati dal cloud): nessun dato viene perso, si aggiunge solo. */
-  function normalizza(s) {
+  function normalizza(s: unknown): Stato {
     var vuoto = statoVuoto();
     Object.keys(vuoto).forEach(function (k) {
       if (s[k] === undefined || s[k] === null) s[k] = vuoto[k];
@@ -532,7 +589,7 @@ function creaLM() {
       }
       s[k] = vuoto[k] !== undefined ? JSON.parse(JSON.stringify(vuoto[k])) : [];
     };
-    var eLista = function (v) { return Array.isArray(v); };
+    var eLista = function (v: unknown) { return Array.isArray(v); };
     ['backlog', 'abitudini', 'lezioni', 'azioni', 'inbox', 'checkins', 'esperimenti',
      'registro', 'log', 'aree', 'areeAttive', 'cancellati'].forEach(function (k) { salva(k, eLista); });
     if (!s.recuperati || typeof s.recuperati !== 'object') s.recuperati = {};
@@ -591,7 +648,7 @@ function creaLM() {
     /* ripara stati vecchi con più di una priorità nello stesso giorno:
        ne tiene una sola (la prima), com'è l'invariante ora. */
     if (Array.isArray(s.azioni)) {
-      var mitVisti = {};
+      var mitVisti: Record<string, boolean> = {};
       s.azioni.forEach(function (a) {
         if (!a.mit) return;
         if (mitVisti[a.data]) a.mit = false; else mitVisti[a.data] = true;
@@ -640,10 +697,10 @@ function creaLM() {
   function leggiIndice() {
     try { return JSON.parse(localStorage.getItem(PUNTI_KEY)) || []; } catch (e) { return []; }
   }
-  function scriviIndice(arr) {
+  function scriviIndice(arr: PuntoRitorno[]) {
     try { localStorage.setItem(PUNTI_KEY, JSON.stringify(arr)); } catch (e) { /* quota */ }
   }
-  function buttaPunto(id) {
+  function buttaPunto(id: string) {
     try { localStorage.removeItem(PUNTO_PRE + id); } catch (e) { /* niente */ }
   }
   function scordaPunti() {
@@ -653,7 +710,7 @@ function creaLM() {
   }
 
   /* lo stato è cambiato: si tiene com'era. `prima` è ciò che c'era scritto. */
-  function segnaPunto(prima, primaNudo, adessoNudo) {
+  function segnaPunto(prima: string | null, primaNudo: string | null, adessoNudo: string | null) {
     if (!prima || primaNudo === adessoNudo) return;   /* niente è cambiato davvero */
     var ora = Date.now();
     var arr = leggiIndice();
@@ -678,7 +735,7 @@ function creaLM() {
   /* la riga del diario con questo istante appartiene a quale punto?
      `dopo` dice quante cose sono state fatte DOPO: se è zero, annullare quel
      punto annulla esattamente quella cosa e nient'altro. */
-  function puntoDiRitorno(ts) {
+  function puntoDiRitorno(ts: number) {
     var arr = leggiIndice();
     for (var i = 0; i < arr.length; i++) {
       if (ts > arr[i].da && ts <= arr[i].fino + 1500) return { id: arr[i].id, dopo: i };
@@ -692,7 +749,7 @@ function creaLM() {
   /* Torna a com'era. Il registro NON si conserva: se tornasse indietro anche
      lui il diario mostrerebbe cose che non sono più vere. Al suo posto resta
      una riga che dice che sei tornato. */
-  function tornaAlPunto(ts, etichetta) {
+  function tornaAlPunto(ts: number, etichetta?: string) {
     var arr = leggiIndice();
     var i = -1;
     for (var j = 0; j < arr.length; j++) { if (ts > arr[j].da && ts <= arr[j].fino + 1500) { i = j; break; } }
@@ -726,12 +783,12 @@ function creaLM() {
      Restano fuori le righe di registro, che raccontano un cambiamento senza
      esserlo: quelle si annullano col punto di ritorno, quando c'è — a meno
      che la riga si porti dietro il suo inverso (`disfa`, vedi registra). */
-  function annullaRecord(tipo, chiave) {
+  function annullaRecord(tipo: string, chiave: string) {
     var s = load();
     /* la riga «Annullato…» dice anche QUANDO, se non è oggi: annullare la
        review di una sera di tre settimane fa e leggere solo «Annullata la
        review della sera» non dice quale */
-    function quando(k) { return k === todayKey() ? '' : ' del ' + fmtShort(k); }
+    function quando(k: Giorno) { return k === todayKey() ? '' : ' del ' + fmtShort(k); }
     if (tipo === 'azione') {
       var a = s.azioni.find(function (x) { return x.id === chiave; });
       if (!a || !a.done) return false;
@@ -856,7 +913,7 @@ function creaLM() {
     }
     document.dispatchEvent(new CustomEvent('lm:change'));
   }
-  function senzaOrologio(raw) {
+  function senzaOrologio(raw: string | null) {
     return raw ? raw.replace(/"updatedAt":\s*\d+,?/, '') : raw;
   }
 
@@ -886,10 +943,10 @@ function creaLM() {
   function leggiBackups() {
     try { return JSON.parse(localStorage.getItem(BACKUP_KEY)) || []; } catch (e) { return []; }
   }
-  function scriviBackups(arr) {
+  function scriviBackups(arr: CopiaSalvata[]) {
     try { localStorage.setItem(BACKUP_KEY, JSON.stringify(arr)); } catch (e) { /* quota */ }
   }
-  function backup(motivo) {
+  function backup(motivo?: string) {
     var raw;
     try { raw = localStorage.getItem(STORAGE_KEY); } catch (e) { raw = null; }
     if (!raw) { try { raw = JSON.stringify(load()); } catch (e) { return; } }
@@ -904,7 +961,7 @@ function creaLM() {
       return { ts: b.ts, motivo: b.motivo, ricchezza: ricchezza(safeParse(b.data)) };
     });
   }
-  function restoreBackup(ts) {
+  function restoreBackup(ts: number) {
     var b = leggiBackups().find(function (x) { return x.ts === ts; });
     if (!b) return false;
     backup('prima-del-ripristino');
@@ -920,11 +977,11 @@ function creaLM() {
     senzaLapidi--;
     return true;
   }
-  function safeParse(t) { try { return JSON.parse(t); } catch (e) { return statoVuoto(); } }
+  function safeParse(t: string | null): Stato { try { return normalizza(JSON.parse(String(t))); } catch (e) { return statoVuoto(); } }
 
   /* Quanto è "pieno" uno stato: serve a non far mai sovrascrivere dati
      reali da uno stato vuoto (la causa del bug di perdita dati). */
-  function ricchezza(s) {
+  function ricchezza(s: unknown): number {
     if (!s || typeof s !== 'object') return 0;
     return (s.azioni ? s.azioni.length : 0) +
       (s.checkins ? s.checkins.length : 0) +
@@ -951,14 +1008,14 @@ function creaLM() {
      Le due cose sono opposte per natura. Unire vuol dire «queste sono due
      mezze verità della stessa storia»; tornare indietro vuol dire «questa
      storia non è mai successa». */
-  function ripristinaStato(obj) {
+  function ripristinaStato(obj: unknown) {
     if (!obj || typeof obj !== 'object') return false;
     hydrate(obj, true);
     save();
     return true;
   }
 
-  function importJson(text) {
+  function importJson(text: string) {
     var obj;
     try { obj = JSON.parse(text); } catch (e) { return { ok: false, err: 'File non valido: non è JSON leggibile.' }; }
     var st = (obj && obj.stato) ? obj.stato : obj; // accetta il file esportato o lo stato nudo
@@ -1014,7 +1071,7 @@ function creaLM() {
 
   /* ---------- mutazioni ---------- */
 
-  function premiaXp(tipo, quando) {
+  function premiaXp(tipo: keyof typeof XP_EVENTI, quando?: Giorno) {
     var s = load();
     var punti = XP_EVENTI[tipo] || 0;
     var k = quando || todayKey();
@@ -1025,7 +1082,7 @@ function creaLM() {
   /* XP in una misura che non sta nella tabella degli eventi: serve per il
      pezzo di una cosa lasciata a metà, che vale in proporzione a quanto ne
      hai fatto e non un valore fisso */
-  function dammiXp(punti, quando) {
+  function dammiXp(punti: number, quando?: Giorno) {
     var s = load();
     var k = quando || todayKey();
     s.xp += punti;
@@ -1033,7 +1090,7 @@ function creaLM() {
     return punti;
   }
   /* toglie XP già assegnati (es. quando si toglie la spunta a una task) */
-  function togliXp(punti, quando) {
+  function togliXp(punti: number, quando?: Giorno) {
     var s = load();
     var k = quando || todayKey();
     s.xp = Math.max(0, s.xp - punti);
@@ -1062,12 +1119,12 @@ function creaLM() {
      è a posto". Serve una nuova MIT solo se il giorno non ne ha ancora
      nessuna — anche già completata, altrimenti finire la priorità e
      aggiungere un'altra cosa creerebbe una seconda priorità (e XP gonfiati). */
-  function serveMit(k) {
+  function serveMit(k?: Giorno) {
     k = k || todayKey();
     return !load().azioni.some(function (a) { return a.data === k && a.mit; });
   }
 
-  function aggiungiAzione(testo, areaId, opts) {
+  function aggiungiAzione(testo: string, areaId: string | null, opts?: OpzAzione) {
     var s = load();
     opts = opts || {};
     var data = opts.data || todayKey();
@@ -1093,7 +1150,7 @@ function creaLM() {
     return a;
   }
 
-  function completaAzione(id) {
+  function completaAzione(id: string) {
     var s = load();
     var a = s.azioni.find(function (x) { return x.id === id; });
     if (!a) return 0;
@@ -1136,7 +1193,7 @@ function creaLM() {
      da fare. Serve per disdire un giorno messo per sbaglio: prima l'unica via
      era cancellare e riscrivere. Se era il passo di un progetto, il passo
      torna semplicemente "non pianificato" (il progetto non si tocca). */
-  function azioneInBacklog(id) {
+  function azioneInBacklog(id: string) {
     var s = load();
     var i = s.azioni.findIndex(function (x) { return x.id === id; });
     if (i < 0) return null;
@@ -1161,7 +1218,7 @@ function creaLM() {
 
   /* Sposta un'azione in un altro giorno (ripianificare senza riscrivere).
      Serve al trascinamento tra i giorni e al pulsante "rimanda a domani". */
-  function spostaAzione(id, giorno) {
+  function spostaAzione(id: string, giorno: Giorno) {
     var s = load();
     var a = s.azioni.find(function (x) { return x.id === id; });
     if (!a || !giorno || a.data === giorno) return null;
@@ -1181,7 +1238,7 @@ function creaLM() {
 
   /* Porta al giorno dopo tutto quello che non è stato fatto: la sera si
      ripulisce la giornata senza riscrivere niente (e senza penalità). */
-  function rimandaNonFatte(daGiorno, aGiorno) {
+  function rimandaNonFatte(daGiorno: Giorno, aGiorno: Giorno) {
     var s = load();
     var da = daGiorno || todayKey();
     var a2 = aGiorno || addDays(da, 1);
@@ -1195,7 +1252,7 @@ function creaLM() {
     return mosse.length;
   }
 
-  function rimandaAzione(id) {
+  function rimandaAzione(id: string) {
     /* "non ora" senza punizione: sposta in fondo alla lista di oggi */
     var s = load();
     var i = s.azioni.findIndex(function (x) { return x.id === id; });
@@ -1250,11 +1307,11 @@ function creaLM() {
      nell'elenco «Da fare»: fallire una cosa non richiede di averla prima
      messa in agenda, e chiedere di programmarla per poter dire che non è
      andata sarebbe un giro assurdo */
-  function trovaCosa(s, id) {
+  function trovaCosa(s: Stato, id: string): Azione | Attivita | null {
     return s.azioni.find(function (x) { return x.id === id; }) ||
       s.backlog.find(function (x) { return x.id === id; }) || null;
   }
-  function segnaMancata(id, perche, nota, quanto) {
+  function segnaMancata(id: string, perche: string, nota: string, quanto: string) {
     var s = load();
     var a = trovaCosa(s, id);
     if (!a) return 0;
@@ -1276,7 +1333,7 @@ function creaLM() {
     save();
     return punti;
   }
-  function togliMancata(id) {
+  function togliMancata(id: string) {
     var s = load();
     var a = trovaCosa(s, id);
     if (!a || !a.mancata) return false;
@@ -1290,7 +1347,7 @@ function creaLM() {
     save();
     return true;
   }
-  function mancate(giorni) {
+  function mancate(giorni: number) {
     var s = load();
     var limite = giorni ? Date.now() - giorni * 86400000 : 0;
     return s.azioni.concat(s.backlog)
@@ -1298,7 +1355,7 @@ function creaLM() {
       .sort(function (x, y) { return y.mancata.ts - x.mancata.ts; });
   }
 
-  function cattura(testo) {
+  function cattura(testo: string) {
     var s = load();
     var el = { id: uid(), testo: testo, creata: Date.now() };
     s.inbox.unshift(el);
@@ -1307,7 +1364,7 @@ function creaLM() {
     return punti;
   }
 
-  function modificaInbox(id, testo) {
+  function modificaInbox(id: string, testo: string) {
     var s = load();
     var el = s.inbox.find(function (x) { return x.id === id; });
     if (!el) return;
@@ -1316,7 +1373,7 @@ function creaLM() {
     save();
   }
 
-  function cambiaAreaAzione(id, areaId) {
+  function cambiaAreaAzione(id: string, areaId: string) {
     var s = load();
     var a = s.azioni.find(function (x) { return x.id === id; });
     if (!a) return;
@@ -1326,7 +1383,7 @@ function creaLM() {
     save();
   }
   /* rinomina un'azione di oggi */
-  function modificaAzione(id, testo) {
+  function modificaAzione(id: string, testo: string) {
     var s = load();
     var a = s.azioni.find(function (x) { return x.id === id; });
     if (!a || !testo) return;
@@ -1335,7 +1392,7 @@ function creaLM() {
     save();
   }
   /* elimina un'azione di oggi (senza penalità: era una scelta, non un fallimento) */
-  function rimuoviAzione(id) {
+  function rimuoviAzione(id: string) {
     var s = load();
     var i = s.azioni.findIndex(function (x) { return x.id === id; });
     if (i < 0) return;
@@ -1350,7 +1407,7 @@ function creaLM() {
     save();
   }
   /* assegna o toglie l'orario di un'azione nella giornata */
-  function setOraAzione(id, ora) {
+  function setOraAzione(id: string, ora: Ora | null) {
     var s = load();
     var a = s.azioni.find(function (x) { return x.id === id; });
     if (!a) return;
@@ -1359,7 +1416,7 @@ function creaLM() {
     save();
   }
   /* durata (in minuti) che l'azione occupa nella giornata */
-  function setDurataAzione(id, minuti) {
+  function setDurataAzione(id: string, minuti: number | null) {
     var s = load();
     var a = s.azioni.find(function (x) { return x.id === id; });
     if (!a) return;
@@ -1368,7 +1425,7 @@ function creaLM() {
     save();
   }
   /* azioni di un giorno qualsiasi (per le viste settimana/mese) */
-  function azioniDelGiorno(k) {
+  function azioniDelGiorno(k: Giorno) {
     return load().azioni.filter(function (a) { return a.data === k; });
   }
 
@@ -1407,7 +1464,7 @@ function creaLM() {
   /* Una toppa per volta, e ogni pezzo controllato: questi valori arrivano da
      due campi di testo, e un orario scritto male qui vorrebbe dire un
      promemoria che non parte mai senza che nessuno capisca perché. */
-  function impostaPromemoria(patch) {
+  function impostaPromemoria(patch: Record<string, unknown>) {
     var c = promemoria();
     if (patch.server != null) c.server = String(patch.server).trim().replace(/\/+$/, '');
     if (patch.chiave != null) c.chiave = String(patch.chiave).trim();
@@ -1433,7 +1490,7 @@ function creaLM() {
   /* ---------- ritmo della giornata e preferenza di visualizzazione ---------- */
 
   /* ritmo di BASE (vale per i giorni senza un registro loro) */
-  function impostaChiedi(patch) {
+  function impostaChiedi(patch: Record<string, unknown>) {
     var s = load();
     if (!s.profilo.chiedi) s.profilo.chiedi = JSON.parse(JSON.stringify(CHIEDI_DEFAULT));
     ['notte', 'giorno'].forEach(function (q) {
@@ -1451,7 +1508,7 @@ function creaLM() {
     return JSON.parse(JSON.stringify(c));
   }
 
-  function impostaRitmo(patch) {
+  function impostaRitmo(patch: Partial<Ritmo>) {
     var s = load();
     if (!s.profilo.ritmo) s.profilo.ritmo = JSON.parse(JSON.stringify(RITMO_DEFAULT));
     if (patch.sveglia != null) s.profilo.ritmo.sveglia = patch.sveglia;
@@ -1462,7 +1519,7 @@ function creaLM() {
   }
   /* sonno e pasti EFFETTIVI di un giorno: il registro del giorno se c'è,
      altrimenti il ritmo di base. */
-  function ritmoDi(k) {
+  function ritmoDi(k: Giorno) {
     var s = load();
     var base = s.profilo.ritmo || RITMO_DEFAULT;
     var g = (s.ritmoGiorno && s.ritmoGiorno[k]) || {};
@@ -1481,7 +1538,7 @@ function creaLM() {
   }
   /* registra sonno/pasti per un singolo giorno (registro). patch può avere
      sveglia, sonno, pasti. */
-  function setRitmoGiorno(k, patch) {
+  function setRitmoGiorno(k: Giorno, patch: Partial<RegistroGiorno>) {
     var s = load();
     if (!s.ritmoGiorno) s.ritmoGiorno = {};
     var cur = s.ritmoGiorno[k];
@@ -1494,19 +1551,19 @@ function creaLM() {
     save();
   }
   /* rimuove il registro di un giorno: torna al ritmo di base */
-  function azzeraRitmoGiorno(k) {
+  function azzeraRitmoGiorno(k: Giorno) {
     var s = load();
     if (s.ritmoGiorno && s.ritmoGiorno[k]) { delete s.ritmoGiorno[k]; registra('giornata', 'Sonno/pasti del ' + fmtShort(k) + ' tornati al ritmo di base', false); save(); }
   }
   /* minuti di sonno di un giorno (a letto → sveglia, attraversa la mezzanotte) */
-  function minutiSonno(k) {
+  function minutiSonno(k: Giorno) {
     var r = ritmoDi(k);
-    function m(hhmm) { var p = String(hhmm).split(':'); return (+p[0]) * 60 + (+p[1]); }
+    function m(hhmm: string | null | undefined) { var p = String(hhmm).split(':'); return (+(p[0] || 0)) * 60 + (+(p[1] || 0)); }
     var a = m(r.sonno), b = m(r.sveglia);
     var dur = b - a; if (dur <= 0) dur += 1440;
     return dur;
   }
-  function impostaGiornataPos(pos) {
+  function impostaGiornataPos(pos: GiornataPos) {
     var s = load();
     s.profilo.giornataPos = pos;
     registra('impostazioni', 'Cambiata la posizione della «Giornata»', false);
@@ -1515,7 +1572,7 @@ function creaLM() {
 
   /* ---------- backlog (attività "da fare", senza data) ---------- */
 
-  function aggiungiBacklog(testo, areaId, interna) {
+  function aggiungiBacklog(testo: string, areaId: string | null, interna?: boolean) {
     var s = load();
     var b = { id: uid(), testo: testo, areaId: areaId || 'altro', creata: Date.now() };
     s.backlog.push(b);
@@ -1523,19 +1580,19 @@ function creaLM() {
     save();
     return b;
   }
-  function modificaBacklog(id, testo) {
+  function modificaBacklog(id: string, testo: string) {
     var s = load();
     var b = s.backlog.find(function (x) { return x.id === id; });
     if (!b) return; b.testo = testo; registra('backlog', 'Rinominata un’attività → «' + testo + '»', false); save();
   }
-  function cambiaAreaBacklog(id, areaId) {
+  function cambiaAreaBacklog(id: string, areaId: string) {
     var s = load();
     var b = s.backlog.find(function (x) { return x.id === id; });
     if (!b) return; b.areaId = areaId;
     var ar = s.aree.find(function (x) { return x.id === areaId; });
     registra('backlog', 'Cambiata area di «' + b.testo + '» → ' + (ar ? ar.nome : areaId), false); save();
   }
-  function rimuoviBacklog(id) {
+  function rimuoviBacklog(id: string) {
     var s = load();
     var i = s.backlog.findIndex(function (x) { return x.id === id; });
     if (i >= 0) { registra('backlog', 'Eliminata l’attività «' + s.backlog[i].testo + '»', true); s.backlog.splice(i, 1); save(); }
@@ -1545,7 +1602,7 @@ function creaLM() {
   /* Porta una cosa da fare in un giorno: oggi (default) o un giorno futuro,
      così si può distribuire il lavoro sulla settimana invece di ammucchiarlo
      tutto su oggi. */
-  function backlogInOggi(id, giorno) {
+  function backlogInOggi(id: string, giorno?: Giorno) {
     var s = load();
     var i = s.backlog.findIndex(function (x) { return x.id === id; });
     if (i < 0) return null;
@@ -1560,7 +1617,7 @@ function creaLM() {
   }
   /* ---------- progetti: un'attività "da fare" con passi ordinati ---------- */
 
-  function aggiungiPasso(bid, testo) {
+  function aggiungiPasso(bid: string, testo: string) {
     var s = load();
     var b = s.backlog.find(function (x) { return x.id === bid; });
     if (!b) return;
@@ -1569,13 +1626,13 @@ function creaLM() {
     registra('backlog', 'Aggiunto un passo a «' + b.testo + '»: ' + testo, false);
     save();
   }
-  function modificaPasso(bid, sid, testo) {
+  function modificaPasso(bid: string, sid: string, testo: string) {
     var s = load();
     var b = s.backlog.find(function (x) { return x.id === bid; });
     var st = b && b.steps && b.steps.find(function (x) { return x.id === sid; });
     if (st) { st.testo = testo; registra('backlog', 'Modificato un passo di «' + b.testo + '»', false); save(); }
   }
-  function rimuoviPasso(bid, sid) {
+  function rimuoviPasso(bid: string, sid: string) {
     var s = load();
     var b = s.backlog.find(function (x) { return x.id === bid; });
     if (!b || !b.steps) return;
@@ -1584,7 +1641,7 @@ function creaLM() {
     registra('backlog', 'Eliminato un passo di «' + b.testo + '»' + (st ? ': ' + st.testo : ''), false);
     save();
   }
-  function togglePasso(bid, sid) {
+  function togglePasso(bid: string, sid: string) {
     var s = load();
     var b = s.backlog.find(function (x) { return x.id === bid; });
     var st = b && b.steps && b.steps.find(function (x) { return x.id === sid; });
@@ -1598,18 +1655,18 @@ function creaLM() {
     }
     save();
   }
-  function avanzamentoProgetto(b) {
+  function avanzamentoProgetto(b: Attivita) {
     var tot = (b.steps || []).length;
     var fatti = (b.steps || []).filter(function (x) { return x.done; }).length;
     return { fatti: fatti, tot: tot, pct: tot ? Math.round(fatti / tot * 100) : 0 };
   }
   /* porta in Oggi il prossimo passo non fatto e non già in lista oggi */
-  function prossimoPassoInOggi(bid, giorno) {
+  function prossimoPassoInOggi(bid: string, giorno?: Giorno) {
     var s = load();
     var b = s.backlog.find(function (x) { return x.id === bid; });
     if (!b || !b.steps) return null;
     var k = giorno || todayKey();
-    var gia = {};
+    var gia: Record<string, boolean> = {};
     azioniDelGiorno(k).forEach(function (a) { if (!a.done && a.passoDi && a.passoDi.b === bid) gia[a.passoDi.s] = true; });
     var st = b.steps.find(function (x) { return !x.done && !gia[x.id]; });
     if (!st) return null;
@@ -1622,14 +1679,14 @@ function creaLM() {
   /* Distribuisci i passi ancora aperti UNO PER GIORNO a partire da un giorno.
      Un progetto non sta in una sola giornata: così si spalma da solo.
      `ogniQuanti` = 1 tutti i giorni, 7 una volta a settimana, ecc. */
-  function distribuisciPassi(bid, daGiorno, ogniQuanti) {
+  function distribuisciPassi(bid: string, daGiorno: Giorno, ogniQuanti: number) {
     var s = load();
     var b = s.backlog.find(function (x) { return x.id === bid; });
     if (!b || !b.steps || !b.steps.length) return 0;
     var passo = Math.max(1, ogniQuanti || 1);
     var k = daGiorno || todayKey();
     /* i passi già in agenda non si duplicano */
-    var giaFuori = {};
+    var giaFuori: Record<string, boolean> = {};
     s.azioni.forEach(function (a) { if (!a.done && a.passoDi && a.passoDi.b === bid) giaFuori[a.passoDi.s] = true; });
     var daFare = b.steps.filter(function (st) { return !st.done && !giaFuori[st.id]; });
     if (!daFare.length) return 0;
@@ -1645,7 +1702,7 @@ function creaLM() {
 
   /* Trasforma una cosa da fare (o un progetto) in ABITUDINE ricorrente: per gli
      obiettivi che non si chiudono in un giorno ma si costruiscono ripetendo. */
-  function backlogInAbitudine(bid, giorni, opts) {
+  function backlogInAbitudine(bid: string, giorni: GiornoSettimana[], opts?: { ora?: Ora | null; durata?: number | null }) {
     var s = load();
     var b = s.backlog.find(function (x) { return x.id === bid; });
     if (!b) return null;
@@ -1660,7 +1717,7 @@ function creaLM() {
   }
 
   /* Mette UN passo specifico in un giorno (o lo sposta se già in agenda) */
-  function pianificaPasso(bid, sid, giorno) {
+  function pianificaPasso(bid: string, sid: string, giorno: Giorno) {
     var s = load();
     var b = s.backlog.find(function (x) { return x.id === bid; });
     if (!b || !b.steps) return null;
@@ -1677,7 +1734,7 @@ function creaLM() {
 
   function backlogPerArea() {
     var s = load();
-    var perArea = {};
+    var perArea: Record<string, Attivita[]> = {};
     s.backlog.forEach(function (b) { (perArea[b.areaId] = perArea[b.areaId] || []).push(b); });
     var out = s.aree.filter(function (a) { return s.areeAttive.indexOf(a.id) >= 0; }).map(function (a) {
       return { area: a, items: perArea[a.id] || [] };
@@ -1707,7 +1764,7 @@ function creaLM() {
 
   var FERMA_GIORNI = 21;   // oltre questo, senza segnali, è roba parcheggiata
 
-  function appuntaBacklog(id, valore) {
+  function appuntaBacklog(id: string, valore?: boolean) {
     var s = load();
     var b = s.backlog.find(function (x) { return x.id === id; });
     if (!b) return;
@@ -1725,7 +1782,7 @@ function creaLM() {
      spiega sembra arbitrario e si smette di fidarsi. `da` dice da quale
      segnale viene, così l'interfaccia non ripete un'informazione che sta
      già mostrando da un'altra parte. */
-  function importanzaBacklog(b, oggi) {
+  function importanzaBacklog(b: Attivita, oggi: Giorno) {
     var k = oggi || todayKey();
     var peso = 0, motivo = '', fascia = 'poi', da = '';
 
@@ -1772,7 +1829,7 @@ function creaLM() {
   }
 
   /* azioni future non fatte che vengono da questa cosa da fare */
-  function azioniDiBacklog(b, oggi) {
+  function azioniDiBacklog(b: Attivita, oggi: Giorno) {
     var s = load();
     var k = oggi || todayKey();
     var isProg = !!(b.steps && b.steps.length);
@@ -1785,7 +1842,7 @@ function creaLM() {
   /* La lista ordinata per importanza, divisa nelle tre fasce. `tetto`
      limita quante ne stanno in cima: tenerne più di 3-4 a mente non si
      può (Cowan 2001), e una fascia "urgente" lunga non è più urgente. */
-  function backlogPerImportanza(opts) {
+  function backlogPerImportanza(opts?: { areaId?: string; tetto?: number }) {
     var s = load();
     var k = todayKey();
     var tetto = (opts && opts.tetto) || 3;
@@ -1809,7 +1866,7 @@ function creaLM() {
   }
 
   /* scadenza opzionale su un'attività da fare */
-  function impostaScadenzaBacklog(id, scadenza) {
+  function impostaScadenzaBacklog(id: string, scadenza: Giorno | null) {
     var s = load();
     var b = s.backlog.find(function (x) { return x.id === id; });
     if (!b) return;
@@ -1818,7 +1875,7 @@ function creaLM() {
     save();
   }
   /* attività con scadenza entro N giorni (o già scadute), dalla più vicina */
-  function scadenzeVicine(giorni) {
+  function scadenzeVicine(giorni: number) {
     var s = load();
     var oggi = todayKey();
     return s.backlog.filter(function (b) { return b.scadenza; })
@@ -1828,7 +1885,7 @@ function creaLM() {
 
   /* ---------- abitudini ricorrenti ---------- */
 
-  function aggiungiAbitudine(testo, areaId, giorni, opts) {
+  function aggiungiAbitudine(testo: string, areaId: string | null, giorni: GiornoSettimana[], opts?: { ora?: Ora | null; durata?: number | null; da?: Giorno; a?: Giorno | null }) {
     var s = load();
     var h = { id: uid(), testo: testo, areaId: areaId || 'salute', giorni: Array.isArray(giorni) ? giorni : [],
       ora: (opts && opts.ora) || null, durata: (opts && opts.durata) || null, creata: Date.now(), fatti: {},
@@ -1839,7 +1896,7 @@ function creaLM() {
     save();
     return h;
   }
-  function modificaAbitudine(id, dati) {
+  function modificaAbitudine(id: string, dati: Partial<Abitudine>) {
     var s = load();
     var h = s.abitudini.find(function (x) { return x.id === id; });
     if (!h) return;
@@ -1853,7 +1910,7 @@ function creaLM() {
     registra('abitudine', 'Modificata l’abitudine «' + h.testo + '»', false);
     save();
   }
-  function rimuoviAbitudine(id) {
+  function rimuoviAbitudine(id: string) {
     var s = load();
     var i = s.abitudini.findIndex(function (x) { return x.id === id; });
     if (i >= 0) { registra('abitudine', 'Eliminata l’abitudine «' + s.abitudini[i].testo + '»', true); s.abitudini.splice(i, 1); save(); }
@@ -1865,7 +1922,7 @@ function creaLM() {
        h.da    = primo giorno valido (di default il giorno in cui la crei)
        h.a     = ultimo giorno valido (vuoto = senza scadenza)
        h.salti = giorni saltati uno a uno ({'2026-07-25': true}) */
-  function abitudinePrevista(h, k) {
+  function abitudinePrevista(h: Abitudine, k: Giorno) {
     k = k || todayKey();
     if (h.da && k < h.da) return false;             // non retroattiva
     if (h.a && k > h.a) return false;               // periodo finito
@@ -1874,7 +1931,7 @@ function creaLM() {
     return h.giorni.indexOf(parseKey(k).getDay()) >= 0;
   }
   /* periodo di validità: da/a (null = da sempre / per sempre) */
-  function impostaPeriodoAbitudine(id, da, a) {
+  function impostaPeriodoAbitudine(id: string, da: Giorno | null, a: Giorno | null) {
     var s = load();
     var h = s.abitudini.find(function (x) { return x.id === id; });
     if (!h) return;
@@ -1885,7 +1942,7 @@ function creaLM() {
   }
   /* toglie (o rimette) l'abitudine in UN solo giorno, senza toccare le altre
      né l'abitudine stessa */
-  function saltaGiornoAbitudine(id, k) {
+  function saltaGiornoAbitudine(id: string, k?: Giorno) {
     var s = load();
     var h = s.abitudini.find(function (x) { return x.id === id; });
     if (!h) return false;
@@ -1903,7 +1960,7 @@ function creaLM() {
     return load().abitudini.filter(function (h) { return abitudinePrevista(h, k); });
   }
   /* completa/annulla l'abitudine per oggi (toggle) */
-  function completaAbitudine(id, giorno) {
+  function completaAbitudine(id: string, giorno?: Giorno) {
     var s = load();
     var h = s.abitudini.find(function (x) { return x.id === id; });
     if (!h) return 0;
@@ -1930,7 +1987,7 @@ function creaLM() {
   }
   /* serie di giorni previsti consecutivi completati, con grazia per oggi
      (oggi non ancora fatto non rompe la serie) */
-  function streakAbitudine(h) {
+  function streakAbitudine(h: Abitudine) {
     var oggi = todayKey(), k = oggi, count = 0;
     for (var i = 0; i < 400; i++) {
       if (h.da && k < h.da) break;   // prima dell'inizio non c'era: la serie finisce lì
@@ -1947,7 +2004,7 @@ function creaLM() {
      corrente riparte da zero, e senza un record da riprendere il numero
      appena perso sembra sparito per sempre — che è il momento in cui si
      molla. */
-  function recordAbitudine(h) {
+  function recordAbitudine(h: Abitudine) {
     var giorni = Object.keys(h.fatti || {});
     if (!giorni.length) return 0;
     giorni.sort();
@@ -1964,7 +2021,7 @@ function creaLM() {
 
   /* Il prossimo giorno in cui tocca, entro un anno: «torna martedì» dice
      più di «L M V», che va riletto e tradotto ogni volta. */
-  function prossimaAbitudine(h) {
+  function prossimaAbitudine(h: Abitudine) {
     var k = todayKey();
     for (var i = 1; i <= 366; i++) {
       k = addDays(k, 1);
@@ -1976,17 +2033,17 @@ function creaLM() {
 
   /* ---------- gestione aree (personalizzabili) ---------- */
 
-  function rinominaArea(id, nome) {
+  function rinominaArea(id: string, nome: string) {
     var s = load();
     var a = s.aree.find(function (x) { return x.id === id; });
     if (a && nome.trim()) { registra('area', 'Area rinominata «' + a.nome + '» → «' + nome.trim() + '»', false); a.nome = nome.trim(); save(); }
   }
-  function modificaRegolaArea(id, regola) {
+  function modificaRegolaArea(id: string, regola: string) {
     var s = load();
     var a = s.aree.find(function (x) { return x.id === id; });
     if (a) { a.sistema = regola; registra('area', 'Modificata la regola dell’area «' + a.nome + '»', false); save(); }
   }
-  function toggleArea(id, attiva) {
+  function toggleArea(id: string, attiva: boolean) {
     var s = load();
     var i = s.areeAttive.indexOf(id);
     if (attiva && i < 0) s.areeAttive.push(id);
@@ -1996,7 +2053,7 @@ function creaLM() {
     registra('area', (attiva ? 'Attivata' : 'Disattivata') + ' l’area «' + (a ? a.nome : id) + '»', false);
     save();
   }
-  function aggiungiArea(nome, icona, slot) {
+  function aggiungiArea(nome: string, icona: string, slot?: Slot) {
     var s = load();
     var id = 'a' + uid();
     var usati = s.aree.map(function (a) { return a.slot; });
@@ -2008,7 +2065,7 @@ function creaLM() {
     save();
     return id;
   }
-  function rimuoviArea(id) {
+  function rimuoviArea(id: string) {
     var s = load();
     if (s.aree.length <= 1) return;
     var rimossa = s.aree.find(function (a) { return a.id === id; });
@@ -2027,16 +2084,16 @@ function creaLM() {
   /* baseline personale di un check-in: la media recente, usata come
      punto di riferimento ("il tuo solito") per rendere la scala meno
      ambigua — chi si sente "sempre nella media" ha così un riferimento. */
-  function baselineCheckin(campo, giorni) {
+  function baselineCheckin(campo: 'energia' | 'focus' | 'umore', giorni: number) {
     var s = load();
-    var vals = [];
+    var vals: number[] = [];
     var limite = giorni ? Date.now() - giorni * 86400000 : 0;
     s.checkins.forEach(function (c) { if (c[campo] != null && (!giorni || c.ts >= limite)) vals.push(c[campo]); });
     if (!vals.length) return null;
     return Math.round(vals.reduce(function (a, b) { return a + b; }, 0) / vals.length * 10) / 10;
   }
 
-  function triageInbox(id, esito, areaId) {
+  function triageInbox(id: string, esito: 'azione' | 'backlog' | 'scarta', areaId: string) {
     /* esito: 'azione' (fai oggi) | 'backlog' (da fare, senza data) | 'scarta' */
     var s = load();
     var i = s.inbox.findIndex(function (x) { return x.id === id; });
@@ -2060,7 +2117,7 @@ function creaLM() {
     save();
   }
 
-  function registraCheckin(energia, focus, umore, contesto) {
+  function registraCheckin(energia: number, focus: number, umore: number, contesto?: string) {
     var s = load();
     s.checkins.push({ data: todayKey(), ts: Date.now(), energia: energia, focus: focus, umore: umore, contesto: contesto || '' });
     var punti = premiaXp('checkin');
@@ -2068,7 +2125,7 @@ function creaLM() {
     return punti;
   }
 
-  function salvaPianoMattina(intenzione) {
+  function salvaPianoMattina(intenzione: string) {
     var s = load();
     var k = todayKey();
     var nuovo = !s.pianoMattina[k];
@@ -2078,7 +2135,7 @@ function creaLM() {
     return punti;
   }
 
-  function valutaArea(areaId, voto, quando) {
+  function valutaArea(areaId: string, voto: number, quando?: Giorno) {
     var s = load();
     var k = quando || todayKey();
     if (!s.valutazioni[k]) s.valutazioni[k] = {};
@@ -2112,7 +2169,7 @@ function creaLM() {
     if (!t.inPausa && Date.now() - t.fine > 6 * 3600000) return null;
     return t;
   }
-  function avviaTimerDati(patch) {
+  function avviaTimerDati(patch: Partial<Timer>) {
     var s = load();
     s.timer = patch;
     save();
@@ -2123,7 +2180,7 @@ function creaLM() {
     s.timer = null;
     save();
   }
-  function aggiornaTimerDati(patch) {
+  function aggiornaTimerDati(patch: Partial<Timer>) {
     var s = load();
     if (!s.timer) return null;
     for (var k in patch) if (Object.prototype.hasOwnProperty.call(patch, k)) s.timer[k] = patch[k];
@@ -2140,7 +2197,7 @@ function creaLM() {
   function tutteLeReview() {
     var s = load();
     var out = [];
-    function pulisci(campi) {
+    function pulisci(campi: { eti: string; val: unknown }[]) {
       return campi.filter(function (c) { return c.val && String(c.val).trim(); })
         .map(function (c) { return { eti: c.eti, val: String(c.val).trim() }; });
     }
@@ -2192,21 +2249,21 @@ function creaLM() {
      Il giorno di OGGI resta fuori dal conto della riuscita. Una giornata
      appena cominciata è a zero per costruzione, e aprire l'app la mattina per
      leggere che stai allo 0% è il modo migliore per non riaprirla. */
-  function chiuso(k) { return k < todayKey(); }
+  function chiuso(k: Giorno) { return k < todayKey(); }
 
   /* `salta` sposta la finestra indietro: serve per confrontare gli ultimi
      trenta giorni con i trenta di prima. Una percentuale da sola non si legge
      — «66%» non dice se va bene — e l'unica cosa che la rende leggibile è
      sapere da dove viene. */
-  function bilancio(giorni, salta) {
+  function bilancio(giorni: number, salta?: boolean) {
     var s = load();
     salta = salta || 0;
     var a2 = addDays(todayKey(), -salta);
     var da = giorni ? addDays(a2, -giorni) : '0000-00-00';
     var fino = a2;
-    var perArea = {};
+    var perArea: Record<string, { areaId: string; messe: number; fatte: number; mancate: number }> = {};
     var messe = 0, fatte = 0, mancate = 0;
-    function segna(areaId, fatta, persa) {
+    function segna(areaId: string, fatta: number, persa: number) {
       var a = perArea[areaId] || (perArea[areaId] = { areaId: areaId, messe: 0, fatte: 0, mancate: 0 });
       a.messe++; messe++;
       if (fatta) { a.fatte++; fatte++; }
@@ -2244,16 +2301,16 @@ function creaLM() {
      rispondere. Le settimane senza niente in programma non fanno un punto a
      zero: uno zero vuol dire «ci hai provato e non è andata», e una settimana
      in cui non ti eri messo niente non è quello. */
-  function serieRiuscita(settimane) {
+  function serieRiuscita(settimane: number) {
     var s = load();
     var n = settimane || 12;
-    var secchi = [];
+    var secchi: { da: Giorno; a: Giorno; messe: number; fatte: number; pct: number | null }[] = [];
     for (var w = n - 1; w >= 0; w--) {
       var fine = addDays(todayKey(), -(w * 7));
       var inizio = addDays(fine, -7);
       secchi.push({ da: inizio, a: fine, fatte: 0, messe: 0 });
     }
-    function metti(k, fatta) {
+    function metti(k: Giorno, fatta: boolean) {
       for (var i = 0; i < secchi.length; i++) {
         if (k >= secchi[i].da && k < secchi[i].a) { secchi[i].messe++; if (fatta) secchi[i].fatte++; return; }
       }
@@ -2272,7 +2329,7 @@ function creaLM() {
 
   /* il numero che sale e basta: quante cose hai portato a termine, in tutto.
      Le abitudini spuntate contano: sono cose fatte quanto le altre. */
-  function quanteFatte(giorni) {
+  function quanteFatte(giorni: number) {
     var s = load();
     var da = giorni ? addDays(todayKey(), -giorni) : '';
     var n = 0;
@@ -2285,8 +2342,8 @@ function creaLM() {
 
   /* i motivi delle cose non riuscite, dal piu' frequente: e' la riga che
      dice su cosa lavorare, e non si puo' sapere senza averli registrati */
-  function motiviMancate(giorni) {
-    var conta = {};
+  function motiviMancate(giorni: number) {
+    var conta: Record<string, number> = {};
     mancate(giorni).forEach(function (a) {
       var q = (a.mancata && a.mancata.perche) || 'altro';
       conta[q] = (conta[q] || 0) + 1;
@@ -2297,7 +2354,7 @@ function creaLM() {
     }).sort(function (a, b) { return b.n - a.n; });
   }
 
-  function registraMinuti(areaId, minuti, quando) {
+  function registraMinuti(areaId: string, minuti: number, quando?: Giorno) {
     var s = load();
     var k = quando || todayKey();
     if (!s.minuti[k]) s.minuti[k] = {};
@@ -2307,7 +2364,7 @@ function creaLM() {
     save();
   }
 
-  function salvaReviewSera(dati) {
+  function salvaReviewSera(dati: { vittoria: string; blocco: string; shutdown: boolean }) {
     var s = load();
     var k = todayKey();
     var nuovo = !s.reviewSera[k];
@@ -2317,7 +2374,7 @@ function creaLM() {
     return punti;
   }
 
-  function salvaReviewSettimana(dati) {
+  function salvaReviewSettimana(dati: { vittorie: string; blocchi: string; imparato: string; prossima: string }) {
     var s = load();
     var k = weekKey(todayKey());
     var nuovo = !s.reviewSettimana[k];
@@ -2348,11 +2405,11 @@ function creaLM() {
      sette — l'unica cosa che aveva in programma. Ognuna porta con sé di che
      specie è, perché a schermo si vedono diverse e i comandi cambiano: una
      cosa di oggi si «rimanda», un'abitudine si «salta per oggi». */
-  function voceAzione(a) {
+  function voceAzione(a: Azione) {
     return { tipo: 'azione', id: a.id, testo: a.testo, areaId: a.areaId, ora: a.ora,
       durata: a.durata, mit: !!a.mit, ifThen: a.ifThen || '', mancata: a.mancata || null };
   }
-  function voceAbitudine(h) {
+  function voceAbitudine(h: Abitudine) {
     /* `giorni` e `record` viaggiano con la voce perché la scheda di «Adesso»
        ci disegna sopra la settimana dell'abitudine: quali giorni si ripete e
        a che punto è la serie. Senza, la scheda dovrebbe ripescare l'abitudine
@@ -2361,7 +2418,7 @@ function creaLM() {
       durata: h.durata, mit: false, ifThen: '', serie: streakAbitudine(h),
       giorni: (h.giorni || []).slice(), record: recordAbitudine(h) };
   }
-  function vociDiAdesso(k) {
+  function vociDiAdesso(k: Giorno) {
     var s = load();
     k = k || todayKey();
     /* una cosa segnata «non ci sono riuscito» è chiusa per oggi: resta nel
@@ -2374,9 +2431,9 @@ function creaLM() {
     return out;
   }
 
-  function azioneAdesso(nowMin) {
+  function azioneAdesso(nowMin: number) {
     if (nowMin == null) { var dd = new Date(); nowMin = dd.getHours() * 60 + dd.getMinutes(); }
-    function mm(hhmm) { var p = String(hhmm).split(':'); return (+p[0]) * 60 + (+p[1]); }
+    function mm(hhmm: string | null | undefined) { var p = String(hhmm).split(':'); return (+(p[0] || 0)) * 60 + (+(p[1] || 0)); }
     var k0 = todayKey();
     var oggi = vociDiAdesso(k0);
     /* i confini servono a sapere dove finisce un blocco senza durata: sono
@@ -2385,7 +2442,7 @@ function creaLM() {
       .concat(load().abitudini.filter(function (h) { return h.ora && abitudinePrevista(h, k0); }).map(function (h) { return mm(h.ora); }))
       .sort(function (x, y) { return x - y; });
     var timed = oggi.filter(function (a) { return a.ora; }).map(function (a) { return { a: a, min: mm(a.ora) }; }).sort(function (x, y) { return x.min - y.min; });
-    function fineSlot(min, durata) {
+    function fineSlot(min: number, durata: number | null) {
       if (durata) return min + durata;
       var next = confini.find(function (m) { return m > min; });
       return next != null ? next : min + 90;
@@ -2411,7 +2468,7 @@ function creaLM() {
   }
   function prossimaAzione() { return azioneAdesso().azione; }
 
-  function giornoAttivo(k) {
+  function giornoAttivo(k: Giorno) {
     var s = load();
     if (s.xpPerGiorno[k] > 0) return true;
     if (s.valutazioni[k] && Object.keys(s.valutazioni[k]).length) return true;
@@ -2443,7 +2500,7 @@ function creaLM() {
 
   /* Serie per grafici */
 
-  function serieValutazioni(areaId, giorni) {
+  function serieValutazioni(areaId: string, giorni: number) {
     var s = load();
     return lastNDays(giorni).map(function (k) {
       var v = s.valutazioni[k] && s.valutazioni[k][areaId];
@@ -2451,16 +2508,16 @@ function creaLM() {
     });
   }
 
-  function serieMinuti(areaId, giorni) {
+  function serieMinuti(areaId: string, giorni: number) {
     var s = load();
     return lastNDays(giorni).map(function (k) {
       return { data: k, valore: (s.minuti[k] && s.minuti[k][areaId]) || 0 };
     });
   }
 
-  function serieCheckin(campo, giorni) {
+  function serieCheckin(campo: 'energia' | 'focus' | 'umore', giorni: number) {
     var s = load();
-    var perGiorno = {};
+    var perGiorno: Record<string, number[]> = {};
     s.checkins.forEach(function (c) {
       if (!perGiorno[c.data]) perGiorno[c.data] = [];
       perGiorno[c.data].push(c[campo]);
@@ -2472,14 +2529,14 @@ function creaLM() {
     });
   }
 
-  function serieXp(giorni) {
+  function serieXp(giorni: number) {
     var s = load();
     return lastNDays(giorni).map(function (k) {
       return { data: k, valore: s.xpPerGiorno[k] || 0 };
     });
   }
 
-  function heatmapConsistenza(settimane) {
+  function heatmapConsistenza(settimane: number) {
     /* celle = XP del giorno, ultime N settimane concluse a oggi */
     var s = load();
     var giorni = settimane * 7;
@@ -2498,7 +2555,7 @@ function creaLM() {
     });
   }
 
-  function mediaValutazioneArea(areaId, giorni) {
+  function mediaValutazioneArea(areaId: string, giorni: number) {
     var vals = serieValutazioni(areaId, giorni).filter(function (p) { return p.valore !== null; });
     if (!vals.length) return null;
     return vals.reduce(function (x, p) { return x + p.valore; }, 0) / vals.length;
@@ -2510,10 +2567,10 @@ function creaLM() {
      per giorno e ordinati dal più recente. Nessun log separato da tenere
      allineato: la storia è sempre coerente con lo stato reale. */
 
-  function diario(giorniMax, tutto) {
+  function diario(giorniMax: number, tutto?: boolean) {
     var s = load();
-    var perGiorno = {};
-    function agg(k, ev) { (perGiorno[k] = perGiorno[k] || []).push(ev); }
+    var perGiorno: Record<string, unknown[]> = {};
+    function agg(k: Giorno, ev: unknown) { (perGiorno[k] = perGiorno[k] || []).push(ev); }
 
     /* `chiave` è come si ritrova il dato che sta dietro alla riga, per poterlo
        disfare da lì (vedi annullaRecord). Le righe di registro di norma non ne
@@ -2561,7 +2618,7 @@ function creaLM() {
 
   function giorniConAttivita() {
     var s = load();
-    var set = {};
+    var set: Record<string, 1> = {};
     s.azioni.forEach(function (a) { if (a.done) set[a.doneAt ? dayKey(new Date(a.doneAt)) : a.data] = 1; });
     s.checkins.forEach(function (c) { set[c.data] = 1; });
     Object.keys(s.reviewSera).forEach(function (k) { set[k] = 1; });
@@ -2589,7 +2646,7 @@ function creaLM() {
     preciso: { eti: 'preciso', breve: '' },
     circa: { eti: 'più o meno', breve: 'circa ' }
   };
-  function precisioneValida(x) { return x === 'preciso' ? 'preciso' : 'circa'; }
+  function precisioneValida(x: unknown) { return x === 'preciso' ? 'preciso' : 'circa'; }
 
   /* l'ultima volta che ti ho visto, e la segna adesso. Torna il valore di
      PRIMA: è quello che serve per capire se in mezzo c'è stata una notte. */
@@ -2608,10 +2665,10 @@ function creaLM() {
 
   /* IL RESOCONTO DELLA NOTTE. `prec` vale per tutti e due gli orari: sono
      stati dati insieme, nello stesso momento e con la stessa faccia. */
-  function registraNotte(k, dati) {
+  function registraNotte(k: Giorno, dati: Record<string, unknown>) {
     var s = load();
     k = k || todayKey();
-    var patch = {};
+    var patch: Partial<RegistroGiorno> = {};
     if (dati.sonno) patch.sonno = dati.sonno;
     if (dati.sveglia) patch.sveglia = dati.sveglia;
     if (Object.keys(patch).length) setRitmoGiorno(k, patch);
@@ -2630,7 +2687,7 @@ function creaLM() {
 
   /* UN PASTO DEL GIORNO. `fatto: false` non è un buco: è un'informazione, e
      nel grafico della giornata quel pasto si vede saltato. */
-  function registraPasto(k, id, dati) {
+  function registraPasto(k: Giorno, id: string, dati: Record<string, unknown>) {
     var s = load();
     k = k || todayKey();
     var base = ritmoDi(k);
@@ -2650,7 +2707,7 @@ function creaLM() {
 
   /* «l'ho chiesto e mi hai detto non adesso»: non si richiede oggi, e la
      domanda resta dove sta di casa (nei rituali) per chi la vuole */
-  function segnaChiesto(k, quale) {
+  function segnaChiesto(k: Giorno, quale: string) {
     var s = load();
     k = k || todayKey();
     if (!s.ritmoGiorno) s.ritmoGiorno = {};
@@ -2658,14 +2715,14 @@ function creaLM() {
     s.ritmoGiorno[k][quale === 'notte' ? 'chiestoNotte' : 'chiestoGiorno'] = true;
     save();
   }
-  function giaChiesto(k, quale) {
+  function giaChiesto(k: Giorno, quale: string) {
     var g = load().ritmoGiorno[k || todayKey()] || {};
     return !!g[quale === 'notte' ? 'chiestoNotte' : 'chiestoGiorno'];
   }
 
   /* I PASTI DI CUI SI PUÒ ANCORA PARLARE: quelli la cui ora è passata. Alle
      nove del mattino non si chiede se hai cenato. */
-  function pastiDaChiedere(k, oraOra) {
+  function pastiDaChiedere(k: Giorno, oraOra?: Ora) {
     k = k || todayKey();
     var r = ritmoDi(k);
     var ora = oraOra == null ? oraDelGiorno() : oraOra;
@@ -2678,7 +2735,7 @@ function creaLM() {
     var d = new Date();
     return d.getHours() * 60 + d.getMinutes();
   }
-  function minutiDaOra(hhmm) {
+  function minutiDaOra(hhmm: string | null | undefined) {
     var m = /^(\d{1,2}):(\d{2})$/.exec(String(hhmm || ''));
     return m ? (+m[1]) * 60 + (+m[2]) : 0;
   }
@@ -2688,7 +2745,7 @@ function creaLM() {
      «completata» racconterebbe due gesti dove ce n'è stato uno.
      Gli XP sono quelli di un'azione qualunque: il lavoro l'hai fatto, che tu
      l'abbia scritto prima o dopo non cambia niente. */
-  function registraFatta(testo, areaId, opts) {
+  function registraFatta(testo: string, areaId: string | null, opts?: OpzAzione) {
     var s = load();
     opts = opts || {};
     var data = opts.data || todayKey();
@@ -2735,19 +2792,19 @@ function creaLM() {
     { id: 'ripetuto', eti: 'lo noto ogni volta', breve: 'ogni volta',  peso: 2 },
     { id: 'misurato', eti: 'misurato',           breve: 'misurato',    peso: 3 }
   ];
-  function forzaLezione(id) {
+  function forzaLezione(id: string) {
     return FORZE_LEZIONE.find(function (f) { return f.id === id; }) || FORZE_LEZIONE[0];
   }
-  function nomeArea(id) {
+  function nomeArea(id: string) {
     var a = load().aree.find(function (x) { return x.id === id; });
     return a ? a.nome : id;
   }
   /* la riga di diario, con il segno del verso: due categorie e non una, così
      nel diario si vede da lontano se è una cosa che funziona o una che no */
-  function registraLezione(l, testo) {
+  function registraLezione(l: Lezione, testo: string) {
     registra(l.verso === 'no' ? 'lezione-no' : 'lezione-si', testo, false);
   }
-  function aggiungiLezione(testo, verso, opts) {
+  function aggiungiLezione(testo: string, verso: Verso, opts?: { forza?: string; areaId?: string | null; espId?: string | null }) {
     var s = load();
     opts = opts || {};
     var l = {
@@ -2768,10 +2825,10 @@ function creaLM() {
     save();
     return l;
   }
-  function trovaLezione(id) {
+  function trovaLezione(id: string) {
     return load().lezioni.find(function (x) { return x.id === id; }) || null;
   }
-  function modificaLezione(id, campi) {
+  function modificaLezione(id: string, campi: Partial<Lezione>) {
     var s = load();
     var l = trovaLezione(id);
     if (!l) return null;
@@ -2799,12 +2856,12 @@ function creaLM() {
     save();
     return l;
   }
-  function giraLezione(id) {
+  function giraLezione(id: string) {
     var l = trovaLezione(id);
     if (!l) return null;
     return modificaLezione(id, { verso: l.verso === 'si' ? 'no' : 'si' });
   }
-  function rimuoviLezione(id) {
+  function rimuoviLezione(id: string) {
     var s = load();
     var i = s.lezioni.findIndex(function (x) { return x.id === id; });
     if (i < 0) return;
@@ -2815,7 +2872,7 @@ function creaLM() {
   }
   /* ordinate per quanto sono solide, poi per quanto sono recenti: in cima
      quello che sai davvero, e a pari forza quello di cui ti sei accorto ora */
-  function lezioni(verso) {
+  function lezioni(verso?: Verso) {
     var s = load();
     return s.lezioni
       .filter(function (l) { return !verso || l.verso === verso; })
@@ -2841,7 +2898,7 @@ function creaLM() {
     { id: 'xp',      nome: 'XP guadagnati nel giorno',    fonte: 'xp' }
   ];
 
-  function creaEsperimento(dati) {
+  function creaEsperimento(dati: Omit<Esperimento, 'id' | 'stato'> & { stato?: Esperimento['stato'] }) {
     var s = load();
     var e = {
       id: uid(),
@@ -2865,7 +2922,7 @@ function creaLM() {
 
   /* il legame nell'altro verso: l'esperimento è già avviato e la riga nasce
      dal suo risultato */
-  function creaLegameEsperimento(espId, lezId) {
+  function creaLegameEsperimento(espId: string, lezId: string) {
     var s = load();
     var e = s.esperimenti.find(function (x) { return x.id === espId; });
     if (!e) return;
@@ -2873,7 +2930,7 @@ function creaLM() {
     save();
   }
 
-  function valoreMetrica(e, k) {
+  function valoreMetrica(e: Esperimento, k: Giorno) {
     var s = load();
     var m = METRICHE_ESPERIMENTO.find(function (x) { return x.id === e.metrica; });
     if (!m) return null;
@@ -2894,9 +2951,9 @@ function creaLM() {
     return null;
   }
 
-  function risultatiEsperimento(e) {
-    var punti = [];
-    var k = e.inizioBaseline;
+  function risultatiEsperimento(e: Esperimento) {
+    var punti: { k: Giorno; v: number | null; fase: string }[] = [];
+    var k: Giorno = e.inizioBaseline;
     var fine = e.fine || todayKey();
     if (daysBetween(k, fine) > 366) fine = addDays(k, 366);
     while (daysBetween(k, fine) >= 0) {
@@ -2904,7 +2961,7 @@ function creaLM() {
       punti.push({ data: k, valore: valoreMetrica(e, k), fase: fase });
       k = addDays(k, 1);
     }
-    function stats(fase) {
+    function stats(fase: (number | null)[]) {
       var v = punti.filter(function (p) { return p.fase === fase && p.valore !== null; }).map(function (p) { return p.valore; });
       if (!v.length) return { n: 0, media: null, sd: null };
       var m = v.reduce(function (a, b) { return a + b; }, 0) / v.length;
@@ -2924,7 +2981,7 @@ function creaLM() {
   /* PRNG con seed fisso: la demo è identica per tutti, così il
      prototipo si valuta su dati stabili e realistici. */
 
-  function mulberry32(seed) {
+  function mulberry32(seed: number) {
     return function () {
       seed |= 0; seed = seed + 0x6D2B79F5 | 0;
       var t = Math.imul(seed ^ seed >>> 15, 1 | seed);
@@ -2935,7 +2992,11 @@ function creaLM() {
 
   function seedDemo() {
     reset();
-    var s = state;
+    /* `load()` e non `state`: dicono la stessa cosa — `reset()` ha appena
+       riempito lo stato — ma `state` è «forse niente» per tutta la vita del
+       modulo, e leggerlo qui costringeva a quarantasei controlli inutili in
+       una funzione che sa benissimo di avere uno stato in mano. */
+    var s = load();
     /* i dati di esempio non sono un azzeramento dichiarato: hanno una storia
        di otto settimane, e il taglio messo da `reset()` li porterebbe via tutti
        alla prima fusione (sono più vecchi dell'istante in cui li si carica) */
@@ -2981,7 +3042,7 @@ function creaLM() {
       'Riunione associazione sforata di un’ora'
     ];
 
-    function pick(arr) { return arr[Math.floor(rnd() * arr.length)]; }
+    function pick<T>(arr: readonly T[]): T { return arr[Math.floor(rnd() * arr.length)] as T; }
 
     giorni.forEach(function (k, idx) {
       var dow = parseKey(k).getDay();
@@ -2995,7 +3056,7 @@ function creaLM() {
 
       /* azioni: 2-3 al giorno, 60-90% completate */
       var nAz = 2 + Math.floor(rnd() * 2);
-      var areeGiorno = [];
+      var areeGiorno: string[] = [];
       for (var i = 0; i < nAz; i++) {
         var area = pick(s.aree).id;
         areeGiorno.push(area);
@@ -3057,7 +3118,7 @@ function creaLM() {
     });
 
     /* review settimanali sulle settimane concluse */
-    var settimane = {};
+    var settimane: Record<string, boolean> = {};
     giorni.forEach(function (k) { settimane[weekKey(k)] = true; });
     Object.keys(settimane).sort().slice(0, -1).forEach(function (wk) {
       if (rnd() < 0.8) {
@@ -3119,7 +3180,7 @@ function creaLM() {
       ['salute', 'Camminata / movimento', [1, 2, 3, 4, 5]]
     ];
     esempiAbit.forEach(function (h, i) {
-      var fatti = {};
+      var fatti: Record<string, boolean> = {};
       for (var d = 1; d <= 12; d++) {
         var k = addDays(oggi, -d);
         if ((h[2].length === 0 || h[2].indexOf(parseKey(k).getDay()) >= 0) && rnd() < 0.8) fatti[k] = true;
