@@ -36,7 +36,7 @@
    schermi — è quello che rende possibile il resto.
    ============================================================ */
 import { LM } from '../dati/dati';
-import type { VoceAdesso, CosaAdesso } from '../dati/dati';
+import type { VoceAdesso, CosaAdesso, VoceDiario, GiornoDiDiario } from '../dati/dati';
 import { ICO, GOOGLE_G, LOGO } from '../segni/segni';
 import { LMCharts } from '../grafici/grafici';
 import { LM_FORMA } from '../forma/forma';
@@ -159,8 +159,10 @@ export type Orizzonte = 'giorno' | 'settimana' | 'mese' | 'anno';
 /* ------------------------------------------------------- i rituali */
 export interface StatoRit { fatto: boolean; testo: string; dett?: string }
 
-/* ------------------------------------------------------- il diario */
-export interface GiornoDiario { k: Giorno; eventi: VoceRegistro[] }
+/* ------------------------------------------------------- il diario
+   la forma la dichiara `dati.ts`, che è dove il diario si costruisce: qui si
+   usa quella, invece di una copia che le somiglia */
+export type GiornoDiario = GiornoDiDiario;
 
 /* ------------------------------------------------------- Attività */
 export interface OpzRigaAtt {
@@ -4659,29 +4661,42 @@ function montaSettimana(container: HTMLElement): void {
       scadHtml + grid + '</div>';
   }).join('');
 
-  container.innerHTML = orizzNav('settimana', giorni[0], giorni[6]) +
+  container.innerHTML = orizzNav('settimana', presa(giorni[0]), presa(giorni[6])) +
     '<div class="card"><div class="wk-wrap"><div class="wk-rail" style="height:' + Hs + 'px">' + railLines + '</div>' +
     '<div class="wk-cols">' + cols + '</div></div>' +
     '<div class="sotto mt-s">Tocca un giorno per aprirlo. I blocchi mostrano quanto tempo occupano le cose con un orario.</div></div>';
   wireOrizzNav(container, 'settimana');
-  container.querySelectorAll<HTMLElement>('[data-tl-giorno]').forEach(function (el) {
-    el.addEventListener('click', function () { setOrizzonte('giorno', el.getAttribute('data-tl-giorno')); });
-    el.setAttribute('data-drop-giorno', el.getAttribute('data-tl-giorno'));
-  });
+  celleGiorno(container);
   /* trascinare una cosa da un giorno all'altro: ripianificare la settimana
      muovendo i blocchi, senza aprire niente */
-  abilitaTrascina(container, function (id, bersaglio) {
-    var giorno = bersaglio.getAttribute('data-drop-giorno');
-    if (!giorno || !LM.spostaAzione(id, giorno)) return;
-    toast('Spostata a ' + etichettaGiorno(giorno).toLowerCase() + '.', 0, 'calendar');
-    disegnaOrizzonte(); aggiornaNav();
+  abilitaTrascina(container, spostaSuGiorno);
+}
+
+/* LE CELLE DEI GIORNI, in settimana e in mese: si toccano per aprire quel
+   giorno e si possono usare come bersaglio del trascinamento. Erano due
+   blocchi identici a settanta righe di distanza. */
+function celleGiorno(container: HTMLElement): void {
+  container.querySelectorAll<HTMLElement>('[data-tl-giorno]').forEach(function (el) {
+    const k = el.getAttribute('data-tl-giorno');
+    if (!k) return;
+    el.addEventListener('click', function () { setOrizzonte('giorno', comeGiorno(k)); });
+    el.setAttribute('data-drop-giorno', k);
   });
+}
+/* e cosa fare quando si lascia: idem, era scritto due volte */
+function spostaSuGiorno(id: string, bersaglio: HTMLElement): void {
+  const quale = bersaglio.getAttribute('data-drop-giorno');
+  if (!quale) return;
+  const g = comeGiorno(quale);
+  if (!LM.spostaAzione(id, g)) return;
+  toast('Spostata a ' + etichettaGiorno(g).toLowerCase() + '.', 0, 'calendar');
+  disegnaOrizzonte(); aggiornaNav();
 }
 
 /* --- Mese: calendario con indicatori di attività e scadenze --- */
 function montaMese(container: HTMLElement): void {
-  var p = giornataAncora.split('-');
-  var anno = +p[0], mese = +p[1] - 1;
+  const p = giornataAncora.split('-');
+  const anno = +(p[0] || 0), mese = +(p[1] || 1) - 1;
   var primo = new Date(anno, mese, 1);
   var inizio = new Date(anno, mese, 1 - ((primo.getDay() + 6) % 7));
   var oggi = LM.todayKey();
@@ -4722,7 +4737,7 @@ function montaMese(container: HTMLElement): void {
       (fatti.length ? '<span class="me-mattoni">' + mattoni + '</span>' : '') + '</button>';
   }
   var dowh = ['L', 'M', 'M', 'G', 'V', 'S', 'D'].map(function (x) { return '<span>' + x + '</span>'; }).join('');
-  container.innerHTML = orizzNav('mese', giornataAncora, null, mesi[mese] + ' ' + anno) +
+  container.innerHTML = orizzNav('mese', giornataAncora, null, (mesi[mese] || '') + ' ' + anno) +
     /* le sette colonne stanno dentro un contenitore che SCORRE di lato: su un
        telefono da 320px, sette colonne in duecentottanta pixel fanno celle da
        trentun pixel, dove non ci sta né una pastiglia né un numero. Meglio
@@ -4737,34 +4752,30 @@ function montaMese(container: HTMLElement): void {
     '<span class="lg"><i class="me-sqkey"></i> ogni quadretto è una cosa fatta, col colore dell’area</span>' +
     '<span class="lg">' + ICO('scadenza', 11) + ' scadenza · tocca un giorno per aprirlo</span></div></div>';
   wireOrizzNav(container, 'mese');
-  container.querySelectorAll<HTMLElement>('[data-tl-giorno]').forEach(function (el) {
-    el.addEventListener('click', function () { setOrizzonte('giorno', el.getAttribute('data-tl-giorno')); });
-    el.setAttribute('data-drop-giorno', el.getAttribute('data-tl-giorno'));
-  });
+  celleGiorno(container);
   /* nel mese si trascinano le cose ancora da fare (le pastiglie in fondo alla
      cella) e si lasciano su un altro giorno: ripianificare a colpo d'occhio */
-  abilitaTrascina(container, function (id, bersaglio) {
-    var giorno = bersaglio.getAttribute('data-drop-giorno');
-    if (!giorno || !LM.spostaAzione(id, giorno)) return;
-    toast('Spostata a ' + etichettaGiorno(giorno).toLowerCase() + '.', 0, 'calendar');
-    disegnaOrizzonte(); aggiornaNav();
-  });
+  abilitaTrascina(container, spostaSuGiorno);
 }
 
 /* --- Anno: mappa dell'attività + scadenze dei prossimi mesi --- */
 function montaAnno(container: HTMLElement): void {
-  var anno = +giornataAncora.split('-')[0];
-  var s = LM.snapshot();
-  var giorni = [];
-  var k = anno + '-01-01';
-  while (+k.split('-')[0] === anno) { giorni.push({ data: k, valore: s.xpPerGiorno[k] || 0 }); k = LM.addDays(k, 1); }
-  var attivi = giorni.filter(function (g) { return LM.giornoAttivo(g.data); }).length;
+  const anno = +(giornataAncora.split('-')[0] || 0);
+  const s = LM.snapshot();
+  const giorni: { data: Giorno; valore: number }[] = [];
+  let k = comeGiorno(anno + '-01-01');
+  while (+(k.split('-')[0] || 0) === anno) { giorni.push({ data: k, valore: s.xpPerGiorno[k] || 0 }); k = LM.addDays(k, 1); }
+  const attivi = giorni.filter(function (g) { return LM.giornoAttivo(g.data); }).length;
   var azFatte = s.azioni.filter(function (a) { return a.done && a.data.slice(0, 4) === '' + anno; }).length;
   var xpAnno = giorni.reduce(function (n, g) { return n + g.valore; }, 0);
-  var scad = s.backlog.filter(function (b) { return b.scadenza && b.scadenza.slice(0, 4) === '' + anno; }).sort(function (a, b) { return a.scadenza < b.scadenza ? -1 : 1; });
-  var scadHtml = scad.length ? scad.map(function (b) {
-    var ar = areaById(b.areaId); var si = scadInfo(b.scadenza);
-    return '<div class="an-scad"><span class="scad-badge ' + si.cls + '">' + LM.fmtShort(b.scadenza) + '</span>' +
+  const scad = s.backlog.filter(function (b) { return b.scadenza && b.scadenza.slice(0, 4) === '' + anno; })
+    .sort(function (a, b) { return (a.scadenza || '') < (b.scadenza || '') ? -1 : 1; });
+  const scadHtml = scad.length ? scad.map(function (b) {
+    const ar = areaById(b.areaId);
+    /* qui la scadenza c'è: il filtro qui sopra ha tenuto solo quelle che ce
+       l'hanno, e `scadInfo` risponde niente soltanto senza una data */
+    const si = presa(scadInfo(b.scadenza));
+    return '<div class="an-scad"><span class="scad-badge ' + si.cls + '">' + LM.fmtShort(presa(b.scadenza)) + '</span>' +
       '<span class="scad-testo">' + esc(b.testo) + '</span>' +
       segnoArea(ar, 13, 'tl-tag') + '</div>';
   }).join('') : '<div class="sotto" style="margin:0">Nessuna scadenza registrata per il ' + anno + '.</div>';
@@ -4777,21 +4788,24 @@ function montaAnno(container: HTMLElement): void {
     '<h2 style="font-size:14px">' + ICO('trendUp', 15) + ' La tua attività, giorno per giorno</h2>' +
     '<div class="an-heat-wrap"><div id="an-heat"></div></div></div>' +
     '<div class="card mt"><h2>' + ICO('scadenza', 15) + ' Scadenze del ' + anno + '</h2><div class="an-scad-lista mt-s">' + scadHtml + '</div></div>';
-  LMCharts.heatmap(document.getElementById('an-heat'), giorni);
+  /* il contenitore è dentro all'HTML che abbiamo appena scritto */
+  LMCharts.heatmap(presa(document.getElementById('an-heat')), giorni);
   wireOrizzNav(container, 'anno');
 }
 
 /* barra di navigazione comune agli orizzonti (‹ periodo › + Oggi) */
 function orizzNav(orizz: Orizzonte, k1: Giorno, k2?: Giorno | null, etichetta?: string): string {
-  var testo = etichetta || (k2 ? LM.fmtShort(k1) + ' – ' + LM.fmtShort(k2) : etichettaGiorno(k1));
+  const testo = etichetta || (k2 ? LM.fmtShort(k1) + ' – ' + LM.fmtShort(k2) : etichettaGiorno(k1));
   /* Quanto siamo lontani da oggi: senza questo, spostandosi di un giorno
      cambiava solo una scritta piccola e sembrava che le frecce non
      facessero niente (i pasti e le abitudini sono uguali ogni giorno). */
-  var oggi = LM.todayKey();
-  var dist = orizz === 'giorno' ? LM.daysBetween(oggi, k1) : (k2 ? (k1 <= oggi && oggi <= k2 ? 0 : null) : null);
-  var lontano = orizz === 'giorno' ? dist !== 0 : (giornataAncora !== oggi && dist !== 0);
-  var quanto = '';
-  if (orizz === 'giorno' && dist !== 0) {
+  const oggi = LM.todayKey();
+  /* `null` vuol dire «non si sa»: negli orizzonti larghi la distanza in
+     giorni non è un numero che significhi qualcosa, e infatti non si scrive */
+  const dist: number | null = orizz === 'giorno' ? LM.daysBetween(oggi, k1) : (k2 ? (k1 <= oggi && oggi <= k2 ? 0 : null) : null);
+  const lontano = orizz === 'giorno' ? dist !== 0 : (giornataAncora !== oggi && dist !== 0);
+  let quanto = '';
+  if (orizz === 'giorno' && dist !== null && dist !== 0) {
     quanto = '<span class="orizz-dist' + (dist > 0 ? ' futuro' : ' passato') + '">' +
       (dist === 1 ? 'domani' : dist === -1 ? 'ieri' : dist > 0 ? 'tra ' + dist + ' giorni' : dist + ' giorni fa').replace('-', '') + '</span>';
   }
@@ -4805,17 +4819,19 @@ function orizzNav(orizz: Orizzonte, k1: Giorno, k2?: Giorno | null, etichetta?: 
     '</div>';
 }
 function shiftKey(k: Giorno, orizz: Orizzonte, n: number): Giorno {
-  var p = k.split('-'); var d;
+  const p = k.split('-');
+  const anno = +(p[0] || 0), mese = +(p[1] || 1) - 1;
+  let d: Date;
   if (orizz === 'giorno') return LM.addDays(k, n);
   if (orizz === 'settimana') return LM.addDays(k, n * 7);
-  if (orizz === 'mese') { d = new Date(+p[0], +p[1] - 1 + n, 1); }
-  else { d = new Date(+p[0] + n, +p[1] - 1, 1); }
+  if (orizz === 'mese') { d = new Date(anno, mese + n, 1); }
+  else { d = new Date(anno + n, mese, 1); }
   return comeGiorno(d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2));
 }
 function wireOrizzNav(container: HTMLElement, orizz: Orizzonte): void {
   container.querySelectorAll<HTMLElement>('[data-nav]').forEach(function (b) {
     b.addEventListener('click', function () {
-      var a = b.getAttribute('data-nav');
+      const a = b.getAttribute('data-nav');
       if (a === 'oggi') giornataAncora = LM.todayKey();
       else giornataAncora = shiftKey(giornataAncora, orizz, a === 'next' ? 1 : -1);
       disegnaOrizzonte();
@@ -4826,17 +4842,17 @@ function wireOrizzNav(container: HTMLElement, orizz: Orizzonte): void {
 export function setOrizzonte(o: Orizzonte, ancora?: Giorno): void {
   giornataOrizzonte = o;
   if (ancora) giornataAncora = ancora;
-  var nav = document.getElementById('orizz-nav');
+  const nav = document.getElementById('orizz-nav');
   if (nav) nav.querySelectorAll<HTMLElement>('[data-orizz]').forEach(function (b) { b.classList.toggle('attivo', b.getAttribute('data-orizz') === o); });
   disegnaOrizzonte();
 }
 /* anima solo quando cambi orizzonte o giorno, non a ogni spunta */
-var orizzMostrato = '';
-export function disegnaOrizzonte() {
-  var c = document.getElementById('orizz-corpo');
+let orizzMostrato = '';
+export function disegnaOrizzonte(): void {
+  const c = document.getElementById('orizz-corpo');
   if (!c) return;
-  var chiave = giornataOrizzonte + '|' + giornataAncora;
-  var cambio = chiave !== orizzMostrato;
+  const chiave = giornataOrizzonte + '|' + giornataAncora;
+  const cambio = chiave !== orizzMostrato;
   if (giornataOrizzonte === 'giorno') montaGiornata(c, { giorno: giornataAncora });
   else if (giornataOrizzonte === 'settimana') montaSettimana(c);
   else if (giornataOrizzonte === 'mese') montaMese(c);
@@ -4845,20 +4861,20 @@ export function disegnaOrizzonte() {
   if (cambio) animaIngresso(c);
 }
 
-function htmlGiornataStrip() {
-  var d = nodiGiornata();
+function htmlGiornataStrip(): string {
+  const d = nodiGiornata();
   const wake = d.wake;
   let bed = d.sleep;
   if (bed <= wake) bed += 1440; // a letto dopo mezzanotte
   function em(m: number | null): number | null { return (m != null && bed > 1440 && m < wake) ? m + 1440 : m; }
-  var span = Math.max(60, bed - wake);
-  function pct(m) { return Math.max(0, Math.min(100, (em(m) - wake) / span * 100)); }
+  const span = Math.max(60, bed - wake);
+  function pct(m: number | null): number { return Math.max(0, Math.min(100, ((em(m) ?? 0) - wake) / span * 100)); }
   /* la barra distingue i tipi: blocchi con DURATA precisa come segmenti che
      occupano il tempo, le cose a un solo orario come punti, i pasti come
      tacche; le abitudini hanno il contorno, le azioni sono piene. */
-  var conDur = 0, soloOra = 0, pasti = 0;
-  var marks = d.placed.map(function (e) {
-    var left = pct(e.min);
+  let conDur = 0, soloOra = 0, pasti = 0;
+  const marks = d.placed.map(function (e) {
+    const left = pct(e.min);
     if (e.tipo === 'pasto') {
       pasti++;
       return '<span class="strip-pasto" style="left:' + left.toFixed(1) + '%" title="' + esc(e.ora + ' · ' + e.nome) + '"></span>';
@@ -4976,7 +4992,7 @@ export function scadInfo(scad: Giorno | null | undefined): { testo: string; cls:
    tocca solo quella cosa, mentre il punto di ritorno riporta indietro
    anche tutto quello che è venuto dopo. A pari merito, la più recente. */
 var annullaPadroni = null;
-function padroniAnnulla(giorni: GiornoDiario[]): Set<VoceRegistro> {
+function padroniAnnulla(giorni: GiornoDiario[]): Set<VoceDiario> {
   var perPunto = {};
   giorni.forEach(function (g) {
     g.eventi.forEach(function (ev) {
@@ -4990,7 +5006,7 @@ function padroniAnnulla(giorni: GiornoDiario[]): Set<VoceRegistro> {
   Object.keys(perPunto).forEach(function (k) { set.add(perPunto[k]); });
   return set;
 }
-function eventoDiarioHtml(ev: VoceRegistro): string {
+function eventoDiarioHtml(ev: VoceDiario): string {
   var ico, testo, cls = '';
   if (ev.tipo === 'azione') {
     var ar = areaById(ev.areaId);

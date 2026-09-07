@@ -2759,8 +2759,7 @@ function creaLM() {
        importanti; con `tutto` anche le minori (impostazioni, modifiche…). */
     (s.registro || []).forEach(function (rg) {
       if (!tutto && !rg.imp) return;
-      var ev: { ts: number; tipo: string; cat: string; testo: string; imp: boolean; chiave?: string; tipoDisfa?: string } =
-        { ts: rg.ts, tipo: 'registro', cat: rg.cat, testo: rg.testo, imp: rg.imp };
+      var ev: VoceDiario = { ts: rg.ts, tipo: 'registro', cat: rg.cat, testo: rg.testo, imp: rg.imp };
       if (rg.disfa) { ev.chiave = rg.disfa.k; ev.tipoDisfa = rg.disfa.t; }
       agg(dayKey(new Date(rg.ts)), ev);
     });
@@ -2795,7 +2794,7 @@ function creaLM() {
     var giorni = Object.keys(perGiorno).sort().reverse();
     if (giorniMax) giorni = giorni.slice(0, giorniMax);
     return giorni.map(function (k) {
-      var eventi = (perGiorno[k] || []) as { ts: number }[];
+      var eventi = perGiorno[k] || [];
       return { data: giorno(k), eventi: eventi.sort(function (a, b) { return b.ts - a.ts; }) };
     });
   }
