@@ -695,8 +695,8 @@ function creaLM() {
       if (!ORA_VALIDA.test(c.silenzio.da || '')) c.silenzio.da = PROMEMORIA_DEFAULT.silenzio.da as Ora;
       if (!ORA_VALIDA.test(c.silenzio.a || '')) c.silenzio.a = PROMEMORIA_DEFAULT.silenzio.a as Ora;
     })(s.profilo.promemoria as Promemoria);
-    if (!s.profilo.ritmo.sveglia) s.profilo.ritmo.sveglia = RITMO_DEFAULT.sveglia;
-    if (!s.profilo.ritmo.sonno) s.profilo.ritmo.sonno = RITMO_DEFAULT.sonno;
+    if (!s.profilo.ritmo.sveglia) s.profilo.ritmo.sveglia = RITMO_DEFAULT.sveglia as Ora;
+    if (!s.profilo.ritmo.sonno) s.profilo.ritmo.sonno = RITMO_DEFAULT.sonno as Ora;
     if (!Array.isArray(s.profilo.ritmo.pasti)) s.profilo.ritmo.pasti = JSON.parse(JSON.stringify(RITMO_DEFAULT.pasti));
     s.profilo.ritmo.pasti.forEach(function (p) { if (p.durata == null) p.durata = 30; });
     if (!s.ritmoGiorno || typeof s.ritmoGiorno !== 'object') s.ritmoGiorno = {};
@@ -831,10 +831,11 @@ function creaLM() {
     var vecchio = raw ? safeParse(raw) : null;
     if (!vecchio) return false;
     /* i punti da qui in avanti descrivono uno stato che non esiste più */
-    for (var k = 0; k <= i; k++) buttaPunto(arr[k].id);
+    for (var k = 0; k <= i; k++) { var vecchioP = arr[k]; if (vecchioP) buttaPunto(vecchioP.id); }
     var resto = arr.slice(i + 1);
     scriviIndice(resto);
-    ultimoPuntoFino = resto.length ? resto[0].fino : 0;
+    var primo = resto[0];
+    ultimoPuntoFino = primo ? primo.fino : 0;
     staTornandoIndietro = true;
     /* SOSTITUISCE. Vedi `ripristinaStato`: unire qui vorrebbe dire tenere sia
        il prima sia il dopo, cioè non annullare niente. */
@@ -1267,10 +1268,10 @@ function creaLM() {
     if (pd) {
       var prog = s.backlog.find(function (x) { return x.id === pd.b; });
       if (prog && prog.steps) {
-        var quale = prog;
-        var st = quale.steps.find(function (x) { return x.id === pd.s; });
+        var quale = prog, passiQ = prog.steps;
+        var st = passiQ.find(function (x) { return x.id === pd.s; });
         if (st) st.done = true;
-        if (quale.steps.length && quale.steps.every(function (x) { return x.done; })) {
+        if (passiQ.length && passiQ.every(function (x) { return x.done; })) {
           s.backlog = s.backlog.filter(function (x) { return x.id !== quale.id; });
         }
       }
@@ -1569,10 +1570,11 @@ function creaLM() {
     var vociPatch = eMappa(patch['voci']) ? patch['voci'] as Record<string, unknown> : null;
     if (vociPatch) {
       var mie = c.voci as unknown as Record<string, VocePromemoria | undefined>;
-      Object.keys(vociPatch).forEach(function (k) {
+      var vociPatch2 = vociPatch;
+      Object.keys(vociPatch2).forEach(function (k) {
         var mia = mie[k];
         if (!mia) return;                             /* niente voci inventate */
-        var v = eMappa(vociPatch[k]) ? vociPatch[k] as Record<string, unknown> : null;
+        var v = eMappa(vociPatch2[k]) ? vociPatch2[k] as Record<string, unknown> : null;
         if (!v) return;
         if (v['on'] != null) mia.on = !!v['on'];
         var oraNuova = v['ora'];
@@ -1603,8 +1605,8 @@ function creaLM() {
       var c = tutte[q] || (tutte[q] = JSON.parse(JSON.stringify(CHIEDI_DEFAULT[q])));
       if (!c) return;
       if (typeof p['on'] === 'boolean') c.on = p['on'];
-      if (patch[q].da) c.da = patch[q].da;
-      if (patch[q].a) c.a = patch[q].a;
+      if (p['da']) c.da = p['da'] as Ora;
+      if (p['a']) c.a = p['a'] as Ora;
     });
     registra('impostazioni', 'Cambiato quando l\u2019app chiede del sonno e dei pasti', false);
     save();
@@ -1736,8 +1738,10 @@ function creaLM() {
   function modificaPasso(bid: string, sid: string, testo: string) {
     var s = load();
     var b = s.backlog.find(function (x) { return x.id === bid; });
-    var st = b && b.steps && b.steps.find(function (x) { return x.id === sid; });
-    if (st) { st.testo = testo; registra('backlog', 'Modificato un passo di «' + b.testo + '»', false); save(); }
+    if (!b || !b.steps) return;
+    var suo = b;
+    var st = suo.steps ? suo.steps.find(function (x) { return x.id === sid; }) : undefined;
+    if (st) { st.testo = testo; registra('backlog', 'Modificato un passo di «' + suo.testo + '»', false); save(); }
   }
   function rimuoviPasso(bid: string, sid: string) {
     var s = load();
@@ -1754,11 +1758,12 @@ function creaLM() {
     var st = b && b.steps && b.steps.find(function (x) { return x.id === sid; });
     if (!st) return;
     st.done = !st.done;
-    registra('backlog', (st.done ? 'Fatto un passo' : 'Tolta la spunta a un passo') + ' di «' + b.testo + '»: ' + st.testo, false);
+    var suoT = b, passiT = b.steps || [];
+    registra('backlog', (st.done ? 'Fatto un passo' : 'Tolta la spunta a un passo') + ' di «' + suoT.testo + '»: ' + st.testo, false);
     /* progetto completato a mano: lo rimuove dalle cose da fare */
-    if (b.steps.length && b.steps.every(function (x) { return x.done; })) {
-      registra('backlog', 'Progetto completato: «' + b.testo + '»', true);
-      s.backlog = s.backlog.filter(function (x) { return x.id !== b.id; });
+    if (passiT.length && passiT.every(function (x) { return x.done; })) {
+      registra('backlog', 'Progetto completato: «' + suoT.testo + '»', true);
+      s.backlog = s.backlog.filter(function (x) { return x.id !== suoT.id; });
     }
     save();
   }
@@ -1814,7 +1819,7 @@ function creaLM() {
     var b = s.backlog.find(function (x) { return x.id === bid; });
     if (!b) return null;
     var h = aggiungiAbitudine(b.testo, b.areaId, giorni && giorni.length ? giorni : [1, 2, 3, 4, 5, 6, 0], opts || {});
-    if (!opts || opts.mantieni !== true) {
+    if (!opts || (opts as { mantieni?: boolean }).mantieni !== true) {
       s = load();
       s.backlog = s.backlog.filter(function (x) { return x.id !== bid; });
     }
@@ -1906,7 +1911,7 @@ function creaLM() {
     /* già messa in un giorno: la decisione è presa, va rispettata */
     var inAg = azioniDiBacklog(b, k);
     if (inAg.length) {
-      var gg = daysBetween(k, inAg[0].data);
+      var gg = daysBetween(k, presa(inAg[0]).data);
       if (gg <= 0) { peso += 700; if (!motivo) { motivo = 'in agenda oggi'; da = 'agenda'; } fascia = 'ora'; }
       else if (gg === 1) { peso += 500; if (!motivo) { motivo = 'in agenda domani'; da = 'agenda'; } if (fascia !== 'ora') fascia = 'ora'; }
       else { peso += 300 - gg; if (!motivo) { motivo = 'in agenda tra ' + gg + ' giorni'; da = 'agenda'; } }
@@ -1968,7 +1973,7 @@ function creaLM() {
     /* E se i segnali non bastano a riempirla, si promuovono le più in alto
        fino a tre. Una fascia con UNA voce sola non è una gerarchia, è un
        ordine: togliere la scelta non aiuta, ridurla a due o tre sì. */
-    while (ora.length < tetto && poi.length) ora.push(poi.shift());
+    while (ora.length < tetto && poi.length) { var q = poi.shift(); if (q) ora.push(q); }
     return { ora: ora, poi: poi, parcheggio: parcheggio, totale: lista.length };
   }
 
@@ -1985,9 +1990,9 @@ function creaLM() {
   function scadenzeVicine(giorni: number) {
     var s = load();
     var oggi = todayKey();
-    return s.backlog.filter(function (b) { return b.scadenza; })
-      .filter(function (b) { return daysBetween(oggi, b.scadenza) <= (giorni == null ? 3650 : giorni); })
-      .sort(function (a, b) { return a.scadenza < b.scadenza ? -1 : 1; });
+    return s.backlog.filter(function (b) { return !!b.scadenza; })
+      .filter(function (b) { return daysBetween(oggi, b.scadenza as Giorno) <= (giorni == null ? 3650 : giorni); })
+      .sort(function (a, b) { return (a.scadenza as Giorno) < (b.scadenza as Giorno) ? -1 : 1; });
   }
 
   /* ---------- abitudini ricorrenti ---------- */
@@ -2035,7 +2040,7 @@ function creaLM() {
     if (h.a && k > h.a) return false;               // periodo finito
     if (h.salti && h.salti[k]) return false;        // saltata solo quel giorno
     if (!h.giorni || !h.giorni.length) return true;
-    return h.giorni.indexOf(parseKey(k).getDay()) >= 0;
+    return h.giorni.indexOf(parseKey(k).getDay() as GiornoSettimana) >= 0;
   }
   /* periodo di validità: da/a (null = da sempre / per sempre) */
   function impostaPeriodoAbitudine(id: string, da: Giorno | null, a: Giorno | null) {
@@ -2115,7 +2120,7 @@ function creaLM() {
     var giorni = Object.keys(h.fatti || {});
     if (!giorni.length) return 0;
     giorni.sort();
-    var k = giorni[0], fine = todayKey(), record = 0, corrente = 0;
+    var k = presa(giorni[0]), fine = todayKey(), record = 0, corrente = 0;
     for (var i = 0; i < 1500 && k <= fine; i++) {
       if (abitudinePrevista(h, k) || (h.fatti && h.fatti[k])) {
         if (h.fatti && h.fatti[k]) { corrente++; if (corrente > record) record = corrente; }
@@ -2164,8 +2169,13 @@ function creaLM() {
     var s = load();
     var id = 'a' + uid();
     var usati = s.aree.map(function (a) { return a.slot; });
-    var scelto = slot || 1;
-    if (!slot) { for (var n = 1; n <= 8; n++) { if (usati.indexOf(n) < 0) { scelto = n; break; } scelto = ((s.aree.length) % 8) + 1; } }
+    var scelto: Slot = slot || 1;
+    if (!slot) {
+      for (var n = 1 as Slot; n <= 8; n = (n + 1) as Slot) {
+        if (usati.indexOf(n) < 0) { scelto = n; break; }
+        scelto = (((s.aree.length) % 8) + 1) as Slot;
+      }
+    }
     s.aree.push({ id: id, nome: nome.trim() || 'Nuova area', icona: icona || 'lightbulb', slot: scelto, sistema: '' });
     s.areeAttive.push(id);
     registra('area', 'Nuova area: «' + (nome.trim() || 'Nuova area') + '»', true);
@@ -2182,7 +2192,7 @@ function creaLM() {
     /* le azioni/backlog di quell'area passano a "altro" se esiste, così
        nessun elemento resta orfano e invisibile */
     var fallback = s.aree.find(function (a) { return a.id === 'altro'; });
-    var fid = fallback ? fallback.id : s.aree[0].id;
+    var fid = fallback ? fallback.id : presa(s.aree[0]).id;
     s.azioni.forEach(function (a) { if (a.areaId === id) a.areaId = fid; });
     s.backlog.forEach(function (b) { if (b.areaId === id) b.areaId = fid; });
     save();
@@ -2245,8 +2255,8 @@ function creaLM() {
   function valutaArea(areaId: string, voto: number, quando?: Giorno) {
     var s = load();
     var k = quando || todayKey();
-    if (!s.valutazioni[k]) s.valutazioni[k] = {};
-    s.valutazioni[k][areaId] = voto;
+    var delGiorno = s.valutazioni[k] || (s.valutazioni[k] = {});
+    delGiorno[areaId] = voto;
     save();
   }
 
@@ -2276,7 +2286,7 @@ function creaLM() {
     if (!t.inPausa && Date.now() - t.fine > 6 * 3600000) return null;
     return t;
   }
-  function avviaTimerDati(patch: Partial<Timer>) {
+  function avviaTimerDati(patch: Timer) {
     var s = load();
     s.timer = patch;
     save();
@@ -2290,7 +2300,9 @@ function creaLM() {
   function aggiornaTimerDati(patch: Partial<Timer>) {
     var s = load();
     if (!s.timer) return null;
-    for (var k in patch) if (Object.prototype.hasOwnProperty.call(patch, k)) s.timer[k] = patch[k];
+    var mio = s.timer as unknown as Record<string, unknown>;
+    var toppa = patch as unknown as Record<string, unknown>;
+    for (var k in toppa) if (Object.prototype.hasOwnProperty.call(toppa, k)) mio[k] = toppa[k];
     save();
     return s.timer;
   }
