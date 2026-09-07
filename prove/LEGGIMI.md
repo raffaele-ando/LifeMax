@@ -1,6 +1,6 @@
 # Prove
 
-Ventotto controlli automatici che guardano una cosa sola ciascuno, ma
+Ventinove controlli automatici che guardano una cosa sola ciascuno, ma
 quella cosa fa morire l'app — o la fa diventare illeggibile — quando si
 rompe. Sono nati da problemi veri.
 
@@ -701,74 +701,92 @@ genera le chiavi, in un browser vero).
   riscrive il raggio al 99% perché l'arco resti dentro al ritaglio. **Un
   numero grosso non è una diagnosi.**
 
-- **pezzi.js** — LE FORME SI SCRIVONO UNA VOLTA SOLA, ed è un **cricchetto**.
-  Nel markup generato da `app.js` ci sono 544 classi diverse e 1630 usi, e
-  sotto ci sono molte meno forme di quante sembrino: sette nomi diversi per
-  «una nota sotto a qualcosa», otto per «l'etichetta di una riga», sette per
-  «una riga di elenco». Nessuno aveva sbagliato — ogni volta serviva una nota
-  e ogni volta il posto più vicino non ce l'aveva, così se ne faceva una.
-  Migrare cinquecentosessantasei punti in un colpo non si fa: si sbaglia.
-  Quindi questa prova non pretende zero, pretende che il numero **non salga**,
-  e ogni volta che scende si abbassa il tetto. Il debito si paga a rate e
-  nessuno può aggiungerne senza accorgersene. Poi esegue davvero
-  `assets/pezzi.js` — un modulo che non si carica passerebbe il conteggio
-  senza fare niente — e controlla le cose che i pezzi devono garantire: che un
-  tasto tonale non si dichiari anche principale, che una riga che porta
-  altrove abbia la freccetta e una che fa una cosa adesso no, che il testo che
-  arriva da fuori venga scappato anche dentro a un attributo. In coda tiene
-  allineati i **due gemelli**, `assets/pezzi.js` e `react/src/pezzi.jsx`: se un
-  pezzo esiste di là e non di qua, la promessa «il lavoro si fa una volta
-  sola» è già rotta. Non serve Chromium.
+- **pezzi.js** — LE FORME SI SCRIVONO UNA VOLTA SOLA, e sono **due
+  cricchetti** che dicono la stessa cosa da due lati.
+  Nel markup dell'app ci sono 544 classi diverse e 1630 usi, e sotto ci sono
+  molte meno forme di quante sembrino: sette nomi diversi per «una nota sotto
+  a qualcosa», otto per «l'etichetta di una riga», sette per «una riga di
+  elenco». Nessuno aveva sbagliato — ogni volta serviva una nota e ogni volta
+  il posto più vicino non ce l'aveva, così se ne faceva una.
+  Il primo cricchetto conta quante volte una forma è scritta a mano (230,
+  tetto 230); il secondo quali pezzi esistono e non li chiama nessuno (13 su
+  19). Non sono due problemi, è uno: le schermate scrivono il markup invece di
+  chiedere il pezzo. Migrare cinquecentosessantasei punti in un colpo non si
+  fa — si sbaglia — quindi nessuno dei due numeri deve pretendere zero: deve
+  **non salire**, e ogni volta che scende si abbassa il tetto. Il debito si
+  paga a rate e nessuno può aggiungerne senza accorgersene.
+  Il secondo tiene un ELENCO e non un numero, apposta: un numero che scende di
+  uno non dice quale, e portare i quindici punti di «Da fare» a `Riga` è un
+  lavoro con dentro una decisione di disegno per ognuno — la riga del pezzo e
+  quella scritta a mano non hanno lo stesso albero, e `prove/impronte.js` lo
+  direbbe subito.
+  Il conto guardava solo `app.js` mentre le stesse forme le scrivevano anche i
+  componenti: **misurava mezzo codice.** Adesso legge tutto `src/`, `class` e
+  `className` insieme, e i tetti ripartono da quello che c'è davvero — il
+  numero è salito perché è salito il campo visivo, non il debito.
+  Poi esegue davvero le quattro funzioni di stringa rimaste
+  (`src/pezzi/stringhe.ts`, compilate al volo con esbuild): un modulo che non
+  si carica passerebbe il conteggio senza fare niente. Sono le sole che
+  costruiscono ancora HTML come stringa, e lì lo scappamento vale più di
+  prima: in JSX il testo che arriva da fuori è scappato per costruzione — è la
+  ragione per cui JSX esiste — in una stringa no, e `esc` è l'unica cosa fra
+  il nome che uno scrive e un `<img onerror=…>` dentro alla pagina.
+  Non serve Chromium.
 
-- **gemelle.js** — LA SCHERMATA DI REACT È IDENTICA A QUELLA DI PRIMA? Non
-  guarda se React «funziona»: guarda se si vede la stessa cosa. Disegna la
-  schermata col codice di prima e si prende l'albero del DOM; la ridisegna con
-  React e riprende l'albero; confronta elemento per elemento — tag, classi,
-  testo, id e i `data-` da cui dipendono i comandi. Gli stili calcolati no:
-  vengono dalle classi, e se le classi combaciano vengono uguali per
-  costruzione. I `data-forma-*` nemmeno: sono gli appunti che si prende
-  forma.js mentre lavora, e cambiano a seconda di quando gira, non di che cosa
-  è stato disegnato.
-  Serve uno strumento e non un'occhiata perché una classe di differenza su una
-  riga di elenco in una fotografia non si vede — ma il giorno che qualcuno
-  cambia il CSS quella riga si comporta diversamente da tutte le altre.
-  **«Identica» deve essere una misura.** Stampa solo le prime tre differenze:
-  di solito le altre sono la loro eco, e un elenco di trecento righe non lo
-  legge nessuno. Portando Attività ha trovato, una per volta: un `<div>` di
-  troppo attorno alla testa, la fila delle linguette che non arrivava dove
-  `sottoNav` la cerca, un contenitore in più attorno all'etichetta di gruppo,
-  e l'animazione d'ingresso che al primo disegno non partiva.
+- **impronte.js** — L'ALBERO È ANCORA QUELLO DI IERI? Qui c'erano due prove
+  gemelle: `gemelle.js` disegnava una schermata col codice di prima, si
+  prendeva l'albero del DOM, la ridisegnava con React e confrontava elemento
+  per elemento; `fogli.js` faceva lo stesso un piano più sotto, dentro a
+  `#sheet-corpo`. Sono state la misura che ha portato di qua sette schermate
+  e quindici pannelli senza che chi guarda se ne accorgesse — quattro
+  elementi di troppo nell'albero di Attività li ha trovati lei, uno per
+  volta, non un'occhiata. Serviva uno strumento perché una classe di
+  differenza su una riga di elenco in una fotografia non si vede, ma il
+  giorno che qualcuno cambia il CSS quella riga si comporta diversamente da
+  tutte le altre. **«Identica» deve essere una misura.**
 
-- **fogli.js** — LO STESSO, PER I PANNELLI. Stessa idea di `gemelle.js`,
-  spostata di un piano: là si confronta quello che sta dentro a `#vista`, qui
-  quello che sta dentro a `#sheet-corpo`, più il titolo scritto in cima e il
-  valore dei campi (due pannelli con lo stesso markup e dentro due valori
-  diversi non sono lo stesso pannello). Un pannello però non si vede andandoci:
-  bisogna aprirlo, e ogni pannello si apre da un posto suo. Quel «da dove» sta
-  scritto nella tabella `APERTURE` in cima al file, una riga per pannello, ed è
-  l'unica parte che cresce quando se ne converte uno.
-  Se un pannello è registrato nell'isola ma non ha la sua riga in `APERTURE`,
-  la prova non lo salta in silenzio: lo segnala. Un pannello convertito e mai
-  guardato è come non averlo convertito.
-  Qualche pannello esiste solo in un certo stato dell'app — «Altro» c'è solo
-  con la barra a quattro pagine, perché con le tre porte non ci sarebbe niente
-  dentro — e per quelli c'è `prima`, che mette l'app in quello stato prima di
-  tutt'e due i giri. E `prima` deve LASCIARE LO STESSO STATO tutte e due le
-  volte: la prima versione della riga dei backup ne creava uno per giro, e al
-  secondo ce n'erano due — una differenza che era la prova stessa ad aver
-  fabbricato.
-  Ogni riga dice anche che TITOLO si aspetta, e serve: una ricetta che sbaglia
-  bersaglio apre un altro pannello, e il confronto lo trova identico a se
-  stesso — verde, e non ha guardato niente. È successo col registro tecnico,
-  dove il tasto da premere esiste solo se hai fatto l'accesso: la prova
-  restava sulle impostazioni e diceva che andava tutto bene.
+  Il codice di prima non c'è più, quindi quel confronto non ha più il secondo
+  termine — ma la macchina serve ancora, per la domanda che vale da qui in
+  avanti. Le impronte di sette schermate e diciotto pannelli stanno in
+  `prove/impronte.json`, committate; questa prova le rifà e le confronta. Se
+  una cambia: o è voluta — e allora si riscrive il file con `--aggiorna`, e
+  la differenza si legge nel diff accanto al codice che l'ha causata — o è un
+  elemento in più che nessuno voleva.
+
+  Confronta, in ordine di quanto conta: l'albero (quali tag, annidati come, in
+  che ordine), le classi, il testo che si legge, gli id e i `data-` da cui
+  dipendono i comandi, il valore dei campi. Gli stili calcolati no: vengono
+  dalle classi, e se le classi combaciano vengono uguali per costruzione. I
+  `data-forma-*` nemmeno: sono gli appunti che si prende `forma.ts` mentre
+  lavora, e cambiano a seconda di quando gira, non di che cosa è stato
+  disegnato. Gli id generati da `LM.uid()` si normalizzano — sei caratteri a
+  caso a ogni giro — e tenerli avrebbe voluto dire un'impronta che cambia
+  sempre, cioè che non dice niente.
+
+  Un pannello non si vede andandoci: bisogna aprirlo, e ognuno si apre da un
+  posto suo. Quel «da dove» sta nella tabella `APERTURE` in cima al file, una
+  riga per pannello. Ogni riga dice anche che TITOLO si aspetta, e serve: una
+  ricetta che sbaglia bersaglio apre un altro pannello, e il confronto lo
+  trova identico a se stesso — verde, e non ha guardato niente. È successo col
+  registro tecnico, dove il tasto da premere esiste solo se hai fatto
+  l'accesso: la prova restava sulle impostazioni e diceva che andava tutto
+  bene. E se un pannello si apre vuoto la prova lo dice invece di registrare
+  un'impronta di niente.
+
   Due ricette con lo stesso nome sono un problema dello stesso genere: la
   seconda vince e la prima sparisce senza dire niente. Il file legge se stesso
   e le conta.
+
+  Qualche pannello esiste solo in un certo stato dell'app — «Altro» c'è solo
+  con la barra a quattro pagine, perché con le tre porte non ci sarebbe niente
+  dentro — e per quelli c'è `prima`, che mette l'app in quello stato. E
+  `prima` deve LASCIARE LO STESSO STATO tutte le volte: la prima versione
+  della riga dei backup ne creava uno per giro, e al secondo ce n'erano due —
+  una differenza che era la prova stessa ad aver fabbricato.
+
   Quello che NON PUÒ essere uguale si dichiara con `senza`, e finora è una
-  cosa sola: le righe che scorrono dentro al registro tecnico. Dicono cos'è
-  successo in QUESTO giro, e i due giri sono due giri diversi — in uno l'isola
-  di React si carica e nell'altro no.
+  cosa sola: le righe che scorrono dentro al registro tecnico, che dicono
+  cos'è successo in QUESTO giro.
 
 - **smista.js** — SMISTARE UNA CODA, NOTA PER NOTA, FINO A SVUOTARLA. Nasce da
   un difetto trovato da chi usa l'app, e nessuna delle altre prove lo poteva
@@ -791,18 +809,18 @@ genera le chiavi, in un browser vero).
 
 ## Come si lanciano
 
-**Prima si costruisce.** Le prove aprono `index.html`, che è generato: se il
-pacco è vecchio, provano il codice di ieri e dicono che va tutto bene.
+**Prima si costruisce.** Le prove aprono `docs/index.html`, che è generato:
+se il sito costruito è vecchio, provano il codice di ieri e dicono che va
+tutto bene. `prove/pacco.js` è quello che se ne accorge, ma girarlo per
+secondo non serve a niente — si costruisce e basta.
 
-    npm install              # esbuild, per il build
-    node costruisci.mjs      # e poi si ricostruisce
-    npm install playwright
+    npm install
+    npm run build:nuovo      # tsc --noEmit && vite build → docs/
     node prove/pacco.js         # solo Node: il pacco è quello dei sorgenti di adesso?
     node prove/intestazioni.js  # solo Node: la cache di _headers non fa danni
     node prove/pezzi.js         # solo Node: il cricchetto delle forme
-    node prove/gemelle.js       # React disegna la stessa cosa di prima?
-                                # sedici sezioni su sette schermate
-    node prove/fogli.js         # e i pannelli?
+    node prove/impronte.js      # l'albero è ancora quello di ieri?
+                                # sette schermate e diciotto pannelli
     node prove/smista.js        # e una coda smistata gesto per gesto?
     node prove/audit.js         # non è una prova: stampa un rapporto da leggere
     node prove/clic.js

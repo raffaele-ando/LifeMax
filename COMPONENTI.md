@@ -39,20 +39,34 @@ tasti pieni insieme.
 
 ## Come si usano
 
-Due gemelli con le **stesse identiche proprietà**, così il lavoro si fa una
-volta sola:
+Un set solo, in `src/pezzi/pezzi.tsx`:
 
-```js
-   PZ.tasto({ testo: 'Salva', ico: 'save', tipo: 'pieno' })   // assets/pezzi.js
-   <Tasto    testo="Salva"    ico="save"   tipo="pieno" />    // react/src/pezzi.jsx
+```jsx
+   <Tasto testo="Salva" ico="save" tipo="pieno" />
 ```
 
-**Le proprietà dicono il RUOLO, mai l'aspetto.** `tipo: 'pieno'` e non
-`tipo: 'blu'`: così la regola di `DESIGN.md` — uno pieno per schermata — vive
+Erano due gemelli con le stesse identiche proprietà — uno che usciva come
+stringa di HTML (`PZ.tasto({…})`) e uno in JSX — perché finché convivevano i
+due disegni della stessa schermata quello era il modo di non buttare il lavoro
+fatto in vanilla. Adesso il gemello in stringa non c'è più: di `pezzi.js` sono
+rimaste quattro funzioni in `src/pezzi/stringhe.ts` — `esc`, `att`, `classi`,
+`riga` — quelle che `app.ts` usa dove costruisce ancora HTML.
+
+**Le proprietà dicono il RUOLO, mai l'aspetto.** `tipo="pieno"` e non
+`tipo="blu"`: così la regola di `DESIGN.md` — uno pieno per schermata — vive
 nel codice invece che nelle teste di chi lo scrive.
 
-`prove/pezzi.js` è un **cricchetto**: conta le forme scritte a mano e non le
-lascia aumentare. Ogni volta che scendono si abbassa il tetto.
+`prove/pezzi.js` sono **due cricchetti**, e dicono la stessa cosa da due lati:
+quante volte una forma è scritta a mano (230, tetto 230) e quali pezzi
+esistono e non li chiama nessuno (13 su 19). Non sono due problemi, è uno — le
+schermate scrivono il markup invece di chiedere il pezzo. Nessuno dei due
+numeri deve salire; ogni volta che scendono si abbassa il tetto.
+
+**Da qui in avanti il lavoro è quello.** L'elenco dei tredici pezzi fermi sta
+in cima a `prove/pezzi.js`, ed è la lista di cosa resta da fare: si porta un
+pezzo per volta, perché la riga del pezzo e quella scritta a mano non hanno lo
+stesso albero e `prove/impronte.js` lo dice subito — cioè ogni passaggio è una
+decisione di disegno da prendere, non una sostituzione meccanica.
 
 ---
 
@@ -61,10 +75,10 @@ lascia aumentare. Ogni volta che scendono si abbassa il tetto.
 ### `Segno` — un'icona accanto a del testo
 Assorbe: `seg-ico` `diario-ico` `sm-porta-ico` `rev-ico` `fs-ico` `lista-azione`
 
-    nome    quale disegno (icons.js)
+    nome    quale disegno (segni.ts)
     dim     11 · 13 · 15 · 18 · 26   — la scala, e non altri numeri
 
-### `Disegno` — un SVG che non viene da `icons.js`
+### `Disegno` — un SVG che non viene da `segni.ts`
 Il marchio di Google, per dirne uno.
 
     svg     il markup, così com'è
