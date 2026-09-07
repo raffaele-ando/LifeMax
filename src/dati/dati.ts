@@ -19,13 +19,12 @@
    sparisce anche quello.
    ============================================================ */
 import type {
-  Stato, Area, Azione, Nota, Attivita, Abitudine, Checkin, Lezione, Esperimento,
-  Ritmo, Chiedi, Pasto, Timer, Lapide, VoceRegistro, Profilo, Slot,
-  Giorno, Ora, GiornoSettimana, Verso, ModoFusione, Passo, PassoDi, Mancata,
+  Stato, Area, Azione, Attivita, Abitudine, Lezione, Esperimento,
+  Ritmo, Pasto, Timer, VoceRegistro, Slot, Disfa,
+  Giorno, Ora, GiornoSettimana, Verso, ModoFusione, PassoDi, Mancata,
   RegistroGiorno, GiornataPos, Promemoria, VocePromemoria
 } from '../tipi/stato';
-import { COME_UNIRE, giorno } from '../tipi/stato';
-import type { Disfa } from '../tipi/stato';
+import { COME_UNIRE, giorno, ora } from '../tipi/stato';
 
 function creaLM() {
 
@@ -461,7 +460,7 @@ function creaLM() {
   function unisci(a: unknown, b: unknown): Stato | null {
     if (!eMappa(a)) return b ? JSON.parse(JSON.stringify(b)) : null;
     if (!eMappa(b)) return JSON.parse(JSON.stringify(a));
-    var qa = a.updatedAt || 0, qb = b.updatedAt || 0;
+    var qa = Number(a.updatedAt) || 0, qb = Number(b.updatedAt) || 0;
     var out: Mappa = {};
     var chiavi: Record<string, 1> = {};
     Object.keys(a).forEach(function (k) { chiavi[k] = 1; });
@@ -491,7 +490,7 @@ function creaLM() {
         case 'insieme': out[k] = unisciInsieme(va, vb); break;
         case 'mappa':   out[k] = unisciMappa(va, vb, qa, qb); break;
         case 'ramo':    out[k] = unisciRiga(va, vb, qa, qb); break;
-        case 'massimo': out[k] = Math.max(Number(va) || 0, Number(vb) || 0); break;
+        case 'massimo': out[k] = Math.max(Number(va as number) || 0, Number(vb as number) || 0); break;
         case 'oppure':  out[k] = !!(va || vb); break;
         case 'recente': out[k] = (qb >= qa) ? vb : va; break;
         default:        out[k] = (qb >= qa) ? vb : va;
@@ -2414,7 +2413,7 @@ function creaLM() {
         var q = addDays(fino, -(g + 1));
         if (q < da) break;
         if (!abitudinePrevista(h, q)) continue;
-        segna(h.areaId || 'altro', !!h.fatti[q], false);
+        segna(h.areaId || 'altro', h.fatti[q] ? 1 : 0, 0);
       }
     });
     var righe = Object.keys(perArea).map(function (id) {
@@ -2772,7 +2771,8 @@ function creaLM() {
     var giorni = Object.keys(perGiorno).sort().reverse();
     if (giorniMax) giorni = giorni.slice(0, giorniMax);
     return giorni.map(function (k) {
-      return { data: k, eventi: perGiorno[k].sort(function (a, b) { return b.ts - a.ts; }) };
+      var eventi = (perGiorno[k] || []) as { ts: number }[];
+      return { data: giorno(k), eventi: eventi.sort(function (a, b) { return b.ts - a.ts; }) };
     });
   }
 
@@ -2806,7 +2806,7 @@ function creaLM() {
     preciso: { eti: 'preciso', breve: '' },
     circa: { eti: 'più o meno', breve: 'circa ' }
   };
-  function precisioneValida(x: unknown) { return x === 'preciso' ? 'preciso' : 'circa'; }
+  function precisioneValida(x: unknown): 'preciso' | 'circa' { return x === 'preciso' ? 'preciso' : 'circa'; }
 
   /* l'ultima volta che ti ho visto, e la segna adesso. Torna il valore di
      PRIMA: è quello che serve per capire se in mezzo c'è stata una notte. */
@@ -2829,13 +2829,13 @@ function creaLM() {
     var s = load();
     k = k || todayKey();
     var patch: Partial<RegistroGiorno> = {};
-    if (dati.sonno) patch.sonno = dati.sonno;
-    if (dati.sveglia) patch.sveglia = dati.sveglia;
+    if (dati['sonno']) patch.sonno = dati['sonno'] as Ora;
+    if (dati['sveglia']) patch.sveglia = dati['sveglia'] as Ora;
     if (Object.keys(patch).length) setRitmoGiorno(k, patch);
     var g = s.ritmoGiorno[k] || (s.ritmoGiorno[k] = {});
-    g.prec = precisioneValida(dati.prec);
+    g.prec = precisioneValida(dati['prec']);
     g.chiestoNotte = true;
-    if (dati.sonno || dati.sveglia) {
+    if (dati['sonno'] || dati['sveglia']) {
       var m = minutiSonno(k);
       registra('giornata', 'Notte registrata: a letto ' + (patch.sonno || g.sonno) +
         ', sveglio ' + (patch.sveglia || g.sveglia) +
@@ -2848,18 +2848,18 @@ function creaLM() {
   /* UN PASTO DEL GIORNO. `fatto: false` non è un buco: è un'informazione, e
      nel grafico della giornata quel pasto si vede saltato. */
   function registraPasto(k: Giorno, id: string, dati: Record<string, unknown>) {
-    var s = load();
+    load();
     k = k || todayKey();
     var base = ritmoDi(k);
-    var pasti = JSON.parse(JSON.stringify(base.pasti || []));
+    var pasti = JSON.parse(JSON.stringify(base.pasti || [])) as Pasto[];
     var pas = pasti.find(function (x) { return x.id === id; });
     if (!pas) return null;
-    if (dati.ora) pas.ora = dati.ora;
-    pas.fatto = dati.fatto !== false;
-    pas.prec = precisioneValida(dati.prec);
+    if (dati['ora']) pas.ora = dati['ora'] as Ora;
+    pas.fatto = dati['fatto'] !== false;
+    pas.prec = precisioneValida(dati['prec']);
     setRitmoGiorno(k, { pasti: pasti });
     registra('giornata', pas.fatto
-      ? pas.nome + (dati.ora ? ' alle ' + pas.ora : '') + (pas.prec === 'circa' ? ' (più o meno)' : '')
+      ? pas.nome + (dati['ora'] ? ' alle ' + pas.ora : '') + (pas.prec === 'circa' ? ' (più o meno)' : '')
       : pas.nome + ': saltato', false);
     save();
     return pas;
@@ -2882,12 +2882,15 @@ function creaLM() {
 
   /* I PASTI DI CUI SI PUÒ ANCORA PARLARE: quelli la cui ora è passata. Alle
      nove del mattino non si chiede se hai cenato. */
-  function pastiDaChiedere(k: Giorno, oraOra?: Ora) {
+  /* `oraOra` sono MINUTI dalla mezzanotte, non un 'HH:MM': gli avevo messo
+     `Ora` per il nome, e il confronto con `+ 30` qui sotto non ha piu' avuto
+     senso. Nessuno la passa: il ripiego e' l'ora di adesso. */
+  function pastiDaChiedere(k: Giorno, oraOra?: number) {
     k = k || todayKey();
     var r = ritmoDi(k);
     var ora = oraOra == null ? oraDelGiorno() : oraOra;
     return (r.pasti || []).filter(function (pa) {
-      if ((pa as Pasto & { fatto?: boolean }).fatto !== undefined) return false;  /* già risposto */
+      if (pa.fatto !== undefined) return false;          /* già risposto */
       return minutiDaOra(pa.ora) <= ora + 30;           /* mezz'ora di grazia */
     });
   }
@@ -2897,7 +2900,7 @@ function creaLM() {
   }
   function minutiDaOra(hhmm: string | null | undefined) {
     var m = /^(\d{1,2}):(\d{2})$/.exec(String(hhmm || ''));
-    return m ? (+m[1]) * 60 + (+m[2]) : 0;
+    return m ? (+(m[1] || 0)) * 60 + (+(m[2] || 0)) : 0;
   }
 
   /* UNA COSA FATTA E SCRITTA DOPO. Non è un'azione da fare che poi si spunta:
@@ -2947,13 +2950,16 @@ function creaLM() {
      a chi vuole essere preciso per dire «questa l'ho vista una volta» senza
      dover scegliere fra tacere e affermare. */
 
-  var FORZE_LEZIONE = [
+  interface ForzaLezione { id: string; eti: string; breve: string; peso: number }
+  var FORZE_LEZIONE: ForzaLezione[] = [
     { id: 'notato',   eti: 'notato una volta',   breve: 'una volta',   peso: 1 },
     { id: 'ripetuto', eti: 'lo noto ogni volta', breve: 'ogni volta',  peso: 2 },
     { id: 'misurato', eti: 'misurato',           breve: 'misurato',    peso: 3 }
   ];
-  function forzaLezione(id: string) {
-    return FORZE_LEZIONE.find(function (f) { return f.id === id; }) || FORZE_LEZIONE[0];
+  /* `id` puo mancare: la chiamano anche con quello che arriva da un campo.
+     Il ripiego e' la prima forza, e `presa` dice perche' quell'indice c'e'. */
+  function forzaLezione(id?: string): ForzaLezione {
+    return FORZE_LEZIONE.find(function (f) { return f.id === id; }) || presa(FORZE_LEZIONE[0]);
   }
   function nomeArea(id: string) {
     var a = load().aree.find(function (x) { return x.id === id; });
@@ -2989,7 +2995,7 @@ function creaLM() {
     return load().lezioni.find(function (x) { return x.id === id; }) || null;
   }
   function modificaLezione(id: string, campi: Partial<Lezione>) {
-    var s = load();
+    load();
     var l = trovaLezione(id);
     if (!l) return null;
     var prima = { testo: l.testo, verso: l.verso, forza: l.forza, areaId: l.areaId };
@@ -3060,7 +3066,7 @@ function creaLM() {
 
   function creaEsperimento(dati: Omit<Esperimento, 'id' | 'stato'> & { stato?: Esperimento['stato'] }) {
     var s = load();
-    var e = {
+    var e: Esperimento = {
       id: uid(),
       nome: dati.nome,
       intervento: dati.intervento || '',
@@ -3099,12 +3105,19 @@ function creaLM() {
       var vals = s.checkins.filter(function (c) { return c.data === k; }).map(function (c) { return c[quale.campo]; });
       return vals.length ? vals.reduce(function (a, b) { return a + b; }, 0) / vals.length : null;
     }
+    /* SENZA AREA NON C'E' NIENTE DA LEGGERE. In JavaScript `[null]` tornava
+       `undefined` e la riga dopo lo trasformava in `null`: lo stesso risultato,
+       detto una riga prima invece che per caso. */
     if (m.fonte === 'valutazione') {
-      var v = s.valutazioni[k] && s.valutazioni[k][e.areaId];
+      if (!e.areaId) return null;
+      var voti = s.valutazioni[k];
+      var v = voti ? voti[e.areaId] : undefined;
       return v === undefined ? null : v;
     }
     if (m.fonte === 'minuti') {
-      return (s.minuti[k] && s.minuti[k][e.areaId]) || null;
+      if (!e.areaId) return null;
+      var min = s.minuti[k];
+      return (min && min[e.areaId]) || null;
     }
     if (m.fonte === 'xp') {
       return s.xpPerGiorno[k] || null;
@@ -3172,7 +3185,10 @@ function creaLM() {
     s.profilo.nome = 'Raffaele';
     s.profilo.visione = 'Costruire cose che contano, imparare più veloce di chiunque, restare curioso e in salute.';
 
-    var esempiAzioni = {
+    /* indicizzata col nome dell'area, e le chiavi qui sotto sono esattamente
+       gli id delle aree di partenza: senza il tipo, `esempiAzioni[area]` era
+       `any` e un'area in piu' avrebbe fatto crollare la demo in silenzio. */
+    var esempiAzioni: Record<string, string[]> = {
       studio:       ['Capitolo di Analisi II + 10 esercizi', 'Ripasso attivo con flashcard (30′)', 'Preparare domande per il ricevimento', 'Sessione deep work biblioteca (90′)'],
       salute:       ['Allenamento forza — gambe', 'Corsa 5 km zona 2', 'Prep pasti per 3 giorni', 'In letto entro le 23:30'],
       relazioni:    ['Chiamare i nonni', 'Organizzare cena con il gruppo', 'Rispondere a Marco con proposta concreta'],
@@ -3222,16 +3238,24 @@ function creaLM() {
       for (var i = 0; i < nAz; i++) {
         var area = pick(s.aree).id;
         areeGiorno.push(area);
-        var a = {
+        /* TRE CAMPI CHE QUI MANCAVANO e che `aggiungiAzione` scrive sempre:
+           `ora`, `durata`, `passoDi`. Da spenti valgono `null` in tutt'e due i
+           casi, quindi non cambia niente di quello che si vede; cambia che
+           un'azione d'esempio ha adesso la stessa forma di una vera, e che
+           `ogAz[0].ora = ...` piu' sotto scrive su un campo che esiste. */
+        var a: Azione = {
           id: uid() + idx + '' + i,
           areaId: area,
-          testo: pick(esempiAzioni[area]),
+          testo: pick(presa(esempiAzioni[area])),
           ifThen: '',
           mit: i === 0,
           done: futuro ? i === 0 : rnd() < (0.6 + boost * 0.3),
           data: k,
           doneAt: null,
-          creata: parseKey(k).getTime() + 8 * 3600000
+          creata: parseKey(k).getTime() + 8 * 3600000,
+          ora: null,
+          durata: null,
+          passoDi: null
         };
         if (a.done) {
           a.doneAt = parseKey(k).getTime() + (10 + i * 3) * 3600000;
@@ -3260,11 +3284,13 @@ function creaLM() {
 
       /* minuti + valutazioni serali sulle aree toccate */
       if (!futuro) {
-        s.valutazioni[k] = {};
-        s.minuti[k] = {};
+        var votiDelGiorno: Record<string, number> = {};
+        var minutiDelGiorno: Record<string, number> = {};
+        s.valutazioni[k] = votiDelGiorno;
+        s.minuti[k] = minutiDelGiorno;
         areeGiorno.forEach(function (areaId) {
-          s.valutazioni[k][areaId] = Math.max(1, Math.min(5, Math.round(2.5 + boost + rnd() * 2)));
-          s.minuti[k][areaId] = 25 * (1 + Math.floor(rnd() * 5));
+          votiDelGiorno[areaId] = Math.max(1, Math.min(5, Math.round(2.5 + boost + rnd() * 2)));
+          minutiDelGiorno[areaId] = 25 * (1 + Math.floor(rnd() * 5));
         });
         if (rnd() < 0.75) {
           s.reviewSera[k] = { vittoria: pick(vittorie), blocco: pick(blocchi), shutdown: rnd() < 0.7, ts: parseKey(k).getTime() + 21 * 3600000 };
@@ -3282,7 +3308,10 @@ function creaLM() {
     /* review settimanali sulle settimane concluse */
     var settimane: Record<string, boolean> = {};
     giorni.forEach(function (k) { settimane[weekKey(k)] = true; });
-    Object.keys(settimane).sort().slice(0, -1).forEach(function (wk) {
+    Object.keys(settimane).sort().slice(0, -1).forEach(function (chiave) {
+      /* `Object.keys` torna stringhe qualunque, ma queste chiavi le ha scritte
+         `weekKey`: sono il lunedi' della settimana, un giorno come gli altri */
+      var wk = giorno(chiave);
       if (rnd() < 0.8) {
         s.reviewSettimana[wk] = {
           vittorie: pick(vittorie),
@@ -3302,7 +3331,7 @@ function creaLM() {
     });
 
     /* backlog demo: attività "da fare" senza data, divise per area */
-    var esempiBacklog = [
+    var esempiBacklog: [string, string][] = [
       ['studio', 'Recuperare i corsi di ingegneria gestionale'],
       ['studio', 'Studiare le risposte per l’OFA di inglese'],
       ['studio', 'Leggere il libro di esercizi di Analisi 1'],
@@ -3336,30 +3365,33 @@ function creaLM() {
     ];
 
     /* abitudini demo con storico per le serie */
-    var esempiAbit = [
+    /* area, testo, e i giorni della settimana in cui vale: vuoto = tutti */
+    var esempiAbit: [string, string, GiornoSettimana[]][] = [
       ['salute', 'Leggere 20 minuti', []],
       ['studio', 'Ripasso flashcard', []],
       ['salute', 'Camminata / movimento', [1, 2, 3, 4, 5]]
     ];
     esempiAbit.forEach(function (h, i) {
       var fatti: Record<string, boolean> = {};
+      var quandoVale = h[2];
       for (var d = 1; d <= 12; d++) {
         var k = addDays(oggi, -d);
-        if ((h[2].length === 0 || h[2].indexOf(parseKey(k).getDay()) >= 0) && rnd() < 0.8) fatti[k] = true;
+        if ((quandoVale.length === 0 || quandoVale.indexOf(parseKey(k).getDay() as GiornoSettimana) >= 0) && rnd() < 0.8) fatti[k] = true;
       }
       /* i dati di esempio hanno una storia: l'abitudine "esiste" da 20 giorni */
-      s.abitudini.push({ id: uid() + 'ab' + i, testo: h[1], areaId: h[0], giorni: h[2], creata: Date.now(),
-        fatti: fatti, da: addDays(oggi, -20), a: null, salti: {} });
+      s.abitudini.push({ id: uid() + 'ab' + i, testo: h[1], areaId: h[0], giorni: quandoVale, creata: Date.now(),
+        fatti: fatti, ora: null, durata: null, da: addDays(oggi, -20), a: null, salti: {} });
     });
 
     /* orari d'esempio per la giornata di oggi, così la timeline "La giornata"
        si vede subito piena */
     var ogAz = s.azioni.filter(function (a) { return a.data === oggi; });
-    if (ogAz[0]) { ogAz[0].ora = '09:30'; ogAz[0].durata = 90; }
-    if (ogAz[1]) { ogAz[1].ora = '15:00'; ogAz[1].durata = 60; }
+    var az0 = ogAz[0], az1 = ogAz[1];
+    if (az0) { az0.ora = ora('09:30'); az0.durata = 90; }
+    if (az1) { az1.ora = ora('15:00'); az1.durata = 60; }
     s.abitudini.forEach(function (h) {
-      if (/camminata|movimento/i.test(h.testo)) { h.ora = '18:00'; h.durata = 45; }
-      else if (/leggere/i.test(h.testo)) { h.ora = '22:00'; h.durata = 30; }
+      if (/camminata|movimento/i.test(h.testo)) { h.ora = ora('18:00'); h.durata = 45; }
+      else if (/leggere/i.test(h.testo)) { h.ora = ora('22:00'); h.durata = 30; }
     });
 
     /* esperimento demo: sport al mattino → focus */
@@ -3369,10 +3401,16 @@ function creaLM() {
       intervento: 'Allenamento o camminata veloce prima delle 10:00, poi sessione di lavoro.',
       metrica: 'focus',
       areaId: null,
-      inizioBaseline: giorni[14],
-      inizioIntervento: giorni[28],
-      fine: giorni[52],
-      stato: 'concluso'
+      /* `presa` e non un punto interrogativo: `lastNDays(56)` torna
+         cinquantasei giorni, questi indici ci sono. Se un giorno non ci
+         fossero, meglio saperlo subito che avere una demo con date vuote. */
+      inizioBaseline: presa(giorni[14]),
+      inizioIntervento: presa(giorni[28]),
+      fine: presa(giorni[52]),
+      stato: 'concluso',
+      /* `lezioneId` mancava: `creaEsperimento` lo scrive sempre, qui no. Da
+         spento e' `null` in tutt'e due i casi. */
+      lezioneId: null
     });
     s.esperimenti.push({
       id: uid() + 'exp2',
@@ -3380,16 +3418,17 @@ function creaLM() {
       intervento: 'Telefono in un’altra stanza durante le sessioni di studio del pomeriggio.',
       metrica: 'minuti',
       areaId: 'studio',
-      inizioBaseline: giorni[42],
-      inizioIntervento: giorni[49],
+      inizioBaseline: presa(giorni[42]),
+      inizioIntervento: presa(giorni[49]),
       fine: null,
-      stato: 'attivo'
+      stato: 'attivo',
+      lezioneId: null
     });
 
     /* quello che ha capito su di sé senza esperimento: mescolate le tre
        forze, e una col verso girato — perché succede davvero che una cosa
        smetta di funzionare */
-    [
+    var esempiLezioni: [string, Verso, string, string | null][] = [
       ['Studiare in biblioteca invece che in camera', 'si', 'ripetuto', 'studio'],
       ['Iniziare dalla cosa più difficile appena mi sveglio', 'si', 'ripetuto', null],
       ['Mettere il telefono in un’altra stanza', 'si', 'misurato', 'studio'],
@@ -3398,12 +3437,13 @@ function creaLM() {
       ['Le liste lunghissime: mi bloccano invece di aiutarmi', 'no', 'ripetuto', null],
       ['Studiare dopo cena', 'no', 'notato', 'studio'],
       ['Le sveglie multiple: le spengo tutte e dormo di più', 'no', 'notato', 'salute']
-    ].forEach(function (r, i) {
+    ];
+    esempiLezioni.forEach(function (r, i) {
       s.lezioni.push({
         id: uid() + 'lez' + i,
         testo: r[0], verso: r[1], forza: r[2], areaId: r[3], espId: null,
-        creata: parseKey(giorni[20 + i * 3]).getTime(),
-        aggiornata: parseKey(giorni[30 + i * 2]).getTime()
+        creata: parseKey(presa(giorni[20 + i * 3])).getTime(),
+        aggiornata: parseKey(presa(giorni[30 + i * 2])).getTime()
       });
     });
 
@@ -3411,9 +3451,9 @@ function creaLM() {
        «com'è andata la notte» sopra una storia inventata non ha senso, e
        soprattutto rende prevedibile l'app per le prove, che partono tutte da
        qui. Domani le domande tornano. */
-    if (!s.ritmoGiorno[oggi]) s.ritmoGiorno[oggi] = {};
-    s.ritmoGiorno[oggi].chiestoNotte = true;
-    s.ritmoGiorno[oggi].chiestoGiorno = true;
+    var oggiRitmo = s.ritmoGiorno[oggi] || (s.ritmoGiorno[oggi] = {});
+    oggiRitmo.chiestoNotte = true;
+    oggiRitmo.chiestoGiorno = true;
 
     s.registro = []; // la demo parte con un diario-registro pulito
     save();

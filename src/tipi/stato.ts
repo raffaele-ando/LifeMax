@@ -149,8 +149,20 @@ export interface Esperimento {
   areaId: string | null;
   inizioBaseline: Giorno;
   inizioIntervento: Giorno;
-  fine: Giorno;
-  stato: 'attivo' | 'finito' | 'annullato';
+  /* PUO' NON AVERE UNA FINE: un esperimento ancora aperto la lascia vuota, e
+     `esitoEsperimento` gia' scriveva `e.fine || todayKey()`. Il tipo diceva
+     `Giorno` e i dati d'esempio ne creano uno con `fine: null`. */
+  fine: Giorno | null;
+  /* DUE STATI, E SONO QUESTI DUE. Li ho scritti guardando il codice: avevo
+     messo 'finito' e 'annullato', che non esistono da nessuna parte.
+     E c'è una cosa che il tipo ha fatto venire fuori: `'concluso'` lo scrive
+     SOLTANTO `seedDemo`. Nel giro vero nessuno lo mette mai — quindi un
+     esperimento resta «attivo» per sempre, anche dopo la sua data di fine, e
+     la pastiglia nella scheda dice «attivo» a tempo indeterminato. Non lo
+     cambio dentro a una migrazione: cambiare comportamento mentre si sposta
+     il pavimento è il modo di non sapere più quale delle due cose ha rotto
+     qualcosa. Sta scritto qui, e si sistema dopo, da solo. */
+  stato: 'attivo' | 'concluso';
   lezioneId: string | null;
 }
 
@@ -160,6 +172,13 @@ export interface Pasto {
   nome: string;
   ora: Ora;
   durata: number;
+  /* SOLO NEL REGISTRO DI UN GIORNO, e `false` non è un buco: è
+     un'informazione. Nel grafico della giornata quel pasto si vede saltato,
+     che è diverso da «non risposto». Nel ritmo di BASE non ci sono. */
+  fatto?: boolean;
+  /* con che faccia l'hai detto: «preciso» o «circa». Vale sia per un pasto
+     sia per gli orari della notte, perché sono dati insieme. */
+  prec?: 'preciso' | 'circa';
 }
 
 export interface Ritmo {
@@ -180,8 +199,11 @@ export interface Chiedi {
 export interface RegistroGiorno {
   sveglia?: Ora;
   sonno?: Ora;
-  prec?: Ora;
-  precisione?: 'preciso' | 'circa';
+  /* CON CHE FACCIA L'HAI DETTO, non un'ora. Ci avevo messo `Ora` guardando i
+     campi vicini; `precisioneValida()` torna una di queste due parole e il
+     compilatore l'ha detto subito. Avevo anche inventato un campo
+     `precisione` che nel codice non esiste da nessuna parte: via. */
+  prec?: 'preciso' | 'circa';
   pasti?: Pasto[];
   /* le due domande dell'app, segnate una per una: chiedere due volte la
      stessa cosa nello stesso giorno è il modo di farsi spegnere */
