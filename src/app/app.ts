@@ -278,6 +278,8 @@ export interface StatoSchermo {
      Era `null` fino al primo disegno, e i venti punti che lo leggono
      dovevano difendersi da un caso che dura un istante e non si vede mai. */
   giornataAncora: Giorno;
+  /* «La giornata»: su quale scala di tempo si guarda */
+  giornataOrizzonte: Orizzonte;
   /* Panoramica e Scoperte: quale sezione si guarda */
   sezPlancia: string;
   sezScoperte: string;
@@ -297,6 +299,7 @@ export interface StatoSchermo {
 export const schermo: StatoSchermo = {
   att: { tab: null, area: 'tutte', query: '', tutteAperte: false, parcheggioAperto: false },
   giornataAncora: LM.todayKey(),
+  giornataOrizzonte: 'giorno',
   sezPlancia: 'riepilogo',
   sezScoperte: 'registro',
   ritualiAperti: null,
@@ -1345,7 +1348,7 @@ function bloccaSfondo(attiva: boolean): void {
 /* UNA VOCE DELLA NAVIGAZIONE. `breve` c'è per una sola («Design lab» →
    «Lab»), e per tutta la vita del file era un campo che compariva in una riga
    su otto senza che niente lo dicesse. */
-interface Vista {
+export interface Vista {
   id: string;
   nome: string;
   breve?: string;
@@ -2678,7 +2681,7 @@ export interface TipoTimer {
 }
 export type NomeTimer = 'avvio' | 'blocco' | 'pomodoro' | 'libero';
 
-const TIPI_TIMER: Record<NomeTimer, TipoTimer> = {
+export const TIPI_TIMER: Record<NomeTimer, TipoTimer> = {
   avvio:    { nome: 'Solo per partire', min: 5,  eti: '5′',  ico: 'play', poi: 25,
               dice: 'Cinque minuti, poi va avanti da solo di 25.' },
   blocco:   { nome: 'Un blocco',        min: 25, eti: '25′', ico: 'clock',
@@ -3913,7 +3916,6 @@ const DURATE: { v: number | ''; t: string }[] = [{ v: '', t: 'durata —' },
   { v: 240, t: '4 h' }, { v: 300, t: '5 h' }, { v: 360, t: '6 h' }, { v: 480, t: '8 h' }];
 
 /* orizzonte della pagina "Giornata" e giorno/settimana/mese di riferimento */
-let giornataOrizzonte: Orizzonte = 'giorno';
 let giornataSonnoAperto = false;  /* pannello sonno/pasti in cima alla pagina Giornata */
 /* C'era anche un `giornataPopVista` ('vista' | 'modifica') per il pop-up su
    schermo stretto: dichiarato e mai letto, in tutta la vita del file. Il
@@ -4939,7 +4941,7 @@ function wireOrizzNav(container: HTMLElement, orizz: Orizzonte): void {
 }
 
 export function setOrizzonte(o: Orizzonte, ancora?: Giorno): void {
-  giornataOrizzonte = o;
+  schermo.giornataOrizzonte = o;
   if (ancora) schermo.giornataAncora = ancora;
   const nav = document.getElementById('orizz-nav');
   if (nav) nav.querySelectorAll<HTMLElement>('[data-orizz]').forEach(function (b) { b.classList.toggle('attivo', b.getAttribute('data-orizz') === o); });
@@ -4950,11 +4952,11 @@ let orizzMostrato = '';
 export function disegnaOrizzonte(): void {
   const c = document.getElementById('orizz-corpo');
   if (!c) return;
-  const chiave = giornataOrizzonte + '|' + schermo.giornataAncora;
+  const chiave = schermo.giornataOrizzonte + '|' + schermo.giornataAncora;
   const cambio = chiave !== orizzMostrato;
-  if (giornataOrizzonte === 'giorno') montaGiornata(c, { giorno: schermo.giornataAncora });
-  else if (giornataOrizzonte === 'settimana') montaSettimana(c);
-  else if (giornataOrizzonte === 'mese') montaMese(c);
+  if (schermo.giornataOrizzonte === 'giorno') montaGiornata(c, { giorno: schermo.giornataAncora });
+  else if (schermo.giornataOrizzonte === 'settimana') montaSettimana(c);
+  else if (schermo.giornataOrizzonte === 'mese') montaMese(c);
   else montaAnno(c);
   orizzMostrato = chiave;
   if (cambio) animaIngresso(c);
@@ -6658,23 +6660,17 @@ const att = schermo.att;
 
 
 /* ============================================================
-   GLI AIUTANTI DI ATTIVITÀ, fuori da vistaInbox.
+   GLI AIUTANTI DI ATTIVITÀ.
 
-   Stavano dentro per abitudine, non per necessità: nessuno di loro chiude
-   su qualcosa di quella chiamata. Da fuori li può chiamare anche la
-   versione React della schermata, che è il motivo per cui sono usciti —
-   `attRigaHtml` deve produrre la stessa identica riga di prima, e l’unico
-   modo di esserne certi è che sia la stessa funzione invece di una copia.
-
-   L’unico filo tagliato è `ridisegna()`, che era la funzione locale di
-   vistaInbox: adesso passa da `ridisegnaAtt`, un gancio che punta a chi sta
-   disegnando in questo momento. Col codice di prima è quella; con React non
-   serve, perché LM.save() manda `lm:change` e React si ridisegna da sé.
+   Stavano dentro alla vecchia `vistaInbox` per abitudine, non per
+   necessità: nessuno di loro chiude su qualcosa di quella chiamata. Sono
+   usciti perché li chiama il componente, e `attRigaHtml` deve produrre la
+   stessa identica riga di prima: l'unico modo di esserne certi è che sia la
+   stessa funzione invece di una copia.
    ============================================================ */
-var ridisegnaAtt = function () {};
 /* ---------- Da fare: una lista, una fila di filtri ---------- */
 /* quante ne mostra il gruppo «Altre» prima di chiedere se vuoi le altre */
-var MURO = 12;
+export const MURO = 12;
 
 /* Le opzioni compaiono mentre scrivi, su una riga sola: prima c'era
    «QUANDO?» sopra le pastiglie e «in» davanti all'area — due etichette
@@ -6703,7 +6699,7 @@ export function wireAggiunta(box: HTMLElement): void {
       toast('«' + v + '» aggiunta a «Da fare».', 0, 'lista');
     }
     opz.querySelectorAll<HTMLElement>('[data-nuovoq]').forEach(function (c) { c.classList.toggle('on', !c.getAttribute('data-nuovoq')); });
-    aggiornaNav(); ridisegnaAtt();
+    aggiornaNav(); render();
   });
 }
 
@@ -6721,170 +6717,22 @@ export function nomeFiltro() {
   return areaById(att.area).nome;
 }
 
-export function disegnaDaFare(box: HTMLElement): void {
-  var st = LM.load();
-  var totale = st.backlog.length;
-  var conData = st.backlog.filter(function (b) { return b.scadenza; }).length;
-  var nProg = st.backlog.filter(function (b) { return b.steps && b.steps.length; }).length;
+/* «DA FARE» LO DISEGNA IL COMPONENTE, e qui non c'è più.
 
-  if (!totale) {
-    box.innerHTML = rigaAggiunta('agg-bk', 'Aggiungi una cosa da fare…', opzDaFare()) +
-      '<div class="vuoto" style="padding:22px 8px 6px">' + illoInbox() + '<b>Nessuna attività.</b><br>Aggiungine una qui sopra' +
-      (st.inbox.length ? ', o sistema le note in «Da sistemare».' : '.') + '</div>';
-    wireAggiunta(box);
-    return;
-  }
+   C'era `disegnaDaFare(box)`: centosessantaquattro righe che costruivano a
+   mano la barra, il pannello dei filtri, i tre gruppi e i loro fili. Le
+   stesse cose le fa `schermi/Attivita.tsx`, che chiama da qui gli aiutanti
+   veri — `attRigaHtml` per le righe, `opzDaFare` e `wireAggiunta` per la
+   riga d'aggiunta, `areaFiltro`/`passaFiltro`/`nomeFiltro` per il filtro —
+   e disegna la struttura per conto suo. Tenere anche l'altra versione
+   voleva dire due sorgenti per la stessa schermata, che è il difetto da cui
+   viene tutto questo lavoro.
 
-  /* I modi di guardare la lista stanno dietro UN comando che dice già
-     quale è attivo. Erano una fila di pastiglie — con le due viste che
-     prima erano linguette, più un'area per ogni area — e su un telefono
-     diventavano cinque righe: duecento pixel di filtri sopra la cosa che
-     si è venuti a leggere. Il filtro si cambia di rado; l'ordine per
-     importanza è la strada principale. */
-  /* Scrivere una cosa nuova e cercarne una vecchia sono due lavori
-     opposti, e prima erano due campi identici affiancati dentro la
-     stessa card, uno sopra l'altro nella stessa cornice. Adesso: il
-     campo per aggiungere sta da solo in cima (è un'azione), e sopra la
-     lista c'è una barra sottile con la lente e il filtro (sono modi di
-     guardare quello che c'è già). Nessuna card intorno: una cornice in
-     meno per ogni cosa. */
-  var cerca = (totale >= 10 || att.query)
-    ? '<label class="att-cerca">' + ICO('lente', 15) +
-      '<input type="text" id="att-q" placeholder="Cerca…" value="' + esc(att.query) + '" aria-label="Cerca un’attività"></label>'
-    : '';
-
-  box.innerHTML =
-    rigaAggiunta('agg-bk', 'Aggiungi una cosa da fare…', opzDaFare()) +
-    '<div class="att-barra">' + cerca +
-    '<button class="att-filtro' + (att.area === 'tutte' ? '' : ' on') + '" id="att-filtro" aria-haspopup="dialog">' +
-    ICO('imbuto', 15) + '<span>' + esc(nomeFiltro()) + '</span>' +
-    '<span class="lista-chev">' + ICO('chevronGiu', 15) + '</span></button>' +
-    '</div>' +
-    '<div id="dafare-lista"></div>';
-  wireAggiunta(box);
-  const q = box.querySelector<HTMLInputElement>('#att-q');
-  if (q) q.addEventListener('input', function () { att.query = q.value; renderLista(); });
-  presa(box.querySelector<HTMLElement>('#att-filtro')).addEventListener('click', apriFiltri);
-  renderLista();
-
-  /* la scelta del filtro è un elenco, come tutti gli altri elenchi */
-  function apriFiltri() {
-    function voce(id: string, ico: string, eti: string, n: number): string {
-      return '<div class="lista-riga">' +
-        '<button class="lista-apri" data-filtro="' + id + '">' +
-        '<span class="lista-vuoto">' + (att.area === id ? ICO('scelto', 15) : '') + '</span>' +
-        '<span class="lista-corpo"><span class="lista-tit">' +
-        (ico ? '<span class="tit-area"' + (ico === 'area' ? ' style="--c-area:' + LM.coloreArea(areaById(id)) + '"' : '') + '>' +
-          ICO(ico === 'area' ? areaById(id).icona : ico, 13) + '</span>' : '') +
-        esc(eti) + '</span></span>' +
-        '<span class="lista-val">' + n + '</span></button></div>';
-    }
-    var html = '<div class="sc">' +
-      '<div class="lista-eti">Tutto</div><div class="lista">' + voce('tutte', 'lista', 'Tutte le attività', totale) + '</div>' +
-      ((conData || nProg)
-        ? '<div class="lista-eti">Per come sono fatte</div><div class="lista">' +
-          (conData ? voce('data', 'calendar', 'Con una data', conData) : '') +
-          (nProg ? voce('progetti', 'rocket', 'Divise in passi', nProg) : '') + '</div>'
-        : '') +
-      etichetta('Per area', 'aree') + '<div class="lista">' +
-      LM.backlogPerArea().filter(function (g) { return g.items.length; })
-        .map(function (g) { return voce(g.area.id, 'area', g.area.nome, g.items.length); }).join('') +
-      '</div></div>';
-    apriSheet('Guarda solo', html, function (root) {
-      root.querySelectorAll<HTMLElement>('[data-filtro]').forEach(function (t) {
-        t.addEventListener('click', function () {
-          att.area = t.getAttribute('data-filtro') || 'tutte';
-          chiudiSheet();
-          disegnaDaFare(box);
-        });
-      });
-    });
-  }
-
-  function gruppo(titolo: string, voci: VocePesata[], cls: string, opts?: { taglia?: boolean }): string {
-    if (!voci.length) return '';
-    var lunga = (opts && opts.taglia) && voci.length > MURO;
-    var tutte = !!att.tutteAperte;
-    var taglia = lunga && !tutte;
-    var mostrate = taglia ? voci.slice(0, MURO) : voci;
-    return '<div class="lista-eti">' + titolo + (voci.length > 1 ? ' <span>' + voci.length + '</span>' : '') + '</div>' +
-      '<div class="lista lista-' + cls + '">' +
-      mostrate.map(function (x, i) { return attRigaHtml(x.b, { primo: cls === 'ora' && i === 0, motivo: x.i && x.i.motivo, da: x.i && x.i.da }); }).join('') +
-      '</div>' +
-      (lunga ? '<button class="lista-altre' + (tutte ? ' aperto' : '') + '" data-tutte="1" aria-expanded="' + tutte + '">' +
-        ICO('chevronGiu', 15) + (taglia ? ' Mostra le altre ' + (voci.length - MURO) : ' Mostra solo le prime ' + MURO) + '</button>' : '');
-  }
-
-  function renderLista() {
-    const lista = presa(box.querySelector<HTMLElement>('#dafare-lista'));
-    var query = att.query.trim().toLowerCase();
-    if (query) {
-      var ris = LM.load().backlog.filter(function (b) { return b.testo.toLowerCase().indexOf(query) >= 0; });
-      lista.innerHTML = '<div class="lista-eti">' + ris.length + (ris.length === 1 ? ' risultato' : ' risultati') + '</div>' +
-        (ris.length
-          ? '<div class="lista">' + ris.map(function (b) { return attRigaHtml(b, {}); }).join('') + '</div>'
-          : '<p class="lista-nota">Nessuna corrispondenza per «' + esc(att.query.trim()) + '».</p>');
-      wireLista(lista); return;
-    }
-    var g = LM.backlogPerImportanza({ areaId: areaFiltro() || 'tutte', tetto: 3 });
-    /* le non riuscite escono dalle tre file e vanno in fondo, in un
-       gruppo loro chiuso: hanno un esito, quindi non chiedono più niente
-       — ma restano dove le si può ritrovare, che è tutta la differenza
-       con l'averle cancellate */
-    var senzaEsito = function (x: VocePesata) { return passaFiltro(x.b) && !x.b.mancata; };
-    var ora = g.ora.filter(senzaEsito);
-    var poi = g.poi.filter(senzaEsito);
-    var parch = g.parcheggio.filter(senzaEsito);
-    var perse = g.ora.concat(g.poi, g.parcheggio)
-      .filter(function (x) { return passaFiltro(x.b) && x.b.mancata; })
-      /* filtrate su `mancata` una riga sopra: qui c'è per il tipo */
-      .sort(function (a, b2) { return (b2.b.mancata?.ts || 0) - (a.b.mancata?.ts || 0); });
-    if (!ora.length && !poi.length && !parch.length && !perse.length) {
-      lista.innerHTML = '<p class="lista-nota">Niente in «' + esc(nomeFiltro()) + '».</p>';
-      return;
-    }
-    var apertoParcheggio = !!att.parcheggioAperto;
-    lista.innerHTML =
-      gruppo('Importanti', ora, 'ora') +
-      gruppo('Altre', poi, 'poi', { taglia: true }) +
-      (parch.length
-        ? '<button class="lista-eti lista-eti-btn" data-parcheggio="1" aria-expanded="' + apertoParcheggio + '">' +
-          'Inattive <span>' + parch.length + '</span>' +
-          '<span class="lista-chev' + (apertoParcheggio ? ' aperta' : '') + '">' + ICO('chevronGiu', 15) + '</span></button>' +
-          '<div class="lista lista-parcheggio"' + (apertoParcheggio ? '' : ' hidden') + '>' +
-          parch.map(function (x) { return attRigaHtml(x.b, { motivo: x.i && x.i.motivo }); }).join('') + '</div>'
-        : '') +
-      /* le non riuscite non stanno più qui: questo è l'elenco di cosa
-         fare adesso, e un promemoria dei fallimenti in mezzo al lavoro
-         non aiuta nessuno a cominciare. Stanno in Panoramica, dentro
-         «Dove ti riesce e dove no», che è la domanda a cui servono. */
-      '';
-
-    const bt = lista.querySelector<HTMLElement>('[data-tutte]');
-    if (bt) bt.addEventListener('click', function () {
-      var primaY = bt.getBoundingClientRect().top;
-      att.tutteAperte = !att.tutteAperte;
-      renderLista();
-      var nuovo = lista.querySelector<HTMLElement>('[data-tutte]');
-      if (nuovo) {
-        var delta = nuovo.getBoundingClientRect().top - primaY;
-        if (delta) window.scrollBy(0, delta);
-        nuovo.focus({ preventScroll: true });
-      }
-    });
-    const bp = lista.querySelector<HTMLElement>('[data-parcheggio]');
-    if (bp) bp.addEventListener('click', function () {
-      var ap = !att.parcheggioAperto;
-      att.parcheggioAperto = ap;
-      var corpo = lista.querySelector<HTMLElement>('.lista-parcheggio');
-      if (corpo) corpo.hidden = !ap;
-      bp.setAttribute('aria-expanded', String(ap));
-      var ch = bp.querySelector<HTMLElement>('.lista-chev');
-      if (ch) ch.classList.toggle('aperta', ap);
-    });
-    wireLista(lista);
-  }
-}
+   Con lei è sparito `ridisegnaAtt`, il gancio che puntava «a chi sta
+   disegnando in questo momento»: adesso chi disegna è React, `LM.save()`
+   manda `lm:change` e il ridisegno arriva da sé. Dove il gancio si chiamava
+   per una cosa che i dati non toccano — il titolo del pannello appena
+   cambiato a mano — si chiama `render()`. */
 
 /* ---------- la riga, una sola in tutta l'app ----------
    comando a sinistra, titolo (più una riga sotto solo se ha qualcosa da
@@ -6947,7 +6795,7 @@ export function wireLista(scope: ParentNode): void {
         LM.backlogInOggi(id);
         toast('Portata tra le cose di oggi.', 0, 'arrowRight');
       }
-      aggiornaNav(); ridisegnaAtt();
+      aggiornaNav(); render();
     });
   });
   scope.querySelectorAll<HTMLElement>('[data-bkapri]').forEach(function (t) {
@@ -6970,7 +6818,7 @@ export function apriScheda(id: string): void {
   var b = trova();
   if (!b) return;
   apriFoglio(b.testo, 'scheda', { id: id });
-  titoloSheetModificabile(b.testo, function (v) { LM.modificaBacklog(id, v); ridisegnaAtt(); });
+  titoloSheetModificabile(b.testo, function (v) { LM.modificaBacklog(id, v); render(); });
 }
 
 /* Quando fare UN passo: gli stessi tasti-giorno della scheda. */
