@@ -339,7 +339,7 @@ function setSkin(sk: Stato['profilo']['skin']): void {
 /* La barra a tre porte si può spegnere: chi la vuole com'era prima
    ritrova le otto voci, e nessuna schermata sparisce in nessuno dei due
    casi — cambia solo da dove ci si arriva. */
-function setNav(v: Stato['profilo']['nav']): void {
+function setNav(v: NonNullable<Stato['profilo']['nav']>): void {
   const s = LM.load();
   if ((s.profilo.nav || 'tre') === v) return;
   s.profilo.nav = v;
@@ -1762,7 +1762,13 @@ function htmlNotaFissa() {
 }
 
 function wirePromemoria(root: HTMLElement): void {
-  var P = window.LM_PROMEMORIA;
+  /* SE IL MODULO DEI PROMEMORIA NON C'È, NON C'È NIENTE DA COLLEGARE.
+     Prima il controllo era sparso: `if (P)` in tre punti e nient'altro negli
+     altri sei, e in quei sei si chiamava `P.qualcosa()` su un niente. Non
+     succedeva mai — il modulo si carica sempre — e proprio per questo il
+     controllo mancante non si vedeva. Uno solo, in cima. */
+  const P = window.LM_PROMEMORIA;
+  if (!P) return;
   function ridisegna() { staTornandoSheet = true; apriPromemoria(); staTornandoSheet = false; }
   /* dopo ogni cambiamento il piano va rimandato subito: aspettare il
      prossimo salvataggio vorrebbe dire che l'orario nuovo vale da domani */
@@ -1771,10 +1777,14 @@ function wirePromemoria(root: HTMLElement): void {
   /* gli interruttori delle voci */
   root.querySelectorAll<HTMLElement>('[data-int]').forEach(function (b) {
     b.addEventListener('click', function () {
-      var id = b.getAttribute('data-int');
-      var era = LM.promemoria().voci[id].on;
-      var patch = { voci: {} }; patch.voci[id] = { on: !era };
-      salva(patch);
+      /* IL NOME DELLA VOCE, non una stringa qualunque. Sono cinque, e li
+         scrive `htmlPromemoria` due dita più sopra: se un giorno se ne
+         aggiunge una sesta, questa riga smette di compilare — che è meglio
+         di un promemoria che parte alle nove perché il nome non combaciava. */
+      const id = b.getAttribute('data-int') as VoceProm | null;
+      if (!id) return;
+      const era = LM.promemoria().voci[id].on;
+      salva({ voci: { [id]: { on: !era } } });
       ridisegna();
     });
   });
@@ -1786,51 +1796,52 @@ function wirePromemoria(root: HTMLElement): void {
      quello che si aspetta chiunque. Il campo dell'ora no: là si scrive. */
   root.querySelectorAll<HTMLElement>('.prom-riga[data-voce]').forEach(function (r) {
     r.addEventListener('click', function (e) {
-      if (e.target.closest('input, select, textarea, button')) return;
-      var b = r.querySelector<HTMLElement>('[data-int]');
+      const t = e.target as HTMLElement | null;
+      if (t && t.closest('input, select, textarea, button')) return;
+      const b = r.querySelector<HTMLElement>('[data-int]');
       if (b) b.click();
     });
   });
   /* gli orari: si salvano quando il campo si chiude, non a ogni tasto */
-  root.querySelectorAll<HTMLElement>('[data-ora]').forEach(function (i) {
+  root.querySelectorAll<HTMLInputElement>('[data-ora]').forEach(function (i) {
     i.addEventListener('change', function () {
-      var id = i.getAttribute('data-ora');
+      const id = i.getAttribute('data-ora') as VoceProm | null;
+      if (!id) return;
       if (!/^([01][0-9]|2[0-3]):[0-5][0-9]$/.test(i.value)) {
         /* un campo ora svuotato rimette quello di prima invece di lasciare
            una voce senza orario, che non partirebbe mai */
-        i.value = LM.promemoria().voci[id].ora;
+        i.value = LM.promemoria().voci[id].ora || '';
         toast('L’ora deve essere scritta per intero.', 0, 'avviso');
         return;
       }
-      var patch = { voci: {} }; patch.voci[id] = { ora: i.value };
-      salva(patch);
+      salva({ voci: { [id]: { on: LM.promemoria().voci[id].on, ora: comeOra(i.value) } } });
       toast('Da domani alle ' + i.value + '.', 0, 'clock');
     });
   });
 
   /* il silenzio */
-  var si = root.querySelector<HTMLElement>('#prom-sil-int');
+  const si = root.querySelector<HTMLElement>('#prom-sil-int');
   if (si) si.addEventListener('click', function () {
     salva({ silenzio: { on: !LM.promemoria().silenzio.on } });
     ridisegna();
   });
-  ['da', 'a'].forEach(function (q) {
-    var i = root.querySelector<HTMLElement>('#prom-sil-' + q);
+  (['da', 'a'] as const).forEach(function (q) {
+    const i = root.querySelector<HTMLInputElement>('#prom-sil-' + q);
     if (!i) return;
     i.addEventListener('change', function () {
-      var patch = { silenzio: {} }; patch.silenzio[q] = i.value;
-      salva(patch);
-      var c = LM.promemoria().silenzio;
+      const c0 = LM.promemoria().silenzio;
+      salva({ silenzio: { on: c0.on, da: q === 'da' ? comeOra(i.value) : c0.da, a: q === 'a' ? comeOra(i.value) : c0.a } });
+      const c = LM.promemoria().silenzio;
       i.value = q === 'da' ? c.da : c.a;
     });
   });
 
   /* la nota fissa */
-  var pf = root.querySelector<HTMLElement>('#imp-prom-fissa');
+  const pf = root.querySelector<HTMLElement>('#imp-prom-fissa');
   if (pf) pf.addEventListener('click', function () {
-    var era = P.fissaAccesa();
+    const era = P.fissaAccesa();
     P.fissa(!era);
-    P.mandaPiano(true);
+    void P.mandaPiano(true);
     ridisegna();
   });
 
@@ -1841,8 +1852,12 @@ function wirePromemoria(root: HTMLElement): void {
     esito.className = 'imp-nota' + (cls ? ' ' + cls : '');
     esito.innerHTML = testo;
   }
-  var coll = root.querySelector<HTMLElement>('#prom-collega');
+  const coll = root.querySelector<HTMLButtonElement>('#prom-collega');
   if (coll) coll.addEventListener('click', function () {
+    /* il tasto si tiene in una costante: dentro alle richiamate che arrivano
+       dopo, `coll` per il compilatore è ancora «forse niente» — lui non sa
+       che ci si arriva solo da dentro all'`if` */
+    const tasto = coll;
     var srv = (campo(root, '#prom-server').value || '').trim().replace(/\/+$/, '');
     var kk = (campo(root, '#prom-chiave').value || '').trim();
     /* si controlla PRIMA di salvare: due campi sbagliati salvati zitti
@@ -1855,17 +1870,17 @@ function wirePromemoria(root: HTMLElement): void {
       dillo('La chiave pubblica è una riga di 87 caratteri senza spazi. Questa ne ha ' + kk.length + ': forse è quella privata (più corta), o c’è dentro un pezzo di testo.', 'sync-errore');
       return;
     }
-    coll.disabled = true;
+    tasto.disabled = true;
     dillo('Sto provando a parlargli…');
     /* prima si chiede al server se è vivo: così l'errore è «il server non
        risponde» invece di «le notifiche non arrivano», che è la stessa cosa
        detta in un modo che non aiuta */
-    fetch(srv + '/salute').then(function (r) { return r.json(); }).then(function (j) {
+    void fetch(srv + '/salute').then(function (r) { return r.json() as Promise<RispostaProva>; }).then(function (j) {
       if (!j || !j.ok) throw new Error('risposta strana');
       LM.impostaPromemoria({ server: srv, chiave: kk });
       if (!j.vapid) {
         dillo('Il server risponde, ma non ha le sue chiavi: sul pannello di Cloudflare mancano i segreti <code>VAPID_PUBBLICA</code> e <code>VAPID_PRIVATA</code>. Il resto è a posto.', 'sync-errore');
-        coll.disabled = false;
+        tasto.disabled = false;
         return null;
       }
       /* IL CONFRONTO. È l'errore numero uno di chi installa da sé: si
@@ -1875,7 +1890,7 @@ function wirePromemoria(root: HTMLElement): void {
          toglie di mezzo mezz'ora di tentativi. */
       if (j.pubblica && j.pubblica !== kk) {
         dillo('Il server c’è, ma <b>le due chiavi non sono la stessa coppia</b>. Qui hai scritto una chiave che comincia per <code>' + esc(kk.slice(0, 12)) + '…</code>, mentre sul Worker c’è <code>' + esc(String(j.pubblica).slice(0, 12)) + '…</code>. Copia quella del Worker in questo campo, oppure rigenera la coppia e rimetti <b>tutti e due</b> i segreti su Cloudflare.', 'sync-errore');
-        coll.disabled = false;
+        tasto.disabled = false;
         return null;
       }
       dillo('Collegato.', 'sync-ok');
@@ -1891,8 +1906,8 @@ function wirePromemoria(root: HTMLElement): void {
         return;
       }
       ridisegna();
-    }).catch(function (e) {
-      coll.disabled = false;
+    }).catch(function () {
+      tasto.disabled = false;
       dillo('Non risponde. Controlla l’indirizzo, e prova ad aprirlo nel browser aggiungendo <code>/salute</code> alla fine: deve rispondere <code>{"ok":true}</code>.', 'sync-errore');
     });
   });
@@ -1902,18 +1917,18 @@ function wirePromemoria(root: HTMLElement): void {
      dentro c'è il codice del servizio push — che è quello che sa perché ha
      detto no. Ogni codice ha una causa sola in pratica, e ognuna ha un
      gesto: qui si scrive quel gesto invece del numero. */
-  function spiegaProva(j: RispostaProva | null, stato: number): string {
-    j = j || {};
-    var s = j.stato || 0;
-    var chiave = (P.cfg().chiave || '');
-    var coppiaDiversa = j.pubblica && chiave && j.pubblica !== chiave;
+  function spiegaProva(risposta: RispostaProva | null, stato: number): string {
+    const j: RispostaProva = risposta || {};
+    const s = j.stato || 0;
+    const chiave = (P.cfg().chiave || '');
+    const coppiaDiversa = j.pubblica && chiave && j.pubblica !== chiave;
     if (coppiaDiversa) {
       return 'Il servizio push ha detto no (<code>' + esc(String(s || stato)) + '</code>) e si vede perché: <b>le due chiavi non sono la stessa coppia</b>. Nell’app c’è <code>' + esc(chiave.slice(0, 12)) + '…</code>, sul Worker <code>' + esc(String(j.pubblica).slice(0, 12)) + '…</code>. Copia quella del Worker qui sopra e premi Collega.';
     }
     if (j.dove === 'firma') {
       return 'Non è nemmeno arrivato a parlare col servizio push: la <b>chiave privata</b> sul Worker non è una chiave valida. Di solito ci è finito dentro uno spazio o un ritorno a capo quando l’hai incollata nel segreto <code>VAPID_PRIVATA</code>. Rifallo copiandola tutta di fila. (<code>' + esc(String(j.errore || '')) + '</code>)';
     }
-    var detto = j.detto ? ' Ha scritto: <code>' + esc(String(j.detto).slice(0, 160)) + '</code>' : '';
+    const detto = j.detto ? ' Ha scritto: <code>' + esc(String(j.detto).slice(0, 160)) + '</code>' : '';
     if (s === 401 || s === 403) {
       return 'Il servizio push ha rifiutato la firma (<code>' + esc(String(s)) + '</code>). Vuol dire che la coppia VAPID sul Worker non è quella con cui questo telefono si è iscritto: rigenera la coppia con <code>promemoria/chiavi.html</code>, rimetti <b>tutti e due</b> i segreti su Cloudflare, incolla la pubblica qui sopra, premi Collega, poi spegni e riaccendi i promemoria.' + detto;
     }
@@ -1927,27 +1942,28 @@ function wirePromemoria(root: HTMLElement): void {
     return 'Il servizio push ha risposto <code>' + esc(String(s || stato)) + '</code> e non ha spiegato.' + detto;
   }
 
-  var pv = root.querySelector<HTMLElement>('#prom-prova');
+  const pv = root.querySelector<HTMLButtonElement>('#prom-prova');
   if (pv) pv.addEventListener('click', function () {
-    pv.disabled = true;
+    const prova = pv;
+    prova.disabled = true;
     dillo('Sto mandando…');
     /* mandare il piano prima serve: se l'iscrizione è nuova, sul server non
        c'è ancora niente a cui mandare la prova */
-    P.mandaPiano(true).then(function () {
+    void P.mandaPiano(true).then(function () {
       return fetch(P.cfg().server + '/prova', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: P.idDispositivo() })
       });
     }).then(function (r) {
-      return r.json().then(function (j) { return { r: r, j: j }; });
+      return (r.json() as Promise<RispostaProva>).then(function (j) { return { r: r, j: j }; });
     }).then(function (x) {
-      pv.disabled = false;
+      prova.disabled = false;
       if (x.r.ok) dillo('Partita. Se non la vedi entro qualche secondo, il permesso c’è ma il sistema la sta nascondendo: controlla le notifiche di LifeMax nelle impostazioni del telefono.', 'sync-ok');
       else if (x.r.status === 404) dillo('Il server non ha ancora un piano per questo dispositivo: spegni e riaccendi i promemoria qui sopra.', 'sync-errore');
       else if (x.r.status === 410) dillo('L’iscrizione non vale più (di solito: notifiche revocate, o app reinstallata). Spegni e riaccendi i promemoria.', 'sync-errore');
       else dillo(spiegaProva(x.j, x.r.status), 'sync-errore');
     }).catch(function () {
-      pv.disabled = false;
+      prova.disabled = false;
       dillo('Non ci sono riuscito: il server non risponde.', 'sync-errore');
     });
   });
@@ -1957,7 +1973,7 @@ function wireAspettoDati(root: HTMLElement): void {
   root.querySelectorAll<HTMLElement>('#seg-suono [data-suono]').forEach(function (b) {
     b.addEventListener('click', function () {
       root.querySelectorAll<HTMLElement>('#seg-suono [data-suono]').forEach(function (o) { o.classList.toggle('attivo', o === b); });
-      var st = LM.load(); st.profilo.suono = b.getAttribute('data-suono'); LM.save();
+      const st = LM.load(); st.profilo.suono = b.getAttribute('data-suono') === 'no' ? 'no' : 'si'; LM.save();
       /* si prova subito: un interruttore del suono che non fa sentire il
          suono che accende chiede di andare a cercarlo da qualche altra parte */
       if (st.profilo.suono === 'si') suona('leggero');
@@ -1966,20 +1982,23 @@ function wireAspettoDati(root: HTMLElement): void {
   root.querySelectorAll<HTMLElement>('#seg-vibra [data-vibra]').forEach(function (b) {
     b.addEventListener('click', function () {
       root.querySelectorAll<HTMLElement>('#seg-vibra [data-vibra]').forEach(function (o) { o.classList.toggle('attivo', o === b); });
-      var st = LM.load(); st.profilo.vibra = b.getAttribute('data-vibra'); LM.save();
+      const st = LM.load(); st.profilo.vibra = b.getAttribute('data-vibra') === 'no' ? 'no' : 'si'; LM.save();
       if (st.profilo.vibra === 'si') vibra('leggero');
     });
   });
   root.querySelectorAll<HTMLElement>('#seg-eff [data-eff]').forEach(function (b) {
     b.addEventListener('click', function () {
       root.querySelectorAll<HTMLElement>('#seg-eff [data-eff]').forEach(function (o) { o.classList.toggle('attivo', o === b); });
-      setEffetti(b.getAttribute('data-eff'));
+      /* i tre gradini sono tre: un attributo scritto male tornava «pieni»
+         per caso, e adesso lo dice il tipo invece del caso */
+      const q = b.getAttribute('data-eff');
+      setEffetti(q === 'minimi' ? 'minimi' : (q === 'ridotti' ? 'ridotti' : 'pieni'));
     });
   });
   root.querySelectorAll<HTMLElement>('#seg-scorri [data-scorri]').forEach(function (b) {
     b.addEventListener('click', function () {
       root.querySelectorAll<HTMLElement>('#seg-scorri [data-scorri]').forEach(function (o) { o.classList.toggle('attivo', o === b); });
-      setScorri(b.getAttribute('data-scorri'));
+      setScorri(b.getAttribute('data-scorri') === 'no' ? 'no' : 'si');
     });
   });
   root.querySelectorAll<HTMLElement>('#seg-nav [data-nav]').forEach(function (b) {
@@ -1987,14 +2006,19 @@ function wireAspettoDati(root: HTMLElement): void {
       /* il pannello resta aperto: il segmento si aggiorna da sé, così si
          vede subito la barra cambiare dietro senza chiudere niente */
       root.querySelectorAll<HTMLElement>('#seg-nav [data-nav]').forEach(function (o) { o.classList.toggle('attivo', o === b); });
-      setNav(b.getAttribute('data-nav'));
+      setNav(b.getAttribute('data-nav') === 'tutte' ? 'tutte' : 'tre');
     });
   });
   root.querySelectorAll<HTMLElement>('#seg-modo [data-modo]').forEach(function (b) {
-    b.addEventListener('click', function () { setModo(b.getAttribute('data-modo')); });
+    b.addEventListener('click', function () {
+      const q = b.getAttribute('data-modo');
+      setModo(q === 'light' ? 'light' : (q === 'dark' ? 'dark' : 'auto'));
+    });
   });
   root.querySelectorAll<HTMLElement>('#seg-skin [data-skin]').forEach(function (b) {
-    b.addEventListener('click', function () { setSkin(b.getAttribute('data-skin')); });
+    b.addEventListener('click', function () {
+      setSkin(b.getAttribute('data-skin') === 'arcade' ? 'arcade' : 'quiete');
+    });
   });
   var la = root.querySelector<HTMLElement>('#imp-accedi');
   if (la) la.addEventListener('click', function () { if (window.LMCloud && window.LMCloud.available) window.LMCloud.signIn(); });
@@ -2019,24 +2043,25 @@ function wireAspettoDati(root: HTMLElement): void {
      da sé — se il permesso è appena cambiato, la riga sopra deve cambiare
      con lui, altrimenti resta a dire «spenti» con le notifiche accese. */
   function riscriviImpostazioni() { staTornandoSheet = true; apriImpostazioni(); staTornandoSheet = false; }
-  var pon = root.querySelector<HTMLElement>('#imp-prom-on');
-  if (pon) pon.addEventListener('click', function () {
+  const P = window.LM_PROMEMORIA;
+  const pon = root.querySelector<HTMLButtonElement>('#imp-prom-on');
+  if (pon && P) pon.addEventListener('click', function () {
     pon.disabled = true;
-    window.LM_PROMEMORIA.accendi().then(function (esito) {
+    void P.accendi().then(function (esito) {
       if (esito === 'negato') toast('Il permesso è stato negato: senza quello non arrivano notifiche.', 0, 'avviso');
       else if (esito === 'chiave') toast('La chiave pubblica non va bene: guarda in «Promemoria».', 0, 'avviso');
       else if (esito === 'server') toast('Il permesso c’è, ma il server non risponde: guarda in «Promemoria».', 0, 'avviso');
-      else if (!window.LM_PROMEMORIA.configurato()) toast('Acceso. Per ora arriva solo la fine del timer.', 0, 'campana');
+      else if (!P.configurato()) toast('Acceso. Per ora arriva solo la fine del timer.', 0, 'campana');
       else toast('Promemoria accesi.', 0, 'campana');
       riscriviImpostazioni();
     });
   });
-  var pc = root.querySelector<HTMLElement>('#imp-prom-come');
+  const pc = root.querySelector<HTMLElement>('#imp-prom-come');
   if (pc) pc.addEventListener('click', apriPromemoria);
-  var poff = root.querySelector<HTMLElement>('#imp-prom-off');
-  if (poff) poff.addEventListener('click', function () {
+  const poff = root.querySelector<HTMLButtonElement>('#imp-prom-off');
+  if (poff && P) poff.addEventListener('click', function () {
     poff.disabled = true;
-    window.LM_PROMEMORIA.spegni().then(function () {
+    void P.spegni().then(function () {
       /* il permesso del browser non si può togliere da qui: si toglie
          l'iscrizione, e il pannello lo dice senza far finta d'altro */
       toast('Promemoria spenti.', 0, 'campanaOff');
@@ -2044,27 +2069,29 @@ function wireAspettoDati(root: HTMLElement): void {
     });
   });
   root.querySelectorAll<HTMLElement>('[data-diag]').forEach(function (b) { b.addEventListener('click', apriDiagnostica); });
-  var imp = root.querySelector<HTMLElement>('#imp-importa'); var file = root.querySelector<HTMLElement>('#imp-file');
+  const imp = root.querySelector<HTMLElement>('#imp-importa');
+  const file = root.querySelector<HTMLInputElement>('#imp-file');
   if (imp && file) {
-    imp.addEventListener('click', function () { file.click(); });
-    file.addEventListener('change', function () {
-      var f = file.files && file.files[0]; if (!f) return;
-      var reader = new FileReader();
+    const campoFile = file;
+    imp.addEventListener('click', function () { campoFile.click(); });
+    campoFile.addEventListener('change', function () {
+      const f = campoFile.files && campoFile.files[0]; if (!f) return;
+      const reader = new FileReader();
       reader.onload = function () {
-        var r = LM.importJson(String(reader.result));
+        const r = LM.importJson(String(reader.result));
         if (r.ok) { chiudiSheet(); applicaTema(); render(); toast('Dati importati (' + r.ricchezza + ' elementi).', 0, 'upload'); }
-        else { toast(r.err, 0, 'avviso'); }
+        else { toast(r.err || 'Importazione non riuscita.', 0, 'avviso'); }
       };
       reader.readAsText(f);
     });
   }
 }
 
-function esportaDati() {
+function esportaDati(): void {
   try {
-    var blob = new Blob([LM.exportJson()], { type: 'application/json' });
-    var url = URL.createObjectURL(blob);
-    var a = document.createElement('a');
+    const blob = new Blob([LM.exportJson()], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
     a.href = url; a.download = 'lifemax-' + LM.todayKey() + '.json';
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(function () { URL.revokeObjectURL(url); }, 1500);
@@ -2083,12 +2110,15 @@ function apriBackups() {
    con la cronologia di cosa è successo e un pulsante che copia tutto —
    perché il problema si vede sul telefono, dove non c'è nessuna console. */
 
-var LOG_SOLO_PROBLEMI = false;
+let LOG_SOLO_PROBLEMI = false;
 
-function statoSalvataggioSpiegato() {
-  var y = window.LM_SYNC || { state: 'idle' };
-  var a = window.LM_AUTH || {};
-  var locale = 'Sul telefono o computer che stai usando i dati sono salvati subito, sempre.';
+/* come sta il salvataggio, spiegato a chi guarda: una classe per il colore,
+   un titolo e una riga di testo */
+export interface Spiegazione { cls: string; tit: string; txt: string }
+function statoSalvataggioSpiegato(): Spiegazione {
+  const y = window.LM_SYNC || { state: 'idle' as const, error: '', at: 0, inCoda: false };
+  const a = window.LM_AUTH || { available: false, user: null, syncing: false };
+  const locale = 'Sul telefono o computer che stai usando i dati sono salvati subito, sempre.';
   if (!a.available) return { cls: 'diag-ok', tit: 'Solo su questo dispositivo', txt: locale + ' Il cloud non è raggiungibile da qui, quindi non c’è copia online.' };
   if (!a.user) return { cls: 'diag-ok', tit: 'Solo su questo dispositivo', txt: locale + ' Accedi con Google per avere anche una copia nel cloud.' };
   /* L'ASCOLTO È UNA COSA A PARTE DAL SALVATAGGIO, e va detta.
@@ -2109,15 +2139,16 @@ function statoSalvataggioSpiegato() {
   return { cls: 'diag-ok', tit: 'Niente in sospeso', txt: locale };
 }
 
-function righeLogHtml() {
-  if (!window.LMLog) return '<div class="imp-nota" style="margin:0">Registro non disponibile.</div>';
-  var r = LMLog.righe();
+function righeLogHtml(): string {
+  const reg = window.LMLog;
+  if (!reg) return '<div class="imp-nota" style="margin:0">Registro non disponibile.</div>';
+  let r = reg.righe();
   if (LOG_SOLO_PROBLEMI) r = r.filter(function (x) { return x.liv !== 'info'; });
   if (!r.length) return '<div class="diag-vuoto">' + (LOG_SOLO_PROBLEMI ? 'Nessun problema registrato.' : 'Ancora niente da mostrare.') + '</div>';
   /* dal più recente: su un telefono l'ultima cosa avvenuta deve stare
      davanti agli occhi, non in fondo a 300 righe */
   return r.slice().reverse().map(function (x) {
-    return '<div class="diag-riga liv-' + x.liv + '"><span class="diag-ora">' + LMLog.ora(x.t) + '</span>' +
+    return '<div class="diag-riga liv-' + x.liv + '"><span class="diag-ora">' + reg.ora(x.t) + '</span>' +
       '<span class="diag-can">' + esc(x.can) + '</span>' +
       '<span class="diag-msg">' + esc(x.msg) + (x.dati ? '<i>' + esc(x.dati) + '</i>' : '') + '</span></div>';
   }).join('');
@@ -2127,14 +2158,16 @@ function apriDiagnostica() {
   apriFoglio('Registro tecnico', 'diagnostica', {}, true);
 }
 
-function wireDiagnostica(root: HTMLElement): void {
-  var cons = root.querySelector<HTMLElement>('#diag-console');
-  var area = root.querySelector<HTMLElement>('#diag-testo');
+export function wireDiagnostica(root: HTMLElement): void {
+  /* i quattro nodi li ha scritti il pannello che sta chiamando questo
+     cablaggio, tre righe sopra: `presa` dice che è quella la ragione */
+  const cons = presa(root.querySelector<HTMLElement>('#diag-console'));
+  const area = presa(root.querySelector<HTMLTextAreaElement>('#diag-testo'));
 
-  function testoCompleto() { return window.LMLog ? LMLog.testo() : ''; }
+  function testoCompleto() { return window.LMLog ? window.LMLog.testo() : ''; }
 
-  root.querySelector<HTMLElement>('#diag-copia').addEventListener('click', function () {
-    var t = testoCompleto();
+  presa(root.querySelector<HTMLElement>('#diag-copia')).addEventListener('click', function () {
+    const t = testoCompleto();
     function aMano() {
       /* niente clipboard (Safari in certi contesti): mostriamo il testo già
          selezionato, così "copia" è comunque a un gesto di distanza */
@@ -2143,25 +2176,25 @@ function wireDiagnostica(root: HTMLElement): void {
       toast('Testo selezionato: tienilo premuto e scegli «Copia».', 0, 'copy');
     }
     if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(t).then(function () {
+      void navigator.clipboard.writeText(t).then(function () {
         toast('Registro copiato.', 0, 'copy');
       }, aMano);
     } else aMano();
   });
 
-  var cond = root.querySelector<HTMLElement>('#diag-condividi');
+  const cond = root.querySelector<HTMLElement>('#diag-condividi');
   if (cond) cond.addEventListener('click', function () {
-    navigator.share({ title: 'LifeMax — registro diagnostico', text: testoCompleto() }).catch(function () { /* annullato */ });
+    void navigator.share({ title: 'LifeMax — registro diagnostico', text: testoCompleto() }).catch(function () { /* annullato */ });
   });
 
-  root.querySelector<HTMLElement>('#diag-riprova').addEventListener('click', function () {
-    LM.save();   // forza un giro di salvataggio: rilancia anche il push sul cloud
-    if (window.LMLog) LMLog.info('registro', 'Salvataggio richiesto a mano dall’utente');
+  presa(root.querySelector<HTMLElement>('#diag-riprova')).addEventListener('click', function () {
+    LM.save();   /* forza un giro di salvataggio: rilancia anche il push sul cloud */
+    if (window.LMLog) window.LMLog.info('registro', 'Salvataggio richiesto a mano dall’utente');
     toast('Salvataggio richiesto: l’esito è nelle righe qui sotto.', 0, 'riprova');
   });
 
-  root.querySelector<HTMLElement>('#diag-svuota').addEventListener('click', function () {
-    if (window.LMLog) LMLog.svuota();
+  presa(root.querySelector<HTMLElement>('#diag-svuota')).addEventListener('click', function () {
+    if (window.LMLog) window.LMLog.svuota();
     cons.innerHTML = righeLogHtml();
   });
 
@@ -2176,20 +2209,22 @@ function wireDiagnostica(root: HTMLElement): void {
 
   /* aggiornamento dal vivo: si aggiunge una riga in cima, il resto non si
      muove. Guardare il registro mentre agisci è metà della diagnosi. */
-  function nuovaRiga(e) {
+  function nuovaRiga(e: Event) {
     if (!document.body.contains(cons)) { window.removeEventListener('lm:log', nuovaRiga); return; }
-    var x = e.detail; if (!x) return;
+    const reg = window.LMLog;
+    const x = (e as CustomEvent).detail as { t: number; liv: string; can: string; msg: string; dati?: string } | null;
+    if (!x || !reg) return;
     if (LOG_SOLO_PROBLEMI && x.liv === 'info') return;
-    var vuoto = cons.querySelector<HTMLElement>('.diag-vuoto');
+    const vuoto = cons.querySelector<HTMLElement>('.diag-vuoto');
     if (vuoto) vuoto.remove();
-    var d = document.createElement('div');
+    const d = document.createElement('div');
     d.className = 'diag-riga liv-' + x.liv + ' diag-nuova';
-    d.innerHTML = '<span class="diag-ora">' + LMLog.ora(x.t) + '</span><span class="diag-can">' + esc(x.can) +
+    d.innerHTML = '<span class="diag-ora">' + reg.ora(x.t) + '</span><span class="diag-can">' + esc(x.can) +
       '</span><span class="diag-msg">' + esc(x.msg) + (x.dati ? '<i>' + esc(x.dati) + '</i>' : '') + '</span>';
     cons.insertBefore(d, cons.firstChild);
-    var testa = root.querySelector<HTMLElement>('.diag-stato');
+    const testa = root.querySelector<HTMLElement>('.diag-stato');
     if (testa && x.can === 'sync') {
-      var st = statoSalvataggioSpiegato();
+      const st = statoSalvataggioSpiegato();
       testa.className = 'diag-stato ' + st.cls;
       testa.innerHTML = '<b>' + esc(st.tit) + '</b><span>' + esc(st.txt.trim()) + '</span>';
     }

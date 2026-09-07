@@ -1547,10 +1547,14 @@ function creaLM() {
   };
   var ORA_VALIDA = /^([01][0-9]|2[0-3]):[0-5][0-9]$/;
 
-  function promemoria() {
+  /* torna sempre una configurazione: se non c'è la mette la riga di sopra.
+     `presa` dice al compilatore quello che dice quella riga — senza, chi
+     legge `promemoria().voci.mattina` deve controllare il niente a ogni
+     chiamata per un caso che non esiste. */
+  function promemoria(): Promemoria {
     var s = load();
-    if (!s.profilo.promemoria) s.profilo.promemoria = JSON.parse(JSON.stringify(PROMEMORIA_DEFAULT));
-    return s.profilo.promemoria;
+    if (!s.profilo.promemoria) s.profilo.promemoria = JSON.parse(JSON.stringify(PROMEMORIA_DEFAULT)) as Promemoria;
+    return presa(s.profilo.promemoria);
   }
 
   /* Una toppa per volta, e ogni pezzo controllato: questi valori arrivano da
