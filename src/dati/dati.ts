@@ -301,6 +301,16 @@ function creaLM() {
      mentire, e mentire al compilatore costa più che tacergli qualcosa. */
   type Mappa = Record<string, unknown>;
 
+  /* UNA RIGA CHE SI SA ESSERCI.
+     Il modo di dire «l'ho appena cercata e l'ho trovata». `findIndex` dà un
+     indice, la riga dopo lo controlla, e `arr[i]` per il compilatore resta
+     comunque «forse niente»: lui non collega le due righe. Questa funzione
+     dice una volta sola quello che si sa, invece di ripeterlo con un punto
+     esclamativo in trenta posti — dove uno dei trenta, un giorno, finirà
+     dove non si sa affatto.
+     SI USA SOLO subito dopo un controllo sull'indice, e mai per «speriamo». */
+  function presa<T>(v: T | undefined): T { return v as T; }
+
   function eMappa(v: unknown): v is Mappa {
     return !!v && typeof v === 'object' && !Array.isArray(v);
   }
@@ -414,7 +424,10 @@ function creaLM() {
       if (!t || !t.k || !t.chiave) return;
       if (!perCampo[t.k]) perCampo[t.k] = {};
       var p = perCampo[t.k];
-      if (!p[t.chiave] || t.ts > p[t.chiave]) p[t.chiave] = t.ts;
+      /* letta una volta e messa in una variabile: scritta tre volte era
+         anche tre occasioni di sbagliarne una */
+      var pre = p[t.chiave];
+      if (pre === undefined || t.ts > pre) p[t.chiave] = t.ts;
     });
     Object.keys(perCampo).forEach(function (k) {
       if (!Array.isArray(s[k])) return;
@@ -569,10 +582,25 @@ function creaLM() {
 
   /* Riempie i campi mancanti negli stati salvati prima di un aggiornamento
      (o arrivati dal cloud): nessun dato viene perso, si aggiunge solo. */
-  function normalizza(s: unknown): Stato {
+  /* IL CONFINE. Questa funzione prende qualcosa che DICE di essere uno stato
+     — un salvataggio vecchio, un file importato, un documento arrivato dalla
+     nuvola — e restituisce uno stato vero. È l'unico punto dell'app in cui un
+     dato non fidato diventa fidato, e per questo tutti i controlli stanno
+     qui: campo per campo, e quello che non regge viene messo da parte invece
+     che buttato.
+     Dentro si lavora COME SE fosse già uno Stato, con una conversione sola e
+     dichiarata. L'alternativa sarebbe scrivere ogni controllo due volte — una
+     per il compilatore e una per davvero — e due copie dello stesso controllo
+     sono il posto dove prima o poi una delle due resta indietro. */
+  function normalizza(grezzo: unknown): Stato {
+    var s = (eMappa(grezzo) ? grezzo : {}) as unknown as Stato;
+    /* la stessa cosa vista per chiave, per i due giri che passano su TUTTI i
+       campi senza sapere quali sono */
+    var perChiave = s as unknown as Record<string, unknown>;
     var vuoto = statoVuoto();
+    var vuotoPerChiave = vuoto as unknown as Record<string, unknown>;
     Object.keys(vuoto).forEach(function (k) {
-      if (s[k] === undefined || s[k] === null) s[k] = vuoto[k];
+      if (perChiave[k] === undefined || perChiave[k] === null) perChiave[k] = vuotoPerChiave[k];
     });
     /* UN CAMPO DEL TIPO SBAGLIATO NON SI BUTTA, SI METTE DA PARTE.
        Qui c'erano righe come `if (!Array.isArray(s.lezioni)) s.lezioni = []`:
@@ -580,14 +608,14 @@ function creaLM() {
        spariva in silenzio e non tornava più. Adesso quello che c'era finisce
        in `recuperati`, che viaggia con lo stato e si può guardare dal
        Registro tecnico. */
-    var salva = function (k, buono) {
-      if (buono(s[k])) return;
-      if (s[k] !== undefined && s[k] !== null) {
+    var salva = function (k: string, buono: (v: unknown) => boolean) {
+      if (buono(perChiave[k])) return;
+      if (perChiave[k] !== undefined && perChiave[k] !== null) {
         s.recuperati = s.recuperati || {};
-        s.recuperati[k] = { quando: Date.now(), valore: s[k] };
+        s.recuperati[k] = { quando: Date.now(), valore: perChiave[k] };
         if (window.LMLog) window.LMLog.errore('dati', 'campo «' + k + '» del tipo sbagliato: messo da parte invece che buttato');
       }
-      s[k] = vuoto[k] !== undefined ? JSON.parse(JSON.stringify(vuoto[k])) : [];
+      perChiave[k] = vuotoPerChiave[k] !== undefined ? JSON.parse(JSON.stringify(vuotoPerChiave[k])) : [];
     };
     var eLista = function (v: unknown) { return Array.isArray(v); };
     ['backlog', 'abitudini', 'lezioni', 'azioni', 'inbox', 'checkins', 'esperimenti',
@@ -614,22 +642,28 @@ function creaLM() {
     if (!s.profilo.promemoria || typeof s.profilo.promemoria !== 'object') {
       s.profilo.promemoria = JSON.parse(JSON.stringify(PROMEMORIA_DEFAULT));
     }
-    (function (c) {
+    /* Stesso confine di `normalizza`: quello che arriva qui dice di essere
+       una configurazione dei promemoria, e il lavoro di queste righe è
+       renderla tale. Le voci si guardano una per una perché uno stato che
+       viene da un dispositivo più vecchio può averne solo una parte. */
+    (function (c: Promemoria) {
+      var voci = c.voci as unknown as Record<string, VocePromemoria | undefined>;
       if (typeof c.server !== 'string') c.server = '';
       if (typeof c.chiave !== 'string') c.chiave = '';
       c.fissa = !!c.fissa;
-      if (!c.voci || typeof c.voci !== 'object') c.voci = {};
-      Object.keys(PROMEMORIA_DEFAULT.voci).forEach(function (k) {
+      if (!c.voci || typeof c.voci !== 'object') { c.voci = {} as Promemoria['voci']; voci = c.voci as unknown as Record<string, VocePromemoria | undefined>; }
+      (Object.keys(PROMEMORIA_DEFAULT.voci) as (keyof Promemoria['voci'])[]).forEach(function (k) {
         var d = PROMEMORIA_DEFAULT.voci[k];
-        if (!c.voci[k] || typeof c.voci[k] !== 'object') c.voci[k] = JSON.parse(JSON.stringify(d));
-        if (typeof c.voci[k].on !== 'boolean') c.voci[k].on = d.on;
-        if (d.ora != null && !ORA_VALIDA.test(c.voci[k].ora || '')) c.voci[k].ora = d.ora;
+        var v = voci[k];
+        if (!v || typeof v !== 'object') { v = JSON.parse(JSON.stringify(d)) as VocePromemoria; voci[k] = v; }
+        if (typeof v.on !== 'boolean') v.on = d.on;
+        if (d.ora != null && !ORA_VALIDA.test(v.ora || '')) v.ora = d.ora;
       });
       if (!c.silenzio || typeof c.silenzio !== 'object') c.silenzio = JSON.parse(JSON.stringify(PROMEMORIA_DEFAULT.silenzio));
       if (typeof c.silenzio.on !== 'boolean') c.silenzio.on = PROMEMORIA_DEFAULT.silenzio.on;
       if (!ORA_VALIDA.test(c.silenzio.da || '')) c.silenzio.da = PROMEMORIA_DEFAULT.silenzio.da;
       if (!ORA_VALIDA.test(c.silenzio.a || '')) c.silenzio.a = PROMEMORIA_DEFAULT.silenzio.a;
-    })(s.profilo.promemoria);
+    })(s.profilo.promemoria as Promemoria);
     if (!s.profilo.ritmo.sveglia) s.profilo.ritmo.sveglia = RITMO_DEFAULT.sveglia;
     if (!s.profilo.ritmo.sonno) s.profilo.ritmo.sonno = RITMO_DEFAULT.sonno;
     if (!Array.isArray(s.profilo.ritmo.pasti)) s.profilo.ritmo.pasti = JSON.parse(JSON.stringify(RITMO_DEFAULT.pasti));
@@ -800,7 +834,7 @@ function creaLM() {
         return String(c.ts || parseKey(c.data).getTime()) === String(chiave);
       });
       if (i < 0) return false;
-      var c = s.checkins.splice(i, 1)[0];
+      var c = presa(s.checkins.splice(i, 1)[0]);
       togliXp(XP_EVENTI.checkin, c.data);
       registra('dati', 'Annullato un check-in' + quando(c.data), true);
       save();
@@ -1054,8 +1088,10 @@ function creaLM() {
      di sicurezza. Tutto il resto — il cloud, un file importato — unisce. */
   function hydrate(obj: unknown, sostituisci?: boolean) {
     if (!obj || typeof obj !== 'object') return;
-    var fuso = sostituisci ? obj : unisci(load(), obj);
-    if (typeof obj.updatedAt === 'number') fuso.updatedAt = Math.max(fuso.updatedAt || 0, obj.updatedAt);
+    var fuso = (sostituisci ? obj : unisci(load(), obj)) as Stato | null;
+    if (!fuso) return;
+    var quando = eMappa(obj) ? obj['updatedAt'] : undefined;
+    if (typeof quando === 'number') fuso.updatedAt = Math.max(fuso.updatedAt || 0, quando);
     senzaLapidi++;
     state = normalizza(fuso);
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) { /* ignora */ }
@@ -1160,9 +1196,12 @@ function creaLM() {
       togliXp(tolti, a.doneAt ? dayKey(new Date(a.doneAt)) : a.data);
       a.done = false;
       a.doneAt = null;
-      if (a.passoDi) {
-        var prog0 = s.backlog.find(function (x) { return x.id === a.passoDi.b; });
-        if (prog0 && prog0.steps) { var st0 = prog0.steps.find(function (x) { return x.id === a.passoDi.s; }); if (st0) st0.done = false; }
+      /* `a.passoDi` dentro a una closure perde la restrizione dell'`if`:
+         si tiene per mano in una variabile, che è anche più chiaro */
+      var pd0 = a.passoDi;
+      if (pd0) {
+        var prog0 = s.backlog.find(function (x) { return x.id === pd0.b; });
+        if (prog0 && prog0.steps) { var st0 = prog0.steps.find(function (x) { return x.id === pd0.s; }); if (st0) st0.done = false; }
       }
       registra('azione', 'Tolta la spunta a «' + a.testo + '» (−' + tolti + ' XP)', false);
       save();
@@ -1175,13 +1214,15 @@ function creaLM() {
     var punti = premiaXp(a.mit ? 'mit' : 'azione', a.data);
     /* se l'azione era il passo di un progetto, spuntalo; se il progetto
        è completo, lo rimuove dalle cose da fare */
-    if (a.passoDi) {
-      var prog = s.backlog.find(function (x) { return x.id === a.passoDi.b; });
+    var pd = a.passoDi;
+    if (pd) {
+      var prog = s.backlog.find(function (x) { return x.id === pd.b; });
       if (prog && prog.steps) {
-        var st = prog.steps.find(function (x) { return x.id === a.passoDi.s; });
+        var quale = prog;
+        var st = quale.steps.find(function (x) { return x.id === pd.s; });
         if (st) st.done = true;
-        if (prog.steps.length && prog.steps.every(function (x) { return x.done; })) {
-          s.backlog = s.backlog.filter(function (x) { return x.id !== prog.id; });
+        if (quale.steps.length && quale.steps.every(function (x) { return x.done; })) {
+          s.backlog = s.backlog.filter(function (x) { return x.id !== quale.id; });
         }
       }
     }
@@ -1197,7 +1238,7 @@ function creaLM() {
     var s = load();
     var i = s.azioni.findIndex(function (x) { return x.id === id; });
     if (i < 0) return null;
-    var a = s.azioni[i];
+    var a = presa(s.azioni[i]);
     var eraPasso = !!a.passoDi;
     s.azioni.splice(i, 1);
     if (a.mit) {
@@ -1257,7 +1298,7 @@ function creaLM() {
     var s = load();
     var i = s.azioni.findIndex(function (x) { return x.id === id; });
     if (i < 0) return;
-    var a = s.azioni.splice(i, 1)[0];
+    var a = presa(s.azioni.splice(i, 1)[0]);
     a.mit = false;
     s.azioni.push(a);
     save();
@@ -1315,7 +1356,7 @@ function creaLM() {
     var s = load();
     var a = trovaCosa(s, id);
     if (!a) return 0;
-    var G = QUANTO_FATTO.find(function (x) { return x.id === quanto; }) || QUANTO_FATTO[0];
+    var G = QUANTO_FATTO.find(function (x) { return x.id === quanto; }) || presa(QUANTO_FATTO[0]);
     a.done = false;
     a.doneAt = null;
     a.mancata = { ts: Date.now(), perche: perche || 'altro', nota: nota || '', quanto: G.id, quota: G.quota };
@@ -1326,7 +1367,8 @@ function creaLM() {
       punti = Math.max(1, Math.round(pieni * G.quota));
       dammiXp(punti, a.data);
     }
-    var q = (PERCHE_MANCATA.find(function (x) { return x.id === a.mancata.perche; }) || {}).eti || '';
+    var motivo = a.mancata ? a.mancata.perche : 'altro';
+    var q = (PERCHE_MANCATA.find(function (x) { return x.id === motivo; }) || { eti: '' }).eti || '';
     registra('azione',
       (G.quota > 0 ? G.eti.toLowerCase() + ' di «' + a.testo + '»' : 'Non ci sono riuscito: «' + a.testo + '»') +
       (q ? ' — ' + q.toLowerCase() : '') + (punti ? ' (+' + punti + ' XP)' : ''), false);
@@ -1352,7 +1394,7 @@ function creaLM() {
     var limite = giorni ? Date.now() - giorni * 86400000 : 0;
     return s.azioni.concat(s.backlog)
       .filter(function (a) { return a.mancata && a.mancata.ts >= limite; })
-      .sort(function (x, y) { return y.mancata.ts - x.mancata.ts; });
+      .sort(function (x, y) { return (y.mancata ? y.mancata.ts : 0) - (x.mancata ? x.mancata.ts : 0); });
   }
 
   function cattura(testo: string) {
@@ -1396,7 +1438,7 @@ function creaLM() {
     var s = load();
     var i = s.azioni.findIndex(function (x) { return x.id === id; });
     if (i < 0) return;
-    var a = s.azioni.splice(i, 1)[0];
+    var a = presa(s.azioni.splice(i, 1)[0]);
     /* se era la priorità, il giorno non deve restare senza: promuovi la
        prima cosa ancora da fare, così resta chiaro da dove ripartire. */
     if (a.mit) {
@@ -1595,7 +1637,7 @@ function creaLM() {
   function rimuoviBacklog(id: string) {
     var s = load();
     var i = s.backlog.findIndex(function (x) { return x.id === id; });
-    if (i >= 0) { registra('backlog', 'Eliminata l’attività «' + s.backlog[i].testo + '»', true); s.backlog.splice(i, 1); save(); }
+    if (i >= 0) { registra('backlog', 'Eliminata l’attività «' + presa(s.backlog[i]).testo + '»', true); s.backlog.splice(i, 1); save(); }
   }
   /* porta un elemento del backlog tra le azioni di oggi (senza XP: è solo
      spostamento). mit true se oggi non c'è ancora nessuna azione. */
@@ -1607,7 +1649,7 @@ function creaLM() {
     var i = s.backlog.findIndex(function (x) { return x.id === id; });
     if (i < 0) return null;
     var k = giorno || todayKey();
-    var b = s.backlog.splice(i, 1)[0];
+    var b = presa(s.backlog.splice(i, 1)[0]);
     var a = aggiungiAzione(b.testo, b.areaId, { data: k, mit: serveMit(k), interna: true });
     registra('azione', k === todayKey()
       ? 'Portata in Oggi: «' + b.testo + '»'
@@ -1622,7 +1664,8 @@ function creaLM() {
     var b = s.backlog.find(function (x) { return x.id === bid; });
     if (!b) return;
     if (!Array.isArray(b.steps)) b.steps = [];
-    b.steps.push({ id: uid(), testo: testo, done: false });
+    var passi = b.steps;
+    passi.push({ id: uid(), testo: testo, done: false });
     registra('backlog', 'Aggiunto un passo a «' + b.testo + '»: ' + testo, false);
     save();
   }
@@ -1913,7 +1956,7 @@ function creaLM() {
   function rimuoviAbitudine(id: string) {
     var s = load();
     var i = s.abitudini.findIndex(function (x) { return x.id === id; });
-    if (i >= 0) { registra('abitudine', 'Eliminata l’abitudine «' + s.abitudini[i].testo + '»', true); s.abitudini.splice(i, 1); save(); }
+    if (i >= 0) { registra('abitudine', 'Eliminata l’abitudine «' + presa(s.abitudini[i]).testo + '»', true); s.abitudini.splice(i, 1); save(); }
   }
   /* prevista in un dato giorno? giorni vuoto = ogni giorno */
   /* Un'abitudine vale da quando la crei in avanti, non a ritroso: prima
