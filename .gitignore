@@ -9,5 +9,5 @@ assets/react/
 # Attenzione alla fine: qui GitHub Pages serve il ramo così com'è, senza
 # nessun passaggio di build — per questo `assets/pacco/` è COMMITTATO. Quando
 # la riscrittura passa le prove e Pages punterà a /docs, questa riga va
-# togliata, se no il sito nuovo non esiste per nessuno.
+# tolta, se no il sito nuovo non esiste per nessuno.
 docs/

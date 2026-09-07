@@ -247,58 +247,16 @@ function creaLM() {
      campo manca. Non è una convenzione da ricordare: è una prova che non passa.
      ------------------------------------------------------------------ */
 
-  /* i modi in cui due valori si mettono insieme:
-       elenco   una lista di righe con una loro identità → unione per identità
-       insieme  una lista di parole → unione, senza doppioni
-       mappa    un oggetto usato come dizionario (per giorno, per area) → unione
-                delle chiavi, e dentro si scende
-       ramo     un oggetto con campi fissi (il profilo) → si scende nei campi
-       recente  vince la copia salvata per ultima
-       massimo  vince il numero più grande (contatori che solo salgono)
-       oppure   vero se è vero da una parte (non si torna indietro) */
-  var COME_UNIRE = {
-    versione: 'massimo',
-    updatedAt: 'massimo',
-    azzerato: 'massimo',
-    onboarded: 'oppure',
-    demo: 'recente',
-    demoChiusa: 'oppure',
-    profilo: 'ramo',
-    ritmoGiorno: 'mappa',
-    visto: 'massimo',
-    aree: 'elenco',
-    areeAttive: 'insieme',
-    azioni: 'elenco',
-    inbox: 'elenco',
-    backlog: 'elenco',
-    abitudini: 'elenco',
-    checkins: 'elenco',
-    valutazioni: 'mappa',
-    minuti: 'mappa',
-    pianoMattina: 'mappa',
-    reviewSera: 'mappa',
-    reviewSettimana: 'mappa',
-    esperimenti: 'elenco',
-    lezioni: 'elenco',
-    xp: 'massimo',
-    xpPerGiorno: 'mappa',
-    log: 'elenco',
-    registro: 'elenco',
-    cancellati: 'elenco',
-    recuperati: 'mappa',
-    /* IL TIMER STA NEI DATI, non nella memoria della pagina. Prima viveva in
-       una variabile: chiudevi il telefono e non era mai esistito, e su un
-       altro dispositivo non c'era. Adesso è un campo come gli altri, quindi
-       si salva, sopravvive a una ricarica e arriva agli altri dispositivi per
-       la strada che c'è già.
-       Quello che si salva è l'ORA DI FINE, non i minuti che restano: un
-       istante assoluto lo legge uguale qualunque dispositivo in qualunque
-       momento, mentre un conto alla rovescia salvato invecchia appena lo
-       scrivi. Vince la copia scritta per ultima — se fai partire un timer sul
-       telefono mentre sul portatile ne gira un altro, quello che conta è
-       l'ultimo che hai toccato. */
-    timer: 'recente'
-  };
+  /* LE REGOLE DI FUSIONE STANNO IN UN POSTO SOLO, e non è più questo.
+     Qui c'era la loro copia: la stessa tabella scritta due volte, una in
+     `src/tipi/stato.ts` e una qui — e questa, essendo locale, oscurava
+     quella. Cioè la garanzia del compilatore («una regola per ogni campo di
+     Stato, o non compila») in questo file non proteggeva niente.
+     È esattamente il difetto che quella garanzia esiste per impedire, e ce
+     l'aveva in casa. Adesso la tabella è una, arriva da `../tipi/stato`, e
+     il suo tipo dice che se aggiungi un campo senza regola non si compila.
+     I modi — elenco, insieme, mappa, ramo, recente, massimo, oppure — sono
+     spiegati uno per uno là, accanto al tipo `ModoFusione`. */
 
   function eMappa(v) {
     return v && typeof v === 'object' && !Array.isArray(v);
@@ -1037,7 +995,7 @@ function creaLM() {
   /* `sostituisci` è vero SOLO per le tre cose che vogliono dire «questa storia
      non è mai successa»: annullare, tornare a un punto, ripristinare una copia
      di sicurezza. Tutto il resto — il cloud, un file importato — unisce. */
-  function hydrate(obj, sostituisci) {
+  function hydrate(obj: unknown, sostituisci?: boolean) {
     if (!obj || typeof obj !== 'object') return;
     var fuso = sostituisci ? obj : unisci(load(), obj);
     if (typeof obj.updatedAt === 'number') fuso.updatedAt = Math.max(fuso.updatedAt || 0, obj.updatedAt);
@@ -1091,7 +1049,7 @@ function creaLM() {
      esiste un inverso preciso ma che nel diario non hanno una riga loro — la
      spunta di un'abitudine, per esempio, che come evento a sé riempirebbe il
      diario di una riga per abitudine al giorno. */
-  function registra(cat, testo, imp, disfa) {
+  function registra(cat: string, testo: string, imp?: boolean, disfa?: Stato | null) {
     var s = load();
     if (!Array.isArray(s.registro)) s.registro = [];
     var e = { ts: Date.now(), cat: cat, testo: testo, imp: !!imp };
