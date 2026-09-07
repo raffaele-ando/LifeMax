@@ -1099,7 +1099,7 @@ function apriSheet(
   wireSheet = onWire || null;
   if (wireSheet) wireSheet(perId('sheet-corpo'));
   if (giaAperto) { if ($sheetScorre) $sheetScorre.scrollTop = 0; if ($sheetPanel) $sheetPanel.focus({ preventScroll: true }); }
-  else { animaIngressoSheet(); entraFuoco($sheetPanel); }
+  else { animaIngressoSheet(); if ($sheetPanel) entraFuoco($sheetPanel); }
 }
 
 /* L'ingresso del foglio: una volta, quando si apre. La classe se ne va da
@@ -2810,30 +2810,32 @@ function scegliTimer(azioneId: string | null, areaId?: string | null, testo?: st
        il timer NON si ferma: uscire dallo schermo e smettere sono due cose
        diverse, e confonderle costa il lavoro fatto.
    ============================================================ */
-var $conc = null;
-function apriConcentrazione() {
-  var t = timerOra();
+let $conc: HTMLElement | null = null;
+function apriConcentrazione(): void {
+  const t = timerOra();
   if (!t) return;
   if (!$conc) {
-    $conc = document.createElement('div');
-    $conc.className = 'concentra';
-    $conc.setAttribute('role', 'dialog');
-    $conc.setAttribute('aria-modal', 'true');
-    $conc.setAttribute('aria-label', 'Timer a schermo intero');
-    document.body.appendChild($conc);
+    const c = document.createElement('div');
+    c.className = 'concentra';
+    c.setAttribute('role', 'dialog');
+    c.setAttribute('aria-modal', 'true');
+    c.setAttribute('aria-label', 'Timer a schermo intero');
+    document.body.appendChild(c);
+    $conc = c;
   }
   disegnaConcentrazione();
   document.body.classList.add('in-concentrazione');
   if (!t.concentrato) LM.aggiornaTimerDati({ concentrato: true });
   battitoTimerAvvia();
 }
-function disegnaConcentrazione() {
-  var t = timerOra();
-  if (!$conc || !t) return;
-  var T = TIPI_TIMER[t.tipo] || TIPI_TIMER.blocco;
-  var az = LM.load().azioni.find(function (x) { return x.id === t.azioneId; });
-  var titolo = (az && az.testo) || t.testo || 'Concentrazione';
-  $conc.innerHTML =
+function disegnaConcentrazione(): void {
+  const t = timerOra();
+  const c = $conc;
+  if (!c || !t) return;
+  const T = TIPI_TIMER[t.tipo];
+  const az = LM.load().azioni.find(function (x) { return x.id === t.azioneId; });
+  const titolo = (az && az.testo) || t.testo || 'Concentrazione';
+  c.innerHTML =
     '<button class="conc-esci" id="conc-esci" aria-label="Torna all’app">' + ICO('x', 18) + '</button>' +
     '<div class="conc-dentro">' +
     '<div class="conc-tipo">' + ICO(T.ico, 13) + ' ' +
@@ -2849,31 +2851,35 @@ function disegnaConcentrazione() {
     '<button class="btn btn-mini btn-ghost" id="conc-ferma">' + ICO('pause', 15) + ' ' +
     (t.daAvvio ? 'Basta così' : 'Ferma e registra i minuti') + '</button>' +
     '</div></div>';
-  presa($conc.querySelector<HTMLElement>('#conc-esci')).addEventListener('click', chiudiConcentrazione);
-  presa($conc.querySelector<HTMLElement>('#conc-ferma')).addEventListener('click', function () {
+  presa(c.querySelector<HTMLElement>('#conc-esci')).addEventListener('click', chiudiConcentrazione);
+  presa(c.querySelector<HTMLElement>('#conc-ferma')).addEventListener('click', function () {
     fermaTimer(true); toast('Minuti registrati.', 0, 'durata'); render();
   });
-  presa($conc.querySelector<HTMLElement>('#conc-fatto')).addEventListener('click', function () {
-    var id = t.azioneId;
+  presa(c.querySelector<HTMLElement>('#conc-fatto')).addEventListener('click', function () {
+    /* UN TIMER LIBERO PUÒ NON ESSERE ATTACCATO A NIENTE: `azioneId` è
+       nullabile per costruzione, e senza questo controllo si chiamava
+       `completaAzione(null)` — che non trova niente e non dice niente. */
+    const id = t.azioneId;
     fermaTimer(true);
-    var s = LM.load();
-    var ab = s.abitudini.some(function (h) { return h.id === id; });
-    var xp = ab ? LM.completaAbitudine(id) : LM.completaAzione(id);
+    if (!id) { festeggia('pieno'); render(); return; }
+    const s = LM.load();
+    const ab = s.abitudini.some(function (h) { return h.id === id; });
+    const xp = ab ? LM.completaAbitudine(id) : LM.completaAzione(id);
     festeggia('pieno');
     toast(ab ? 'Abitudine spuntata.' : 'Azione completata.', xp, ab ? 'refresh' : 'check');
     render();
   });
   passoTimer();
 }
-function chiudiConcentrazione() {
-  var era = document.body.classList.contains('in-concentrazione');
+function chiudiConcentrazione(): void {
+  const era = document.body.classList.contains('in-concentrazione');
   document.body.classList.remove('in-concentrazione');
   if ($conc) { $conc.innerHTML = ''; }
   /* uscire dallo schermo pieno e fermare il timer sono due cose diverse:
      qui si segna solo che non ci sei più dentro */
   if (era && LM.timerVivo()) LM.aggiornaTimerDati({ concentrato: false });
 }
-function concentrazioneAperta() { return document.body.classList.contains('in-concentrazione'); }
+function concentrazioneAperta(): boolean { return document.body.classList.contains('in-concentrazione'); }
 
 /* ============================================================
    LA FESTA — coriandoli, un suono, una vibrazione
@@ -2911,7 +2917,16 @@ function concentrazioneAperta() { return document.body.classList.contains('in-co
    tipo:  sine = morbido, triangle = un po' più presente
    salita/discesa: l'ordine delle note dice il verso della cosa — si apre e
    si sale, si chiude e si scende, si annulla e si torna indietro. */
-var SUONI = {
+/* UNA VOCE: le note, la forma d'onda, quanto dura, quanto è forte, e ogni
+   quanto parte la nota dopo. `passo` ce l'ha solo chi ha più di una nota. */
+interface Voce {
+  note: number[];
+  tipo: OscillatorType;
+  dur: number;
+  vol: number;
+  passo?: number;
+}
+const SUONI: Record<string, Voce> = {
   tocco:    { note: [660],            tipo: 'sine',     dur: 0.055, vol: 0.030 },
   tastoPieno:{ note: [523.25, 659.25], tipo: 'triangle', dur: 0.085, vol: 0.055, passo: 0.045 },
   segmento: { note: [784],            tipo: 'sine',     dur: 0.05,  vol: 0.035 },
@@ -2926,45 +2941,59 @@ var SUONI = {
   scarto:   { note: [349.23],         tipo: 'sine',     dur: 0.09,  vol: 0.040 },
   guaio:    { note: [311.13, 293.66], tipo: 'triangle', dur: 0.16,  vol: 0.070, passo: 0.070 }
 };
-var udio = null;
-function suona(che: string): void {
-  var p = LM.load().profilo || {};
+/* i tredici nomi che stanno nella tabella qui sopra, e non uno di più: un
+   nome scritto male prendeva il ripiego («tocco») senza dire niente */
+type NomeSuono = keyof typeof SUONI;
+
+let udio: AudioContext | null = null;
+function suona(che: NomeSuono): void {
+  const p = LM.load().profilo;
   if (p.suono === 'no') return;
-  var V = SUONI[che] || SUONI.tocco;
+  const V = SUONI[che] || presa(SUONI['tocco']);
   try {
-    var AC = window.AudioContext || window.webkitAudioContext;
+    /* `webkitAudioContext` è il nome che usava Safari e non sta nei tipi
+       standard: si chiede alla finestra invece di darlo per scontato */
+    const conFinestra = window as Window & { webkitAudioContext?: typeof AudioContext };
+    const AC = window.AudioContext || conFinestra.webkitAudioContext;
     if (!AC) return;
     if (!udio) udio = new AC();
-    if (udio.state === 'suspended') udio.resume();
-    var t0 = udio.currentTime;
+    const ctx = udio;
+    if (ctx.state === 'suspended') void ctx.resume();
+    const t0 = ctx.currentTime;
     V.note.forEach(function (f, n) {
-      var o = udio.createOscillator(), g = udio.createGain();
+      const o = ctx.createOscillator(), g = ctx.createGain();
       o.type = V.tipo; o.frequency.value = f;
-      var q = t0 + n * (V.passo || 0);
+      const q = t0 + n * (V.passo || 0);
       g.gain.setValueAtTime(0.0001, q);
       g.gain.exponentialRampToValueAtTime(V.vol, q + 0.008);
       g.gain.exponentialRampToValueAtTime(0.0001, q + V.dur);
-      o.connect(g); g.connect(udio.destination);
+      o.connect(g); g.connect(ctx.destination);
       o.start(q); o.stop(q + V.dur + 0.02);
     });
-  } catch (e) {}
+  } catch { /* niente audio: si va avanti in silenzio */ }
 }
-function vibra(che: string): void {
-  var p = LM.load().profilo || {};
+
+/* i cinque modelli di vibrazione: sono cinque, e sono questi */
+type NomeVibra = 'pieno' | 'finito' | 'spunta' | 'leggero' | 'tocco';
+const VIBRAZIONI: Record<NomeVibra, number[]> = {
+  pieno: [14, 40, 22], finito: [14, 40, 22], spunta: [10], leggero: [8], tocco: [6]
+};
+function vibra(che: NomeVibra): void {
+  const p = LM.load().profilo;
   if (p.vibra === 'no') return;
   if (!navigator.vibrate) return;
-  var q = { pieno: [14, 40, 22], finito: [14, 40, 22], spunta: [10], leggero: [8], tocco: [6] }[che] || [8];
-  try { navigator.vibrate(q); } catch (e) {}
+  const q = VIBRAZIONI[che] || [8];
+  try { navigator.vibrate(q); } catch { /* niente vibrazione */ }
 }
 
 /* OGNI COSA CHE PREMI HA IL SUO SUONO, e lo decide un posto solo.
    Attaccarlo a mano su ogni comando vorrebbe dire dimenticarsene sul
    prossimo che si scrive; qui si guarda che cosa è stato toccato e si
    sceglie la voce. Chi vuole dire la sua mette `data-suono` addosso. */
-function voceDi(el: HTMLElement | null): string {
+function voceDi(el: Element | null): NomeSuono | null {
   if (!el) return null;
-  var esplicita = el.closest('[data-suono]');
-  if (esplicita) return esplicita.getAttribute('data-suono') || null;
+  const esplicita = el.closest('[data-suono]');
+  if (esplicita) return (esplicita.getAttribute('data-suono') as NomeSuono | null) || null;
   if (el.closest('.spunta, [data-fa-fatto], [data-steptoggle]')) return 'spunta';
   if (el.closest('.icona-pericolo, [data-stepdel], .sc-pericolo')) return 'scarto';
   if (el.closest('.segmenti button, .segmenti a, .q-chip, .att-chip, .giorno-chip')) return 'segmento';
@@ -2979,16 +3008,20 @@ document.addEventListener('pointerdown', function (ev) {
      browser ha deciso che era un clic — trecento millisecondi dopo un gesto
      non sono più una conferma di quel gesto */
   if (!(ev.target instanceof Element)) return;
-  var v = voceDi(ev.target);
+  const v = voceDi(ev.target);
   if (!v) return;
   suona(v);
   vibra(v === 'spunta' ? 'spunta' : 'tocco');
 }, true);
 
-function festeggia(che: string, x?: number, y?: number): void {
+/* DUE FESTE, non una stringa qualunque: quella grande (una cosa finita, con
+   la pioggia) e quella piccola (una riga spuntata, lo scoppio attorno al
+   dito). Chi la chiamava con un terzo nome prendeva il ramo piccolo. */
+type NomeFesta = 'pieno' | 'leggero';
+function festeggia(che: NomeFesta, x?: number, y?: number): void {
   if (che === 'pieno') { pioggiaCoriandoli(); suona('finito'); vibra('pieno'); return; }
   if (x != null && y != null) burst(x, y);
-  suona(che === 'leggero' ? 'spunta' : che);
+  suona('spunta');
   vibra('leggero');
 }
 
@@ -3013,7 +3046,10 @@ function festeggia(che: string, x?: number, y?: number): void {
 interface Coriandolo {
   x: number; y: number; vx: number; vy: number;
   a: number; va: number; w: number; h: number;
-  col: string; vita: number;
+  col: string;
+  /* la gravità: 900 per lo scoppio attorno al dito, 620 per la pioggia — un
+     coriandolo lanciato in aria cade più in fretta di uno che scende dall'alto */
+  g: number;
 }
 let telaFesta: HTMLCanvasElement | null = null;
 let festaAttiva = 0;
@@ -3031,27 +3067,27 @@ let telaW = 0, telaH = 0, dprFesta = 1;
    Adesso c'è una tela, un ciclo, e i pezzi ci si disegnano dentro. Due
    feste ravvicinate non si scavalcano: la seconda aggiunge i suoi pezzi a
    quelli che stanno già cadendo. */
-function preparaTela() {
+function preparaTela(): void {
   if (!telaFesta) {
     telaFesta = document.createElement('canvas');
     telaFesta.className = 'tela-festa';
     telaFesta.setAttribute('aria-hidden', 'true');
     document.body.appendChild(telaFesta);
   }
-  var W = window.innerWidth, H = window.innerHeight;
+  const W = window.innerWidth, H = window.innerHeight;
   if (W !== telaW || H !== telaH || telaFesta.style.display === 'none') {
     /* LA TELA STA A UNA VOLTA, NON A TRE. Un coriandolo e' un rettangolo da
        sei pixel che gira mentre cade: la densita' dello schermo non gliela
        vede nessuno, e ogni raddoppio quadruplica i pixel da pulire e
        riempire a ogni fotogramma. Misurato con la CPU rallentata sei volte:
        a due volte la festa girava a 43 fotogrammi, a una a sessanta. */
-    var dpr = 1;
+    const dpr = 1;
     dprFesta = dpr;
     telaW = W; telaH = H;
     telaFesta.width = Math.round(W * dpr);
     telaFesta.height = Math.round(H * dpr);
     telaCtx = telaFesta.getContext('2d');
-    telaCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    if (telaCtx) telaCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
   }
   telaFesta.style.display = 'block';
 }
@@ -3059,16 +3095,21 @@ function preparaTela() {
 function festa(opt: OpzFesta): void {
   if (RIDOTTO) return;
   preparaTela();
-  var W = telaW, H = telaH, n = opt.quanti || 40;
-  for (var i = 0; i < n; i++) {
+  /* la tela e il suo pennello si prendono una volta: dentro al ciclo, per il
+     compilatore, sarebbero ancora «forse niente» a ogni fotogramma */
+  const ctx = telaCtx, tela = telaFesta;
+  if (!ctx || !tela) return;
+  const W = telaW, H = telaH, n = opt.quanti || 40;
+  for (let i = 0; i < n; i++) {
+    const col = COLORI_FESTA[i % COLORI_FESTA.length] || '#7c5df0';
     if (opt.da === 'punto') {
-      var ang = Math.random() * Math.PI * 2, forza = 170 + Math.random() * 280;
+      const ang = Math.random() * Math.PI * 2, forza = 170 + Math.random() * 280;
       pezziFesta.push({
-        x: opt.x, y: opt.y,
+        x: opt.x || 0, y: opt.y || 0,
         vx: Math.cos(ang) * forza, vy: Math.sin(ang) * forza - 190,
         w: 5 + Math.random() * 3, h: 8 + Math.random() * 5,
         a: Math.random() * Math.PI * 2, va: (Math.random() - 0.5) * 11,
-        col: COLORI_FESTA[i % COLORI_FESTA.length], g: 900
+        col: col, g: 900
       });
     } else {
       pezziFesta.push({
@@ -3076,21 +3117,22 @@ function festa(opt: OpzFesta): void {
         vx: (Math.random() - 0.5) * 60, vy: 220 + Math.random() * 260,
         w: 5 + Math.random() * 4, h: 9 + Math.random() * 6,
         a: Math.random() * Math.PI * 2, va: (Math.random() - 0.5) * 9,
-        col: COLORI_FESTA[i % COLORI_FESTA.length], g: 620
+        col: col, g: 620
       });
     }
   }
   if (festaAttiva) return;                 /* il ciclo gira già */
   festaAttiva = 1;
-  var ultimo = performance.now();
-  (function passo(ora) {
-    var dt = Math.min(0.05, (ora - ultimo) / 1000);
+  let ultimo = performance.now();
+  (function passo(ora: number) {
+    const dt = Math.min(0.05, (ora - ultimo) / 1000);
     ultimo = ora;
-    telaCtx.setTransform(dprFesta, 0, 0, dprFesta, 0, 0);
-    telaCtx.clearRect(0, 0, telaW, telaH);
-    var vivi = [];
-    for (var k = 0; k < pezziFesta.length; k++) {
-      var q = pezziFesta[k];
+    ctx.setTransform(dprFesta, 0, 0, dprFesta, 0, 0);
+    ctx.clearRect(0, 0, telaW, telaH);
+    const vivi: Coriandolo[] = [];
+    for (let k = 0; k < pezziFesta.length; k++) {
+      const q = pezziFesta[k];
+      if (!q) continue;
       q.vy += q.g * dt;
       q.x += q.vx * dt; q.y += q.vy * dt; q.a += q.va * dt;
       if (q.y > telaH + 30 || q.x < -60 || q.x > telaW + 60) continue;
@@ -3098,26 +3140,26 @@ function festa(opt: OpzFesta): void {
       /* `setTransform` invece di save/translate/rotate/restore: quattro
          chiamate diventano una, e a quaranta pezzi per sessanta fotogrammi
          sono novemila chiamate al secondo risparmiate */
-      var co = Math.cos(q.a), si = Math.sin(q.a);
-      telaCtx.setTransform(co * dprFesta, si * dprFesta, -si * dprFesta, co * dprFesta,
+      const co = Math.cos(q.a), si = Math.sin(q.a);
+      ctx.setTransform(co * dprFesta, si * dprFesta, -si * dprFesta, co * dprFesta,
         q.x * dprFesta, q.y * dprFesta);
-      telaCtx.fillStyle = q.col;
+      ctx.fillStyle = q.col;
       /* lo spessore che si assottiglia col coseno: è un rettangolo che gira
          su se stesso, e girando lo vedi di taglio */
-      telaCtx.fillRect(-q.w / 2, -q.h / 2, q.w * Math.abs(Math.cos(q.a * 1.7)), q.h);
+      ctx.fillRect(-q.w / 2, -q.h / 2, q.w * Math.abs(Math.cos(q.a * 1.7)), q.h);
     }
     pezziFesta = vivi;
     if (vivi.length) requestAnimationFrame(passo);
     else {
-      telaCtx.setTransform(dprFesta, 0, 0, dprFesta, 0, 0);
-      telaCtx.clearRect(0, 0, telaW, telaH);
-      telaFesta.style.display = 'none';
+      ctx.setTransform(dprFesta, 0, 0, dprFesta, 0, 0);
+      ctx.clearRect(0, 0, telaW, telaH);
+      tela.style.display = 'none';
       festaAttiva = 0;
     }
   })(ultimo);
 }
 
-function pioggiaCoriandoli() { festa({ da: 'alto', quanti: 40 }); }
+function pioggiaCoriandoli(): void { festa({ da: 'alto', quanti: 40 }); }
 
 /* "fuocoScelto": quando l'utente decide di fare un'altra cosa invece di
    quella suggerita dal piano, la fissa lui e resta finché non la finisce o

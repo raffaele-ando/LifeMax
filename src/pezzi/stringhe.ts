@@ -38,17 +38,24 @@ export function classi(...pezzi: (string | false | null | undefined)[]): string 
      'porta'   ti porta altrove          → ha la freccetta
      'fa'      fa una cosa adesso        → non ce l'ha, perché non si va via
      'ferma'   non fa niente, si legge   → non è un bottone                */
+/* I CAMPI FACOLTATIVI DICONO ANCHE `undefined`, e non è una formalità.
+   Con `exactOptionalPropertyTypes` un campo `valore?: string` accetta di non
+   esserci, ma rifiuta un `valore: undefined` scritto a mano — e i chiamanti
+   qui fanno proprio quello, perché passano una variabile che può non avere un
+   valore. La distinzione ha senso dove «assente» e «vuoto» sono due cose
+   diverse; qui non lo sono: una riga senza valore e una riga col valore
+   assente si disegnano identiche. */
 export interface OpzRiga {
   mestiere?: 'porta' | 'fa' | 'ferma';
-  id?: string;
-  ico?: string;
-  eti?: string;
-  titolo?: string;
-  sotto?: string;
-  valore?: string;
-  coda?: string;
-  piu?: string;
-  dati?: string;
+  id?: string | undefined;
+  ico?: string | undefined;
+  eti?: string | undefined;
+  titolo?: string | undefined;
+  sotto?: string | undefined;
+  valore?: string | undefined;
+  coda?: string | undefined;
+  piu?: string | undefined;
+  dati?: string | undefined;
 }
 
 export function riga(o: OpzRiga, segno: (nome?: string, dim?: number) => string): string {
