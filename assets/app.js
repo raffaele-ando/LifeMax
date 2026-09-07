@@ -264,8 +264,11 @@
      l'azione — con quella distruttiva in rosso. */
   var avvisoAperto = null;
 
-  function avviso(opz, onSi) {
-    if (avvisoAperto) return;
+  /* `onNo` serve quando le due strade sono due SCELTE e non «fai» / «lascia
+     stare»: chi chiude senza rispondere sta comunque dicendo qualcosa, e chi
+     ha fatto la domanda deve poter andare avanti. */
+  function avviso(opz, onSi, onNo) {
+    if (avvisoAperto) { if (onNo) onNo(); return; }
     var ovl = document.createElement('div');
     ovl.className = 'avviso-ovl';
     ovl.innerHTML = '<div class="avviso" role="alertdialog" aria-modal="true" aria-labelledby="avv-tit"' +
@@ -284,17 +287,19 @@
     if (sottostante) sottostante.setAttribute('inert', '');
     bloccaSfondo(true);
     entraFuoco(pannello);
-    function chiudi() {
+    var risposto = false;
+    function chiudi(conSi) {
       if (!avvisoAperto) return;
       avvisoAperto = null;
       ovl.remove();
+      if (!conSi && !risposto && onNo) { risposto = true; onNo(); }
       if (sottostante) sottostante.removeAttribute('inert');
       bloccaSfondo(false);
       esceFuoco();
       verificaModalita();
     }
-    ovl.querySelector('.avv-no').addEventListener('click', chiudi);
-    ovl.querySelector('.avv-si').addEventListener('click', function () { chiudi(); onSi(); });
+    ovl.querySelector('.avv-no').addEventListener('click', function () { chiudi(false); });
+    ovl.querySelector('.avv-si').addEventListener('click', function () { risposto = true; chiudi(true); onSi(); });
     /* fuori dall'avviso e Esc = annulla: la via d'uscita non deve mai mancare */
     var giuDentro = false;
     ovl.addEventListener('pointerdown', function (e) { giuDentro = e.target !== ovl; }, true);
@@ -1282,12 +1287,12 @@
          da smanettoni perché è la via d'uscita: se il disegno nuovo si rompe
          sul telefono la mattina, si spegne in due tocchi. */
       rigaScelta('Schermate nuove', PZ.segmenti({
-        id: 'seg-react', piu: 'imp-seg', chiave: 'react', scelta: String(!!s.profilo.react),
+        id: 'seg-react', piu: 'imp-seg', chiave: 'react', scelta: String(reactVoluto()),
         etichetta: 'Schermate nuove',
         voci: [{ val: 'true', eti: 'Accese' }, { val: 'false', eti: 'Spente' }]
       })) +
       '</div>' +
-      PZ.nota({ html: '<b>Schermate nuove</b> riscrive «Attività» con un motore diverso, che ridisegna solo quello che è cambiato invece di rifare tutta la pagina. Le altre schermate restano come sono. Se qualcosa va storto si spegne da qui, oppure aggiungendo <b>?classico=1</b> all’indirizzo — che funziona anche se l’app non risponde più.' }) +
+      PZ.nota({ html: '<b>Schermate nuove</b> disegna le schermate e i pannelli con un motore diverso, che rifà solo quello che è cambiato invece di tutta la pagina. Si vede uguale: è un cambio di motore. Se qualcosa va storto si spegne da qui, oppure aggiungendo <b>?classico=1</b> all’indirizzo — che funziona anche se l’app non risponde più. <b>Vale solo su questo dispositivo</b>, e nessun altro può riaccenderlo da lontano.' }) +
       '<p class="lista-nota"><b>Effetti</b> serve se compaiono rettangoli grigi o neri a spigolo vivo in mezzo alle schermate, o se l’app va a scatti. <b>Ridotti</b> toglie le sfocature dietro ai pannelli e alla barra, e la forma resta. <b>Minimi</b> spegne tutto — niente curva degli angoli, niente sfocature, niente fondo colorato. Se il difetto sparisce a un gradino e non all’altro, si sa da cosa dipende.</p>' +
       '<p class="lista-nota">Aurora è più sobrio, Arcade più acceso. Con <b>tre porte</b> le altre schermate stanno in una riga di linguette sotto al titolo; con <b>tutte le pagine</b> torna la barra lunga. In entrambi i casi ci sono tutte: cambia solo da dove ci si arriva. Con lo <b>scorrimento acceso</b> si passa da una schermata all’altra trascinando il dito di lato, come si sfoglia: le linguette restano dove sono.</p>' +
 
@@ -1659,10 +1664,13 @@
     root.querySelectorAll('#seg-react [data-react]').forEach(function (b) {
       b.addEventListener('click', function () {
         root.querySelectorAll('#seg-react [data-react]').forEach(function (o) { o.classList.toggle('attivo', o === b); });
+        var acceso = b.getAttribute('data-react') === 'true';
+        /* prima di tutto qui, dove nessun altro dispositivo può arrivare */
+        try { localStorage.setItem(CHIAVE_REACT, acceso ? 'si' : 'no'); } catch (e) { /* ignora */ }
         var st = LM.load();
-        st.profilo.react = b.getAttribute('data-react') === 'true';
+        st.profilo.react = acceso;
         LM.save();
-        LM.registra('impostazioni', 'Schermate nuove ' + (st.profilo.react ? 'accese' : 'spente'), false);
+        LM.registra('impostazioni', 'Schermate nuove ' + (acceso ? 'accese' : 'spente') + ' (solo su questo dispositivo)', false);
         /* Accendendolo l'isola non è ancora in memoria: il router se ne
            accorge, la chiede, e quando arriva ridisegna da sé. Qui basta
            chiudere il pannello e far ripartire un giro. */
@@ -1785,6 +1793,8 @@
       'prima-di-aggiornamento-da-altro-dispositivo': 'prima di un aggiornamento da un altro dispositivo',
       'prima-di-unire-col-cloud': 'prima di unire con il cloud',
       'prima-di-riprendere-una-copia-dal-cloud': 'prima di riprendere una copia dal cloud',
+      'prima-di-sostituire-con-una-copia-dal-cloud': 'prima di sostituire con una copia dal cloud',
+      'prima-di-togliere-i-dati-di-esempio': 'prima di togliere i dati di esempio',
       'prima-di-sfoltire-il-registro': 'prima di fare spazio'
     };
     var corpo;
@@ -1794,7 +1804,7 @@
       corpo = '<div class="backup-lista">' + lista.map(function (b) {
         var data = new Date(b.ts).toLocaleString('it-IT', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
         return '<div class="backup-riga"><div><b>' + data + '</b><small>' + b.ricchezza + ' elementi' + (motivi[b.motivo] ? ' · ' + motivi[b.motivo] : '') + '</small></div>' +
-          '<button class="btn btn-mini" data-ts="' + b.ts + '">Ripristina</button></div>';
+          PZ.tasto({ testo: 'Ripristina', misura: 'mini', dati: PZ.att('data-ts', String(b.ts)) }) + '</div>';
       }).join('') + '</div>';
     }
     /* LE COPIE NEL CLOUD, che c'erano da mesi e non si vedevano.
@@ -1820,12 +1830,32 @@
             return;
           }
           host.innerHTML = etichetta('Nel cloud', 'cloudCheck', arr.length) +
-            '<div class="imp-nota" style="margin:0">Riprendere una copia AGGIUNGE quello che le manca: non toglie niente di quello che hai adesso.</div>' +
+            '<div class="imp-nota" style="margin:0"><b>Riprendi</b> AGGIUNGE quello che manca e non toglie niente. ' +
+            '<b>Sostituisci</b> mette questa copia al posto di tutto: serve quando quello che c’è adesso non è roba tua ' +
+            '— i dati di esempio finiti nell’account a un accesso — e non c’è altro modo di toglierla.</div>' +
             '<div class="backup-lista">' + arr.map(function (b) {
               var data = b.ts ? new Date(b.ts).toLocaleString('it-IT', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'senza data';
               return '<div class="backup-riga"><div><b>' + data + '</b><small>' + b.ricchezza + ' elementi</small></div>' +
-                '<button class="btn btn-mini" data-cloudbk="' + esc(String(b.id)) + '">Riprendi</button></div>';
+                PZ.tasto({ testo: 'Riprendi', misura: 'mini', dati: PZ.att('data-cloudbk', String(b.id)) }) +
+                PZ.tasto({ testo: 'Sostituisci', misura: 'mini', piu: 'btn-ghost', dati: PZ.att('data-cloudsost', String(b.id)) }) +
+                '</div>';
             }).join('') + '</div>';
+          host.querySelectorAll('[data-cloudsost]').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+              var id = btn.getAttribute('data-cloudsost');
+              avviso({
+                titolo: 'Mettere questa copia al posto di tutto?',
+                testo: 'Quello che c’è adesso viene salvato in un backup su questo dispositivo, e al suo posto va questa copia. Le cose che nella copia non ci sono spariscono: è la sola via per togliere roba che non è tua.',
+                azione: 'Sostituisci', pericolo: true
+              }, function () {
+                btn.disabled = true; btn.textContent = 'Sto sostituendo…';
+                c.sostituisciConBackup(id).then(function (fatto) {
+                  chiudiSheet(); applicaTema(); render();
+                  toast(fatto ? 'Fatto: adesso ci sono solo i dati di quella copia.' : 'Non sono riuscito a sostituire.', 0, fatto ? 'cloudCheck' : 'alert');
+                });
+              });
+            });
+          });
           host.querySelectorAll('[data-cloudbk]').forEach(function (btn) {
             btn.addEventListener('click', function () {
               var id = btn.getAttribute('data-cloudbk');
@@ -3242,8 +3272,24 @@
      `?classico=1` nell'indirizzo, che funziona anche se l'app non risponde
      più. Finché quelle due strade ci sono, questa scelta è reversibile in un
      tocco da chiunque, senza aspettare un rilascio. */
+  /* LA VIA D'USCITA È DI QUESTO DISPOSITIVO, E NON SI SINCRONIZZA.
+     Stava in `profilo`, che va nel cloud — e `profilo` si fonde prendendo
+     quello del documento più recente: bastava che un altro dispositivo, o uno
+     stato più nuovo arrivato dalla nuvola, portasse `react: true`, e lo
+     «spento» che avevi appena messo si riaccendeva da solo. Cioè: l'unica
+     leva che serve quando qualcosa si è rotto poteva essere tirata da un'altra
+     parte. Adesso vive qui, accanto a `?classico=1`, che per natura è di
+     questo browser e di nessun altro.
+     `profilo.react` si legge ancora, ma solo come ultima parola per chi ce
+     l'aveva già messo: la scelta locale, se c'è, vince sempre. */
+  var CHIAVE_REACT = 'lifemax.schermate-nuove';
   function reactVoluto() {
     if (/[?&]classico=1/.test(location.search)) return false;
+    try {
+      var v = localStorage.getItem(CHIAVE_REACT);
+      if (v === 'no') return false;
+      if (v === 'si') return true;
+    } catch (e) { /* niente localStorage: si va avanti con quello di prima */ }
     try {
       var p = LM.load().profilo || {};
       return p.react !== false;
@@ -8705,6 +8751,26 @@
     if (inOnboarding && !a.user) { refreshObAccount(); return; }
     if (staDigitando() && !a.user) return;
     render();
+  });
+
+  /* L'ESEMPIO NON ENTRA NELL'ACCOUNT SENZA CHIEDERE.
+     La prima sincronizzazione UNISCE, apposta, per non perdere niente. Ma se
+     su questo dispositivo ci sono i DATI DI ESEMPIO, unire vuol dire infilare
+     otto settimane di roba inventata dentro a un account vero — e da una
+     fusione non si torna indietro: aggiungono tutte le strade, la fusione,
+     l'importazione da un file, «riprendi una copia». È successo, e chi l'ha
+     subito non aveva nessun modo di rimediare.
+     L'app non può sapere da sé se quell'esempio è ancora esempio o se ci hai
+     lavorato sopra per un mese. Quindi non decide: chiede. */
+  window.addEventListener('lm:esempio-al-cloud', function (e) {
+    var d = (e && e.detail) || {};
+    if (typeof d.decidi !== 'function') return;
+    avviso({
+      titolo: 'Su questo dispositivo ci sono i dati di esempio',
+      testo: 'Nel tuo account ce ne sono ' + d.cloud + '. Unendoli, le otto settimane inventate restano dentro per sempre. Posso invece tenere solo i tuoi: l’esempio resta in un backup qui, e da lì si recupera.',
+      azione: 'Tieni solo i miei',
+      annulla: 'Uniscili lo stesso'
+    }, function () { d.decidi('solo-cloud'); }, function () { d.decidi('unisci'); });
   });
 
   /* aggiornamento arrivato da un altro dispositivo */

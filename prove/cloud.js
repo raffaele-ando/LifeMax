@@ -65,6 +65,7 @@ B.entra = function (uid) { B.utente = { uid: uid || 'prova-uid', email: 'prova@e
 const FINTO_FS = `
 const B = (window.__fb = window.__fb || {});
 B.doc = null;              /* il documento remoto: {data, updatedAt} */
+B.copie = {};              /* users/uid/backups/... : le copie di sicurezza */
 B.scritture = [];          /* tutto quello che l'app ha mandato su */
 B.attacchi = [];           /* quando l'ascolto è stato attaccato */
 B.rompi = null;            /* chiamandola, l'ascolto cade */
@@ -74,13 +75,20 @@ export function getFirestore() { return { finto: true }; }
 export function initializeFirestore(a, opz) { B.opzioni = opz; return { finto: true }; }
 export function doc(db) { return { via: [].slice.call(arguments, 1).join('/') }; }
 export function collection(db) { return { via: [].slice.call(arguments, 1).join('/') }; }
+/* LE COPIE NEL CLOUD ESISTONO ANCHE QUI DENTRO.
+   Prima il finto Firestore le buttava via: una scrittura su .../backups/x non
+   andava da nessuna parte e una lettura tornava vuota. Ma la copia presa
+   PRIMA di unire è tutta la rete di sicurezza dell'accesso — è il posto dove
+   stanno i dati veri di chi si è ritrovato l'esempio nell'account — e finché
+   la prova non la teneva, quella rete non la guardava nessuno. */
 export function getDoc(ref) {
-  const d = /backups/.test(ref.via) ? null : B.doc;
+  const d = /backups/.test(ref.via) ? (B.copie[ref.via] || null) : B.doc;
   return Promise.resolve({ exists: () => !!d, data: () => d, id: 'x' });
 }
 export function getDocs() { return Promise.resolve({ forEach: () => {} }); }
 export function setDoc(ref, dati) {
-  if (!/backups/.test(ref.via)) { B.doc = dati; B.scritture.push(dati); }
+  if (/backups/.test(ref.via)) { B.copie[ref.via] = dati; return Promise.resolve(); }
+  B.doc = dati; B.scritture.push(dati);
   return Promise.resolve();
 }
 export function onSnapshot(ref, suDati, suErrore) {
@@ -361,6 +369,172 @@ export function onSnapshot(ref, suDati, suErrore) {
     });
     ok('un gesto solo è già partito dopo 250ms', r.subito >= 1, r.subito + ' scritture');
     ok('e otto gesti di fila non fanno otto scritture', r.raffica <= 4, r.raffica + ' scritture per 8 gesti');
+  }
+
+  /* ============================================================
+     I DATI DI ESEMPIO FINITI NELL'ACCOUNT, E LA VIA PER TOGLIERLI
+
+     È successo davvero. Uno guarda l'app con i dati di esempio, poi fa
+     l'accesso: la prima sincronizzazione UNISCE — apposta, per non perdere
+     niente — e otto settimane di roba inventata entrano nell'account vero.
+     Da lì non si tornava indietro in nessun modo: la fusione aggiunge,
+     l'importazione da un file aggiunge, «riprendi una copia dal cloud»
+     aggiunge, e l'unica cosa che sostituisce vale per le copie di questo
+     dispositivo — che l'esempio ce l'avevano già dentro.
+     Le due cose che questa prova pretende:
+       · prima di unire, il documento vero viene messo da parte nel cloud;
+       · e da quella copia si può tornare SOSTITUENDO, non unendo.
+     ============================================================ */
+  console.log('\nL’ESEMPIO ENTRATO NELL’ACCOUNT SI PUÒ TOGLIERE');
+  {
+    const r = await p.evaluate(async () => {
+      /* si riparte da zero: esce l'account, si mette l'esempio, e nel cloud
+         c'è un documento vero che l'esempio non ha mai visto */
+      window.__fb.utente = null; if (window.__fb.avvisa) window.__fb.avvisa(null);
+      await new Promise((r2) => setTimeout(r2, 300));
+      localStorage.clear();
+      LM.seedDemo();
+      const demo = LM.snapshot();
+
+      const vero = LM.statoVuoto();
+      vero.updatedAt = Date.now() - 60000;
+      vero.lezioni = [{ id: 'vera-1', testo: 'UNA COSA MIA DAVVERO', verso: 'si', forza: 'noto', creata: Date.now() - 90000 }];
+      vero.azioni = [{ id: 'vera-2', testo: 'AZIONE MIA DAVVERO', data: LM.todayKey(), creata: Date.now() - 90000 }];
+      window.__fb.copie = {};
+      window.__fb.doc = { data: JSON.stringify(vero), updatedAt: vero.updatedAt };
+
+      /* si risponde «Uniscili lo stesso»: è la strada che porta al guaio, ed
+         è quella che deve restare recuperabile. Chi risponde così ha scelto,
+         e la via del ritorno serve a lui. */
+      window.__fb.entra('uid-esempio');
+      for (let i = 0; i < 60; i++) {
+        await new Promise((r2) => setTimeout(r2, 100));
+        const t = document.querySelector('.avviso-ovl #avv-tit');
+        if (t && /dati di esempio/i.test(t.textContent)) { document.querySelector('.avviso-ovl .avv-no').click(); break; }
+      }
+      await new Promise((r2) => setTimeout(r2, 1200));
+
+      const unito = JSON.stringify(LM.snapshot());
+      const vie = Object.keys(window.__fb.copie);
+      const laCopia = vie[0] && JSON.parse(window.__fb.copie[vie[0]].data);
+
+      return {
+        demoEra: !!demo.demo,
+        /* dopo l'accesso: l'esempio è entrato (è il difetto), e la roba vera c'è */
+        esempioDentro: /Capitolo di Analisi II/.test(unito),
+        veroDentro: /UNA COSA MIA DAVVERO/.test(unito),
+        /* e la copia di sicurezza è stata presa PRIMA di unire */
+        copie: vie.length,
+        copiaSenzaEsempio: !!laCopia && !/Capitolo di Analisi II/.test(JSON.stringify(laCopia)),
+        copiaColVero: !!laCopia && /UNA COSA MIA DAVVERO/.test(JSON.stringify(laCopia)),
+        id: vie[0] && vie[0].split('/').pop()
+      };
+    });
+    ok('lo stato di esempio si riconosce da sé', r.demoEra);
+    ok('scegliendo «uniscili», l’esempio entra nell’account', r.esempioDentro, 'è la strada che porta al guaio');
+    ok('e i dati veri dell’account restano', r.veroDentro);
+    ok('prima di unire, il documento vero è messo da parte nel cloud', r.copie === 1, r.copie + ' copie');
+    ok('e quella copia ha i dati veri e NON l’esempio', r.copiaColVero && r.copiaSenzaEsempio,
+      'vero: ' + r.copiaColVero + ' · senza esempio: ' + r.copiaSenzaEsempio);
+
+    const q = await p.evaluate(async (id) => {
+      const fatto = await window.LMCloud.sostituisciConBackup(id);
+      await new Promise((r2) => setTimeout(r2, 500));
+      const ora = JSON.stringify(LM.snapshot());
+      return {
+        fatto: fatto,
+        esempioAncora: /Capitolo di Analisi II/.test(ora),
+        veroAncora: /UNA COSA MIA DAVVERO/.test(ora),
+        /* e quello che c'era è recuperabile: sostituire è la sola cosa che
+           toglie, e deve lasciare una strada per tornare */
+        scappatoia: LM.listBackups().some((x) => x.motivo === 'prima-di-sostituire-con-una-copia-dal-cloud'),
+        suCloud: !/Capitolo di Analisi II/.test(String((window.__fb.doc || {}).data || ''))
+      };
+    }, r.id);
+    ok('sostituendo con quella copia, l’esempio sparisce', q.fatto && !q.esempioAncora,
+      q.fatto ? (q.esempioAncora ? 'c’è ancora' : 'via') : 'la sostituzione non è partita');
+    ok('e i dati veri ci sono tutti', q.veroAncora);
+    ok('anche il cloud non ha più l’esempio', q.suCloud);
+    ok('e quello che c’era prima resta in un backup su questo dispositivo', q.scappatoia);
+
+    /* E LA VOLTA DOPO NON DEVE SUCCEDERE PIÙ: adesso l'app chiede, invece di
+       unire e basta. Qui si risponde «tieni solo i miei» e l'esempio non
+       entra proprio — la copia di sicurezza resta comunque, perché quella
+       risposta TOGLIE e chi toglie deve lasciare una strada per tornare. */
+    const chiesto = await p.evaluate(async () => {
+      window.__fb.utente = null; if (window.__fb.avvisa) window.__fb.avvisa(null);
+      await new Promise((r2) => setTimeout(r2, 300));
+      localStorage.clear();
+      LM.seedDemo();
+      const vero = LM.statoVuoto();
+      vero.updatedAt = Date.now() - 60000;
+      vero.lezioni = [{ id: 'v2', testo: 'ROBA MIA SECONDA VOLTA', verso: 'si', forza: 'noto', creata: Date.now() - 90000 }];
+      window.__fb.copie = {};
+      window.__fb.doc = { data: JSON.stringify(vero), updatedAt: vero.updatedAt };
+
+      /* si guarda che la domanda compaia, e si risponde come farebbe un dito */
+      let vista = false;
+      window.__fb.entra('uid-chiede');
+      for (let i = 0; i < 60; i++) {
+        await new Promise((r2) => setTimeout(r2, 100));
+        const t = document.querySelector('.avviso-ovl #avv-tit');
+        if (t && /dati di esempio/i.test(t.textContent)) {
+          vista = true;
+          document.querySelector('.avviso-ovl .avv-si').click();
+          break;
+        }
+      }
+      await new Promise((r2) => setTimeout(r2, 900));
+      const ora = JSON.stringify(LM.snapshot());
+      return {
+        vista: vista,
+        esempio: /Capitolo di Analisi II/.test(ora),
+        vero: /ROBA MIA SECONDA VOLTA/.test(ora),
+        scappatoia: LM.listBackups().some((x) => x.motivo === 'prima-di-togliere-i-dati-di-esempio')
+      };
+    });
+    ok('accedendo con l’esempio, l’app CHIEDE invece di unire e basta', chiesto.vista);
+    ok('e rispondendo «tieni solo i miei» l’esempio non entra', chiesto.vista && !chiesto.esempio);
+    ok('mentre i dati dell’account ci sono', chiesto.vero);
+    ok('e l’esempio resta in un backup, per chi ci aveva lavorato sopra', chiesto.scappatoia);
+
+  }
+
+  /* ============================================================
+     LA VIA D'USCITA NON SI FA SPEGNERE DA UN ALTRO DISPOSITIVO
+     L'interruttore delle schermate nuove è la leva che si tira quando
+     qualcosa si è rotto. Stava in `profilo`, che si sincronizza — e `profilo`
+     si fonde prendendo quello del documento più recente: bastava che
+     dall'altra parte arrivasse un `react: true` più nuovo e lo «spento» che
+     avevi appena messo si riaccendeva da solo.
+     ============================================================ */
+  console.log('\nLO «SPENTO» DELLE SCHERMATE NUOVE RESTA SPENTO');
+  {
+    const r = await p.evaluate(async () => {
+      /* lo si spegne come lo spegne un dito: scrivendo la chiave locale */
+      localStorage.setItem('lifemax.schermate-nuove', 'no');
+      const s = LM.load(); s.profilo.react = false; LM.save();
+      const primaDi = !!(window.LM_APP && window.LM_APP.foglioReact('filtri'));
+
+      /* e adesso arriva un altro dispositivo che ce l'ha acceso, più recente */
+      const altro = JSON.parse(JSON.stringify(LM.snapshot()));
+      altro.updatedAt = Date.now() + 120000;
+      altro.profilo = Object.assign({}, altro.profilo, { react: true });
+      await new Promise((r2) => { const t = setInterval(() => { if (window.__fb.vivo) { clearInterval(t); r2(); } }, 80); setTimeout(() => { clearInterval(t); r2(); }, 20000); });
+      window.__fb.consegna({ data: JSON.stringify(altro), updatedAt: altro.updatedAt });
+      await new Promise((r2) => setTimeout(r2, 700));
+
+      return {
+        primaDi: primaDi,
+        profiloDice: LM.load().profilo.react,
+        dopo: !!(window.LM_APP && window.LM_APP.foglioReact('filtri'))
+      };
+    });
+    ok('spegnendolo, l’app usa davvero il codice di prima', r.primaDi === false);
+    ok('l’altro dispositivo porta il suo «acceso» nel profilo', r.profiloDice === true,
+      'ed è giusto: il profilo si sincronizza');
+    ok('ma su QUESTO dispositivo resta spento', r.dopo === false,
+      r.dopo ? 'si è riacceso da solo' : 'spento come l’avevi lasciato');
   }
 
   ok('nessun errore in pagina', errori.length === 0, errori.slice(0, 3).join(' | '));

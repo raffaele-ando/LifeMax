@@ -215,20 +215,20 @@ function opCede(che, a) {
       /* riprende una copia dal cloud. Non sostituisce: UNISCE, come tutto il
          resto — chi va a ripescare una copia vuole riavere quello che manca,
          non buttare via quello che nel frattempo ha fatto. */
-      riprendiBackup: async function (id) {
-        if (!currentUser) return false;
-        try {
-          const d = await fsMod.getDoc(fsMod.doc(db, 'users', currentUser.uid, 'backups', String(id)));
-          if (!d.exists()) return false;
-          LM.backup('prima-di-riprendere-una-copia-dal-cloud');
-          applicaRemoto(d.data(), false);
-          await push(currentUser.uid);
-          return true;
-        } catch (e) {
-          log('errore', 'non riesco a riprendere la copia', e && e.message);
-          return false;
-        }
-      }
+      riprendiBackup: async function (id) { return daBackup(id, false); },
+      /* RIPRENDERE AGGIUNGE, SOSTITUIRE RIFÀ DA CAPO.
+         «Riprendi» unisce, ed è quello che serve quasi sempre: una copia è un
+         pezzo della stessa vita, e buttare il resto sarebbe una perdita.
+         Ma c'è un caso in cui unire è esattamente il problema: quando quello
+         che c'è adesso NON è tuo. I dati di esempio finiti nell'account a un
+         accesso sono il caso vero — da lì non si torna indietro unendo, e
+         finché questa via non è esistita non si tornava indietro affatto:
+         la fusione aggiunge, l'importazione aggiunge, «riprendi» aggiunge, e
+         l'unica cosa che sostituisce valeva solo per le copie di questo
+         dispositivo, che quei dati di esempio ce li avevano già dentro.
+         Prima di rifare si mette da parte una copia locale: sostituire è la
+         sola cosa qui che TOGLIE, e deve avere una strada per tornare. */
+      sostituisciConBackup: async function (id) { return daBackup(id, true); }
     };
 
     log('info', 'cloud pronto', 'progetto ' + firebaseConfig.projectId);
@@ -308,11 +308,23 @@ async function primaSincronizzazione(uid) {
        STESSA riga. Poi si rimanda su il risultato, così anche il cloud ha
        tutto. La copia del documento remoto si prende lo stesso, prima di
        toccarlo: se anche la fusione sbagliasse, quello che c'era è ancora là. */
+    /* L'ESEMPIO NON ENTRA SENZA CHIEDERE. Unire è la regola e resta la
+       regola; ma i dati di esempio non sono «un pezzo della stessa vita»,
+       sono inventati — e una volta uniti non c'è più una strada per toglierli.
+       Lo stato di esempio si riconosce da sé (`demo`), e allora si domanda.
+       Non si decide al posto suo: chi ha caricato l'esempio può averci
+       lavorato sopra per settimane, e l'app non ha modo di saperlo. */
+    let sostituendo = false;
+    if (locale.demo && remoteR > 0) {
+      log('info', 'qui ci sono i dati di esempio e nel cloud ce ne sono di veri: chiedo prima di unire');
+      sostituendo = (await chiediDellEsempio(localR, remoteR)) === 'solo-cloud';
+      log('info', 'risposto', sostituendo ? 'tieni solo quelli del cloud' : 'unisci lo stesso');
+    }
     await backupRemoto(uid, snap.data());
-    LM.backup('prima-di-unire-col-cloud');
-    applicaRemoto(snap.data(), false);
+    LM.backup(sostituendo ? 'prima-di-togliere-i-dati-di-esempio' : 'prima-di-unire-col-cloud');
+    applicaRemoto(snap.data(), false, sostituendo);
     const dopo = LM.ricchezza(LM.snapshot());
-    log('info', 'uniti', 'adesso ' + dopo + ' elementi (erano ' + localR + ' qui e ' + remoteR + ' nel cloud)');
+    log('info', sostituendo ? 'tenuti quelli del cloud' : 'uniti', 'adesso ' + dopo + ' elementi (erano ' + localR + ' qui e ' + remoteR + ' nel cloud)');
     opCede('lettura iniziale', 'scrittura');
     await push(uid);
   } else {
@@ -320,6 +332,47 @@ async function primaSincronizzazione(uid) {
     log('info', 'primo salvataggio per questo account');
     opCede('lettura iniziale', 'scrittura');
     await push(uid);
+  }
+}
+
+/* La domanda la fa l'app, non questo file: qui non c'è niente che sappia
+   disegnare. Si manda l'evento e si aspetta la risposta.
+   E c'è un salvagente: se non risponde nessuno — l'app non è ancora in piedi,
+   o è una versione che questa domanda non la conosce — dopo venti secondi si
+   UNISCE, che è la scelta che non toglie niente. Una sincronizzazione appesa
+   per sempre in attesa di una risposta che non arriva è peggio del problema
+   che stiamo evitando: è già successo una volta, con «Salvataggio…» che
+   restava lì per sempre. */
+function chiediDellEsempio(qui, cloud) {
+  return new Promise(function (risolvi) {
+    let risposto = false;
+    const una = function (v) { if (risposto) return; risposto = true; risolvi(v); };
+    const salvagente = setTimeout(function () {
+      log('avviso', 'nessuna risposta sulla domanda dell’esempio: unisco', 'passati 20 secondi');
+      una('unisci');
+    }, 20000);
+    window.dispatchEvent(new CustomEvent('lm:esempio-al-cloud', { detail: {
+      qui: qui, cloud: cloud,
+      decidi: function (v) { clearTimeout(salvagente); una(v); }
+    } }));
+  });
+}
+
+/* una copia dal cloud, unita o messa al posto di tutto. Le due strade
+   condividono tutto tranne una parola, e tenerle separate voleva dire due
+   posti dove sbagliare il salvataggio di sicurezza. */
+async function daBackup(id, sostituisci) {
+  if (!currentUser) return false;
+  try {
+    const d = await FSM.getDoc(FSM.doc(db, 'users', currentUser.uid, 'backups', String(id)));
+    if (!d.exists()) return false;
+    LM.backup(sostituisci ? 'prima-di-sostituire-con-una-copia-dal-cloud' : 'prima-di-riprendere-una-copia-dal-cloud');
+    applicaRemoto(d.data(), false, sostituisci);
+    await push(currentUser.uid);
+    return true;
+  } catch (e) {
+    log('errore', sostituisci ? 'non riesco a sostituire con la copia' : 'non riesco a riprendere la copia', e && e.message);
+    return false;
   }
 }
 
@@ -342,11 +395,11 @@ function parseDoc(d) {
   try { return JSON.parse(d.data); } catch (e) { return null; }
 }
 
-function applicaRemoto(d, notifica) {
+function applicaRemoto(d, notifica, sostituisci) {
   const obj = parseDoc(d);
   if (!obj) return;
   const prima = LM.ricchezza(LM.snapshot());
-  log('info', 'unisco i dati ' + (notifica ? 'arrivati da un altro dispositivo' : 'del cloud'), LM.ricchezza(obj) + ' elementi');
+  log('info', (sostituisci ? 'sostituisco con i dati' : 'unisco i dati ') + (notifica ? ' arrivati da un altro dispositivo' : ' del cloud'), LM.ricchezza(obj) + ' elementi');
   if (notifica) LM.backup('prima-di-aggiornamento-da-altro-dispositivo');
   applyingRemote = true;
   lastWrittenAt = (d && d.updatedAt) || obj.updatedAt || 0;
@@ -354,11 +407,13 @@ function applicaRemoto(d, notifica) {
      una storia diversa e tornarci mescolerebbe due timeline */
   if (LM.scordaPunti) LM.scordaPunti();
   /* si UNISCE, non si sostituisce: vedi il commento lungo in
-     primaSincronizzazione, e LM.unisci in assets/data.js */
-  LM.hydrate(obj);
+     primaSincronizzazione, e LM.unisci in assets/data.js. L'unica eccezione è
+     `sostituisci`, che si chiede a mano da «Backup e ripristino» quando
+     quello che c'è adesso non è roba tua. */
+  LM.hydrate(obj, !!sostituisci);
   applyingRemote = false;
   const dopo = LM.ricchezza(LM.snapshot());
-  if (dopo < prima) {
+  if (!sostituisci && dopo < prima) {
     /* non deve poter succedere: la fusione toglie solo dove c'è una lapide o
        un azzeramento dichiarato. Se succede lo stesso, si grida — e la copia
        di sicurezza presa qui sopra è la via di uscita. */

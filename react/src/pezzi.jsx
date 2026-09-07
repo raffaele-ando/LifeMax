@@ -63,15 +63,20 @@ const RUOLO = {
 const MISURA = { normale: '', grande: 'btn-grande', mini: 'btn-mini' };
 const cl = (...a) => a.filter(Boolean).join(' ');
 
-export function Tasto({ testo, ico, tipo = 'quieto', misura = 'normale', sotto, id, via, spento, etichetta, piu, onClick }) {
+/* `dati` sono gli attributi in più — i `data-` da cui dipende un comando.
+   Il gemello in vanilla ce li ha da sempre (`PZ.tasto({ dati: … })`); di qua
+   mancavano, e la prima volta che sono serviti la strada breve era riscrivere
+   il tasto a mano. È così che una forma scritta a mano si moltiplica. */
+export function Tasto({ testo, ico, tipo = 'quieto', misura = 'normale', sotto, id, via, spento, etichetta, piu, dati, onClick }) {
   const dentro = <>
     {ico && <Segno nome={ico} />}{ico && testo ? ' ' : ''}{testo}
     {sotto && <small>{sotto}</small>}
   </>;
   const classe = cl('btn', RUOLO[tipo], MISURA[misura], piu);
-  if (via) return <a className={classe} href={via} id={id} aria-label={etichetta}>{dentro}</a>;
+  if (via) return <a className={classe} href={via} id={id} aria-label={etichetta} {...(dati || {})}>{dentro}</a>;
   return (
-    <button className={classe} id={id} type="button" disabled={spento} aria-label={etichetta} onClick={onClick}>
+    <button className={classe} id={id} type="button" disabled={spento} aria-label={etichetta}
+      {...(dati || {})} onClick={onClick}>
       {dentro}
     </button>
   );

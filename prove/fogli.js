@@ -60,8 +60,13 @@ const APERTURE = {
     await p.waitForTimeout(650);
     await p.evaluate(() => { const b = document.getElementById('imp-ritmo'); if (b) b.click(); });
   } },
-  /* con zero copie il pannello è tre righe di testo: si mettono giù due
-     copie prima, se no la parte che conta — l'elenco — non la guarda nessuno */
+  /* con zero copie il pannello è tre righe di testo: si mette giù una copia
+     prima, se no la parte che conta — l'elenco — non la guarda nessuno.
+     QUELLO CHE QUI NON SI VEDE: la sezione «Nel cloud», con «Riprendi» e
+     «Sostituisci», perché in questa prova il cloud non c'è e quella parte
+     resta vuota di qua come di là. A guardarla è `prove/cloud.js`, che ha un
+     Firebase finto e prova la cosa che conta davvero — che sostituire
+     sostituisca — invece della forma dei due tasti. */
   backup: { titolo: 'Backup e ripristino', vai: 'plancia',
     /* UNA COPIA SOLA, E LA STESSA NEI DUE GIRI. `prima` gira due volte e i
        backup restano nel deposito: senza svuotarlo, il secondo giro ne trova

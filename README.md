@@ -277,6 +277,52 @@ sostituisce `process.env.NODE_ENV`, e senza una riga di configurazione nel
 pacco finisce la versione di sviluppo. Funziona tutto, costa il doppio, e non
 fa rumore.)
 
+### La via d'uscita è di questo dispositivo
+
+L'interruttore *Schermate nuove* è la leva che si tira quando qualcosa si è
+rotto. Stava in `profilo`, che si sincronizza — e `profilo` si fonde prendendo
+quello del documento più recente: bastava che da un altro dispositivo
+arrivasse un `react: true` più nuovo, e lo «spento» appena messo si
+riaccendeva da solo. **Una via d'uscita che qualcun altro può annullare da
+lontano non è una via d'uscita.** Adesso vive in `localStorage`, accanto a
+`?classico=1`, che per natura è di questo browser e di nessun altro;
+`profilo.react` si legge ancora, ma solo come ultima parola per chi ce l'aveva
+già messo.
+
+### Unire non si può disfare — e per un caso serviva poterlo
+
+Dappertutto, quando due copie dei dati si incontrano, **si unisce**: la
+sincronizzazione col cloud, l'importazione da un file, «riprendi una copia».
+È una scelta presa dopo una perdita di dati vera, e resta giusta: una copia è
+un pezzo della stessa vita, e sceglierne una vuol dire buttare l'altra.
+
+Ma da una fusione non si torna indietro, e c'è un caso in cui unire è
+esattamente il problema: **quando quello che c'è adesso non è tuo.** Guardi
+l'app con i dati di esempio, fai l'accesso, e otto settimane di roba inventata
+entrano nell'account vero. Da lì non c'era nessuna strada: la fusione
+aggiunge, l'importazione aggiunge, «riprendi» aggiunge, e l'unica cosa che
+sostituisce vale per le copie di *questo* dispositivo — che l'esempio ce
+l'avevano già dentro. Succedeva, e non si rimediava.
+
+Adesso ci sono due cose, e sono cose diverse:
+
+- **Non succede più senza che tu lo dica.** Lo stato di esempio si riconosce
+  da sé (`demo`), e all'accesso l'app *chiede* invece di unire: «tieni solo i
+  miei» oppure «uniscili lo stesso». Non decide al posto tuo, perché non può
+  saperlo: chi ha caricato l'esempio può averci lavorato sopra per settimane.
+  Se non risponde nessuno entro venti secondi si unisce — la scelta che non
+  toglie niente — perché una sincronizzazione appesa è peggio.
+- **E se è già successo, si torna indietro.** Prima di unire, il documento del
+  cloud viene messo da parte in `users/{uid}/backups/`, e quella copia non la
+  tocca più nessuno. In *Backup e ripristino → Nel cloud* adesso ci sono due
+  tasti: **Riprendi** aggiunge quello che manca, **Sostituisci** mette quella
+  copia al posto di tutto. Il secondo è la sola cosa nell'app che toglie, e
+  quindi prende una copia locale prima di farlo.
+
+`prove/cloud.js` tiene tutt'e due le strade, con un Firebase finto che adesso
+si ricorda anche le copie di sicurezza — prima le buttava via, e la rete di
+sicurezza dell'accesso non la guardava nessuno.
+
 ### Dove sta ospitato, e cosa cambierebbe a spostarlo
 
 Oggi è su **GitHub Pages**: `git push` e in un minuto è online. Ogni risposta

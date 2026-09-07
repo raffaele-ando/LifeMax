@@ -28,7 +28,7 @@ const ok = (nome, cond, det) => {
    Se questa prova diventa rossa perché hai scritto una forma a mano: non
    alzare il numero. Usa `PZ`. */
 const TETTO = {
-  btn: 86, card: 35, 'lista-riga': 29, campo: 30, 'q-chip': 7,
+  btn: 84, card: 35, 'lista-riga': 29, campo: 30, 'q-chip': 7,
   segmenti: 14, stat: 6, vuoto: 9, 'lista-nota': 22
 };
 

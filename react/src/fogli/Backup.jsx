@@ -8,7 +8,7 @@
    Si caricano dopo, perché passano dalla rete: il pannello si apre subito con
    quelle locali e questa parte si riempie quando arriva.  */
 import { useEffect, useState } from 'react';
-import { Segno } from '../pezzi.jsx';
+import { Segno, Tasto } from '../pezzi.jsx';
 
 const A = () => window.LM_APP;
 
@@ -21,6 +21,8 @@ const MOTIVI = {
   'prima-di-aggiornamento-da-altro-dispositivo': 'prima di un aggiornamento da un altro dispositivo',
   'prima-di-unire-col-cloud': 'prima di unire con il cloud',
   'prima-di-riprendere-una-copia-dal-cloud': 'prima di riprendere una copia dal cloud',
+  'prima-di-sostituire-con-una-copia-dal-cloud': 'prima di sostituire con una copia dal cloud',
+  'prima-di-togliere-i-dati-di-esempio': 'prima di togliere i dati di esempio',
   'prima-di-sfoltire-il-registro': 'prima di fare spazio'
 };
 
@@ -55,12 +57,21 @@ function Cloud() {
   }
   return (<>
     {eti(righe.length)}
-    <div className="imp-nota" style={{ margin: 0 }}>Riprendere una copia AGGIUNGE quello che le manca: non toglie niente di quello che hai adesso.</div>
+    {/* RIPRENDERE AGGIUNGE, SOSTITUIRE RIFÀ DA CAPO. La seconda esiste per un
+        caso solo, ma è un caso vero: quando quello che c'è adesso non è tuo.
+        Unire è la regola dappertutto — la fusione col cloud, l'importazione da
+        un file — proprio per non perdere niente; e allora da una fusione
+        sbagliata non si tornava indietro in nessun modo. */}
+    <div className="imp-nota" style={{ margin: 0 }}>
+      <b>Riprendi</b> AGGIUNGE quello che manca e non toglie niente.{' '}
+      <b>Sostituisci</b> mette questa copia al posto di tutto: serve quando quello che c’è adesso non è roba tua
+      {' '}— i dati di esempio finiti nell’account a un accesso — e non c’è altro modo di toglierla.
+    </div>
     <div className="backup-lista">
       {righe.map((b) => (
         <div className="backup-riga" key={String(b.id)}>
           <div><b>{quando(b.ts)}</b><small>{b.ricchezza} elementi</small></div>
-          <button className="btn btn-mini" data-cloudbk={String(b.id)} onClick={(e) => {
+          <Tasto testo="Riprendi" misura="mini" dati={{ 'data-cloudbk': String(b.id) }} onClick={(e) => {
             const btn = e.currentTarget;
             a.avviso({
               titolo: 'Riprendere questa copia?',
@@ -73,7 +84,22 @@ function Cloud() {
                 a.toast(fatto ? 'Copia ripresa e unita.' : 'Non sono riuscito a riprenderla.', 0, fatto ? 'cloudCheck' : 'alert');
               });
             });
-          }}>Riprendi</button>
+          }} />
+          <Tasto testo="Sostituisci" misura="mini" piu="btn-ghost" dati={{ 'data-cloudsost': String(b.id) }} onClick={(e) => {
+            const btn = e.currentTarget;
+            a.avviso({
+              titolo: 'Mettere questa copia al posto di tutto?',
+              testo: 'Quello che c’è adesso viene salvato in un backup su questo dispositivo, e al suo posto va questa copia. Le cose che nella copia non ci sono spariscono: è la sola via per togliere roba che non è tua.',
+              azione: 'Sostituisci', pericolo: true
+            }, () => {
+              btn.disabled = true; btn.textContent = 'Sto sostituendo…';
+              c.sostituisciConBackup(b.id).then((fatto) => {
+                a.chiudiSheet(); a.applicaTema(); a.render();
+                a.toast(fatto ? 'Fatto: adesso ci sono solo i dati di quella copia.' : 'Non sono riuscito a sostituire.',
+                  0, fatto ? 'cloudCheck' : 'alert');
+              });
+            });
+          }} />
         </div>
       ))}
     </div>
@@ -91,7 +117,7 @@ export default function Backup() {
         {lista.map((b) => (
           <div className="backup-riga" key={b.ts}>
             <div><b>{quando(b.ts)}</b><small>{b.ricchezza} elementi{MOTIVI[b.motivo] ? ' · ' + MOTIVI[b.motivo] : ''}</small></div>
-            <button className="btn btn-mini" data-ts={b.ts} onClick={() => {
+            <Tasto testo="Ripristina" misura="mini" dati={{ 'data-ts': String(b.ts) }} onClick={() => {
               a.avviso({
                 titolo: 'Ripristinare questo backup?',
                 testo: 'I dati di adesso non vanno persi: prima di ripristinare vengono salvati come nuovo backup.',
@@ -100,7 +126,7 @@ export default function Backup() {
                 window.LM.restoreBackup(b.ts); a.chiudiSheet(); a.applicaTema(); a.render();
                 a.toast('Backup ripristinato.', 0, 'archivio');
               });
-            }}>Ripristina</button>
+            }} />
           </div>
         ))}
       </div>
