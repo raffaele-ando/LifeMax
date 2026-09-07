@@ -7,7 +7,8 @@
 # prima che compaia qualcosa: misurati su 4G lenta, 677 ms contro 576.
 #
 # Il nome dei file del pacco ha l'impronta del contenuto dentro
-# (pacco.fdad6673cc.js): se cambia una riga, cambia il nome. Quindi quel file
+# (app-Bx7kQ2.js): se cambia una riga, cambia il nome — lo scrive Vite, e
+# la cartella si chiama `pacco` per la stessa ragione di prima. Quindi quel file
 # lì non cambierà mai, e si può dire al browser di tenerselo per un anno senza
 # chiedere più niente. È esattamente la cosa per cui `immutable` esiste.
 #
@@ -26,5 +27,5 @@
 # non ci sarebbe modo di raggiungerlo — dal lato del server non si ripara.
 # prove/intestazioni.js si rifiuta di far passare un file che lo fa.
 
-/assets/pacco/*
+/pacco/*
   Cache-Control: public, max-age=31536000, immutable

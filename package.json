@@ -1,15 +1,13 @@
 {
   "name": "lifemax",
   "private": true,
-  "description": "Il sito di adesso è statico e non ha bisogno di npm per funzionare. npm serve a costruire il pacco (esbuild, in uscita), a lanciare le prove (playwright) e — dalla riscrittura in corso — a Vite + TypeScript, che escono in docs/ senza toccare la radice.",
+  "comment-type": "NIENTE `type: module`: le trenta prove in prove/ sono CommonJS e usano require(). La configurazione di Vite risolve la sua metà da sé chiamandosi vite.config.mts.",
+  "description": "TypeScript + React + Vite. `npm run build:nuovo` controlla i tipi e scrive il sito in docs/, che è quello che GitHub Pages serve — il ramo così com'è, senza nessun passaggio di build. Per questo docs/ è committato, e prove/pacco.js controlla che non sia più vecchio dei sorgenti.",
   "scripts": {
-    "build": "node costruisci.mjs",
-    "build:pulito": "node costruisci.mjs --pulisci",
-    "build:react": "vite build --config react/vite.config.mjs",
-    "build:tutto": "npm run build:react && npm run build",
-    "tipi": "tsc --noEmit",
     "dev": "vite",
-    "build:nuovo": "tsc --noEmit && vite build"
+    "tipi": "tsc --noEmit",
+    "build:nuovo": "tsc --noEmit && vite build",
+    "prove": "node prove/pacco.js && node prove/pezzi.js && node prove/segni.js && node prove/intestazioni.js"
   },
   "devDependencies": {
     "@types/node": "^26.4.1",
@@ -17,7 +15,6 @@
     "@types/react-dom": "^19.2.7",
     "@vitejs/plugin-react": "^6.1.1",
     "esbuild": "^0.28.2",
-    "preact": "^10.29.8",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "typescript": "^7.0.2",

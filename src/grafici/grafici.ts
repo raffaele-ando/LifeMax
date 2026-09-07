@@ -19,6 +19,7 @@
    alberi di JSX sarebbe un altro lavoro, e non è questo.
    ============================================================ */
 import type { Giorno } from '../tipi/stato';
+import { LM } from '../dati/dati';
 import { presa } from '../tipi/presa';
 
 /* ------------------------------------------------------------- i tipi
@@ -203,7 +204,7 @@ function sparkline(container: HTMLElement, punti: Punto[], opzioni?: Opzioni): v
       return (meglio === null || dd < Math.abs(X(meglio.i) - fx)) ? { p: p, i: i } : meglio;
     }, null);
     if (vicino) {
-      showTip('<b>' + window.LM.fmtShort(vicino.p.data) + '</b> · ' + fmtNum(vicino.p.valore) + (opts.unita ? ' ' + opts.unita : ''), ev.clientX, ev.clientY);
+      showTip('<b>' + LM.fmtShort(vicino.p.data) + '</b> · ' + fmtNum(vicino.p.valore) + (opts.unita ? ' ' + opts.unita : ''), ev.clientX, ev.clientY);
     }
   });
   hover.addEventListener('mouseleave', hideTip);
@@ -261,7 +262,7 @@ function trend(container: HTMLElement, serie: Serie[], opzioni?: Opzioni): void 
     const g = giorni[i];
     if (i < 0 || !g) return;
     const t = el('text', { x: X(i), y: H - 6, 'text-anchor': i === 0 ? 'start' : (i === giorni.length - 1 ? 'end' : 'middle'), 'font-size': 11, fill: 'var(--inchiostro-muto)' }, svg);
-    t.textContent = window.LM.fmtShort(g);
+    t.textContent = LM.fmtShort(g);
   });
   /* baseline */
   el('line', { x1: m.l, x2: W - m.r, y1: Y(min), y2: Y(min), stroke: 'var(--baseline)', 'stroke-width': 1 }, svg);
@@ -344,7 +345,7 @@ function trend(container: HTMLElement, serie: Serie[], opzioni?: Opzioni): void 
         (p && p.valore !== null ? fmtNum(p.valore) : '—') + '</b>';
     }).join('<br>');
     const g = giorni[best];
-    showTip('<b>' + (g ? window.LM.fmtShort(g) : '—') + '</b><br>' + righe, ev.clientX, ev.clientY);
+    showTip('<b>' + (g ? LM.fmtShort(g) : '—') + '</b><br>' + righe, ev.clientX, ev.clientY);
   });
   hover.addEventListener('mouseleave', function () { cross.setAttribute('visibility', 'hidden'); hideTip(); });
 }
@@ -411,7 +412,7 @@ function heatmap(container: HTMLElement, giorni: GiornoCaldo[], opzioni?: Opzion
     if (bin >= 0) c.style.background = rampa[bin] || '';
     c.setAttribute('data-bin', String(bin));
     c.addEventListener('mousemove', function (ev) {
-      showTip('<b>' + window.LM.weekdayShort(g.data) + ' ' + window.LM.fmtShort(g.data) + '</b> · ' + quanto + ' XP', ev.clientX, ev.clientY);
+      showTip('<b>' + LM.weekdayShort(g.data) + ' ' + LM.fmtShort(g.data) + '</b> · ' + quanto + ' XP', ev.clientX, ev.clientY);
     });
     c.addEventListener('mouseleave', hideTip);
     wrap.appendChild(c);
@@ -505,7 +506,7 @@ function experiment(container: HTMLElement, ris: EsitoProva, opzioni?: Opzioni):
     if (v === null) return;
     const dot = el('circle', { cx: X(i), cy: Y(v), r: 3.5, fill: p.fase === 'B' ? colB : colA, stroke: 'var(--superficie-1)', 'stroke-width': 2 }, svg);
     dot.addEventListener('mousemove', function (ev) {
-      showTip('<b>' + window.LM.fmtShort(p.data) + '</b> · ' + (p.fase === 'B' ? 'dopo la modifica' : 'prima') + ' · <b>' + fmtNum(v) + '</b>', ev.clientX, ev.clientY);
+      showTip('<b>' + LM.fmtShort(p.data) + '</b> · ' + (p.fase === 'B' ? 'dopo la modifica' : 'prima') + ' · <b>' + fmtNum(v) + '</b>', ev.clientX, ev.clientY);
     });
     dot.addEventListener('mouseleave', hideTip);
   });
@@ -556,5 +557,3 @@ export const LMCharts = {
 };
 export type Grafici = typeof LMCharts;
 
-/* finché il vecchio `app.js` gira accanto a questo */
-window.LMCharts = LMCharts;

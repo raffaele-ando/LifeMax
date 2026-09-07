@@ -7,14 +7,14 @@
 <title>LifeMax — Misura. Ingegnerizza. Massimizza.</title>
 <meta name="description" content="Sistema operativo personale per il miglioramento continuo: cattura istantanea, una sola prossima azione, misurazione a zero frizione, esperimenti N-of-1. Ogni scelta di design è motivata dalla letteratura scientifica.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='1' x2='1' y2='0'%3E%3Cstop offset='0' stop-color='%237c5df0'/%3E%3Cstop offset='.55' stop-color='%234a7bf5'/%3E%3Cstop offset='1' stop-color='%232ab8e8'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect x='2' y='2' width='44' height='44' rx='13' fill='url(%23g)'/%3E%3Cpath d='M12 30.5l7-7 5 5L34.5 18' fill='none' stroke='white' stroke-width='4.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M27.5 17h7.5v7.5' fill='none' stroke='white' stroke-width='4.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
-<link rel="icon" type="image/png" sizes="32x32" href="assets/icone/favicon-32.png">
-<link rel="icon" type="image/png" sizes="192x192" href="assets/icone/icona-192.png">
+<link rel="icon" type="image/png" sizes="32x32" href="./icone/favicon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="./icone/icona-192.png">
 <!-- iOS ignora le favicon SVG quando si aggiunge alla schermata home: serve un PNG
      dedicato, quadrato e senza trasparenze (la maschera la disegna il sistema) -->
-<link rel="apple-touch-icon" sizes="180x180" href="assets/icone/icona-180.png">
-<link rel="apple-touch-icon" sizes="167x167" href="assets/icone/icona-167.png">
-<link rel="apple-touch-icon" sizes="152x152" href="assets/icone/icona-152.png">
-<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" sizes="180x180" href="./icone/icona-180.png">
+<link rel="apple-touch-icon" sizes="167x167" href="./icone/icona-167.png">
+<link rel="apple-touch-icon" sizes="152x152" href="./icone/icona-152.png">
+<link rel="manifest" href="./manifest.webmanifest">
 <meta name="application-name" content="LifeMax">
 <meta name="apple-mobile-web-app-title" content="LifeMax">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -22,7 +22,13 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="theme-color" content="#f6f6f8" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0a0a0d" media="(prefers-color-scheme: dark)">
-<link rel="stylesheet" href="assets/app.css">
+<!-- LO STILE NON STA QUI. Se lo carica `main.tsx` con un `import`, Vite lo
+     mette in un file col nome che porta dentro l'impronta del contenuto e ne
+     scrive il <link> qui in cima da sé: uno che scade fra un anno invece di
+     uno che il browser richiede ogni dieci minuti. Un `<link>` scritto a
+     mano a un nome fisso non lo si può cachare per sempre. -->
+  <script type="module" crossorigin src="./pacco/index-CVh4qHMu.js"></script>
+  <link rel="stylesheet" crossorigin href="./pacco/index-BhPl0Cg1.css">
 </head>
 <body>
 
@@ -94,25 +100,11 @@
 
 <div id="onboarding-root"></div>
 
-<!-- primo di tutti: così il registro cattura anche gli errori degli script che seguono -->
-<script src="assets/log.js"></script>
-<!-- LA FORMA DEGLI ANGOLI. Sta prima di tutto il resto perché la prima
-     schermata la disegna già lui: caricato dopo, si vedrebbe un lampo di
-     angoli tondi normali e poi lo scatto alla curva di Apple. -->
-<script src="assets/forma.js"></script>
-<script src="assets/icons.js"></script>
-<!-- I PEZZI: le forme dell'interfaccia scritte una volta sola. Dopo icons.js,
-     perché un pezzo chiede a lui i suoi segni; prima di app.js, che li usa. -->
-<script src="assets/pezzi.js"></script>
-<script src="assets/data.js"></script>
-<script src="assets/promemoria.js"></script>
-<script src="assets/charts.js"></script>
-<!-- il laboratorio dei dieci design: NON sta qui. Si carica da sé quando si
-     apre quella pagina — sessantun kilobyte di codice e settantacinque di
-     stile per una schermata in cui non entra quasi nessuno, e prima venivano
-     analizzati a ogni avvio. Il build sa dov'è; senza build lo trova in
-     assets/lab.js. -->
-<script src="assets/app.js"></script>
-<script type="module" src="assets/cloud.js"></script>
+<!-- UN MODULO SOLO, e Vite scrive il resto.
+     Prima qui c'erano nove <script> in un ordine che andava tenuto a mano:
+     il registro primo di tutti per catturare gli errori di quelli dopo, la
+     forma degli angoli prima del primo disegno, i segni prima dei pezzi, i
+     pezzi prima dell'app. Quell'ordine adesso lo dicono gli `import` dentro
+     ai moduli, che è il posto dove si vede accanto alla ragione. -->
 </body>
 </html>

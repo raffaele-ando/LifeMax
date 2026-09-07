@@ -48,12 +48,12 @@ self.addEventListener('push', (e) => {
     const fissa = d.tipo === 'stato';
     await self.registration.showNotification(d.titolo || 'LifeMax', {
       body: d.corpo || '',
-      icon: 'assets/icone/icona-192.png',
+      icon: 'icone/icona-192.png',
       /* `badge` è il segno piccolo che Android mette nella barra di stato,
          accanto all'ora, e là viene reso in monocromatico: l'icona a colori
          dell'app ci diventa un quadrato pieno, cioè una macchia. Questa è la
          sola forma, bianca su niente, e a 18px si legge ancora. */
-      badge: 'assets/icone/badge-96.png',
+      badge: 'icone/badge-96.png',
       lang: 'it',
       /* `tag` fa sostituire la precedente dello stesso tipo invece di
          accumularne dieci: chi ha l'ADHD non ha bisogno di una pila di avvisi

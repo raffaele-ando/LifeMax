@@ -1,13 +1,8 @@
 node_modules
 node_modules/
-# l'isola React esce da Vite in assets/react/ e da lì la prende costruisci.mjs,
-# che ne mette una copia con l'impronta nel nome dentro assets/pacco/. Quella
-# serve, questa no: è un passaggio intermedio.
-assets/react/
-
-# L'USCITA DELLA RISCRITTURA, IGNORATA FINCHÉ È UN CANTIERE.
-# Attenzione alla fine: qui GitHub Pages serve il ramo così com'è, senza
-# nessun passaggio di build — per questo `assets/pacco/` è COMMITTATO. Quando
-# la riscrittura passa le prove e Pages punterà a /docs, questa riga va
-# tolta, se no il sito nuovo non esiste per nessuno.
-docs/
+# QUI NON C'È `docs/`, ED È APPOSTA.
+# GitHub Pages serve il ramo così com'è, senza nessun passaggio di build:
+# quello che sta in `docs/` È il sito. Ignorarlo vorrebbe dire che il sito
+# non esiste per nessuno. Si costruisce con `npm run build:nuovo` e si
+# committa insieme al codice che l'ha prodotto — `prove/pacco.js` controlla
+# che i due non divergano.

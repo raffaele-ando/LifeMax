@@ -34,6 +34,7 @@
    dentro a un nodo suo, e riscrivere dieci mock come alberi di JSX non
    servirebbe a niente: esistono per essere guardati, non per funzionare.
    ============================================================ */
+import { ICO, LOGO } from '../segni/segni';
 import { presa } from '../tipi/presa';
 
 /* le due schermate che ogni mock sa disegnare, e sono due */
@@ -55,12 +56,12 @@ const CHIAVE = 'lifemax.lab3';
 /* Le misure sono i cinque gradini della scala (11/13/15/18/26) come in tutto
    il resto: `ICO` ci tira comunque il numero più vicino, quindi qui c'erano
    dei 12, 14, 16, 20 e 22 che il file diceva e nessuno disegnava. */
-function I(n: string, s?: number): string { return window.ICO ? window.ICO(n, s) : ''; }
+function I(n: string, s?: number): string { return ICO(n, s); }
 /* Il marchio, non un'icona. Prima qui stava la freccia in salita, che in
    tutta l'app vuol dire «l'andamento nel tempo»: nei mock faceva da logo, e
    un mock che mostra un marchio che non esiste non serve a confrontare
    niente. */
-function L(s?: number): string { return window.LOGO ? window.LOGO(s) : ''; }
+function L(s?: number): string { return LOGO(s); }
 function esc(s: unknown): string { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
 
 /* ============================================================
@@ -1109,5 +1110,3 @@ function montaIn(el: HTMLElement): void {
 export const LM_LAB = { montaIn: montaIn, DESIGN: DESIGN, CONTENUTO: C };
 export type Lab = typeof LM_LAB;
 
-/* finché il vecchio `app.js` gira accanto a questo */
-window.LM_LAB = LM_LAB;

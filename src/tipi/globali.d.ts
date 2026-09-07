@@ -1,24 +1,30 @@
-/* I GLOBALI CHE ESISTONO DAVVERO, DICHIARATI UNA VOLTA.
+/* I QUATTRO GLOBALI CHE RESTANO, E PERCHÉ NON SONO UNA SVISTA.
 
-   Non è una lista di comodo: sono i pezzi che nel browser vivono su `window`
-   perché ci arrivano da uno `<script>` — il registro tecnico, i disegni, la
-   nuvola. Man mano che passano a modulo, le righe qui sotto sparivano una per
-   una: quando questo file è vuoto, la migrazione è finita.
+   Qui c'erano dieci nomi: i pezzi che nel browser vivevano su `window`
+   perché ci arrivavano da uno `<script>` — i disegni, la forma, i grafici,
+   i promemoria, il laboratorio. Adesso quelli sono moduli e chi li vuole se
+   li importa: sei righe sparite, e con loro la possibilità che qualcuno
+   chiami `window.ICO(...)` su un niente.
 
-   QUELLO CHE RESTA È IL SEME, e non è una svista. `LM`, il registro e la
-   nuvola si cercano a vicenda: `dati.ts` scrive nel registro, il registro
-   legge lo stato per la fotografia dell'ambiente, la nuvola chiama tutt'e
-   due. Fra moduli sarebbe un giro chiuso di import; su `window` è un
-   appuntamento che nessuno dei tre deve conoscere in anticipo. È lo stesso
-   motivo per cui c'erano tre `<script>` e non un albero di dipendenze.  */
+   I QUATTRO CHE RESTANO SONO UN APPUNTAMENTO, non una comodità.
+
+   `LM` sta qui perché `dati.ts` e `registro.ts` si cercano a vicenda:
+   `dati.ts` scrive nel registro ogni volta che salva, e il registro legge lo
+   stato per la fotografia dell'ambiente. Fra moduli sarebbe un giro chiuso
+   di import; su `window` è un appuntamento che nessuno dei due deve
+   conoscere in anticipo.
+
+   I tre della nuvola — `LM_AUTH`, `LM_SYNC`, `LMCloud` — stanno qui per una
+   ragione diversa e più forte: la nuvola SI CARICA A PARTE, con un
+   `import()`, perché va a prendere l'SDK di Firebase dalla rete e l'app deve
+   funzionare anche senza. Se `app.ts` la importasse per leggere chi è
+   entrato, Vite la metterebbe nel pezzo principale — cioè esattamente quello
+   che il caricamento a parte esiste per evitare. Chi c'è lo si chiede a
+   `window`, e chi non c'è non risponde: è la stessa cosa detta dal
+   `?` accanto ai tre nomi.  */
 import type { ApiLM } from '../dati/dati';
 import type { Registro, Riga as RigaRegistro } from '../registro/registro';
 import type { StatoAuth, StatoSync, ApiCloud, DettaglioEsempio } from '../nuvola/nuvola';
-import type { Segni } from '../segni/segni';
-import type { Forma } from '../forma/forma';
-import type { Grafici } from '../grafici/grafici';
-import type { Promemoria } from '../promemoria/promemoria';
-import type { Lab } from '../lab/lab';
 
 declare global {
   interface Window {
@@ -29,18 +35,6 @@ declare global {
     LM_AUTH?: StatoAuth;
     LM_SYNC?: StatoSync;
     LMCloud?: ApiCloud;
-    /* i disegni: una funzione con quattro tabelle attaccate */
-    ICO: Segni;
-    GOOGLE_G: (size?: number) => string;
-    LOGO: (size?: number) => string;
-    /* la forma degli angoli, applicata al DOM vero */
-    LM_FORMA?: Forma;
-    /* i grafici: sei funzioni che scrivono SVG dentro a un contenitore */
-    LMCharts: Grafici;
-    /* i promemoria: il pezzo che parla col Worker postino */
-    LM_PROMEMORIA?: Promemoria;
-    /* il laboratorio di design: dieci mock, e si apre da una pagina sola */
-    LM_LAB?: Lab;
   }
 }
 

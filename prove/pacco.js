@@ -102,10 +102,14 @@ try {
        non entra quasi nessuno. Il caricamento a richiesta è un `import()`
        dentro a `caricaLab`, e Vite lo riconosce e mette quel codice in un
        pezzo a parte — ma se qualcuno un giorno lo importa in cima al file,
-       Vite lo mette dentro al principale senza lamentarsi. Si riconosce dal
-       nome che pubblica. */
+       Vite lo mette dentro al principale senza lamentarsi.
+       SI CERCA UN TESTO, NON UN NOME. Prima il segno era `window.LM_LAB=`,
+       che c'era perché il laboratorio si pubblicava su `window`; adesso è un
+       modulo e quel nome, minificato, non esiste più. I nomi dei dieci mock
+       invece sono stringhe, e le stringhe il minificatore le tiene: se «Due
+       colonne» è nel pezzo principale, c'è dentro tutto il laboratorio. */
     ok('il Design lab resta fuori dal pezzo principale',
-      testo.indexOf('window.LM_LAB=') < 0 && testo.indexOf('window.LM_LAB =') < 0,
+      testo.indexOf('Due colonne') < 0,
       'sessantun kilobyte analizzati a ogni avvio per una pagina in cui non entra quasi nessuno');
     ok('ma c’è, in un pezzo suo', pezzi.some((f) => /^lab-.*\.js$/.test(f)),
       pezzi.filter((f) => /^lab-/.test(f)).join(', ') || 'nessuno');

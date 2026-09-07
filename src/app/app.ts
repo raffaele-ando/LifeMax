@@ -40,6 +40,14 @@ import type { VoceAdesso, CosaAdesso, VoceDiario, GiornoDiDiario } from '../dati
 import { ICO, GOOGLE_G, LOGO } from '../segni/segni';
 import { LMCharts } from '../grafici/grafici';
 import { LM_FORMA } from '../forma/forma';
+/* I PROMEMORIA SI IMPORTANO, E QUINDI CI SONO SEMPRE.
+   Prima si leggevano da `window.LM_PROMEMORIA`, e il controllo «e se non
+   c'è?» era sparso: `if (P)` in tre punti e nient'altro negli altri sei,
+   dove si chiamava `P.qualcosa()` su un niente. Non succedeva mai — il
+   modulo si caricava sempre — e proprio per questo il controllo mancante
+   non si vedeva. Adesso è un import: o c'è, o non compila. `P` resta il
+   nome corto con cui lo chiamano le trenta righe che lo usano. */
+import { LM_PROMEMORIA as P } from '../promemoria/promemoria';
 import type { Lab } from '../lab/lab';
 import { presa } from '../tipi/presa';
 import { esc as escapa, riga as pzRiga } from '../pezzi/stringhe';
@@ -1644,8 +1652,6 @@ function rigaScelta(eti: string, dentro: string): string {
    riga è una porta, la nota sotto e il tasto che la accompagna */
 interface StatoPromemoria { val: string; porta: boolean; nota: string; azione: string }
 function statoPromemoria(): StatoPromemoria {
-  const P = window.LM_PROMEMORIA;
-  if (!P) return { val: 'non disponibili', porta: false, nota: '', azione: '' };
   const st = P.stato();
   if (st === 'niente') {
     return { val: 'non disponibili', porta: false,
@@ -1786,9 +1792,8 @@ export function htmlImpostazioni(): string {
    macchina ha il permesso di interromperti, e quella decisione merita una
    schermata sola invece di essere infilata fra il tema e i backup. */
 export function apriPromemoria() {
-  var P = window.LM_PROMEMORIA;
   var c = LM.promemoria();
-  var conf = P && P.configurato();
+  var conf = P.configurato();
 
   function riga(id: VoceProm, nome: string, spiega: string) {
     var v = c.voci[id] || {};
@@ -1879,8 +1884,7 @@ export function apriPromemoria() {
    Live Activity: le può avere solo un'app installata dallo store. Meglio
    dirlo che far cercare un interruttore che non esiste. */
 function htmlNotaFissa() {
-  var P = window.LM_PROMEMORIA;
-  if (!P || P.stato() !== 'granted') return '';
+  if (P.stato() !== 'granted') return '';
   var accesa = P.fissaAccesa();
   var t = P.testoFissa();
   return '<div class="imp-sezione"><div class="imp-eti">La nota che resta</div>' +
@@ -1902,17 +1906,10 @@ function htmlNotaFissa() {
 }
 
 export function wirePromemoria(root: HTMLElement): void {
-  /* SE IL MODULO DEI PROMEMORIA NON C'È, NON C'È NIENTE DA COLLEGARE.
-     Prima il controllo era sparso: `if (P)` in tre punti e nient'altro negli
-     altri sei, e in quei sei si chiamava `P.qualcosa()` su un niente. Non
-     succedeva mai — il modulo si carica sempre — e proprio per questo il
-     controllo mancante non si vedeva. Uno solo, in cima. */
-  const P = window.LM_PROMEMORIA;
-  if (!P) return;
   function ridisegna() { staTornandoSheet = true; apriPromemoria(); staTornandoSheet = false; }
   /* dopo ogni cambiamento il piano va rimandato subito: aspettare il
      prossimo salvataggio vorrebbe dire che l'orario nuovo vale da domani */
-  function salva(patch: Parameters<typeof LM.impostaPromemoria>[0]) { LM.impostaPromemoria(patch); if (P) void P.mandaPiano(true); }
+  function salva(patch: Parameters<typeof LM.impostaPromemoria>[0]) { LM.impostaPromemoria(patch); void P.mandaPiano(true); }
 
   /* gli interruttori delle voci */
   root.querySelectorAll<HTMLElement>('[data-int]').forEach(function (b) {
@@ -2060,7 +2057,7 @@ export function wirePromemoria(root: HTMLElement): void {
   function spiegaProva(risposta: RispostaProva | null, stato: number): string {
     const j: RispostaProva = risposta || {};
     const s = j.stato || 0;
-    const chiave = (P ? P.cfg().chiave || '' : '');
+    const chiave = P.cfg().chiave || '';
     const coppiaDiversa = j.pubblica && chiave && j.pubblica !== chiave;
     if (coppiaDiversa) {
       return 'Il servizio push ha detto no (<code>' + esc(String(s || stato)) + '</code>) e si vede perché: <b>le due chiavi non sono la stessa coppia</b>. Nell’app c’è <code>' + esc(chiave.slice(0, 12)) + '…</code>, sul Worker <code>' + esc(String(j.pubblica).slice(0, 12)) + '…</code>. Copia quella del Worker qui sopra e premi Collega.';
@@ -2183,9 +2180,8 @@ export function wireAspettoDati(root: HTMLElement): void {
      da sé — se il permesso è appena cambiato, la riga sopra deve cambiare
      con lui, altrimenti resta a dire «spenti» con le notifiche accese. */
   function riscriviImpostazioni() { staTornandoSheet = true; apriImpostazioni(); staTornandoSheet = false; }
-  const P = window.LM_PROMEMORIA;
   const pon = root.querySelector<HTMLButtonElement>('#imp-prom-on');
-  if (pon && P) pon.addEventListener('click', function () {
+  if (pon) pon.addEventListener('click', function () {
     pon.disabled = true;
     void P.accendi().then(function (esito) {
       if (esito === 'negato') toast('Il permesso è stato negato: senza quello non arrivano notifiche.', 0, 'avviso');
@@ -2199,7 +2195,7 @@ export function wireAspettoDati(root: HTMLElement): void {
   const pc = root.querySelector<HTMLElement>('#imp-prom-come');
   if (pc) pc.addEventListener('click', apriPromemoria);
   const poff = root.querySelector<HTMLButtonElement>('#imp-prom-off');
-  if (poff && P) poff.addEventListener('click', function () {
+  if (poff) poff.addEventListener('click', function () {
     poff.disabled = true;
     void P.spegni().then(function () {
       /* il permesso del browser non si può togliere da qui: si toglie
@@ -2846,7 +2842,7 @@ function avvisoFuori(titolo: string, testo: string): void {
      timer serve proprio per andare a fare la cosa: la fine deve poter
      arrivare anche da fuori. È l'unica notifica che il web sa dare senza un
      server, perché la pagina è ancora viva. */
-  if (window.LM_PROMEMORIA) window.LM_PROMEMORIA.locale(titolo, testo, '#/oggi');
+  P.locale(titolo, testo, '#/oggi');
 }
 
 /* ============================================================

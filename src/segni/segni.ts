@@ -449,7 +449,3 @@ export const ICO = Object.assign(segno, {
 export { GOOGLE_G, LOGO };
 export type Segni = typeof ICO;
 
-/* finché il vecchio `app.js` gira accanto a questo */
-window.ICO = ICO;
-window.GOOGLE_G = GOOGLE_G;
-window.LOGO = LOGO;

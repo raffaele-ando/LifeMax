@@ -14,7 +14,7 @@
    Il pannello sta in Impostazioni → Promemoria.
 
    LA CHIAVE PRIVATA NON STA QUI, e non ci deve stare. `CONFIG.chiave` e
-   `window.LM.promemoria().chiave` sono la chiave PUBBLICA VAPID: serve al browser
+   `LM.promemoria().chiave` sono la chiave PUBBLICA VAPID: serve al browser
    per iscriversi, e sta in chiaro nei dati apposta. Quella privata vive
    soltanto come segreto del Worker — se un campo di qui te la chiede, e' il
    campo sbagliato.
@@ -25,6 +25,7 @@
    resta anche su `window` finche' il vecchio `app.js` gira accanto a
    questo. */
 import type { Abitudine, Ora, GiornoSettimana, Promemoria as ConfigPromemoria } from '../tipi/stato';
+import { LM } from '../dati/dati';
 
 /* ------------------------------------------------------------------ i tipi
    UNA VOCE DEL PIANO: quello che il postino riceve e riscrive in notifiche.
@@ -69,11 +70,11 @@ const CONFIG = {
 };
 
 /* Dove sta scritto davvero: nelle impostazioni, dentro i tuoi dati
-   (`window.LM.promemoria()`), così si cambia dall'app e si porta dietro sui tuoi
+   (`LM.promemoria()`), così si cambia dall'app e si porta dietro sui tuoi
    dispositivi. I valori qui sopra sono solo il ripiego per quando lo stato
    non c'è ancora. Ordine: quello che hai scritto tu vince. */
 function cfg(): Configurazione {
-  const c = (window.LM && window.LM.promemoria) ? window.LM.promemoria() : null;
+  const c = (window.LM && LM.promemoria) ? LM.promemoria() : null;
   if (!c) return { server: CONFIG.server, chiave: CONFIG.chiave, voci: null, silenzio: null, fissa: false };
   return {
     server: c.server || CONFIG.server,
@@ -88,18 +89,18 @@ function cfg(): Configurazione {
    dati. Chi aveva già configurato non deve rifarlo: si travasa una volta e
    si cancella la vecchia riga, così il travaso non si ripete ogni avvio. */
 function travasaVecchio(): void {
-  if (!window.LM || !window.LM.impostaPromemoria) return;
+  if (!window.LM || !LM.impostaPromemoria) return;
   try {
     const v = JSON.parse(localStorage.getItem('lifemax.promemoria.cfg') || 'null') as
       { server?: string; chiave?: string } | null;
-    const gia = window.LM.promemoria();
+    const gia = LM.promemoria();
     if (v && v.server && v.chiave && !(gia && gia.server)) {
-      window.LM.impostaPromemoria({ server: v.server, chiave: v.chiave });
+      LM.impostaPromemoria({ server: v.server, chiave: v.chiave });
     }
     if (v) localStorage.removeItem('lifemax.promemoria.cfg');
     const f = localStorage.getItem('lifemax.promemoria.fissa');
     if (f !== null) {
-      if (f === '1' && !(gia && gia.fissa)) window.LM.impostaPromemoria({ fissa: true });
+      if (f === '1' && !(gia && gia.fissa)) LM.impostaPromemoria({ fissa: true });
       localStorage.removeItem('lifemax.promemoria.fissa');
     }
   } catch { /* ignora */ }
@@ -192,13 +193,13 @@ if ('serviceWorker' in navigator) {
    l'app si fermava con lo stack pieno appena si accendeva la nota fissa.
    Un pezzo condiviso non ha versi. */
 /* L'ora la scegli tu, in Impostazioni. Questi sono i valori di partenza, e
-   stanno in `window.LM.PROMEMORIA_DEFAULT` — qui si leggono da lì per non averli
+   stanno in `LM.PROMEMORIA_DEFAULT` — qui si leggono da lì per non averli
    scritti due volte in due file che poi si dimenticano l'uno dell'altro. */
 function ora(id: VoceId): Ora {
   const c = cfg();
   const mia = c.voci ? c.voci[id] : undefined;
   if (mia && mia.ora) return mia.ora;
-  const d = window.LM && window.LM.PROMEMORIA_DEFAULT;
+  const d = window.LM && LM.PROMEMORIA_DEFAULT;
   const suo = d ? d.voci[id] : undefined;
   return (suo && suo.ora) || ('09:00' as Ora);
 }
@@ -209,9 +210,9 @@ function acceso(id: VoceId): boolean {
 }
 
 function ritualiAperti(): RitualeAperto[] {
-  if (!window.LM) return [];
-  const s = window.LM.load();
-  const oggi = window.LM.todayKey();
+  if (!LM) return [];
+  const s = LM.load();
+  const oggi = LM.todayKey();
   const out: RitualeAperto[] = [];
   if (!(s.pianoMattina || {})[oggi]) {
     out.push({ id: 'mattina', ora: ora('mattina'),
@@ -232,20 +233,20 @@ function ritualiAperti(): RitualeAperto[] {
    entrano nel piano (una notifica per ognuna sarebbe rumore) ma entrano nel
    conto: restano comunque cose aperte. */
 function abitudiniAperte(soloConOra: boolean): Abitudine[] {
-  if (!window.LM) return [];
-  const s = window.LM.load();
-  const oggi = window.LM.todayKey();
+  if (!LM) return [];
+  const s = LM.load();
+  const oggi = LM.todayKey();
   return (s.abitudini || []).filter(function (h) {
     if (soloConOra && !h.ora) return false;
-    if (!window.LM.abitudinePrevista(h, oggi)) return false;
+    if (!LM.abitudinePrevista(h, oggi)) return false;
     return !(h.fatti && h.fatti[oggi]);
   });
 }
 
 function piano(): VoceDelPiano[] {
-  if (!window.LM) return [];
-  const s = window.LM.load();
-  const oggi = window.LM.todayKey();
+  if (!LM) return [];
+  const s = LM.load();
+  const oggi = LM.todayKey();
   const voci: VoceDelPiano[] = [];
 
   /* Gli orari dei tre momenti. L'app non li tiene come dato: `ritualeDellOra`
@@ -305,8 +306,8 @@ function piano(): VoceDelPiano[] {
    sale premia il tenere aperte le cose. */
 function restano(): { n: number; righe: string[] } {
   if (!window.LM) return { n: 0, righe: [] };
-  const s = window.LM.load();
-  const oggi = window.LM.todayKey();
+  const s = LM.load();
+  const oggi = LM.todayKey();
   const righe: string[] = [];
 
   const az = (s.azioni || []).filter(function (a) { return a.data === oggi && !a.done; });
@@ -352,7 +353,7 @@ function segnaNumero(): number {
    di cosa che non si mette senza chiedere. */
 function fissaAccesa(): boolean { return cfg().fissa; }
 function fissa(vero: boolean): void {
-  if (window.LM && window.LM.impostaPromemoria) window.LM.impostaPromemoria({ fissa: !!vero });
+  if (window.LM && LM.impostaPromemoria) LM.impostaPromemoria({ fissa: !!vero });
   if (vero) scriviFissa();
   else togliFissa();
 }
@@ -371,7 +372,7 @@ function scriviFissa(): boolean {
      `NotificationOptions` e sono proprio quello che tiene la nota lì senza
      far rumore: sono i due campi per cui questa notifica esiste. */
   void reg.showNotification(t.titolo, {
-    body: t.corpo, icon: 'assets/icone/icona-192.png', badge: 'assets/icone/badge-96.png',
+    body: t.corpo, icon: 'icone/icona-192.png', badge: 'icone/badge-96.png',
     lang: 'it', tag: 'lifemax-stato', renotify: false, silent: true, requireInteraction: true,
     data: { vai: '#/oggi', tipo: 'stato' }
   } as NotificationOptions & { renotify: boolean; requireInteraction: boolean });
@@ -431,7 +432,7 @@ function mandaPiano(forza: boolean): Promise<boolean> {
   /* il giorno sta dentro l'impronta: un piano identico a quello di ieri
      (perché ieri non hai aperto l'app) va comunque rimandato, altrimenti il
      server continua a credere che sia ancora ieri */
-  const impronta = window.LM.todayKey() + '|' + JSON.stringify(p);
+  const impronta = LM.todayKey() + '|' + JSON.stringify(p);
   let vecchia: string | null = null;
   try { vecchia = localStorage.getItem(CHIAVE_ULTIMO); } catch { /* ignora */ }
   /* Non si scrive per ogni battito: il piano si manda solo se è cambiato, e
@@ -450,7 +451,7 @@ function mandaPiano(forza: boolean): Promise<boolean> {
         id: idDispositivo(),
         iscrizione: sub.toJSON ? sub.toJSON() : sub,
         fuso: (Intl.DateTimeFormat().resolvedOptions() || {}).timeZone || 'Europe/Rome',
-        giorno: window.LM.todayKey(),
+        giorno: LM.todayKey(),
         numero: restano().n,
         silenzio: cfg().silenzio,
         voci: p
@@ -508,7 +509,7 @@ function locale(titolo: string, corpo?: string, vai?: string): boolean {
   if (stato() !== 'granted') return false;
   if (reg && reg.showNotification) {
     void reg.showNotification(titolo, {
-      body: corpo || '', icon: 'assets/icone/icona-192.png', badge: 'assets/icone/badge-96.png', lang: 'it',
+      body: corpo || '', icon: 'icone/icona-192.png', badge: 'icone/badge-96.png', lang: 'it',
       tag: 'lifemax-locale', data: { vai: vai || '#/oggi' }
     });
     return true;
@@ -528,9 +529,6 @@ export const LM_PROMEMORIA = {
   CONFIG: CONFIG
 };
 export type Promemoria = typeof LM_PROMEMORIA;
-
-/* finché il vecchio `app.js` gira accanto a questo */
-window.LM_PROMEMORIA = LM_PROMEMORIA;
 
 /* Si registra da subito, e se i promemoria sono già accesi manda subito il
    piano: aprendo l'app di prima mattina il server ha ancora quello di ieri,

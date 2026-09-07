@@ -1095,7 +1095,5 @@ export const LM_FORMA = {
 };
 export type Forma = typeof LM_FORMA;
 
-/* finché il vecchio `app.js` gira accanto a questo */
-window.LM_FORMA = LM_FORMA;
 
 avvia();
