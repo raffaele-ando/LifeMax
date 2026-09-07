@@ -33,8 +33,8 @@ function Chips({ id, voci, attributo, scelto, onScegli }: {
 
 export interface PropMancata {
   id: string;
-  testo?: string;
-  dopo?: () => void;
+  testo?: string | undefined;
+  dopo?: (() => void) | undefined;
 }
 
 export default function Mancata({ id, testo, dopo }: PropMancata) {

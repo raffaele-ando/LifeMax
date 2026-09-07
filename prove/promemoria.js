@@ -10,7 +10,7 @@
 
    node prove/promemoria.js        (CHROMIUM=/percorso/di/chrome se serve)  */
 const http = require('http'), fs = require('fs'), path = require('path'), { chromium } = require('playwright');
-const RADICE = path.join(__dirname, '..');
+const RADICE = require('./dove').SERVITO;
 const T = { '.html': 'text/html', '.css': 'text/css', '.js': 'text/javascript', '.json': 'application/json', '.webmanifest': 'application/manifest+json', '.svg': 'image/svg+xml', '.png': 'image/png' };
 let fail = 0;
 const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  ') + n + (d ? '  → ' + d : '')); };

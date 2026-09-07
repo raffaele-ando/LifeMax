@@ -2,7 +2,7 @@
    l'app deve essere viva e cliccabile. Un livello di modalità rimasto
    appeso non si vede: si scopre che l'app non risponde più a niente. */
 const http=require('http'),fs=require('fs'),path=require('path');const {chromium}=require('playwright');
-const RADICE=path.join(__dirname,'..');
+const RADICE = require('./dove').SERVITO;
 const T={'.html':'text/html','.js':'text/javascript','.css':'text/css','.svg':'image/svg+xml','.png':'image/png','.webmanifest':'application/manifest+json'};
 const IGN=/gstatic|firebase|firestore|identitytoolkit|googleapis|net::|Failed|ERR_/i;
 let fail=0;const ok=(n,c,x)=>{console.log((c?'  ok   ':'  BUG  ')+n+(x?'  → '+x:''));if(!c)fail++;};

@@ -6,7 +6,7 @@
    Nata per un bug vero: una regola cancellata per sbaglio aveva reso l'area
    sensibile di una casella grande quanto tutta la card. */
 const http=require('http'),fs=require('fs'),path=require('path');const {chromium}=require('playwright');
-const RADICE=path.join(__dirname,'..');
+const RADICE = require('./dove').SERVITO;
 const T={'.html':'text/html','.js':'text/javascript','.css':'text/css','.svg':'image/svg+xml','.png':'image/png','.webmanifest':'application/manifest+json'};
 const PAGINE=['oggi','giornata','inbox','rituali','plancia','esperimenti','scienza'];
 let fail=0;const ok=(n,c,x)=>{console.log((c?'  ok   ':'  BUG  ')+n+(x?'  → '+x:''));if(!c)fail++;};

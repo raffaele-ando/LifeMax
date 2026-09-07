@@ -35,7 +35,7 @@ function Voce({ id, ico, eti, n, scelto, onScegli }: {
   );
 }
 
-export default function Filtri({ dopo }: { dopo?: () => void }) {
+export default function Filtri({ dopo }: { dopo?: (() => void) | undefined }) {
   const st = LM.load();
   const totale = st.backlog.length;
   const conData = st.backlog.filter((b) => !b.done && b.scadenza).length;

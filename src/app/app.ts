@@ -49,6 +49,9 @@ import type {
   Mancata, PassoDi
 } from '../tipi/stato';
 import { giorno as comeGiorno, ora as comeOra } from '../tipi/stato';
+/* solo tipi, cancellati alla compilazione: `app.ts` non importa niente da
+   nessun pannello — vedi `fogli/porte.ts` */
+import type { PropDiFoglio, NomeFoglio } from '../fogli/porte';
 
 const esc = escapa;
 
@@ -68,7 +71,9 @@ const esc = escapa;
    `$vista`, e questo è quello che rende possibile montarne una dentro a un
    nodo qualunque — che è esattamente cosa fa una radice di React. */
 export type DisegnaSchermo = (dove: HTMLElement) => void;
-export type MontaFoglio = (dove: HTMLElement, props: Record<string, unknown>) => void;
+/* chi disegna dentro a un pannello: il contenitore, e le proprietà che
+   QUEL pannello vuole — la tabella sta in `fogli/porte.ts` */
+export type MontaFoglio<K extends NomeFoglio> = (dove: HTMLElement, props: PropDiFoglio[K]) => void;
 
 /* LA SCENA DI «ADESSO»: il dentro e le classi, senza toccare la pagina. */
 export interface Scena { dentro: string; classi: string }
@@ -3361,8 +3366,20 @@ export function registraSchermo(id: string, disegna: DisegnaSchermo): void { SCH
    sono moduli, e quello che una schermata vuole se lo importa. Un elenco
    scritto a mano di cosa è lecito chiamare era il modo di avere un confine
    senza avere i moduli.  */
-const FOGLI: Record<string, MontaFoglio> = {};
-export function registraFoglio(id: string, monta: MontaFoglio): void { FOGLI[id] = monta; }
+/* I quindici disegnano cose diverse e vogliono proprietà diverse, quindi
+   messi insieme in una tabella non hanno un tipo comune: quello che li
+   accomuna è «prende un contenitore e le SUE proprietà», e in TypeScript
+   quel «sue» si scrive soltanto sul singolo. I due passaggi qui sotto sono
+   le due facce dello stesso confine — si mette dentro con la chiave giusta
+   (`registraFoglio` è generica e lo pretende) e si tira fuori con la stessa
+   chiave (`apriFoglio` è generica e lo pretende): fra i due il tipo resta
+   chiuso in un cassetto, e `never` è il modo di dire che nessuno può
+   aprirlo per sbaglio. */
+type FoglioChiuso = (dove: HTMLElement, props: never) => void;
+const FOGLI: Partial<Record<NomeFoglio, FoglioChiuso>> = {};
+export function registraFoglio<K extends NomeFoglio>(id: K, monta: MontaFoglio<K>): void {
+  FOGLI[id] = monta as FoglioChiuso;
+}
 
 /* IL GANCIO PER SMONTARE. Chiudendo il foglio, chi ci ha disegnato dentro
    deve poterlo sapere: React tiene i suoi nodi in mano a una radice, e
@@ -3373,10 +3390,10 @@ export const ganci: { smontaFoglio: () => void } = { smontaFoglio: function () {
 /* Aprire un pannello. Stessa porta di sempre — il foglio è quello, la pila
    del ritorno è quella, il gesto per chiuderlo è quello — ma il corpo lo
    possiede chi si è iscritto: si apre vuoto e ci si monta dentro. */
-export function apriFoglio(titolo: string, quale: string, props?: Record<string, unknown>, largo?: boolean, riapri?: Riapri | null): void {
+export function apriFoglio<K extends NomeFoglio>(titolo: string, quale: K, props: PropDiFoglio[K], largo?: boolean, riapri?: Riapri | null): void {
   apriSheet(titolo, '', function (root) {
     const monta = FOGLI[quale];
-    if (monta) monta(root, props || {});
+    if (monta) (monta as MontaFoglio<K>)(root, props);
   }, largo, riapri);
 }
 

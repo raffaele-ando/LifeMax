@@ -15,10 +15,10 @@ import type { NomeTimer } from '../app/app';
 const QUALI: NomeTimer[] = ['avvio', 'blocco', 'pomodoro', 'libero'];
 
 export interface PropTimer {
-  azioneId?: string | null;
-  areaId?: string | null;
-  testo?: string;
-  minBlocco?: number | null;
+  azioneId?: string | null | undefined;
+  areaId?: string | null | undefined;
+  testo?: string | undefined;
+  minBlocco?: number | null | undefined;
 }
 
 export default function Timer({ azioneId, areaId, testo, minBlocco }: PropTimer) {

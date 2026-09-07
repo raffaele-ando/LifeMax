@@ -20,7 +20,7 @@
    node prove/larghezze.js        (CHROMIUM=/percorso/di/chrome se serve)  */
 'use strict';
 const http = require('http'), fs = require('fs'), path = require('path'), { chromium } = require('playwright');
-const RADICE = path.join(__dirname, '..');
+const RADICE = require('./dove').SERVITO;
 const T = { '.html': 'text/html', '.css': 'text/css', '.js': 'text/javascript', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.webmanifest': 'application/manifest+json' };
 const LARGHEZZE = [320, 360, 390, 412, 768, 810, 834, 1024, 1180, 1280];
 const VIE = ['oggi', 'giornata', 'rituali', 'inbox', 'plancia', 'esperimenti', 'scienza'];

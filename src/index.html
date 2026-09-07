@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>LifeMax — Misura. Ingegnerizza. Massimizza.</title>
+<meta name="description" content="Sistema operativo personale per il miglioramento continuo: cattura istantanea, una sola prossima azione, misurazione a zero frizione, esperimenti N-of-1. Ogni scelta di design è motivata dalla letteratura scientifica.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='1' x2='1' y2='0'%3E%3Cstop offset='0' stop-color='%237c5df0'/%3E%3Cstop offset='.55' stop-color='%234a7bf5'/%3E%3Cstop offset='1' stop-color='%232ab8e8'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect x='2' y='2' width='44' height='44' rx='13' fill='url(%23g)'/%3E%3Cpath d='M12 30.5l7-7 5 5L34.5 18' fill='none' stroke='white' stroke-width='4.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M27.5 17h7.5v7.5' fill='none' stroke='white' stroke-width='4.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="icon" type="image/png" sizes="32x32" href="./icone/favicon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="./icone/icona-192.png">
+<!-- iOS ignora le favicon SVG quando si aggiunge alla schermata home: serve un PNG
+     dedicato, quadrato e senza trasparenze (la maschera la disegna il sistema) -->
+<link rel="apple-touch-icon" sizes="180x180" href="./icone/icona-180.png">
+<link rel="apple-touch-icon" sizes="167x167" href="./icone/icona-167.png">
+<link rel="apple-touch-icon" sizes="152x152" href="./icone/icona-152.png">
+<link rel="manifest" href="./manifest.webmanifest">
+<meta name="application-name" content="LifeMax">
+<meta name="apple-mobile-web-app-title" content="LifeMax">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#f6f6f8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0a0a0d" media="(prefers-color-scheme: dark)">
+<!-- LO STILE NON STA QUI. Se lo carica `main.tsx` con un `import`, Vite lo
+     mette in un file col nome che porta dentro l'impronta del contenuto e ne
+     scrive il <link> qui in cima da sé: uno che scade fra un anno invece di
+     uno che il browser richiede ogni dieci minuti. Un `<link>` scritto a
+     mano a un nome fisso non lo si può cachare per sempre. -->
+</head>
+<body>
+
+<div class="aurora" aria-hidden="true"><i></i><i></i><i></i></div>
+
+<div id="banda-demo" role="region" aria-label="Avviso dati di esempio"></div>
+
+<div class="app">
+
+  <!-- navigazione desktop -->
+  <aside class="sidebar" aria-label="Navigazione principale">
+    <div class="logo" id="logo-blocco">LifeMax <span class="logo-tag">Beta</span></div>
+    <button class="cattura-cta" id="side-cattura" title="Cattura un pensiero (tasto C)">
+      <span class="cattura-cta-testo"></span><kbd>C</kbd>
+    </button>
+    <nav id="nav-lato" aria-label="Sezioni"></nav>
+    <div class="sidebar-fondo" id="sidebar-fondo"></div>
+  </aside>
+
+  <!-- contenuto -->
+  <main class="main" id="vista" tabindex="-1"></main>
+</div>
+
+<!-- navigazione mobile -->
+<nav class="tabbar" id="nav-tab" aria-label="Navigazione mobile"></nav>
+
+<!-- cattura istantanea: sempre a un gesto di distanza -->
+
+<!-- pannello (bottom sheet su mobile, modale al centro su desktop) -->
+<div class="sheet-overlay" id="sheet-overlay" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-titolo" tabindex="-1">
+    <!-- una via d'uscita sola: col dito la maniglia (si trascina giù o si
+         tocca), col mouse la x. Averle entrambe insieme erano due comandi
+         per la stessa cosa nello stesso angolo. -->
+    <button class="sheet-maniglia" id="sheet-maniglia" aria-label="Chiudi"></button>
+    <!-- se sei entrato qui da un altro pannello, la via del ritorno porta
+         scritto il nome del posto da cui vieni -->
+    <div class="sheet-testa">
+      <div class="sheet-testa-sx">
+        <button class="sheet-indietro" id="sheet-indietro" hidden></button>
+        <h2 id="sheet-titolo"></h2>
+      </div>
+      <button class="sheet-chiudi" id="sheet-chiudi" aria-label="Chiudi"></button>
+    </div>
+    <div class="sheet-corpo" id="sheet-corpo"></div>
+  </div>
+</div>
+
+<div class="overlay" id="overlay-cattura" hidden>
+  <div class="pannello-cattura" role="dialog" aria-modal="true" aria-label="Cattura rapida" tabindex="-1">
+    <div class="corpo-cattura" id="corpo-cattura">
+      <input type="text" id="input-cattura" placeholder="Scrivi un pensiero…" autocomplete="off" enterkeyhint="done">
+      <!-- col dito non c'è nessun tasto Invio a portata: serve un pulsante -->
+      <button class="btn btn-primario cattura-salva" id="cattura-salva" type="button">Salva</button>
+    </div>
+    <!-- Una nota sola. Le due classi che sceglievano fra tastiera e dito
+         erano rimaste nel markup dopo una ripulitura del CSS, quindi sul
+         telefono si leggeva «Invio salva nell'inbox · Esc chiude»: le
+         istruzioni per due tasti che lì non esistono. Quello che serve
+         sapere è dove finisce la nota, e vale in tutti i casi. -->
+    <div class="piede">
+      <span>Finisce tra le cose da sistemare.</span>
+      <button type="button" class="cattura-chiudi" id="cattura-chiudi">Chiudi</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-zona" id="toast-zona" aria-live="polite"></div>
+
+<div id="onboarding-root"></div>
+
+<!-- UN MODULO SOLO, e Vite scrive il resto.
+     Prima qui c'erano nove <script> in un ordine che andava tenuto a mano:
+     il registro primo di tutti per catturare gli errori di quelli dopo, la
+     forma degli angoli prima del primo disegno, i segni prima dei pezzi, i
+     pezzi prima dell'app. Quell'ordine adesso lo dicono gli `import` dentro
+     ai moduli, che è il posto dove si vede accanto alla ragione. -->
+<script type="module" src="./main.tsx"></script>
+</body>
+</html>

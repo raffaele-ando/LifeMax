@@ -1827,11 +1827,20 @@ function creaLM() {
     registra('backlog', 'Eliminato un passo di «' + b.testo + '»' + (st ? ': ' + st.testo : ''), false);
     save();
   }
-  function togglePasso(bid: string, sid: string) {
+  /* Torna `true` se il passo è stato SPUNTATO, `false` se la spunta è stata
+     tolta, `null` se quel passo non c'è (cancellato, o arrivata la fusione da
+     un altro dispositivo mentre la scheda era aperta).
+     Prima non tornava niente, e la scheda ci passava sopra il risultato a
+     `feedbackSpunta(ev, xp, …)` — che con `undefined` non fa niente: nessuna
+     conferma, nessuno scoppio, nessun toast. Spuntare un passo di un progetto
+     è sempre stato l'unico gesto di questo tipo senza risposta. I punti non
+     ce li ha e non deve averceli (li dà l'azione che nasce dal passo): quello
+     che mancava è il «fatto». */
+  function togglePasso(bid: string, sid: string): boolean | null {
     var s = load();
     var b = s.backlog.find(function (x) { return x.id === bid; });
     var st = b && b.steps && b.steps.find(function (x) { return x.id === sid; });
-    if (!st || !b) return;
+    if (!st || !b) return null;
     st.done = !st.done;
     var suoT = b, passiT = b.steps || [];
     registra('backlog', (st.done ? 'Fatto un passo' : 'Tolta la spunta a un passo') + ' di «' + suoT.testo + '»: ' + st.testo, false);
@@ -1841,6 +1850,7 @@ function creaLM() {
       s.backlog = s.backlog.filter(function (x) { return x.id !== suoT.id; });
     }
     save();
+    return st.done;
   }
   function avanzamentoProgetto(b: Attivita) {
     var tot = (b.steps || []).length;

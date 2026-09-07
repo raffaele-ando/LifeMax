@@ -23,7 +23,7 @@
 'use strict';
 const http = require('http'), fs = require('fs'), path = require('path');
 const { chromium } = require('playwright');
-const RADICE = '/home/user/LifeMax', PORTA = 8781;
+const RADICE = require('./dove').SERVITO, PORTA = 8781;
 const T = { '.html': 'text/html', '.css': 'text/css', '.js': 'text/javascript', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.webmanifest': 'application/manifest+json' };
 /* Il Design lab sta fuori: sono dieci interfacce diverse per scelta, e
    contarle qui vorrebbe dire chiamare «incoerenza» proprio la cosa che quella

@@ -18,7 +18,7 @@
 'use strict';
 const http = require('http'), fs = require('fs'), path = require('path');
 const { chromium } = require('playwright');
-const RADICE = path.join(__dirname, '..');
+const RADICE = require('./dove').SERVITO;
 const PORTA = 8749;
 const T = { '.html': 'text/html', '.css': 'text/css', '.js': 'text/javascript', '.json': 'application/json', '.svg': 'image/svg+xml' };
 
