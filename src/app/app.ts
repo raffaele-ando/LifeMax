@@ -93,6 +93,11 @@ export interface Nodo {
   mit?: boolean;
   streak?: number;
   mancata?: Mancata | null;
+  /* UN'AZIONE PUÒ NASCERE DA UN PASSO DI UN PROGETTO, e il pannello della
+     giornata lo legge per dire «il passo resta nel progetto» invece di
+     «rimessa in Da fare». Non lo metteva `nodiGiorno`: lo cercava su un
+     oggetto che non ce l'aveva, quindi quella frase non è mai comparsa. */
+  passoDi?: PassoDi | null;
 }
 
 /* IL GIORNO INTERO, come lo legge la griglia. `wake` e `sleep` sono i due
@@ -132,21 +137,21 @@ export interface Disposto {
    `rail: false` per la striscia, `nowMin` per il pop-up. Chi leggeva il
    codice doveva raccoglierli a mano dalle cinque chiamate. */
 export interface OpzGriglia {
-  pxh?: number;
+  pxh?: number | undefined;
   /* la versione piccola: settimana e mese. Niente etichette, blocchi bassi. */
   mini?: boolean;
   /* la colonna delle ore a sinistra: si spegne nella striscia */
   rail?: boolean;
   senzaEtichettaSonno?: boolean;
   /* «adesso» in minuti, per la riga rossa: nel pop-up si passa a mano */
-  nowMin?: number;
+  nowMin?: number | null;
   compact?: boolean;
   controls?: boolean;
   header?: boolean;
   interactive?: boolean;
   spuntabile?: boolean;
   taglia?: string;
-  giorno?: Giorno;
+  giorno?: Giorno | undefined;
 }
 
 export type Orizzonte = 'giorno' | 'settimana' | 'mese' | 'anno';
@@ -289,7 +294,7 @@ function illoSole(): string {
     '</svg>';
 }
 
-function illoInbox(): string {
+export function illoInbox(): string {
   return '<svg class="illo" viewBox="0 0 200 120" aria-hidden="true">' +
     '<defs><linearGradient id="ilB" x1="0" y1="1" x2="1" y2="0">' +
     '<stop offset="0" style="stop-color:var(--brand-a)"/><stop offset="1" style="stop-color:var(--brand-c)"/></linearGradient></defs>' +
@@ -328,7 +333,7 @@ function illoOrbita(): string {
 
 /* ---------- tema & skin ---------- */
 
-function applicaTema(): void {
+export function applicaTema(): void {
   const s = LM.load();
   const modo = s.profilo.modo || 'auto';
   const scuroOS = window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -393,7 +398,7 @@ function setScorri(v: Stato['profilo']['scorri']): void {
   LM.registra('impostazioni', 'Scorrimento fra le schermate ' + (v === 'no' ? 'spento' : 'acceso'), false);
   LM.save(); render();
 }
-function caricaDemo(): void {
+export function caricaDemo(): void {
   avviso({
     titolo: 'Sostituire i dati con quelli di esempio?',
     testo: 'Al posto dei tuoi dati vengono caricate otto settimane di esempio. Quelli di adesso restano in un backup, che trovi nelle impostazioni.',
@@ -403,7 +408,7 @@ function caricaDemo(): void {
     toast('Dati di esempio caricati.', 0, 'sparkles');
   });
 }
-function azzeraTutto(): void {
+export function azzeraTutto(): void {
   avviso({
     titolo: 'Cancellare tutti i dati?',
     testo: 'Riparti da zero. I dati stanno soltanto su questo browser: una volta cancellati non tornano indietro.',
@@ -508,7 +513,7 @@ export interface OpzAvviso {
 /* `onNo` serve quando le due strade sono due SCELTE e non «fai» / «lascia
    stare»: chi chiude senza rispondere sta comunque dicendo qualcosa, e chi
    ha fatto la domanda deve poter andare avanti. */
-function avviso(opz: OpzAvviso, onSi?: () => void, onNo?: () => void): void {
+export function avviso(opz: OpzAvviso, onSi?: () => void, onNo?: () => void): void {
   if (avvisoAperto) { if (onNo) onNo(); return; }
   const ovl = document.createElement('div');
   ovl.className = 'avviso-ovl';
@@ -563,7 +568,7 @@ function avviso(opz: OpzAvviso, onSi?: () => void, onNo?: () => void): void {
 
 /* un toast con un tasto: «Annulla», e cosa fare se lo si tocca */
 export interface AzioneToast { eti: string; fai: () => void }
-function toast(testo: string, xp?: number, icona?: string, azione?: AzioneToast): void {
+export function toast(testo: string, xp?: number, icona?: string, azione?: AzioneToast): void {
   const zona = perId('toast-zona');
   const t = document.createElement('div');
   t.className = 'toast' + (azione ? ' toast-lungo' : '');
@@ -583,7 +588,7 @@ function toast(testo: string, xp?: number, icona?: string, azione?: AzioneToast)
    dieci volte al giorno smette di leggerla. Quindi le cancellazioni
    piccole si fanno subito, e per qualche secondo si possono rimettere a
    posto. Restano dietro un avviso solo quelle che portano via tutto. */
-function conAnnulla(testo: string, icona: string, fai: () => void): void {
+export function conAnnulla(testo: string, icona: string, fai: () => void): void {
   const prima = JSON.parse(JSON.stringify(LM.load())) as Stato;
   fai();
   toast(testo, 0, icona, { eti: 'Annulla', fai: function () {
@@ -595,7 +600,7 @@ function conAnnulla(testo: string, icona: string, fai: () => void): void {
 
 /* feedback per una spunta: XP che volano + toast quando si completa;
    avviso «spunta tolta» (con gli XP restituiti) quando si annulla per errore */
-function feedbackSpunta(ev: { currentTarget: EventTarget | null }, xp: number, doneMsg: string, icona?: string): void {
+export function feedbackSpunta(ev: { currentTarget: EventTarget | null }, xp: number, doneMsg: string, icona?: string): void {
   if (xp > 0) {
     const dove = ev.currentTarget as HTMLElement | null;
     if (!dove) return;
@@ -749,7 +754,7 @@ function scriviSe(el: HTMLElement | null, html: string): boolean {
    `getAnimations()` fa la stessa cosa senza impaginare: annulla quelle che
    stanno girando, e la classe rimessa ne fa partire una nuova. */
 let girata = 0;
-function animaIngresso(el: HTMLElement | null, sezione?: boolean, verso?: number): void {
+export function animaIngresso(el: HTMLElement | null, sezione?: boolean, verso?: number): void {
   if (!el) return;
   const n = el as NodoConMemoria;
   const dove = verso || 0;
@@ -1026,6 +1031,7 @@ document.addEventListener('keydown', function (e) {
     let fatto = false;
     function poi() {
       if (fatto) return; fatto = true;
+      if (!pan) return;
       pan.classList.remove('sheet-via');
       pan.style.transform = '';
       scriviVelo(1);
@@ -1066,7 +1072,7 @@ let pilaSheet: Riapri[] = [];
 let riapriCorrente: Riapri | null = null;
 let staTornandoSheet = false;
 
-function apriSheet(
+export function apriSheet(
   titolo: string,
   html: string,
   onWire?: ((root: HTMLElement) => void) | null,
@@ -1149,7 +1155,7 @@ function tornaIndietroSheet(): void {
 /* Il nome di una cosa si cambia dove lo si legge: nel titolo del
    pannello. Prima c'era una riga «Nome» con dentro un campo, cioè lo
    stesso testo scritto due volte a tre centimetri di distanza. */
-function titoloSheetModificabile(valore: string, onCambio: (v: string) => void): void {
+export function titoloSheetModificabile(valore: string, onCambio: (v: string) => void): void {
   const t = perId('sheet-titolo');
   if (!t) return;
   let nome = valore;
@@ -1176,7 +1182,7 @@ function titoloSheetModificabile(valore: string, onCambio: (v: string) => void):
   });
 }
 
-function chiudiSheet(): void {
+export function chiudiSheet(): void {
   $sheet.hidden = true; wireSheet = null;
   ganci.smontaFoglio();
   document.dispatchEvent(new CustomEvent('lm:sheet-chiuso'));
@@ -1324,7 +1330,7 @@ function badgeInbox(id: string, s: Stato): string {
   return id === 'inbox' && s.inbox.length ? '<span class="nav-badge">' + s.inbox.length + '</span>' : '';
 }
 
-function aggiornaNav(): void {
+export function aggiornaNav(): void {
   const s = LM.load();
   const corrente = vistaCorrente();
 
@@ -1410,7 +1416,7 @@ export interface StatoSalvataggio {
   breve: string;
   title?: string;
 }
-function statoSync(): StatoSalvataggio {
+export function statoSync(): StatoSalvataggio {
   const y = window.LM_SYNC || { state: 'idle' as const, error: '', at: 0, inCoda: false };
   const quando = y.at ? ' · ' + oraDi(y.at) : '';
   /* `breve` è la versione per la barra laterale, dove lo spazio è una
@@ -1558,7 +1564,7 @@ function statoPromemoria(): StatoPromemoria {
     azione: '<button class="btn btn-mini btn-tinta" id="imp-prom-on">' + ICO('campana', 15) + ' Accendi i promemoria</button>' };
 }
 
-function htmlImpostazioni(): string {
+export function htmlImpostazioni(): string {
   const s = LM.load();
   const modo = s.profilo.modo || 'auto';
   const skin = s.profilo.skin || 'quiete';
@@ -1667,7 +1673,7 @@ function htmlImpostazioni(): string {
    Sta a parte per un motivo che non è di spazio: qui si decide quando una
    macchina ha il permesso di interromperti, e quella decisione merita una
    schermata sola invece di essere infilata fra il tema e i backup. */
-function apriPromemoria() {
+export function apriPromemoria() {
   var P = window.LM_PROMEMORIA;
   var c = LM.promemoria();
   var conf = P && P.configurato();
@@ -1783,7 +1789,7 @@ function htmlNotaFissa() {
     '</div>';
 }
 
-function wirePromemoria(root: HTMLElement): void {
+export function wirePromemoria(root: HTMLElement): void {
   /* SE IL MODULO DEI PROMEMORIA NON C'È, NON C'È NIENTE DA COLLEGARE.
      Prima il controllo era sparso: `if (P)` in tre punti e nient'altro negli
      altri sei, e in quei sei si chiamava `P.qualcosa()` su un niente. Non
@@ -1991,7 +1997,7 @@ function wirePromemoria(root: HTMLElement): void {
   });
 }
 
-function wireAspettoDati(root: HTMLElement): void {
+export function wireAspettoDati(root: HTMLElement): void {
   root.querySelectorAll<HTMLElement>('#seg-suono [data-suono]').forEach(function (b) {
     b.addEventListener('click', function () {
       root.querySelectorAll<HTMLElement>('#seg-suono [data-suono]').forEach(function (o) { o.classList.toggle('attivo', o === b); });
@@ -2109,7 +2115,7 @@ function wireAspettoDati(root: HTMLElement): void {
   }
 }
 
-function esportaDati(): void {
+export function esportaDati(): void {
   try {
     const blob = new Blob([LM.exportJson()], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -2122,7 +2128,7 @@ function esportaDati(): void {
   } catch (e) { toast('Esportazione non riuscita.', 0, 'avviso'); }
 }
 
-function apriBackups() {
+export function apriBackups() {
   apriFoglio('Backup e ripristino', 'backup', {});
 }
 
@@ -2137,7 +2143,7 @@ let LOG_SOLO_PROBLEMI = false;
 /* come sta il salvataggio, spiegato a chi guarda: una classe per il colore,
    un titolo e una riga di testo */
 export interface Spiegazione { cls: string; tit: string; txt: string }
-function statoSalvataggioSpiegato(): Spiegazione {
+export function statoSalvataggioSpiegato(): Spiegazione {
   const y = window.LM_SYNC || { state: 'idle' as const, error: '', at: 0, inCoda: false };
   const a = window.LM_AUTH || { available: false, user: null, syncing: false };
   const locale = 'Sul telefono o computer che stai usando i dati sono salvati subito, sempre.';
@@ -2161,7 +2167,7 @@ function statoSalvataggioSpiegato(): Spiegazione {
   return { cls: 'diag-ok', tit: 'Niente in sospeso', txt: locale };
 }
 
-function righeLogHtml(): string {
+export function righeLogHtml(): string {
   const reg = window.LMLog;
   if (!reg) return '<div class="imp-nota" style="margin:0">Registro non disponibile.</div>';
   let r = reg.righe();
@@ -2176,7 +2182,7 @@ function righeLogHtml(): string {
   }).join('');
 }
 
-function apriDiagnostica() {
+export function apriDiagnostica() {
   apriFoglio('Registro tecnico', 'diagnostica', {}, true);
 }
 
@@ -2264,13 +2270,13 @@ export function wireDiagnostica(root: HTMLElement): void {
 var ICONE_AREA = ['book', 'heart', 'users', 'wallet', 'landmark', 'rocket', 'briefcase',
   'lightbulb', 'casa', 'musica', 'globo', 'pesi', 'user', 'shield'];
 
-function apriAree() {
+export function apriAree() {
   apriFoglio('Le tue aree', 'aree', {});
 }
 
 /* ---------- guida in-app ---------- */
 
-function apriGuida() {
+export function apriGuida() {
   apriFoglio('Primi passi', 'guida', {});
 }
 
@@ -2303,7 +2309,7 @@ function htmlAccount() {
     '<span class="sc-val">su questo dispositivo</span></div></div>';
 }
 
-function apriImpostazioni() {
+export function apriImpostazioni() {
   apriSheet('Impostazioni', htmlImpostazioni(), wireAspettoDati, false,
     { nome: 'Impostazioni', apri: apriImpostazioni });
 }
@@ -2315,7 +2321,7 @@ function apriImpostazioni() {
    leggere una volta sola.
    Con le tre porte non serve nessun elenco: ogni schermata sta a un tocco
    dalle linguette sotto al titolo della sua porta, e qui l'elenco è vuoto. */
-function vociMenu() {
+export function vociMenu() {
   if (navTre()) return { extra: [], secondarie: [] };
   return {
     extra: primarie().filter(function (v) { return TAB_MOBILE.indexOf(v.id) < 0; }), /* es. Giornata */
@@ -2323,7 +2329,7 @@ function vociMenu() {
   };
 }
 
-function apriMenuAltro() {
+export function apriMenuAltro() {
   apriFoglio('Menu', 'menu', {});
 }
 
@@ -2349,12 +2355,12 @@ function apriMenuAltro() {
    un segno onesto non c'è — «Dopo questa», «Le altre» — non se ne inventa
    uno: un glifo scelto per riempire il posto è una figura in più da
    decifrare, non un aiuto.  */
-function etichetta(testo: string, ico?: string, conta?: number | string): string {
+export function etichetta(testo: string, ico?: string, conta?: number | string): string {
   return '<div class="lista-eti">' + (ico ? ICO(ico, 11) : '') + testo +
     (conta != null ? ' <span>' + conta + '</span>' : '') + '</div>';
 }
 
-function rigaAggiunta(id: string, segnaposto: string, opzioniHtml?: string): string {
+export function rigaAggiunta(id: string, segnaposto: string, opzioniHtml?: string): string {
   return '<form class="agg" id="' + id + '" autocomplete="off">' +
     '<div class="agg-riga">' +
     '<input type="text" class="agg-testo" placeholder="' + esc(segnaposto) + '" aria-label="' + esc(segnaposto) + '" enterkeyhint="done">' +
@@ -2368,7 +2374,7 @@ function rigaAggiunta(id: string, segnaposto: string, opzioniHtml?: string): str
 /* Collega la riga: le opzioni si aprono al primo carattere, si chiudono
    quando il campo torna vuoto e si perde il fuoco. `onInvio(testo, opz)`
    riceve il testo e il contenitore delle opzioni. */
-function wireRigaAggiunta(scope: ParentNode, id: string, onInvio: (testo: string, opz: HTMLElement) => void): void {
+export function wireRigaAggiunta(scope: ParentNode, id: string, onInvio: (testo: string, opz: HTMLElement) => void): void {
   const form = scope.querySelector<HTMLElement>('#' + id);
   if (!form) return;
   /* il campo lo ha scritto `rigaAggiunta` dentro a quel form: se non c'è,
@@ -2377,10 +2383,11 @@ function wireRigaAggiunta(scope: ParentNode, id: string, onInvio: (testo: string
   const inp = form.querySelector<HTMLInputElement>('.agg-testo');
   if (!inp) return;
   const opz = form.querySelector<HTMLElement>('.agg-opz');
+  const ilForm = form;
   function apri(v: boolean) {
     if (!opz) return;
     opz.hidden = !v;
-    form.classList.toggle('agg-aperta', !!v);
+    ilForm.classList.toggle('agg-aperta', !!v);
   }
   inp.addEventListener('input', function () { if (inp.value.trim()) apri(true); });
   inp.addEventListener('focus', function () { if (inp.value.trim()) apri(true); });
@@ -2413,7 +2420,7 @@ function wireRigaAggiunta(scope: ParentNode, id: string, onInvio: (testo: string
 
 /* ---------- helper UI ---------- */
 
-function areaById(id: string | null | undefined): Area {
+export function areaById(id: string | null | undefined): Area {
   const aree = LM.load().aree;
   /* l'ultima è «Altro», e c'è sempre: `statoVuoto()` la mette, e le aree non
      si cancellano (si spengono) */
@@ -2432,12 +2439,12 @@ function segnoArea(ar: Area | null | undefined, dim?: number, cls?: string): str
     ' style="--c-area:' + LM.coloreArea(ar) + '">' + ICO(ar.icona, dim || 13) + '</span>';
 }
 
-function areeAttive() {
+export function areeAttive() {
   var s = LM.load();
   return s.aree.filter(function (a) { return s.areeAttive.indexOf(a.id) >= 0; });
 }
 
-function selectAree(id: string, selezionata?: string | null, etichetta?: string, cls?: string): string {
+export function selectAree(id: string, selezionata?: string | null, etichetta?: string, cls?: string): string {
   return '<select id="' + id + '"' + (cls ? ' class="' + cls + '"' : '') + ' aria-label="' + esc(etichetta || 'Area') + '">' + areeAttive().map(function (a) {
     return '<option value="' + a.id + '"' + (a.id === selezionata ? ' selected' : '') + '>' + esc(a.nome) + '</option>';
   }).join('') + '</select>';
@@ -2469,7 +2476,7 @@ function selectAreaAzione(id: string, areaId?: string | null, cls?: string): str
    riga di spiegazione serve: la leggi una volta e sai dove sei finito.
 
    `giaNellaNav`: il nome è già scritto nella navigazione. */
-function topbar(titolo: string, sottotitolo?: string, destra?: string, cls?: string, giaNellaNav?: boolean): string {
+export function topbar(titolo: string, sottotitolo?: string, destra?: string, cls?: string, giaNellaNav?: boolean): string {
   var h1 = '<h1' + (giaNellaNav ? ' class="solo-lettori"' : '') + '>' + titolo + '</h1>';
   if (giaNellaNav && !destra && !sottotitolo) return h1;
   /* una riga che tiene solo un comando è una barra di strumenti, non una
@@ -2597,7 +2604,7 @@ function fmtCrono(ms: number): string {
   return Math.floor(m / 60) + ':' + ('0' + (m % 60)).slice(-2) + ':' + ss;
 }
 
-function avviaTimer(azioneId: string | null, minuti: number | null, areaId?: string | null, tipo?: NomeTimer, testo?: string): void {
+export function avviaTimer(azioneId: string | null, minuti: number | null, areaId?: string | null, tipo?: NomeTimer, testo?: string): void {
   const quale: NomeTimer = tipo || 'blocco';
   const T = TIPI_TIMER[quale];
   const min = minuti != null ? minuti : T.min;
@@ -2607,6 +2614,10 @@ function avviaTimer(azioneId: string | null, minuti: number | null, areaId?: str
     testo: testo || '', inizio: ora, durata: min,
     fine: min > 0 ? ora + min * 60000 : 0,
     ciclo: 1, inPausa: false, pausaFine: 0,
+    /* `fermatoA` è quando è stato messo in pausa a mano, e qui è zero perché
+       il timer sta appena partendo. Mancava, e il tipo l'ha detto: la forma
+       del timer nei dati aveva un campo che nessuno scriveva all'avvio. */
+    fermatoA: 0,
     /* SE ERI DENTRO, CI TORNI. Riaprire lo schermo pieno a ogni
        ricaricamento sarebbe prepotente; non riaprirlo mai vuol dire che
        chiudere il telefono mentre stai lavorando ti riporta indietro alla
@@ -2737,7 +2748,7 @@ function avvisoFuori(titolo: string, testo: string): void {
    filtro: sono poche, e un filtro su poche cose è un comando in più per
    guardare meno roba.
    ============================================================ */
-function apriArchivioReview() {
+export function apriArchivioReview() {
   apriFoglio('Le review di prima', 'review', {});
 }
 
@@ -2755,16 +2766,16 @@ function apriArchivioReview() {
    spezzare, e prima o poi sarà l'app a poterlo dire.
    ============================================================ */
 /* «quanto» in parole, per le righe che lo mostrano */
-function etichettaQuanto(m: Mancata): string {
+export function etichettaQuanto(m: Mancata): string {
   if (!m) return '';
   var g = LM.QUANTO_FATTO.find(function (x) { return x.id === m.quanto; });
   return g ? g.eti.toLowerCase() : 'non riuscita';
 }
 /* chi aveva scelto questa come «la cosa di adesso» non ce l'ha più: il
    fuoco si scorda insieme all'esito */
-function scordaFuoco(id: string): void { if (fuocoScelto === id) fuocoScelto = null; }
+export function scordaFuoco(id: string): void { if (fuocoScelto === id) fuocoScelto = null; }
 
-function chiediMancata(id: string, testo: string, dopo?: () => void): void {
+export function chiediMancata(id: string, testo: string, dopo?: () => void): void {
   apriFoglio('Non del tutto', 'mancata', { id: id, testo: testo, dopo: dopo });
 }
 
@@ -2780,7 +2791,7 @@ function chiediMancata(id: string, testo: string, dopo?: () => void): void {
    Il minutaggio del blocco lo porta la cosa stessa (la durata che le hai
    dato trascinandola nella Giornata); dove non c'è, venticinque.
    ============================================================ */
-function scegliTimer(azioneId: string | null, areaId?: string | null, testo?: string, minBlocco?: number): void {
+export function scegliTimer(azioneId: string | null, areaId?: string | null, testo?: string, minBlocco?: number): void {
   apriFoglio('Quanto ci stai', 'timer', { azioneId: azioneId, areaId: areaId, testo: testo, minBlocco: minBlocco });
 }
 
@@ -2811,7 +2822,7 @@ function scegliTimer(azioneId: string | null, areaId?: string | null, testo?: st
        diverse, e confonderle costa il lavoro fatto.
    ============================================================ */
 let $conc: HTMLElement | null = null;
-function apriConcentrazione(): void {
+export function apriConcentrazione(): void {
   const t = timerOra();
   if (!t) return;
   if (!$conc) {
@@ -3018,7 +3029,7 @@ document.addEventListener('pointerdown', function (ev) {
    la pioggia) e quella piccola (una riga spuntata, lo scoppio attorno al
    dito). Chi la chiamava con un terzo nome prendeva il ramo piccolo. */
 type NomeFesta = 'pieno' | 'leggero';
-function festeggia(che: NomeFesta, x?: number, y?: number): void {
+export function festeggia(che: NomeFesta, x?: number, y?: number): void {
   if (che === 'pieno') { pioggiaCoriandoli(); suona('finito'); vibra('pieno'); return; }
   if (x != null && y != null) burst(x, y);
   suona('spunta');
@@ -3255,7 +3266,7 @@ export const ganci: { smontaFoglio: () => void } = { smontaFoglio: function () {
 /* Aprire un pannello. Stessa porta di sempre — il foglio è quello, la pila
    del ritorno è quella, il gesto per chiuderlo è quello — ma il corpo lo
    possiede chi si è iscritto: si apre vuoto e ci si monta dentro. */
-function apriFoglio(titolo: string, quale: string, props?: Record<string, unknown>, largo?: boolean, riapri?: Riapri | null): void {
+export function apriFoglio(titolo: string, quale: string, props?: Record<string, unknown>, largo?: boolean, riapri?: Riapri | null): void {
   apriSheet(titolo, '', function (root) {
     const monta = FOGLI[quale];
     if (monta) monta(root, props || {});
@@ -3655,7 +3666,7 @@ export function vistaFocus(soloScena?: boolean): Scena | undefined {
    sono in pagina. Fuori dalla vista perché lo deve chiamare anche React,
    che il markup lo disegna per conto suo. Le poche cose che gli servono
    stanno in `fuocoOra`, riempito da chi ha appena costruito la scena. */
-function wireFuoco() {
+export function wireFuoco() {
 
 $vista.querySelectorAll<HTMLElement>('[data-vai]').forEach(function (b) {
   b.addEventListener('click', function () {
@@ -3756,7 +3767,7 @@ if (bt) bt.addEventListener('click', function () {
 
 
 /* la barra compatta della giornata è sempre in cima a Oggi */
-function montaOggiGiornata(): void {
+export function montaOggiGiornata(): void {
   const zona = document.getElementById('oggi-giornata');
   if (zona) montaGiornataStrip(zona);
 }
@@ -3784,7 +3795,7 @@ function fmtMin(m: number): string {
   return ('0' + Math.floor(m / 60)).slice(-2) + ':' + ('0' + (m % 60)).slice(-2);
 }
 /* durata leggibile: 90 → "1h 30m", 45 → "45m", 120 → "2h" */
-function fmtOre(min: number): string {
+export function fmtOre(min: number): string {
   var h = Math.floor(min / 60), m = min % 60;
   return (h ? h + 'h' : '') + (h && m ? ' ' : '') + (m ? m + 'm' : (h ? '' : '0m'));
 }
@@ -3799,7 +3810,11 @@ const DURATE: { v: number | ''; t: string }[] = [{ v: '', t: 'durata —' },
 
 /* orizzonte della pagina "Giornata" e giorno/settimana/mese di riferimento */
 let giornataOrizzonte: Orizzonte = 'giorno';
-let giornataAncora: Giorno | null = null;
+/* IL GIORNO DI RIFERIMENTO della pagina «La giornata»: oggi, finché non si
+   sfoglia. Era `null` fino al primo disegno, e tutti i venti punti che lo
+   leggono dovevano difendersi da un caso che dura un istante e non si vede
+   mai — la schermata lo riempiva prima di guardarlo. */
+let giornataAncora: Giorno = LM.todayKey();
 let giornataSonnoAperto = false;  /* pannello sonno/pasti in cima alla pagina Giornata */
 let giornataPopVista: 'vista' | 'modifica' = 'vista';  /* pop-up su schermo stretto */
 
@@ -3814,7 +3829,7 @@ function nodiGiorno(k: Giorno): NodiDelGiorno {
     /* `fatto` arriva dal resoconto della sera: `false` non è un buco, è una
        risposta — quel pasto si vede SALTATO, non scomparso, perché «non ho
        pranzato» è un dato che serve */
-    if (p.ora) placed.push({ tipo: 'pasto', min: minOf(p.ora), ora: p.ora, dur: p.durata || 30, nome: p.nome, pastoId: p.id, fatto: p.fatto, icona: /colaz|coffee|breakfast/i.test((p.id || '') + ' ' + p.nome) ? 'coffee' : 'utensils' });
+    if (p.ora) placed.push({ tipo: 'pasto', min: minOf(p.ora), ora: p.ora, dur: p.durata || 30, nome: p.nome, pastoId: p.id, fatto: p.fatto ?? undefined, icona: /colaz|coffee|breakfast/i.test((p.id || '') + ' ' + p.nome) ? 'coffee' : 'utensils' });
   });
   s.abitudini.forEach(function (h) {
     if (!LM.abitudinePrevista(h, k)) return;
@@ -3822,7 +3837,7 @@ function nodiGiorno(k: Giorno): NodiDelGiorno {
     (e.min == null ? tray : placed).push(e);
   });
   LM.azioniDelGiorno(k).forEach(function (a) {
-    const e: Nodo = { tipo: 'azione', min: minOf(a.ora), ora: a.ora, dur: a.durata || null, id: a.id, testo: a.testo, areaId: a.areaId, mit: a.mit, done: a.done, mancata: a.mancata || null };
+    const e: Nodo = { tipo: 'azione', min: minOf(a.ora), ora: a.ora, dur: a.durata || null, id: a.id, testo: a.testo, areaId: a.areaId, mit: a.mit, done: a.done, mancata: a.mancata || null, passoDi: a.passoDi };
     (e.min == null ? tray : placed).push(e);
   });
   /* qui dentro l'ora c'è per costruzione: chi non ce l'ha è finito nel
@@ -3928,7 +3943,7 @@ function htmlTimeGrid(d: NodiDelGiorno, opzioni?: OpzGriglia): string {
     if (e.tipo === 'pasto') {
       return '<div class="tl-blk tl-blk-pasto' + (e.fatto === false ? ' saltato' : '') + '" style="' + pos + '"' +
         (e.fatto === false ? ' title="' + esc(e.nome) + ': saltato"' : '') + '>' +
-        ICO(e.icona, 13) + (opts.mini ? '' : '<span class="tl-blk-t">' + esc(e.nome) + '</span>') + '</div>';
+        ICO(e.icona || 'utensils', 13) + (opts.mini ? '' : '<span class="tl-blk-t">' + esc(e.nome) + '</span>') + '</div>';
     }
     var ar = areaById(e.areaId), col = LM.coloreArea(ar);
     var fatto = e.tipo === 'azione' ? e.done : e.fatto;
@@ -4385,7 +4400,7 @@ function montaGiornata(container: HTMLElement, opzioni?: OpzGriglia): void {
     /* «dormi» era la parola di troppo che a 320px mandava la riga a capo: con
        il letto davanti e due orari, «8h» è già la durata del sonno */
     var riass = ICO('bed', 13) + ' <b>' + d.sonno + '</b>→<b>' + d.sveglia + '</b> · ' + fmtOre(LM.minutiSonno(k)) + ' · ' + pastiBlocco;
-    var durOpt = function (v) { return DURATE.map(function (o) { return '<option value="' + o.v + '"' + ((v || '') === o.v ? ' selected' : '') + '>' + o.t + '</option>'; }).join(''); };
+    const durOpt = function (v: number | null | undefined) { return DURATE.map(function (o) { return '<option value="' + o.v + '"' + ((v || '') === o.v ? ' selected' : '') + '>' + o.t + '</option>'; }).join(''); };
     var pastiRows = (d.pasti || []).map(function (p, i) {
       return '<div class="sp-riga" data-pi="' + i + '">' +
         '<span class="sp-ico">' + ICO(/colaz|coffee/i.test((p.id || '') + p.nome) ? 'coffee' : 'utensils', 15) + '</span>' +
@@ -4452,7 +4467,7 @@ function montaGiornata(container: HTMLElement, opzioni?: OpzGriglia): void {
   }
   var sommario = '';
   if (compact && nowMin != null) {
-    var pross = d.placed.filter(function (e) { return e.min + (e.dur || 30) > nowMin && !(e.tipo === 'azione' ? e.done : (e.tipo === 'abitudine' ? e.fatto : false)); })[0];
+    const pross = d.placed.filter(function (e) { return (e.min ?? 0) + (e.dur || 30) > nowMin && !(e.tipo === 'azione' ? e.done : (e.tipo === 'abitudine' ? e.fatto : false)); })[0];
     sommario = 'Adesso <b>' + fmtMin(nowMin) + '</b>' + (pross ? ' · poi ' + esc(pross.nome || pross.testo) + ' alle ' + pross.ora : ' · niente altro in agenda');
   }
   /* Nella pagina il titolo diceva «La giornata» per la terza volta in
@@ -4487,13 +4502,13 @@ function montaGiornata(container: HTMLElement, opzioni?: OpzGriglia): void {
        aveva una sua intestazione: due teste una sopra l'altra. Adesso è la
        prima riga della scheda — è quello che dice DI CHE GIORNO stai
        guardando le ore, quindi è la sua intestazione. */
-    var navGiorno = orizzNav('giorno', k);
+  var navGiorno = orizzNav('giorno', k);
     container.innerHTML = '<div class="card giornata">' + navGiorno + head + sonnoTop + '<div id="tl-grid-host">' + gridHtml + '</div>' + senzaOra + quickAdd + trayRo + footer + '</div>';
     wireOrizzNav(container, 'giorno');
   }
 
   wireRigaAggiunta(container, 'agg-gio', function (testo, opz) {
-    var sel = opz && opz.querySelector<HTMLElement>('select');
+    const sel = opz.querySelector<HTMLSelectElement>('select');
     LM.aggiungiAzione(testo, sel ? sel.value : 'altro', { data: k, mit: LM.serveMit(k) });
     montaGiornata(container, opts); aggiornaNav();
   });
@@ -4502,26 +4517,30 @@ function montaGiornata(container: HTMLElement, opzioni?: OpzGriglia): void {
     /* completare un elemento (spunta) ricostruisce tutto: non c'è un campo
        attivo da preservare. */
     function onCambio() { montaGiornata(container, opts); aggiornaNav(); }
-    function wireGriglia(scope) {
+    function wireGriglia(scope: ParentNode): void {
       scope.querySelectorAll<HTMLElement>('.tl-check[data-tl-az], .tl-blk-check[data-tl-az]').forEach(function (b) {
         b.addEventListener('click', function (ev) {
-          feedbackSpunta(ev, LM.completaAzione(b.getAttribute('data-tl-az')), 'Fatto.', 'check');
+          const id = b.getAttribute('data-tl-az');
+          if (!id) return;
+          feedbackSpunta(ev, LM.completaAzione(id), 'Fatto.', 'check');
           onCambio();
         });
       });
       scope.querySelectorAll<HTMLElement>('.tl-check[data-tl-ab], .tl-blk-check[data-tl-ab]').forEach(function (b) {
         b.addEventListener('click', function (ev) {
-          feedbackSpunta(ev, LM.completaAbitudine(b.getAttribute('data-tl-ab'), k), 'Fatta. Continua così.', 'flame');
+          const id = b.getAttribute('data-tl-ab');
+          if (!id) return;
+          feedbackSpunta(ev, LM.completaAbitudine(id, k), 'Fatta. Continua così.', 'flame');
           montaGiornata(container, opts);
         });
       });
       /* toccare un blocco (o una riga «senza orario») apre il pannellino di
          modifica di QUELLA cosa: orario, durata, area, spunta. */
       scope.querySelectorAll<HTMLElement>('[data-blk-az]').forEach(function (b) {
-        b.addEventListener('click', function () { apriItemGiornata(k, b.getAttribute('data-blk-az'), 'azione', onCambio, spuntabile); });
+        b.addEventListener('click', function () { const id = b.getAttribute('data-blk-az'); if (id) apriItemGiornata(k, id, 'azione', onCambio, spuntabile); });
       });
       scope.querySelectorAll<HTMLElement>('[data-blk-ab]').forEach(function (b) {
-        b.addEventListener('click', function () { apriItemGiornata(k, b.getAttribute('data-blk-ab'), 'abitudine', onCambio, spuntabile); });
+        b.addEventListener('click', function () { const id = b.getAttribute('data-blk-ab'); if (id) apriItemGiornata(k, id, 'abitudine', onCambio, spuntabile); });
       });
     }
     /* refresh SOLO della griglia visiva (usato dai cambi di sonno/pasti):
@@ -4539,59 +4558,68 @@ function montaGiornata(container: HTMLElement, opzioni?: OpzGriglia): void {
     if (grigliaEl) grigliaEl.setAttribute('data-drop-ora', '1');
     var zonaSo = container.querySelector<HTMLElement>('.gio-so');
     if (zonaSo) zonaSo.setAttribute('data-drop-senzaora', '1');
-    abilitaTrascina(container, function (id, bersaglio, x, y) {
+    abilitaTrascina(container, function (id, bersaglio, _x, y) {
       if (bersaglio.hasAttribute('data-drop-senzaora')) {
         LM.setOraAzione(id, null);
         toast('Tolto l’orario: resta tra le cose senza orario.', 0, 'clock');
       } else if (bersaglio.hasAttribute('data-drop-ora')) {
-        var gs = +bersaglio.getAttribute('data-gs'), pxh = +bersaglio.getAttribute('data-pxh');
+        const gs = +(bersaglio.getAttribute('data-gs') || ''), pxh = +(bersaglio.getAttribute('data-pxh') || '');
         if (isNaN(gs) || !pxh) return;
-        var r = bersaglio.getBoundingClientRect();
-        var min = gs + (y - r.top) / pxh * 60;
-        min = Math.max(0, Math.round(min / 15) * 15) % 1440;
-        LM.setOraAzione(id, fmtMin(min));
+        const r = bersaglio.getBoundingClientRect();
+        const grezzo = gs + (y - r.top) / pxh * 60;
+        const min = Math.max(0, Math.round(grezzo / 15) * 15) % 1440;
+        LM.setOraAzione(id, comeOra(fmtMin(min)));
         LM.spostaAzione(id, k);
         toast('Spostata alle ' + fmtMin(min) + '.', 0, 'clock');
       } else if (bersaglio.hasAttribute('data-drop-giorno')) {
-        var g = bersaglio.getAttribute('data-drop-giorno');
-        if (!LM.spostaAzione(id, g)) return;
-        toast('Spostata a ' + etichettaGiorno(g).toLowerCase() + '.', 0, 'calendar');
+        const g = bersaglio.getAttribute('data-drop-giorno');
+        if (!g || !LM.spostaAzione(id, comeGiorno(g))) return;
+        toast('Spostata a ' + etichettaGiorno(comeGiorno(g)).toLowerCase() + '.', 0, 'calendar');
       }
       montaGiornata(container, opts); aggiornaNav();
     });
 
     /* --- sonno e pasti del giorno (registro), modifica uno per uno --- */
-    function aggiornaDorm() { var el = container.querySelector<HTMLElement>('#sp-dorm'); if (el) el.textContent = fmtOre(LM.minutiSonno(k)); }
-    function leggiPasti() { return JSON.parse(JSON.stringify(nodiGiorno(k).pasti || [])); }
-    var spA = container.querySelector<HTMLElement>('#sp-aletto');
-    if (spA) spA.addEventListener('change', function () { LM.setRitmoGiorno(k, { sonno: spA.value || d.sonno }); aggiornaDorm(); refreshGriglia(); });
-    var spS = container.querySelector<HTMLElement>('#sp-sveglia');
-    if (spS) spS.addEventListener('change', function () { LM.setRitmoGiorno(k, { sveglia: spS.value || d.sveglia }); aggiornaDorm(); refreshGriglia(); });
-    container.querySelectorAll<HTMLElement>('[data-sp-nome]').forEach(function (inp) {
-      inp.addEventListener('change', function () { var i = +inp.getAttribute('data-sp-nome'); var arr = leggiPasti(); if (arr[i]) { arr[i].nome = inp.value.trim() || 'Pasto'; LM.setRitmoGiorno(k, { pasti: arr }); } });
+    function aggiornaDorm() { const el = container.querySelector<HTMLElement>('#sp-dorm'); if (el) el.textContent = fmtOre(LM.minutiSonno(k)); }
+    function leggiPasti(): Pasto[] { return JSON.parse(JSON.stringify(nodiGiorno(k).pasti || [])) as Pasto[]; }
+    const spA = campoSe(container, '#sp-aletto');
+    if (spA) spA.addEventListener('change', function () { LM.setRitmoGiorno(k, { sonno: spA.value ? comeOra(spA.value) : d.sonno }); aggiornaDorm(); refreshGriglia(); });
+    const spS = campoSe(container, '#sp-sveglia');
+    if (spS) spS.addEventListener('change', function () { LM.setRitmoGiorno(k, { sveglia: spS.value ? comeOra(spS.value) : d.sveglia }); aggiornaDorm(); refreshGriglia(); });
+    container.querySelectorAll<HTMLInputElement>('[data-sp-nome]').forEach(function (inp) {
+      inp.addEventListener('change', function () {
+        const arr = leggiPasti(); const p = arr[+(inp.getAttribute('data-sp-nome') || '')];
+        if (p) { p.nome = inp.value.trim() || 'Pasto'; LM.setRitmoGiorno(k, { pasti: arr }); }
+      });
     });
-    container.querySelectorAll<HTMLElement>('[data-sp-ora]').forEach(function (inp) {
-      inp.addEventListener('change', function () { var i = +inp.getAttribute('data-sp-ora'); var arr = leggiPasti(); if (arr[i]) { arr[i].ora = inp.value || null; LM.setRitmoGiorno(k, { pasti: arr }); refreshGriglia(); } });
+    container.querySelectorAll<HTMLInputElement>('[data-sp-ora]').forEach(function (inp) {
+      inp.addEventListener('change', function () {
+        const arr = leggiPasti(); const p = arr[+(inp.getAttribute('data-sp-ora') || '')];
+        if (p) { p.ora = comeOra(inp.value); LM.setRitmoGiorno(k, { pasti: arr }); refreshGriglia(); }
+      });
     });
-    container.querySelectorAll<HTMLElement>('[data-sp-dur]').forEach(function (sel) {
-      sel.addEventListener('change', function () { var i = +sel.getAttribute('data-sp-dur'); var arr = leggiPasti(); if (arr[i]) { arr[i].durata = sel.value ? +sel.value : 30; LM.setRitmoGiorno(k, { pasti: arr }); refreshGriglia(); } });
+    container.querySelectorAll<HTMLSelectElement>('[data-sp-dur]').forEach(function (sel) {
+      sel.addEventListener('change', function () {
+        const arr = leggiPasti(); const p = arr[+(sel.getAttribute('data-sp-dur') || '')];
+        if (p) { p.durata = sel.value ? +sel.value : 30; LM.setRitmoGiorno(k, { pasti: arr }); refreshGriglia(); }
+      });
     });
     container.querySelectorAll<HTMLElement>('[data-sp-del]').forEach(function (b) {
-      b.addEventListener('click', function () { var i = +b.getAttribute('data-sp-del'); var arr = leggiPasti(); arr.splice(i, 1); LM.setRitmoGiorno(k, { pasti: arr }); montaGiornata(container, opts); });
+      b.addEventListener('click', function () { const arr = leggiPasti(); arr.splice(+(b.getAttribute('data-sp-del') || ''), 1); LM.setRitmoGiorno(k, { pasti: arr }); montaGiornata(container, opts); });
     });
-    var spAdd = container.querySelector<HTMLElement>('#sp-add');
-    if (spAdd) spAdd.addEventListener('click', function () { var arr = leggiPasti(); arr.push({ id: 'p' + Date.now().toString(36), nome: 'Pasto', ora: '', durata: 30 }); LM.setRitmoGiorno(k, { pasti: arr }); montaGiornata(container, opts); });
-    var spReset = container.querySelector<HTMLElement>('#sp-reset');
+    const spAdd = container.querySelector<HTMLElement>('#sp-add');
+    if (spAdd) spAdd.addEventListener('click', function () { const arr = leggiPasti(); arr.push({ id: 'p' + Date.now().toString(36), nome: 'Pasto', ora: comeOra(''), durata: 30 }); LM.setRitmoGiorno(k, { pasti: arr }); montaGiornata(container, opts); });
+    const spReset = container.querySelector<HTMLElement>('#sp-reset');
     if (spReset) spReset.addEventListener('click', function () { LM.azzeraRitmoGiorno(k); toast('Ripristinato il ritmo di base.', 0, 'annulla'); montaGiornata(container, opts); });
-    var spBase = container.querySelector<HTMLElement>('#sp-base');
+    const spBase = container.querySelector<HTMLElement>('#sp-base');
     if (spBase) spBase.addEventListener('click', apriRitmo);
-    var gsT = container.querySelector<HTMLElement>('#gio-sonno-toggle');
+    const gsT = container.querySelector<HTMLElement>('#gio-sonno-toggle');
     if (gsT) gsT.addEventListener('click', function () {
       giornataSonnoAperto = !giornataSonnoAperto;
-      var corpo = container.querySelector<HTMLElement>('.gio-sonno-corpo');
+      const corpo = container.querySelector<HTMLElement>('.gio-sonno-corpo');
       if (corpo) corpo.hidden = !giornataSonnoAperto;
-      gsT.setAttribute('aria-expanded', giornataSonnoAperto);
-      var ch = gsT.querySelector<HTMLElement>('.bk-chevron');
+      gsT.setAttribute('aria-expanded', String(giornataSonnoAperto));
+      const ch = gsT.querySelector<HTMLElement>('.bk-chevron');
       if (ch) ch.classList.toggle('aperta', giornataSonnoAperto);
     });
   }
@@ -4754,7 +4782,7 @@ function montaAnno(container: HTMLElement): void {
 }
 
 /* barra di navigazione comune agli orizzonti (‹ periodo › + Oggi) */
-function orizzNav(orizz: Orizzonte, k1: Giorno, k2: Giorno | null, etichetta: string): string {
+function orizzNav(orizz: Orizzonte, k1: Giorno, k2?: Giorno | null, etichetta?: string): string {
   var testo = etichetta || (k2 ? LM.fmtShort(k1) + ' – ' + LM.fmtShort(k2) : etichettaGiorno(k1));
   /* Quanto siamo lontani da oggi: senza questo, spostandosi di un giorno
      cambiava solo una scritta piccola e sembrava che le frecce non
@@ -4782,7 +4810,7 @@ function shiftKey(k: Giorno, orizz: Orizzonte, n: number): Giorno {
   if (orizz === 'settimana') return LM.addDays(k, n * 7);
   if (orizz === 'mese') { d = new Date(+p[0], +p[1] - 1 + n, 1); }
   else { d = new Date(+p[0] + n, +p[1] - 1, 1); }
-  return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2);
+  return comeGiorno(d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2));
 }
 function wireOrizzNav(container: HTMLElement, orizz: Orizzonte): void {
   container.querySelectorAll<HTMLElement>('[data-nav]').forEach(function (b) {
@@ -4795,7 +4823,7 @@ function wireOrizzNav(container: HTMLElement, orizz: Orizzonte): void {
   });
 }
 
-function setOrizzonte(o: Orizzonte, ancora?: Giorno): void {
+export function setOrizzonte(o: Orizzonte, ancora?: Giorno): void {
   giornataOrizzonte = o;
   if (ancora) giornataAncora = ancora;
   var nav = document.getElementById('orizz-nav');
@@ -4804,7 +4832,7 @@ function setOrizzonte(o: Orizzonte, ancora?: Giorno): void {
 }
 /* anima solo quando cambi orizzonte o giorno, non a ogni spunta */
 var orizzMostrato = '';
-function disegnaOrizzonte() {
+export function disegnaOrizzonte() {
   var c = document.getElementById('orizz-corpo');
   if (!c) return;
   var chiave = giornataOrizzonte + '|' + giornataAncora;
@@ -4822,7 +4850,7 @@ function htmlGiornataStrip() {
   const wake = d.wake;
   let bed = d.sleep;
   if (bed <= wake) bed += 1440; // a letto dopo mezzanotte
-  function em(m) { return (m != null && bed > 1440 && m < wake) ? m + 1440 : m; }
+  function em(m: number | null): number | null { return (m != null && bed > 1440 && m < wake) ? m + 1440 : m; }
   var span = Math.max(60, bed - wake);
   function pct(m) { return Math.max(0, Math.min(100, (em(m) - wake) / span * 100)); }
   /* la barra distingue i tipi: blocchi con DURATA precisa come segmenti che
@@ -4899,7 +4927,7 @@ function montaGiornataStrip(container: HTMLElement): void {
 
 /* editor del RITMO DI BASE: sonno, sveglia, pasti (con durata). Vale per i
    giorni che non hanno un registro proprio. */
-function apriRitmo() {
+export function apriRitmo() {
   apriFoglio('Sonno e pasti', 'ritmo', {});
 }
 
@@ -4915,7 +4943,7 @@ var diarioGiorni = 21;
 var diarioTutto = false;
 
 /* etichetta relativa del giorno: Oggi / Ieri / "lun 14 lug" */
-function etichettaGiorno(k: Giorno): string {
+export function etichettaGiorno(k: Giorno): string {
   var t = LM.todayKey();
   if (k === t) return 'Oggi';
   if (k === LM.addDays(t, -1)) return 'Ieri';
@@ -4933,7 +4961,7 @@ function oraDi(ts: number): string {
 
 /* conto alla rovescia leggibile di una scadenza (ADHD: rende visibile il
    tempo che passa, senza allarmismi) */
-function scadInfo(scad: Giorno | null | undefined): { testo: string; cls: string } | null {
+export function scadInfo(scad: Giorno | null | undefined): { testo: string; cls: string } | null {
   var d = LM.daysBetween(LM.todayKey(), scad);
   if (d < 0) return { d: d, testo: d === -1 ? 'ieri' : (-d) + 'g fa', cls: 'scad-ritardo' };
   if (d === 0) return { d: 0, testo: 'oggi', cls: 'scad-oggi' };
@@ -5045,7 +5073,7 @@ function eventoDiarioHtml(ev: VoceRegistro): string {
    le stesse schede.
    ============================================================ */
 
-function disegnaSezione() {
+export function disegnaSezione() {
   var c = document.getElementById('sez-corpo');
   var cambio = sezPlancia !== sezMostrata;
   if (sezPlancia === 'riepilogo') sezRiepilogo(c);
@@ -5282,7 +5310,7 @@ function sezDiario(c: HTMLElement): void {
    elementi sono in pagina: il numero che sale e la linea dell'andamento.
    ============================================================ */
 /* quello che va fatto DOPO, quando gli elementi sono in pagina */
-function wireEroePlancia() {
+export function wireEroePlancia() {
   var pct = Math.round(LM.bilancio(30).tasso * 100);
   var serie = LM.serieRiuscita(12);
   var elPct = document.getElementById('som-pct');
@@ -5303,7 +5331,7 @@ function wireEroePlancia() {
    disegna il contenitore. Serve a React, che se avvolge un pezzo di HTML
    già completo si ritrova un elemento in più nell'albero — ed è l'errore
    che prove/gemelle.js ha trovato quattro volte di fila. */
-function eroePlancia() {
+export function eroePlancia() {
   var html = '';
   var classi = '';
   /* i tre numeri di contorno: stavano fra i conti di `vistaPlancia`, e
@@ -5371,7 +5399,7 @@ function eroePlancia() {
 }
 
 /* per il codice di prima, che scrive stringhe: lo stesso pezzo già avvolto */
-function eroePlanciaHtml() {
+export function eroePlanciaHtml() {
   var e = eroePlancia();
   return '<div class="' + e.classi + '">' + e.dentro + '</div>';
 }
@@ -5486,7 +5514,7 @@ document.addEventListener('lm:change', function () {
   if (vistaCorrente() === 'rituali') aggiornaStatiRituali();
 });
 
-function ritualeDellOra() {
+export function ritualeDellOra() {
   var ora = new Date().getHours();
   return ora < 12 ? 'mattina' : (ora >= 19 ? 'sera' : 'checkin');
 }
@@ -5498,7 +5526,7 @@ function ritualeDellOra() {
    se erano un sì, un no o un conteggio. La colonna risponde a UNA domanda,
    «è fatto oggi?», e lo dice sempre nello stesso modo; il numero, quando
    aggiunge qualcosa, sta sotto, più piccolo e muto. */
-function statoRituale(id: string): StatoRit {
+export function statoRituale(id: string): StatoRit {
   var s = LM.load(), t = LM.todayKey();
   if (id === 'mattina') {
     if (s.pianoMattina[t]) return { fatto: true, testo: 'fatto' };
@@ -5535,7 +5563,7 @@ function statoRituale(id: string): StatoRit {
 /* Il contenuto di TUTTE le sezioni aperte. Fuori dalla vista perché lo deve
    chiamare anche React, dopo che ha disegnato le sezioni: sono le stesse
    cinque schermate dei rituali, non copie. */
-function disegnaCorpiRituali() {
+export function disegnaCorpiRituali() {
   var disegna = {
     mattina: ritualeMattina, registro: ritualeRegistro,
     checkin: ritualeCheckin, sera: ritualeSera, settimana: ritualeSettimana
@@ -6001,17 +6029,17 @@ function ritualeMattina(corpo: HTMLElement): void {
 var GIORNI_ORD = [1, 2, 3, 4, 5, 6, 0];
 var GIORNI_LAB = { 1: 'L', 2: 'M', 3: 'M', 4: 'G', 5: 'V', 6: 'S', 0: 'D' };
 
-function chipsGiorni(giorni: GiornoSettimana[]): string {
+export function chipsGiorni(giorni: GiornoSettimana[]): string {
   return '<div class="giorni-chips">' + GIORNI_ORD.map(function (d) {
     return '<button type="button" class="giorno-chip' + (giorni.indexOf(d) >= 0 ? ' sel' : '') + '" data-giorno="' + d + '">' + GIORNI_LAB[d] + '</button>';
   }).join('') + '</div>';
 }
-function leggiGiorni(root: ParentNode): GiornoSettimana[] {
+export function leggiGiorni(root: ParentNode): GiornoSettimana[] {
   var g = [];
   root.querySelectorAll<HTMLElement>('.giorno-chip.sel').forEach(function (b) { g.push(+b.getAttribute('data-giorno')); });
   return g;
 }
-function riepilogoGiorni(giorni: GiornoSettimana[]): string {
+export function riepilogoGiorni(giorni: GiornoSettimana[]): string {
   if (!giorni || !giorni.length) return 'ogni giorno';
   if (giorni.length === 7) return 'ogni giorno';
   var feriali = [1, 2, 3, 4, 5];
@@ -6039,7 +6067,7 @@ function riepilogoGiorni(giorni: GiornoSettimana[]): string {
    andando. Le caselle passate si toccano — capita di ricordarsi la sera
    di una cosa fatta il giorno prima, e i dati lo permettevano già senza
    che ci fosse un modo per dirlo. */
-function giorniAbitudine(h: Abitudine, settimane: number): { k: Giorno; prevista: boolean; fatta: boolean; saltata: boolean }[] {
+export function giorniAbitudine(h: Abitudine, settimane: number): { k: Giorno; prevista: boolean; fatta: boolean; saltata: boolean }[] {
   /* incolonnati per giorno della settimana, come un calendario: se le
      caselle scorrono via una dietro l'altra non si vede più che «il
      martedì salta sempre», che è l'unica cosa che una griglia sa dire e
@@ -6062,7 +6090,7 @@ function giorniAbitudine(h: Abitudine, settimane: number): { k: Giorno; prevista
   return out;
 }
 
-function statoAbitudineOggi(h: Abitudine): { fatta: boolean; prevista: boolean; saltata: boolean } {
+export function statoAbitudineOggi(h: Abitudine): { fatta: boolean; prevista: boolean; saltata: boolean } {
   var k = LM.todayKey();
   return { fatta: !!(h.fatti && h.fatti[k]), saltata: !!(h.salti && h.salti[k]) };
 }
@@ -6099,7 +6127,7 @@ function sottoAbitudine(h: Abitudine, previstaOggi: boolean): string {
   return null;
 }
 
-function rigaAbitudine(h: Abitudine, previstaOggi: boolean): string {
+export function rigaAbitudine(h: Abitudine, previstaOggi: boolean): string {
   var st = statoAbitudineOggi(h);
   var sotto = sottoAbitudine(h, previstaOggi);
   var ar = areaById(h.areaId);
@@ -6207,7 +6235,7 @@ function sezioneAbitudini(corpo: HTMLElement): void {
 /* La scheda di un'abitudine: quello che prima stava sempre in vista per
    tutte, qui sta per una sola e solo quando serve. In cima c'è oggi
    (fatta / salta), poi la catena, poi le impostazioni. */
-function apriDettaglioAbitudine(id: string, dopo?: () => void): void {
+export function apriDettaglioAbitudine(id: string, dopo?: () => void): void {
   var h0 = LM.load().abitudini.find(function (x) { return x.id === id; });
   if (!h0) return;
   apriFoglio(h0.testo, 'abitudine', { id: id, dopo: dopo });
@@ -6478,7 +6506,7 @@ var MURO = 12;
    «QUANDO?» sopra le pastiglie e «in» davanti all'area — due etichette
    per due cose che si capiscono da sole. */
 
-function opzDaFare() {
+export function opzDaFare() {
   var oggiK = LM.todayKey();
   return '<button type="button" class="q-chip" data-nuovoq="' + oggiK + '">Oggi</button>' +
     '<button type="button" class="q-chip" data-nuovoq="' + LM.addDays(oggiK, 1) + '">Domani</button>' +
@@ -6486,7 +6514,7 @@ function opzDaFare() {
     selectAree('agg-bk-area', areaFiltro() || 'altro', 'Area', 'agg-sel-area');
 }
 
-function wireAggiunta(box: HTMLElement): void {
+export function wireAggiunta(box: HTMLElement): void {
   wireRigaAggiunta(box, 'agg-bk', function (v, opz) {
     var sel = opz.querySelector<HTMLElement>('[data-nuovoq].on');
     var giorno = sel ? sel.getAttribute('data-nuovoq') : '';
@@ -6504,13 +6532,13 @@ function wireAggiunta(box: HTMLElement): void {
 }
 
 /* i due filtri che non sono aree */
-function areaFiltro() { return (attArea === 'tutte' || attArea === 'data' || attArea === 'progetti') ? null : attArea; }
-function passaFiltro(b: Attivita): boolean {
+export function areaFiltro() { return (attArea === 'tutte' || attArea === 'data' || attArea === 'progetti') ? null : attArea; }
+export function passaFiltro(b: Attivita): boolean {
   if (attArea === 'data') return !!b.scadenza;
   if (attArea === 'progetti') return !!(b.steps && b.steps.length);
   return true;
 }
-function nomeFiltro() {
+export function nomeFiltro() {
   if (attArea === 'data') return 'Con una data';
   if (attArea === 'progetti') return 'Progetti';
   if (attArea === 'tutte') return 'Tutte';
@@ -6685,7 +6713,7 @@ function disegnaDaFare(box: HTMLElement): void {
    comando a sinistra, titolo (più una riga sotto solo se ha qualcosa da
    dire), valore a destra, freccina. Niente tre densità, niente striscia
    di colore sul fianco: l'area la dice la sua icona davanti al titolo. */
-function attRigaHtml(b: Attivita, opts?: OpzRigaAtt): string {
+export function attRigaHtml(b: Attivita, opts?: OpzRigaAtt): string {
   var isProg = !!(b.steps && b.steps.length);
   var av = isProg ? LM.avanzamentoProgetto(b) : null;
   var ar = areaById(b.areaId);
@@ -6727,7 +6755,7 @@ function attRigaHtml(b: Attivita, opts?: OpzRigaAtt): string {
     '</div>';
 }
 
-function wireLista(scope: ParentNode): void {
+export function wireLista(scope: ParentNode): void {
   scope.querySelectorAll<HTMLElement>('[data-bkoggi]').forEach(function (t) {
     t.addEventListener('click', function () {
       var id = t.getAttribute('data-bkoggi');
@@ -6758,7 +6786,7 @@ function wireLista(scope: ParentNode): void {
    tre modi diversi nello stesso cassetto. Adesso è piatta: le sezioni
    sono etichette sopra il gruppo, come negli elenchi di iOS, e si
    scorre invece di aprire. */
-function apriScheda(id: string): void {
+export function apriScheda(id: string): void {
   function trova() { return LM.load().backlog.find(function (x) { return x.id === id; }); }
   var b = trova();
   if (!b) return;
@@ -6767,12 +6795,12 @@ function apriScheda(id: string): void {
 }
 
 /* Quando fare UN passo: gli stessi tasti-giorno della scheda. */
-function apriQuandoPasso(prog: Attivita, passo: Passo): void {
+export function apriQuandoPasso(prog: Attivita, passo: Passo): void {
   apriFoglio(passo.testo, 'quando-passo', { prog: prog, passo: passo });
 }
 
 /* Da cosa-da-fare a abitudine: si scelgono i giorni e (se serve) l'ora. */
-function apriDaAbitudine(b: Attivita): void {
+export function apriDaAbitudine(b: Attivita): void {
   apriFoglio(b.testo, 'da-abitudine', { id: b.id });
 }
 
@@ -6812,7 +6840,7 @@ var LEZ_VERSI = {
 
 /* l'area è FACOLTATIVA: «le liste lunghissime mi bloccano» non è di
    un'area, è di te. Il selettore normale non ha il posto per dire «nessuna». */
-function selectAreeOpz(id: string, selezionata?: string | null, cls?: string): string {
+export function selectAreeOpz(id: string, selezionata?: string | null, cls?: string): string {
   return '<select id="' + id + '"' + (cls ? ' class="' + cls + '"' : '') + ' aria-label="Area">' +
     '<option value=""' + (selezionata ? '' : ' selected') + '>nessuna in particolare</option>' +
     areeAttive().map(function (a) {
@@ -6879,7 +6907,7 @@ function bloccoLezioniHtml() {
    avrebbe due difetti: butta via il campo in cui si sta scrivendo (e chi
    butta giù una riga spesso ne butta giù tre di fila) e fa ripartire i
    grafici degli esperimenti sotto, che non c'entrano niente. */
-function ridisegnaLezioni(tornaNelCampo?: boolean): void {
+export function ridisegnaLezioni(tornaNelCampo?: boolean): void {
   var vecchia = document.querySelector<HTMLElement>('.lez-card');
   if (!vecchia || !vecchia.parentNode) { render(); return; }
   var tmp = document.createElement('div');
@@ -6929,7 +6957,7 @@ function wireLezioni(scope: HTMLElement): void {
 
 /* la scheda di una cosa imparata: come per le attività, un posto solo dove
    si sistema tutto quello che c'è da sistemare */
-function apriLezione(id: string): void {
+export function apriLezione(id: string): void {
   if (!LM.trovaLezione(id)) return;
   apriFoglio('Una cosa che hai capito', 'lezione', { id: id }, false,
     { nome: 'Una cosa che hai capito', apri: function () { apriLezione(id); } });
@@ -6954,7 +6982,7 @@ var formExp = null;
 var sezScoperte = 'registro';
 
 
-function disegnaScoperte() {
+export function disegnaScoperte() {
   var s = LM.load();
   var c = document.getElementById('scop-corpo');
   if (!c) return;
@@ -7574,7 +7602,7 @@ var sottonavChiave = '';
 window.addEventListener('resize', function () { sottonavChiave = ''; });
 
 var vistaMostrata = '';
-function render() {
+export function render() {
   var s = LM.load();
   if (!s.onboarded) {
     if (!perId('onboarding-root').innerHTML) onboarding();
