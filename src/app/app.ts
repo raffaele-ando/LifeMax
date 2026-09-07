@@ -3767,7 +3767,7 @@ function nodiGiorno(k: Giorno): NodiDelGiorno {
   var s = LM.load();
   var r = LM.ritmoDi(k);
   var isToday = k === LM.todayKey();
-  var placed = [], tray = [];
+  const placed: Nodo[] = [], tray: Nodo[] = [];
   (r.pasti || []).forEach(function (p) {
     /* `fatto` arriva dal resoconto della sera: `false` non è un buco, è una
        risposta — quel pasto si vede SALTATO, non scomparso, perché «non ho
@@ -3776,14 +3776,16 @@ function nodiGiorno(k: Giorno): NodiDelGiorno {
   });
   s.abitudini.forEach(function (h) {
     if (!LM.abitudinePrevista(h, k)) return;
-    var e = { tipo: 'abitudine', min: minOf(h.ora), ora: h.ora, dur: h.durata || null, id: h.id, testo: h.testo, areaId: h.areaId, fatto: !!h.fatti[k], streak: isToday ? LM.streakAbitudine(h) : 0 };
+    const e: Nodo = { tipo: 'abitudine', min: minOf(h.ora), ora: h.ora, dur: h.durata || null, id: h.id, testo: h.testo, areaId: h.areaId, fatto: !!h.fatti[k], streak: isToday ? LM.streakAbitudine(h) : 0 };
     (e.min == null ? tray : placed).push(e);
   });
   LM.azioniDelGiorno(k).forEach(function (a) {
-    var e = { tipo: 'azione', min: minOf(a.ora), ora: a.ora, dur: a.durata || null, id: a.id, testo: a.testo, areaId: a.areaId, mit: a.mit, done: a.done, mancata: a.mancata || null };
+    const e: Nodo = { tipo: 'azione', min: minOf(a.ora), ora: a.ora, dur: a.durata || null, id: a.id, testo: a.testo, areaId: a.areaId, mit: a.mit, done: a.done, mancata: a.mancata || null };
     (e.min == null ? tray : placed).push(e);
   });
-  placed.sort(function (a, b) { return a.min - b.min; });
+  /* qui dentro l'ora c'è per costruzione: chi non ce l'ha è finito nel
+     vassoio due righe sopra */
+  placed.sort(function (a, b) { return (a.min ?? 0) - (b.min ?? 0); });
   /* wake = risveglio di stamattina (inizio della veglia); sleep = fine della
      giornata sul grafico = ora di andare a letto della ROUTINE (stanotte è un
      piano, non un fatto). sonno/sveglia restano i valori registrati (il
@@ -3923,10 +3925,13 @@ function htmlTimeGrid(d: NodiDelGiorno, opzioni?: OpzGriglia): string {
     return '<div class="tl-blk tl-blk-att' + (fatto ? ' fatta' : '') + (e.mancata ? ' mancata' : '') + (basso ? ' tl-blk-basso' : '') + (corto ? ' tl-blk-corto' : '') + (opts.interactive && !opts.mini ? ' tl-blk-clic' : '') + '"' + clic + ' style="' + pos + ';--c-area:' + col + '" title="' + esc(e.testo) + '">' +
       check + (e.tipo === 'azione' && !opts.mini && opts.interactive ? '<span class="manico" data-manico aria-hidden="true">' + ICO('presa', 13) + '</span>' : '') +
       (righe === 0 ? '' : '<span class="tl-blk-t">' + (e.mit ? ICO('star', 11) + ' ' : '') + esc(e.testo) + '</span>') +
-      (!corto && !opts.mini ? '<span class="tl-blk-ora">' + e.ora + '–' + fmtMin(e.min + dur) + '</span>' : '') + '</div>';
+      (!corto && !opts.mini ? '<span class="tl-blk-ora">' + e.ora + '–' + fmtMin((e.min ?? 0) + dur) + '</span>' : '') + '</div>';
   }).join('');
-  var now = '';
-  if (opts.nowMin != null) { var nm = em(opts.nowMin); if (nm >= gs && nm <= ge) now = '<div class="tl-now-line" style="top:' + y(nm) + 'px"><span>' + fmtMin(opts.nowMin) + '</span></div>'; }
+  let now = '';
+  if (opts.nowMin != null) {
+    const nm = em(opts.nowMin) ?? 0;
+    if (nm >= gs && nm <= ge) now = '<div class="tl-now-line" style="top:' + y(nm) + 'px"><span>' + fmtMin(opts.nowMin) + '</span></div>';
+  }
   /* geometria salvata sull'elemento: permette di muovere la linea "adesso"
      in tempo reale senza ridisegnare tutta la griglia. data-adesso marca
      SOLO le griglie che rappresentano oggi (le altre non devono averla). */
@@ -3938,16 +3943,19 @@ function htmlTimeGrid(d: NodiDelGiorno, opzioni?: OpzGriglia): string {
 }
 /* muove la linea "adesso" in tutte le griglie di oggi (giorno e colonna di
    oggi nella settimana), senza ridisegnarle. */
-function aggiornaLineaGriglia() {
+function aggiornaLineaGriglia(): void {
+  /* la geometria è scritta sull'elemento da `htmlTimeGrid`: `+null` fa zero e
+     `isNaN` due righe sotto ferma il giro, che è quello che faceva prima */
+  const num = function (e: HTMLElement, nome: string) { return +(e.getAttribute(nome) || ''); };
   document.querySelectorAll<HTMLElement>('.tl-grid[data-adesso]').forEach(function (grid) {
-    var gs = +grid.getAttribute('data-gs'), ge = +grid.getAttribute('data-ge'), pxh = +grid.getAttribute('data-pxh');
-    var wake = +grid.getAttribute('data-wake'), bed = +grid.getAttribute('data-bed');
+    const gs = num(grid, 'data-gs'), ge = num(grid, 'data-ge'), pxh = num(grid, 'data-pxh');
+    const wake = num(grid, 'data-wake'), bed = num(grid, 'data-bed');
     if (isNaN(gs) || isNaN(pxh)) return;
-    var nn = new Date(); var now = nn.getHours() * 60 + nn.getMinutes();
-    var nm = (bed > 1440 && now < wake) ? now + 1440 : now;
-    var line = grid.querySelector<HTMLElement>('.tl-now-line');
+    const nn = new Date(); const now = nn.getHours() * 60 + nn.getMinutes();
+    const nm = (bed > 1440 && now < wake) ? now + 1440 : now;
+    let line = grid.querySelector<HTMLElement>('.tl-now-line');
     if (nm < gs || nm > ge) { if (line) line.remove(); return; }
-    var top = (nm - gs) / 60 * pxh;
+    const top = (nm - gs) / 60 * pxh;
     if (!line) {
       line = document.createElement('div'); line.className = 'tl-now-line';
       line.innerHTML = '<span></span>'; presa(grid.querySelector<HTMLElement>('.tl-blocks')).appendChild(line);
@@ -3968,10 +3976,20 @@ function aggiornaLineaGriglia() {
      data-drop-giorno="AAAA-MM-GG"  → sposta in quel giorno
      data-drop-ora="1"              → dà l'ora corrispondente al punto
      data-drop-senzaora="1"         → toglie l'orario                        */
-var trasc = null;
+/* IL TRASCINAMENTO IN CORSO: cosa si sta portando, da dove è partito, e
+   l'etichetta che segue il dito. Era `null` più otto campi scritti a mano nel
+   punto in cui il gesto comincia. */
+interface Trascinamento {
+  id: string;
+  /* da dove è partito: si spegne il suo «sto prendendo» alla fine */
+  el: HTMLElement;
+  fantasma: HTMLElement;
+  bersaglio: HTMLElement | null;
+}
+let trasc: Trascinamento | null = null;
 
 function bersaglioSotto(x: number, y: number): HTMLElement | null {
-  var el = document.elementFromPoint(x, y);
+  let el = document.elementFromPoint(x, y) as HTMLElement | null;
   while (el && el !== document.body) {
     if (el.hasAttribute && (el.hasAttribute('data-drop-giorno') || el.hasAttribute('data-drop-ora') || el.hasAttribute('data-drop-senzaora'))) return el;
     el = el.parentElement;
@@ -3981,22 +3999,33 @@ function bersaglioSotto(x: number, y: number): HTMLElement | null {
 /* Dove finirà la cosa: lo diciamo a parole nell'etichetta che segue il dito,
    e sulla griglia mostriamo anche una riga all'ora esatta. Senza questo si
    trascinava "alla cieca". */
-function anteprima(bers: HTMLElement | null, y: number): void {
+/* DOVE FINIRÀ LA COSA: le parole per l'etichetta, e — solo sulla griglia —
+   l'ora esatta con la riga da disegnare. `min`, `top` e `host` ci sono in un
+   caso su quattro, ed era un oggetto senza forma con tre campi facoltativi. */
+interface Anteprima {
+  testo: string;
+  min?: number;
+  top?: number;
+  host?: HTMLElement;
+}
+function anteprima(bers: HTMLElement | null, y: number): Anteprima {
   if (!bers) return { testo: 'Lascia su un giorno o su un’ora' };
   if (bers.hasAttribute('data-drop-senzaora')) return { testo: 'Senza orario' };
-  if (bers.hasAttribute('data-drop-giorno')) return { testo: etichettaGiorno(bers.getAttribute('data-drop-giorno')) };
+  const quale = bers.getAttribute('data-drop-giorno');
+  if (quale) return { testo: etichettaGiorno(comeGiorno(quale)) };
   if (bers.hasAttribute('data-drop-ora')) {
-    var gs = +bers.getAttribute('data-gs'), pxh = +bers.getAttribute('data-pxh');
+    const gs = +(bers.getAttribute('data-gs') || ''), pxh = +(bers.getAttribute('data-pxh') || '');
     if (isNaN(gs) || !pxh) return { testo: '' };
-    var r = bers.getBoundingClientRect();
-    var min = Math.max(0, Math.round((gs + (y - r.top) / pxh * 60) / 15) * 15);
+    const r = bers.getBoundingClientRect();
+    const min = Math.max(0, Math.round((gs + (y - r.top) / pxh * 60) / 15) * 15);
     return { testo: 'alle ' + fmtMin(min % 1440), min: min, top: (min - gs) / 60 * pxh, host: bers };
   }
   return { testo: '' };
 }
-function guida(ap: boolean): void {
-  var g = document.getElementById('trasc-guida');
-  if (!ap || ap.top == null || !ap.host) { if (g) g.remove(); return; }
+function guida(ap: Anteprima | null): void {
+  const gia = document.getElementById('trasc-guida');
+  if (!ap || ap.top == null || !ap.host) { if (gia) gia.remove(); return; }
+  let g = gia;
   if (!g || g.parentNode !== ap.host) {
     if (g) g.remove();
     g = document.createElement('div'); g.id = 'trasc-guida'; g.className = 'trasc-guida';
@@ -4004,7 +4033,7 @@ function guida(ap: boolean): void {
     (ap.host.querySelector<HTMLElement>('.tl-blocks') || ap.host).appendChild(g);
   }
   g.style.top = ap.top + 'px';
-  presa(g.querySelector<HTMLElement>('span')).textContent = fmtMin(ap.min % 1440);
+  presa(g.querySelector<HTMLElement>('span')).textContent = fmtMin((ap.min ?? 0) % 1440);
 }
 function evidenzia(el: HTMLElement | null): void {
   if (trasc && trasc.bersaglio === el) return;
@@ -4012,11 +4041,11 @@ function evidenzia(el: HTMLElement | null): void {
   if (trasc) trasc.bersaglio = el;
   if (el) el.classList.add('drop-attivo');
 }
-function fineTrascina() {
+function fineTrascina(): void {
   if (!trasc) return;
   if (trasc.bersaglio) trasc.bersaglio.classList.remove('drop-attivo');
   if (trasc.fantasma && trasc.fantasma.parentNode) trasc.fantasma.parentNode.removeChild(trasc.fantasma);
-  if (trasc.sorgente) trasc.sorgente.classList.remove('sto-prendendo');
+  trasc.el.classList.remove('sto-prendendo');
   guida(null);
   document.body.classList.remove('sto-trascinando');
   trasc = null;
@@ -4027,53 +4056,57 @@ function abilitaTrascina(scope: ParentNode, onRilascio: (id: string, bersaglio: 
   scope.querySelectorAll<HTMLElement>('[data-drag-az]').forEach(function (el) {
     el.addEventListener('pointerdown', function (ev) {
       if (ev.button > 0) return;
-      var btnDentro = ev.target.closest('button');
-      if (btnDentro && btnDentro !== el && el.contains(btnDentro)) return;  // i pulsanti interni restano cliccabili
-      var id = el.getAttribute('data-drag-az');
-      var x0 = ev.clientX, y0 = ev.clientY;
-      var tocco = ev.pointerType === 'touch';
-      var manico = el.matches('[data-manico]') ? el : el.querySelector<HTMLElement>('[data-manico]');
-      var dalManico = !!(manico && (ev.target === manico || manico.contains(ev.target) || ev.target.closest('[data-manico]')));
+      const bersaglio = ev.target as HTMLElement | null;
+      if (!bersaglio) return;
+      const btnDentro = bersaglio.closest('button');
+      if (btnDentro && btnDentro !== el && el.contains(btnDentro)) return;  /* i pulsanti interni restano cliccabili */
+      const id = el.getAttribute('data-drag-az');
+      if (!id) return;
+      const x0 = ev.clientX, y0 = ev.clientY;
+      const tocco = ev.pointerType === 'touch';
+      const manico = el.matches('[data-manico]') ? el : el.querySelector<HTMLElement>('[data-manico]');
+      const dalManico = !!(manico && (bersaglio === manico || manico.contains(bersaglio) || bersaglio.closest('[data-manico]')));
       /* Col dito, se l'elemento ha un manico si prende SOLO da lì: toccando
          il corpo il browser vorrebbe selezionare il testo (era il bug) e la
          pagina deve restare scorribile. Preso dal manico l'intenzione è
          chiara, quindi parte subito senza tenere premuto. */
       if (tocco && manico && !dalManico) return;
-      var attesa = null, spostato = false, morto = false;
+      let attesa: ReturnType<typeof setTimeout> | undefined;
+      let spostato = false, morto = false;
 
       /* col dito il browser vuole scorrere la pagina: dopo il "tieni premuto"
          blocchiamo lo scorrimento, altrimenti il gesto ci viene strappato. */
-      function bloccaTouch(e) { if (trasc) e.preventDefault(); }
+      function bloccaTouch(e: TouchEvent) { if (trasc) e.preventDefault(); }
 
       function avvia() {
         if (morto || trasc) return;
-        var r = el.getBoundingClientRect();
-        var f = document.createElement('div');
+        const r = el.getBoundingClientRect();
+        const f = document.createElement('div');
         f.className = 'trasc-fantasma';
         f.innerHTML = '<b></b><i></i>';
         presa(f.querySelector<HTMLElement>('b')).textContent = (el.getAttribute('title') || el.textContent || '').trim().slice(0, 44);
         f.style.width = Math.min(280, Math.max(150, r.width)) + 'px';
         document.body.appendChild(f);
-        trasc = { id: id, fantasma: f, bersaglio: null, sorgente: el };
+        trasc = { id: id, fantasma: f, bersaglio: null, el: el };
         el.classList.add('sto-prendendo');
         document.body.classList.add('sto-trascinando');
-        try { el.setPointerCapture(ev.pointerId); } catch (e2) { }
+        try { el.setPointerCapture(ev.pointerId); } catch { /* niente cattura: si va avanti */ }
         document.addEventListener('touchmove', bloccaTouch, { passive: false });
         muovi(x0, y0);
       }
-      function muovi(x, y) {
+      function muovi(x: number, y: number) {
         if (!trasc) return;
         trasc.fantasma.style.left = x + 'px';
         trasc.fantasma.style.top = y + 'px';
-        var b = bersaglioSotto(x, y);
+        const b = bersaglioSotto(x, y);
         evidenzia(b);
-        var ap = anteprima(b, y);
-        trasc.presa(fantasma.querySelector<HTMLElement>('i')).textContent = ap.testo;
+        const ap = anteprima(b, y);
+        presa(trasc.fantasma.querySelector<HTMLElement>('i')).textContent = ap.testo;
         trasc.fantasma.classList.toggle('pronto', !!b);
         guida(ap);
       }
-      function onMove(e) {
-        var dx = e.clientX - x0, dy = e.clientY - y0;
+      function onMove(e: PointerEvent) {
+        const dx = e.clientX - x0, dy = e.clientY - y0;
         if (!trasc) {
           /* soglia generosa: un clic con la mano un po' mossa NON deve
              diventare un trascinamento (era la causa dei "pulsanti che non
@@ -4088,19 +4121,19 @@ function abilitaTrascina(scope: ParentNode, onRilascio: (id: string, bersaglio: 
         e.preventDefault();
         muovi(e.clientX, e.clientY);
       }
-      function onUp(e) {
+      function onUp(e: PointerEvent) {
         clearTimeout(attesa);
-        var fatto = false;
+        let fatto = false;
         if (trasc && spostato) {
-          var b = bersaglioSotto(e.clientX, e.clientY);
-          var idFin = trasc.id;
+          const b = bersaglioSotto(e.clientX, e.clientY);
+          const idFin = trasc.id;
           fineTrascina();
           if (b) { fatto = true; onRilascio(idFin, b, e.clientX, e.clientY); }
         }
         /* il clic va ingoiato SOLO se abbiamo davvero spostato qualcosa,
            altrimenti si bloccherebbero i clic normali */
         if (fatto) {
-          var ingoia = function (ce) { ce.stopPropagation(); ce.preventDefault(); };
+          const ingoia = function (ce: Event) { ce.stopPropagation(); ce.preventDefault(); };
           window.addEventListener('click', ingoia, true);
           setTimeout(function () { window.removeEventListener('click', ingoia, true); }, 350);
         }
@@ -4109,7 +4142,7 @@ function abilitaTrascina(scope: ParentNode, onRilascio: (id: string, bersaglio: 
       function pulisci() {
         clearTimeout(attesa);
         fineTrascina();
-        document.removeEventListener('touchmove', bloccaTouch, { passive: false });
+        document.removeEventListener('touchmove', bloccaTouch);
         el.removeEventListener('pointermove', onMove);
         el.removeEventListener('pointerup', onUp);
         window.removeEventListener('pointermove', onMove);
@@ -4136,19 +4169,20 @@ function abilitaTrascina(scope: ParentNode, onRilascio: (id: string, bersaglio: 
    spuntala, dàlle un orario, una durata, un'area. Sostituisce la vecchia
    lista "Orari e durate" che raddoppiava tutto quello che era già nel grafico.
    onCambio() ridisegna la giornata dietro al pannello. */
-function apriItemGiornata(k: Giorno, id: string, tipo: 'azione' | 'abitudine', onCambio?: () => void, spuntabile?: boolean): void {
-  var isAz = tipo === 'azione';
-  if (spuntabile === undefined) spuntabile = true;
-  function trova() {
-    var dd = nodiGiorno(k);
-    return dd.placed.concat(dd.tray).find(function (x) { return x.id === id; });
-  }
-  var e = trova();
+function apriItemGiornata(k: Giorno, id: string, tipo: 'azione' | 'abitudine', onCambio?: () => void, spuntabileOpz?: boolean): void {
+  const isAz = tipo === 'azione';
+  const spuntabile = spuntabileOpz === undefined ? true : spuntabileOpz;
+  const dd = nodiGiorno(k);
+  const e = dd.placed.concat(dd.tray).find(function (x) { return x.id === id; });
   if (!e) return;
-  var ar = areaById(e.areaId), col = LM.coloreArea(ar);
-  var fatto = isAz ? e.done : e.fatto;
-  var durOpt = DURATE.map(function (o) { return '<option value="' + o.v + '"' + ((e.dur || '') === o.v ? ' selected' : '') + '>' + o.t + '</option>'; }).join('');
-  var html = '<div class="ig-ed">' +
+  /* il pannello ridisegna la giornata dietro di sé quando qualcosa cambia:
+     senza `onCambio` non c'è niente da ridisegnare, e chiamarlo comunque
+     voleva dire una funzione che non c'è */
+  const ricarica = function () { if (onCambio) onCambio(); };
+  void LM.coloreArea(areaById(e.areaId));
+  const fatto = isAz ? e.done : e.fatto;
+  const durOpt = DURATE.map(function (o) { return '<option value="' + o.v + '"' + ((e.dur || '') === o.v ? ' selected' : '') + '>' + o.t + '</option>'; }).join('');
+  const html = '<div class="ig-ed">' +
     '<input type="text" class="ig-nome" id="ig-nome" value="' + esc(e.testo) + '" aria-label="Testo" placeholder="Cosa devi fare">' +
     /* su un giorno futuro non si spunta: si sta pianificando, non facendo */
     (spuntabile
@@ -4172,87 +4206,87 @@ function apriItemGiornata(k: Giorno, id: string, tipo: 'azione' | 'abitudine', o
     '</div>' +
     '</div>';
   apriSheet(esc(e.testo), html, function (root) {
-    function ricarica() { onCambio(); }
-    var nome = root.querySelector<HTMLElement>('#ig-nome');
+    const nome = campo(root, '#ig-nome');
     nome.addEventListener('change', function () {
-      var v = nome.value.trim();
-      if (!v) { nome.value = e.testo; return; }
+      const v = nome.value.trim();
+      if (!v) { nome.value = e.testo || ''; return; }
       if (isAz) LM.modificaAzione(id, v); else LM.modificaAbitudine(id, { testo: v });
       e.testo = v;
-      var tit = perId('sheet-titolo'); if (tit) tit.textContent = v;
+      const tit = perId('sheet-titolo'); if (tit) tit.textContent = v;
       ricarica();
     });
-    var bFatto = root.querySelector<HTMLElement>('.ig-fatto');
+    const bFatto = root.querySelector<HTMLElement>('.ig-fatto');
     if (bFatto) bFatto.addEventListener('click', function (ev) {
       if (isAz) feedbackSpunta(ev, LM.completaAzione(id), 'Fatto.', 'check');
       else feedbackSpunta(ev, LM.completaAbitudine(id, k), 'Fatta. Continua così.', 'flame');
       chiudiSheet(); ricarica();
     });
-    var ora = root.querySelector<HTMLElement>('#ig-ora');
+    const ora = campo(root, '#ig-ora');
     ora.addEventListener('change', function () {
-      if (isAz) LM.setOraAzione(id, ora.value || null); else LM.modificaAbitudine(id, { ora: ora.value || null });
+      const q = ora.value ? comeOra(ora.value) : null;
+      if (isAz) LM.setOraAzione(id, q); else LM.modificaAbitudine(id, { ora: q });
       ricarica();
     });
-    var dur = root.querySelector<HTMLElement>('#ig-dur');
+    const dur = campo(root, '#ig-dur');
     dur.addEventListener('change', function () {
-      var v = dur.value ? +dur.value : null;
+      const v = dur.value ? +dur.value : null;
       if (isAz) LM.setDurataAzione(id, v); else LM.modificaAbitudine(id, { durata: v });
       ricarica();
     });
-    var area = root.querySelector<HTMLElement>('#ig-area');
+    const area = campo(root, '#ig-area');
     area.addEventListener('change', function () {
       if (isAz) LM.cambiaAreaAzione(id, area.value); else LM.modificaAbitudine(id, { areaId: area.value });
       ricarica();
     });
-    var noora = root.querySelector<HTMLElement>('.ig-noora');
+    const noora = root.querySelector<HTMLElement>('.ig-noora');
     if (noora) noora.addEventListener('click', function () {
       if (isAz) LM.setOraAzione(id, null); else LM.modificaAbitudine(id, { ora: null });
       chiudiSheet(); ricarica();
     });
-    var ind = root.querySelector<HTMLElement>('.ig-indietro');
+    const ind = root.querySelector<HTMLElement>('.ig-indietro');
     if (ind) ind.addEventListener('click', function () {
       LM.azioneInBacklog(id);
       toast(e.passoDi ? 'Tolta dal giorno: il passo resta nel progetto.' : 'Rimessa in «Da fare».', 0, 'lista');
       chiudiSheet(); ricarica();
     });
-    var rim = root.querySelector<HTMLElement>('.ig-rimuovi');
+    const rim = root.querySelector<HTMLElement>('.ig-rimuovi');
     if (rim) rim.addEventListener('click', function () {
       conAnnulla('Rimossa da oggi.', 'trash', function () { LM.rimuoviAzione(id); });
       chiudiSheet(); ricarica();
     });
-    var salta = root.querySelector<HTMLElement>('.ig-salta');
+    const salta = root.querySelector<HTMLElement>('.ig-salta');
     if (salta) salta.addEventListener('click', function () {
       LM.saltaGiornoAbitudine(id, k);
       toast('Tolta solo da questo giorno: le altre e i prossimi giorni non cambiano.', 0, 'x');
       chiudiSheet(); ricarica();
     });
-    var fq = root.querySelector<HTMLElement>('.ig-finequi');
+    const fq = root.querySelector<HTMLElement>('.ig-finequi');
     if (fq) fq.addEventListener('click', function () {
-      var hh = LM.load().abitudini.find(function (x) { return x.id === id; });
+      const hh = LM.load().abitudini.find(function (x) { return x.id === id; });
       LM.impostaPeriodoAbitudine(id, hh ? hh.da : null, k);
       toast('Da domani non comparirà più. Lo storico resta.', 0, 'fineperiodo');
       chiudiSheet(); ricarica();
     });
-    var vai = root.querySelector<HTMLElement>('.ig-vairituali');
+    const vai = root.querySelector<HTMLElement>('.ig-vairituali');
     if (vai) vai.addEventListener('click', function () { chiudiSheet(); attTab = 'abitudini'; location.hash = '#/inbox'; });
   });
 }
 
-function montaGiornata(container: HTMLElement, opts?: { giorno?: Giorno }): void {
-  opts = opts || {};
-  var compact = !!opts.compact;
-  var k = opts.giorno || LM.todayKey();
-  var d = nodiGiorno(k);
+function montaGiornata(container: HTMLElement, opzioni?: OpzGriglia): void {
+  const opts: OpzGriglia = opzioni || {};
+  const compact = !!opts.compact;
+  const k = opts.giorno || LM.todayKey();
+  const d = nodiGiorno(k);
   /* Tre modi: il passato si guarda, oggi si fa, il futuro si PIANIFICA.
      Nel futuro si può aggiungere/modificare/spostare, ma non spuntare:
      una cosa di domani non si può aver già fatta (falserebbe XP e serie). */
-  var isFuturo = k > LM.todayKey();
-  var interactive = true;                    // si può sempre sistemare
-  var spuntabile = !isFuturo;                // anche a posteriori, mai nel futuro
-  var now = new Date();
-  var nowMin = d.isToday ? now.getHours() * 60 + now.getMinutes() : null;
+  const isFuturo = k > LM.todayKey();
+  const interactive = true;                  /* si può sempre sistemare */
+  const spuntabile = !isFuturo;              /* anche a posteriori, mai nel futuro */
+  const now = new Date();
+  const nowMin = d.isToday ? now.getHours() * 60 + now.getMinutes() : null;
 
-  var vuota = !d.placed.length && !d.tray.length;
+  const vuota = !d.placed.length && !d.tray.length;
 
   /* Le cose SENZA orario non stanno sul grafico: le mostriamo sotto, come
      righe che si toccano per dargli un orario (o si spuntano al volo).
