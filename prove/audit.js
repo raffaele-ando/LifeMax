@@ -86,8 +86,18 @@ const RILEVA = `(function () {
       /* ORFANE, MISURATE. Contare le parole non basta: quasi ogni testo di
          più righe finisce con una parola corta, e così si segnalava tutto.
          L'unica domanda vera è se l'ULTIMA RIGA contiene una parola sola, e
-         quella si legge dai rettangoli di un Range, non dal testo. */
-      if (righe > 1 && e.childNodes.length === 1 && e.firstChild.nodeType === 3 && t.length > 25) {
+         quella si legge dai rettangoli di un Range, non dal testo.
+         QUI C'ERA UN CONTROLLO SU UNA VARIABILE CANCELLATA. Il conto delle
+         righe era una stima — altezza diviso interlinea — ed e' stato tolto
+         quando e' passato ai rettangoli del Range, che le righe le contano
+         davvero. La condizione qui sotto la nominava ancora, quindi ogni
+         scena moriva con un ReferenceError e lo strumento stampava
+         «(saltata)» quaranta volte senza misurare niente, uscendo verde.
+         Il conto adesso lo fa rects.length > 1, tre righe piu' giu': la
+         stessa domanda, chiesta al posto giusto.
+         NIENTE APICI ROVESCI QUI DENTRO: questo pezzo vive dentro a un
+         template literal, e un apice rovescio lo chiude. */
+      if (e.childNodes.length === 1 && e.firstChild.nodeType === 3 && t.length > 25) {
         try {
           var rg = document.createRange();
           rg.selectNodeContents(e);
@@ -143,6 +153,7 @@ const RILEVA = `(function () {
 
   const conto = { testo: new Map(), raggi: new Map(), ombre: new Map(), colori: new Map(), sfondi: new Map() };
   const trovate = { primari: [], orfane: [], righeLunghe: [], fuori: [] };
+  const saltate = [];
   let viste = 0;
   const somma = (m, v, dove) => { if (!m.has(v)) m.set(v, { n: 0, dove: new Set() }); const x = m.get(v); x.n++; if (x.dove.size < 4) x.dove.add(dove); };
 
@@ -175,7 +186,11 @@ const RILEVA = `(function () {
         r.righeLunghe.forEach((x) => trovate.righeLunghe.push(dove + ' · ' + x));
         r.fuori.forEach((x) => trovate.fuori.push(dove + ' · ' + x));
       } catch (e) {
-        console.log('  (saltata: ' + nome + ' — ' + e.message.slice(0, 60) + ')');
+        /* UNA SCENA SALTATA NON È UN DETTAGLIO: è una scena non misurata, e
+           un rapporto che ne salta metà racconta la metà che ha guardato
+           come se fosse tutto. Si contano, e in fondo si dice quante. */
+        saltate.push(nome + ' — ' + e.message.split('\n')[0].slice(0, 70));
+        console.log('  (saltata: ' + nome + ' — ' + e.message.split('\n')[0].slice(0, 60) + ')');
       }
       await p.close();
     }
@@ -210,4 +225,18 @@ const RILEVA = `(function () {
   elenca('RIGHE TROPPO LUNGHE (oltre 78 caratteri)', trovate.righeLunghe);
   elenca('ULTIMA RIGA CON UNA PAROLA SOLA', trovate.orfane);
   elenca('CONTENUTO CHE ESCE DAL SUO CONTENITORE', trovate.fuori);
+
+  /* QUESTO NON È UN NUMERO IN FONDO AL RAPPORTO: è la sola riga che dice se
+     il rapporto vale qualcosa. Per un po' le scene saltate sono state tutte
+     e quaranta — una riga che nominava una variabile cancellata — e lo
+     strumento continuava a stampare i suoi elenchi, vuoti, come se avesse
+     guardato. Un rapporto che non ha misurato niente deve dirlo forte, e
+     uscire male: se no è peggio di uno che manca, perché rassicura. */
+  if (saltate.length) {
+    console.log('\n════ ' + saltate.length + ' SCENE SALTATE: IL RAPPORTO NON LE HA GUARDATE ════');
+    saltate.slice(0, 8).forEach((x) => console.log('    ' + x));
+    if (saltate.length > 8) console.log('    …e altre ' + (saltate.length - 8));
+    process.exit(1);
+  }
+  console.log('\n════ nessuna scena saltata: il rapporto le ha guardate tutte ════');
 })();
