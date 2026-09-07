@@ -4977,12 +4977,17 @@ function oraDi(ts: number): string {
 
 /* conto alla rovescia leggibile di una scadenza (ADHD: rende visibile il
    tempo che passa, senza allarmismi) */
-export function scadInfo(scad: Giorno | null | undefined): { testo: string; cls: string } | null {
-  var d = LM.daysBetween(LM.todayKey(), scad);
-  if (d < 0) return { d: d, testo: d === -1 ? 'ieri' : (-d) + 'g fa', cls: 'scad-ritardo' };
-  if (d === 0) return { d: 0, testo: 'oggi', cls: 'scad-oggi' };
-  if (d === 1) return { d: 1, testo: 'domani', cls: 'scad-vicina' };
-  return { d: d, testo: 'tra ' + d + 'g', cls: d <= 3 ? 'scad-vicina' : 'scad-lontana' };
+/* quanti giorni mancano, come si dice, e la classe del colore. `d` c'era e
+   non lo leggeva nessuno: quattro rami lo mettevano nell'oggetto e nessuno
+   dei nove chiamanti lo guardava. */
+export interface Scadenza { testo: string; cls: string }
+export function scadInfo(scad: Giorno | null | undefined): Scadenza | null {
+  if (!scad) return null;
+  const d = LM.daysBetween(LM.todayKey(), scad);
+  if (d < 0) return { testo: d === -1 ? 'ieri' : (-d) + 'g fa', cls: 'scad-ritardo' };
+  if (d === 0) return { testo: 'oggi', cls: 'scad-oggi' };
+  if (d === 1) return { testo: 'domani', cls: 'scad-vicina' };
+  return { testo: 'tra ' + d + 'g', cls: d <= 3 ? 'scad-vicina' : 'scad-lontana' };
 }
 
 /* una riga della timeline del Diario */
@@ -4991,25 +4996,25 @@ export function scadInfo(scad: Giorno | null | undefined): { testo: string; cls:
    racconta). Vince quella che ha un dato da togliere: disfare il dato
    tocca solo quella cosa, mentre il punto di ritorno riporta indietro
    anche tutto quello che è venuto dopo. A pari merito, la più recente. */
-var annullaPadroni = null;
+let annullaPadroni: Set<VoceDiario> | null = null;
 function padroniAnnulla(giorni: GiornoDiario[]): Set<VoceDiario> {
-  var perPunto = {};
+  const perPunto: Record<string, VoceDiario> = {};
   giorni.forEach(function (g) {
     g.eventi.forEach(function (ev) {
-      var pt = LM.puntoDiRitorno(ev.ts);
+      const pt = LM.puntoDiRitorno(ev.ts);
       if (!pt) return;
-      var att = perPunto[pt.id];
+      const att = perPunto[pt.id];
       if (!att || (ev.chiave && !att.chiave)) perPunto[pt.id] = ev;
     });
   });
-  var set = new Set();
-  Object.keys(perPunto).forEach(function (k) { set.add(perPunto[k]); });
+  const set = new Set<VoceDiario>();
+  Object.keys(perPunto).forEach(function (k) { const v = perPunto[k]; if (v) set.add(v); });
   return set;
 }
 function eventoDiarioHtml(ev: VoceDiario): string {
-  var ico, testo, cls = '';
+  let ico: string, testo: string, cls = '';
   if (ev.tipo === 'azione') {
-    var ar = areaById(ev.areaId);
+    const ar = areaById(ev.areaId);
     ico = '<span class="diario-ico ok">' + ICO('check', 15) + '</span>';
     testo = 'Completata · <b>' + esc(ev.testo) + '</b>' +
       ' ' + segnoArea(ar, 13, 'diario-area') +
@@ -5036,12 +5041,12 @@ function eventoDiarioHtml(ev: VoceDiario): string {
        d'occhio invece che riga per riga. Prima «area» usava le stelline (che
        vogliono dire «extra») e «focus» il quadrante come «giornata» — due
        categorie diverse con la stessa figura. */
-    var icoCat = { azione: 'target', abitudine: 'refresh', backlog: 'lista', inbox: 'inbox',
+    const icoCat: Record<string, string> = { azione: 'target', abitudine: 'refresh', backlog: 'lista', inbox: 'inbox',
       area: 'aree', giornata: 'giornata', focus: 'mirino', impostazioni: 'ingranaggio', dati: 'dati',
       /* due categorie e non una: nel diario si deve vedere da lontano se
          quella riga racconta una cosa che funziona o una che no */
       'lezione-si': 'funziona', 'lezione-no': 'nonFunziona' };
-    ico = '<span class="diario-ico' + (ev.imp ? '' : ' minore') + '">' + ICO(icoCat[ev.cat] || 'lista', 13) + '</span>';
+    ico = '<span class="diario-ico' + (ev.imp ? '' : ' minore') + '">' + ICO(icoCat[ev.cat || ''] || 'lista', 13) + '</span>';
     testo = '<span class="diario-log">' + esc(ev.testo) + '</span>';
     cls = ev.imp ? '' : ' minore';
   } else { /* cattura */
@@ -5066,9 +5071,9 @@ function eventoDiarioHtml(ev: VoceDiario): string {
      due righe (la nota annotata e la riga di registro che la racconta), e
      due tasti identici a due righe di distanza sono un doppione. Quale delle
      due lo porta lo decide padroniAnnulla, sopra. */
-  var punto = LM.puntoDiRitorno(ev.ts);
-  var annulla = '';
-  var mostra = punto ? (!annullaPadroni || annullaPadroni.has(ev)) : !!ev.chiave;
+  const punto = LM.puntoDiRitorno(ev.ts);
+  let annulla = '';
+  const mostra = punto ? (!annullaPadroni || annullaPadroni.has(ev)) : !!ev.chiave;
   if (mostra) {
     annulla = '<button class="diario-annulla" data-annulla="' + ev.ts + '"' +
       (ev.chiave ? ' data-tipo="' + (ev.tipoDisfa || ev.tipo) + '" data-chiave="' + esc(String(ev.chiave)) + '"' : '') +
@@ -5089,9 +5094,10 @@ function eventoDiarioHtml(ev: VoceDiario): string {
    le stesse schede.
    ============================================================ */
 
-export function disegnaSezione() {
-  var c = document.getElementById('sez-corpo');
-  var cambio = sezPlancia !== sezMostrata;
+export function disegnaSezione(): void {
+  const c = document.getElementById('sez-corpo');
+  if (!c) return;
+  const cambio = sezPlancia !== sezMostrata;
   if (sezPlancia === 'riepilogo') sezRiepilogo(c);
   else if (sezPlancia === 'diario') sezDiario(c);
   else if (sezPlancia === 'aree') sezAree(c);
@@ -5104,14 +5110,8 @@ export function disegnaSezione() {
 function sezRiepilogo(c: HTMLElement): void {
   /* i conti che prima le arrivavano da `vistaPlancia`: uscendo se li fa da
      sé. Sono le stesse chiamate, quindi gli stessi numeri. */
-  var s = LM.load();
-  var t = LM.todayKey();
-  var lvl = LM.livelloDaXp(s.xp);
-  var st = LM.streak();
-  var oggi = LM.azioniDiOggi();
-  var fatte = oggi.filter(function (a) { return a.done; }).length;
-  var checkinOggi = s.checkins.filter(function (c2) { return c2.data === t; }).length;
-  var bil = LM.bilancio(30);
+  const oggi = LM.azioniDiOggi();
+  const bil = LM.bilancio(30);
   c.innerHTML = '<div class="griglia griglia-2">' +
     '<div class="card" style="--i:0"><h2>' + ICO('target', 15) + ' Le azioni di oggi</h2>' +
     /* «Oggi» non è più un link: il pulsante pieno «Vai a Oggi» sta due
@@ -5168,14 +5168,16 @@ function sezRiepilogo(c: HTMLElement): void {
         }).join('') + '</div>'
       : '<p class="lista-nota">Ancora nessun giorno chiuso da contare.</p>') +
     (function () {
-      var perse = LM.mancate(90), motivi = LM.motiviMancate(90);
+      const perse = LM.mancate(90), motivi = LM.motiviMancate(90);
       if (!perse.length) return '';
+      const primo = motivi[0], secondo = motivi[1];
       return '<div class="lista-eti mt">Non ci sono riuscito <span>' + perse.length + '</span></div>' +
-        (motivi.length ? '<p class="lista-nota bil-motivo">Più spesso: <b>' + esc(motivi[0].eti.toLowerCase()) + '</b>' +
-          (motivi.length > 1 ? ', poi ' + esc(motivi[1].eti.toLowerCase()) : '') + '.</p>' : '') +
+        (primo ? '<p class="lista-nota bil-motivo">Più spesso: <b>' + esc(primo.eti.toLowerCase()) + '</b>' +
+          (secondo ? ', poi ' + esc(secondo.eti.toLowerCase()) : '') + '.</p>' : '') +
         '<div class="lista">' + perse.slice(0, 8).map(function (a) {
-          var ar = areaById(a.areaId);
-          var g = LM.QUANTO_FATTO.find(function (x) { return x.id === a.mancata.quanto; });
+          const ar = areaById(a.areaId);
+          /* `mancate()` torna solo cose che ce l'hanno: è il suo filtro */
+          const g = LM.QUANTO_FATTO.find(function (x) { return x.id === (a.mancata ? a.mancata.quanto : ''); });
           return '<div class="lista-riga mancata-riga">' +
             '<span class="lista-azione mancata-segno">' + ICO('annulla', 15) + '</span>' +
             '<span class="lista-corpo"><span class="lista-tit">' + segnoArea(ar, 13, 'tit-area') + esc(a.testo) + '</span>' +
@@ -5192,14 +5194,15 @@ function sezRiepilogo(c: HTMLElement): void {
     '</div></div>' +
     '</div>';
 
-  LMCharts.heatmap(document.getElementById('heatmap'), LM.heatmapConsistenza(12));
+  /* i due contenitori li ha scritti l'HTML qui sopra */
+  LMCharts.heatmap(presa(document.getElementById('heatmap')), LM.heatmapConsistenza(12));
 
-  var lista = document.getElementById('lista-oggi');
+  const lista = presa(document.getElementById('lista-oggi'));
   if (!oggi.length) {
     lista.innerHTML = '<div class="vuoto" style="padding:16px 8px">Nessuna azione scelta per oggi.<br><a href="#/rituali">Scegline in Rituali</a>.</div>';
   } else {
     lista.innerHTML = oggi.map(function (a) {
-      var ar = areaById(a.areaId);
+      const ar = areaById(a.areaId);
       return '<div class="riga-azione' + (a.done ? ' fatta' : '') + '">' +
         '<button class="spunta" data-id="' + a.id + '" aria-label="Completa">' + ICO('check', 13) + '</button>' +
         '<span class="testo">' + esc(a.testo) + '</span>' +
@@ -5208,15 +5211,17 @@ function sezRiepilogo(c: HTMLElement): void {
     }).join('');
     lista.querySelectorAll<HTMLElement>('.spunta').forEach(function (b) {
       b.addEventListener('click', function (ev) {
-        feedbackSpunta(ev, LM.completaAzione(b.getAttribute('data-id')), 'Azione completata.', 'check');
+        const id = b.getAttribute('data-id');
+        if (!id) return;
+        feedbackSpunta(ev, LM.completaAzione(id), 'Azione completata.', 'check');
         render();
       });
     });
   }
-  var bRev = document.getElementById('riep-review');
+  const bRev = document.getElementById('riep-review');
   if (bRev) bRev.addEventListener('click', apriArchivioReview);
   wireRigaAggiunta(c, 'agg-riep', function (testo, opz) {
-    var sel = opz && opz.querySelector<HTMLElement>('select');
+    const sel = opz.querySelector<HTMLSelectElement>('select');
     LM.aggiungiAzione(testo, sel ? sel.value : 'altro', { mit: LM.serveMit() });
     render();
   });
@@ -5225,10 +5230,10 @@ function sezRiepilogo(c: HTMLElement): void {
 /* --- Aree: griglia delle aree di vita --- */
 function sezAree(c: HTMLElement): void {
   c.innerHTML = '<div class="griglia griglia-aree" id="griglia-aree"></div>';
-  var ga = document.getElementById('griglia-aree');
+  const ga = presa(document.getElementById('griglia-aree'));
   ga.innerHTML = areeAttive().map(function (a, i) {
-    var media = LM.mediaValutazioneArea(a.id, 7);
-    var min7 = LM.serieMinuti(a.id, 7).reduce(function (x, p) { return x + p.valore; }, 0);
+    const media = LM.mediaValutazioneArea(a.id, 7);
+    const min7 = LM.serieMinuti(a.id, 7).reduce(function (x, p) { return x + p.valore; }, 0);
     return '<div class="card card-area card-hover" style="--i:' + i + ';--c-area:' + LM.coloreArea(a) + '">' +
       '<div class="testata"><span class="icona-area">' + ICO(a.icona, 15) + '</span>' + esc(a.nome) + '</div>' +
       '<div id="spark-' + a.id + '"></div>' +

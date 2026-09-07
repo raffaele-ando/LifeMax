@@ -71,6 +71,13 @@ export interface Azione {
   durata: number | null;
   passoDi: PassoDi | null;
   mancata?: Mancata;
+  /* SCRITTA DOPO, non pianificata. Le mette `registraFatta`, quando la sera
+     si annota una cosa fatta senza averla mai messa in lista. Serve a due
+     cose: a non contarla come pianificata quando si guarda se il piano del
+     mattino ha funzionato, e al blocco «Altre cose fatte» dei rituali, che
+     è l'unico posto che le rilegge. Il campo lo scriveva `dati.ts` e il tipo
+     non lo conosceva: chi lo leggeva non compilava. */
+  dopo?: boolean;
 }
 
 export interface Nota {
