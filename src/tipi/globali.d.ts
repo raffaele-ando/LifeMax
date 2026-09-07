@@ -16,6 +16,7 @@ import type { Registro } from '../registro/registro';
 import type { StatoAuth, StatoSync, ApiCloud } from '../nuvola/nuvola';
 import type { Segni } from '../segni/segni';
 import type { Forma } from '../forma/forma';
+import type { Grafici } from '../grafici/grafici';
 
 declare global {
   interface Window {
@@ -32,5 +33,7 @@ declare global {
     LOGO: (size?: number) => string;
     /* la forma degli angoli, applicata al DOM vero */
     LM_FORMA?: Forma;
+    /* i grafici: sei funzioni che scrivono SVG dentro a un contenitore */
+    LMCharts: Grafici;
   }
 }
