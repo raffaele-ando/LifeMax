@@ -133,12 +133,16 @@ ok('nessuna voce senza icona', nude.length===0, nude.join(' | ')||'nessuna');
 console.log('\nIL DESIGN LAB SI CARICA SOLO QUANDO LO APRI');
 /* Centouno kilobyte fra codice e stile, per una schermata in cui non entra
    quasi nessuno: prima venivano scaricati e analizzati a ogni avvio, su ogni
-   telefono, per niente. Basta che qualcuno rimetta un `<script>` nel sorgente
-   HTML e si torna lì senza che nessuno se ne accorga. */
-const primaDelLab = chiesti.filter(u=>/\/lab\.[^/]*\.(js|css)$/.test(u)).length;
+   telefono, per niente. Basta che qualcuno metta un `import` in cima al file
+   invece dell'`import()` dentro a `caricaLab`, e Vite lo rimette nel pezzo
+   principale senza lamentarsi.
+   IL NOME DEI DUE FILE È CAMBIATO ALFABETO: esbuild scriveva `lab.<esa>.js`,
+   Vite scrive `lab-<base64url>.js`. La cosa che conta è la stessa. */
+const eLab = (u) => /\/lab[.-][^/]*\.(js|css)$/.test(u);
+const primaDelLab = chiesti.filter(eLab).length;
 ok('finché non ci vai, non si scarica', primaDelLab===0, primaDelLab+' file');
 await p.evaluate(()=>{location.hash='#/lab';});await p.waitForTimeout(1500);
-const dopoIlLab = chiesti.filter(u=>/\/lab\.[^/]*\.(js|css)$/.test(u)).map(u=>u.split('/').pop());
+const dopoIlLab = chiesti.filter(eLab).map(u=>u.split('/').pop());
 ok('e appena ci vai arrivano tutti e due', dopoIlLab.length===2, dopoIlLab.join(', ')||'niente');
 const montato = await p.evaluate(()=>{const r=document.getElementById('lab-radice');return r?r.children.length:-1;});
 ok('e il laboratorio si monta davvero', montato>0,

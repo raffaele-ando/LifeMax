@@ -465,6 +465,18 @@ const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  
   /* e la pagina esiste davvero all'indirizzo a cui il link manda */
   const rr = await p.evaluate(() => fetch('promemoria/chiavi.html').then(r => r.status).catch(() => 0));
   ok('la pagina risponde a quell’indirizzo', rr === 200, String(rr));
+  /* LA PAGINA STA DUE VOLTE NEL DEPOSITO, e per una ragione: `promemoria/`
+     è il Worker, che gira su Cloudflare e nel sito non ci va; `chiavi.html`
+     invece è una pagina del sito, e in `docs/` ci finisce quello che sta in
+     `public/`. Si copia un file solo invece di pubblicare tutta la cartella.
+     Due copie però divergono, e allora il link apre una pagina che non è
+     quella che è stata scritta: qui si pretende che siano la stessa. */
+  {
+    const su = fs.readFileSync(path.join(RAMO, 'promemoria', 'chiavi.html'), 'utf8');
+    const giu = fs.readFileSync(path.join(RAMO, 'public', 'promemoria', 'chiavi.html'), 'utf8');
+    ok('e in public/ c’è la stessa pagina, non una più vecchia', su === giu,
+      su === giu ? 'identiche' : 'cp promemoria/chiavi.html public/promemoria/chiavi.html');
+  }
   const collega = async (srv, kk) => {
     await p.evaluate(x => {
       document.getElementById('prom-server').value = x.s;

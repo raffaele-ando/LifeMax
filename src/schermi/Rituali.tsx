@@ -8,10 +8,10 @@
    React possiede la struttura e quali sezioni sono aperte; il contenuto di
    ognuna lo disegna `disegnaCorpiRituali()` — sono cinque schermate intere,
    e devono essere le stesse. */
-import { Fragment, useEffect } from 'react';
+import { Fragment, useEffect, useRef } from 'react';
 import { usaLM } from '../pezzi/usaLM';
 import { Segno, Testa } from '../pezzi/pezzi';
-import { schermo, GRUPPI_RIT, RITUALI, ritualeDellOra, statoRituale, disegnaCorpiRituali, render } from '../app/app';
+import { schermo, GRUPPI_RIT, RITUALI, ritualeDellOra, statoRituale, disegnaCorpiRituali, giroDiDisegno, render } from '../app/app';
 import type { Rituale } from '../app/app';
 
 function Riga({ r, adesso, aperto, onApri }: {
@@ -51,9 +51,31 @@ export default function Rituali() {
   }
   const aperti = schermo.ritualiAperti;
 
-  /* i corpi si disegnano dopo ogni commit: React ha appena rifatto i
-     contenitori delle sezioni aperte, e sono vuoti finché non ci si scrive */
-  useEffect(() => { disegnaCorpiRituali(); });
+  /* I CORPI NON SI RIFANNO A OGNI RIDISEGNO, e questa riga è tutta la
+     differenza fra tenere quello che stai scrivendo e buttarlo via.
+
+     I corpi dei rituali li scrive `disegnaCorpiRituali` con `innerHTML`:
+     React quei nodi non li tocca — in JSX sono `div` vuoti — quindi
+     sopravvivono a un suo ridisegno da soli. Quello che li cancellava era
+     questo effetto, che girava a OGNI commit: bastava che `aggiungiLezione`
+     mandasse `lm:change` (il tasto «Salvala fra le Scoperte» sotto alla
+     review della sera) e la review appena scritta, non ancora salvata,
+     spariva dal campo.
+
+     Nel codice di prima non succedeva perché le due strade erano separate:
+     `render()` rifaceva la schermata, mentre l'ascoltatore di `lm:change`
+     aggiornava SOLO la colonna degli stati. Qui la colonna la disegna React
+     e si aggiorna da sé a ogni ridisegno; i corpi si rifanno quando cambia
+     il giro di `render()` o quando si apre o chiude una sezione — cioè
+     quando c'è un contenitore nuovo e vuoto da riempire.
+     `prove/lezioni.js` è la prova che lo pretende. */
+  const chiave = giroDiDisegno() + '|' + Object.keys(aperti).sort().join(',');
+  const disegnati = useRef('');
+  useEffect(() => {
+    if (disegnati.current === chiave) return;
+    disegnati.current = chiave;
+    disegnaCorpiRituali();
+  });
 
   const apri = (id: string, bottone: HTMLElement) => {
     /* la riga resta dove sta: si tiene la sua posizione, così aprire una

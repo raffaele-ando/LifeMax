@@ -455,3 +455,21 @@ Perché `aes128gcm` e non `aesgcm`: `aesgcm` è lo schema vecchio, e il servizio
 push di Apple — quello che serve le app aggiunte alla schermata Home
 dell'iPhone — accetta solo il nuovo. Con quello vecchio le notifiche
 arriverebbero su Android e non sull'iPhone.
+
+---
+
+## `chiavi.html` sta due volte, apposta
+
+`chiavi.html` è una PAGINA DEL SITO — genera la coppia VAPID nel browser, e il
+link per arrivarci sta nel pannello dei promemoria — quindi deve finire in
+`docs/`, e in `docs/` ci finisce quello che sta in `public/`. Il resto di
+questa cartella no: gira su Cloudflare, e pubblicarlo vorrebbe dire mettere in
+rete del codice che là non serve a nessuno. Per questo si copia un file solo
+invece di dichiarare tutta la cartella come pubblica.
+
+La copia buona è questa. Si cambia qui, e si ricopia:
+
+    cp promemoria/chiavi.html public/promemoria/chiavi.html
+
+`prove/promemoria.js` controlla che le due siano la stessa: se divergono, il
+link apre una pagina che non è quella che è stata scritta.

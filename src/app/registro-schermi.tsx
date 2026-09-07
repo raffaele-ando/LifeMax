@@ -38,6 +38,7 @@ import Giornata from '../schermi/Giornata';
 import Panoramica from '../schermi/Panoramica';
 import Rituali from '../schermi/Rituali';
 import Adesso from '../schermi/Adesso';
+import Lab from '../schermi/Lab';
 
 import Filtri from '../fogli/Filtri';
 import Menu from '../fogli/Menu';
@@ -87,7 +88,10 @@ type Schermo = ComponentType<{ fila: HTMLElement | null }>;
 
 const SCHERMI: Record<string, Schermo> = {
   inbox: Attivita, scienza: Scienza, esperimenti: Scoperte,
-  giornata: Giornata, plancia: Panoramica, rituali: Rituali, oggi: Adesso
+  giornata: Giornata, plancia: Panoramica, rituali: Rituali, oggi: Adesso,
+  /* il laboratorio si disegna da sé dentro al suo contenitore, ma passa da
+     qui come tutti: `#vista` deve avere un padrone solo */
+  lab: Lab
 };
 
 /* quali schermate hanno una fila di linguette propria, e com'è fatta.

@@ -10,76 +10,46 @@ vista **Scienza** dentro l'app e la tabella sotto).
 
 ## Avvio
 
-Resta un sito statico: nessun server, nessun framework, nessuna compilazione
-per farlo partire.
+TypeScript + React + Vite. Serve `npm install` una volta, e poi:
 
 ```bash
-# 1) doppio click su index.html, oppure
-# 2) un server statico qualsiasi:
-python3 -m http.server 8080   # → http://localhost:8080
+npm run dev            # server di sviluppo, ricarica a caldo
+npm run build:nuovo    # tsc --noEmit && vite build → esce in docs/
+npm run tipi           # solo il controllo dei tipi
 ```
 
-## Il build
+Il sito costruito sta in **`docs/`**, ed è quello che GitHub Pages serve — il
+ramo così com'è, senza nessun passaggio di build. Vuol dire che `docs/` va
+**committato**, e che se è vecchio il sito è vecchio: `node prove/pacco.js`
+ricostruisce in una cartella temporanea e lo confronta, così quel «vecchio» si
+scopre lì invece che in rete.
 
-`index.html` è **generato**. Il file scritto a mano è `index.sorgente.html`: si
-cambia quello, e poi si ricostruisce.
+## Com'è fatto
 
-```bash
-npm install          # una volta sola: serve esbuild, e basta quello
-node costruisci.mjs  # scrive assets/pacco/ e riscrive index.html
+Un motore solo: `tsc` per i tipi, Vite per il pacco, React per le schermate.
+Prima erano due build — esbuild per il sito e Vite in modalità libreria per
+l'isola React — e due motori vogliono dire due posti dove una regola può
+essere diversa: infatti per un giro intero l'isola è finita nel pacco in
+versione di sviluppo senza che nessuno lo notasse.
+
 ```
-
-Cosa fa, e perché. Il browser, all'apertura, si scaricava **1,1 MB di codice**
-— 323 KB compressi — e su un telefono in giro per la città lo schermo restava
-vuoto per oltre due secondi. Il 40% di quel megabyte erano commenti e spazi:
-nel sorgente valgono più del codice, nel browser sono peso morto. Il build li
-tiene dove servono.
-
-- unisce i sette script in **un** file solo, nell'ordine in cui stanno
-  nell'HTML — che conta, perché `forma.js` disegna già la prima schermata e
-  caricato dopo si vedrebbe un lampo di angoli tondi normali. Il nome del
-  sorgente resta scritto in cima a ogni pezzo, così un errore in produzione
-  può ancora dire da dove viene;
-- tiene **fuori il Design lab**: 101 KB fra codice e stile, analizzati a ogni
-  avvio per una pagina in cui non entra quasi nessuno. Adesso se li va a
-  prendere da sé quando la si apre;
-- lascia `cloud.js` per conto suo, perché è un modulo e importa Firebase da
-  fuori a runtime;
-- mette **l'impronta del contenuto nel nome** di ogni file. Serve soprattutto
-  al contrario di come sembra: appena una riga cambia, cambia il nome, e
-  nessuno si ritrova con mezza app vecchia in cache e mezza nuova. (Su GitHub
-  Pages la cache dura dieci minuti e non si può allungare; il giorno che il
-  sito sta dietro a un CDN configurabile, con questi nomi si può dire
-  «tienili per sempre» senza pensarci più.)
-
-Quanto pesa, misurato — con la compressione accesa, che è come i file
-arrivano davvero:
-
-| | prima | dopo |
-|---|---|---|
-| codice in tutto | 1168 KB | 583 KB |
-| **scaricato per il primo schermo** (gzip) | **323 KB** | **140 KB** |
-| primo schermo, telefono lento su 4G lenta | 2278 ms | **1417 ms** |
-| primo schermo, telefono lento in locale | 513 ms | 494 ms |
-
-Le ultime due righe dicono la stessa cosa da due lati, e vale la pena
-leggerle insieme: **il guadagno è nei byte, non nella CPU.** Se i file sono
-già lì — sul computer, in locale — togliere commenti e spazi non cambia
-niente: 513 ms contro 494. È quando devono attraversare una rete che mezzo
-megabyte in meno si sente, e allora l'attesa si dimezza. Misurato con la CPU
-rallentata sei volte, «4G lenta» (1,6 Mbps, 150 ms di latenza), cinque
-aperture a freddo per lato, mediana.
-
-`node prove/pacco.js` rifà i conti in memoria e li confronta col disco: se
-qualcuno cambia il codice e dimentica di ricostruire, se ne accorge lì invece
-che in rete. **Le prove girano sul pacco**, non sui sorgenti — cioè su quello
-che gira davvero: si ricostruisce prima di lanciarle.
+src/
+  main.tsx            l'avvio: l'ordine in cui i pezzi entrano, e perché
+  index.html          lo scheletro (un solo <script type="module">)
+  app/app.ts          il motore: router, navigazione, fogli, toast, timer,
+                      gesti, e i pezzi di corpo che i componenti chiamano
+  app/registro-schermi.tsx   il solo modulo che conosce React e app.ts insieme
+  schermi/*.tsx       le sette schermate
+  fogli/*.tsx         i quindici pannelli, più fogli/porte.ts (il contratto
+                      delle loro proprietà)
+  pezzi/              i pezzi dell'interfaccia, usaLM, e le quattro funzioni
+                      di stringa che restano
+  dati/dati.ts        la verità: fusione, lapidi, backup — non si tocca
+  tipi/stato.ts       la forma dei dati, e COME_UNIRE
+  segni/ grafici/ forma/ nuvola/ promemoria/ registro/ lab/
+```
 
 ### Il registro degli schermi, e perché il pacco non si divideva
-
-Il build ha fatto la metà facile: togliere commenti e spazi, e cacciare fuori
-il Design lab. La metà difficile — **caricare una schermata per volta** — non
-si poteva fare, e il motivo era una riga sola.
 
 `render()` nominava una per una tutte e otto le viste, in una catena di `if`.
 E ogni vista, quando cambia qualcosa, chiama `render()`. Due archi, e il grafo
@@ -89,12 +59,11 @@ quindi non si possono separare — e siccome vale per tutte, non se ne separa
 nessuna. Misurato: la chiusura di ogni vista era **444 KB**, cioè tutto il
 file, e la parte «solo sua» era **zero** per tutte e sette.
 
-Adesso le viste si iscrivono (`schermo('inbox', vistaInbox)`) e `render` le
+Adesso le viste si iscrivono (`registraSchermo('inbox', …)`) e `render` le
 cerca. Il registro non fa niente di più di quella catena di `if`: è solo
 l'unico modo di scriverla che non incolla ogni schermata a tutte le altre.
 
-**E il numero che ne esce è più piccolo di quanto sembrasse.** Tagliato
-l'anello, `app.js` si divide così:
+Tagliato l'anello, il codice si divide così:
 
 | | |
 |---|---|
@@ -108,157 +77,138 @@ righe di elenco, i pannelli, le pastiglie, i grafici — e quei pezzi servono
 dappertutto. Vale la pena farlo, ma è il secondo ordine di grandezza, non il
 primo.
 
-Per confronto, quanto codice viene davvero eseguito girando **tutte** le
-schermate, in chiaro e in scuro, su telefono e su desktop:
+**Ed è quel taglio che rende possibile la regola di adesso: `app.ts` non
+importa React.** Il registro è vuoto e chi disegna si iscrive; il modulo che
+conosce tutti e due — `app/registro-schermi.tsx` — è uno, e lo importa
+`main.tsx` all'avvio. Se `app.ts` conoscesse i componenti, l'anello
+tornerebbe con un altro nome.
 
-| | nel pacco | acceso almeno una volta |
-|---|---|---|
-| JavaScript | 360 KB | 119 KB (33%) |
-| CSS | 121 KB | 48 KB (40%) |
+Due cose si caricano da sé quando servono, e non prima:
 
-Il 33% del JavaScript va letto con prudenza — «mai eseguito» non vuol dire
-«mai servito»: buona parte sono i gestori che partono quando tocchi qualcosa,
-e un giro automatico non tocca niente. I **73 KB di CSS che non si accendono
-mai**, invece, sono più solidi: quelli sono regole che non trovano nessuno.
+- **il Design lab**, sessantun kilobyte di codice e settantacinque di stile
+  per una schermata in cui non entra quasi nessuno. È un `import()` dentro a
+  `caricaLab`: Vite lo riconosce e mette quel codice in un pezzo a parte.
+  Prima erano uno `<script>` e un `<link>` costruiti a mano coi nomi presi da
+  una tabella che scriveva il build — una tabella in meno da tenere allineata;
+- **la nuvola**, che va a prendere l'SDK di Firebase dalla rete. L'app
+  funziona lo stesso senza — solo su questo dispositivo — e farle aspettare la
+  rete vorrebbe dire uno schermo bianco a chi non ce l'ha.
 
-### I pezzi, e l'isola React
+`node prove/pacco.js` tiene ferme tutte e due, perché un `import` messo in
+cima al file le rimetterebbe dentro al pezzo principale senza che Vite si
+lamenti.
 
-**I pezzi** (`assets/pezzi.js`). In `app.js` c'erano **566 punti** in cui una
-forma che esiste già veniva riscritta a mano come stringa: 86 tasti, 35
-schede, 31 righe di elenco, 30 campi. Riscrivere una forma a mano non è più
-lento — è più **fragile**: la differenza fra due righe scritte in due punti
-diversi non si vede finché qualcuno non cambia il CSS, e allora si rompe in
-una schermata sola. È così che sono nati quasi tutti i difetti dell'audit.
+### Perché i tipi, e cosa hanno trovato
 
-Ogni pezzo è una funzione pura: `PZ.tasto({ testo, ico, tipo, misura })`.
-Le proprietà dicono il **ruolo** e mai l'aspetto — `tipo: 'pieno'` e non
-`tipo: 'blu'` — così la regola di `DESIGN.md` («uno pieno per schermata») vive
+`tsconfig.json` è stretto davvero — `strict`, più
+`noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`, `noUnusedLocals` —
+e non per gusto del rigore. Questa app è arrivata a diecimila righe con dieci
+oggetti globali che si parlavano fra loro, e i difetti che ha prodotto — una
+casella che mostrava il testo della nota di prima, un campo senza regola di
+fusione, uno stato letto un disegno troppo presto — sono tutti difetti di
+**contratto fra due pezzi**: esattamente quelli che un tipo prende a
+compilazione invece di farli scoprire a chi usa l'app.
+
+Cos'è venuto fuori convertendo, e nessuna prova lo guardava:
+
+- **`s.misure` non esiste, e non è mai esistito.** Una riga del registro
+  tecnico scriveva «misure 0» in ogni fotografia dell'ambiente, da mesi.
+- **Il `Timer` nei dati aveva quattro campi che nessuno dichiarava**
+  (`pausaFine`, `daAvvio`, `concentrato`, `fermatoA`): li scriveva
+  `aggiornaTimerDati` una chiave per volta, senza guardare.
+- **`Nodo.passoDi` non c'era**: il pannello della giornata lo leggeva su un
+  oggetto che non ce l'aveva, quindi «il passo resta nel progetto» non è mai
+  comparso.
+- **`togglePasso` non tornava niente** e la scheda passava quel niente a
+  `feedbackSpunta`, che con `undefined` sta zitta: spuntare un passo di un
+  progetto era l'unico gesto dell'app senza risposta.
+- **`filo()` in `forma.js` era morto** da quando `anello()` l'ha sostituito,
+  con la sua cache e il suo contatore. L'ha trovato `noUnusedLocals`.
+- **Due punti in `charts.js` leggevano una variabile riempita in un
+  `forEach`** e letta dopo — la stessa forma del difetto che in React è
+  costato uno stato letto troppo presto.
+- **`backupRemoto` poteva scrivere `data: undefined`**, che Firestore
+  rifiuta: la copia di sicurezza non si faceva e nessuno lo sapeva.
+
+C'è **una** asserzione non controllata in tutto il progetto, `presa()`, e sta
+in un file suo (`src/tipi/presa.ts`) perché così si può contare.
+
+### I pezzi
+
+In `app.js` c'erano **566 punti** in cui una forma che esiste già veniva
+riscritta a mano come stringa: 86 tasti, 35 schede, 31 righe di elenco, 30
+campi. Riscrivere una forma a mano non è più lento — è più **fragile**: la
+differenza fra due righe scritte in due punti diversi non si vede finché
+qualcuno non cambia il CSS, e allora si rompe in una schermata sola. È così
+che sono nati quasi tutti i difetti dell'audit.
+
+Ogni pezzo dice il **ruolo** e mai l'aspetto — `tipo="pieno"` e non
+`tipo="blu"` — così la regola di `DESIGN.md` («uno pieno per schermata») vive
 nel codice invece che nelle teste.
 
-`prove/pezzi.js` è un **cricchetto**: non pretende zero, pretende che il
-numero non salga. Ogni volta che scende si abbassa il tetto. Il debito si paga
-a rate e nessuno può aggiungerne senza accorgersene.
+`prove/pezzi.js` sono **due cricchetti**, e dicono la stessa cosa da due lati:
+quante volte una forma è scritta a mano (230, tetto 230) e quali pezzi
+esistono e non li chiama nessuno (13 su 19). Non sono due problemi, è uno — le
+schermate scrivono il markup invece di chiedere il pezzo. Nessuno dei due
+numeri può salire; ogni volta che scendono si abbassa il tetto. Il debito si
+paga a rate.
+
+Il cricchetto leggeva solo `app.js` mentre le stesse forme le scrivevano anche
+i componenti: **misurava mezzo codice.** Adesso legge tutto `src/`, `class` e
+`className` insieme, e i tetti ripartono da quello che c'è davvero — il numero
+è salito perché è salito il campo visivo, non il debito.
 
 Il catalogo completo — tutte le forme, i doppioni che ciascuna assorbe e
 l'ordine in cui migrarle — sta in **`COMPONENTI.md`**.
 
-**L'isola React** (`react/`, costruita con Vite). La migrazione è a fico
-strangolatore: si converte una schermata per volta e finché non è finita
-convivono le due. Nel router c'è **un `if`**, e l'interruttore sta in
-*Impostazioni → Schermate nuove*. Se si rompe, `?classico=1` nell'indirizzo
-spegne tutto **anche se l'app non risponde più**.
+### Cosa ha insegnato React
 
-    npm run build:react     # costruisce l'isola in assets/react/
-    npm run build           # e poi il pacco, che se la prende da lì
+Le sette schermate e i quindici pannelli sono passati **uno per volta**, e
+finché non era finito convivevano i due disegni della stessa cosa: nel router
+un `if`, e un interruttore in *Impostazioni → Schermate nuove* più
+`?classico=1` nell'indirizzo, che spegneva tutto **anche se l'app non
+rispondeva più**. A pretendere «identica» c'erano due prove che disegnavano
+ogni schermata e ogni pannello nei due modi e confrontavano l'albero elemento
+per elemento — tag, classi, testo, id e i `data-` da cui dipendono i comandi:
+**sedici sezioni su sette schermate e quindici pannelli, tutti identici**.
 
-Quanto costa, misurato — ed è il numero che decide se questa strada si
-percorre fino in fondo:
+Adesso il codice di prima non c'è più, quindi non c'è più nessun posto a cui
+tornare, e un interruttore che porta dove non c'è niente è peggio che non
+averlo. Quelle due prove sono diventate `prove/impronte.js`: la stessa
+macchina, un'altra domanda — l'albero è ancora quello di ieri? Le impronte
+stanno in `prove/impronte.json` e si aggiornano con `--aggiorna`, così una
+differenza voluta si vede nel diff accanto al codice che l'ha causata.
 
-| | compresso |
-|---|---|
-| React 19 + ReactDOM, versione di sviluppo | 176 KB |
-| React 19 + ReactDOM, versione di produzione | **61 KB** |
-| **Preact con `preact/compat`, stesso JSX** | **9 KB** |
+Le quattro cose che si sono imparate portandole, in ordine di quanto costano:
 
-Si è scelto **React**, non Preact: la scelta è di chi usa l'app, e i numeri
-qui sopra servivano a farla con qualcosa in mano invece che a occhio. Chi non
-accende l'interruttore non scarica niente lo stesso: l'isola sta fuori dal
-pacco, come il Design lab.
+**«Cambiato» non vuol dire la stessa cosa di qua e di là.** Nel browser
+l'evento `change` di un campo di testo o di una data arriva quando hai finito
+— esci dal campo, o premi invio. `onChange` di React arriva a ogni tasto
+premuto: è `input` con un altro nome. Per rinominare un'area voleva dire un
+salvataggio (e un ridisegno di mezza app) per carattere; per la scadenza di
+un'attività, una data scritta a metà salvata come «nessuna». Quei campi
+tengono l'ascoltatore vero del browser, e la ragione sta in
+`src/pezzi/nativo.ts`.
 
-**Tutte e sette le schermate sono convertite**, e React è acceso di serie. Il
-codice di prima resta al suo posto e non è morto: è la via di ritorno, e si
-prende in due modi — l'impostazione *Schermate nuove*, oppure `?classico=1`
-nell'indirizzo, che funziona **anche se l'app non risponde più**. Finché
-quelle due strade ci sono, la scelta è reversibile in un tocco.
+**`defaultValue` vale solo al montaggio.** Il codice di prima rifaceva tutto
+`#sheet-corpo` a ogni ridisegno, quindi il campo era un elemento nuovo e
+ripartiva da quello che dicono i dati; React invece riusa il nodo che sta
+nella stessa posizione. Togliendo la scadenza di un'attività, il campo
+continuava a mostrare la data appena tolta. L'ha visto `prove/campi.js`. La
+cura è una `key` che cambia: il nodo rinasce, che è esattamente quello che
+succedeva prima.
 
-«Identica» non è una parola:
-`prove/gemelle.js` disegna ogni schermata col codice di prima, si prende
-l'albero del DOM, la ridisegna con React e confronta elemento per elemento —
-tag, classi, testo, id e i `data-` da cui dipendono i comandi.
-
-| | |
-|---|---|
-| Adesso | 76 su 76 |
-| La giornata · giorno / settimana / mese / anno | 264 · 334 · 301 · 443 |
-| Attività · sistemare / da fare / abitudini | 61 · 147 · 95 |
-| Panoramica · riepilogo / diario / aree / grafici | 281 · 1806 · 168 · 135 |
-| Rituali | 111 su 111 |
-| Scoperte · registro / esperimenti | 140 · 66 |
-| Perché l'app è fatta così | 178 su 178 |
-
-**Sedici sezioni su sette schermate, tutte identiche.**
-
-**E poi i pannelli.** Le schermate non sono tutto quello che si vede: sopra a
-ognuna si aprono i fogli — la scheda di un'attività, quella di un'abitudine,
-i filtri, il menu, le tue aree, sonno e pasti, e le finestrelle da cui si
-sceglie un timer o si dice com'è andata quando una cosa non è andata.
-
-Vale la stessa regola, e c'è lo stesso strumento a pretenderla:
-`prove/fogli.js` apre ogni pannello col codice di prima e con React e
-confronta quello che sta dentro a `#sheet-corpo`, il titolo in cima e il
-valore dei campi (due pannelli con lo stesso markup e dentro due valori
-diversi non sono lo stesso pannello).
-
-| | |
-|---|---|
-| Scheda di un'attività · divisa in passi / semplice | 93 · 61 |
-| Scheda di un'abitudine | 143 |
-| Le review di prima | 696 |
-| Sonno e pasti | 109 |
-| Le tue aree | 101 |
-| Guarda solo (i filtri) | 73 |
-| Primi passi | 73 |
-| Una cosa che hai capito | 45 |
-| Diventa un'abitudine | 41 |
-| Quanto ci stai (la scelta del timer) | 31 |
-| Non del tutto | 24 |
-| Menu | 22 |
-| Quando fare questo passo | 15 |
-| Registro tecnico | 15 |
-| Backup e ripristino | 11 |
-
-Quindici, e ne mancano due che contano: le **Impostazioni**, da sole grandi
-quanto una schermata, e i **Promemoria**, che di là dal markup hanno
-l'iscrizione alle notifiche e i messaggi che spiegano quale delle due chiavi
-hai sbagliato. Sono due pannelli che si sistemano una volta e poi non si
-toccano più — cioè esattamente quelli che, a romperli, si rompono in silenzio.
-
-Un pannello che sta nell'isola ma non ha la sua riga nella tabella delle
-aperture non viene saltato in silenzio: la prova lo segnala. Un pannello
-convertito e mai guardato è come non averlo convertito.
-
-Una cosa che i pannelli hanno insegnato e le schermate no: **«cambiato» non
-vuol dire la stessa cosa di qua e di là.** Nel browser l'evento `change` di un
-campo di testo o di una data arriva quando hai finito — esci dal campo, o
-premi invio. `onChange` di React arriva a ogni tasto premuto: è `input` con un
-altro nome. Per rinominare un'area voleva dire un salvataggio (e un ridisegno
-di mezza app) per carattere; per la scadenza di un'attività, una data scritta
-a metà salvata come «nessuna». Quei campi tengono l'ascoltatore vero del
-browser, e la ragione sta scritta in `react/src/nativo.js`.
-
-**E `defaultValue` vale solo al montaggio.** Il codice di prima rifà tutto
-`#sheet-corpo` a ogni ridisegno, quindi il campo è un elemento nuovo e riparte
-da quello che dicono i dati; React invece riusa il nodo che sta nella stessa
-posizione. Togliendo la scadenza di un'attività, il campo continuava a
-mostrare la data appena tolta. L'ha visto `prove/campi.js`. La cura è una
-`key` che cambia: il nodo rinasce, che è esattamente quello che succedeva
-prima.
-
-**E `defaultValue` in una CODA CHE AVANZA riscrive i dati.** È la stessa
-trappola di sopra, ma con un morso diverso, e l'ha trovata chi usa l'app —
-non una prova. In «Da sistemare» smisti una nota, la coda avanza, e React
-riusa il nodo che sta nella stessa posizione: dentro la casella resta il testo
-della nota precedente. Poi il tasto «Oggi» legge il campo, lo trova diverso
-dal testo della nota, e lo **salva**: la nota nuova viene ribattezzata col
-nome di quella appena smistata. Una coda di cinque note diventa cinque copie
-della prima, e i testi originali non tornano più. Il codice di prima non ce
-l'aveva, perché rifà tutto `#vista` a ogni giro.
-
-Nessuna delle prove lo poteva vedere: guardano **uno schermo**, disegnato una
+**E in una CODA CHE AVANZA riscrive i dati.** Stessa trappola, morso diverso,
+e l'ha trovata chi usa l'app — non una prova. In «Da sistemare» smisti una
+nota, la coda avanza, e React riusa il nodo che sta nella stessa posizione:
+dentro la casella resta il testo della nota precedente. Poi il tasto «Oggi»
+legge il campo, lo trova diverso dal testo della nota, e lo **salva**: la nota
+nuova viene ribattezzata col nome di quella appena smistata. Una coda di
+cinque note diventa cinque copie della prima, e i testi originali non tornano
+più. Nessuna prova lo poteva vedere: guardano **uno schermo**, disegnato una
 volta. Da qui `prove/smista.js`, che conta la **sequenza** — smisti, la coda
 avanza, e la domanda è se quello che vedi adesso è la nota di adesso, gesto
-per gesto fino a svuotarla, di qua e di là. Rimettendo il difetto dà 11
-problemi; togliendolo, zero.
+per gesto fino a svuotarla.
 
 **E la più insidiosa: uno stato di React si vede al disegno DOPO.** La scelta
 di «Non del tutto» stava in due variabili normali — toccare una pastiglia le
@@ -272,38 +222,37 @@ riferimento risponde a «cos'hai scelto» adesso — e dove il codice di prima
 leggeva i CAMPI (il ritmo di base, il nome di una nuova area) li rilegge anche
 questo. Leggere i campi è l'unica risposta che non può essere in ritardo.
 
-Portandola sono venute fuori quattro differenze, una alla volta, e la più
-istruttiva è la seconda: `sottoNav()` **sposta** il nodo delle linguette della
-vista dentro a una riga nuova, dopo che la pagina si è disegnata. Per il
-codice di prima è una furbizia che funziona; per React è un figlio portato via
-dall'albero, e al ridisegno dopo `insertBefore` lo cerca in un padre in cui
-non c'è più. La soluzione è un **portale**: il contenitore delle linguette lo
-crea `monta()` a mano come figlio diretto di `#vista`, e React ci disegna
-dentro — il nodo può finire dove vuole, di un portale gli importa il
-contenitore e non dove sta appeso.
+**E una cosa dei moduli, non di React.** `sottoNav()` **sposta** il nodo delle
+linguette della vista dentro a una riga nuova, dopo che la pagina si è
+disegnata. Per il codice di prima è una furbizia che funziona; per React è un
+figlio portato via dall'albero, e al ridisegno dopo `insertBefore` lo cerca in
+un padre in cui non c'è più. La soluzione è un **portale**: il contenitore
+delle linguette lo crea il registro a mano come figlio diretto di `#vista`, e
+React ci disegna dentro — il nodo può finire dove vuole, di un portale gli
+importa il contenitore e non dove sta appeso.
 
-**Portare in React non è ridisegnare.** Una schermata entra fra le convertite
-solo quando è *identica* a quella di prima — stesso markup, stesse classi,
-stesso comportamento. È un cambio di motore, e chi guarda non se ne deve
-accorgere. (Il primo tentativo qui era una versione «mia» di Attività, con
-altre linguette e altro contenuto. Era sbagliato ed è stato tolto.)
+**Portare in React non è ridisegnare.** Una schermata entrava fra le
+convertite solo quando era *identica* a quella di prima. È un cambio di
+motore, e chi guarda non se ne deve accorgere. (Il primo tentativo qui era una
+versione «mia» di Attività, con altre linguette e altro contenuto. Era
+sbagliato ed è stato tolto.)
 
-(I 176 KB della prima riga non sono un refuso: in modalità libreria Vite non
-sostituisce `process.env.NODE_ENV`, e senza una riga di configurazione nel
-pacco finisce la versione di sviluppo. Funziona tutto, costa il doppio, e non
-fa rumore.)
 
-### La via d'uscita è di questo dispositivo
+### Una via d'uscita che qualcun altro può annullare da lontano non è una via d'uscita
 
-L'interruttore *Schermate nuove* è la leva che si tira quando qualcosa si è
-rotto. Stava in `profilo`, che si sincronizza — e `profilo` si fonde prendendo
-quello del documento più recente: bastava che da un altro dispositivo
-arrivasse un `react: true` più nuovo, e lo «spento» appena messo si
-riaccendeva da solo. **Una via d'uscita che qualcun altro può annullare da
-lontano non è una via d'uscita.** Adesso vive in `localStorage`, accanto a
-`?classico=1`, che per natura è di questo browser e di nessun altro;
-`profilo.react` si legge ancora, ma solo come ultima parola per chi ce l'aveva
-già messo.
+L'interruttore *Schermate nuove* non c'è più — non c'è più il posto dove
+tornare — ma quello che ha insegnato resta, e vale per ogni prossima leva
+d'emergenza. Stava in `profilo`, che si sincronizza, e `profilo` si fonde
+prendendo quello del documento più recente: bastava che da un altro
+dispositivo arrivasse un `react: true` più nuovo, e lo «spento» appena messo
+si riaccendeva da solo. È finito in `localStorage`, che per natura è di questo
+browser e di nessun altro.
+
+Il campo `profilo.react` è ancora dichiarato in `tipi/stato.ts`, e c'è un
+commento accanto che dice perché: `COME_UNIRE` pretende una regola per ogni
+campo, e i dati di chi ce l'aveva già messo quel campo ce l'hanno ancora.
+Togliere la dichiarazione lasciando il dato vivo vorrebbe dire un campo senza
+regola alla prima fusione — che è esattamente il difetto di `demoChiusa`.
 
 ### Unire non si può disfare — e per un caso serviva poterlo
 
@@ -341,8 +290,9 @@ sicurezza dell'accesso non la guardava nessuno.
 
 ### Dove sta ospitato, e cosa cambierebbe a spostarlo
 
-Oggi è su **GitHub Pages**: `git push` e in un minuto è online. Ogni risposta
-esce con `Cache-Control: max-age=600`, e non si può cambiare.
+Oggi è su **GitHub Pages**, che serve il ramo così com'è: `git push` e in un
+minuto è online — nessun passaggio di build, per questo `docs/` è committato.
+Ogni risposta esce con `Cache-Control: max-age=600`, e non si può cambiare.
 
 C'è un `_headers` pronto per **Cloudflare Pages**, che quel limite non ce l'ha
 e che comprime in Brotli invece che in gzip. Quanto vale, misurato allo stesso
@@ -356,8 +306,8 @@ modo di sopra:
 
 Un decimo di secondo per parte. **Vale la pena perché costa niente, non
 perché cambia la vita** — e i 585 KB del build, quelli, valgono dieci volte
-tanto. Il passaggio sono due cose: collegare il repository su Cloudflare
-Pages senza comando di build (i file costruiti stanno già nel repository), e
+tanto. Il passaggio sono due cose: collegare il deposito su Cloudflare Pages
+senza comando di build (i file costruiti stanno già dentro, in `docs/`), e
 aggiungere il nuovo dominio ai **domini autorizzati** di Firebase, se no
 l'accesso con Google smette di funzionare.
 
@@ -607,18 +557,40 @@ errore) gli XP vengono **restituiti**, così il conteggio resta corretto.
 ## Struttura
 
 ```
-index.sorgente.html shell scritta a mano (nav, overlay cattura, toast)
-index.html          ← generato da costruisci.mjs: non si tocca
-costruisci.mjs      il build: un pacco solo, minificato, con l'impronta nel nome
-assets/pacco/       ← generato: quello che il browser scarica davvero
-assets/app.css      design system: token, 2 skin, chiaro/scuro, mobile
-assets/icons.js     iconografia SVG proprietaria + logo Google
-assets/data.js      stato, XP/streak/esperimenti, hydrate/snapshot, seed demo
-assets/charts.js    micro-libreria SVG: sparkline, trend, heatmap, barre, anello, A/B
-assets/app.js       router, viste, timeline "La giornata", onboarding, cattura, UI account
-assets/cloud.js     Firebase: accesso Google + sync Firestore (modulo ES)
+src/index.html      lo scheletro (nav, overlay cattura, toast) e un <script>
+src/main.tsx        l'avvio: l'ordine in cui i pezzi entrano, e perché
+src/app/app.ts      router, navigazione, fogli, toast, timer, gesti, onboarding,
+                    e i pezzi di corpo che i componenti chiamano
+src/app/registro-schermi.tsx   chi disegna che cosa: il solo modulo che
+                    conosce React e app.ts insieme
+src/schermi/*.tsx   le sette schermate
+src/fogli/*.tsx     i quindici pannelli
+src/fogli/porte.ts  che proprietà vuole ciascuno: un contratto, non un elenco
+src/pezzi/          i pezzi, usaLM (il ponte coi dati), le funzioni di stringa
+src/dati/dati.ts    stato, XP/serie/esperimenti, fusione, lapidi, seed demo
+src/tipi/stato.ts   la forma dei dati, e COME_UNIRE
+src/segni/segni.ts  iconografia SVG proprietaria + logo Google
+src/grafici/        micro-libreria SVG: sparkline, trend, heatmap, barre, anello, A/B
+src/forma/          la curva di Apple applicata al DOM vero, a runtime
+src/nuvola/         Firebase: accesso Google + sync Firestore
+src/promemoria/     le notifiche: il pezzo che parla col Worker postino
+src/registro/       il registro tecnico
+src/stile/app.css   design system: token, 2 skin, chiaro/scuro, mobile
+public/             icone, manifest, sw.js, _headers: copiati così come sono
+docs/               ← il sito costruito, committato: è quello che Pages serve
+prove/              trenta controlli, e prove/dove.js dice da dove servire
 firestore.rules     regole di sicurezza (accesso limitato ai propri dati)
+promemoria/         il Worker su Cloudflare, con le sue prove
+segni/              gli strumenti che generano le icone (Node, fuori dal sito)
 ```
+
+**Cosa non c'è più.** `costruisci.mjs` e `assets/` (il build a esbuild e i
+nove file che serviva), `index.sorgente.html` con `index.html` generato,
+`react/` (l'isola e il suo Vite in modalità libreria), `assets/pezzi.js` (le
+quindici forme come stringhe: ne restano quattro in `src/pezzi/stringhe.ts`,
+che `app.ts` usa dove costruisce ancora HTML). E le dieci finestre globali —
+`LM_APP`, `LM_REACT`, `LM_PACCO`, `PZ` — che erano il modo di avere un
+confine senza avere i moduli.
 
 ### Grafici
 

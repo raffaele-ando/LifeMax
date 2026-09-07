@@ -1,8 +1,18 @@
 # Prove
 
-Ventinove controlli automatici che guardano una cosa sola ciascuno, ma
+Ventotto controlli automatici che guardano una cosa sola ciascuno, ma
 quella cosa fa morire l'app — o la fa diventare illeggibile — quando si
 rompe. Sono nati da problemi veri.
+
+**DA DOVE SI SERVE IL SITO lo dice `dove.js`, in un posto solo.** Le prove
+pilotano un browser vero e interrogano il DOM da fuori: non sanno né gli
+importa chi ha scritto il markup, ed è per questo che sono sopravvissute
+intere al passaggio a TypeScript + React + Vite — cambiava il percorso.
+Adesso si serve `docs/`, quello che esce dal build, e quelle che leggono il
+CODICE invece di guardare la pagina leggono `src/` tutto intero: prima
+avevano un elenco di file scritto a mano, e un elenco va aggiornato quando
+nasce un modulo — il giorno che qualcuno se ne dimentica, la prova continua a
+dire «tutto a posto» avendo guardato metà del codice.
 
 Le prove dei promemoria stanno di là, in `promemoria/`, perché lì c'è anche
 la parte che gira sul server: `prova.mjs` (la cifratura, byte per byte contro
@@ -623,18 +633,31 @@ genera le chiavi, in un browser vero).
   Nasce da «c'è un bug con questi bottom sheet, si blocca tutto» e da «non si
   riesce a portare giù la tendina».
 
-- **pacco.js** — IL PACCO È QUELLO DEI SORGENTI DI ADESSO. Da quando c'è un
-  build, `index.html` e `assets/pacco/` sono roba generata, e un build ha un
-  solo modo di fare danni: qualcuno cambia il codice, prova aprendo i
-  sorgenti, non ricostruisce, e in rete resta la versione di ieri. Non se ne
-  accorge nessuno finché non lo usa qualcuno. Questa prova rifà i conti del
-  build **in memoria** — stesso codice, `piano()` dentro `costruisci.mjs` —
-  e li confronta con quello che c'è sul disco, file per file e byte per byte.
-  Poi guarda le tre cose che il build può rompere in silenzio: che nel pacco
-  ci siano ancora tutti e sette gli script (se un `<script>` sparisce dal
-  sorgente, il build non si lamenta: fa un pacco più piccolo e l'app si rompe
-  in pagina), che `forma.js` stia prima di `app.js`, e che il Design lab sia
-  rimasto fuori — sono i 101 KB per cui il build esiste. Non serve Chromium.
+- **pacco.js** — IL SITO SUL DISCO È QUELLO DEI SORGENTI DI ADESSO. Un build
+  ha un solo modo di fare danni: qualcuno cambia il codice, prova col server
+  di sviluppo, non ricostruisce, e in rete resta la versione di ieri. Non se
+  ne accorge nessuno finché non lo usa qualcuno — e qui il rischio è vero, non
+  teorico: GitHub Pages serve il ramo così com'è, quindi quello che sta in
+  `docs/` **è** il sito. Se `docs/` è vecchio, il sito è vecchio.
+  La prova ricostruisce con Vite in una cartella temporanea e confronta con
+  `docs/`, file per file e byte per byte. Il build è deterministico — il nome
+  di ogni file porta dentro l'impronta del suo contenuto — quindi una
+  differenza vuol dire che i sorgenti sono cambiati dopo l'ultimo build.
+  Le mappe dei sorgenti restano fuori dal confronto, e non è una scorciatoia:
+  dentro a una `.js.map` i percorsi sono relativi alla cartella d'uscita, e
+  questa prova costruisce altrove — sarebbero diverse per costruzione, e dire
+  «diverse» a ogni giro vuol dire addestrare chi legge a passarci sopra.
+  Poi guarda le tre cose che il build può rompere in silenzio: che il **Design
+  lab** resti fuori dal pezzo principale (sessantun kilobyte per una pagina in
+  cui non entra quasi nessuno: basta un `import` messo in cima al file e Vite
+  lo mette dentro senza lamentarsi), che la **nuvola** pure, e che nessuna
+  **chiave privata** sia finita nel pacco — un segreto pubblicato è
+  pubblicato, e da lì non si ripara.
+  Cerca una chiave, non il nome del segreto: la prima versione cercava la
+  stringa `VAPID_PRIVATA` e diventava rossa subito, per due messaggi che quel
+  nome lo SCRIVONO a chi installa da sé. Sono istruzioni, non chiavi — e una
+  prova che si lamenta di un'istruzione è una prova che si impara a ignorare.
+  Non serve Chromium.
 
 - **intestazioni.js** — LE INTESTAZIONI DELLA CACHE, PRIMA CHE FACCIANO DANNI.
   `_headers` è un file che non si prova aprendo il sito: se è sbagliato, il
@@ -652,6 +675,11 @@ genera le chiavi, in un browser vero).
   pretende che chi promette «per sempre» su una cartella abbia l'impronta nel
   nome di ogni file lì dentro. Non serve Chromium, e in coda si dà in pasto
   tutte e due le trappole scritte a mano per far vedere che le riconosce.
+  L'impronta c'è ancora, ed è scritta in un altro alfabeto: esbuild la
+  scriveva in esadecimale fra due punti (`pacco.fdad6673cc.js`), Vite in
+  base64url dopo un trattino (`index-DQOrfnMU.js`). La cosa che conta è la
+  stessa — se cambia una riga cambia il nome — e la prova cercava l'alfabeto
+  invece della cosa.
 
 ## E uno che non è una prova
 

@@ -7370,7 +7370,7 @@ export const PRINCIPI: Principio[] = [
    pezzo a parte, e del nome col trattino si occupa lui. Una tabella in meno
    da tenere allineata a mano. */
 let labChiesto: Promise<Lab> | null = null;
-function caricaLab(): Promise<Lab> {
+export function caricaLab(): Promise<Lab> {
   if (labChiesto) return labChiesto;
   labChiesto = Promise.all([
     import('../lab/lab'),
@@ -7387,25 +7387,10 @@ function caricaLab(): Promise<Lab> {
   return labChiesto;
 }
 
-registraSchermo('lab', vistaLab);
-function vistaLab(dove: HTMLElement): void {
-  dove.innerHTML = topbar('Design lab', 'Scegli la base grafica del sito.') +
-    '<div id="lab-radice"></div>';
-  const radice = presa(dove.querySelector<HTMLElement>('#lab-radice'));
-  /* arriva da fuori: su una rete lenta questa attesa si vede, e uno schermo
-     bianco senza spiegazioni sembra un guasto */
-  radice.innerHTML = '<div class="card vuoto">Sto caricando il laboratorio…</div>';
-  void caricaLab().then(function (lab) {
-    /* la schermata può essere cambiata mentre il file arrivava: si scrive
-       solo se quel contenitore sta ancora in pagina */
-    if (!radice.isConnected) return;
-    lab.montaIn(radice);
-  }).catch(function () {
-    if (radice.isConnected) {
-      radice.innerHTML = '<div class="card vuoto">Il laboratorio non si è caricato. Ricarica la pagina.</div>';
-    }
-  });
-}
+/* La schermata sta in `schermi/Lab.tsx`, come tutte le altre. Qui c'era
+   l'ultima scritta a mano, `dove.innerHTML = …`, e non era una
+   semplificazione: `#vista` lo possiede la radice di React, e scriverci
+   sopra gli porta via nodi che lui crede ancora di avere. */
 
 
 /* ============================================================
@@ -7668,7 +7653,23 @@ var sottonavChiave = '';
 window.addEventListener('resize', function () { sottonavChiave = ''; });
 
 var vistaMostrata = '';
+
+/* QUANTE VOLTE SI È DISEGNATO DA CAPO, e a che cosa serve saperlo.
+
+   `render()` e un cambiamento dei dati non sono la stessa cosa, e una
+   schermata che li tratta uguali butta via quello che stai scrivendo.
+   Nel codice di prima la differenza era ovvia perché erano due strade
+   diverse: `render()` rifaceva la schermata, mentre l'ascoltatore di
+   `lm:change` sui Rituali aggiornava SOLO la colonna degli stati — apposta,
+   perché i corpi dei rituali contengono campi a metà.
+   Con React le due strade arrivano allo stesso posto: tutt'e due fanno
+   ridisegnare il componente. Questo contatore le distingue di nuovo — chi
+   deve rifare qualcosa di imperativo lo confronta col giro di prima. */
+let giriDiDisegno = 0;
+export function giroDiDisegno(): number { return giriDiDisegno; }
+
 export function render() {
+  giriDiDisegno++;
   var s = LM.load();
   if (!s.onboarded) {
     if (!perId('onboarding-root').innerHTML) onboarding();
