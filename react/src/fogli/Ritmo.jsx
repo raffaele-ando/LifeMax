@@ -23,8 +23,12 @@ function durSonno(aletto, sveglia) {
    oggi» dei Rituali. */
 function RigaChiedi({ quale, nome, spiega, v, onCambia }) {
   const acceso = !!v.on;
+  /* la `key` porta dentro il valore: `defaultValue` vale solo al montaggio, e
+     questa riga si ridisegna ogni volta che tocchi l'interruttore. Senza, il
+     campo mostrerebbe l'ora di prima anche dopo che i dati sono cambiati —
+     è la stessa trappola che in «Da sistemare» ribattezzava le note. */
   const ora = (campo, eti, val) => (
-    <input type="time" className="prom-ora" data-chora={quale} data-chcampo={campo}
+    <input key={campo + ':' + (val || '')} type="time" className="prom-ora" data-chora={quale} data-chcampo={campo}
       defaultValue={val} aria-label={nome + ', ' + eti} disabled={!acceso}
       onChange={(e) => { if (e.target.value) onCambia(quale, campo, e.target.value); }} />
   );

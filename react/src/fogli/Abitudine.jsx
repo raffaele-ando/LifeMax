@@ -230,7 +230,7 @@ export default function Abitudine({ id, dopo }) {
             può infilare col suo involucro, e le stesse righe si scrivono in
             JSX. Dove un involucro c'è già (la riga «Area» della scheda di
             un'attività) si usa ancora quella di app.js. */}
-        <select id="abd-area" ref={area} aria-label="Area" defaultValue={h.areaId}>
+        <select key={'ar' + (h.areaId || '')} id="abd-area" ref={area} aria-label="Area" defaultValue={h.areaId}>
           {a.areeAttive().map((x) => <option key={x.id} value={x.id}>{x.nome}</option>)}
         </select>
         <label className="campo">Per quanto vale</label>

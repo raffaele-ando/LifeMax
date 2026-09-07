@@ -103,13 +103,27 @@ function Smista({ st }) {
       {/* `etichetta()` restituisce già il suo <div class="lista-eti">:
           avvolgerlo in un altro div aggiungeva un livello all'albero */}
       <div className="lista-eti" {...html(A().ICO('inbox', 11) + 'Da sistemare')} />
+      {/* LA `key` QUI NON È UN DETTAGLIO: È QUELLO CHE C'È SCRITTO DENTRO.
+          `defaultValue` vale solo al montaggio, e questa coda AVANZA: appena
+          smisti una nota, React ridisegna con la nota dopo e riusa il nodo che
+          sta nella stessa posizione — dentro ci resta il testo di quella di
+          prima. Chi guarda vede la nota precedente al posto della nuova.
+          E poi succede il peggio: `decidi()` legge il campo e, trovandolo
+          diverso dal testo della nota, lo salva — cioè RIBATTEZZA la nota
+          nuova col nome di quella appena smistata. Una coda intera diventa
+          copie della prima. È un difetto vero e l'ha trovato chi usa l'app.
+          Il codice di prima non ce l'aveva perché rifà tutto #vista a ogni
+          giro: la casella è un elemento nuovo, e riparte dai dati.
+          Con la chiave sull'id della nota il nodo rinasce, che è esattamente
+          quello che succedeva prima. `prove/smista.js` è la prova che lo
+          pretende, nota per nota, fino a svuotare la coda. */}
       <div className="sm-nota">
-        <textarea className="sm-titolo" id="sm-testo" rows="1" aria-label="Testo della nota"
+        <textarea key={'t' + nota.id} className="sm-titolo" id="sm-testo" rows="1" aria-label="Testo della nota"
           ref={campo} defaultValue={nota.testo}
           onInput={adatta} onBlur={salva}
           onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur(); } }} />
         <div className="sm-meta">
-          <select id="sm-area" className="sm-area-sel" aria-label="Area"
+          <select key={'a' + nota.id} id="sm-area" className="sm-area-sel" aria-label="Area"
             ref={area} defaultValue={nota.areaSug || 'altro'}>
             {A().areeAttive().map((a) => <option key={a.id} value={a.id}>{a.nome}</option>)}
           </select>

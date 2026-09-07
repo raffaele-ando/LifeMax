@@ -30,7 +30,11 @@ function Nome({ area }) {
     A().render();
     A().toast('Area rinominata.', 0, 'check');
   }, [area.id]);
-  return <input type="text" className="area-nome-input" data-rin={area.id}
+  /* la key porta dentro il nome: così il campo riparte dai dati anche se
+     qualcuno rinomina l'area da un'altra parte. Regge anche senza — la scheda
+     si rifà a ogni rinomina — ma quella è una certezza che dipende da chi
+     legge il codice, e questa no. */
+  return <input key={area.nome} type="text" className="area-nome-input" data-rin={area.id}
     ref={campo} defaultValue={area.nome} aria-label="Nome dell’area" />;
 }
 

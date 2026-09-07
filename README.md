@@ -244,6 +244,22 @@ mostrare la data appena tolta. L'ha visto `prove/campi.js`. La cura è una
 `key` che cambia: il nodo rinasce, che è esattamente quello che succedeva
 prima.
 
+**E `defaultValue` in una CODA CHE AVANZA riscrive i dati.** È la stessa
+trappola di sopra, ma con un morso diverso, e l'ha trovata chi usa l'app —
+non una prova. In «Da sistemare» smisti una nota, la coda avanza, e React
+riusa il nodo che sta nella stessa posizione: dentro la casella resta il testo
+della nota precedente. Poi il tasto «Oggi» legge il campo, lo trova diverso
+dal testo della nota, e lo **salva**: la nota nuova viene ribattezzata col
+nome di quella appena smistata. Una coda di cinque note diventa cinque copie
+della prima, e i testi originali non tornano più. Il codice di prima non ce
+l'aveva, perché rifà tutto `#vista` a ogni giro.
+
+Nessuna delle prove lo poteva vedere: guardano **uno schermo**, disegnato una
+volta. Da qui `prove/smista.js`, che conta la **sequenza** — smisti, la coda
+avanza, e la domanda è se quello che vedi adesso è la nota di adesso, gesto
+per gesto fino a svuotarla, di qua e di là. Rimettendo il difetto dà 11
+problemi; togliendolo, zero.
+
 **E la più insidiosa: uno stato di React si vede al disegno DOPO.** La scelta
 di «Non del tutto» stava in due variabili normali — toccare una pastiglia le
 cambiava, e il tasto «Segna e vai avanti» leggeva il valore di quel momento.

@@ -66,6 +66,27 @@ const ok = (n, c, d) => { if (!c) guai++; console.log('  ' + (c ? 'ok  ' : 'KO  
       const avanzo = Object.keys(regole).filter((k) => !(k in vuoto));
       return { senza, avanzo, quanti: Object.keys(vuoto).length };
     });
+    /* E UN CAMPO PUÒ NASCERE FUORI DA `statoVuoto()`.
+       `LM.load().demoChiusa = true` crea un campo che lo stato vuoto non
+       conosce: il controllo qui sopra non lo vede, e alla prima fusione
+       `unisci` lo trova senza regola, si tiene quello del documento più
+       recente e GRIDA — nel registro di chi usa l'app, non qui. È arrivato
+       così, da un registro tecnico incollato in chat.
+       Quindi si legge il codice e si cercano le scritture dirette. */
+    {
+      const fonti = ['app.js', 'data.js', 'promemoria.js', 'charts.js', 'pezzi.js', 'forma.js', 'log.js']
+        .map((n) => path.join(RADICE, 'assets', n))
+        .filter((v) => fs.existsSync(v))
+        .map((v) => fs.readFileSync(v, 'utf8')).join('\n');
+      const nati = [...fonti.matchAll(/(?:load|snapshot)\(\)\.([A-Za-z_][A-Za-z0-9_]*)\s*=[^=]/g)]
+        .map((m) => m[1]);
+      const noti = await p.evaluate(() => Object.keys(LM.statoVuoto()).concat(Object.keys(LM.COME_UNIRE)));
+      const orfani = [...new Set(nati)].filter((k) => noti.indexOf(k) < 0);
+      ok('nessun campo nasce da una scrittura diretta senza essere dichiarato',
+        orfani.length === 0,
+        orfani.length ? orfani.join(', ') + ' — mettili in statoVuoto() e in COME_UNIRE'
+          : [...new Set(nati)].length + ' scritture dirette, tutte dichiarate');
+    }
     ok('tutti i ' + r.quanti + ' campi sono nominati in COME_UNIRE', r.senza.length === 0,
       r.senza.length ? 'SENZA REGOLA: ' + r.senza.join(', ') + ' — aggiungila in assets/data.js' : 'nessuno scoperto');
     /* e il contrario: una regola per un campo che non esiste più è una regola

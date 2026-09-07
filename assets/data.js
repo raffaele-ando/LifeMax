@@ -146,6 +146,10 @@ var LM = (function () {
       updatedAt: 0,
       onboarded: false,
       demo: false,
+      /* la banda «dati di esempio» è stata chiusa a mano? Una volta chiusa
+         resta chiusa, anche se l'altro dispositivo non lo sa ancora: per
+         questo si fonde con 'oppure' e non «vince il più recente». */
+      demoChiusa: false,
       /* giornataPos: dove mostrare la timeline della giornata
          ('oggi-strip' | 'panoramica' | 'oggi-full' | 'menu') */
       profilo: { nome: '', visione: '', skin: 'quiete', modo: 'auto', scorri: 'si', effetti: 'pieni', suono: 'si', vibra: 'si', giornataPos: 'oggi-strip', ritmo: JSON.parse(JSON.stringify(RITMO_DEFAULT)), chiedi: JSON.parse(JSON.stringify(CHIEDI_DEFAULT)) },
@@ -237,6 +241,7 @@ var LM = (function () {
     azzerato: 'massimo',
     onboarded: 'oppure',
     demo: 'recente',
+    demoChiusa: 'oppure',
     profilo: 'ramo',
     ritmoGiorno: 'mappa',
     visto: 'massimo',

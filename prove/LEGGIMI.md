@@ -742,6 +742,25 @@ genera le chiavi, in un browser vero).
   successo in QUESTO giro, e i due giri sono due giri diversi — in uno l'isola
   di React si carica e nell'altro no.
 
+- **smista.js** — SMISTARE UNA CODA, NOTA PER NOTA, FINO A SVUOTARLA. Nasce da
+  un difetto trovato da chi usa l'app, e nessuna delle altre prove lo poteva
+  vedere: guardano UNO SCHERMO, disegnato una volta. Qui conta la **sequenza**.
+  Smisti una nota, la coda avanza, e la domanda è se quello che vedi adesso è
+  la nota di adesso.
+  Cos'era andato storto: la casella del testo aveva `defaultValue` senza
+  `key`. Quel valore si applica solo al montaggio, e una coda che avanza riusa
+  il nodo che sta nella stessa posizione — dentro restava il testo della nota
+  precedente. Poi «Oggi» legge il campo, lo trova diverso dal testo della
+  nota e lo salva: la nota nuova veniva RIBATTEZZATA col nome di quella appena
+  smistata, e una coda di cinque note diventava cinque copie della prima. I
+  testi originali non tornavano più.
+  Il codice di prima non ce l'aveva, perché rifà tutto `#vista` a ogni giro e
+  la casella è un elemento nuovo. Per questo la prova gira **di qua e di là**:
+  è il modo di dire «React deve fare quello che faceva prima» anche quando ci
+  sono di mezzo cinque gesti invece di uno.
+  Rimettendo il difetto la prova dà 11 problemi; togliendolo, zero. Una prova
+  che non si è vista fallire sul difetto che dice di prendere non prova niente.
+
 ## Come si lanciano
 
 **Prima si costruisce.** Le prove aprono `index.html`, che è generato: se il
@@ -756,6 +775,7 @@ pacco è vecchio, provano il codice di ieri e dicono che va tutto bene.
     node prove/gemelle.js       # React disegna la stessa cosa di prima?
                                 # sedici sezioni su sette schermate
     node prove/fogli.js         # e i pannelli?
+    node prove/smista.js        # e una coda smistata gesto per gesto?
     node prove/audit.js         # non è una prova: stampa un rapporto da leggere
     node prove/clic.js
     node prove/modalita.js

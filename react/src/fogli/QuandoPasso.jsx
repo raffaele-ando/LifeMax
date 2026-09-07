@@ -40,7 +40,7 @@ export default function QuandoPasso({ prog, passo }) {
           {chip(window.LM.addDays(oggi, 7), 'Tra una settimana')}
         </div>
         <label className="sc-campo"><span>un altro giorno</span>
-          <input type="date" id="qp-data" ref={data}
+          <input key={gia ? gia.data : 'nuovo'} type="date" id="qp-data" ref={data}
             defaultValue={gia ? gia.data : window.LM.addDays(oggi, 1)} /></label>
         {gia ? (
           <button className="btn btn-mini btn-ghost" id="qp-togli" onClick={() => {
