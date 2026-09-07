@@ -308,21 +308,32 @@ Ogni risposta esce con `Cache-Control: max-age=600`, e non si può cambiare.
 > autorizzati di Firebase — non cambia.
 
 C'è un `_headers` pronto per **Cloudflare Pages**, che quel limite non ce l'ha
-e che comprime in Brotli invece che in gzip. Quanto vale, misurato allo stesso
-modo di sopra:
+e che comprime in Brotli invece che in gzip. I tempi misurati sul build di
+prima — 1412 ms contro 1314 alla prima apertura, 677 contro 576 tornando il
+giorno dopo — erano un decimo di secondo per parte: **vale la pena perché
+costa niente, non perché cambia la vita.**
 
-| | GitHub Pages | Cloudflare Pages |
-|---|---|---|
-| prima apertura | 1412 ms · 140 KB | **1314 ms · 119 KB** (Brotli) |
-| si torna entro dieci minuti | 398 ms | 398 ms |
-| si torna il giorno dopo | 677 ms | **576 ms** |
+### Quanto pesa adesso, e da dove viene la differenza
 
-Un decimo di secondo per parte. **Vale la pena perché costa niente, non
-perché cambia la vita** — e i 585 KB del build, quelli, valgono dieci volte
-tanto. Il passaggio sono due cose: collegare il deposito su Cloudflare Pages
-senza comando di build (i file costruiti stanno già dentro, in `docs/`), e
-aggiungere il nuovo dominio ai **domini autorizzati** di Firebase, se no
-l'accesso con Google smette di funzionare.
+| | gzip |
+|---|---|
+| il pezzo principale (JS) | 172 KB |
+| lo stile | 23 KB |
+| **il primo schermo** | **195 KB** |
+| il Design lab, quando lo apri | 8 + 9 KB |
+| la nuvola, quando c'è la rete | 4 KB |
+
+Erano 140 KB. I cinquantacinque in più sono React, ed è il numero che stava
+già scritto nella tabella di sopra quando la scelta è stata fatta: React 19 in
+versione di produzione costa 61 KB compressi, Preact col suo `compat` ne
+costava 9. Si è scelto React lo stesso, e questa riga serve a tenere il conto
+onesto invece che a nasconderlo — chi un giorno volesse rifare quella scelta
+sa esattamente quanto vale.
+
+Il passaggio a Cloudflare, se un giorno si fa, sono due cose: collegare il
+deposito senza comando di build (i file costruiti stanno già dentro, in
+`docs/`), e aggiungere il nuovo dominio ai **domini autorizzati** di Firebase,
+se no l'accesso con Google smette di funzionare.
 
 `_headers` ha una regola sola, e ci sono due motivi per cui deve restarne una
 sola — tutti e due irreparabili dal lato del server. `node
