@@ -5867,25 +5867,27 @@ function bloccoRecupero(tutti?: boolean): string {
     '</div>';
 }
 
-function wireRecupero(scope: HTMLElement, dopo?: () => void): void {
-  var t = LM.todayKey();
+function wireRecupero(scope: HTMLElement, dopo?: (() => void) | null): void {
+  const t = LM.todayKey();
   function rifai() {
-    var vecchio = document.getElementById('blocco-recupero');
+    const vecchio = document.getElementById('blocco-recupero');
     if (!vecchio || !vecchio.parentNode) { render(); return; }
-    var tmp = document.createElement('div');
+    const tmp = document.createElement('div');
     tmp.innerHTML = bloccoRecupero();
-    var nuovo = tmp.firstChild;
+    const nuovo = tmp.firstChild as HTMLElement | null;
+    if (!nuovo) { render(); return; }
     vecchio.parentNode.replaceChild(nuovo, vecchio);
     wireRecupero(nuovo, dopo);
   }
   scope.querySelectorAll<HTMLElement>('[data-pasto]').forEach(function (riga) {
-    var id = riga.getAttribute('data-pasto');
-    var solito = riga.getAttribute('data-psolito') || null;
-    var campoOra = riga.querySelector<HTMLElement>('[data-poraval]');
+    const id = riga.getAttribute('data-pasto');
+    if (!id) return;
+    const solito = riga.getAttribute('data-psolito');
+    const campoOra = riga.querySelector<HTMLInputElement>('[data-poraval]');
     riga.querySelectorAll<HTMLElement>('[data-pfatto]').forEach(function (b) {
       b.addEventListener('click', function () {
-        var si = b.getAttribute('data-pfatto') === 'si';
-        LM.registraPasto(t, id, { fatto: si, ora: si ? solito : null, prec: 'circa' });
+        const si = b.getAttribute('data-pfatto') === 'si';
+        LM.registraPasto(t, id, { fatto: si, ora: si && solito ? comeOra(solito) : null, prec: 'circa' });
         rifai();
       });
     });
@@ -5895,14 +5897,14 @@ function wireRecupero(scope: HTMLElement, dopo?: () => void): void {
        poi corretto lascia due righe nel diario. */
     if (campoOra) campoOra.addEventListener('change', function () {
       if (!campoOra.value) return;
-      LM.registraPasto(t, id, { fatto: true, ora: campoOra.value, prec: 'preciso' });
+      LM.registraPasto(t, id, { fatto: true, ora: comeOra(campoOra.value), prec: 'preciso' });
       rifai();
     });
   });
   wireRigaAggiunta(scope, 'agg-fatto', function (testo, opz) {
-    var sel = opz ? opz.querySelector<HTMLElement>('#agg-fatto-area') : null;
-    var oraEl = opz ? opz.querySelector<HTMLElement>('#agg-fatto-ora') : null;
-    LM.registraFatta(testo, sel ? sel.value : null, { ora: oraEl && oraEl.value ? oraEl.value : null });
+    const sel = opz.querySelector<HTMLSelectElement>('#agg-fatto-area');
+    const oraEl = opz.querySelector<HTMLInputElement>('#agg-fatto-ora');
+    LM.registraFatta(testo, sel ? sel.value : null, { ora: oraEl && oraEl.value ? comeOra(oraEl.value) : null });
     toast('Segnata fra le cose di oggi.', LM.XP_EVENTI.azione, 'check');
     rifai();
     var inp = document.querySelector<HTMLElement>('#agg-fatto .agg-testo');
@@ -5910,7 +5912,8 @@ function wireRecupero(scope: HTMLElement, dopo?: () => void): void {
   });
   scope.querySelectorAll<HTMLElement>('[data-ftogli]').forEach(function (b) {
     b.addEventListener('click', function () {
-      var id = b.getAttribute('data-ftogli');
+      const id = b.getAttribute('data-ftogli');
+      if (!id) return;
       conAnnulla('Tolta.', 'trash', function () { LM.rimuoviAzione(id); });
       rifai();
     });
