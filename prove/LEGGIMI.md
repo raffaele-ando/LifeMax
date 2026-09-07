@@ -1,6 +1,6 @@
 # Prove
 
-Ventotto controlli automatici che guardano una cosa sola ciascuno, ma
+Ventinove controlli automatici che guardano una cosa sola ciascuno, ma
 quella cosa fa morire l'app — o la fa diventare illeggibile — quando si
 rompe. Sono nati da problemi veri.
 
@@ -711,6 +711,22 @@ genera le chiavi, in un browser vero).
   `sottoNav` la cerca, un contenitore in più attorno all'etichetta di gruppo,
   e l'animazione d'ingresso che al primo disegno non partiva.
 
+- **fogli.js** — LO STESSO, PER I PANNELLI. Stessa idea di `gemelle.js`,
+  spostata di un piano: là si confronta quello che sta dentro a `#vista`, qui
+  quello che sta dentro a `#sheet-corpo`, più il titolo scritto in cima e il
+  valore dei campi (due pannelli con lo stesso markup e dentro due valori
+  diversi non sono lo stesso pannello). Un pannello però non si vede andandoci:
+  bisogna aprirlo, e ogni pannello si apre da un posto suo. Quel «da dove» sta
+  scritto nella tabella `APERTURE` in cima al file, una riga per pannello, ed è
+  l'unica parte che cresce quando se ne converte uno.
+  Se un pannello è registrato nell'isola ma non ha la sua riga in `APERTURE`,
+  la prova non lo salta in silenzio: lo segnala. Un pannello convertito e mai
+  guardato è come non averlo convertito.
+  Qualche pannello esiste solo in un certo stato dell'app — «Altro» c'è solo
+  con la barra a quattro pagine, perché con le tre porte non ci sarebbe niente
+  dentro — e per quelli c'è `prima`, che mette l'app in quello stato prima di
+  tutt'e due i giri.
+
 ## Come si lanciano
 
 **Prima si costruisce.** Le prove aprono `index.html`, che è generato: se il
@@ -723,6 +739,8 @@ pacco è vecchio, provano il codice di ieri e dicono che va tutto bene.
     node prove/intestazioni.js  # solo Node: la cache di _headers non fa danni
     node prove/pezzi.js         # solo Node: il cricchetto delle forme
     node prove/gemelle.js       # React disegna la stessa cosa di prima?
+                                # sedici sezioni su sette schermate
+    node prove/fogli.js         # e i pannelli?
     node prove/audit.js         # non è una prova: stampa un rapporto da leggere
     node prove/clic.js
     node prove/modalita.js

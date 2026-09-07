@@ -31,10 +31,27 @@ import Scienza from './schermi/Scienza.jsx';
 import Scoperte from './schermi/Scoperte.jsx';
 import Giornata from './schermi/Giornata.jsx';
 import Panoramica from './schermi/Panoramica.jsx';
+import Rituali from './schermi/Rituali.jsx';
+import Adesso from './schermi/Adesso.jsx';
+import Filtri from './fogli/Filtri.jsx';
+import Menu from './fogli/Menu.jsx';
+import Aree from './fogli/Aree.jsx';
+import Ritmo from './fogli/Ritmo.jsx';
+import Scheda from './fogli/Scheda.jsx';
+import Abitudine from './fogli/Abitudine.jsx';
 
 const SCHERMI = {
   inbox: Attivita, scienza: Scienza, esperimenti: Scoperte,
-  giornata: Giornata, plancia: Panoramica
+  giornata: Giornata, plancia: Panoramica, rituali: Rituali, oggi: Adesso
+};
+
+/* I PANNELLI CONVERTITI. Stessa regola delle schermate: qui dentro entra un
+   pannello solo quando `prove/fogli.js` dice che è identico a quello di
+   prima. Il pannello non è una schermata più piccola — si apre sopra a
+   quello che stavi guardando, e chi lo apre resta vivo dietro — ma la strada
+   per portarlo di qua è la stessa: un ramo solo in chi lo apre. */
+const FOGLI = {
+  filtri: Filtri, menu: Menu, aree: Aree, ritmo: Ritmo, scheda: Scheda, abitudine: Abitudine
 };
 
 /* una radice per contenitore: React vuole tenersela fra un disegno e
@@ -117,6 +134,37 @@ function monta(quale, dove) {
   return true;
 }
 
+/* ================================================================
+   I PANNELLI
+
+   Un pannello non vive quanto una schermata: si apre, si guarda, si chiude.
+   Quindi niente radice tenuta da parte — se ne fa una all'apertura e la si
+   butta alla chiusura. Tenerla sarebbe anche peggio che inutile: `apriSheet`
+   riscrive `#sheet-corpo` con `innerHTML` ogni volta che apre qualcosa, e
+   una radice rimasta appesa punterebbe a nodi che non esistono più.
+
+   `flushSync` perché chi apre il foglio si aspetta il contenuto in pagina
+   subito dopo la chiamata: mette a fuoco, misura, scorre in cima.
+   ================================================================ */
+let radiceFoglio = null;
+
+function montaFoglio(quale, dove, props) {
+  const Foglio = FOGLI[quale];
+  if (!Foglio || !dove) return false;
+  smontaFoglio();
+  const r = createRoot(dove);
+  radiceFoglio = r;
+  flushSync(() => { r.render(<StrictMode><Foglio {...(props || {})} /></StrictMode>); });
+  return true;
+}
+
+function smontaFoglio() {
+  if (!radiceFoglio) return;
+  const r = radiceFoglio;
+  radiceFoglio = null;
+  r.unmount();
+}
+
 /* Smontare serve: quando si torna a una schermata vecchia, React deve
    lasciare il contenitore pulito, se no il codice di prima ci scrive dentro
    sopra e si vedono due interfacce sovrapposte. */
@@ -133,7 +181,11 @@ function smonta(dove) {
 window.LM_REACT = {
   monta: monta,
   smonta: smonta,
+  montaFoglio: montaFoglio,
+  smontaFoglio: smontaFoglio,
   /* chi c'è: serve al router per sapere se questa schermata la disegna React */
   conosce: (quale) => Object.prototype.hasOwnProperty.call(SCHERMI, quale),
-  schermi: Object.keys(SCHERMI)
+  conosceFoglio: (quale) => Object.prototype.hasOwnProperty.call(FOGLI, quale),
+  schermi: Object.keys(SCHERMI),
+  fogli: Object.keys(FOGLI)
 };

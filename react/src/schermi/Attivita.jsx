@@ -69,17 +69,33 @@ function Smista({ st }) {
     if (v !== nota.testo) window.LM.modificaInbox(nota.id, v);
   };
 
+  /* Le tre porte, con gli stessi messaggi del codice di prima — e «Scarta»
+     passa da `conAnnulla`, che dà il tempo di rimettere a posto: scartare è
+     l'unica delle tre che butta via qualcosa. */
   const decidi = (esito) => {
+    const a = A();
     const t = campo.current;
     const v = t.value.replace(/\s+/g, ' ').trim();
     if (v && v !== nota.testo) window.LM.modificaInbox(nota.id, v);
-    window.LM.triageInbox(nota.id, esito, area.current ? area.current.value : 'altro');
-    A().aggiornaNav();
-    if (!window.LM.load().inbox.length) {
-      A().attTab = 'dafare';
-      A().render();
-      A().toast('Coda svuotata: non c’è più niente da sistemare.', 0, 'check');
-    }
+    const areaVal = area.current ? area.current.value : 'altro';
+
+    const fatto = () => {
+      window.LM.triageInbox(nota.id, esito, areaVal);
+      a.aggiornaNav();
+      if (!window.LM.load().inbox.length) {
+        a.attTab = 'dafare';
+        a.render();
+        a.toast('Coda svuotata: non c’è più niente da sistemare.', 0, 'check');
+        return;
+      }
+      a.render();
+      a.animaIngresso(document.getElementById('att-corpo'));
+    };
+
+    if (esito === 'scarta') { a.conAnnulla('Scartata.', 'trash', fatto); return; }
+    a.toast(esito === 'azione' ? 'Messa tra le cose di oggi.' : 'Aggiunta a «Da fare».',
+      window.LM.XP_EVENTI.triage, esito === 'azione' ? 'arrowRight' : 'lista');
+    fatto();
   };
 
   return (
@@ -172,9 +188,13 @@ function listaHtml(st, query) {
       : '');
 }
 
-/* IL PANNELLO DEI FILTRI — la scelta è un elenco, come tutti gli altri. */
+/* IL PANNELLO DEI FILTRI — la scelta è un elenco, come tutti gli altri.
+   Da qui in poi lo disegna React (`fogli/Filtri.jsx`); il codice qui sotto è
+   quello di prima, e resta perché con l'interruttore spento deve funzionare
+   ancora — è la stessa regola delle schermate. */
 function apriFiltri(dopo) {
   const a = A();
+  if (a.foglioReact('filtri')) { a.apriFoglio('Guarda solo', 'filtri', { dopo: dopo }); return; }
   const st = window.LM.load();
   const totale = st.backlog.length;
   const conData = st.backlog.filter((b) => !b.done && b.scadenza).length;

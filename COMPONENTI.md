@@ -64,6 +64,17 @@ Assorbe: `seg-ico` `diario-ico` `sm-porta-ico` `rev-ico` `fs-ico` `lista-azione`
     nome    quale disegno (icons.js)
     dim     11 · 13 · 15 · 18 · 26   — la scala, e non altri numeri
 
+### `Disegno` — un SVG che non viene da `icons.js`
+Il marchio di Google, per dirne uno.
+
+    svg     il markup, così com'è
+
+In vanilla non fa niente: restituisce la stringa che le dai, perché di là il
+markup si infila e basta. Esiste per il gemello in React, dove non è banale —
+là il markup grezzo ha bisogno di un elemento che lo contenga, e uno `<span>`
+in più cambia l'albero. Quindi il gemello smonta l'SVG e ne ridisegna uno vero
+con gli stessi attributi: fuori esce lo stesso elemento, senza involucro.
+
 ### `Etichetta` — il nome di una cosa, dentro a una riga
 Assorbe: `sc-eti` `lista-eti` `imp-eti` `agg-eti` `stat-eti` `som-eti` `seg-eti` `conc-eti`
 

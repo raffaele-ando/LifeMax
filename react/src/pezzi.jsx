@@ -43,9 +43,15 @@ function smonta(testo) {
   return fuori;
 }
 
-export function Segno({ nome, dim = 15 }) {
+export function Segno({ nome, dim = 15, piu }) {
   if (!nome || typeof window.ICO !== 'function') return null;
-  const p = smonta(window.ICO(nome, dim));
+  return <Disegno svg={window.ICO(nome, dim, piu)} />;
+}
+
+/* Un SVG che non viene da `ICO`: il marchio di Google, per dirne uno. Stessa
+   smontatura, stessa ragione — dev'essere figlio diretto di chi lo contiene. */
+export function Disegno({ svg }) {
+  const p = svg && smonta(svg);
   if (!p) return null;
   return <svg {...p.attributi} dangerouslySetInnerHTML={{ __html: p.dentro }} />;
 }

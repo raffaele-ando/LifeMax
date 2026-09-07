@@ -229,6 +229,18 @@
     return '<span class="' + classi('pz-segno', o.piu) + '">' + segno(o.nome, o.dim) + '</span>';
   }
 
+  /* UN SVG CHE NON VIENE DA `ICO` — il marchio di Google, per dirne uno.
+     Di qua non c'è niente da fare: una stringa di markup si infila dove
+     serve, e questa funzione restituisce quella che le dai. Esiste per il suo
+     gemello in React, dove non è banale: là il markup grezzo ha bisogno di un
+     elemento che lo contenga, e uno <span> in più cambia l'albero — quindi il
+     gemello smonta l'SVG e lo ridisegna senza involucro. Le due firme restano
+     appaiate, ed è quello che pretende prove/pezzi.js. */
+  function disegno(o) {
+    if (typeof o === 'string') return o;
+    return (o && o.svg) || '';
+  }
+
   /* il nome di una cosa dentro a una riga: otto nomi diventano questo */
   function etichetta(o) {
     if (typeof o === 'string') o = { testo: o };
@@ -274,12 +286,26 @@
       (o.colore ? ';background:' + o.colore : '') + '"></i></span>';
   }
 
+  /* ------------------------------------------------------------ LA TESTA
+     La riga in cima a una schermata. Tre forme, e la differenza conta perché
+     cambia l'albero: se il nome sta già nella navigazione e non c'è altro,
+     esce SOLO un <h1> per i lettori di schermo — niente contenitore. */
+  function testa(o) {
+    o = o || {};
+    var h1 = '<h1' + (o.giaNellaNav ? ' class="solo-lettori"' : '') + '>' + esc(o.titolo) + '</h1>';
+    if (o.giaNellaNav && !o.destra && !o.sottotitolo) return h1;
+    return '<div class="' + classi('topbar', o.giaNellaNav ? 'topbar-nuda' : '', o.piu) + '">' +
+      (o.giaNellaNav ? h1 : '<div>' + h1 +
+        (o.sottotitolo ? '<div class="sottotitolo">' + esc(o.sottotitolo) + '</div>' : '') + '</div>') +
+      '<div class="spazio"></div>' + (o.destra || '') + '</div>';
+  }
+
   window.PZ = {
     tasto: tasto, scheda: scheda, elenco: elenco, riga: riga, campo: campo,
     pastiglie: pastiglie, segmenti: segmenti, statistica: statistica,
     niente: niente, nota: nota,
-    icona: icona, etichetta: etichetta, valore: valore, titolo: titolo,
-    fila: fila, barra: barra,
+    icona: icona, disegno: disegno, etichetta: etichetta, valore: valore, titolo: titolo,
+    fila: fila, barra: barra, testa: testa,
     /* utili anche fuori: chi compone a mano un caso che non è un pezzo */
     esc: esc, att: att, classi: classi
   };

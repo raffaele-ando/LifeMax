@@ -194,6 +194,31 @@ const SCENE = [
     return p;
   };
 
+
+  /* SI ASPETTA CHE IL NUMERO SMETTA DI SALIRE.
+     La percentuale grande di Panoramica parte da zero e sale fino al suo
+     valore. L'impronta legge il testo della schermata, e letta a metà corsa
+     dice 59% prima del clic e 65% dopo: sembra che il clic abbia cambiato
+     qualcosa. Non è un effetto del clic, è l'orologio dell'animazione — e
+     due comandi che non fanno niente finiscono per sembrare due modi per la
+     stessa cosa. È successo davvero, con «Panoramica» (la linguetta su cui
+     sei già) e «Aggiungi» (che apre la cattura senza toccare la schermata
+     sotto): stessa animazione, stesso istante, stessa impronta falsa.
+     Si guarda finché il testo smette di cambiare, con un tetto perché
+     un’animazione infinita non deve bloccare la prova. */
+  const calma = async (p) => {
+    let prima = null;
+    for (let i = 0; i < 25; i++) {
+      const ora = await p.evaluate(() => {
+        const v = document.getElementById('vista'), c = document.getElementById('sheet-corpo');
+        return (v ? v.textContent : '') + '\u0003' + (c ? c.textContent : '');
+      });
+      if (ora === prima) return;
+      prima = ora;
+      await p.waitForTimeout(120);
+    }
+  };
+
   const trovati = [];
   for (const s of SCENE) {
     const p0 = await scena(s);
@@ -205,6 +230,7 @@ const SCENE = [
     const effetti = [];
     for (let i = 0; i < quanti; i++) {
       const p = await scena(s);
+      await calma(p);
       const prima = await p.evaluate(IMPRONTA);
       const eti = await p.evaluate(`(function () { const l = ${LISTA}; const e = l[${i}];
         if (!e) return null;
@@ -223,6 +249,7 @@ const SCENE = [
           scelto: scelto, chiude: chiude }; })()`);
       const ok = await p.evaluate(`(function () { const l = ${LISTA}; if (!l[${i}]) return false; l[${i}].click(); return true; })()`);
       await p.waitForTimeout(650);
+      if (ok) await calma(p);
       const dopo = ok ? await p.evaluate(IMPRONTA) : null;
       await p.close();
       if (!dopo || !eti) continue;
@@ -230,6 +257,11 @@ const SCENE = [
         hash: dopo.hash !== prima.hash ? dopo.hash : '',
         stato: dopo.stato !== prima.stato ? dopo.stato : '',
         chiuso: prima.aperto && !dopo.aperto,
+        /* aprire un pannello è un effetto quanto chiuderlo: finché si
+           guardava solo la chiusura, «Aggiungi» — che apre la cattura sopra
+           la schermata senza toccarla — risultava un comando che non fa
+           niente, e finiva in gruppo con la linguetta su cui sei già. */
+        apre: !prima.aperto && dopo.aperto,
         titolo: dopo.titolo !== prima.titolo ? dopo.titolo : '',
         schermo: dopo.schermo !== prima.schermo ? dopo.schermo : '',
         toast: dopo.toast, vista: dopo.vista }) });
@@ -242,14 +274,14 @@ const SCENE = [
          niente è il gruppo che questa prova NON riesce a vedere (le linguette
          che spostano una variabile, il timer, la scelta del fuoco): è un buco
          della misura, non un doppione */
-      const cieco = !o.hash && !o.stato && !o.chiuso && !o.titolo && !o.toast && !o.schermo;
+      const cieco = !o.hash && !o.stato && !o.chiuso && !o.apre && !o.titolo && !o.toast && !o.schermo;
       /* Un gruppo dove ognuno è o la scelta già attiva o la via d'uscita non
          è un gruppo di doppioni: ritoccare l'opzione accesa non deve fare
          niente, e chiudere è chiudere. Perché sia un doppione ci vuole almeno
          un comando che PROMETTE di fare qualcos'altro. */
       const tuttiGiaScelti = v.every(x => x.scelto || x.chiude);
       trovati.push({ scena: s.nome, cieco: cieco || tuttiGiaScelti,
-        cosa: (o.chiuso ? 'chiudono il pannello ' : '') + (o.hash ? 'portano a ' + o.hash + ' ' : '') +
+        cosa: (o.chiuso ? 'chiudono il pannello ' : '') + (o.apre ? 'aprono un pannello ' : '') + (o.hash ? 'portano a ' + o.hash + ' ' : '') +
           (o.titolo ? 'aprono «' + o.titolo + '» ' : '') + (o.toast ? 'dicono «' + o.toast + '» ' : '') +
           (o.schermo ? 'e lasciano la stessa schermata ' : '') +
           (o.stato ? 'e salvano lo stesso stato' : ''),

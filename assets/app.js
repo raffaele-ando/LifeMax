@@ -799,6 +799,10 @@
     else if (!staTornandoSheet && !stessoDiPrima && riapriCorrente) pilaSheet.push(riapriCorrente);
     riapriCorrente = riapri || null;
     scriviTestaSheet(titolo);
+    /* se il corpo di prima era di React, va staccato PRIMA di riscriverlo:
+       `innerHTML` gli porterebbe via i nodi da sotto e la sua radice
+       resterebbe attaccata a roba che non esiste più */
+    if (window.LM_REACT) window.LM_REACT.smontaFoglio();
     document.getElementById('sheet-corpo').innerHTML = html;
     if ($sheetPanel) $sheetPanel.classList.toggle('sheet-largo', !!largo);
     $sheet.hidden = false;
@@ -883,6 +887,7 @@
 
   function chiudiSheet() {
     $sheet.hidden = true; wireSheet = null;
+    if (window.LM_REACT) window.LM_REACT.smontaFoglio();
     document.dispatchEvent(new CustomEvent('lm:sheet-chiuso'));
     if ($sheetPanel) $sheetPanel.classList.remove('sheet-largo');
     bloccaSfondo(false);
@@ -2009,6 +2014,7 @@
     'lightbulb', 'casa', 'musica', 'globo', 'pesi', 'user', 'shield'];
 
   function apriAree() {
+    if (foglioReact('aree')) { apriFoglio('Le tue aree', 'aree', {}); return; }
     var s = LM.load();
     var righe = s.aree.map(function (a) {
       var attiva = s.areeAttive.indexOf(a.id) >= 0;
@@ -2135,21 +2141,33 @@
       { nome: 'Impostazioni', apri: apriImpostazioni });
   }
 
+  /* CHE COSA C'È NEL MENU — una sola volta, e la leggono in due.
+     Stessa gerarchia della barra laterale: dentro ci finiscono le pagine che
+     non stanno nella barra in basso, e sotto quelle secondarie; senza livelli
+     sarebbero un elenco piatto in cui «Giornata» pesa come una pagina da
+     leggere una volta sola.
+     Con le tre porte non serve nessun elenco: ogni schermata sta a un tocco
+     dalle linguette sotto al titolo della sua porta, e qui l'elenco è vuoto. */
+  function vociMenu() {
+    if (navTre()) return { extra: [], secondarie: [] };
+    return {
+      extra: primarie().filter(function (v) { return TAB_MOBILE.indexOf(v.id) < 0; }), /* es. Giornata */
+      secondarie: VISTE.filter(function (v) { return v.gruppo === 'secondaria'; })
+    };
+  }
+
   function apriMenuAltro() {
+    if (foglioReact('menu')) { apriFoglio('Menu', 'menu', {}); return; }
     var s = LM.load();
-    /* stessa gerarchia della barra laterale: qui dentro finiscono le pagine
-       che non stanno nella tab bar, e senza livelli sarebbero un elenco piatto
-       in cui Giornata pesa come una pagina da leggere una volta sola */
-    var extra = primarie().filter(function (v) { return TAB_MOBILE.indexOf(v.id) < 0; }); /* es. Giornata */
+    var voci = vociMenu();
+    var extra = voci.extra;
     function voceMenu(v) {
       return '<button class="menu-voce menu-' + (v.livello || 'quotidiana') + '" data-vai="' + v.id + '">' +
         ICO(v.icona, v.livello === 'extra' ? 15 : 18) + '<span>' + v.nome + '</span>' + ICO('arrowRight', 15) + '</button>';
     }
-    /* con le tre porte qui non serve nessun elenco di pagine: ogni schermata
-       sta a un tocco dalle linguette sotto al titolo della sua porta */
-    var link = navTre() ? '' : (extra.map(voceMenu).join('') +
+    var link = extra.map(voceMenu).join('') +
       (extra.length ? '<div class="nav-sep"></div>' : '') +
-      VISTE.filter(function (v) { return v.gruppo === 'secondaria'; }).map(voceMenu).join(''));
+      voci.secondarie.map(voceMenu).join('');
     var a = window.LM_AUTH || { available: false, user: null };
     var acct;
     if (a.user) {
@@ -3101,6 +3119,31 @@
       illoInbox: illoInbox,
       apriSheet: apriSheet,
       chiudiSheet: chiudiSheet,
+      apriFoglio: apriFoglio,
+      foglioReact: foglioReact,
+      vociMenu: vociMenu,
+      avviso: avviso,
+      DURATE: DURATE,
+      fmtOre: fmtOre,
+      GIORNI_ORD: GIORNI_ORD,
+      GIORNI_LAB: GIORNI_LAB,
+      statoAbitudineOggi: statoAbitudineOggi,
+      giorniAbitudine: giorniAbitudine,
+      etichettaGiorno: etichettaGiorno,
+      etichettaQuanto: etichettaQuanto,
+      scadInfo: scadInfo,
+      apriDaAbitudine: apriDaAbitudine,
+      chiediMancata: chiediMancata,
+      apriQuandoPasso: apriQuandoPasso,
+      titoloSheetModificabile: titoloSheetModificabile,
+      /* `ridisegnaAtt` è un gancio che cambia: si passa una funzione che lo
+         chiama, non il suo valore di adesso, se no si congela quello di ora */
+      ridisegnaAtt: function () { ridisegnaAtt(); },
+      ICONE_AREA: ICONE_AREA,
+      apriAree: apriAree,
+      statoSync: statoSync,
+      GOOGLE_G: function (n) { return window.GOOGLE_G(n); },
+      apriDiagnostica: apriDiagnostica,
       areaById: areaById,
       MURO: MURO,
       get attArea() { return attArea; },
@@ -3119,6 +3162,8 @@
       PRINCIPI: PRINCIPI,
       /* Scoperte */
       disegnaScoperte: disegnaScoperte,
+      get lezDaProvare() { return lezDaProvare; },
+      get formExp() { return formExp; },
       /* Panoramica */
       eroePlancia: eroePlancia,
       eroePlanciaHtml: eroePlanciaHtml,
@@ -3126,6 +3171,22 @@
       disegnaSezPlancia: disegnaSezione,
       get sezPlancia() { return sezPlancia; },
       set sezPlancia(v) { sezPlancia = v; },
+      conAnnulla: conAnnulla,
+      /* Adesso */
+      vistaFocus: vistaFocus,
+      wireFuoco: wireFuoco,
+      montaOggiGiornata: montaOggiGiornata,
+      wireRigaAggiunta2: wireRigaAggiunta,
+      /* Rituali */
+      RITUALI: RITUALI,
+      GRUPPI_RIT: GRUPPI_RIT,
+      statoRituale: statoRituale,
+      ritualeDellOra: ritualeDellOra,
+      get ritualiAperti() { return ritualiAperti; },
+      set ritualiAperti(v) { ritualiAperti = v; },
+      disegnaCorpiRituali: disegnaCorpiRituali,
+      get sottoRituale() { return sottoRituale; },
+      set sottoRituale(v) { sottoRituale = v; },
       /* La giornata */
       disegnaOrizzonte: disegnaOrizzonte,
       setOrizzonte: setOrizzonte,
@@ -3147,9 +3208,20 @@
   }
 
   var isolaChiesta = null;
+  /* ACCESO DI SERIE. Tutte e sette le schermate sono convertite e
+     prove/gemelle.js le confronta con quelle di prima elemento per elemento,
+     in tutte e sedici le loro sezioni: stesso albero, stesse classi, stesso
+     testo, stessi data-. Il codice di prima resta al suo posto e non è morto:
+     è la via di ritorno, e si prende in due modi — l'impostazione, oppure
+     `?classico=1` nell'indirizzo, che funziona anche se l'app non risponde
+     più. Finché quelle due strade ci sono, questa scelta è reversibile in un
+     tocco da chiunque, senza aspettare un rilascio. */
   function reactVoluto() {
     if (/[?&]classico=1/.test(location.search)) return false;
-    try { return !!(LM.load().profilo || {}).react; } catch (e) { return false; }
+    try {
+      var p = LM.load().profilo || {};
+      return p.react !== false;
+    } catch (e) { return true; }
   }
   function caricaIsola() {
     if (isolaChiesta) return isolaChiesta;
@@ -3176,8 +3248,39 @@
     return window.LM_REACT.conosce(v);
   }
 
+  /* LO STESSO RAMO, PER I PANNELLI.
+     Un pannello si apre da dentro a una schermata, e quindi l'isola a quel
+     punto è già in pagina (l'ha caricata il router). Se non c'è — perché il
+     pannello si apre da una schermata non ancora convertita — non si aspetta
+     niente: si disegna quello di prima, che è lì e funziona. Aspettare
+     vorrebbe dire un pannello che tarda a comparire dopo un tocco, ed è
+     esattamente la cosa che non deve succedere. */
+  function foglioReact(quale) {
+    if (!reactVoluto()) return false;
+    if (!window.LM_REACT) { caricaIsola().catch(function () { /* resta il vecchio */ }); return false; }
+    return !!window.LM_REACT.conosceFoglio(quale);
+  }
+
+  /* Aprire un pannello disegnato da React. Stessa porta di sempre — il foglio
+     è quello, la pila del ritorno è quella, il gesto per chiuderlo è quello —
+     ma il corpo lo possiede l'isola: si apre vuoto e ci si monta dentro. */
+  function apriFoglio(titolo, quale, props, largo, riapri) {
+    apriSheet(titolo, '', function (root) {
+      window.LM_REACT.montaFoglio(quale, root, props);
+    }, largo, riapri);
+  }
+
   schermo('oggi', vistaFocus);
-  function vistaFocus() {
+  var fuocoOra = {};
+
+  /* LA SCENA DI «ADESSO», senza toccare la pagina: restituisce il dentro e le
+     classi, e chi la usa disegna il contenitore. `wireFuoco()` fa quello che
+     va fatto dopo, con gli elementi già attaccati. */
+  /* `soloScena` la fa fermare un attimo prima: calcola tutto e restituisce
+     {classi, dentro} senza toccare la pagina. La usa React, che il
+     contenitore lo disegna per conto suo — avvolgere un blocco già completo
+     vorrebbe dire un elemento in più nell'albero. */
+  function vistaFocus(soloScena) {
     var adesso;
     if (fuocoScelto) {
       /* la cosa scelta a mano può essere un'abitudine come una cosa di oggi:
@@ -3189,8 +3292,15 @@
       adesso = LM.azioneAdesso();
     }
     var prossima = adesso.azione;
+    /* quello che serve DOPO, quando gli elementi sono in pagina: sta in un
+       oggetto di modulo perché il cablaggio è uscito da qui e non vede più le
+       variabili locali di questa chiamata. Si riempie QUI e non prima: la
+       prima versione lo azzerava due righe più sotto, dopo averlo riempito,
+       e al primo tocco su «Fatto» leggeva un null. */
+    fuocoOra = { prossima: prossima, adesso: adesso, oggi: null, minTimer: 25 };
     ultimoFuocoKey = fuocoScelto ? 'pin:' + fuocoScelto : (prossima ? prossima.id : '') + '|' + adesso.stato;
     var oggi = LM.azioniDiOggi();
+    fuocoOra.oggi = oggi;
     var inCoda = oggi.filter(function (a) { return !a.done; }).length - (prossima ? 1 : 0);
 
     /* In cima non c'è niente da leggere. Prima c'erano tre nomi per la stessa
@@ -3206,12 +3316,18 @@
        l'unico momento in cui funziona per chi ha l'ADHD (Barkley 1997 sulla
        sensibilità alle conseguenze immediate contro quelle rimandate). Il
        progresso della giornata resta in «Andamento», dove lo si va a cercare. */
+    /* LA SCENA ESCE DAL SUO CONTENITORE. La vista non restituisce più un
+       blocco già avvolto ma il DENTRO e le classi separati: React deve poter
+       disegnare lui il contenitore, se no si ritrova un elemento in più
+       nell'albero — l'errore che prove/gemelle.js ha già trovato quattro
+       volte. Il codice di prima riavvolge tutto due righe più sotto. */
+    var scena = { classi: 'focus-scena', dentro: '' };
     var html = topbar('Oggi', '', '', '', true);
     html += '<div id="oggi-giornata"></div>';
 
     if (!prossima) {
       var finita = oggi.length > 0;
-      html += '<div class="focus-scena"><div class="vuoto">' + illoSole() +
+      scena.dentro += '<div class="vuoto">' + illoSole() +
         (oggi.length ? '<b>Per oggi hai finito tutto.</b><br>Restano la review della sera, o una cosa in più se ne hai voglia.'
                      : '<b>Oggi non hai ancora scelto cosa fare.</b><br>Bastano pochi secondi: scegli la prima cosa e parti.') +
         '</div>' +
@@ -3232,8 +3348,9 @@
             '<button class="btn btn-mini btn-ghost" data-vai="inbox">' + ICO('inbox', 15) + ' Prendi dalle attività</button>') +
         '</div>' +
         '<div class="focus-agg">' + rigaAggiunta('agg-rapida', 'Scrivi una cosa da fare…') + '</div>' +
-        '</div>';
-      $vista.innerHTML = html;
+        '';
+      if (soloScena) return scena;
+      $vista.innerHTML = html + '<div class="' + scena.classi + '">' + scena.dentro + '</div>';
       montaOggiGiornata();
       $vista.querySelectorAll('[data-vai]').forEach(function (b) {
         b.addEventListener('click', function () {
@@ -3252,6 +3369,7 @@
     var colArea = LM.coloreArea(area);
     var timerAttivo = !!timerDiQuesta(prossima.id);
     var minTimer = Math.max(1, Math.min(180, +(prossima.durata || 0) || 25));
+    fuocoOra.minTimer = minTimer;
 
     /* Una riga sola sopra al titolo, e dice due cose che il titolo non dice:
        di che parte della tua vita è questa cosa, e perché è questa adesso.
@@ -3412,7 +3530,8 @@
        tutti figli della stessa colonna centrata, e «Le altre di oggi» finiva
        incollata sotto ai tasti con duecento pixel di niente sotto di sé: la
        schermata sembrava interrotta a metà. */
-    html += '<div class="focus-scena' + (timerAttivo ? ' timer-attivo' : '') + '">' +
+    scena.classi = 'focus-scena' + (timerAttivo ? ' timer-attivo' : '');
+    scena.dentro +=
       '<div class="focus-cuore st-' + stato.cls + ' tipo-' + tipoCls + '" style="--c-area:' + colArea + '">' +
       '<div class="focus-stato st-' + stato.cls + '">' +
       (stato.barra
@@ -3502,84 +3621,99 @@
         '<div class="focus-coda"><span>Ultima di oggi</span></div>') +
       '</div>' +
       altreHtml +
-      '</div>';
+      '';
 
-    $vista.innerHTML = html;
+    if (soloScena) return scena;
+    $vista.innerHTML = html + '<div class="' + scena.classi + '">' + scena.dentro + '</div>';
     montaOggiGiornata();
-
-    $vista.querySelectorAll('[data-vai]').forEach(function (b) {
-      b.addEventListener('click', function () {
-        if (b.getAttribute('data-sub')) sottoRituale = b.getAttribute('data-sub');
-        location.hash = '#/' + b.getAttribute('data-vai');
-      });
-    });
-
-    var btnAltre = document.getElementById('btn-altre');
-    /* passa da render(), non da vistaFocus(): questa funzione riscrive TUTTO
-       $vista, riga delle sezioni compresa, e solo render() la rimette. Aprendo
-       «le altre» la riga spariva fino al ridisegno successivo. Con la pagina
-       che non cambia, render() conserva lo scorrimento e non anima niente. */
-    if (btnAltre) btnAltre.addEventListener('click', function () { mostraAltre = !mostraAltre; render(); });
-    var btnTorna = document.getElementById('btn-torna-piano');
-    if (btnTorna) btnTorna.addEventListener('click', function () { fuocoScelto = null; render(); });
-    $vista.querySelectorAll('[data-fa-fuoco]').forEach(function (b) {
-      b.addEventListener('click', function () { fuocoScelto = b.getAttribute('data-fa-fuoco'); mostraAltre = false; render(); });
-    });
-    $vista.querySelectorAll('[data-fa-fatto]').forEach(function (b) {
-      b.addEventListener('click', function (ev) {
-        feedbackSpunta(ev, LM.completaAzione(b.getAttribute('data-fa-fatto')), 'Fatto.', 'check');
-        render();
-      });
-    });
-
-    document.getElementById('btn-fatto').addEventListener('click', function (ev) {
-      var eraTimer = !!timerDiQuesta(prossima.id);
-      if (eraTimer) fermaTimer(true);
-      var abitudine = prossima.tipo === 'abitudine';
-      var xp = abitudine ? LM.completaAbitudine(prossima.id) : LM.completaAzione(prossima.id);
-      var r = ev.currentTarget.getBoundingClientRect();
-      flyXp(r.left + r.width / 2, r.top, xp);
-      /* la pioggia di coriandoli per QUALUNQUE cosa finita, non solo per la
-         più importante: una cosa fatta è una cosa fatta, e il momento in cui
-         la ricompensa conta è questo, non un contatore da un'altra parte */
-      festeggia('pieno', r.left + r.width / 2, r.top + r.height / 2);
-      toast(abitudine ? 'Abitudine spuntata.'
-        : (prossima.mit ? 'Hai completato l’azione più importante di oggi.' : 'Azione completata.'),
-        xp, abitudine ? 'refresh' : (prossima.mit ? 'star' : 'check'));
-      render();
-    });
-    /* «Falla adesso» non è «Fatto»: è la scelta di spostare qui una cosa che
-       il piano metteva più in là. La scheda passa a «Scelta da te», con la
-       via del ritorno al piano accanto. */
-    var bAdesso = document.getElementById('btn-adesso');
-    if (bAdesso) bAdesso.addEventListener('click', function () {
-      fuocoScelto = prossima.id; mostraAltre = false; render();
-    });
-    var bNonOra = document.getElementById('btn-nonora');
-    if (bNonOra) bNonOra.addEventListener('click', function () {
-      fermaTimer(false);
-      if (fuocoScelto === prossima.id) fuocoScelto = null;
-      LM.rimandaAzione(prossima.id);
-      toast('Rimandata.', 0, 'rimanda');
-      render();
-    });
-    var bSalta = document.getElementById('btn-salta');
-    if (bSalta) bSalta.addEventListener('click', function () {
-      fermaTimer(false);
-      if (fuocoScelto === prossima.id) fuocoScelto = null;
-      LM.saltaGiornoAbitudine(prossima.id);
-      toast('Saltata per oggi: la serie non si azzera.', 0, 'salta');
-      render();
-    });
-    var bm = document.getElementById('btn-mancata');
-    if (bm) bm.addEventListener('click', function () { chiediMancata(prossima.id, prossima.testo); });
-    var bc = document.getElementById('btn-concentra');
-    if (bc) bc.addEventListener('click', function () { apriConcentrazione(); });
-    var bt = document.getElementById('btn-timer');
-    if (bt) bt.addEventListener('click', function () {
-      scegliTimer(prossima.id, prossima.areaId, prossima.testo, minTimer);
-    });
+    wireFuoco();
   }
+
+  /* IL CABLAGGIO DI «ADESSO» — quello che va fatto quando gli elementi
+     sono in pagina. Fuori dalla vista perché lo deve chiamare anche React,
+     che il markup lo disegna per conto suo. Le poche cose che gli servono
+     stanno in `fuocoOra`, riempito da chi ha appena costruito la scena. */
+  function wireFuoco() {
+
+  $vista.querySelectorAll('[data-vai]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      if (b.getAttribute('data-sub')) sottoRituale = b.getAttribute('data-sub');
+      location.hash = '#/' + b.getAttribute('data-vai');
+    });
+  });
+
+  var btnAltre = document.getElementById('btn-altre');
+  /* passa da render(), non da vistaFocus(): questa funzione riscrive TUTTO
+     $vista, riga delle sezioni compresa, e solo render() la rimette. Aprendo
+     «le altre» la riga spariva fino al ridisegno successivo. Con la pagina
+     che non cambia, render() conserva lo scorrimento e non anima niente. */
+  if (btnAltre) btnAltre.addEventListener('click', function () { mostraAltre = !mostraAltre; render(); });
+  var btnTorna = document.getElementById('btn-torna-piano');
+  if (btnTorna) btnTorna.addEventListener('click', function () { fuocoScelto = null; render(); });
+  $vista.querySelectorAll('[data-fa-fuoco]').forEach(function (b) {
+    b.addEventListener('click', function () { fuocoScelto = b.getAttribute('data-fa-fuoco'); mostraAltre = false; render(); });
+  });
+  $vista.querySelectorAll('[data-fa-fatto]').forEach(function (b) {
+    b.addEventListener('click', function (ev) {
+      feedbackSpunta(ev, LM.completaAzione(b.getAttribute('data-fa-fatto')), 'Fatto.', 'check');
+      render();
+    });
+  });
+
+  /* A giornata vuota «Fatto» non c'è: la scena è un altro ramo. Nel codice di
+     prima quel ramo usciva prima di arrivare qui; adesso che il cablaggio è
+     una funzione a sé, ci si può arrivare comunque — e senza questa guardia
+     il primo tocco su una giornata vuota rompeva tutta la schermata. */
+  var bFatto = document.getElementById('btn-fatto');
+  if (bFatto) bFatto.addEventListener('click', function (ev) {
+    var eraTimer = !!timerDiQuesta(fuocoOra.prossima.id);
+    if (eraTimer) fermaTimer(true);
+    var abitudine = fuocoOra.prossima.tipo === 'abitudine';
+    var xp = abitudine ? LM.completaAbitudine(fuocoOra.prossima.id) : LM.completaAzione(fuocoOra.prossima.id);
+    var r = ev.currentTarget.getBoundingClientRect();
+    flyXp(r.left + r.width / 2, r.top, xp);
+    /* la pioggia di coriandoli per QUALUNQUE cosa finita, non solo per la
+       più importante: una cosa fatta è una cosa fatta, e il momento in cui
+       la ricompensa conta è questo, non un contatore da un'altra parte */
+    festeggia('pieno', r.left + r.width / 2, r.top + r.height / 2);
+    toast(abitudine ? 'Abitudine spuntata.'
+      : (fuocoOra.prossima.mit ? 'Hai completato l’azione più importante di oggi.' : 'Azione completata.'),
+      xp, abitudine ? 'refresh' : (fuocoOra.prossima.mit ? 'star' : 'check'));
+    render();
+  });
+  /* «Falla adesso» non è «Fatto»: è la scelta di spostare qui una cosa che
+     il piano metteva più in là. La scheda passa a «Scelta da te», con la
+     via del ritorno al piano accanto. */
+  var bAdesso = document.getElementById('btn-adesso');
+  if (bAdesso) bAdesso.addEventListener('click', function () {
+    fuocoScelto = fuocoOra.prossima.id; mostraAltre = false; render();
+  });
+  var bNonOra = document.getElementById('btn-nonora');
+  if (bNonOra) bNonOra.addEventListener('click', function () {
+    fermaTimer(false);
+    if (fuocoScelto === fuocoOra.prossima.id) fuocoScelto = null;
+    LM.rimandaAzione(fuocoOra.prossima.id);
+    toast('Rimandata.', 0, 'rimanda');
+    render();
+  });
+  var bSalta = document.getElementById('btn-salta');
+  if (bSalta) bSalta.addEventListener('click', function () {
+    fermaTimer(false);
+    if (fuocoScelto === fuocoOra.prossima.id) fuocoScelto = null;
+    LM.saltaGiornoAbitudine(fuocoOra.prossima.id);
+    toast('Saltata per oggi: la serie non si azzera.', 0, 'salta');
+    render();
+  });
+  var bm = document.getElementById('btn-mancata');
+  if (bm) bm.addEventListener('click', function () { chiediMancata(fuocoOra.prossima.id, fuocoOra.prossima.testo); });
+  var bc = document.getElementById('btn-concentra');
+  if (bc) bc.addEventListener('click', function () { apriConcentrazione(); });
+  var bt = document.getElementById('btn-timer');
+  if (bt) bt.addEventListener('click', function () {
+    scegliTimer(fuocoOra.prossima.id, fuocoOra.prossima.areaId, fuocoOra.prossima.testo, fuocoOra.minTimer);
+  });
+  }
+
 
   /* la barra compatta della giornata è sempre in cima a Oggi */
   function montaOggiGiornata() {
@@ -4673,6 +4807,7 @@
   /* editor del RITMO DI BASE: sonno, sveglia, pasti (con durata). Vale per i
      giorni che non hanno un registro proprio. */
   function apriRitmo() {
+    if (foglioReact('ritmo')) { apriFoglio('Sonno e pasti', 'ritmo', {}); return; }
     var r = LM.load().profilo.ritmo || LM.RITMO_DEFAULT;
     var q = LM.chiediQuando();
     function rigaChiedi(quale, nome, spiega, v) {
@@ -5516,6 +5651,20 @@
   }
 
   schermo('rituali', vistaRituali);
+  /* Il contenuto di TUTTE le sezioni aperte. Fuori dalla vista perché lo deve
+     chiamare anche React, dopo che ha disegnato le sezioni: sono le stesse
+     cinque schermate dei rituali, non copie. */
+  function disegnaCorpiRituali() {
+    var disegna = {
+      mattina: ritualeMattina, registro: ritualeRegistro,
+      checkin: ritualeCheckin, sera: ritualeSera, settimana: ritualeSettimana
+    };
+    Object.keys(disegna).forEach(function (id) {
+      var c = document.getElementById('corpo-rit-' + id);
+      if (c) disegna[id](c);
+    });
+  }
+
   function vistaRituali() {
     var adesso = ritualeDellOra();
     /* alla prima apertura è aperto quello dell'ora; dopo vale quello che hai
@@ -5559,15 +5708,7 @@
 
     $vista.innerHTML = topbar('Rituali', '', '', '', true) + corpoHtml;
 
-    /* disegna il contenuto di TUTTE le sezioni aperte */
-    var disegna = {
-      mattina: ritualeMattina, registro: ritualeRegistro,
-      checkin: ritualeCheckin, sera: ritualeSera, settimana: ritualeSettimana
-    };
-    Object.keys(disegna).forEach(function (id) {
-      var c = document.getElementById('corpo-rit-' + id);
-      if (c) disegna[id](c);
-    });
+    disegnaCorpiRituali();
 
     $vista.querySelectorAll('.rit-riga').forEach(function (b) {
       b.addEventListener('click', function () {
@@ -6258,6 +6399,7 @@
     function trova() { return LM.load().abitudini.find(function (x) { return x.id === id; }); }
     var h0 = trova();
     if (!h0) return;
+    if (foglioReact('abitudine')) { apriFoglio(h0.testo, 'abitudine', { id: id, dopo: dopo }); return; }
     /* chiusa ogni volta che si apre la scheda: aprirla è una decisione, non
        una preferenza da ricordare */
     var abdApertaConfig = false;
@@ -7212,6 +7354,11 @@
   function apriScheda(id) {
     function trova() { return LM.load().backlog.find(function (x) { return x.id === id; }); }
     if (!trova()) return;
+    if (foglioReact('scheda')) {
+      apriFoglio(trova().testo, 'scheda', { id: id });
+      titoloSheetModificabile(trova().testo, function (v) { LM.modificaBacklog(id, v); ridisegnaAtt(); });
+      return;
+    }
 
     function corpoHtml() {
       var b = trova();
@@ -7411,7 +7558,7 @@
       });
       root.querySelector('#sc-abitudine').addEventListener('click', function () { apriDaAbitudine(trova()); });
       var bM = root.querySelector('#sc-mancata');
-      if (bM) bM.addEventListener('click', function () { chiediMancata(b.id, trova().testo, ridisegna); });
+      if (bM) bM.addEventListener('click', function () { chiediMancata(b.id, trova().testo, ridisegnaAtt); });
       var bR = root.querySelector('#sc-rimetti');
       if (bR) bR.addEventListener('click', function () {
         LM.togliMancata(b.id);

@@ -29,6 +29,11 @@ function Linguetta({ id, ico, eti, quanti, attiva, onScegli }) {
 export default function Scoperte() {
   const s = usaLM((LM) => LM.load());
   const a = A();
+  /* Chi arriva qui per aprire un esperimento — dalla scheda di una riga, o
+     perché ne aveva uno mezzo scritto — entra dalla parte degli esperimenti:
+     il modulo vive là dentro, e aprire la pagina sul registro vorrebbe dire
+     far sparire quello che stava scrivendo. */
+  if (a.lezDaProvare || a.formExp) a.sezScoperte = 'esperimenti';
   const quale = a.sezScoperte;
 
   /* il corpo si ridisegna dopo ogni commit: React ha appena rifatto il

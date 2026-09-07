@@ -165,10 +165,57 @@ qui sopra servivano a farla con qualcosa in mano invece che a occhio. Chi non
 accende l'interruttore non scarica niente lo stesso: l'isola sta fuori dal
 pacco, come il Design lab.
 
-**La prima schermata convertita è Attività**, e «identica» non è una parola:
-`prove/gemelle.js` disegna la schermata col codice di prima, si prende
-l'albero del DOM, la ridisegna con React e confronta elemento per elemento.
-**61 elementi su 61, tutti uguali.**
+**Tutte e sette le schermate sono convertite**, e React è acceso di serie. Il
+codice di prima resta al suo posto e non è morto: è la via di ritorno, e si
+prende in due modi — l'impostazione *Schermate nuove*, oppure `?classico=1`
+nell'indirizzo, che funziona **anche se l'app non risponde più**. Finché
+quelle due strade ci sono, la scelta è reversibile in un tocco.
+
+«Identica» non è una parola:
+`prove/gemelle.js` disegna ogni schermata col codice di prima, si prende
+l'albero del DOM, la ridisegna con React e confronta elemento per elemento —
+tag, classi, testo, id e i `data-` da cui dipendono i comandi.
+
+| | |
+|---|---|
+| Adesso | 76 su 76 |
+| La giornata · giorno / settimana / mese / anno | 264 · 334 · 301 · 443 |
+| Attività · sistemare / da fare / abitudini | 61 · 147 · 95 |
+| Panoramica · riepilogo / diario / aree / grafici | 281 · 1806 · 168 · 135 |
+| Rituali | 111 su 111 |
+| Scoperte · registro / esperimenti | 140 · 66 |
+| Perché l'app è fatta così | 178 su 178 |
+
+**Sedici sezioni su sette schermate, tutte identiche.**
+
+**E poi i pannelli.** Le schermate non sono tutto quello che si vede: sopra a
+ognuna si aprono i fogli — la scheda di un'attività, quella di un'abitudine, i filtri,
+il menu, le tue aree, sonno e pasti. Vale la stessa regola, e c'è lo stesso strumento a
+pretenderla: `prove/fogli.js`, che apre ogni pannello col codice di prima e
+con React e confronta quello che sta dentro a `#sheet-corpo`, il titolo in
+cima e il valore dei campi.
+
+| | |
+|---|---|
+| Guarda solo (i filtri) | 73 su 73 |
+| Menu | 22 su 22 |
+| Le tue aree | 101 su 101 |
+| Sonno e pasti | 109 su 109 |
+| Scheda di un'attività · divisa in passi / semplice | 93 · 61 |
+| Scheda di un'abitudine | 143 su 143 |
+
+Un pannello che sta nell'isola ma non ha la sua riga nella tabella delle
+aperture non viene saltato in silenzio: la prova lo segnala. Un pannello
+convertito e mai guardato è come non averlo convertito.
+
+Una cosa che i pannelli hanno insegnato e le schermate no: **«cambiato» non
+vuol dire la stessa cosa di qua e di là.** Nel browser l'evento `change` di un
+campo di testo o di una data arriva quando hai finito — esci dal campo, o
+premi invio. `onChange` di React arriva a ogni tasto premuto: è `input` con un
+altro nome. Per rinominare un'area voleva dire un salvataggio (e un ridisegno
+di mezza app) per carattere; per la scadenza di un'attività, una data scritta
+a metà salvata come «nessuna». Quei campi tengono l'ascoltatore vero del
+browser, e la ragione sta scritta in `react/src/nativo.js`.
 
 Portandola sono venute fuori quattro differenze, una alla volta, e la più
 istruttiva è la seconda: `sottoNav()` **sposta** il nodo delle linguette della
