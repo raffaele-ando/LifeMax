@@ -5315,8 +5315,8 @@ function sezDiario(c: HTMLElement): void {
          sta guardando, e finisce nella riga «Annullato: …» */
       var riga = bt.closest('.diario-evento');
       var eti = riga ? (riga.querySelector<HTMLElement>('.diario-testo') || {}).textContent : '';
-      annullaDalDiario(+bt.getAttribute('data-annulla'), (eti || '').replace(/\s+/g, ' ').trim().slice(0, 60),
-        bt.getAttribute('data-tipo'), bt.getAttribute('data-chiave'));
+      annullaDalDiario(+(bt.getAttribute('data-annulla') || 0), (eti || '').replace(/\s+/g, ' ').trim().slice(0, 60),
+        bt.getAttribute('data-tipo') || undefined, bt.getAttribute('data-chiave') || undefined);
     });
   });
 }
@@ -5435,7 +5435,7 @@ export function eroePlanciaHtml() {
    si chiede conferma — una sorpresa qui costa più di un tocco in più. */
 function annullaDalDiario(ts: number, etichetta: string, tipo?: string, chiave?: string): void {
   /* «Rimetti»: lo stato di adesso, messo da parte prima di toccarlo */
-  function conRimetti(fai) {
+  function conRimetti(fai: () => void) {
     var prima = JSON.parse(JSON.stringify(LM.load()));
     if (!fai()) { toast('Questa non si può più annullare.', 0, 'aiuto'); return; }
     render();
@@ -5816,7 +5816,7 @@ function bloccoRecupero(tutti?: boolean): string {
     (righePasti
       ? etichetta('I pasti di oggi', 'utensils') + '<div class="lista">' + righePasti + '</div>'
       : '') +
-    etichetta('Altre cose fatte', 'check', fatte.length || null) +
+    etichetta('Altre cose fatte', 'check', fatte.length || undefined) +
     /* la stessa riga d'aggiunta di tutto il resto dell'app: una cosa per
        volta, e l'area compare quando hai cominciato a scrivere */
     rigaAggiunta('agg-fatto', 'Una cosa che hai fatto…',
