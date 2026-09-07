@@ -189,20 +189,39 @@ tag, classi, testo, id e i `data-` da cui dipendono i comandi.
 **Sedici sezioni su sette schermate, tutte identiche.**
 
 **E poi i pannelli.** Le schermate non sono tutto quello che si vede: sopra a
-ognuna si aprono i fogli — la scheda di un'attività, quella di un'abitudine, i filtri,
-il menu, le tue aree, sonno e pasti. Vale la stessa regola, e c'è lo stesso strumento a
-pretenderla: `prove/fogli.js`, che apre ogni pannello col codice di prima e
-con React e confronta quello che sta dentro a `#sheet-corpo`, il titolo in
-cima e il valore dei campi.
+ognuna si aprono i fogli — la scheda di un'attività, quella di un'abitudine,
+i filtri, il menu, le tue aree, sonno e pasti, e le finestrelle da cui si
+sceglie un timer o si dice com'è andata quando una cosa non è andata.
+
+Vale la stessa regola, e c'è lo stesso strumento a pretenderla:
+`prove/fogli.js` apre ogni pannello col codice di prima e con React e
+confronta quello che sta dentro a `#sheet-corpo`, il titolo in cima e il
+valore dei campi (due pannelli con lo stesso markup e dentro due valori
+diversi non sono lo stesso pannello).
 
 | | |
 |---|---|
-| Guarda solo (i filtri) | 73 su 73 |
-| Menu | 22 su 22 |
-| Le tue aree | 101 su 101 |
-| Sonno e pasti | 109 su 109 |
 | Scheda di un'attività · divisa in passi / semplice | 93 · 61 |
-| Scheda di un'abitudine | 143 su 143 |
+| Scheda di un'abitudine | 143 |
+| Le review di prima | 696 |
+| Sonno e pasti | 109 |
+| Le tue aree | 101 |
+| Guarda solo (i filtri) | 73 |
+| Primi passi | 73 |
+| Una cosa che hai capito | 45 |
+| Diventa un'abitudine | 41 |
+| Quanto ci stai (la scelta del timer) | 31 |
+| Non del tutto | 24 |
+| Menu | 22 |
+| Quando fare questo passo | 15 |
+| Registro tecnico | 15 |
+| Backup e ripristino | 11 |
+
+Quindici, e ne mancano due che contano: le **Impostazioni**, da sole grandi
+quanto una schermata, e i **Promemoria**, che di là dal markup hanno
+l'iscrizione alle notifiche e i messaggi che spiegano quale delle due chiavi
+hai sbagliato. Sono due pannelli che si sistemano una volta e poi non si
+toccano più — cioè esattamente quelli che, a romperli, si rompono in silenzio.
 
 Un pannello che sta nell'isola ma non ha la sua riga nella tabella delle
 aperture non viene saltato in silenzio: la prova lo segnala. Un pannello
@@ -216,6 +235,26 @@ altro nome. Per rinominare un'area voleva dire un salvataggio (e un ridisegno
 di mezza app) per carattere; per la scadenza di un'attività, una data scritta
 a metà salvata come «nessuna». Quei campi tengono l'ascoltatore vero del
 browser, e la ragione sta scritta in `react/src/nativo.js`.
+
+**E `defaultValue` vale solo al montaggio.** Il codice di prima rifà tutto
+`#sheet-corpo` a ogni ridisegno, quindi il campo è un elemento nuovo e riparte
+da quello che dicono i dati; React invece riusa il nodo che sta nella stessa
+posizione. Togliendo la scadenza di un'attività, il campo continuava a
+mostrare la data appena tolta. L'ha visto `prove/campi.js`. La cura è una
+`key` che cambia: il nodo rinasce, che è esattamente quello che succedeva
+prima.
+
+**E la più insidiosa: uno stato di React si vede al disegno DOPO.** La scelta
+di «Non del tutto» stava in due variabili normali — toccare una pastiglia le
+cambiava, e il tasto «Segna e vai avanti» leggeva il valore di quel momento.
+Con uno stato, chi preme le due cose una in fila all'altra arriva al tasto
+prima che il disegno sia stato rifatto, e il tasto legge ancora «nessuna
+scelta»: quello che avevi fatto non veniva registrato e non valeva i suoi
+punti. L'ha preso `prove/timer.js`. La cura è la traduzione fedele — un
+riferimento accanto allo stato, dove lo stato accende la pastiglia e il
+riferimento risponde a «cos'hai scelto» adesso — e dove il codice di prima
+leggeva i CAMPI (il ritmo di base, il nome di una nuova area) li rilegge anche
+questo. Leggere i campi è l'unica risposta che non può essere in ritardo.
 
 Portandola sono venute fuori quattro differenze, una alla volta, e la più
 istruttiva è la seconda: `sottoNav()` **sposta** il nodo delle linguette della

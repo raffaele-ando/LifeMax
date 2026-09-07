@@ -69,12 +69,18 @@ export default function Aree() {
   const s = window.LM.load();
   const [nome, setNome] = useState('');
   const [ico, setIco] = useState(a.ICONE_AREA[0]);
+  /* il segno scelto sta anche in un riferimento: lo stato si vede al disegno
+     dopo, e chi tocca un segno e preme «Aggiungi» subito dietro arriverebbe
+     al tasto prima. Il codice di prima teneva una variabile normale, e questa
+     è la sua traduzione. Lo stato serve solo ad accendere il tasto giusto. */
+  const segno = useRef(a.ICONE_AREA[0]);
 
   const crea = (e) => {
     e.preventDefault();
-    const v = nome.trim();
+    const campo = document.getElementById('area-nuova-nome');
+    const v = ((campo && campo.value) || nome).trim();
     if (!v) return;
-    window.LM.aggiungiArea(v, ico);
+    window.LM.aggiungiArea(v, segno.current);
     a.render();
     a.apriAree();
     a.toast('Area creata.', 0, 'aree');
@@ -102,7 +108,7 @@ export default function Aree() {
       <div className="ico-picker mt-s" id="ico-picker" hidden={!nome.trim()}>
         {a.ICONE_AREA.map((x) => (
           <button key={x} className={'ico-pick' + (x === ico ? ' sel' : '')} data-ico={x} aria-label={x}
-            onClick={() => setIco(x)}><Segno nome={x} /></button>
+            onClick={() => { segno.current = x; setIco(x); }}><Segno nome={x} /></button>
         ))}
       </div>
     </div>

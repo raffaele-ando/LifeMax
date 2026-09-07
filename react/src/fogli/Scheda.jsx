@@ -63,15 +63,35 @@ function Passo({ b, st, onRidisegna }) {
 
 export default function Scheda({ id }) {
   const a = A();
+  /* TUTTI I GANCI PRIMA DELL'USCITA ANTICIPATA. React li conta, e li conta
+     nello stesso ordine a ogni disegno: uno che sta sotto a un `return` è un
+     gancio che a volte c'è e a volte no. */
   const [, bump] = useState(0);
   const nuovoPasso = useRef(null);
+  const scad = useRef(null);
+  const areaBox = useRef(null);
 
   const b = window.LM.load().backlog.find((x) => x.id === id);
+  const ridisegna = () => { bump((n) => n + 1); a.ridisegnaAtt(); };
+
+  /* la riga della scadenza è il bersaglio: il campo VERO ci sta steso sopra,
+     trasparente e grande quanto lei, così il tocco arriva al calendario del
+     sistema senza passare da noi. Aprirlo a mano su un campo alto un pixel e
+     senza eventi del puntatore non apriva niente. */
+  usaCambioNativo(scad, (i) => {
+    window.LM.impostaScadenzaBacklog(id, i.value || null); ridisegna();
+  }, [id, b && b.scadenza]);
+
+  /* il <select> delle aree lo scrive ancora `selectAree` di app.js: è lo
+     stesso di tutta l'app, e riscriverlo vorrebbe dire due sorgenti per la
+     stessa forma. I suoi eventi però non sono di React, quindi si ascolta il
+     `change` vero sul contenitore. */
+  usaCambioNativo(areaBox, (i) => { window.LM.cambiaAreaBacklog(id, i.value); a.ridisegnaAtt(); }, [id]);
+
   /* sparita mentre il pannello era aperto (cancellata, o arrivata la fusione
      da un altro dispositivo): si chiude, come faceva `collega` */
   if (!b) { a.chiudiSheet(); a.ridisegnaAtt(); return null; }
 
-  const ridisegna = () => { bump((n) => n + 1); a.ridisegnaAtt(); };
   const isProg = !!(b.steps && b.steps.length);
   const oggi = window.LM.todayKey();
   const av = isProg ? window.LM.avanzamentoProgetto(b) : null;
@@ -109,12 +129,6 @@ export default function Scheda({ id }) {
     });
   };
 
-  /* la riga della scadenza è il bersaglio: il campo VERO ci sta steso sopra,
-     trasparente e grande quanto lei, così il tocco arriva al calendario del
-     sistema senza passare da noi. Aprirlo a mano su un campo alto un pixel e
-     senza eventi del puntatore non apriva niente. */
-  const scad = useRef(null);
-  usaCambioNativo(scad, (i) => { window.LM.impostaScadenzaBacklog(b.id, i.value || null); ridisegna(); }, [b.id, b.scadenza]);
   /* LA `key` NON È UN DETTAGLIO QUI.
      Il codice di prima rifà tutto `#sheet-corpo` a ogni ridisegno: il campo è
      un elemento NUOVO, e il suo valore riparte da quello che dicono i dati.
@@ -127,12 +141,6 @@ export default function Scheda({ id }) {
       defaultValue={b.scadenza || undefined} aria-label="Scadenza" />
   );
 
-  /* il <select> delle aree lo scrive ancora `selectAree` di app.js: è lo
-     stesso di tutta l'app, e riscriverlo vorrebbe dire due sorgenti per la
-     stessa forma. I suoi eventi però non sono di React, quindi si ascolta il
-     `change` vero sul contenitore. */
-  const areaBox = useRef(null);
-  usaCambioNativo(areaBox, (i) => { window.LM.cambiaAreaBacklog(b.id, i.value); a.ridisegnaAtt(); }, [b.id]);
 
   return (
     <div className="sc">

@@ -31,44 +31,108 @@ const ok = (n, c, d) => { if (!c) guai++; console.log('  ' + (c ? 'ok  ' : 'KO  
    saltarlo in silenzio — un pannello convertito e non guardato sarebbe la
    stessa cosa che non averlo convertito. */
 const APERTURE = {
-  filtri: { vai: 'inbox', tab: 1, apri: (p) => p.evaluate(() => {
+  filtri: { titolo: 'Guarda solo', vai: 'inbox', tab: 1, apri: (p) => p.evaluate(() => {
     const b = document.querySelector('.att-filtro'); if (b) b.click();
   }) },
   /* «Altro» esiste solo con la barra a quattro pagine: con le tre porte
      accese quel pulsante non c'è, perché non ci sarebbe niente dentro. Per
      guardarlo bisogna quindi prima spegnere le tre porte. */
-  menu: { vai: 'oggi',
+  menu: { titolo: 'Menu', vai: 'oggi',
     prima: (p) => p.evaluate(() => { const s = LM.load(); s.profilo.nav = 'tutte'; LM.save(); }),
     apri: (p) => p.evaluate(() => {
       const b = document.querySelector('#nav-tab [data-menu]'); if (b) b.click();
     }) },
-  impostazioni: { vai: 'plancia', apri: (p) => p.evaluate(() => {
+  impostazioni: { titolo: 'Impostazioni', vai: 'plancia', apri: (p) => p.evaluate(() => {
     const b = document.getElementById('fondo-impostazioni') || document.querySelector('[data-imp]'); if (b) b.click();
   }) },
-  aree: { vai: 'plancia', apri: async (p) => {
+  aree: { titolo: 'Le tue aree', vai: 'plancia', apri: async (p) => {
     await p.evaluate(() => { const b = document.getElementById('fondo-impostazioni') || document.querySelector('[data-imp]'); if (b) b.click(); });
     await p.waitForTimeout(650);
     await p.evaluate(() => { const b = document.getElementById('imp-aree'); if (b) b.click(); });
   } },
-  promemoria: { vai: 'plancia', apri: async (p) => {
+  promemoria: { titolo: 'Promemoria', vai: 'plancia', apri: async (p) => {
     await p.evaluate(() => { const b = document.getElementById('fondo-impostazioni') || document.querySelector('[data-imp]'); if (b) b.click(); });
     await p.waitForTimeout(650);
     await p.evaluate(() => { const b = document.getElementById('imp-prom-come'); if (b) b.click(); });
   } },
-  ritmo: { vai: 'plancia', apri: async (p) => {
+  ritmo: { titolo: 'Sonno e pasti', vai: 'plancia', apri: async (p) => {
     await p.evaluate(() => { const b = document.getElementById('fondo-impostazioni') || document.querySelector('[data-imp]'); if (b) b.click(); });
     await p.waitForTimeout(650);
     await p.evaluate(() => { const b = document.getElementById('imp-ritmo'); if (b) b.click(); });
   } },
-  backup: { vai: 'plancia', apri: async (p) => {
+  /* con zero copie il pannello è tre righe di testo: si mettono giù due
+     copie prima, se no la parte che conta — l'elenco — non la guarda nessuno */
+  backup: { titolo: 'Backup e ripristino', vai: 'plancia',
+    /* UNA COPIA SOLA, E LA STESSA NEI DUE GIRI. `prima` gira due volte e i
+       backup restano nel deposito: senza svuotarlo, il secondo giro ne trova
+       uno in più del primo e il confronto trova una differenza che è la prova
+       stessa ad aver creato. L'orologio è fermo, quindi l'ora della copia è
+       identica di qua e di là. */
+    prima: (p) => p.evaluate(() => {
+      localStorage.removeItem('lifemax.backups.v1');
+      LM.backup('prima-import');
+    }),
+    apri: async (p) => {
     await p.evaluate(() => { const b = document.getElementById('fondo-impostazioni') || document.querySelector('[data-imp]'); if (b) b.click(); });
     await p.waitForTimeout(650);
     await p.evaluate(() => { const b = document.getElementById('imp-backup'); if (b) b.click(); });
   } },
-  registro: { vai: 'plancia', apri: async (p) => {
+  /* si arriva da dentro alla scheda di un'attività: prima si apre quella, e
+     poi il tasto del giorno accanto a un passo */
+  'quando-passo': { vai: 'inbox', tab: 1, apri: async (p) => {
+    await p.evaluate(() => {
+      const st = LM.load().backlog.filter((b) => b.steps && b.steps.some((x) => !x.done))[0];
+      const r = st && document.querySelector('[data-bkapri="' + st.id + '"]');
+      if (r) r.click();
+    });
+    await p.waitForTimeout(700);
+    await p.evaluate(() => { const b = document.querySelector('[data-stepquando]'); if (b) b.click(); });
+  } },
+  'da-abitudine': { vai: 'inbox', tab: 1, apri: async (p) => {
+    await p.evaluate(() => { const r = document.querySelector('[data-bkapri]'); if (r) r.click(); });
+    await p.waitForTimeout(700);
+    await p.evaluate(() => { const b = document.getElementById('sc-abitudine'); if (b) b.click(); });
+  } },
+  /* «Non del tutto» si apre dalla scheda di un'attività non ancora mancata */
+  mancata: { titolo: 'Non del tutto', vai: 'inbox', tab: 1, apri: async (p) => {
+    await p.evaluate(() => {
+      const st = LM.load().backlog.filter((b) => !b.mancata)[0];
+      const r = st && document.querySelector('[data-bkapri="' + st.id + '"]');
+      if (r) r.click();
+    });
+    await p.waitForTimeout(700);
+    await p.evaluate(() => { const b = document.getElementById('sc-mancata'); if (b) b.click(); });
+  } },
+  /* la scelta del timer si apre da «Adesso», sulla cosa di adesso */
+  timer: { titolo: 'Quanto ci stai', vai: 'oggi', apri: (p) => p.evaluate(() => {
+    const b = document.getElementById('btn-timer');
+    if (b) b.click();
+  }) },
+  /* il registro tecnico si apre dalla pastiglia del salvataggio, dentro alle
+     impostazioni: chi legge «Salvataggio…» vuole sapere subito perché */
+  /* del registro si confronta tutto tranne le righe che ci scorrono dentro:
+     dicono cos'è successo in questo giro, e i due giri sono due giri diversi.
+     Anche la testa dice a che punto sta il salvataggio adesso. */
+  diagnostica: { titolo: 'Registro tecnico', senza: '#diag-console, .diag-stato', vai: 'plancia', apri: async (p) => {
     await p.evaluate(() => { const b = document.getElementById('fondo-impostazioni') || document.querySelector('[data-imp]'); if (b) b.click(); });
     await p.waitForTimeout(650);
-    await p.evaluate(() => { const b = document.getElementById('imp-log'); if (b) b.click(); });
+    /* IL REGISTRO SI SVUOTA UN ATTIMO PRIMA. Le righe si accumulano per tutta
+       la prova, e il secondo giro ne ha più del primo: il numero scritto sulla
+       linguetta «Solo problemi (N)» sarebbe diverso di qua e di là per un
+       motivo che non c'entra niente col pannello. */
+    await p.evaluate(() => { if (window.LMLog) LMLog.svuota(); });
+    await p.evaluate(() => { const b = document.getElementById('imp-diag'); if (b) b.click(); });
+  } },
+  lezione: { titolo: 'Una cosa che hai capito', vai: 'esperimenti', apri: (p) => p.evaluate(() => {
+    const b = document.querySelector('[data-lezapri]'); if (b) b.click();
+  }) },
+  review: { titolo: 'Le review di prima', vai: 'plancia', apri: (p) => p.evaluate(() => {
+    const b = document.getElementById('riep-review'); if (b) b.click();
+  }) },
+  guida: { titolo: 'Primi passi', vai: 'plancia', apri: async (p) => {
+    await p.evaluate(() => { const b = document.getElementById('fondo-impostazioni') || document.querySelector('[data-imp]'); if (b) b.click(); });
+    await p.waitForTimeout(650);
+    await p.evaluate(() => { const b = document.getElementById('imp-guida'); if (b) b.click(); });
   } },
   /* DUE SCHEDE, NON UNA. Un'attività divisa in passi e una semplice sono due
      metà diverse dello stesso pannello — la scala dei passi, «Prossimo passo
@@ -93,7 +157,7 @@ const APERTURE = {
 
 /* L'IMPRONTA DI UN ALBERO — la stessa di prove/gemelle.js, con la radice che
    cambia. Le regole su cosa si guarda e cosa no stanno spiegate là. */
-const impronta = (radice) => `(function (radice) {
+const impronta = (radice, senza) => `(function (radice, senza) {
   function testoProprio(e) {
     var t = '';
     for (var i = 0; i < e.childNodes.length; i++) {
@@ -123,12 +187,18 @@ const impronta = (radice) => `(function (radice) {
       ? ((e.type === 'checkbox' || e.type === 'radio') ? (e.checked ? '1' : '0') : (e.value || '')) : '';
     out.push(liv + '|' + tag + '|' + cl + '|' + (e.id || '') + '|' + dati.sort().join(',') + '|' + testoProprio(e) + '|' + val);
     if (tag === 'svg') return;
+    /* QUELLO CHE NON PUÒ ESSERE UGUALE, e non è un difetto.
+       Il registro tecnico mostra il registro di QUESTO giro: i due giri sono
+       due giri diversi (in uno l'isola di React si carica, nell'altro no), e
+       le righe che scrivono non sono le stesse né lo possono essere. Del
+       riquadro si confronta l'involucro, non quello che ci scorre dentro. */
+    if (senza && e.matches(senza)) return;
     for (var j = 0; j < e.children.length; j++) scendi(e.children[j], liv + 1);
   }
   if (!radice) return ['NIENTE'];
   for (var k = 0; k < radice.children.length; k++) scendi(radice.children[k], 0);
   return out;
-})(document.getElementById('${radice}'))`;
+})(document.getElementById('${radice}'), ${senza ? "'" + senza + "'" : 'null'})`;
 
 const TITOLO = `(function () {
   var t = document.getElementById('sheet-titolo');
@@ -136,6 +206,22 @@ const TITOLO = `(function () {
   var c = t.querySelector('textarea, input');
   return (c ? c.value : t.textContent).replace(/\\s+/g, ' ').trim();
 })()`;
+
+/* DUE RICETTE CON LO STESSO NOME, E UNA SPARISCE SENZA DIRE NIENTE.
+   `APERTURE` è un oggetto: se un nome compare due volte, la seconda vince e
+   la prima non esiste più — comprese le sue righe (il titolo atteso, quello
+   che c'è da preparare prima). È successo, e il pannello risultava guardato
+   mentre la sua ricetta buona era stata coperta. Si legge il file e si conta. */
+{
+  const testo = fs.readFileSync(__filename, 'utf8');
+  const dentro = testo.slice(testo.indexOf('const APERTURE = {'), testo.indexOf('/* L’IMPRONTA DI UN ALBERO'));
+  const nomi = [...dentro.matchAll(/^  '?([a-z-]+)'?:\s*[[{]/gm)].map((m) => m[1]);
+  const doppi = nomi.filter((n, i) => nomi.indexOf(n) !== i);
+  if (doppi.length) {
+    console.log('  KO  ogni pannello ha una ricetta sola  → ' + [...new Set(doppi)].join(', '));
+    guai++;
+  }
+}
 
 (async () => {
   const srv = http.createServer((q, r) => {
@@ -209,7 +295,7 @@ const TITOLO = `(function () {
     await p.waitForTimeout(700);
     await ferme();
     const aperto = await p.evaluate(() => { const s = document.getElementById('sheet-overlay'); return !!s && !s.hidden; });
-    return { aperto, titolo: await p.evaluate(TITOLO), albero: await p.evaluate(impronta('sheet-corpo')) };
+    return { aperto, titolo: await p.evaluate(TITOLO), albero: await p.evaluate(impronta('sheet-corpo', r.senza)) };
   };
 
   for (const nome of quali) {
@@ -231,6 +317,13 @@ const TITOLO = `(function () {
 
     ok('il titolo è lo stesso', vecchio.titolo === nuovo.titolo,
       '«' + vecchio.titolo + '» prima, «' + nuovo.titolo + '» dopo');
+    /* ED È QUELLO GIUSTO. Una ricetta che sbaglia bersaglio apre un altro
+       pannello, e il confronto lo trova identico a se stesso: verde, e non ha
+       guardato niente. È successo col registro tecnico, dove il tasto da
+       premere esiste solo se hai fatto l'accesso — la prova restava sulle
+       impostazioni e diceva che andava tutto bene. */
+    if (r.titolo) ok('ed è il pannello che ci si aspettava', vecchio.titolo === r.titolo,
+      vecchio.titolo === r.titolo ? '' : 'la ricetta ha aperto «' + vecchio.titolo + '», non «' + r.titolo + '»');
     ok('l’albero ha lo stesso numero di elementi', vecchio.albero.length === nuovo.albero.length,
       vecchio.albero.length + ' prima, ' + nuovo.albero.length + ' dopo');
 

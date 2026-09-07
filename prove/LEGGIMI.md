@@ -725,7 +725,22 @@ genera le chiavi, in un browser vero).
   Qualche pannello esiste solo in un certo stato dell'app — «Altro» c'è solo
   con la barra a quattro pagine, perché con le tre porte non ci sarebbe niente
   dentro — e per quelli c'è `prima`, che mette l'app in quello stato prima di
-  tutt'e due i giri.
+  tutt'e due i giri. E `prima` deve LASCIARE LO STESSO STATO tutte e due le
+  volte: la prima versione della riga dei backup ne creava uno per giro, e al
+  secondo ce n'erano due — una differenza che era la prova stessa ad aver
+  fabbricato.
+  Ogni riga dice anche che TITOLO si aspetta, e serve: una ricetta che sbaglia
+  bersaglio apre un altro pannello, e il confronto lo trova identico a se
+  stesso — verde, e non ha guardato niente. È successo col registro tecnico,
+  dove il tasto da premere esiste solo se hai fatto l'accesso: la prova
+  restava sulle impostazioni e diceva che andava tutto bene.
+  Due ricette con lo stesso nome sono un problema dello stesso genere: la
+  seconda vince e la prima sparisce senza dire niente. Il file legge se stesso
+  e le conta.
+  Quello che NON PUÒ essere uguale si dichiara con `senza`, e finora è una
+  cosa sola: le righe che scorrono dentro al registro tecnico. Dicono cos'è
+  successo in QUESTO giro, e i due giri sono due giri diversi — in uno l'isola
+  di React si carica e nell'altro no.
 
 ## Come si lanciano
 

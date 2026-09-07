@@ -1774,6 +1774,7 @@
   }
 
   function apriBackups() {
+    if (foglioReact('backup')) { apriFoglio('Backup e ripristino', 'backup', {}); return; }
     var lista = LM.listBackups();
     var motivi = {
       'prima-azzeramento': 'prima di azzerare',
@@ -1906,6 +1907,7 @@
   }
 
   function apriDiagnostica() {
+    if (foglioReact('diagnostica')) { apriFoglio('Registro tecnico', 'diagnostica', {}, true); return; }
     var st = statoSalvataggioSpiegato();
     var nProblemi = window.LMLog ? LMLog.righe().filter(function (x) { return x.liv !== 'info'; }).length : 0;
     apriSheet('Registro tecnico',
@@ -2089,6 +2091,7 @@
   /* ---------- guida in-app ---------- */
 
   function apriGuida() {
+    if (foglioReact('guida')) { apriFoglio('Primi passi', 'guida', {}); return; }
     function voce(ico, tit, testo) {
       return '<div class="guida-voce"><span class="guida-ico">' + ICO(ico, 15) + '</span><div><b>' + tit + '</b><p>' + testo + '</p></div></div>';
     }
@@ -2578,6 +2581,7 @@
      guardare meno roba.
      ============================================================ */
   function apriArchivioReview() {
+    if (foglioReact('review')) { apriFoglio('Le review di prima', 'review', {}); return; }
     var righe = LM.tutteLeReview();
     var corpo = righe.length
       ? '<div class="lista">' + righe.map(function (r) {
@@ -2615,7 +2619,12 @@
     var g = LM.QUANTO_FATTO.find(function (x) { return x.id === m.quanto; });
     return g ? g.eti.toLowerCase() : 'non riuscita';
   }
+  /* chi aveva scelto questa come «la cosa di adesso» non ce l'ha più: il
+     fuoco si scorda insieme all'esito */
+  function scordaFuoco(id) { if (fuocoScelto === id) fuocoScelto = null; }
+
   function chiediMancata(id, testo, dopo) {
+    if (foglioReact('mancata')) { apriFoglio('Non del tutto', 'mancata', { id: id, testo: testo, dopo: dopo }); return; }
     var quanti = LM.QUANTO_FATTO.map(function (x) {
       return '<button class="q-chip" data-quanto="' + x.id + '">' + x.eti + '</button>';
     }).join('');
@@ -2674,6 +2683,10 @@
      dato trascinandola nella Giornata); dove non c'è, venticinque.
      ============================================================ */
   function scegliTimer(azioneId, areaId, testo, minBlocco) {
+    if (foglioReact('timer')) {
+      apriFoglio('Quanto ci stai', 'timer', { azioneId: azioneId, areaId: areaId, testo: testo, minBlocco: minBlocco });
+      return;
+    }
     var righe = ['avvio', 'blocco', 'pomodoro', 'libero'].map(function (k) {
       var T = TIPI_TIMER[k];
       var min = k === 'blocco' ? (minBlocco || T.min) : T.min;
@@ -3123,8 +3136,17 @@
       foglioReact: foglioReact,
       vociMenu: vociMenu,
       avviso: avviso,
+      applicaTema: applicaTema,
+      statoSalvataggioSpiegato: statoSalvataggioSpiegato,
+      righeLogHtml: righeLogHtml,
+      get logSoloProblemi() { return LOG_SOLO_PROBLEMI; },
+      set logSoloProblemi(v) { LOG_SOLO_PROBLEMI = v; },
       DURATE: DURATE,
       fmtOre: fmtOre,
+      TIPI_TIMER: TIPI_TIMER,
+      avviaTimer: avviaTimer,
+      festeggia: festeggia,
+      scordaFuoco: scordaFuoco,
       GIORNI_ORD: GIORNI_ORD,
       GIORNI_LAB: GIORNI_LAB,
       statoAbitudineOggi: statoAbitudineOggi,
@@ -3163,7 +3185,11 @@
       /* Scoperte */
       disegnaScoperte: disegnaScoperte,
       get lezDaProvare() { return lezDaProvare; },
+      set lezDaProvare(v) { lezDaProvare = v; },
       get formExp() { return formExp; },
+      selectAreeOpz: selectAreeOpz,
+      ridisegnaLezioni: function (t) { ridisegnaLezioni(t); },
+      trovaLezione: function (id) { return LM.trovaLezione(id); },
       /* Panoramica */
       eroePlancia: eroePlancia,
       eroePlanciaHtml: eroePlanciaHtml,
@@ -7576,6 +7602,7 @@
 
   /* Quando fare UN passo: gli stessi tasti-giorno della scheda. */
   function apriQuandoPasso(prog, passo) {
+    if (foglioReact('quando-passo')) { apriFoglio(passo.testo, 'quando-passo', { prog: prog, passo: passo }); return; }
     var oggi = LM.todayKey();
     var gia = LM.snapshot().azioni.find(function (a) { return !a.done && a.passoDi && a.passoDi.b === prog.id && a.passoDi.s === passo.id; });
     function chip(k, et) { return '<button class="q-chip' + (gia && gia.data === k ? ' on' : '') + '" data-qp="' + k + '">' + et + '</button>'; }
@@ -7610,6 +7637,7 @@
 
   /* Da cosa-da-fare a abitudine: si scelgono i giorni e (se serve) l'ora. */
   function apriDaAbitudine(b) {
+    if (foglioReact('da-abitudine')) { apriFoglio(b.testo, 'da-abitudine', { id: b.id }); return; }
     var html = '<div class="sc">' +
       etichetta('In che giorni', 'calendar') +
       '<div class="sc-gruppo">' +
@@ -7794,6 +7822,11 @@
   function apriLezione(id) {
     function trova() { return LM.trovaLezione(id); }
     if (!trova()) return;
+    if (foglioReact('lezione')) {
+      apriFoglio('Una cosa che hai capito', 'lezione', { id: id }, false,
+        { nome: 'Una cosa che hai capito', apri: function () { apriLezione(id); } });
+      return;
+    }
 
     function corpoHtml() {
       var l = trova();

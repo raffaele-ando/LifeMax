@@ -97,13 +97,46 @@ function Catena({ giorni, onGiorno }) {
 
 export default function Abitudine({ id, dopo }) {
   const a = A();
+  /* TUTTI I GANCI PRIMA DELL'USCITA ANTICIPATA: React li conta, e nello
+     stesso ordine a ogni disegno. */
   const [, bump] = useState(0);
   const [aperta, setAperta] = useState(false);
+  const nome = useRef(null);
+  const gg = useRef(null);
+  const ora = useRef(null);
+  const dur = useRef(null);
+  const area = useRef(null);
+  const da = useRef(null);
+  const fin = useRef(null);
 
   const h = window.LM.load().abitudini.find((x) => x.id === id);
+  const ridisegna = () => { bump((n) => n + 1); if (dopo) dopo(); };
+
+  /* i campi che salvano nei dati tengono il `change` vero del browser: la
+     ragione sta in react/src/nativo.js */
+  usaCambioNativo(nome, (i) => {
+    const v2 = i.value.trim();
+    const ora2 = window.LM.load().abitudini.find((x) => x.id === id);
+    if (!v2) { if (ora2) i.value = ora2.testo; return; }
+    window.LM.modificaAbitudine(id, { testo: v2 });
+    const tit = document.getElementById('sheet-titolo');
+    if (tit) tit.textContent = v2;
+    if (dopo) dopo();
+  }, [id, h && h.testo]);
+  usaCambioNativo(ora, (i) => { window.LM.modificaAbitudine(id, { ora: i.value || null }); ridisegna(); }, [id, h && h.ora]);
+  usaCambioNativo(dur, (i) => { window.LM.modificaAbitudine(id, { durata: i.value ? +i.value : null }); if (dopo) dopo(); }, [id]);
+  usaCambioNativo(area, (i) => { window.LM.modificaAbitudine(id, { areaId: i.value }); if (dopo) dopo(); }, [id]);
+  usaCambioNativo(da, (i) => {
+    const q = window.LM.load().abitudini.find((x) => x.id === id) || {};
+    window.LM.impostaPeriodoAbitudine(id, i.value || null, q.a); ridisegna();
+  }, [id, h && h.da, h && h.a]);
+  usaCambioNativo(fin, (i) => {
+    const q = window.LM.load().abitudini.find((x) => x.id === id) || {};
+    window.LM.impostaPeriodoAbitudine(id, q.da, i.value || null); ridisegna();
+  }, [id, h && h.da, h && h.a]);
+
   if (!h) { a.chiudiSheet(); if (dopo) dopo(); return null; }
 
-  const ridisegna = () => { bump((n) => n + 1); if (dopo) dopo(); };
   const st = a.statoAbitudineOggi(h);
   const serie = window.LM.streakAbitudine(h);
   const record = window.LM.recordAbitudine(h);
@@ -111,22 +144,9 @@ export default function Abitudine({ id, dopo }) {
   const giorni = a.giorniAbitudine(h, 4);
   const prevista = window.LM.abitudinePrevista(h, window.LM.todayKey());
 
-  /* i campi che salvano nei dati tengono il `change` vero del browser: la
-     ragione sta in react/src/nativo.js */
-  const nome = useRef(null);
-  usaCambioNativo(nome, (i) => {
-    const v = i.value.trim();
-    if (!v) { i.value = h.testo; return; }
-    window.LM.modificaAbitudine(id, { testo: v });
-    const tit = document.getElementById('sheet-titolo');
-    if (tit) tit.textContent = v;
-    if (dopo) dopo();
-  }, [id, h.testo]);
-
   /* le pastiglie dei giorni le scrive `chipsGiorni` di app.js: sono le stesse
      della riga d'aggiunta, e riscriverle vorrebbe dire due sorgenti per la
      stessa forma. Il tocco si prende sul contenitore. */
-  const gg = useRef(null);
   const toccaGiorno = (e) => {
     const chip = e.target.closest('.giorno-chip');
     if (!chip) return;
@@ -134,17 +154,6 @@ export default function Abitudine({ id, dopo }) {
     window.LM.modificaAbitudine(id, { giorni: a.leggiGiorni(gg.current) });
     ridisegna();
   };
-
-  const ora = useRef(null);
-  usaCambioNativo(ora, (i) => { window.LM.modificaAbitudine(id, { ora: i.value || null }); ridisegna(); }, [id, h.ora]);
-  const dur = useRef(null);
-  usaCambioNativo(dur, (i) => { window.LM.modificaAbitudine(id, { durata: i.value ? +i.value : null }); if (dopo) dopo(); }, [id]);
-  const area = useRef(null);
-  usaCambioNativo(area, (i) => { window.LM.modificaAbitudine(id, { areaId: i.value }); if (dopo) dopo(); }, [id]);
-  const da = useRef(null);
-  usaCambioNativo(da, (i) => { window.LM.impostaPeriodoAbitudine(id, i.value || null, h.a); ridisegna(); }, [id, h.da, h.a]);
-  const fin = useRef(null);
-  usaCambioNativo(fin, (i) => { window.LM.impostaPeriodoAbitudine(id, h.da, i.value || null); ridisegna(); }, [id, h.da, h.a]);
 
   return (
     <div className="abd">

@@ -84,13 +84,26 @@ export default function Ritmo() {
     setQ(window.LM.chiediQuando());
   };
 
+  /* SI SALVA QUELLO CHE C'È NEI CAMPI ADESSO, non quello che dice lo stato.
+     Sono la stessa cosa quasi sempre; non lo sono se qualcuno cambia un campo
+     e preme «Salva» prima che il disegno sia stato rifatto — un dito veloce, o
+     una prova che clicca. Il codice di prima leggeva i campi, e leggere i
+     campi è anche l'unica risposta che non può essere in ritardo. */
   const salva = () => {
+    const dentro = (q) => { const e = document.querySelector(q); return e ? e.value : ''; };
     const fuori = [];
-    pasti.forEach((p, i) => {
-      if (!p.ora) return;
-      fuori.push({ id: 'p' + i, nome: (p.nome || '').trim() || 'Pasto', ora: p.ora, durata: p.durata ? +p.durata : 30 });
+    document.querySelectorAll('#ritmo-pasti .ritmo-pasto').forEach((riga, i) => {
+      const ora2 = riga.querySelector('.ritmo-ora').value;
+      if (!ora2) return;
+      const n = riga.querySelector('.ritmo-nome').value.trim() || 'Pasto';
+      const d = riga.querySelector('.ritmo-dur').value;
+      fuori.push({ id: 'p' + i, nome: n, ora: ora2, durata: d ? +d : 30 });
     });
-    window.LM.impostaRitmo({ sveglia: sveglia || '07:30', sonno: sonno || '23:30', pasti: fuori });
+    window.LM.impostaRitmo({
+      sveglia: dentro('#ritmo-sveglia') || '07:30',
+      sonno: dentro('#ritmo-sonno') || '23:30',
+      pasti: fuori
+    });
     a.chiudiSheet(); a.render();
     a.toast('Ritmo di base aggiornato.', 0, 'check');
   };

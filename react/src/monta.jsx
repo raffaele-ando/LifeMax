@@ -39,6 +39,15 @@ import Aree from './fogli/Aree.jsx';
 import Ritmo from './fogli/Ritmo.jsx';
 import Scheda from './fogli/Scheda.jsx';
 import Abitudine from './fogli/Abitudine.jsx';
+import Guida from './fogli/Guida.jsx';
+import QuandoPasso from './fogli/QuandoPasso.jsx';
+import DaAbitudine from './fogli/DaAbitudine.jsx';
+import Mancata from './fogli/Mancata.jsx';
+import Timer from './fogli/Timer.jsx';
+import Review from './fogli/Review.jsx';
+import Lezione from './fogli/Lezione.jsx';
+import Diagnostica from './fogli/Diagnostica.jsx';
+import Backup from './fogli/Backup.jsx';
 
 const SCHERMI = {
   inbox: Attivita, scienza: Scienza, esperimenti: Scoperte,
@@ -51,7 +60,11 @@ const SCHERMI = {
    quello che stavi guardando, e chi lo apre resta vivo dietro — ma la strada
    per portarlo di qua è la stessa: un ramo solo in chi lo apre. */
 const FOGLI = {
-  filtri: Filtri, menu: Menu, aree: Aree, ritmo: Ritmo, scheda: Scheda, abitudine: Abitudine
+  filtri: Filtri, menu: Menu, aree: Aree, ritmo: Ritmo,
+  scheda: Scheda, abitudine: Abitudine, guida: Guida,
+  'quando-passo': QuandoPasso, 'da-abitudine': DaAbitudine,
+  mancata: Mancata, timer: Timer, review: Review, lezione: Lezione,
+  diagnostica: Diagnostica, backup: Backup
 };
 
 /* una radice per contenitore: React vuole tenersela fra un disegno e
