@@ -14,6 +14,8 @@
 import type { ApiLM } from '../dati/dati';
 import type { Registro } from '../registro/registro';
 import type { StatoAuth, StatoSync, ApiCloud } from '../nuvola/nuvola';
+import type { Segni } from '../segni/segni';
+import type { Forma } from '../forma/forma';
 
 declare global {
   interface Window {
@@ -24,5 +26,11 @@ declare global {
     LM_AUTH?: StatoAuth;
     LM_SYNC?: StatoSync;
     LMCloud?: ApiCloud;
+    /* i disegni: una funzione con quattro tabelle attaccate */
+    ICO: Segni;
+    GOOGLE_G: (size?: number) => string;
+    LOGO: (size?: number) => string;
+    /* la forma degli angoli, applicata al DOM vero */
+    LM_FORMA?: Forma;
   }
 }

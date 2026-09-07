@@ -25,6 +25,7 @@ import type {
   RegistroGiorno, GiornataPos, Promemoria, VocePromemoria
 } from '../tipi/stato';
 import { COME_UNIRE, giorno, ora } from '../tipi/stato';
+import { presa } from '../tipi/presa';
 
 function creaLM() {
 
@@ -300,16 +301,6 @@ function creaLM() {
      controlla invece di fidarsi. Dare `Stato` a queste funzioni vorrebbe dire
      mentire, e mentire al compilatore costa più che tacergli qualcosa. */
   type Mappa = Record<string, unknown>;
-
-  /* UNA RIGA CHE SI SA ESSERCI.
-     Il modo di dire «l'ho appena cercata e l'ho trovata». `findIndex` dà un
-     indice, la riga dopo lo controlla, e `arr[i]` per il compilatore resta
-     comunque «forse niente»: lui non collega le due righe. Questa funzione
-     dice una volta sola quello che si sa, invece di ripeterlo con un punto
-     esclamativo in trenta posti — dove uno dei trenta, un giorno, finirà
-     dove non si sa affatto.
-     SI USA SOLO subito dopo un controllo sull'indice, e mai per «speriamo». */
-  function presa<T>(v: T | undefined): T { return v as T; }
 
   function eMappa(v: unknown): v is Mappa {
     return !!v && typeof v === 'object' && !Array.isArray(v);
