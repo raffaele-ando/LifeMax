@@ -3,24 +3,26 @@
    Non è una lista di comodo: sono i pezzi che nel browser vivono su `window`
    perché ci arrivano da uno `<script>` — il registro tecnico, i disegni, la
    nuvola. Man mano che passano a modulo, le righe qui sotto sparivano una per
-   una: quando questo file è vuoto, la migrazione è finita.  */
-import type { ApiLM } from '../dati/dati';
+   una: quando questo file è vuoto, la migrazione è finita.
 
-/* IL REGISTRO. È il primo di tutti a caricarsi, apposta: così prende anche
-   gli errori degli script che vengono dopo. */
-export interface Registro {
-  info(can: string, msg: string, dati?: string): void;
-  avviso(can: string, msg: string, dati?: string): void;
-  errore(can: string, msg: string, dati?: string): void;
-  righe(): { t: number; liv: string; can: string; msg: string; dati?: string }[];
-  testo(): string;
-  ora(t: number): string;
-  svuota(): void;
-}
+   QUELLO CHE RESTA È IL SEME, e non è una svista. `LM`, il registro e la
+   nuvola si cercano a vicenda: `dati.ts` scrive nel registro, il registro
+   legge lo stato per la fotografia dell'ambiente, la nuvola chiama tutt'e
+   due. Fra moduli sarebbe un giro chiuso di import; su `window` è un
+   appuntamento che nessuno dei tre deve conoscere in anticipo. È lo stesso
+   motivo per cui c'erano tre `<script>` e non un albero di dipendenze.  */
+import type { ApiLM } from '../dati/dati';
+import type { Registro } from '../registro/registro';
+import type { StatoAuth, StatoSync, ApiCloud } from '../nuvola/nuvola';
 
 declare global {
   interface Window {
     LM: ApiLM;
     LMLog?: Registro;
+    /* la nuvola: `available: false` quando l'SDK non si carica, e da lì in
+       poi l'app funziona lo stesso su questo dispositivo */
+    LM_AUTH?: StatoAuth;
+    LM_SYNC?: StatoSync;
+    LMCloud?: ApiCloud;
   }
 }
