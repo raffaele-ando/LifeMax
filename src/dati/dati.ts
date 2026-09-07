@@ -22,7 +22,7 @@ import type {
   Stato, Area, Azione, Attivita, Abitudine, Lezione, Esperimento,
   Ritmo, Pasto, Timer, VoceRegistro, Slot, Disfa,
   Giorno, Ora, GiornoSettimana, Verso, ModoFusione, PassoDi, Mancata,
-  RegistroGiorno, GiornataPos, Promemoria, VocePromemoria
+  RegistroGiorno, GiornataPos, Promemoria, VocePromemoria, Chiedi, PatchChiedi
 } from '../tipi/stato';
 import { COME_UNIRE, giorno, ora } from '../tipi/stato';
 import { presa } from '../tipi/presa';
@@ -1662,25 +1662,33 @@ function creaLM() {
   /* ---------- ritmo della giornata e preferenza di visualizzazione ---------- */
 
   /* ritmo di BASE (vale per i giorni senza un registro loro) */
-  function impostaChiedi(patch: Record<string, unknown>) {
+  /* Una toppa: uno dei due gruppi, uno dei suoi campi. Chi chiama ne cambia
+     un pezzo per volta — l'interruttore, o un'ora — e non deve riscrivere
+     tutto il resto per farlo. */
+  function impostaChiedi(patch: PatchChiedi) {
     var s = load();
     if (!s.profilo.chiedi) s.profilo.chiedi = JSON.parse(JSON.stringify(CHIEDI_DEFAULT));
     var tutte = s.profilo.chiedi as unknown as Record<string, { on: boolean; da: Ora; a?: Ora } | undefined>;
     (['notte', 'giorno'] as const).forEach(function (q) {
-      var p = eMappa(patch[q]) ? patch[q] as Record<string, unknown> : null;
+      const p = patch[q];
       if (!p) return;
       var c = tutte[q] || (tutte[q] = JSON.parse(JSON.stringify(CHIEDI_DEFAULT[q])));
       if (!c) return;
-      if (typeof p['on'] === 'boolean') c.on = p['on'];
-      if (p['da']) c.da = p['da'] as Ora;
-      if (p['a']) c.a = p['a'] as Ora;
+      if (typeof p.on === 'boolean') c.on = p.on;
+      if (p.da) c.da = p.da;
+      /* `a` — «non dopo le» — ce l'ha solo la domanda della notte: quella
+         del giorno è una volta sola, a fine giornata. */
+      if ('a' in p && p.a) c.a = p.a;
     });
     registra('impostazioni', 'Cambiato quando l\u2019app chiede del sonno e dei pasti', false);
     save();
   }
-  function chiediQuando() {
+  /* una COPIA, non l'originale: chi la riceve la tiene in mano e ci scrive
+     dentro (il pannello del ritmo lo fa), e scrivere nell'oggetto vivo dei
+     dati vorrebbe dire cambiarli senza passare da `save` */
+  function chiediQuando(): Chiedi {
     var c = load().profilo.chiedi || CHIEDI_DEFAULT;
-    return JSON.parse(JSON.stringify(c));
+    return JSON.parse(JSON.stringify(c)) as Chiedi;
   }
 
   function impostaRitmo(patch: Partial<Ritmo>) {

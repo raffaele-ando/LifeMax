@@ -3909,7 +3909,7 @@ export function fmtOre(min: number): string {
 
 /* scaletta di durate ampia: dai 5 minuti (una micro-azione per partire) alle
    8 ore (una giornata di lavoro), così nessuno deve arrotondare per forza */
-const DURATE: { v: number | ''; t: string }[] = [{ v: '', t: 'durata —' },
+export const DURATE: { v: number | ''; t: string }[] = [{ v: '', t: 'durata —' },
   { v: 5, t: '5 min' }, { v: 10, t: '10 min' }, { v: 15, t: '15 min' }, { v: 20, t: '20 min' },
   { v: 25, t: '25 min' }, { v: 30, t: '30 min' }, { v: 45, t: '45 min' }, { v: 60, t: '1 h' },
   { v: 90, t: '1 h 30' }, { v: 120, t: '2 h' }, { v: 150, t: '2 h 30' }, { v: 180, t: '3 h' },

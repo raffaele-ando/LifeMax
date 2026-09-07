@@ -203,6 +203,14 @@ export interface Chiedi {
   giorno: { on: boolean; da: Ora };
 }
 
+/* una toppa su `Chiedi`: un campo per volta, di uno dei due gruppi. È quello
+   che manda il pannello del ritmo quando si tocca un interruttore o si
+   cambia un'ora. */
+export interface PatchChiedi {
+  notte?: { on?: boolean; da?: Ora | null; a?: Ora | null };
+  giorno?: { on?: boolean; da?: Ora | null };
+}
+
 export interface RegistroGiorno {
   sveglia?: Ora;
   sonno?: Ora;
