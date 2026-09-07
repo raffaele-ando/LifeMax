@@ -42,11 +42,10 @@ import { LMCharts } from '../grafici/grafici';
 import { LM_FORMA } from '../forma/forma';
 import { presa } from '../tipi/presa';
 import { esc as escapa, riga as pzRiga } from '../pezzi/stringhe';
-import type { OpzRiga } from '../pezzi/stringhe';
 import type {
   Giorno, Ora, GiornoSettimana, Stato, Area, Azione, Attivita, Abitudine,
-  Lezione, Esperimento, Passo, Pasto, Ritmo, Timer as TimerVivo, VoceRegistro,
-  Mancata, PassoDi, Slot
+  Lezione, Esperimento, Passo, Pasto, Timer as TimerVivo,
+  Mancata, PassoDi
 } from '../tipi/stato';
 import { giorno as comeGiorno, ora as comeOra } from '../tipi/stato';
 
@@ -88,10 +87,10 @@ export interface Nodo {
   areaId?: string;
   pastoId?: string;
   icona?: string;
-  fatto?: boolean;
-  done?: boolean;
-  mit?: boolean;
-  streak?: number;
+  fatto?: boolean | undefined;
+  done?: boolean | undefined;
+  mit?: boolean | undefined;
+  streak?: number | undefined;
   mancata?: Mancata | null;
   /* UN'AZIONE PUÒ NASCERE DA UN PASSO DI UN PROGETTO, e il pannello della
      giornata lo legge per dire «il passo resta nel progetto» invece di
@@ -165,6 +164,12 @@ export interface StatoRit { fatto: boolean; testo: string; dett?: string }
 export type GiornoDiario = GiornoDiDiario;
 
 /* ------------------------------------------------------- Attività */
+/* UNA VOCE DI «DA FARE» come la impagina questa schermata: l'attività e il
+   perché sta dove sta (`i`, da `importanzaBacklog`). Il tipo si scrive qui e
+   non nei dati perché è la forma che `backlogPerImportanza` restituisce, e
+   `dati.ts` la deduce da sé: qui serve un nome per passarla a `gruppo`. */
+export type VocePesata = ReturnType<typeof LM.backlogPerImportanza>['ora'][number];
+
 export interface OpzRigaAtt {
   primo?: boolean;
   motivo?: string;
@@ -200,14 +205,105 @@ type Precisione = 'preciso' | 'circa';
    `src/promemoria/promemoria.ts`, e per la stessa ragione */
 type VoceProm = 'mattina' | 'checkin' | 'mit' | 'sera' | 'abitudini';
 
-/* cosa risponde il Worker a `/salute`: `ok` sempre, il resto quando c'è */
+/* COSA RISPONDE IL WORKER. Una forma sola per due porte — `/salute` e
+   `/prova` — perché `spiegaProva` le legge insieme: la salute dice se il
+   Worker ha le chiavi, la prova dice cosa ne ha fatto il servizio push, e
+   la diagnosi utile nasce dal confronto fra le due. Tutto opzionale: sono
+   campi che il Worker aggiunge quando li ha (vedi `promemoria/worker.js`).
+   `stato` e `detto` sono il numero e il testo che ha risposto il servizio
+   push; `dove` compare solo quando il Worker non è nemmeno arrivato a
+   parlargli, e allora vale `'firma'`. */
 interface RispostaProva {
   ok?: boolean;
   vapid?: boolean;
   pubblica?: string;
+  soggetto?: string;
   iscritti?: number;
   errore?: string;
+  stato?: number;
+  detto?: string;
+  dove?: 'firma';
 }
+
+/* ============================================================
+   LO STATO DI VISTA
+
+   Nove cose che non sono né dati né DOM: quale linguetta è aperta, quale
+   giorno si sta sfogliando, cosa c'è scritto nel modulo a metà. Non
+   finiscono in localStorage e non passano dal cloud — ricaricando la pagina
+   tornano così — ma devono sopravvivere a un ridisegno, perché la pagina si
+   ridisegna da sé quando arriva la risposta dell'account o un aggiornamento
+   dal cloud, e ritrovarsi riportati su un'altra sezione senza aver toccato
+   niente è peggio del problema che quella sezione risolve.
+
+   STANNO IN UN OGGETTO SOLO, e la ragione è il nuovo motore. Prima erano
+   `var` dentro alla funzione che racchiudeva tutto, e i componenti React ci
+   scrivevano dentro passando per `window.LM_APP`. In moduli ES un nome
+   importato è di sola lettura: `import { schermo.sezPlancia }` non si può assegnare.
+   Un campo di un oggetto esportato sì — `schermo.sezPlancia = 'diario'`
+   funziona da qualunque modulo, ed è lo stesso oggetto per tutti. Così la
+   scrittura da fuori resta possibile senza rimettere in piedi una finestra
+   globale.
+   ============================================================ */
+
+/* la schermata Attività: quale linguetta, quale filtro, la ricerca, e quali
+   dei due gruppi a scomparsa sono aperti. `attTabMostrata` non c'è più —
+   serviva ad animare solo al cambio di linguetta, e la linguetta adesso la
+   tiene il componente, che sa da sé quando cambia. */
+export interface StatoAttivita {
+  tab: 'sistemare' | 'dafare' | 'abitudini' | null;
+  area: string;   /* 'tutte' | 'data' | 'progetti' | id di un'area */
+  query: string;
+  tutteAperte: boolean;
+  parcheggioAperto: boolean;
+}
+
+/* IL MODULO DEL NUOVO ESPERIMENTO mentre è aperto, con quello che c'è
+   scritto dentro. `lez` è la riga imparata da cui è partito, quando è
+   partito da lì. Tutti stringhe perché vengono da campi di testo e tendine:
+   diventano date e numeri solo quando si preme Avvia. */
+export interface ModuloEsperimento {
+  nome: string;
+  int: string;
+  area: string;
+  metrica: string;
+  durata: string;
+  lez: string | null;
+}
+
+export interface StatoSchermo {
+  att: StatoAttivita;
+  /* «La giornata»: il giorno di riferimento, oggi finché non si sfoglia.
+     Era `null` fino al primo disegno, e i venti punti che lo leggono
+     dovevano difendersi da un caso che dura un istante e non si vede mai. */
+  giornataAncora: Giorno;
+  /* Panoramica e Scoperte: quale sezione si guarda */
+  sezPlancia: string;
+  sezScoperte: string;
+  /* Rituali: quali blocchi sono aperti — ognuno per conto suo, aprirne uno
+     non chiude gli altri — e quale aprire arrivandoci da un collegamento
+     («vai alle abitudini» da Oggi), che si consuma al primo disegno. */
+  ritualiAperti: Record<string, boolean> | null;
+  sottoRituale: string | null;
+  /* Scoperte → esperimenti: la riga imparata da provare al prossimo
+     disegno, e il modulo aperto con quello che c'è scritto dentro */
+  lezDaProvare: Lezione | null;
+  formExp: ModuloEsperimento | null;
+  /* la diagnostica: solo i problemi, o tutto */
+  logSoloProblemi: boolean;
+}
+
+export const schermo: StatoSchermo = {
+  att: { tab: null, area: 'tutte', query: '', tutteAperte: false, parcheggioAperto: false },
+  giornataAncora: LM.todayKey(),
+  sezPlancia: 'riepilogo',
+  sezScoperte: 'registro',
+  ritualiAperti: null,
+  sottoRituale: null,
+  lezDaProvare: null,
+  formExp: null,
+  logSoloProblemi: false
+};
 
 /* ------------------------------------------------------------ PRENDERE UN NODO
    Due modi, e la differenza è tutta.
@@ -1955,7 +2051,7 @@ export function wirePromemoria(root: HTMLElement): void {
   function spiegaProva(risposta: RispostaProva | null, stato: number): string {
     const j: RispostaProva = risposta || {};
     const s = j.stato || 0;
-    const chiave = (P.cfg().chiave || '');
+    const chiave = (P ? P.cfg().chiave || '' : '');
     const coppiaDiversa = j.pubblica && chiave && j.pubblica !== chiave;
     if (coppiaDiversa) {
       return 'Il servizio push ha detto no (<code>' + esc(String(s || stato)) + '</code>) e si vede perché: <b>le due chiavi non sono la stessa coppia</b>. Nell’app c’è <code>' + esc(chiave.slice(0, 12)) + '…</code>, sul Worker <code>' + esc(String(j.pubblica).slice(0, 12)) + '…</code>. Copia quella del Worker qui sopra e premi Collega.';
@@ -2274,7 +2370,7 @@ export function wireDiagnostica(root: HTMLElement): void {
    vogliono già dire priorità, serie, cattura, esperimenti, «Oggi» e «extra».
    Un'area con la stella finiva accanto alla stella della priorità, e le due
    figure identiche dicevano due cose diverse nella stessa riga. */
-var ICONE_AREA = ['book', 'heart', 'users', 'wallet', 'landmark', 'rocket', 'briefcase',
+export const ICONE_AREA = ['book', 'heart', 'users', 'wallet', 'landmark', 'rocket', 'briefcase',
   'lightbulb', 'casa', 'musica', 'globo', 'pesi', 'user', 'shield'];
 
 export function apriAree() {
@@ -3238,7 +3334,7 @@ function fraQuanto(min: number): string {
    schermata a tutte le altre.
    ============================================================ */
 const SCHERMI: Record<string, DisegnaSchermo> = {};
-export function schermo(id: string, disegna: DisegnaSchermo): void { SCHERMI[id] = disegna; }
+export function registraSchermo(id: string, disegna: DisegnaSchermo): void { SCHERMI[id] = disegna; }
 
 /* ---------------------------------------------------------- E I PANNELLI
    Lo stesso taglio, per la stessa ragione. Un pannello si apre da dentro a
@@ -3262,7 +3358,7 @@ export function schermo(id: string, disegna: DisegnaSchermo): void { SCHERMI[id]
    scritto a mano di cosa è lecito chiamare era il modo di avere un confine
    senza avere i moduli.  */
 const FOGLI: Record<string, MontaFoglio> = {};
-export function foglio(id: string, monta: MontaFoglio): void { FOGLI[id] = monta; }
+export function registraFoglio(id: string, monta: MontaFoglio): void { FOGLI[id] = monta; }
 
 /* IL GANCIO PER SMONTARE. Chiudendo il foglio, chi ci ha disegnato dentro
    deve poterlo sapere: React tiene i suoi nodi in mano a una radice, e
@@ -3374,7 +3470,7 @@ export function vistaFocus(soloScena?: boolean): Scena | undefined {
     montaOggiGiornata();
     $vista.querySelectorAll<HTMLElement>('[data-vai]').forEach(function (b) {
       b.addEventListener('click', function () {
-        if (b.getAttribute('data-sub')) sottoRituale = b.getAttribute('data-sub');
+        if (b.getAttribute('data-sub')) schermo.sottoRituale = b.getAttribute('data-sub');
         location.hash = '#/' + b.getAttribute('data-vai');
       });
     });
@@ -3677,7 +3773,7 @@ export function wireFuoco() {
 
 $vista.querySelectorAll<HTMLElement>('[data-vai]').forEach(function (b) {
   b.addEventListener('click', function () {
-    if (b.getAttribute('data-sub')) sottoRituale = b.getAttribute('data-sub');
+    if (b.getAttribute('data-sub')) schermo.sottoRituale = b.getAttribute('data-sub');
     location.hash = '#/' + b.getAttribute('data-vai');
   });
 });
@@ -3817,13 +3913,10 @@ const DURATE: { v: number | ''; t: string }[] = [{ v: '', t: 'durata —' },
 
 /* orizzonte della pagina "Giornata" e giorno/settimana/mese di riferimento */
 let giornataOrizzonte: Orizzonte = 'giorno';
-/* IL GIORNO DI RIFERIMENTO della pagina «La giornata»: oggi, finché non si
-   sfoglia. Era `null` fino al primo disegno, e tutti i venti punti che lo
-   leggono dovevano difendersi da un caso che dura un istante e non si vede
-   mai — la schermata lo riempiva prima di guardarlo. */
-let giornataAncora: Giorno = LM.todayKey();
 let giornataSonnoAperto = false;  /* pannello sonno/pasti in cima alla pagina Giornata */
-let giornataPopVista: 'vista' | 'modifica' = 'vista';  /* pop-up su schermo stretto */
+/* C'era anche un `giornataPopVista` ('vista' | 'modifica') per il pop-up su
+   schermo stretto: dichiarato e mai letto, in tutta la vita del file. Il
+   pop-up si apre già in modifica. */
 
 /* eventi di un giorno qualsiasi (per giorno/settimana/mese) */
 function nodiGiorno(k: Giorno): NodiDelGiorno {
@@ -4124,7 +4217,7 @@ function abilitaTrascina(scope: ParentNode, onRilascio: (id: string, bersaglio: 
       if (!bersaglio) return;
       const btnDentro = bersaglio.closest('button');
       if (btnDentro && btnDentro !== el && el.contains(btnDentro)) return;  /* i pulsanti interni restano cliccabili */
-      const id = el.getAttribute('data-drag-az');
+      const id: string = el.getAttribute('data-drag-az') || '';
       if (!id) return;
       const x0 = ev.clientX, y0 = ev.clientY;
       const tocco = ev.pointerType === 'touch';
@@ -4332,7 +4425,7 @@ function apriItemGiornata(k: Giorno, id: string, tipo: 'azione' | 'abitudine', o
       chiudiSheet(); ricarica();
     });
     const vai = root.querySelector<HTMLElement>('.ig-vairituali');
-    if (vai) vai.addEventListener('click', function () { chiudiSheet(); attTab = 'abitudini'; location.hash = '#/inbox'; });
+    if (vai) vai.addEventListener('click', function () { chiudiSheet(); att.tab = 'abitudini'; location.hash = '#/inbox'; });
   });
 }
 
@@ -4642,7 +4735,7 @@ function montaGiornata(container: HTMLElement, opzioni?: OpzGriglia): void {
 
 /* --- Settimana: 7 colonne con blocchi (scroll orizzontale su mobile) --- */
 function montaSettimana(container: HTMLElement): void {
-  var lunedi = LM.weekKey(giornataAncora);
+  var lunedi = LM.weekKey(schermo.giornataAncora);
   var giorni = []; for (var i = 0; i < 7; i++) giorni.push(LM.addDays(lunedi, i));
   var oggi = LM.todayKey();
   var nowMin = new Date().getHours() * 60 + new Date().getMinutes();
@@ -4700,7 +4793,7 @@ function spostaSuGiorno(id: string, bersaglio: HTMLElement): void {
 
 /* --- Mese: calendario con indicatori di attività e scadenze --- */
 function montaMese(container: HTMLElement): void {
-  const p = giornataAncora.split('-');
+  const p = schermo.giornataAncora.split('-');
   const anno = +(p[0] || 0), mese = +(p[1] || 1) - 1;
   var primo = new Date(anno, mese, 1);
   var inizio = new Date(anno, mese, 1 - ((primo.getDay() + 6) % 7));
@@ -4742,7 +4835,7 @@ function montaMese(container: HTMLElement): void {
       (fatti.length ? '<span class="me-mattoni">' + mattoni + '</span>' : '') + '</button>';
   }
   var dowh = ['L', 'M', 'M', 'G', 'V', 'S', 'D'].map(function (x) { return '<span>' + x + '</span>'; }).join('');
-  container.innerHTML = orizzNav('mese', giornataAncora, null, (mesi[mese] || '') + ' ' + anno) +
+  container.innerHTML = orizzNav('mese', schermo.giornataAncora, null, (mesi[mese] || '') + ' ' + anno) +
     /* le sette colonne stanno dentro un contenitore che SCORRE di lato: su un
        telefono da 320px, sette colonne in duecentottanta pixel fanno celle da
        trentun pixel, dove non ci sta né una pastiglia né un numero. Meglio
@@ -4765,7 +4858,7 @@ function montaMese(container: HTMLElement): void {
 
 /* --- Anno: mappa dell'attività + scadenze dei prossimi mesi --- */
 function montaAnno(container: HTMLElement): void {
-  const anno = +(giornataAncora.split('-')[0] || 0);
+  const anno = +(schermo.giornataAncora.split('-')[0] || 0);
   const s = LM.snapshot();
   const giorni: { data: Giorno; valore: number }[] = [];
   let k = comeGiorno(anno + '-01-01');
@@ -4778,14 +4871,14 @@ function montaAnno(container: HTMLElement): void {
   const scadHtml = scad.length ? scad.map(function (b) {
     const ar = areaById(b.areaId);
     /* qui la scadenza c'è: il filtro qui sopra ha tenuto solo quelle che ce
-       l'hanno, e `scadInfo` risponde niente soltanto senza una data */
-    const si = presa(scadInfo(b.scadenza));
+       l'hanno */
+    const si = scadInfo(presa(b.scadenza));
     return '<div class="an-scad"><span class="scad-badge ' + si.cls + '">' + LM.fmtShort(presa(b.scadenza)) + '</span>' +
       '<span class="scad-testo">' + esc(b.testo) + '</span>' +
       segnoArea(ar, 13, 'tl-tag') + '</div>';
   }).join('') : '<div class="sotto" style="margin:0">Nessuna scadenza registrata per il ' + anno + '.</div>';
 
-  container.innerHTML = orizzNav('anno', giornataAncora, null, '' + anno) +
+  container.innerHTML = orizzNav('anno', schermo.giornataAncora, null, '' + anno) +
     '<div class="card"><div class="eroe-statistiche" style="justify-content:flex-start;margin-bottom:14px">' +
     '<div class="stat"><span class="stat-val">' + attivi + '</span><span class="stat-eti">giorni attivi</span></div>' +
     '<div class="stat"><span class="stat-val">' + azFatte + '</span><span class="stat-eti">azioni fatte</span></div>' +
@@ -4808,7 +4901,7 @@ function orizzNav(orizz: Orizzonte, k1: Giorno, k2?: Giorno | null, etichetta?: 
   /* `null` vuol dire «non si sa»: negli orizzonti larghi la distanza in
      giorni non è un numero che significhi qualcosa, e infatti non si scrive */
   const dist: number | null = orizz === 'giorno' ? LM.daysBetween(oggi, k1) : (k2 ? (k1 <= oggi && oggi <= k2 ? 0 : null) : null);
-  const lontano = orizz === 'giorno' ? dist !== 0 : (giornataAncora !== oggi && dist !== 0);
+  const lontano = orizz === 'giorno' ? dist !== 0 : (schermo.giornataAncora !== oggi && dist !== 0);
   let quanto = '';
   if (orizz === 'giorno' && dist !== null && dist !== 0) {
     quanto = '<span class="orizz-dist' + (dist > 0 ? ' futuro' : ' passato') + '">' +
@@ -4837,8 +4930,8 @@ function wireOrizzNav(container: HTMLElement, orizz: Orizzonte): void {
   container.querySelectorAll<HTMLElement>('[data-nav]').forEach(function (b) {
     b.addEventListener('click', function () {
       const a = b.getAttribute('data-nav');
-      if (a === 'oggi') giornataAncora = LM.todayKey();
-      else giornataAncora = shiftKey(giornataAncora, orizz, a === 'next' ? 1 : -1);
+      if (a === 'oggi') schermo.giornataAncora = LM.todayKey();
+      else schermo.giornataAncora = shiftKey(schermo.giornataAncora, orizz, a === 'next' ? 1 : -1);
       disegnaOrizzonte();
     });
   });
@@ -4846,7 +4939,7 @@ function wireOrizzNav(container: HTMLElement, orizz: Orizzonte): void {
 
 export function setOrizzonte(o: Orizzonte, ancora?: Giorno): void {
   giornataOrizzonte = o;
-  if (ancora) giornataAncora = ancora;
+  if (ancora) schermo.giornataAncora = ancora;
   const nav = document.getElementById('orizz-nav');
   if (nav) nav.querySelectorAll<HTMLElement>('[data-orizz]').forEach(function (b) { b.classList.toggle('attivo', b.getAttribute('data-orizz') === o); });
   disegnaOrizzonte();
@@ -4856,9 +4949,9 @@ let orizzMostrato = '';
 export function disegnaOrizzonte(): void {
   const c = document.getElementById('orizz-corpo');
   if (!c) return;
-  const chiave = giornataOrizzonte + '|' + giornataAncora;
+  const chiave = giornataOrizzonte + '|' + schermo.giornataAncora;
   const cambio = chiave !== orizzMostrato;
-  if (giornataOrizzonte === 'giorno') montaGiornata(c, { giorno: giornataAncora });
+  if (giornataOrizzonte === 'giorno') montaGiornata(c, { giorno: schermo.giornataAncora });
   else if (giornataOrizzonte === 'settimana') montaSettimana(c);
   else if (giornataOrizzonte === 'mese') montaMese(c);
   else montaAnno(c);
@@ -4898,8 +4991,13 @@ function htmlGiornataStrip(): string {
   }).join('');
   var now = new Date();
   var nm = now.getHours() * 60 + now.getMinutes();
-  var nowEl = (em(nm) >= wake && em(nm) <= bed) ? '<span class="strip-now" style="left:' + pct(nm).toFixed(1) + '%"></span>' : '';
-  var pross = d.placed.filter(function (e) { return e.min >= nm && !(e.tipo === 'azione' ? e.done : e.fatto); })[0];
+  /* `em` torna null solo se gli si passa null: qui gli si passa l'ora di
+     adesso, che c'è sempre. */
+  const nmEff = em(nm) ?? nm;
+  var nowEl = (nmEff >= wake && nmEff <= bed) ? '<span class="strip-now" style="left:' + pct(nm).toFixed(1) + '%"></span>' : '';
+  /* in `placed` finiscono solo i nodi con un orario (vedi `nodiGiorno`): il
+     controllo su `min` è per il tipo, non per il caso. */
+  var pross = d.placed.filter(function (e) { return e.min != null && e.min >= nm && !(e.tipo === 'azione' ? e.done : e.fatto); })[0];
   /* Prima ora, poi il nome: «alle 15:00 Confrontare piani telefonici» è un
      appuntamento, «poi Confrontare piani telefonici · 15:00» è la prossima
      cosa da fare. E la prossima cosa da fare la dice già la schermata sotto,
@@ -4941,7 +5039,7 @@ function montaGiornataStrip(container: HTMLElement): void {
   var b = container.querySelector<HTMLElement>('#giornata-strip-btn');
   if (b) b.addEventListener('click', function () {
     apriSheet('La giornata', '<div id="sheet-giornata"></div>', function (root) {
-      montaGiornata(root.querySelector<HTMLElement>('#sheet-giornata'), { compact: true });
+      montaGiornata(presa(root.querySelector<HTMLElement>('#sheet-giornata')), { compact: true });
     }, true);
   });
 }
@@ -4957,7 +5055,6 @@ export function apriRitmo() {
    VISTA: PLANCIA
    ============================================================ */
 
-var sezPlancia = 'riepilogo';
 var sezMostrata = '';   // per animare solo al cambio di sezione
 var periodoTrend = 14;
 var diarioGiorni = 21;
@@ -4985,14 +5082,16 @@ function oraDi(ts: number): string {
 /* quanti giorni mancano, come si dice, e la classe del colore. `d` c'era e
    non lo leggeva nessuno: quattro rami lo mettevano nell'oggetto e nessuno
    dei nove chiamanti lo guardava. */
-export interface Scadenza { testo: string; cls: string }
-export function scadInfo(scad: Giorno | null | undefined): Scadenza | null {
-  if (!scad) return null;
+/* `d` sono i giorni che mancano, negativi se è passata: il testo da solo
+   non basta a chi lo legge — «ieri» va scritto «scaduta ieri» e «domani»
+   «entro domani», e la differenza la dice il segno. */
+export interface Scadenza { d: number; testo: string; cls: string }
+export function scadInfo(scad: Giorno): Scadenza {
   const d = LM.daysBetween(LM.todayKey(), scad);
-  if (d < 0) return { testo: d === -1 ? 'ieri' : (-d) + 'g fa', cls: 'scad-ritardo' };
-  if (d === 0) return { testo: 'oggi', cls: 'scad-oggi' };
-  if (d === 1) return { testo: 'domani', cls: 'scad-vicina' };
-  return { testo: 'tra ' + d + 'g', cls: d <= 3 ? 'scad-vicina' : 'scad-lontana' };
+  if (d < 0) return { d: d, testo: d === -1 ? 'ieri' : (-d) + 'g fa', cls: 'scad-ritardo' };
+  if (d === 0) return { d: 0, testo: 'oggi', cls: 'scad-oggi' };
+  if (d === 1) return { d: 1, testo: 'domani', cls: 'scad-vicina' };
+  return { d: d, testo: 'tra ' + d + 'g', cls: d <= 3 ? 'scad-vicina' : 'scad-lontana' };
 }
 
 /* una riga della timeline del Diario */
@@ -5102,12 +5201,12 @@ function eventoDiarioHtml(ev: VoceDiario): string {
 export function disegnaSezione(): void {
   const c = document.getElementById('sez-corpo');
   if (!c) return;
-  const cambio = sezPlancia !== sezMostrata;
-  if (sezPlancia === 'riepilogo') sezRiepilogo(c);
-  else if (sezPlancia === 'diario') sezDiario(c);
-  else if (sezPlancia === 'aree') sezAree(c);
+  const cambio = schermo.sezPlancia !== sezMostrata;
+  if (schermo.sezPlancia === 'riepilogo') sezRiepilogo(c);
+  else if (schermo.sezPlancia === 'diario') sezDiario(c);
+  else if (schermo.sezPlancia === 'aree') sezAree(c);
   else sezAndamento(c);
-  sezMostrata = sezPlancia;
+  sezMostrata = schermo.sezPlancia;
   if (cambio) animaIngresso(c);
 }
 
@@ -5247,7 +5346,7 @@ function sezAree(c: HTMLElement): void {
       '<div class="sistema-nota">' + esc(a.sistema) + '</div></div>';
   }).join('');
   areeAttive().forEach(function (a) {
-    LMCharts.sparkline(document.getElementById('spark-' + a.id), LM.serieValutazioni(a.id, 14),
+    LMCharts.sparkline(perId('spark-' + a.id), LM.serieValutazioni(a.id, 14),
       { min: 1, max: 5, colore: LM.coloreArea(a), label: 'Auto-valutazione ' + a.nome + ', 14 giorni', unita: '/5' });
   });
 }
@@ -5263,19 +5362,19 @@ function sezAndamento(c: HTMLElement): void {
     '<div class="card mt" style="--i:1"><h2>' + ICO('tempospeso', 15) + ' Come hai speso il tempo</h2>' +
     '<div class="sotto">Minuti per area, negli ultimi 7 giorni.</div><div id="hbar-minuti"></div></div>';
 
-  LMCharts.trend(document.getElementById('trend-checkin'), [
+  LMCharts.trend(perId('trend-checkin'), [
     { nome: 'Energia', colore: dark ? '#c98500' : '#eda100', punti: LM.serieCheckin('energia', periodoTrend) },
     { nome: 'Focus',   colore: dark ? '#3987e5' : '#2a78d6', punti: LM.serieCheckin('focus', periodoTrend) },
     { nome: 'Umore',   colore: dark ? '#199e70' : '#1baf7a', punti: LM.serieCheckin('umore', periodoTrend) }
   ], { min: 1, max: 5, label: 'Andamento di energia, focus e umore' });
 
-  LMCharts.hbar(document.getElementById('hbar-minuti'),
+  LMCharts.hbar(perId('hbar-minuti'),
     LM.minutiSettimanaPerArea().sort(function (a, b) { return b.minuti - a.minuti; })
       .map(function (r) { return { label: r.area.nome, icona: ICO(r.area.icona, 15), value: r.minuti, colore: LM.coloreArea(r.area) }; }),
     { unita: 'min' });
 
-  presa(document.getElementById('seg-periodo')).querySelectorAll<HTMLElement>('[data-g]').forEach(function (b) {
-    b.addEventListener('click', function () { periodoTrend = +b.getAttribute('data-g'); disegnaSezione(); });
+  perId('seg-periodo').querySelectorAll<HTMLElement>('[data-g]').forEach(function (b) {
+    b.addEventListener('click', function () { periodoTrend = +(b.getAttribute('data-g') || 14); disegnaSezione(); });
   });
 }
 
@@ -5286,7 +5385,7 @@ function sezDiario(c: HTMLElement): void {
   var filtro = '<div class="segmenti mini-seg" id="diario-filtro">' +
     '<button data-tutto="0" class="' + (!diarioTutto ? 'attivo' : '') + '">Cose importanti</button>' +
     '<button data-tutto="1" class="' + (diarioTutto ? 'attivo' : '') + '">Tutto</button></div>';
-  var html;
+  let html: string;
   if (!giorni.length) {
     html = '<div class="card diario"><div class="card-testa">' + filtro + '</div>' +
       '<div class="vuoto" style="padding:20px 8px">' + ICO('quaderno', 26) + '<br><b>Ancora niente da mostrare.</b><br>Appena fai qualcosa comparirà qui, giorno per giorno.</div></div>';
@@ -5475,10 +5574,6 @@ function annullaDalDiario(ts: number, etichetta: string, tipo?: string, chiave?:
    VISTA: RITUALI
    ============================================================ */
 
-/* la sezione dei rituali da aprire quando ci si arriva da un collegamento
-   («vai alle abitudini» da Oggi): si consuma al primo disegno */
-export let sottoRituale: string | null = null;
-export function apriPoi(id: string | null): void { sottoRituale = id; }
 
 /* ============================================================
    I RITUALI, IN ORDINE DI GIORNATA
@@ -5511,11 +5606,6 @@ export const GRUPPI_RIT: GruppoRit[] = [
   { eti: 'Il registro di oggi', ids: ['registro'] },
   { eti: 'Bilanci',            ids: ['checkin', 'sera', 'settimana'] }
 ];
-/* quali sezioni sono aperte: ognuna si apre e si chiude per conto suo, e
-   aprirne una non chiude le altre (linee guida Apple: le sezioni a
-   scomparsa sono indipendenti, e lo stato di chi le ha aperte si rispetta) */
-export let ritualiAperti: Record<string, boolean> | null = null;
-export function apriRituali(v: Record<string, boolean> | null): void { ritualiAperti = v; }
 
 /* un rituale: il segno, il nome, e se è una cosa del giorno o di ogni tanto */
 export interface Rituale { id: string; ico: string; nome: string; quando: 'giorno' | 'ogni tanto' }
@@ -5727,8 +5817,13 @@ function wireNotte(scope: HTMLElement, dopo?: (() => void) | null): void {
   /* la precisione scelta A MANO vince su tutto: due parole e non una stringa
      qualunque — `precisioneValida` nei dati accetta soltanto queste */
   let scelta: Precisione | null = null;
-  const chips = scope.querySelector<HTMLElement>('#notte-prec');
-  if (!chips) return;
+  const forse = scope.querySelector<HTMLElement>('#notte-prec');
+  if (!forse) return;
+  /* il nodo si ricopia in un `const` già ristretto perché `prec` e
+     `mettiPrec` sono dichiarazioni di funzione: risalgono in cima al blocco,
+     quindi il compilatore non può sapere che nessuno le chiama prima del
+     controllo qui sopra. Ricopiarlo dopo il controllo glielo dice. */
+  const chips: HTMLElement = forse;
   function prec(): Precisione {
     const on = chips.querySelector<HTMLElement>('.q-chip.on');
     return (on ? on.getAttribute('data-prec') : 'circa') === 'preciso' ? 'preciso' : 'circa';
@@ -6043,7 +6138,7 @@ function ritualeMattina(corpo: HTMLElement): void {
     '<div class="riga-flex mt"><button class="btn btn-primario btn-grande" id="btn-salva-piano">' + ICO('save', 15) + (piano ? ' Aggiorna' : ' Salva e parti') + ' <small>+' + LM.XP_EVENTI.pianoMattina + ' XP</small></button></div>' +
     '</div>';
 
-  var lista = document.getElementById('piano-lista');
+  var lista = perId('piano-lista');
   lista.innerHTML = oggi.length
     ? oggi.map(function (a) {
         var ar = areaById(a.areaId);
@@ -6054,7 +6149,7 @@ function ritualeMattina(corpo: HTMLElement): void {
     : '<div class="vuoto" style="padding:14px">Niente scelto. La prima che scrivi diventa la più importante.</div>';
 
   wireRigaAggiunta(corpo, 'agg-piano', function (testo, opz) {
-    var sel = opz && opz.querySelector<HTMLElement>('select');
+    var sel = opz ? opz.querySelector<HTMLSelectElement>('select') : null;
     LM.aggiungiAzione(testo, sel ? sel.value : 'altro', { mit: LM.serveMit() });
     render();
   });
@@ -6218,7 +6313,7 @@ export function rigaAbitudine(h: Abitudine, previstaOggi: boolean): string {
     '</div>';
 }
 
-function sezioneAbitudini(corpo: HTMLElement): void {
+export function sezioneAbitudini(corpo: HTMLElement): void {
   var s = LM.load();
   /* con un orario la lista prende la forma della giornata: prima quelle
      che hanno un'ora, in ordine, poi quelle che si fanno quando capita */
@@ -6228,7 +6323,7 @@ function sezioneAbitudini(corpo: HTMLElement): void {
     if (b.ora) return 1;
     return 0;
   });
-  var idOggi = {};
+  const idOggi: Record<string, true> = {};
   oggi.forEach(function (h) { idOggi[h.id] = true; });
   var altre = s.abitudini.filter(function (h) { return !idOggi[h.id]; });
   var fatte = oggi.filter(function (h) { return !!h.fatti[LM.todayKey()]; }).length;
@@ -6277,22 +6372,22 @@ function sezioneAbitudini(corpo: HTMLElement): void {
 
   corpo.querySelectorAll<HTMLElement>('[data-toggle-ab]').forEach(function (b) {
     b.addEventListener('click', function (ev) {
-      feedbackSpunta(ev, LM.completaAbitudine(b.getAttribute('data-toggle-ab')), 'Fatta. Continua così', 'flame');
+      feedbackSpunta(ev, LM.completaAbitudine(b.getAttribute('data-toggle-ab') || ''), 'Fatta. Continua così', 'flame');
       sezioneAbitudini(corpo);
     });
   });
   corpo.querySelectorAll<HTMLElement>('[data-abdett]').forEach(function (b) {
     b.addEventListener('click', function () {
-      apriDettaglioAbitudine(b.getAttribute('data-abdett'), function () { sezioneAbitudini(corpo); });
+      apriDettaglioAbitudine(b.getAttribute('data-abdett') || '', function () { sezioneAbitudini(corpo); });
     });
   });
-  var nuovaG = corpo.querySelector<HTMLElement>('#agg-ab-giorni');
+  var nuovaG = presa(corpo.querySelector<HTMLElement>('#agg-ab-giorni'));
   nuovaG.querySelectorAll<HTMLElement>('.giorno-chip').forEach(function (chip) {
     chip.addEventListener('click', function () { chip.classList.toggle('sel'); });
   });
   wireRigaAggiunta(corpo, 'agg-ab', function (testo, opz) {
-    var giorni = leggiGiorni(opz.querySelector<HTMLElement>('#agg-ab-giorni'));
-    var ora = campo(opz, '#agg-ab-ora').value || null;
+    var giorni = leggiGiorni(presa(opz.querySelector<HTMLElement>('#agg-ab-giorni')));
+    var ora = campo(opz, '#agg-ab-ora').value ? comeOra(campo(opz, '#agg-ab-ora').value) : null;
     LM.aggiungiAbitudine(testo, campo(opz, '#agg-ab-area').value, giorni, { ora: ora });
     toast('«' + testo + '» ' + riepilogoGiorni(giorni) + (ora ? ' alle ' + ora : '') + ', da oggi.', 0, 'refresh');
     sezioneAbitudini(corpo);
@@ -6316,14 +6411,15 @@ export function apriDettaglioAbitudine(id: string, dopo?: () => void): void {
    concretamente ogni livello riduce la tendenza a rifugiarsi nel "3".
    Il riferimento "il tuo solito" (media recente) dà un punto d'appoggio
    a chi si sente sempre nella media. */
-var ANCORE = {
+type Voto = 'energia' | 'focus' | 'umore';
+const ANCORE: Record<Voto, [string, string, string, string, string]> = {
   energia: ['esausto', 'fiacco', 'normale', 'carico', 'pieno'],
   focus: ['disperso', 'a fatica', 'normale', 'lucido', 'concentratissimo'],
   umore: ['giù', 'così così', 'normale', 'bene', 'alla grande']
 };
 
 function ritualeCheckin(corpo: HTMLElement): void {
-  var voti = { energia: 0, focus: 0, umore: 0 };
+  const voti: Record<Voto, number> = { energia: 0, focus: 0, umore: 0 };
   corpo.innerHTML = '<div class="card">' +
     testaRituale('polso', 'Energia, focus e umore',
       /* la prima metà («Energia, concentrazione e umore su una scala da 1 a
@@ -6338,11 +6434,13 @@ function ritualeCheckin(corpo: HTMLElement): void {
     '<div class="riga-flex mt"><button class="btn btn-tonale btn-grande" id="btn-salva-checkin" disabled>' + ICO('save', 15) + ' Registra <small>+' + LM.XP_EVENTI.checkin + ' XP</small></button></div>' +
     '</div><div class="card mt"><h2>' + ICO('trendUp', 15) + ' Andamento degli ultimi 14 giorni</h2><div id="mini-trend"></div></div>';
 
-  function scala(campo, icona, nome) {
-    var base = LM.baselineCheckin(campo, 30);
-    var anc = ANCORE[campo];
+  /* il parametro si chiamava `campo`, come l'aiutante che prende un input
+     in questo file: dentro `scala` quello spariva. */
+  function scala(quale: Voto, icona: string, nome: string): string {
+    var base = LM.baselineCheckin(quale, 30);
+    var anc = ANCORE[quale];
     return '<div class="scala-blocco"><label class="campo">' + ICO(icona, 13) + ' ' + nome + '</label>' +
-      '<div class="scala" data-campo="' + campo + '">' +
+      '<div class="scala" data-campo="' + quale + '">' +
       [1, 2, 3, 4, 5].map(function (v) {
         return '<button data-v="' + v + '" aria-label="' + v + ', ' + anc[v - 1] + '">' + v + '</button>';
       }).join('') + '</div>' +
@@ -6359,21 +6457,22 @@ function ritualeCheckin(corpo: HTMLElement): void {
       b.addEventListener('click', function () {
         sc.querySelectorAll<HTMLElement>('button').forEach(function (x) { x.classList.remove('sel'); });
         b.classList.add('sel');
-        voti[sc.getAttribute('data-campo')] = +b.getAttribute('data-v');
-        presa(document.getElementById('btn-salva-checkin')).disabled = !(voti.energia && voti.focus && voti.umore);
+        /* i tre nomi li scrive `scala` qui sopra, da `ANCORE` */
+        voti[(sc.getAttribute('data-campo') || 'energia') as Voto] = +(b.getAttribute('data-v') || 0);
+        (perId<HTMLButtonElement>('btn-salva-checkin')).disabled = !(voti.energia && voti.focus && voti.umore);
       });
     });
   });
-  presa(document.getElementById('btn-salva-checkin')).addEventListener('click', function (ev) {
+  perId('btn-salva-checkin').addEventListener('click', function (ev) {
     var xp = LM.registraCheckin(voti.energia, voti.focus, voti.umore);
-    var r = ev.currentTarget.getBoundingClientRect();
+    var r = (ev.currentTarget as HTMLElement).getBoundingClientRect();
     flyXp(r.left + r.width / 2, r.top, xp);
     toast('Salvato.', xp, 'polso');
     render();
   });
 
   var dark = document.documentElement.getAttribute('data-mode') === 'dark';
-  LMCharts.trend(document.getElementById('mini-trend'), [
+  LMCharts.trend(perId('mini-trend'), [
     { nome: 'Energia', colore: dark ? '#c98500' : '#eda100', punti: LM.serieCheckin('energia', 14) },
     { nome: 'Focus',   colore: dark ? '#3987e5' : '#2a78d6', punti: LM.serieCheckin('focus', 14) },
     { nome: 'Umore',   colore: dark ? '#199e70' : '#1baf7a', punti: LM.serieCheckin('umore', 14) }
@@ -6386,11 +6485,15 @@ function ritualeCheckin(corpo: HTMLElement): void {
    diverse, e cancellare la prima per avere la seconda sarebbe una perdita.
    Il tasto si nasconde da sé quando il campo è vuoto o quando quella riga
    c'è già, così non promette due volte la stessa cosa. */
-function collegaTenutaLezione(scope: ParentNode, idCampo: string, idTasto: string, verso: 'si' | 'no', forza: string): void {
-  var campo = scope.querySelector<HTMLElement>('#' + idCampo);
-  var tasto = scope.querySelector<HTMLElement>('#' + idTasto);
-  if (!campo || !tasto) return;
-  function giaC(v) {
+function collegaTenutaLezione(scope: ParentNode, idCampo: string, idTasto: string, verso: 'si' | 'no', forza?: string): void {
+  const forseCampo = scope.querySelector<HTMLInputElement | HTMLTextAreaElement>('#' + idCampo);
+  const forseTasto = scope.querySelector<HTMLElement>('#' + idTasto);
+  if (!forseCampo || !forseTasto) return;
+  /* ricopiati dopo il controllo: `giaC` e `aggiorna` sono dichiarazioni di
+     funzione e risalgono in cima, quindi il compilatore non tiene il
+     controllo qui sopra (vedi la stessa cosa in `wireNotte`). */
+  const campo = forseCampo, tasto = forseTasto;
+  function giaC(v: string): boolean {
     return LM.load().lezioni.some(function (l) {
       return l.verso === verso && l.testo.toLowerCase() === v.toLowerCase();
     });
@@ -6416,7 +6519,7 @@ function ritualeSera(corpo: HTMLElement): void {
   var s = LM.load();
   var t = LM.todayKey();
   var rev = s.reviewSera[t];
-  var toccate = {};
+  const toccate: Record<string, true> = {};
   LM.azioniDiOggi().forEach(function (a) { toccate[a.areaId] = true; });
   var ordinate = areeAttive().slice().sort(function (a, b) { return (toccate[b.id] ? 1 : 0) - (toccate[a.id] ? 1 : 0); });
   var votiOggi = s.valutazioni[t] || {};
@@ -6462,11 +6565,11 @@ function ritualeSera(corpo: HTMLElement): void {
       b.addEventListener('click', function () {
         riga.querySelectorAll<HTMLElement>('button').forEach(function (x) { x.classList.remove('sel'); });
         b.classList.add('sel');
-        LM.valutaArea(riga.getAttribute('data-area'), +b.getAttribute('data-v'));
+        LM.valutaArea(riga.getAttribute('data-area') || '', +(b.getAttribute('data-v') || 0));
       });
     });
   });
-  presa(document.getElementById('btn-salva-sera')).addEventListener('click', function () {
+  perId('btn-salva-sera').addEventListener('click', function () {
     var xp = LM.salvaReviewSera({
       vittoria: presa(campoId('sera-vittoria')).value.trim(),
       blocco: presa(campoId('sera-blocco')).value.trim(),
@@ -6523,11 +6626,10 @@ function ritualeSettimana(corpo: HTMLElement): void {
   });
 }
 
-var backlogAperte = {};   // { __tutte, __parcheggio }
-var attTab = null;        // 'sistemare' | 'dafare'
-var attTabMostrata = '';  // per animare solo al cambio di scheda
-var attArea = 'tutte';    // il filtro: 'tutte' | 'data' | 'progetti' | id area
-var attQuery = '';        // ricerca testo
+/* lo stato di questa schermata vive in `schermo.att`, in cima al file:
+   qui c'è solo il nome corto con cui lo chiamano le righe qui sotto — è lo
+   stesso oggetto, non una copia. */
+const att = schermo.att;
 
 /* ============================================================
    VISTA: ATTIVITÀ
@@ -6588,12 +6690,14 @@ export function opzDaFare() {
 export function wireAggiunta(box: HTMLElement): void {
   wireRigaAggiunta(box, 'agg-bk', function (v, opz) {
     var sel = opz.querySelector<HTMLElement>('[data-nuovoq].on');
-    var giorno = sel ? sel.getAttribute('data-nuovoq') : '';
-    var selArea = opz.querySelector<HTMLElement>('#agg-bk-area');
+    /* i tre valori li scrive `opzDaFare`: oggi, domani, o vuoto */
+    const quando = sel ? sel.getAttribute('data-nuovoq') || '' : '';
+    var selArea = opz.querySelector<HTMLSelectElement>('#agg-bk-area');
     var nb = LM.aggiungiBacklog(v, selArea ? selArea.value : 'altro');
-    if (giorno) {
-      LM.backlogInOggi(nb.id, giorno);
-      toast('«' + v + '» messa ' + etichettaGiorno(giorno).toLowerCase() + '.', 0, 'calendar');
+    if (quando) {
+      const g = comeGiorno(quando);
+      LM.backlogInOggi(nb.id, g);
+      toast('«' + v + '» messa ' + etichettaGiorno(g).toLowerCase() + '.', 0, 'calendar');
     } else {
       toast('«' + v + '» aggiunta a «Da fare».', 0, 'lista');
     }
@@ -6603,20 +6707,20 @@ export function wireAggiunta(box: HTMLElement): void {
 }
 
 /* i due filtri che non sono aree */
-export function areaFiltro() { return (attArea === 'tutte' || attArea === 'data' || attArea === 'progetti') ? null : attArea; }
+export function areaFiltro() { return (att.area === 'tutte' || att.area === 'data' || att.area === 'progetti') ? null : att.area; }
 export function passaFiltro(b: Attivita): boolean {
-  if (attArea === 'data') return !!b.scadenza;
-  if (attArea === 'progetti') return !!(b.steps && b.steps.length);
+  if (att.area === 'data') return !!b.scadenza;
+  if (att.area === 'progetti') return !!(b.steps && b.steps.length);
   return true;
 }
 export function nomeFiltro() {
-  if (attArea === 'data') return 'Con una data';
-  if (attArea === 'progetti') return 'Progetti';
-  if (attArea === 'tutte') return 'Tutte';
-  return areaById(attArea).nome;
+  if (att.area === 'data') return 'Con una data';
+  if (att.area === 'progetti') return 'Progetti';
+  if (att.area === 'tutte') return 'Tutte';
+  return areaById(att.area).nome;
 }
 
-function disegnaDaFare(box: HTMLElement): void {
+export function disegnaDaFare(box: HTMLElement): void {
   var st = LM.load();
   var totale = st.backlog.length;
   var conData = st.backlog.filter(function (b) { return b.scadenza; }).length;
@@ -6643,31 +6747,31 @@ function disegnaDaFare(box: HTMLElement): void {
      lista c'è una barra sottile con la lente e il filtro (sono modi di
      guardare quello che c'è già). Nessuna card intorno: una cornice in
      meno per ogni cosa. */
-  var cerca = (totale >= 10 || attQuery)
+  var cerca = (totale >= 10 || att.query)
     ? '<label class="att-cerca">' + ICO('lente', 15) +
-      '<input type="text" id="att-q" placeholder="Cerca…" value="' + esc(attQuery) + '" aria-label="Cerca un’attività"></label>'
+      '<input type="text" id="att-q" placeholder="Cerca…" value="' + esc(att.query) + '" aria-label="Cerca un’attività"></label>'
     : '';
 
   box.innerHTML =
     rigaAggiunta('agg-bk', 'Aggiungi una cosa da fare…', opzDaFare()) +
     '<div class="att-barra">' + cerca +
-    '<button class="att-filtro' + (attArea === 'tutte' ? '' : ' on') + '" id="att-filtro" aria-haspopup="dialog">' +
+    '<button class="att-filtro' + (att.area === 'tutte' ? '' : ' on') + '" id="att-filtro" aria-haspopup="dialog">' +
     ICO('imbuto', 15) + '<span>' + esc(nomeFiltro()) + '</span>' +
     '<span class="lista-chev">' + ICO('chevronGiu', 15) + '</span></button>' +
     '</div>' +
     '<div id="dafare-lista"></div>';
   wireAggiunta(box);
-  var q = box.querySelector<HTMLElement>('#att-q');
-  if (q) q.addEventListener('input', function () { attQuery = q.value; renderLista(); });
+  const q = box.querySelector<HTMLInputElement>('#att-q');
+  if (q) q.addEventListener('input', function () { att.query = q.value; renderLista(); });
   presa(box.querySelector<HTMLElement>('#att-filtro')).addEventListener('click', apriFiltri);
   renderLista();
 
   /* la scelta del filtro è un elenco, come tutti gli altri elenchi */
   function apriFiltri() {
-    function voce(id, ico, eti, n) {
+    function voce(id: string, ico: string, eti: string, n: number): string {
       return '<div class="lista-riga">' +
         '<button class="lista-apri" data-filtro="' + id + '">' +
-        '<span class="lista-vuoto">' + (attArea === id ? ICO('scelto', 15) : '') + '</span>' +
+        '<span class="lista-vuoto">' + (att.area === id ? ICO('scelto', 15) : '') + '</span>' +
         '<span class="lista-corpo"><span class="lista-tit">' +
         (ico ? '<span class="tit-area"' + (ico === 'area' ? ' style="--c-area:' + LM.coloreArea(areaById(id)) + '"' : '') + '>' +
           ICO(ico === 'area' ? areaById(id).icona : ico, 13) + '</span>' : '') +
@@ -6688,7 +6792,7 @@ function disegnaDaFare(box: HTMLElement): void {
     apriSheet('Guarda solo', html, function (root) {
       root.querySelectorAll<HTMLElement>('[data-filtro]').forEach(function (t) {
         t.addEventListener('click', function () {
-          attArea = t.getAttribute('data-filtro');
+          att.area = t.getAttribute('data-filtro') || 'tutte';
           chiudiSheet();
           disegnaDaFare(box);
         });
@@ -6696,10 +6800,10 @@ function disegnaDaFare(box: HTMLElement): void {
     });
   }
 
-  function gruppo(titolo, voci, cls, opts) {
+  function gruppo(titolo: string, voci: VocePesata[], cls: string, opts?: { taglia?: boolean }): string {
     if (!voci.length) return '';
     var lunga = (opts && opts.taglia) && voci.length > MURO;
-    var tutte = !!backlogAperte.__tutte;
+    var tutte = !!att.tutteAperte;
     var taglia = lunga && !tutte;
     var mostrate = taglia ? voci.slice(0, MURO) : voci;
     return '<div class="lista-eti">' + titolo + (voci.length > 1 ? ' <span>' + voci.length + '</span>' : '') + '</div>' +
@@ -6711,14 +6815,14 @@ function disegnaDaFare(box: HTMLElement): void {
   }
 
   function renderLista() {
-    var lista = box.querySelector<HTMLElement>('#dafare-lista');
-    var query = attQuery.trim().toLowerCase();
+    const lista = presa(box.querySelector<HTMLElement>('#dafare-lista'));
+    var query = att.query.trim().toLowerCase();
     if (query) {
       var ris = LM.load().backlog.filter(function (b) { return b.testo.toLowerCase().indexOf(query) >= 0; });
       lista.innerHTML = '<div class="lista-eti">' + ris.length + (ris.length === 1 ? ' risultato' : ' risultati') + '</div>' +
         (ris.length
           ? '<div class="lista">' + ris.map(function (b) { return attRigaHtml(b, {}); }).join('') + '</div>'
-          : '<p class="lista-nota">Nessuna corrispondenza per «' + esc(attQuery.trim()) + '».</p>');
+          : '<p class="lista-nota">Nessuna corrispondenza per «' + esc(att.query.trim()) + '».</p>');
       wireLista(lista); return;
     }
     var g = LM.backlogPerImportanza({ areaId: areaFiltro() || 'tutte', tetto: 3 });
@@ -6726,18 +6830,19 @@ function disegnaDaFare(box: HTMLElement): void {
        gruppo loro chiuso: hanno un esito, quindi non chiedono più niente
        — ma restano dove le si può ritrovare, che è tutta la differenza
        con l'averle cancellate */
-    var senzaEsito = function (x) { return passaFiltro(x.b) && !x.b.mancata; };
+    var senzaEsito = function (x: VocePesata) { return passaFiltro(x.b) && !x.b.mancata; };
     var ora = g.ora.filter(senzaEsito);
     var poi = g.poi.filter(senzaEsito);
     var parch = g.parcheggio.filter(senzaEsito);
     var perse = g.ora.concat(g.poi, g.parcheggio)
       .filter(function (x) { return passaFiltro(x.b) && x.b.mancata; })
-      .sort(function (a, b2) { return (b2.b.mancata.ts || 0) - (a.b.mancata.ts || 0); });
+      /* filtrate su `mancata` una riga sopra: qui c'è per il tipo */
+      .sort(function (a, b2) { return (b2.b.mancata?.ts || 0) - (a.b.mancata?.ts || 0); });
     if (!ora.length && !poi.length && !parch.length && !perse.length) {
       lista.innerHTML = '<p class="lista-nota">Niente in «' + esc(nomeFiltro()) + '».</p>';
       return;
     }
-    var apertoParcheggio = !!backlogAperte.__parcheggio;
+    var apertoParcheggio = !!att.parcheggioAperto;
     lista.innerHTML =
       gruppo('Importanti', ora, 'ora') +
       gruppo('Altre', poi, 'poi', { taglia: true }) +
@@ -6754,10 +6859,10 @@ function disegnaDaFare(box: HTMLElement): void {
          «Dove ti riesce e dove no», che è la domanda a cui servono. */
       '';
 
-    var bt = lista.querySelector<HTMLElement>('[data-tutte]');
+    const bt = lista.querySelector<HTMLElement>('[data-tutte]');
     if (bt) bt.addEventListener('click', function () {
       var primaY = bt.getBoundingClientRect().top;
-      backlogAperte.__tutte = !backlogAperte.__tutte;
+      att.tutteAperte = !att.tutteAperte;
       renderLista();
       var nuovo = lista.querySelector<HTMLElement>('[data-tutte]');
       if (nuovo) {
@@ -6766,13 +6871,13 @@ function disegnaDaFare(box: HTMLElement): void {
         nuovo.focus({ preventScroll: true });
       }
     });
-    var bp = lista.querySelector<HTMLElement>('[data-parcheggio]');
+    const bp = lista.querySelector<HTMLElement>('[data-parcheggio]');
     if (bp) bp.addEventListener('click', function () {
-      var ap = !backlogAperte.__parcheggio;
-      backlogAperte.__parcheggio = ap;
+      var ap = !att.parcheggioAperto;
+      att.parcheggioAperto = ap;
       var corpo = lista.querySelector<HTMLElement>('.lista-parcheggio');
       if (corpo) corpo.hidden = !ap;
-      bp.setAttribute('aria-expanded', ap);
+      bp.setAttribute('aria-expanded', String(ap));
       var ch = bp.querySelector<HTMLElement>('.lista-chev');
       if (ch) ch.classList.toggle('aperta', ap);
     });
@@ -6800,7 +6905,8 @@ export function attRigaHtml(b: Attivita, opts?: OpzRigaAtt): string {
   if (inAgenda.length) {
     sotto.push('<span class="sub-agenda">' + (isProg && inAgenda.length > 1
       ? inAgenda.length + ' passi in agenda'
-      : 'in agenda ' + etichettaGiorno(inAgenda[0].data).toLowerCase()) + '</span>');
+      /* `inAgenda.length` è > 0: il ramo è dentro il suo controllo */
+      : 'in agenda ' + etichettaGiorno(presa(inAgenda[0]).data).toLowerCase()) + '</span>');
   }
   /* il motivo si scrive solo se dice qualcosa che la riga non dice già:
      «iniziata, 1 di 3» accanto a «1 di 3» in coda è la stessa cosa due volte */
@@ -6821,7 +6927,8 @@ export function attRigaHtml(b: Attivita, opts?: OpzRigaAtt): string {
     esc(b.testo) + '</span>' +
     (sotto.length ? '<span class="lista-sub">' + sotto.join(' · ') + '</span>' : '') +
     '</span>' +
-    (isProg ? '<span class="lista-val">' + av.fatti + ' di ' + av.tot + '</span>' : '') +
+    /* `av` c'è esattamente quando `isProg`: le due nascono dalla stessa riga */
+    (isProg && av ? '<span class="lista-val">' + av.fatti + ' di ' + av.tot + '</span>' : '') +
     '<span class="lista-chev">' + ICO('chevronGiu', 15) + '</span></button>' +
     '</div>';
 }
@@ -6829,7 +6936,7 @@ export function attRigaHtml(b: Attivita, opts?: OpzRigaAtt): string {
 export function wireLista(scope: ParentNode): void {
   scope.querySelectorAll<HTMLElement>('[data-bkoggi]').forEach(function (t) {
     t.addEventListener('click', function () {
-      var id = t.getAttribute('data-bkoggi');
+      const id = t.getAttribute('data-bkoggi') || '';
       var it = LM.load().backlog.find(function (x) { return x.id === id; });
       if (!it) return;
       if (it.steps && it.steps.length) {
@@ -7034,12 +7141,6 @@ export function apriLezione(id: string): void {
     { nome: 'Una cosa che hai capito', apri: function () { apriLezione(id); } });
 }
 
-/* la riga da cui aprire il modulo dell'esperimento al prossimo disegno della
-   pagina: la mette la scheda di una riga imparata, la consuma la vista */
-var lezDaProvare = null;
-/* il modulo del nuovo esperimento mentre è aperto, con quello che c'è
-   scritto dentro: sopravvive ai ridisegni della pagina */
-var formExp = null;
 
 /* ============================================================
    VISTA: ESPERIMENTI
@@ -7050,14 +7151,13 @@ var formExp = null;
    risposta dell'account o un aggiornamento dal cloud, e ritrovarsi
    riportati sull'altra sezione senza aver toccato niente è peggio del
    problema che questa divisione risolve. */
-var sezScoperte = 'registro';
 
 
 export function disegnaScoperte() {
   var s = LM.load();
   var c = document.getElementById('scop-corpo');
   if (!c) return;
-  if (sezScoperte === 'registro') {
+  if (schermo.sezScoperte === 'registro') {
     c.innerHTML = bloccoLezioniHtml();
     wireLezioni(c);
     return;
@@ -7153,8 +7253,8 @@ export function disegnaScoperte() {
     var pre = daLezione && daLezione.testo
       ? { nome: '«' + daLezione.testo + '»: è vero?', int: daLezione.testo, area: daLezione.areaId || '',
           metrica: '', durata: '', lez: daLezione.id }
-      : (formExp || { nome: '', int: '', area: '', metrica: '', durata: '', lez: null });
-    formExp = { nome: pre.nome, int: pre.int, area: pre.area, metrica: pre.metrica, durata: pre.durata, lez: pre.lez };
+      : (schermo.formExp || { nome: '', int: '', area: '', metrica: '', durata: '', lez: null });
+    schermo.formExp = { nome: pre.nome, int: pre.int, area: pre.area, metrica: pre.metrica, durata: pre.durata, lez: pre.lez };
     zona.innerHTML = '<div class="card mt">' +
       '<h2>Nuovo esperimento</h2><div class="sotto">I giorni già passati fanno da base di partenza; la modifica che vuoi testare inizia oggi.</div>' +
       '<label class="campo" for="exp-nome">Cosa vuoi scoprire</label><input type="text" id="exp-nome" value="' + esc(pre.nome) + '" placeholder="Es. studiare in biblioteca mi fa studiare di più?">' +
@@ -7171,7 +7271,7 @@ export function disegnaScoperte() {
       '<div class="riga-flex mt"><button class="btn btn-primario" id="exp-crea">' + ICO('flask', 15) + ' Avvia</button>' +
       '<button class="btn btn-ghost" id="exp-annulla">Annulla</button></div></div>';
     presa(document.getElementById('exp-annulla')).addEventListener('click', function () {
-      formExp = null; zona.innerHTML = '';
+      schermo.formExp = null; zona.innerHTML = '';
     });
     /* i valori scelti si rimettono dopo, non nell'HTML: un `selected` da
        costruire dentro tre `map` diversi è tre posti dove sbagliarsi */
@@ -7183,7 +7283,7 @@ export function disegnaScoperte() {
     var tieni = function (id, chiave) {
       var el = campo(id);
       if (!el) return;
-      var scrivi = function () { if (formExp) formExp[chiave] = el.value; };
+      var scrivi = function () { if (schermo.formExp) schermo.formExp[chiave] = el.value; };
       el.addEventListener('input', scrivi);
       el.addEventListener('change', scrivi);
     };
@@ -7207,15 +7307,15 @@ export function disegnaScoperte() {
         fine: LM.addDays(t, +dur[1]),
         lezioneId: pre.lez
       });
-      formExp = null;
+      schermo.formExp = null;
       toast('Esperimento avviato.', 0, 'flask');
       render();
     });
   }
   /* chi è arrivato qui da una riga imparata trova il modulo già aperto e
      già scritto; chi lo aveva aperto e stava scrivendo lo ritrova com'era */
-  if (lezDaProvare) { var daQui = lezDaProvare; lezDaProvare = null; mostraFormExp(daQui); }
-  else if (formExp) mostraFormExp();
+  if (schermo.lezDaProvare) { var daQui = schermo.lezDaProvare; schermo.lezDaProvare = null; mostraFormExp(daQui); }
+  else if (schermo.formExp) mostraFormExp();
 }
 
 /* la riga imparata da cui è nato un esperimento, se c'è ancora */
@@ -7721,7 +7821,7 @@ export function render() {
 }
 
 window.addEventListener('hashchange', function () {
-  if (vistaCorrente() !== 'rituali') sottoRituale = null;
+  if (vistaCorrente() !== 'rituali') schermo.sottoRituale = null;
   chiudiSheet();
   render();
 });

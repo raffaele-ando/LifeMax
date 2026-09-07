@@ -61,6 +61,41 @@ export interface CosaAdesso {
   fine: number | null;
 }
 
+/* UNA VOCE DEL DIARIO. Il diario è una vista sola su sette fonti diverse
+   (registro, azioni fatte, check-in, i tre rituali, catture): sono
+   raccolte in una forma unica perché la schermata le impagina insieme,
+   in ordine di orologio. I campi oltre i primi due valgono per una fonte
+   sola — `energia` solo per i check-in, `vittorie` solo per la settimana —
+   e restano opzionali per questo, non per pigrizia. */
+export interface VoceDiario {
+  ts: number;
+  tipo: 'registro' | 'azione' | 'checkin' | 'mattina' | 'sera' | 'settimana' | 'cattura';
+  chiave?: string;
+  cat?: string;
+  imp?: boolean;
+  tipoDisfa?: string;
+  id?: string;
+  testo?: string;
+  areaId?: string;
+  mit?: boolean;
+  energia?: number;
+  focus?: number;
+  umore?: number;
+  intenzione?: string;
+  vittoria?: string;
+  blocco?: string;
+  vittorie?: string;
+  blocchi?: string;
+  imparato?: string;
+  prossima?: string;
+}
+
+/* Un giorno di diario: la data e le sue voci, dalla più recente. */
+export interface GiornoDiDiario {
+  data: Giorno;
+  eventi: VoceDiario[];
+}
+
 function creaLM() {
 
   /* ---------------------------------------------------------------------
@@ -2495,8 +2530,10 @@ function creaLM() {
   }
 
   /* il numero che sale e basta: quante cose hai portato a termine, in tutto.
-     Le abitudini spuntate contano: sono cose fatte quanto le altre. */
-  function quanteFatte(giorni: number) {
+     Le abitudini spuntate contano: sono cose fatte quanto le altre.
+     `giorni` a zero — o non passato — vuol dire DA SEMPRE: è il conto che
+     sta in fondo al riassunto («da quando hai cominciato»). */
+  function quanteFatte(giorni: number = 0) {
     var s = load();
     var da = giorni ? addDays(todayKey(), -giorni) : '';
     var n = 0;
@@ -2748,8 +2785,8 @@ function creaLM() {
 
   function diario(giorniMax: number, tutto?: boolean) {
     var s = load();
-    var perGiorno: Record<string, unknown[]> = {};
-    function agg(k: Giorno, ev: unknown) { (perGiorno[k] = perGiorno[k] || []).push(ev); }
+    var perGiorno: Record<string, VoceDiario[]> = {};
+    function agg(k: Giorno, ev: VoceDiario) { (perGiorno[k] = perGiorno[k] || []).push(ev); }
 
     /* `chiave` è come si ritrova il dato che sta dietro alla riga, per poterlo
        disfare da lì (vedi annullaRecord). Le righe di registro di norma non ne
