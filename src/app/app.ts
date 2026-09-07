@@ -190,6 +190,11 @@ export interface OpzFesta {
   quanti?: number;
 }
 
+/* «PRECISO» O «CIRCA», e sono due: è quello che risponde
+   `precisioneValida()` nei dati, e la stessa parola che finisce in
+   `RegistroGiorno.prec`. */
+type Precisione = 'preciso' | 'circa';
+
 /* ---------------------------------------------------- i promemoria
    le cinque voci hanno un nome, e sono cinque: la stessa cosa che dice
    `src/promemoria/promemoria.ts`, e per la stessa ragione */
@@ -5435,7 +5440,9 @@ export function eroePlanciaHtml() {
    si chiede conferma — una sorpresa qui costa più di un tocco in più. */
 function annullaDalDiario(ts: number, etichetta: string, tipo?: string, chiave?: string): void {
   /* «Rimetti»: lo stato di adesso, messo da parte prima di toccarlo */
-  function conRimetti(fai: () => void) {
+  /* torna `false` quando non c'è più niente da disfare: `LM.annullaRecord` e
+     `LM.tornaAlPunto` rispondono così, e il messaggio qui sotto ci conta */
+  function conRimetti(fai: () => boolean) {
     var prima = JSON.parse(JSON.stringify(LM.load()));
     if (!fai()) { toast('Questa non si può più annullare.', 0, 'aiuto'); return; }
     render();
@@ -5468,7 +5475,10 @@ function annullaDalDiario(ts: number, etichetta: string, tipo?: string, chiave?:
    VISTA: RITUALI
    ============================================================ */
 
-var sottoRituale = null;
+/* la sezione dei rituali da aprire quando ci si arriva da un collegamento
+   («vai alle abitudini» da Oggi): si consuma al primo disegno */
+export let sottoRituale: string | null = null;
+export function apriPoi(id: string | null): void { sottoRituale = id; }
 
 /* ============================================================
    I RITUALI, IN ORDINE DI GIORNATA
@@ -5487,7 +5497,9 @@ var sottoRituale = null;
    Mettere «Le azioni di oggi» accanto al check-in era mettere una decisione
    accanto a una misura, e le abitudini accanto a entrambe era metterci
    dentro anche un pannello di configurazione. */
-var GRUPPI_RIT = [
+/* un gruppo di rituali: l'etichetta della sezione e chi ci sta dentro */
+export interface GruppoRit { eti: string; ids: string[] }
+export const GRUPPI_RIT: GruppoRit[] = [
   { eti: 'Il piano di oggi',   ids: ['mattina'] },
   /* IL REGISTRO HA UNA RIGA SUA, e si vede dall'elenco senza aprire niente.
      Sonno, pasti e cose fatte erano tre domande sparse in due rituali
@@ -5502,8 +5514,12 @@ var GRUPPI_RIT = [
 /* quali sezioni sono aperte: ognuna si apre e si chiude per conto suo, e
    aprirne una non chiude le altre (linee guida Apple: le sezioni a
    scomparsa sono indipendenti, e lo stato di chi le ha aperte si rispetta) */
-var ritualiAperti = null;
-var RITUALI = [
+export let ritualiAperti: Record<string, boolean> | null = null;
+export function apriRituali(v: Record<string, boolean> | null): void { ritualiAperti = v; }
+
+/* un rituale: il segno, il nome, e se è una cosa del giorno o di ogni tanto */
+export interface Rituale { id: string; ico: string; nome: string; quando: 'giorno' | 'ogni tanto' }
+export const RITUALI: Rituale[] = [
   { id: 'mattina',   ico: 'sun',      nome: 'Le azioni di oggi',      quando: 'giorno' },
   { id: 'registro',  ico: 'ritmo',    nome: 'Sonno, pasti e cose fatte', quando: 'giorno' },
   { id: 'checkin',   ico: 'polso',    nome: 'Check-in',               quando: 'giorno' },
@@ -5584,14 +5600,15 @@ export function statoRituale(id: string): StatoRit {
 /* Il contenuto di TUTTE le sezioni aperte. Fuori dalla vista perché lo deve
    chiamare anche React, dopo che ha disegnato le sezioni: sono le stesse
    cinque schermate dei rituali, non copie. */
-export function disegnaCorpiRituali() {
-  var disegna = {
+export function disegnaCorpiRituali(): void {
+  const disegna: Record<string, (corpo: HTMLElement) => void> = {
     mattina: ritualeMattina, registro: ritualeRegistro,
     checkin: ritualeCheckin, sera: ritualeSera, settimana: ritualeSettimana
   };
   Object.keys(disegna).forEach(function (id) {
-    var c = document.getElementById('corpo-rit-' + id);
-    if (c) disegna[id](c);
+    const c = document.getElementById('corpo-rit-' + id);
+    const f = disegna[id];
+    if (c && f) f(c);
   });
 }
 
@@ -5691,44 +5708,53 @@ function bloccoNotte(forzaAperto?: boolean): string {
     '</div>';
 }
 
-function wireNotte(scope: HTMLElement, dopo?: () => void): void {
-  var t = LM.todayKey();
-  var cambia = scope.querySelector<HTMLElement>('#notte-cambia');
+function wireNotte(scope: HTMLElement, dopo?: (() => void) | null): void {
+  const t = LM.todayKey();
+  const cambia = scope.querySelector<HTMLElement>('#notte-cambia');
   if (cambia) {
     cambia.addEventListener('click', function () {
-      var padre = scope.parentNode;
-      var tmp = document.createElement('div');
+      const padre = scope.parentNode;
+      const tmp = document.createElement('div');
       tmp.innerHTML = bloccoNotte(true);
-      padre.replaceChild(tmp.firstChild, scope);
-      wireNotte(padre.querySelector<HTMLElement>('#blocco-notte'), dopo);
+      const nuovo = tmp.firstChild;
+      if (!padre || !nuovo) return;
+      padre.replaceChild(nuovo, scope);
+      const dentro = (padre as ParentNode).querySelector<HTMLElement>('#blocco-notte');
+      if (dentro) wireNotte(dentro, dopo);
     });
     return;
   }
-  var scelta = null;   /* la precisione scelta A MANO vince su tutto */
-  var chips = scope.querySelector<HTMLElement>('#notte-prec');
-  function prec() {
-    var on = chips.querySelector<HTMLElement>('.q-chip.on');
-    return on ? on.getAttribute('data-prec') : 'circa';
+  /* la precisione scelta A MANO vince su tutto: due parole e non una stringa
+     qualunque — `precisioneValida` nei dati accetta soltanto queste */
+  let scelta: Precisione | null = null;
+  const chips = scope.querySelector<HTMLElement>('#notte-prec');
+  if (!chips) return;
+  function prec(): Precisione {
+    const on = chips.querySelector<HTMLElement>('.q-chip.on');
+    return (on ? on.getAttribute('data-prec') : 'circa') === 'preciso' ? 'preciso' : 'circa';
   }
-  function mettiPrec(v) {
+  function mettiPrec(v: Precisione) {
     chips.querySelectorAll<HTMLElement>('.q-chip').forEach(function (c) {
       c.classList.toggle('on', c.getAttribute('data-prec') === v);
     });
   }
   chips.querySelectorAll<HTMLElement>('.q-chip').forEach(function (c) {
-    c.addEventListener('click', function () { scelta = c.getAttribute('data-prec'); mettiPrec(scelta); });
+    c.addEventListener('click', function () {
+      scelta = c.getAttribute('data-prec') === 'preciso' ? 'preciso' : 'circa';
+      mettiPrec(scelta);
+    });
   });
   /* CHI CAMBIA L'ORA STA DANDO UN NUMERO: la scelta si sposta su «precisi»
      da sé, e si VEDE spostarsi — se restasse «più o meno» dopo che uno ha
      messo 7:12 col dito, il dato racconterebbe una cosa diversa da quella
      che è appena stata fatta. Chi ha scelto a mano non viene toccato. */
   ['#notte-sonno', '#notte-sveglia'].forEach(function (sel) {
-    var el = scope.querySelector(sel);
-    el.addEventListener('change', function () { if (!scelta) mettiPrec('preciso'); });
+    const el = scope.querySelector<HTMLElement>(sel);
+    if (el) el.addEventListener('change', function () { if (!scelta) mettiPrec('preciso'); });
   });
-  function salva(sonno, sveglia, p) {
+  function salva(sonno: Ora | null, sveglia: Ora | null, p: Precisione) {
     LM.registraNotte(t, { sonno: sonno, sveglia: sveglia, prec: p });
-    var m = LM.minutiSonno(t);
+    const m = LM.minutiSonno(t);
     toast('Notte registrata: ' + Math.floor(m / 60) + 'h' + (m % 60 ? ' ' + (m % 60) + 'm' : '') +
       (p === 'circa' ? ' (più o meno)' : ''), 0, 'bed');
     if (dopo) dopo();
@@ -5739,8 +5765,8 @@ function wireNotte(scope: HTMLElement, dopo?: () => void): void {
     salva(r.sonnoRoutine, r.svegliaRoutine, 'circa');
   });
   presa(scope.querySelector<HTMLElement>('#notte-salva')).addEventListener('click', function () {
-    salva(campo(scope, '#notte-sonno').value || null,
-      campo(scope, '#notte-sveglia').value || null, prec());
+    const so = campo(scope, '#notte-sonno').value, sv = campo(scope, '#notte-sveglia').value;
+    salva(so ? comeOra(so) : null, sv ? comeOra(sv) : null, prec());
   });
   presa(scope.querySelector<HTMLElement>('#notte-boh')).addEventListener('click', function () {
     /* nessun orario: il giorno resta sul ritmo di base, e non si richiede.
