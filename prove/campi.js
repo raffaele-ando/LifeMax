@@ -200,9 +200,11 @@ const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  
      l'app non la prende più, da nessuna parte. */
   console.log('UNA SOLA RICHIESTA, NON DUE');
   {
-    const sorgente = fs.readFileSync(path.join(RADICE, 'assets', 'app.js'), 'utf8');
-    /* via i commenti: lì «showPicker» ci sta, ed è il racconto di com'era */
-    const vivo = sorgente.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/[^\n]*/g, '$1');
+    /* TUTTO src, non un file: da quando le schermate sono componenti, un
+       campo dell'ora sta anche in `fogli/Ritmo.tsx` e in `fogli/Scheda.tsx`.
+       Guardare solo `app.ts` vorrebbe dire dire «a posto» avendo controllato
+       il posto da cui la cosa è già stata tolta. */
+    const vivo = require('./dove').codiceVivo();
     ok('l’app non chiede l’orologio a mano da nessuna parte',
       vivo.indexOf('showPicker') < 0, (vivo.match(/.{0,40}showPicker.{0,40}/g) || []).join(' · '));
   }

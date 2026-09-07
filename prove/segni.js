@@ -5,11 +5,12 @@
    Si lancia con: node prove/segni.js  (non serve né Chromium né npm) */
 'use strict';
 const fs = require('fs'), path = require('path');
-const RADICE = path.join(__dirname, '..');
-const leggi = f => fs.readFileSync(path.join(RADICE, f), 'utf8');
-const ico = leggi('assets/icons.js');
-const sorgenti = ['assets/app.js', 'assets/data.js', 'assets/lab.js', 'index.html']
-  .filter(f => fs.existsSync(path.join(RADICE, f))).map(leggi).join('\n');
+const { RAMO, tuttoIlCodice } = require('./dove');
+const ico = fs.readFileSync(path.join(RAMO, 'src', 'segni', 'segni.ts'), 'utf8');
+/* TUTTO src, e non un elenco di file: da quando le schermate sono componenti
+   un `ICO('flame')` sta in venti file invece di tre, e un elenco scritto a
+   mano diventa una prova che guarda la metà del codice dicendo «a posto». */
+const sorgenti = tuttoIlCodice();
 
 let guai = 0;
 const ok = (nome, cond, det) => {
@@ -22,17 +23,19 @@ const ok = (nome, cond, det) => {
    troppo in basso questa prova finiva per confrontare i SIGNIFICATI invece dei
    disegni — e passava, perché i significati sono unici per costruzione. Una
    prova che passa per il motivo sbagliato è peggio di una che manca. */
-const blocco = ico.slice(ico.indexOf('var PATHS'), ico.indexOf('var SENSO'));
+const blocco = ico.slice(ico.indexOf('const PATHS'), ico.indexOf('const SENSO'));
 const segni = new Map();
 /* il commento in coda dice da quale segno del pacco arriva: fa parte della riga */
-blocco.replace(/^\s{4}([A-Za-z0-9]+):\s*'(.*?)',?(?:\s*\/\*[^*]*\*\/)?\s*$/gm,
+/* due spazi di rientro, non quattro: le tabelle non stanno più dentro a una
+   funzione che racchiude tutto il file — sono al primo livello di un modulo */
+blocco.replace(/^\s{2}([A-Za-z0-9]+):\s*'(.*?)',?(?:\s*\/\*[^*]*\*\/)?\s*$/gm,
   (_, n, d) => { segni.set(n, d); return _; });
 
 /* il registro dei significati, letto dal file e non copiato qui */
-const bloccoSenso = ico.slice(ico.indexOf('var SENSO'), ico.indexOf('var GENERICI'));
+const bloccoSenso = ico.slice(ico.indexOf('const SENSO'), ico.indexOf('const GENERICI'));
 const senso = new Map();
-bloccoSenso.replace(/^\s{4}([A-Za-z0-9]+):\s*'(.*?)',?\s*$/gm, (_, n, d) => { senso.set(n, d); return _; });
-const generici = new Set(((/var GENERICI = \[([^\]]*)\]/.exec(ico) || [, ''])[1].match(/'([A-Za-z0-9]+)'/g) || [])
+bloccoSenso.replace(/^\s{2}([A-Za-z0-9]+):\s*'(.*?)',?\s*$/gm, (_, n, d) => { senso.set(n, d); return _; });
+const generici = new Set(((/const GENERICI[^=]*= \[([^\]]*)\]/.exec(ico) || [, ''])[1].match(/'([A-Za-z0-9]+)'/g) || [])
   .map(x => x.slice(1, -1)));
 
 console.log('UN SEGNO, UNA COSA  (' + segni.size + ' segni nel set)\n');
@@ -60,6 +63,10 @@ agg(/ICO\('([A-Za-z0-9]+)'/g);
 agg(/\bI\('([A-Za-z0-9]+)',\s*\d+\)/g);
 agg(/\bicona:\s*'([A-Za-z0-9]+)'/g);
 agg(/\bico:\s*'([A-Za-z0-9]+)'/g);
+/* le forme di JSX: <Segno nome="flame" />, ico="lente", <Icona nome="x" /> */
+agg(/\bnome="([A-Za-z0-9]+)"/g);
+agg(/\bico="([A-Za-z0-9]+)"/g);
+agg(/\bnome=\{[^}]*'([A-Za-z0-9]+)'\s*:\s*'([A-Za-z0-9]+)'\}/g);
 /* i segni scelti al volo: ICO(condizione ? 'a' : 'b', …). La condizione può
    contenere espressioni regolari e parentesi, quindi non si prova a
    riconoscerla: si guarda un pezzo di testo dopo ogni «ICO(». */
@@ -119,7 +126,7 @@ ok('nessun segno è sia area sia comando', doppi.length === 0, doppi.join(', ') 
 ok('la scelta delle aree ha almeno dieci segni', aree.length >= 10, aree.length + ' segni');
 
 /* 4. tutte le misure stanno sulla scala */
-const SCALA = (/var SCALA = \[([^\]]*)\]/.exec(ico) || [, ''])[1].split(',').map(x => +x.trim()).filter(Boolean);
+const SCALA = (/const SCALA[^=]*= \[([^\]]*)\]/.exec(ico) || [, ''])[1].split(',').map(x => +x.trim()).filter(Boolean);
 const fuoriScala = new Set();
 let m; const reSize = /ICO\((?:[^()]|\([^()]*\))*?,\s*(\d+)\s*[,)]/g;
 while ((m = reSize.exec(sorgenti))) { const n = +m[1]; if (!SCALA.includes(n)) fuoriScala.add(n); }

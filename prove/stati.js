@@ -29,13 +29,13 @@
    node prove/stati.js        (CHROMIUM=/percorso/di/chrome se serve)  */
 'use strict';
 const http = require('http'), fs = require('fs'), path = require('path'), { chromium } = require('playwright');
-const RADICE = require('./dove').SERVITO;
+const { SERVITO: RADICE, RAMO } = require('./dove');
 const T = { '.html': 'text/html', '.css': 'text/css', '.js': 'text/javascript', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.webmanifest': 'application/manifest+json' };
 const PORTA = 8829;
 let guai = 0;
 const ok = (n, c, d) => { if (!c) guai++; console.log('  ' + (c ? 'ok  ' : 'KO  ') + n + (d ? '  → ' + d : '')); };
 
-const SCENE = JSON.parse(fs.readFileSync(path.join(RADICE, 'segni/scene.json'), 'utf8'));
+const SCENE = JSON.parse(fs.readFileSync(path.join(RAMO, 'segni/scene.json'), 'utf8'));
 
 /* IL CONTROLLO, dentro la pagina. Gli stati si accendono con
    `CSS.forcePseudoState` del protocollo di Chrome: `:hover` non si può

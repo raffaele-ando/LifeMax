@@ -74,10 +74,9 @@ const ok = (n, c, d) => { if (!c) guai++; console.log('  ' + (c ? 'ok  ' : 'KO  
        così, da un registro tecnico incollato in chat.
        Quindi si legge il codice e si cercano le scritture dirette. */
     {
-      const fonti = ['app.js', 'data.js', 'promemoria.js', 'charts.js', 'pezzi.js', 'forma.js', 'log.js']
-        .map((n) => path.join(RADICE, 'assets', n))
-        .filter((v) => fs.existsSync(v))
-        .map((v) => fs.readFileSync(v, 'utf8')).join('\n');
+      /* si leggono TUTTI i sorgenti, non un elenco scritto a mano: vedi
+         `prove/dove.js` per la ragione */
+      const fonti = require('./dove').tuttoIlCodice();
       const nati = [...fonti.matchAll(/(?:load|snapshot)\(\)\.([A-Za-z_][A-Za-z0-9_]*)\s*=[^=]/g)]
         .map((m) => m[1]);
       const noti = await p.evaluate(() => Object.keys(LM.statoVuoto()).concat(Object.keys(LM.COME_UNIRE)));
@@ -88,7 +87,7 @@ const ok = (n, c, d) => { if (!c) guai++; console.log('  ' + (c ? 'ok  ' : 'KO  
           : [...new Set(nati)].length + ' scritture dirette, tutte dichiarate');
     }
     ok('tutti i ' + r.quanti + ' campi sono nominati in COME_UNIRE', r.senza.length === 0,
-      r.senza.length ? 'SENZA REGOLA: ' + r.senza.join(', ') + ' — aggiungila in assets/data.js' : 'nessuno scoperto');
+      r.senza.length ? 'SENZA REGOLA: ' + r.senza.join(', ') + ' — aggiungila in src/tipi/stato.ts' : 'nessuno scoperto');
     /* e il contrario: una regola per un campo che non esiste più è una regola
        che nessuno rilegge, e domani mente */
     ok('e nessuna regola parla di un campo che non c’è più', r.avanzo.length === 0,

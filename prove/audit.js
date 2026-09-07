@@ -23,13 +23,13 @@
 'use strict';
 const http = require('http'), fs = require('fs'), path = require('path');
 const { chromium } = require('playwright');
-const RADICE = require('./dove').SERVITO, PORTA = 8781;
+const { SERVITO: RADICE, RAMO } = require('./dove'), PORTA = 8781;
 const T = { '.html': 'text/html', '.css': 'text/css', '.js': 'text/javascript', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.webmanifest': 'application/manifest+json' };
 /* Il Design lab sta fuori: sono dieci interfacce diverse per scelta, e
    contarle qui vorrebbe dire chiamare «incoerenza» proprio la cosa che quella
    schermata esiste per mostrare. Prima ci stava dentro e faceva il 70% del
    rumore. */
-const SCENE = JSON.parse(fs.readFileSync(path.join(RADICE, 'segni/scene.json'), 'utf8'))
+const SCENE = JSON.parse(fs.readFileSync(path.join(RAMO, 'segni/scene.json'), 'utf8'))
   .filter((s) => !/^Design lab/.test(s.nome));
 
 const RILEVA = `(function () {

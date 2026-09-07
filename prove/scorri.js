@@ -26,7 +26,7 @@
    node prove/scorri.js       (CHROMIUM=/percorso/di/chrome se serve)  */
 'use strict';
 const http = require('http'), fs = require('fs'), path = require('path'), { chromium } = require('playwright');
-const RADICE = require('./dove').SERVITO;
+const { SERVITO: RADICE, RAMO } = require('./dove');
 const PORTA = 8772;
 const T = { '.html': 'text/html', '.css': 'text/css', '.js': 'text/javascript', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.webmanifest': 'application/manifest+json' };
 let fail = 0;
@@ -176,7 +176,7 @@ const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  
       document.addEventListener('click', () => { window.__clic++; }, true);
     });
   }
-  const soglia = +(fs.readFileSync(path.join(RADICE, 'assets/app.js'), 'utf8')
+  const soglia = +(fs.readFileSync(path.join(RAMO, 'src', 'app', 'app.ts'), 'utf8')
     .match(/colpo:\s*(\d+)/) || [])[1];
   ok('il browser sintetizza ancora un clic a qualche distanza (se no la misura è muta)',
     ultimoConClic > 0, 'l’ultima con clic: ' + ultimoConClic + 'px');

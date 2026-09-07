@@ -1,35 +1,60 @@
-/* LE DUE GEMELLE, PER I PANNELLI — il foglio di React è identico a quello di prima?
+/* L'IMPRONTA DI OGNI SCHERMATA E DI OGNI PANNELLO — è ancora quella?
 
-   Stessa idea di `prove/gemelle.js`, spostata di un piano: là si confronta
-   quello che sta dentro a #vista, qui quello che sta dentro a #sheet-corpo.
-   Un pannello però non si vede andandoci: bisogna aprirlo, e ogni pannello si
-   apre da un posto suo. Quel «da dove» sta scritto qui sotto, una riga per
-   pannello, ed è l'unica parte che cresce quando se ne converte uno nuovo.
+   COS'ERA PRIMA, e perché adesso è questo. Qui c'erano due prove gemelle:
+   `gemelle.js` disegnava una schermata col codice di prima, si prendeva
+   l'albero del DOM, la ridisegnava con React e confrontava; `fogli.js` faceva
+   lo stesso un piano più sotto, per i pannelli. Sono state la misura che ha
+   portato di qua sette schermate e quindici pannelli senza che chi guarda se
+   ne accorgesse — quattro elementi in più nell'albero li ha trovati lei, non
+   un'occhiata.
 
-   Cosa confronta, in ordine di quanto conta:
+   Il codice di prima non c'è più, quindi quel confronto non ha più il secondo
+   termine. Ma la macchina serve ancora, e serve per una domanda che vale da
+   qui in avanti: l'albero è ancora quello di ieri? Le impronte stanno in
+   `prove/impronte.json`, committate; questa prova le rifà e le confronta. Se
+   una cambia, la prova non passa e va guardata: o è una modifica voluta — e
+   allora si riscrive il file con `--aggiorna`, e la differenza si vede nel
+   diff insieme al codice che l'ha causata — o è un elemento in più che
+   nessuno voleva.
+
+   Non è la stessa cosa di una fotografia. Non confronta gli stili calcolati:
+   quelli vengono dalle classi, e se le classi combaciano vengono uguali per
+   costruzione. Confronta, in ordine di quanto conta:
      1. l'albero: quali tag, annidati come, in che ordine
      2. le classi di ogni elemento
      3. il testo che si legge
      4. gli id e i data- da cui dipendono i comandi
-     5. il titolo scritto in cima al foglio
+     5. il valore dei campi
 
-   node prove/fogli.js           tutti i pannelli convertiti
-   node prove/fogli.js filtri    uno solo                                   */
+   node prove/impronte.js              tutto
+   node prove/impronte.js inbox        una sola
+   node prove/impronte.js --aggiorna   riscrive le impronte                */
 'use strict';
 const http = require('http'), fs = require('fs'), path = require('path');
 const { chromium } = require('playwright');
-const RADICE = path.join(__dirname, '..'), PORTA = 8801;
-const T = { '.html': 'text/html', '.css': 'text/css', '.js': 'text/javascript', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.webmanifest': 'application/manifest+json' };
+const RADICE = require('./dove').SERVITO, PORTA = 8799;
+const ALBO = path.join(__dirname, 'impronte.json');
+const T = { '.html': 'text/html', '.css': 'text/css', '.js': 'text/javascript', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.webmanifest': 'application/manifest+json', '.map': 'application/json' };
 
 let guai = 0;
 const ok = (n, c, d) => { if (!c) guai++; console.log('  ' + (c ? 'ok  ' : 'KO  ') + n + (d ? '  → ' + d : '')); };
 
+const arg = process.argv[2] || '';
+const AGGIORNA = arg === '--aggiorna';
+const SOLO = AGGIORNA ? '' : arg;
+
+/* le sette schermate, nell'ordine della navigazione */
+const SCHERMATE = ['oggi', 'giornata', 'inbox', 'rituali', 'plancia', 'esperimenti', 'scienza'];
+
 /* DA DOVE SI APRE OGNI PANNELLO.
    `vai` è la schermata, `tab` la linguetta (indice nella fila dei segmenti),
    `apri` il gesto che lo fa comparire. Il nome è quello con cui il pannello
-   è registrato nell'isola: se ne manca uno qui, la prova lo dice invece di
-   saltarlo in silenzio — un pannello convertito e non guardato sarebbe la
-   stessa cosa che non averlo convertito. */
+   è registrato: se ne manca uno qui, la prova lo dice invece di saltarlo in
+   silenzio — un pannello che nessuno guarda è un pannello che si rompe senza
+   che nessuno lo sappia.
+   Ci sono anche i due pannelli che React non disegna — «Impostazioni» e
+   «Promemoria», che restano stringhe in `app.ts`: l'impronta è utile a
+   quelli come agli altri. */
 const APERTURE = {
   filtri: { titolo: 'Guarda solo', vai: 'inbox', tab: 1, apri: (p) => p.evaluate(() => {
     const b = document.querySelector('.att-filtro'); if (b) b.click();
@@ -64,24 +89,23 @@ const APERTURE = {
      prima, se no la parte che conta — l'elenco — non la guarda nessuno.
      QUELLO CHE QUI NON SI VEDE: la sezione «Nel cloud», con «Riprendi» e
      «Sostituisci», perché in questa prova il cloud non c'è e quella parte
-     resta vuota di qua come di là. A guardarla è `prove/cloud.js`, che ha un
-     Firebase finto e prova la cosa che conta davvero — che sostituire
-     sostituisca — invece della forma dei due tasti. */
+     resta vuota. A guardarla è `prove/cloud.js`, che ha un Firebase finto e
+     prova la cosa che conta davvero — che sostituire sostituisca — invece
+     della forma dei due tasti. */
   backup: { titolo: 'Backup e ripristino', vai: 'plancia',
-    /* UNA COPIA SOLA, E LA STESSA NEI DUE GIRI. `prima` gira due volte e i
-       backup restano nel deposito: senza svuotarlo, il secondo giro ne trova
-       uno in più del primo e il confronto trova una differenza che è la prova
-       stessa ad aver creato. L'orologio è fermo, quindi l'ora della copia è
-       identica di qua e di là. */
+    /* UNA COPIA SOLA, e la stessa a ogni giro: senza svuotare il deposito il
+       giro dopo ne trova una in più e l'impronta cambia per un motivo che è
+       la prova stessa ad aver creato. L'orologio è fermo, quindi l'ora della
+       copia è sempre quella. */
     prima: (p) => p.evaluate(() => {
       localStorage.removeItem('lifemax.backups.v1');
       LM.backup('prima-import');
     }),
     apri: async (p) => {
-    await p.evaluate(() => { const b = document.getElementById('fondo-impostazioni') || document.querySelector('[data-imp]'); if (b) b.click(); });
-    await p.waitForTimeout(650);
-    await p.evaluate(() => { const b = document.getElementById('imp-backup'); if (b) b.click(); });
-  } },
+      await p.evaluate(() => { const b = document.getElementById('fondo-impostazioni') || document.querySelector('[data-imp]'); if (b) b.click(); });
+      await p.waitForTimeout(650);
+      await p.evaluate(() => { const b = document.getElementById('imp-backup'); if (b) b.click(); });
+    } },
   /* si arriva da dentro alla scheda di un'attività: prima si apre quella, e
      poi il tasto del giorno accanto a un passo */
   'quando-passo': { vai: 'inbox', tab: 1, apri: async (p) => {
@@ -113,18 +137,15 @@ const APERTURE = {
     const b = document.getElementById('btn-timer');
     if (b) b.click();
   }) },
-  /* il registro tecnico si apre dalla pastiglia del salvataggio, dentro alle
-     impostazioni: chi legge «Salvataggio…» vuole sapere subito perché */
-  /* del registro si confronta tutto tranne le righe che ci scorrono dentro:
-     dicono cos'è successo in questo giro, e i due giri sono due giri diversi.
-     Anche la testa dice a che punto sta il salvataggio adesso. */
+  /* del registro tecnico si guarda tutto tranne le righe che ci scorrono
+     dentro: dicono cos'è successo in QUESTO giro, e la testa dice a che punto
+     sta il salvataggio adesso. */
   diagnostica: { titolo: 'Registro tecnico', senza: '#diag-console, .diag-stato', vai: 'plancia', apri: async (p) => {
     await p.evaluate(() => { const b = document.getElementById('fondo-impostazioni') || document.querySelector('[data-imp]'); if (b) b.click(); });
     await p.waitForTimeout(650);
     /* IL REGISTRO SI SVUOTA UN ATTIMO PRIMA. Le righe si accumulano per tutta
-       la prova, e il secondo giro ne ha più del primo: il numero scritto sulla
-       linguetta «Solo problemi (N)» sarebbe diverso di qua e di là per un
-       motivo che non c'entra niente col pannello. */
+       la prova, e il numero scritto sulla linguetta «Solo problemi (N)»
+       cambierebbe a ogni giro per un motivo che non c'entra col pannello. */
     await p.evaluate(() => { if (window.LMLog) LMLog.svuota(); });
     await p.evaluate(() => { const b = document.getElementById('imp-diag'); if (b) b.click(); });
   } },
@@ -160,8 +181,10 @@ const APERTURE = {
   }) }
 };
 
-/* L'IMPRONTA DI UN ALBERO — la stessa di prove/gemelle.js, con la radice che
-   cambia. Le regole su cosa si guarda e cosa no stanno spiegate là. */
+/* L'IMPRONTA DI UN ALBERO. Si scende in profondità e si scrive una riga per
+   elemento: livello, tag, classi ordinate, id, i data-, il testo proprio
+   (non quello dei figli, se no ogni testo comparirebbe a ogni livello) e il
+   valore, se è un campo. */
 const impronta = (radice, senza) => `(function (radice, senza) {
   function testoProprio(e) {
     var t = '';
@@ -175,6 +198,14 @@ const impronta = (radice, senza) => `(function (radice, senza) {
   function scendi(e, liv) {
     if (!e || e.nodeType !== 1) return;
     var tag = e.tagName.toLowerCase();
+    /* Le classi che segnano un'ENTRATA sono appunti di runtime, non markup:
+       animaIngresso le mette prima e le toglie quando l'animazione finisce,
+       quindi ci sono o non ci sono a seconda dell'istante in cui guardi.
+       (anim-a e anim-b poi si alternano APPOSTA a ogni disegno: sono due nomi
+       per la stessa animazione, e servono a farla ripartire senza costringere
+       il browser a impaginare.)
+       Che l'entrata ci sia quando deve esserci lo tiene prove/sezioni.js, che
+       guarda le animazioni vive invece delle classi. */
     var TRANSITORIE = /^(anim-a|anim-b|anim|vista-enter|sez-enter(-dx|-sx)?|sheet-entra)$/;
     var cl = (e.getAttribute('class') || '').trim().split(/\\s+/)
       .filter(function (c) { return c && !TRANSITORIE.test(c); })
@@ -182,7 +213,12 @@ const impronta = (radice, senza) => `(function (radice, senza) {
     var dati = [];
     for (var i = 0; i < e.attributes.length; i++) {
       var a = e.attributes[i];
-      /* NIENTE APICI ROVESCI QUI DENTRO: questo pezzo vive dentro a un
+      /* i data-forma-* non sono markup: sono gli appunti che forma.ts si
+         prende mentre lavora (misure, «questa l'ho gia fatta», «questa e
+         secca»). Cambiano a seconda di QUANDO gira rispetto al disegno, non
+         di che cosa e stato disegnato. I data- che contano sono quelli da cui
+         dipendono i comandi.
+         NIENTE APICI ROVESCI QUI DENTRO: questo pezzo vive dentro a un
          template literal, e un apice rovescio lo chiude. */
       if (a.name.indexOf('data-') === 0 && a.name.indexOf('data-forma') !== 0) dati.push(a.name + '=' + a.value);
     }
@@ -190,13 +226,28 @@ const impronta = (radice, senza) => `(function (radice, senza) {
        stesso markup e dentro due valori diversi non sono lo stesso pannello */
     var val = (tag === 'input' || tag === 'select' || tag === 'textarea')
       ? ((e.type === 'checkbox' || e.type === 'radio') ? (e.checked ? '1' : '0') : (e.value || '')) : '';
-    out.push(liv + '|' + tag + '|' + cl + '|' + (e.id || '') + '|' + dati.sort().join(',') + '|' + testoProprio(e) + '|' + val);
+    /* GLI ID GENERATI NON POSSONO ESSERE UGUALI, e non e' un difetto.
+       LM.uid() e' 'id' piu' l'ora in base 36 piu' sei caratteri a caso:
+       l'ora e' ferma (l'orologio e' bloccato), i sei caratteri no. Ogni
+       giro semina dati nuovi con id nuovi, e senza questa riga l'impronta
+       cambiava sempre — cioe' non diceva niente.
+       Si tolgono i quattordici caratteri dell'id e si tiene quello che c'e'
+       dopo: nei dati di esempio e' un suffisso scritto a mano ('550',
+       'lez2') che dice QUALE cosa e', e quello e' segnale vero.
+       NIENTE APICI ROVESCI QUI DENTRO: questo pezzo vive dentro a un
+       template literal, e un apice rovescio lo chiude. E' la terza volta
+       che ci casco in questo progetto. */
+    const riga = (liv + '|' + tag + '|' + cl + '|' + (e.id || '') + '|' + dati.sort().join(',') + '|' + testoProprio(e) + '|' + val)
+      /* DUE BARRE ROVESCE, NON UNA. Qui siamo dentro a un template
+         literal: una barra rovescia con la b dietro e' il carattere
+         backspace, non il confine di parola. Scritta con una sola, la
+         regola si e' presa il backspace e non ha sostituito niente —
+         zitta, e l'impronta continuava a cambiare a ogni giro. */
+      .replace(/\\bid[0-9a-z]{14}/g, 'id~');
+    out.push(riga);
+    /* dentro a un <svg> non si guarda: i disegni li fa segni.ts, e i suoi
+       nodi interni sono decine per icona */
     if (tag === 'svg') return;
-    /* QUELLO CHE NON PUÒ ESSERE UGUALE, e non è un difetto.
-       Il registro tecnico mostra il registro di QUESTO giro: i due giri sono
-       due giri diversi (in uno l'isola di React si carica, nell'altro no), e
-       le righe che scrivono non sono le stesse né lo possono essere. Del
-       riquadro si confronta l'involucro, non quello che ci scorre dentro. */
     if (senza && e.matches(senza)) return;
     for (var j = 0; j < e.children.length; j++) scendi(e.children[j], liv + 1);
   }
@@ -219,13 +270,40 @@ const TITOLO = `(function () {
    mentre la sua ricetta buona era stata coperta. Si legge il file e si conta. */
 {
   const testo = fs.readFileSync(__filename, 'utf8');
-  const dentro = testo.slice(testo.indexOf('const APERTURE = {'), testo.indexOf('/* L’IMPRONTA DI UN ALBERO'));
+  const dentro = testo.slice(testo.indexOf('const APERTURE = {'), testo.indexOf("/* L'IMPRONTA DI UN ALBERO"));
   const nomi = [...dentro.matchAll(/^  '?([a-z-]+)'?:\s*[[{]/gm)].map((m) => m[1]);
   const doppi = nomi.filter((n, i) => nomi.indexOf(n) !== i);
   if (doppi.length) {
     console.log('  KO  ogni pannello ha una ricetta sola  → ' + [...new Set(doppi)].join(', '));
     guai++;
   }
+}
+
+const vecchie = fs.existsSync(ALBO) ? JSON.parse(fs.readFileSync(ALBO, 'utf8')) : {};
+const nuove = {};
+
+/* la differenza si dice in righe, non in numeri: chi legge deve vedere COSA
+   è cambiato senza aprire due file */
+function confronta(nome, prima, adesso) {
+  if (!prima) {
+    ok(nome + ': impronta nuova, da mettere nell’albo', false,
+      adesso.length + ' righe — rilancia con --aggiorna se è voluto');
+    return;
+  }
+  if (prima.join('\n') === adesso.join('\n')) {
+    ok(nome, true, adesso.length + ' elementi');
+    return;
+  }
+  const n = Math.max(prima.length, adesso.length);
+  const righe = [];
+  for (let i = 0; i < n && righe.length < 6; i++) {
+    if (prima[i] !== adesso[i]) {
+      righe.push('    prima : ' + (prima[i] === undefined ? '(niente)' : prima[i]));
+      righe.push('    adesso: ' + (adesso[i] === undefined ? '(niente)' : adesso[i]));
+    }
+  }
+  ok(nome, false, prima.length + ' elementi → ' + adesso.length);
+  righe.forEach((r) => console.log(r));
 }
 
 (async () => {
@@ -241,7 +319,8 @@ const TITOLO = `(function () {
   const ctx = await b.newContext({ viewport: { width: 390, height: 900 }, hasTouch: true, isMobile: true });
   const p = await ctx.newPage();
   const err = []; p.on('pageerror', (e) => err.push('' + e));
-  /* stessa ora e stessi dati nei due giri */
+  /* l'orologio fermo: due giri a due ore diverse sono due giornate diverse,
+     e la differenza non sarebbe del markup */
   await p.addInitScript((t) => {
     const D = Date;
     class F extends D { constructor(...a) { if (!a.length) super(t); else super(...a); } static now() { return t; } }
@@ -250,22 +329,11 @@ const TITOLO = `(function () {
 
   await p.goto('http://localhost:' + PORTA + '/index.html'); await p.waitForTimeout(300);
   await p.evaluate(() => { localStorage.clear(); LM.seedDemo(); });
-  await p.evaluate(() => { const s = LM.load(); s.profilo.react = true; LM.save(); });
   await p.reload(); await p.waitForTimeout(1200);
 
-  const quali = process.argv[2]
-    ? [process.argv[2]]
-    : await p.evaluate(() => (window.LM_REACT && window.LM_REACT.fogli) || []);
-
-  if (!quali.length) {
-    console.log('  --  nessun pannello convertito: niente da confrontare');
-    console.log('\n>>> PROVA SALTATA');
-    await b.close(); srv.close(); process.exit(0);
-  }
-
-  /* si aspetta che le animazioni finiscano: il foglio entra scorrendo, e
-     fotografato a metà entrata non è ancora quello che sarà */
-  const ferme = async () => {
+  /* si aspetta che le animazioni finiscano: la schermata entra scorrendo, e
+     fotografata a metà entrata non è ancora quella che sarà */
+  const ferme = async (dove) => {
     for (let i = 0; i < 30; i++) {
       const quante = await p.evaluate(() =>
         document.getAnimations().filter((a) => a.playState === 'running' && a.effect &&
@@ -275,85 +343,86 @@ const TITOLO = `(function () {
     }
     let prima = null;
     for (let i = 0; i < 25; i++) {
-      const ora = await p.evaluate(() => {
-        const e = document.getElementById('sheet-corpo');
+      const adesso = await p.evaluate((id) => {
+        const e = document.getElementById(id);
         return e ? e.textContent : '';
-      });
-      if (ora === prima) break;
-      prima = ora;
+      }, dove);
+      if (adesso === prima) break;
+      prima = adesso;
       await p.waitForTimeout(120);
     }
   };
 
-  const disegna = async (r, react) => {
-    await p.evaluate((x) => { const s = LM.load(); s.profilo.react = x; LM.save(); }, react);
-    /* qualche pannello ha bisogno che l'app sia in un certo stato per
-       esistere: `prima` lo mette lì, e vale per tutt'e due i giri */
-    if (r.prima) await r.prima(p);
-    await p.evaluate((v) => { location.hash = '#/' + v; }, r.vai);
-    await p.reload(); await p.waitForTimeout(react ? 1400 : 900);
-    if (r.tab != null) {
-      await p.evaluate((i) => { const t = document.querySelectorAll('#vista .segmenti button')[i]; if (t) t.click(); }, r.tab);
-      await p.waitForTimeout(600);
-    }
-    await r.apri(p);
-    await p.waitForTimeout(700);
-    await ferme();
-    const aperto = await p.evaluate(() => { const s = document.getElementById('sheet-overlay'); return !!s && !s.hidden; });
-    return { aperto, titolo: await p.evaluate(TITOLO), albero: await p.evaluate(impronta('sheet-corpo', r.senza)) };
+  const pulisci = async () => {
+    await p.evaluate(() => {
+      const x = document.getElementById('sheet-chiudi');
+      if (x) x.click();
+      const s = LM.load(); s.profilo.nav = 'porte'; LM.save();
+    });
+    await p.waitForTimeout(400);
   };
 
-  for (const nome of quali) {
-    if (!APERTURE[nome]) {
-      console.log('\nPANNELLO «' + nome + '»');
-      ok('si sa da dove si apre', false, 'manca la riga in APERTURE: convertito ma mai guardato');
-      continue;
-    }
-    /* un pannello può avere più di un modo di essere: la scheda di un'attività
-       divisa in passi non è la stessa della scheda di un'attività semplice */
-    for (const r of [].concat(APERTURE[nome])) {
-    console.log('\nPANNELLO «' + nome + (r.come ? ' · ' + r.come : '') + '»');
-    const vecchio = await disegna(r, false);
-    const nuovo = await disegna(r, true);
+  console.log('\nLE SETTE SCHERMATE');
+  for (const v of SCHERMATE) {
+    if (SOLO && SOLO !== v) continue;
+    await p.evaluate((h) => { location.hash = '#/' + h; }, v);
+    await p.waitForTimeout(350);
+    await ferme('vista');
+    const imp = await p.evaluate(impronta('vista', null));
+    nuove[v] = imp;
+    if (!AGGIORNA) confronta(v, vecchie[v], imp);
+  }
 
-    ok('il pannello si apre di qua e di là', vecchio.aperto && nuovo.aperto,
-      (vecchio.aperto ? '' : 'non si è aperto col codice di prima') + (nuovo.aperto ? '' : ' non si è aperto con React'));
-    if (!vecchio.aperto || !nuovo.aperto) continue;
-
-    ok('il titolo è lo stesso', vecchio.titolo === nuovo.titolo,
-      '«' + vecchio.titolo + '» prima, «' + nuovo.titolo + '» dopo');
-    /* ED È QUELLO GIUSTO. Una ricetta che sbaglia bersaglio apre un altro
-       pannello, e il confronto lo trova identico a se stesso: verde, e non ha
-       guardato niente. È successo col registro tecnico, dove il tasto da
-       premere esiste solo se hai fatto l'accesso — la prova restava sulle
-       impostazioni e diceva che andava tutto bene. */
-    if (r.titolo) ok('ed è il pannello che ci si aspettava', vecchio.titolo === r.titolo,
-      vecchio.titolo === r.titolo ? '' : 'la ricetta ha aperto «' + vecchio.titolo + '», non «' + r.titolo + '»');
-    ok('l’albero ha lo stesso numero di elementi', vecchio.albero.length === nuovo.albero.length,
-      vecchio.albero.length + ' prima, ' + nuovo.albero.length + ' dopo');
-
-    const quante = Math.min(vecchio.albero.length, nuovo.albero.length);
-    const diverse = [];
-    for (let i = 0; i < quante; i++) if (vecchio.albero[i] !== nuovo.albero[i]) diverse.push(i);
-    ok('e ogni elemento combacia', diverse.length === 0,
-      diverse.length ? diverse.length + ' righe diverse' : 'tutte uguali');
-    if (diverse.length) {
-      console.log('      le prime tre differenze, prima → dopo:');
-      diverse.slice(0, 3).forEach((i) => {
-        console.log('        prima: ' + vecchio.albero[i]);
-        console.log('        dopo:  ' + nuovo.albero[i]);
-      });
-      if (vecchio.albero.length !== nuovo.albero.length) {
-        const piu = vecchio.albero.length > nuovo.albero.length ? vecchio.albero : nuovo.albero;
-        console.log('      e ' + (piu === vecchio.albero ? 'di là' : 'di qua') + ' ce ne sono altre, la prima è:');
-        console.log('        ' + piu[quante]);
+  console.log('\nI PANNELLI');
+  const nomi = Object.keys(APERTURE);
+  for (const nome of nomi) {
+    const ricette = Array.isArray(APERTURE[nome]) ? APERTURE[nome] : [APERTURE[nome]];
+    for (const r of ricette) {
+      const eti = nome + (r.come ? ' (' + r.come + ')' : '');
+      if (SOLO && SOLO !== nome) continue;
+      await pulisci();
+      if (r.prima) await r.prima(p);
+      await p.evaluate((h) => { location.hash = '#/' + h; }, r.vai);
+      await p.waitForTimeout(400);
+      if (r.tab != null) {
+        await p.evaluate((i) => {
+          const bb = document.querySelectorAll('#vista .segmenti.sez-nav button, .testa-porta .segmenti.sez-nav button');
+          if (bb[i]) bb[i].click();
+        }, r.tab);
+        await p.waitForTimeout(450);
+      }
+      await r.apri(p);
+      await p.waitForTimeout(500);
+      await ferme('sheet-corpo');
+      const imp = await p.evaluate(impronta('sheet-corpo', r.senza || null));
+      const tit = await p.evaluate(TITOLO);
+      const chiave = 'foglio:' + eti;
+      nuove[chiave] = imp;
+      nuove[chiave + ' [titolo]'] = [tit];
+      if (!AGGIORNA) {
+        if (imp.length === 1 && imp[0] === 'NIENTE') {
+          ok(eti, false, 'il pannello non si e’ aperto: la ricetta non porta piu’ da nessuna parte');
+        } else {
+          confronta(eti, vecchie[chiave], imp);
+          if (r.titolo) ok(eti + ': il titolo', tit === r.titolo, tit);
+          else confronta(eti + ': il titolo', vecchie[chiave + ' [titolo]'], [tit]);
+        }
       }
     }
-    }
   }
-  ok('nessun errore in pagina', err.length === 0, [...new Set(err)].slice(0, 2).join(' · '));
 
+  if (AGGIORNA) {
+    /* si tiene quello che non si è rifatto in questo giro: `--aggiorna` con
+       un nome solo non deve buttare via le altre */
+    const tutte = Object.assign({}, vecchie, nuove);
+    fs.writeFileSync(ALBO, JSON.stringify(tutte, null, 1) + '\n');
+    console.log('\n>>> ALBO RISCRITTO: ' + Object.keys(nuove).length + ' impronte in prove/impronte.json');
+    console.log('    guardale nel diff: quello che è cambiato deve avere una ragione nel codice accanto.');
+    await b.close(); srv.close(); process.exit(0);
+  }
+
+  ok('nessun errore JS', !err.length, err.slice(0, 3).join(' · '));
+  console.log(guai ? '\n>>> ' + guai + ' IMPRONTE CAMBIATE' : '\n>>> TUTTO A POSTO');
   await b.close(); srv.close();
-  console.log(guai ? '\n>>> ' + guai + (guai === 1 ? ' PROBLEMA' : ' PROBLEMI') : '\n>>> TUTTO A POSTO');
   process.exit(guai ? 1 : 0);
 })();

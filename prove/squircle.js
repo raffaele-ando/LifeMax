@@ -16,7 +16,7 @@
    node prove/squircle.js        (CHROMIUM=/percorso/di/chrome se serve)  */
 'use strict';
 const http = require('http'), fs = require('fs'), path = require('path'), { chromium } = require('playwright');
-const RADICE = require('./dove').SERVITO;
+const { SERVITO: RADICE, RAMO } = require('./dove');
 const T = { '.html': 'text/html', '.css': 'text/css', '.js': 'text/javascript', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.webmanifest': 'application/manifest+json' };
 const PORTA = 8772;
 let guai = 0;
@@ -327,7 +327,7 @@ const CONTORNO = `(function (b64, R, dritto) {
      non c'è niente da rigenerare e niente da confrontare. Le cose da
      pretendere sono altre tre, e la terza è quella che conta. */
   {
-    const css = fs.readFileSync(path.join(RADICE, 'assets/app.css'), 'utf8');
+    const css = fs.readFileSync(path.join(RAMO, 'src', 'stile', 'app.css'), 'utf8');
     ok('il blocco generato è sparito dal foglio di stile',
       css.indexOf('==== SUPERCERCHI') < 0, 'trecentoquattordici kilobyte in meno');
     /* nessuna regola scritta a mano deve dare una forma col ritaglio: se ce
@@ -343,19 +343,21 @@ const CONTORNO = `(function (b64, R, dritto) {
     ok('e nessuna regola scritta a mano dà una forma col ritaglio', fuori.length === 0,
       fuori.slice(0, 3).join(' | ') || 'solo il testo per i lettori di schermo');
 
-    /* l'ordine si legge sul sorgente scritto a mano: index.html lo genera
-       il build, che i sette script se li mangia tutti in un pacco solo —
-       nello stesso ordine in cui stanno qui. */
-    const sorgHtml = path.join(RADICE, 'index.sorgente.html');
-    const html = fs.readFileSync(fs.existsSync(sorgHtml) ? sorgHtml : path.join(RADICE, 'index.html'), 'utf8');
-    const iForma = html.indexOf('assets/forma.js');
-    const iApp = html.indexOf('assets/app.js');
-    ok('forma.js è caricato, e prima di app.js', iForma > 0 && iForma < iApp,
+    /* L'ORDINE ADESSO SI LEGGE IN `main.tsx`, non in `index.html`.
+       Erano nove `<script>` in fila, tenuti in ordine a mano con un commento
+       accanto a ognuno; adesso sono gli `import` di un modulo, che girano
+       prima del suo corpo. La regola non è cambiata: la forma degli angoli
+       deve entrare prima dell'app, se no il primo disegno esce con gli
+       angoli tondi normali e poi scatta alla curva di Apple. */
+    const avvio = fs.readFileSync(path.join(RAMO, 'src', 'main.tsx'), 'utf8');
+    const iForma = avvio.indexOf("'./forma/forma'");
+    const iApp = avvio.indexOf("'./app/app'");
+    ok('forma.ts entra, e prima di app.ts', iForma > 0 && iForma < iApp,
       'se arrivasse dopo, il primo disegno della pagina avrebbe gli angoli tondi normali');
 
     /* le costanti non possono divergere da segni/apple.mjs: sono la stessa
        curva scritta due volte, una per il browser e una per gli strumenti */
-    const js = fs.readFileSync(path.join(RADICE, 'assets/forma.js'), 'utf8');
+    const js = fs.readFileSync(path.join(RAMO, 'src', 'forma', 'forma.ts'), 'utf8');
     ok('e le costanti dell’angolo sono quelle di segni/apple.mjs',
       js.indexOf(String(A.INIZIO)) > 0 && js.indexOf('1.08849296') > 0 && js.indexOf('0.07491139') > 0,
       'INIZIO = ' + A.INIZIO);
@@ -521,7 +523,7 @@ const CONTORNO = `(function (b64, R, dritto) {
     })(), png);
   };
   {
-    const svg = fs.readFileSync(path.join(RADICE, 'assets/icone/icona.svg'), 'utf8');
+    const svg = fs.readFileSync(path.join(RAMO, 'public', 'icone', 'icona.svg'), 'utf8');
     const d = (svg.match(/d="(M ?[0-9][^"]{200,})"/) || [])[1] || '';
     const atteso = A.tracciatoSvg(512, 512, 512 / (2 * A.INIZIO));
     ok('icona.svg ha il tracciato di Apple, generato', d === atteso,
@@ -531,12 +533,12 @@ const CONTORNO = `(function (b64, R, dritto) {
       'raggio ' + (512 / (2 * A.INIZIO)).toFixed(1) + 'px su 512');
   }
   for (const f of ['icona-180.png', 'icona-167.png', 'icona-152.png', 'icona-maskable-192.png']) {
-    const a = await angoloPng('assets/icone/' + f);
+    const a = await angoloPng('icone/' + f);
     ok(f + ' è piena fino al bordo', a > 200,
       a > 200 ? 'alfa ' + a : 'ha l’angolo tagliato: dentro la maschera del sistema resterebbe un anello di niente');
   }
   for (const f of ['icona-192.png', 'icona-512.png', 'favicon-32.png']) {
-    const a = await angoloPng('assets/icone/' + f);
+    const a = await angoloPng('icone/' + f);
     ok(f + ' ha l’angolo a supercerchio', a < 40, 'alfa ' + a);
   }
 

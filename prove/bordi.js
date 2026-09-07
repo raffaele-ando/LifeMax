@@ -42,14 +42,14 @@
    node prove/bordi.js        (CHROMIUM=/percorso/di/chrome se serve)  */
 'use strict';
 const http = require('http'), fs = require('fs'), path = require('path'), { chromium } = require('playwright');
-const RADICE = require('./dove').SERVITO;
+const { SERVITO: RADICE, RAMO } = require('./dove');
 const T = { '.html': 'text/html', '.css': 'text/css', '.js': 'text/javascript', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.webmanifest': 'application/manifest+json' };
 const PORTA = 8825;
 let guai = 0;
 const ok = (n, c, d) => { if (!c) guai++; console.log('  ' + (c ? 'ok  ' : 'KO  ') + n + (d ? '  → ' + d : '')); };
 
 /* LE SCENE stanno in segni/scene.json, una lista sola per tutti. */
-const SCENE = JSON.parse(fs.readFileSync(path.join(RADICE, 'segni/scene.json'), 'utf8'));
+const SCENE = JSON.parse(fs.readFileSync(path.join(RAMO, 'segni/scene.json'), 'utf8'));
 
 /* --- il controllo, dentro la pagina --- */
 const CONTROLLA = `(function (conFuoco) {

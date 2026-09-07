@@ -24,7 +24,11 @@
    Si lancia con: node prove/intestazioni.js   (solo Node, niente browser)  */
 'use strict';
 const fs = require('fs'), path = require('path');
-const RADICE = path.join(__dirname, '..');
+const { SERVITO: RADICE } = require('./dove');
+/* `_headers` sta in `public/`, che Vite copia in `docs/` così com'è: la
+   copia in `docs/` è quella che Cloudflare legge, ed è quella da guardare —
+   il sorgente potrebbe essere più nuovo del sito pubblicato, ed è
+   esattamente il caso in cui questa prova serve. */
 const VIA = path.join(RADICE, '_headers');
 
 let guai = 0;
@@ -74,7 +78,10 @@ const eterni = blocchi.filter((b) => b.teste.some((t) =>
   t.nome === 'cache-control' && /immutable|max-age\s*=\s*([1-9]\d{5,})/.test(t.valore)));
 
 /* i file dal nome fisso: quelli che devono poter cambiare senza cambiare via */
-const FISSI = ['/', '/index.html', '/sw.js', '/manifest.webmanifest', '/assets/app.js', '/assets/data.js'];
+/* i file dal nome fisso adesso sono quattro: quelli che il build copia da
+   `public/` senza toccarne il nome, più l'HTML. Tutto il resto sta sotto
+   `/pacco/` e ha l'impronta nel nome. */
+const FISSI = ['/', '/index.html', '/sw.js', '/manifest.webmanifest', '/icone/icona-192.png'];
 const presi = [];
 eterni.forEach((b) => {
   const r = aRegex(b.modello);
@@ -93,7 +100,17 @@ eterni.forEach((b) => {
   const suDisco = path.join(RADICE, cartella);
   if (!fs.existsSync(suDisco) || !fs.statSync(suDisco).isDirectory()) return;
   fs.readdirSync(suDisco).forEach((f) => {
-    if (!/\.[0-9a-f]{8,}\./.test(f)) senzaImpronta.push(cartella + '/' + f);
+    /* L'IMPRONTA C'È, ED È SCRITTA IN UN ALTRO ALFABETO.
+       esbuild la scriveva in esadecimale fra due punti (`pacco.fdad6673cc.js`);
+       Vite la scrive in base64url dopo un trattino (`index-DQOrfnMU.js`). La
+       cosa che conta è la stessa — se cambia una riga cambia il nome, quindi
+       quel file lì non cambierà mai e si può promettere «per sempre» — e la
+       prova cercava l'alfabeto invece della cosa.
+       Si accettano entrambi, e il pezzo dell'impronta non può avere trattini
+       dentro: senza quel dettaglio `icona-maskable-512.png` passerebbe
+       contando `-maskable-512` come un'impronta. */
+    const senzaMappa = f.replace(/\.map$/, '');
+    if (!/[.-][A-Za-z0-9_]{8,}\.[a-z0-9]+$/.test(senzaMappa)) senzaImpronta.push(cartella + '/' + f);
   });
 });
 ok('ogni file sotto una regola eterna ha l’impronta nel nome', senzaImpronta.length === 0,
@@ -105,9 +122,9 @@ console.log('\nDUE REGOLE NON PRENDONO LO STESSO FILE');
    intestazione fanno uscire una riga senza senso, e il caso peggiore è
    proprio quello che sembra prudente: una regola larga messa in fondo. */
 const esempi = [];
-fs.readdirSync(path.join(RADICE, 'assets', 'pacco')).forEach((f) => esempi.push('/assets/pacco/' + f));
+fs.readdirSync(path.join(RADICE, 'pacco')).forEach((f) => esempi.push('/pacco/' + f));
 FISSI.forEach((f) => esempi.push(f));
-['/assets/icone/icona-192.png', '/assets/app.css', '/promemoria/chiavi.html'].forEach((f) => esempi.push(f));
+['/icone/icona-512.png', '/manifest.webmanifest'].forEach((f) => esempi.push(f));
 
 const scontri = [];
 esempi.forEach((f) => {
@@ -124,8 +141,8 @@ ok('nessun file riceve la stessa intestazione da due regole',
 console.log('\nE QUELLO CHE SERVE C’È');
 const copre = (f) => blocchi.some((b) => aRegex(b.modello).test(f) &&
   b.teste.some((t) => t.nome === 'cache-control' && /immutable/.test(t.valore)));
-const pacco = fs.readdirSync(path.join(RADICE, 'assets', 'pacco'));
-const scoperti = pacco.filter((f) => !copre('/assets/pacco/' + f));
+const pacco = fs.readdirSync(path.join(RADICE, 'pacco'));
+const scoperti = pacco.filter((f) => !copre('/pacco/' + f));
 ok('ogni pezzo del pacco è dichiarato eterno', scoperti.length === 0,
   scoperti.join(', ') || pacco.length + ' file');
 
