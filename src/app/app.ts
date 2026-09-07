@@ -6047,8 +6047,11 @@ function ritualeMattina(corpo: HTMLElement): void {
 
 /* ---------- Attività → Abitudini ---------- */
 
-var GIORNI_ORD = [1, 2, 3, 4, 5, 6, 0];
-var GIORNI_LAB = { 1: 'L', 2: 'M', 3: 'M', 4: 'G', 5: 'V', 6: 'S', 0: 'D' };
+/* I SETTE GIORNI, in ordine di settimana italiana (lunedì primo) e con la
+   loro iniziale. `Date.getDay()` mette la domenica a zero: l'ordine qui è
+   quello che si legge, non quello che dà il browser. */
+export const GIORNI_ORD: readonly GiornoSettimana[] = [1, 2, 3, 4, 5, 6, 0];
+export const GIORNI_LAB: Record<GiornoSettimana, string> = { 1: 'L', 2: 'M', 3: 'M', 4: 'G', 5: 'V', 6: 'S', 0: 'D' };
 
 export function chipsGiorni(giorni: GiornoSettimana[]): string {
   return '<div class="giorni-chips">' + GIORNI_ORD.map(function (d) {
@@ -6056,14 +6059,18 @@ export function chipsGiorni(giorni: GiornoSettimana[]): string {
   }).join('') + '</div>';
 }
 export function leggiGiorni(root: ParentNode): GiornoSettimana[] {
-  var g = [];
-  root.querySelectorAll<HTMLElement>('.giorno-chip.sel').forEach(function (b) { g.push(+b.getAttribute('data-giorno')); });
+  const g: GiornoSettimana[] = [];
+  root.querySelectorAll<HTMLElement>('.giorno-chip.sel').forEach(function (b) {
+    /* i sette valori li ha scritti `chipsGiorni` da `GIORNI_ORD`: quello che
+       torna da `data-giorno` è uno di quelli */
+    g.push(+(b.getAttribute('data-giorno') || 0) as GiornoSettimana);
+  });
   return g;
 }
 export function riepilogoGiorni(giorni: GiornoSettimana[]): string {
   if (!giorni || !giorni.length) return 'ogni giorno';
   if (giorni.length === 7) return 'ogni giorno';
-  var feriali = [1, 2, 3, 4, 5];
+  const feriali: GiornoSettimana[] = [1, 2, 3, 4, 5];
   if (giorni.length === 5 && feriali.every(function (d) { return giorni.indexOf(d) >= 0; })) return 'lun–ven';
   return GIORNI_ORD.filter(function (d) { return giorni.indexOf(d) >= 0; }).map(function (d) { return GIORNI_LAB[d]; }).join(' ');
 }
@@ -6088,17 +6095,28 @@ export function riepilogoGiorni(giorni: GiornoSettimana[]): string {
    andando. Le caselle passate si toccano — capita di ricordarsi la sera
    di una cosa fatta il giorno prima, e i dati lo permettevano già senza
    che ci fosse un modo per dirlo. */
-export function giorniAbitudine(h: Abitudine, settimane: number): { k: Giorno; prevista: boolean; fatta: boolean; saltata: boolean }[] {
+/* UNA CASELLA DELLA CATENA. `fatto`/`saltato` e non `fatta`/`saltata`: il
+   nome che il codice usa da sempre, e la forma che leggono la scheda
+   dell'abitudine e la sua griglia. */
+export interface CasellaCatena {
+  k: Giorno;
+  fatto: boolean;
+  saltato: boolean;
+  prevista: boolean;
+  futuro: boolean;
+  oggi: boolean;
+}
+export function giorniAbitudine(h: Abitudine, settimane: number): CasellaCatena[] {
   /* incolonnati per giorno della settimana, come un calendario: se le
      caselle scorrono via una dietro l'altra non si vede più che «il
      martedì salta sempre», che è l'unica cosa che una griglia sa dire e
      una lista no. Si parte dal lunedì di N settimane fa e si arriva a
      fine settimana: gli ultimi giorni possono essere nel futuro. */
-  var oggi = LM.todayKey();
-  var inizio = LM.addDays(LM.weekKey(oggi), -7 * (settimane - 1));
-  var out = [];
-  for (var i = 0; i < settimane * 7; i++) {
-    var k = LM.addDays(inizio, i);
+  const oggi = LM.todayKey();
+  const inizio = LM.addDays(LM.weekKey(oggi), -7 * (settimane - 1));
+  const out: CasellaCatena[] = [];
+  for (let i = 0; i < settimane * 7; i++) {
+    const k = LM.addDays(inizio, i);
     out.push({
       k: k,
       fatto: !!(h.fatti && h.fatti[k]),
@@ -6111,8 +6129,8 @@ export function giorniAbitudine(h: Abitudine, settimane: number): { k: Giorno; p
   return out;
 }
 
-export function statoAbitudineOggi(h: Abitudine): { fatta: boolean; prevista: boolean; saltata: boolean } {
-  var k = LM.todayKey();
+export function statoAbitudineOggi(h: Abitudine): { fatta: boolean; saltata: boolean } {
+  const k = LM.todayKey();
   return { fatta: !!(h.fatti && h.fatti[k]), saltata: !!(h.salti && h.salti[k]) };
 }
 
@@ -6120,21 +6138,24 @@ export function statoAbitudineOggi(h: Abitudine): { fatta: boolean; prevista: bo
    per cui oggi non è in lista. */
 /* «torna martedì» invece di «L M V»: il giorno in cui tocca è
    un'informazione, l'elenco delle iniziali va tradotto ogni volta. */
-function quandoTorna(h: Abitudine): string {
-  var k = LM.prossimaAbitudine(h);
+function quandoTorna(h: Abitudine): string | null {
+  const k = LM.prossimaAbitudine(h);
   if (!k) return null;
   if (k === LM.addDays(LM.todayKey(), 1)) return 'torna domani';
-  var g = LM.weekdayShort(k);
-  var nomi = { lun: 'lunedì', mar: 'martedì', mer: 'mercoledì', gio: 'giovedì', ven: 'venerdì', sab: 'sabato', dom: 'domenica' };
+  const g = LM.weekdayShort(k);
+  const nomi: Record<string, string> = { lun: 'lunedì', mar: 'martedì', mer: 'mercoledì', gio: 'giovedì', ven: 'venerdì', sab: 'sabato', dom: 'domenica' };
   if (LM.daysBetween(LM.todayKey(), k) <= 7) return 'torna ' + (nomi[g] || g);
   return 'torna il ' + LM.fmtShort(k);
 }
 
-function sottoAbitudine(h: Abitudine, previstaOggi: boolean): string {
-  var st = statoAbitudineOggi(h);
+/* la riga sotto al nome: la serie se c'è, altrimenti il motivo per cui oggi
+   non è in lista. `ico` ce l'ha solo la serie (la fiamma). */
+interface SottoRiga { testo: string; cls: string; ico?: string }
+function sottoAbitudine(h: Abitudine, previstaOggi: boolean): SottoRiga | null {
+  const st = statoAbitudineOggi(h);
   if (st.saltata) return { testo: 'saltata oggi', cls: 'saltata' };
   if (!previstaOggi) {
-    var oggi = LM.todayKey();
+    const oggi = LM.todayKey();
     if (h.da && oggi < h.da) return { testo: 'comincia il ' + LM.fmtShort(h.da), cls: '' };
     if (h.a && oggi > h.a) return { testo: 'finita il ' + LM.fmtShort(h.a), cls: '' };
     return { testo: quandoTorna(h) || riepilogoGiorni(h.giorni), cls: '' };
@@ -6142,16 +6163,16 @@ function sottoAbitudine(h: Abitudine, previstaOggi: boolean): string {
   /* Per le abitudini di oggi la seconda riga la merita solo la serie:
      ripetere «ogni giorno» sotto ogni riga di una lista intitolata
      «Oggi» è una parola che si legge sei volte e non dice niente. */
-  var serie = LM.streakAbitudine(h);
+  const serie = LM.streakAbitudine(h);
   if (serie > 1) return { testo: serie + ' giorni di fila', cls: 'serie', ico: 'flame' };
   if (serie === 1) return { testo: 'cominciata oggi', cls: 'serie', ico: 'flame' };
   return null;
 }
 
 export function rigaAbitudine(h: Abitudine, previstaOggi: boolean): string {
-  var st = statoAbitudineOggi(h);
-  var sotto = sottoAbitudine(h, previstaOggi);
-  var ar = areaById(h.areaId);
+  const st = statoAbitudineOggi(h);
+  const sotto = sottoAbitudine(h, previstaOggi);
+  const ar = areaById(h.areaId);
   return '<div class="lista-riga ab-riga' + (st.fatta ? ' fatta' : '') + (st.saltata ? ' saltata' : '') +
     '" data-abid="' + h.id + '" style="--c-area:' + LM.coloreArea(ar) + '">' +
     (st.saltata
