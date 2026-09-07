@@ -24,6 +24,11 @@ ramo così com'è, senza nessun passaggio di build. Vuol dire che `docs/` va
 ricostruisce in una cartella temporanea e lo confronta, così quel «vecchio» si
 scopre lì invece che in rete.
 
+**Da fare una volta sola, e non si può fare dal codice:** in *Settings →
+Pages → Build and deployment*, accanto al ramo, scegliere **`/docs`** invece
+di **`/ (root)`**. Finché non è fatto la radice non ha più un `index.html` e
+l'indirizzo risponde 404.
+
 ## Com'è fatto
 
 Un motore solo: `tsc` per i tipi, Vite per il pacco, React per le schermate.
@@ -293,6 +298,14 @@ sicurezza dell'accesso non la guardava nessuno.
 Oggi è su **GitHub Pages**, che serve il ramo così com'è: `git push` e in un
 minuto è online — nessun passaggio di build, per questo `docs/` è committato.
 Ogni risposta esce con `Cache-Control: max-age=600`, e non si può cambiare.
+
+> **UNA COSA DA FARE A MANO, UNA VOLTA SOLA.** Il sito adesso esce in
+> `docs/`, e Pages va detto dove guardare: *Settings → Pages → Build and
+> deployment → Branch*, e accanto al ramo si sceglie **`/docs`** invece di
+> **`/ (root)`**. È l'unico passaggio della riscrittura che non si può fare
+> dal codice, e finché non è fatto la radice non ha più un `index.html`:
+> l'indirizzo risponde 404. Il resto — il ramo, il dominio, i domini
+> autorizzati di Firebase — non cambia.
 
 C'è un `_headers` pronto per **Cloudflare Pages**, che quel limite non ce l'ha
 e che comprime in Brotli invece che in gzip. Quanto vale, misurato allo stesso
