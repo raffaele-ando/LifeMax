@@ -290,6 +290,22 @@ export interface Timer {
   ciclo: number;
   inPausa: boolean;
   fermatoA: number;
+  /* DUE CAMPI CHE MANCAVANO, e li scrive `app.ts`.
+     `pausaFine` è quando finisce la pausa del pomodoro: senza, un timer in
+     pausa non sapeva quando ripartire. `daAvvio` dice che il timer è nato
+     come «cinque minuti per cominciare» e poi è andato avanti da sé — e in
+     quel caso il tasto non dice «Ferma e registra i minuti» ma «Basta così».
+     Erano scritti a mano dentro all'oggetto del timer e letti in tre punti,
+     e per il tipo non esistevano: `aggiornaTimerDati` li lasciava passare
+     perché fondeva le chiavi una per una senza guardare quali. */
+  pausaFine?: number;
+  daAvvio?: boolean;
+  /* SE ERI DENTRO, CI TORNI. Lo schermo della concentrazione è aperto o no, e
+     la risposta sta nei dati: chiudendo il telefono mentre stai lavorando, al
+     ritorno lo si ritrova aperto invece di essere riportati indietro alla
+     schermata da cui si era usciti apposta. Terzo campo che `app.ts` scriveva
+     e che il tipo non conosceva. */
+  concentrato?: boolean;
 }
 
 /* LE LAPIDI. Per ogni riga tolta davvero: serve alla fusione fra dispositivi,

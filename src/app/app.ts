@@ -100,8 +100,13 @@ export interface Nodo {
 export interface NodiDelGiorno {
   k: Giorno;
   isToday: boolean;
-  wake: number | null;
-  sleep: number | null;
+  /* DUE NUMERI, NON DUE «FORSE». Sono i due capi dell'asse, e la griglia ci
+     fa i conti sopra in venti punti. Vengono da `minOf(r.sveglia)` e
+     `minOf(r.sonnoRoutine)`: le ore di un ritmo ci sono sempre — le mette
+     `RITMO_DEFAULT` e le difende `normalizza` — quindi il `null` che `minOf`
+     sa restituire, qui non arriva. Detto una volta invece di venti. */
+  wake: number;
+  sleep: number;
   sveglia: Ora;
   sonno: Ora;
   sonnoRoutine: Ora;
@@ -120,11 +125,27 @@ export interface Disposto {
   ncols?: number;
 }
 
+/* LE OPZIONI DELLA GRIGLIA, tutte quelle che il file legge davvero. Erano
+   dieci campi facoltativi su un oggetto senza forma, e nessuna delle cinque
+   chiamate ne passava lo stesso sottoinsieme: `mini` per la settimana,
+   `rail: false` per la striscia, `nowMin` per il pop-up. Chi leggeva il
+   codice doveva raccoglierli a mano dalle cinque chiamate. */
 export interface OpzGriglia {
   pxh?: number;
-  modifica?: boolean;
-  compatta?: boolean;
-  senzaVassoio?: boolean;
+  /* la versione piccola: settimana e mese. Niente etichette, blocchi bassi. */
+  mini?: boolean;
+  /* la colonna delle ore a sinistra: si spegne nella striscia */
+  rail?: boolean;
+  senzaEtichettaSonno?: boolean;
+  /* «adesso» in minuti, per la riga rossa: nel pop-up si passa a mano */
+  nowMin?: number;
+  compact?: boolean;
+  controls?: boolean;
+  header?: boolean;
+  interactive?: boolean;
+  spuntabile?: boolean;
+  taglia?: string;
+  giorno?: Giorno;
 }
 
 export type Orizzonte = 'giorno' | 'settimana' | 'mese' | 'anno';
@@ -2347,11 +2368,15 @@ function rigaAggiunta(id: string, segnaposto: string, opzioniHtml?: string): str
    quando il campo torna vuoto e si perde il fuoco. `onInvio(testo, opz)`
    riceve il testo e il contenitore delle opzioni. */
 function wireRigaAggiunta(scope: ParentNode, id: string, onInvio: (testo: string, opz: HTMLElement) => void): void {
-  var form = scope.querySelector<HTMLElement>('#' + id);
+  const form = scope.querySelector<HTMLElement>('#' + id);
   if (!form) return;
-  var inp = form.querySelector<HTMLElement>('.agg-testo');
-  var opz = form.querySelector<HTMLElement>('.agg-opz');
-  function apri(v) {
+  /* il campo lo ha scritto `rigaAggiunta` dentro a quel form: se non c'è,
+     non c'è niente da collegare — e prima si andava avanti a chiamare
+     `inp.addEventListener` su un niente */
+  const inp = form.querySelector<HTMLInputElement>('.agg-testo');
+  if (!inp) return;
+  const opz = form.querySelector<HTMLElement>('.agg-opz');
+  function apri(v: boolean) {
     if (!opz) return;
     opz.hidden = !v;
     form.classList.toggle('agg-aperta', !!v);
@@ -2369,9 +2394,14 @@ function wireRigaAggiunta(scope: ParentNode, id: string, onInvio: (testo: string
   });
   form.addEventListener('submit', function (e) {
     e.preventDefault();
-    var v = inp.value.trim();
+    const v = inp.value.trim();
     if (!v) { inp.focus(); return; }
-    onInvio(v, opz);
+    /* SENZA OPZIONI SI PASSA IL FORM. `onInvio` riceve il contenitore delle
+       opzioni per andarci a leggere l'area scelta; dove le opzioni non ci
+       sono, tutti i chiamanti fanno `sel ? sel.value : 'altro'` — cioè
+       cercano dentro e non trovano. Passare il form invece di un niente è la
+       stessa cosa per loro, e non è più un `null` che gira. */
+    onInvio(v, opz || form);
     inp.value = '';
     apri(false);
     /* il fuoco resta nel campo: chi butta giù una cosa spesso ne butta giù
@@ -2383,7 +2413,10 @@ function wireRigaAggiunta(scope: ParentNode, id: string, onInvio: (testo: string
 /* ---------- helper UI ---------- */
 
 function areaById(id: string | null | undefined): Area {
-  return LM.load().aree.find(function (a) { return a.id === id; }) || LM.load().aree[LM.load().aree.length - 1];
+  const aree = LM.load().aree;
+  /* l'ultima è «Altro», e c'è sempre: `statoVuoto()` la mette, e le aree non
+     si cancellano (si spengono) */
+  return aree.find(function (a) { return a.id === id; }) || presa(aree[aree.length - 1]);
 }
 
 /* Il segno dell'area: il glifo colorato che sta accanto a una cosa da fare.
@@ -2391,7 +2424,7 @@ function areaById(id: string | null | undefined): Area {
    quattro di quei sei non diceva il proprio nome a nessuno — il title non
    esiste sul tocco e l'icona è aria-hidden, quindi per chi legge con la voce
    l'area non c'era affatto. Uno solo, che si annuncia. */
-function segnoArea(ar: Area, dim?: number, cls?: string): string {
+function segnoArea(ar: Area | null | undefined, dim?: number, cls?: string): string {
   if (!ar) return '';
   return '<span class="segno-area' + (cls ? ' ' + cls : '') + '" role="img"' +
     ' aria-label="Area: ' + esc(ar.nome) + '" title="' + esc(ar.nome) + '"' +
@@ -2463,9 +2496,9 @@ function refreshObAccount() {
   }
 }
 
-function bandaDemo() {
-  var s = LM.load();
-  var banda = perId('banda-demo');
+function bandaDemo(): void {
+  const s = LM.load();
+  const banda = perId('banda-demo');
   /* l'altezza della banda finisce in una variabile CSS: serve a far stare la
      pagina "Oggi" esattamente in una schermata, senza scorrimento inutile */
   function misura() {
@@ -2473,13 +2506,14 @@ function bandaDemo() {
   }
   if (!s.demo || s.demoChiusa) { if (scriviSe(banda, '')) misura(); return; }
   /* sul telefono il testo lungo occupava due righe e mangiava mezzo schermo */
-  var htmlBanda = '<div class="banda-demo"><span>' + ICO('sparkles', 13) +
+  const htmlBanda = '<div class="banda-demo"><span>' + ICO('sparkles', 13) +
     ' <b>Dati di esempio</b><span class="banda-piu">· modifica pure, tutto resta salvato</span></span>' +
     '<button class="banda-x" id="banda-x" aria-label="Nascondi">' + ICO('x', 15) + '</button></div>';
   /* la banda non cambia mai finché è aperta: la si riscriveva a ogni spunta */
   if (!scriviSe(banda, htmlBanda)) return;
   misura();
-  document.getElementById('banda-x').addEventListener('click', function () {
+  /* il tasto è dentro all'HTML che abbiamo appena scritto due righe sopra */
+  presa(document.getElementById('banda-x')).addEventListener('click', function () {
     LM.load().demoChiusa = true; LM.save(); scriviSe(banda, ''); misura();
   });
 }
@@ -2517,7 +2551,22 @@ function bandaDemo() {
    niente a nessuno. Il conto alla rovescia non si salva mai, perché un
    conto alla rovescia salvato invecchia appena lo scrivi.
    ============================================================ */
-var TIPI_TIMER = {
+/* I QUATTRO MODI DI CONTARE IL TEMPO. `poi` e `pausa` esistono per uno solo
+   ciascuno, e prima erano due campi che comparivano in una riga su quattro. */
+export interface TipoTimer {
+  nome: string;
+  min: number;
+  ico: string;
+  dice: string;
+  eti?: string;
+  /* «Solo per partire»: cinque minuti, e poi va avanti da sé di questi */
+  poi?: number;
+  /* il pomodoro, e nessun altro */
+  pausa?: number;
+}
+export type NomeTimer = 'avvio' | 'blocco' | 'pomodoro' | 'libero';
+
+const TIPI_TIMER: Record<NomeTimer, TipoTimer> = {
   avvio:    { nome: 'Solo per partire', min: 5,  eti: '5′',  ico: 'play', poi: 25,
               dice: 'Cinque minuti, poi va avanti da solo di 25.' },
   blocco:   { nome: 'Un blocco',        min: 25, eti: '25′', ico: 'clock',
@@ -2528,31 +2577,32 @@ var TIPI_TIMER = {
               dice: 'Conta in avanti. Fermi tu quando vuoi.' }
 };
 
-var battitoTimer2 = null;
+let battitoTimer2: ReturnType<typeof setInterval> | null = null;
 
-function timerOra() { return LM.timerVivo(); }
+function timerOra(): TimerVivo | null { return LM.timerVivo(); }
 function timerDiQuesta(id: string): TimerVivo | null { const t = timerOra(); return t && t.azioneId === id ? t : null; }
 
 /* quanti millisecondi mancano (o sono passati, per il libero) */
-function timerResta(t: TimerVivo): number {
+function timerResta(t: TimerVivo | null): number {
   if (!t) return 0;
   if (t.inPausa) return Math.max(0, (t.pausaFine || 0) - Date.now());
   if (t.tipo === 'libero') return Date.now() - t.inizio;
   return Math.max(0, t.fine - Date.now());
 }
 function fmtCrono(ms: number): string {
-  var sec = Math.max(0, Math.round(ms / 1000));
-  var m = Math.floor(sec / 60), ss = ('0' + (sec % 60)).slice(-2);
+  const sec = Math.max(0, Math.round(ms / 1000));
+  const m = Math.floor(sec / 60), ss = ('0' + (sec % 60)).slice(-2);
   if (m < 60) return m + ':' + ss;
   return Math.floor(m / 60) + ':' + ('0' + (m % 60)).slice(-2) + ':' + ss;
 }
 
-function avviaTimer(azioneId: string | null, minuti: number, areaId?: string | null, tipo?: string, testo?: string): void {
-  var T = TIPI_TIMER[tipo] || TIPI_TIMER.blocco;
-  var min = minuti != null ? minuti : T.min;
-  var ora = Date.now();
+function avviaTimer(azioneId: string | null, minuti: number | null, areaId?: string | null, tipo?: NomeTimer, testo?: string): void {
+  const quale: NomeTimer = tipo || 'blocco';
+  const T = TIPI_TIMER[quale];
+  const min = minuti != null ? minuti : T.min;
+  const ora = Date.now();
   LM.avviaTimerDati({
-    azioneId: azioneId, areaId: areaId || null, tipo: tipo || 'blocco',
+    azioneId: azioneId, areaId: areaId || null, tipo: quale,
     testo: testo || '', inizio: ora, durata: min,
     fine: min > 0 ? ora + min * 60000 : 0,
     ciclo: 1, inPausa: false, pausaFine: 0,
@@ -2568,20 +2618,20 @@ function avviaTimer(azioneId: string | null, minuti: number, areaId?: string | n
 }
 
 /* i minuti che il timer ha davvero macinato, per il conto delle aree */
-function minutiFatti(t: TimerVivo): number {
+function minutiFatti(t: TimerVivo | null): number {
   if (!t) return 0;
   if (t.tipo === 'libero') return Math.round((Date.now() - t.inizio) / 60000);
   return Math.round((t.durata * 60000 - Math.max(0, t.fine - Date.now())) / 60000);
 }
 
 function fermaTimer(registra?: boolean): void {
-  var t = timerOra();
+  const t = timerOra();
   if (battitoTimer2) { clearInterval(battitoTimer2); battitoTimer2 = null; }
   if (t && registra) {
-    var fatti = minutiFatti(t);
+    const fatti = minutiFatti(t);
     if (fatti >= 1) {
-      var a = LM.load().azioni.find(function (x) { return x.id === t.azioneId; });
-      var areaMin = t.areaId || (a ? a.areaId : null);
+      const a = LM.load().azioni.find(function (x) { return x.id === t.azioneId; });
+      const areaMin = t.areaId || (a ? a.areaId : null);
       if (areaMin) LM.registraMinuti(areaMin, fatti);
     }
   }
@@ -2592,17 +2642,22 @@ function fermaTimer(registra?: boolean): void {
 /* IL BATTITO. Non ridisegna la pagina: scrive due numeri dove servono. Un
    `render()` ogni secondo sarebbe la pagina rifatta sessanta volte al
    minuto per far cambiare due cifre. */
-function battitoTimerAvvia() {
+function battitoTimerAvvia(): void {
   if (battitoTimer2) return;
   battitoTimer2 = setInterval(passoTimer, 250);
 }
-function passoTimer() {
-  var t = timerOra();
+/* la pausa del pomodoro: è dichiarata là e vale cinque minuti. Si legge una
+   volta invece di scrivere `TIPI_TIMER.pomodoro.pausa` in tre punti, dove il
+   campo è facoltativo (ce l'ha solo il pomodoro) e va comunque difeso. */
+const PAUSA_POMODORO = TIPI_TIMER.pomodoro.pausa || 5;
+
+function passoTimer(): void {
+  const t = timerOra();
   if (!t) { if (battitoTimer2) { clearInterval(battitoTimer2); battitoTimer2 = null; } return; }
-  var resta = timerResta(t);
-  var quota = t.tipo === 'libero' ? 0
+  const resta = timerResta(t);
+  const quota = t.tipo === 'libero' ? 0
     : (t.inPausa
-      ? 1 - resta / Math.max(1, (TIPI_TIMER.pomodoro.pausa * 60000))
+      ? 1 - resta / Math.max(1, PAUSA_POMODORO * 60000)
       : Math.min(1, 1 - resta / Math.max(1, t.durata * 60000)));
   document.querySelectorAll<HTMLElement>('[data-timer-cifre]').forEach(function (e) { e.textContent = fmtCrono(resta); });
   document.querySelectorAll<HTMLElement>('[data-timer-anello]').forEach(function (e) { e.style.setProperty('--p', quota.toFixed(4)); });
@@ -2611,7 +2666,7 @@ function passoTimer() {
   /* IL TEMPO È FINITO */
   if (t.inPausa) {
     /* la pausa è finita: riparte un blocco */
-    var ora = Date.now();
+    const ora = Date.now();
     LM.aggiornaTimerDati({ inPausa: false, pausaFine: 0, inizio: ora,
       fine: ora + t.durata * 60000, ciclo: (t.ciclo || 1) + 1 });
     festeggia('leggero');
@@ -2621,11 +2676,11 @@ function passoTimer() {
     return;
   }
   if (t.tipo === 'pomodoro') {
-    var q = LM.load().azioni.find(function (x) { return x.id === t.azioneId; });
-    var fatti = minutiFatti(t);
-    var areaP = t.areaId || (q ? q.areaId : null);
+    const q = LM.load().azioni.find(function (x) { return x.id === t.azioneId; });
+    const fatti = minutiFatti(t);
+    const areaP = t.areaId || (q ? q.areaId : null);
     if (fatti >= 1 && areaP) LM.registraMinuti(areaP, fatti);
-    LM.aggiornaTimerDati({ inPausa: true, pausaFine: Date.now() + TIPI_TIMER.pomodoro.pausa * 60000 });
+    LM.aggiornaTimerDati({ inPausa: true, pausaFine: Date.now() + PAUSA_POMODORO * 60000 });
     festeggia('leggero');
     toast('Blocco finito. Cinque minuti di pausa.', 0, 'durata');
     avvisoFuori('Blocco finito', 'Cinque minuti di pausa.');
@@ -2642,11 +2697,11 @@ function passoTimer() {
      dicendolo. Chi voleva davvero smettere ha «Basta così» sotto le cifre,
      e chi non guarda continua a lavorare. */
   if (t.tipo === 'avvio' && TIPI_TIMER.avvio.poi) {
-    var qA = LM.load().azioni.find(function (x) { return x.id === t.azioneId; });
-    var fattiA = minutiFatti(t);
-    var areaA = t.areaId || (qA ? qA.areaId : null);
+    const qA = LM.load().azioni.find(function (x) { return x.id === t.azioneId; });
+    const fattiA = minutiFatti(t);
+    const areaA = t.areaId || (qA ? qA.areaId : null);
     if (fattiA >= 1 && areaA) LM.registraMinuti(areaA, fattiA);
-    var oraA = Date.now(), pezzo = TIPI_TIMER.avvio.poi;
+    const oraA = Date.now(), pezzo = TIPI_TIMER.avvio.poi;
     LM.aggiornaTimerDati({ tipo: 'blocco', inizio: oraA, durata: pezzo,
       fine: oraA + pezzo * 60000, ciclo: (t.ciclo || 1) + 1, daAvvio: true });
     festeggia('leggero');
@@ -2655,11 +2710,11 @@ function passoTimer() {
     render();
     return;
   }
-  var quale = LM.load().azioni.find(function (x) { return x.id === t.azioneId; });
+  const cosa = LM.load().azioni.find(function (x) { return x.id === t.azioneId; });
   fermaTimer(true);
   festeggia('pieno');
   toast('Timer finito. Minuti registrati.', 0, 'durata');
-  avvisoFuori('Tempo scaduto', quale ? quale.testo : 'Il timer è finito.');
+  avvisoFuori('Tempo scaduto', cosa ? cosa.testo : 'Il timer è finito.');
   render();
 }
 function avvisoFuori(titolo: string, testo: string): void {
@@ -2667,7 +2722,7 @@ function avvisoFuori(titolo: string, testo: string): void {
      timer serve proprio per andare a fare la cosa: la fine deve poter
      arrivare anche da fuori. È l'unica notifica che il web sa dare senza un
      server, perché la pagina è ancora viva. */
-  if (window.LM_PROMEMORIA) LM_PROMEMORIA.locale(titolo, testo, '#/oggi');
+  if (window.LM_PROMEMORIA) window.LM_PROMEMORIA.locale(titolo, testo, '#/oggi');
 }
 
 /* ============================================================
@@ -2793,11 +2848,11 @@ function disegnaConcentrazione() {
     '<button class="btn btn-mini btn-ghost" id="conc-ferma">' + ICO('pause', 15) + ' ' +
     (t.daAvvio ? 'Basta così' : 'Ferma e registra i minuti') + '</button>' +
     '</div></div>';
-  $conc.querySelector<HTMLElement>('#conc-esci').addEventListener('click', chiudiConcentrazione);
-  $conc.querySelector<HTMLElement>('#conc-ferma').addEventListener('click', function () {
+  presa($conc.querySelector<HTMLElement>('#conc-esci')).addEventListener('click', chiudiConcentrazione);
+  presa($conc.querySelector<HTMLElement>('#conc-ferma')).addEventListener('click', function () {
     fermaTimer(true); toast('Minuti registrati.', 0, 'durata'); render();
   });
-  $conc.querySelector<HTMLElement>('#conc-fatto').addEventListener('click', function () {
+  presa($conc.querySelector<HTMLElement>('#conc-fatto')).addEventListener('click', function () {
     var id = t.azioneId;
     fermaTimer(true);
     var s = LM.load();
@@ -3612,9 +3667,15 @@ function montaOggiGiornata() {
 
 function minOf(hhmm: string | null | undefined): number | null {
   if (!hhmm) return null;
-  var p = String(hhmm).split(':');
-  return (+p[0]) * 60 + (+p[1]);
+  const p = String(hhmm).split(':');
+  return (+(p[0] || 0)) * 60 + (+(p[1] || 0));
 }
+/* L'ORA DI UN RITMO C'È SEMPRE. `RITMO_DEFAULT` la mette e `normalizza` la
+   difende, quindi `minOf` su quella non torna mai niente. Questa funzione dice
+   quel «sempre» una volta, invece di far controllare il niente a ogni conto
+   della griglia — e se un giorno un ritmo arrivasse senza sveglia, la
+   mezzanotte è la risposta meno sorprendente di un asse che collassa. */
+function minDi(o: Ora): number { return minOf(o) ?? 0; }
 function fmtMin(m: number): string {
   m = ((m % 1440) + 1440) % 1440;
   return ('0' + Math.floor(m / 60)).slice(-2) + ':' + ('0' + (m % 60)).slice(-2);
@@ -3627,17 +3688,17 @@ function fmtOre(min: number): string {
 
 /* scaletta di durate ampia: dai 5 minuti (una micro-azione per partire) alle
    8 ore (una giornata di lavoro), così nessuno deve arrotondare per forza */
-var DURATE = [{ v: '', t: 'durata —' },
+const DURATE: { v: number | ''; t: string }[] = [{ v: '', t: 'durata —' },
   { v: 5, t: '5 min' }, { v: 10, t: '10 min' }, { v: 15, t: '15 min' }, { v: 20, t: '20 min' },
   { v: 25, t: '25 min' }, { v: 30, t: '30 min' }, { v: 45, t: '45 min' }, { v: 60, t: '1 h' },
   { v: 90, t: '1 h 30' }, { v: 120, t: '2 h' }, { v: 150, t: '2 h 30' }, { v: 180, t: '3 h' },
   { v: 240, t: '4 h' }, { v: 300, t: '5 h' }, { v: 360, t: '6 h' }, { v: 480, t: '8 h' }];
 
 /* orizzonte della pagina "Giornata" e giorno/settimana/mese di riferimento */
-var giornataOrizzonte = 'giorno';
-var giornataAncora = null;
-var giornataSonnoAperto = false; // pannello sonno/pasti in cima alla pagina Giornata
-var giornataPopVista = 'vista'; // pop-up su schermo stretto: 'vista' | 'modifica'
+let giornataOrizzonte: Orizzonte = 'giorno';
+let giornataAncora: Giorno | null = null;
+let giornataSonnoAperto = false;  /* pannello sonno/pasti in cima alla pagina Giornata */
+let giornataPopVista: 'vista' | 'modifica' = 'vista';  /* pop-up su schermo stretto */
 
 /* eventi di un giorno qualsiasi (per giorno/settimana/mese) */
 function nodiGiorno(k: Giorno): NodiDelGiorno {
@@ -3666,25 +3727,33 @@ function nodiGiorno(k: Giorno): NodiDelGiorno {
      giornata sul grafico = ora di andare a letto della ROUTINE (stanotte è un
      piano, non un fatto). sonno/sveglia restano i valori registrati (il
      resoconto della notte passata) per il pannello e per "quanto ho dormito". */
-  return { k: k, isToday: isToday, wake: minOf(r.sveglia), sleep: minOf(r.sonnoRoutine), sveglia: r.sveglia, sonno: r.sonno, sonnoRoutine: r.sonnoRoutine, pasti: r.pasti, dalRegistro: r.dalRegistro, placed: placed, tray: tray };
+  return { k: k, isToday: isToday, wake: minDi(r.sveglia), sleep: minDi(r.sonnoRoutine), sveglia: r.sveglia, sonno: r.sonno, sonnoRoutine: r.sonnoRoutine, pasti: r.pasti, dalRegistro: r.dalRegistro, placed: placed, tray: tray };
 }
-function nodiGiornata() { return nodiGiorno(LM.todayKey()); }
+function nodiGiornata(): NodiDelGiorno { return nodiGiorno(LM.todayKey()); }
 
 /* dispone i blocchi che si sovrappongono in colonne affiancate */
 function disponiBlocchi(placed: Nodo[]): Disposto[] {
-  var items = placed.map(function (e) { return { e: e, start: e.min, end: e.min + (e.dur || 30) }; });
+  /* qui arrivano solo i nodi PIAZZATI, cioè quelli che hanno un'ora:
+     `nodiGiorno` manda gli altri nel vassoio. `?? 0` è quel confine. */
+  const items: Disposto[] = placed.map(function (e) {
+    const st = e.min ?? 0;
+    return { e: e, start: st, end: st + (e.dur || 30) };
+  });
   items.sort(function (a, b) { return a.start - b.start || a.end - b.end; });
-  var gruppi = [], cur = [], curEnd = -1;
+  const gruppi: Disposto[][] = [];
+  let cur: Disposto[] = [], curEnd = -1;
   items.forEach(function (it) {
     if (cur.length && it.start >= curEnd) { gruppi.push(cur); cur = []; curEnd = -1; }
     cur.push(it); curEnd = Math.max(curEnd, it.end);
   });
   if (cur.length) gruppi.push(cur);
   gruppi.forEach(function (g) {
-    var cols = [];
+    const cols: number[] = [];
     g.forEach(function (it) {
-      var piazzato = false;
-      for (var c = 0; c < cols.length; c++) { if (it.start >= cols[c]) { cols[c] = it.end; it.col = c; piazzato = true; break; } }
+      let piazzato = false;
+      for (let c = 0; c < cols.length; c++) {
+        if (it.start >= (cols[c] ?? 0)) { cols[c] = it.end; it.col = c; piazzato = true; break; }
+      }
       if (!piazzato) { it.col = cols.length; cols.push(it.end); }
     });
     g.forEach(function (it) { it.ncols = cols.length; });
@@ -3693,42 +3762,46 @@ function disponiBlocchi(placed: Nodo[]): Disposto[] {
 }
 
 /* griglia oraria con blocchi che occupano il tempo (durata) */
-function htmlTimeGrid(d: NodiDelGiorno, opts?: OpzGriglia): string {
-  opts = opts || {};
-  var pxh = opts.pxh || 56;
+function htmlTimeGrid(d: NodiDelGiorno, opzioni?: OpzGriglia): string {
+  const opts: OpzGriglia = opzioni || {};
+  const pxh = opts.pxh || 56;
   /* Finestra di veglia. sonno = ora di andare a letto, sveglia = risveglio.
      Se si va a letto dopo mezzanotte (bed <= wake) la notte scavalla le 24h,
      così l'asse resta monotòno invece di collassare/andare in negativo. */
-  var wake = d.wake, bed = d.sleep;
+  const wake = d.wake;
+  let bed = d.sleep;
   if (bed <= wake) bed += 1440;
   /* minuto "effettivo" sull'asse: i blocchi alle prime ore, quando si è
      svegli oltre mezzanotte, vanno nella coda notturna (+24h). */
-  function em(min) { return (min != null && bed > 1440 && min < wake) ? min + 1440 : min; }
+  function em(min: number | null): number | null { return (min != null && bed > 1440 && min < wake) ? min + 1440 : min; }
   /* La finestra deve contenere il sonno E ogni blocco piazzato: così nessun
      elemento finisce fuori dalla griglia a coprire il resto della pagina. */
-  var lo = wake, hi = bed;
+  let lo = wake, hi = bed;
   d.placed.forEach(function (b) {
-    var st = em(b.min); if (st == null) return;
-    var en = st + (b.dur || 30);
-    if (st < lo) lo = st; if (en > hi) hi = en;
+    const st = em(b.min); if (st == null) return;
+    const en = st + (b.dur || 30);
+    if (st < lo) lo = st;
+    if (en > hi) hi = en;
   });
-  var gs = Math.floor(lo / 60) * 60, ge = Math.ceil(hi / 60) * 60;
+  const gs = Math.floor(lo / 60) * 60;
+  let ge = Math.ceil(hi / 60) * 60;
   if (ge <= gs) ge = gs + 60;
-  var H = (ge - gs) / 60 * pxh;
-  function y(m) { return (m - gs) / 60 * pxh; }
-  var lines = '';
-  for (var h = gs; h <= ge; h += 60) lines += '<div class="tl-hr" style="top:' + y(h) + 'px">' + (opts.rail === false ? '' : '<span class="tl-hr-eti">' + fmtMin(h) + '</span>') + '</div>';
-  var shade = '';
+  const H = (ge - gs) / 60 * pxh;
+  function y(m: number): number { return (m - gs) / 60 * pxh; }
+  let lines = '';
+  for (let h = gs; h <= ge; h += 60) lines += '<div class="tl-hr" style="top:' + y(h) + 'px">' + (opts.rail === false ? '' : '<span class="tl-hr-eti">' + fmtMin(h) + '</span>') + '</div>';
+  let shade = '';
   /* Nella pagina la riga in cima alla scheda dice già «23:30→07:30 · 8h»:
      ripeterlo dentro la fascia tratteggiata era lo stesso dato due volte a
      quaranta pixel di distanza. Nel pop-up quella riga non c'è, e qui serve. */
-  var sonnoLbl = (opts.mini || opts.senzaEtichettaSonno) ? '' : '<span class="tl-sleep-lbl">' + ICO('bed', 11) + ' ' + fmtOre(LM.minutiSonno(d.k)) + '</span>';
+  const sonnoLbl = (opts.mini || opts.senzaEtichettaSonno) ? '' : '<span class="tl-sleep-lbl">' + ICO('bed', 11) + ' ' + fmtOre(LM.minutiSonno(d.k)) + '</span>';
   if (wake > gs) shade += '<div class="tl-sleep" style="top:0;height:' + y(wake) + 'px">' + sonnoLbl + '</div>';
   if (bed < ge) shade += '<div class="tl-sleep" style="top:' + y(bed) + 'px;height:' + (H - y(bed)) + 'px">' + (wake > gs ? '' : sonnoLbl) + '</div>';
-  var blocks = disponiBlocchi(d.placed).map(function (it) {
-    var e = it.e, dur = e.dur || 30;
-    var top = y(em(e.min)), hgt = Math.max(opts.mini ? 15 : 24, dur / 60 * pxh - 2);
-    var w = 100 / it.ncols, left = it.col * w;
+  const blocks = disponiBlocchi(d.placed).map(function (it) {
+    const e = it.e, dur = e.dur || 30;
+    const top = y(em(e.min) ?? 0), hgt = Math.max(opts.mini ? 15 : 24, dur / 60 * pxh - 2);
+    const quante = it.ncols || 1;
+    const w = 100 / quante, left = (it.col || 0) * w;
     var pos = 'top:' + top + 'px;height:' + hgt + 'px;left:calc(' + left + '% + 1px);width:calc(' + w + '% - 3px)';
     /* QUANTE RIGHE CI STANNO DAVVERO. Nella settimana il titolo va a capo, e
        il numero di righe permesse era tre per tutti — ma il blocco e' alto
@@ -3816,10 +3889,10 @@ function aggiornaLineaGriglia() {
     var top = (nm - gs) / 60 * pxh;
     if (!line) {
       line = document.createElement('div'); line.className = 'tl-now-line';
-      line.innerHTML = '<span></span>'; grid.querySelector<HTMLElement>('.tl-blocks').appendChild(line);
+      line.innerHTML = '<span></span>'; presa(grid.querySelector<HTMLElement>('.tl-blocks')).appendChild(line);
     }
     line.style.top = top + 'px';
-    line.querySelector<HTMLElement>('span').textContent = fmtMin(now);
+    presa(line.querySelector<HTMLElement>('span')).textContent = fmtMin(now);
   });
 }
 
@@ -3870,7 +3943,7 @@ function guida(ap: boolean): void {
     (ap.host.querySelector<HTMLElement>('.tl-blocks') || ap.host).appendChild(g);
   }
   g.style.top = ap.top + 'px';
-  g.querySelector<HTMLElement>('span').textContent = fmtMin(ap.min % 1440);
+  presa(g.querySelector<HTMLElement>('span')).textContent = fmtMin(ap.min % 1440);
 }
 function evidenzia(el: HTMLElement | null): void {
   if (trasc && trasc.bersaglio === el) return;
@@ -3917,7 +3990,7 @@ function abilitaTrascina(scope: ParentNode, onRilascio: (id: string, bersaglio: 
         var f = document.createElement('div');
         f.className = 'trasc-fantasma';
         f.innerHTML = '<b></b><i></i>';
-        f.querySelector<HTMLElement>('b').textContent = (el.getAttribute('title') || el.textContent || '').trim().slice(0, 44);
+        presa(f.querySelector<HTMLElement>('b')).textContent = (el.getAttribute('title') || el.textContent || '').trim().slice(0, 44);
         f.style.width = Math.min(280, Math.max(150, r.width)) + 'px';
         document.body.appendChild(f);
         trasc = { id: id, fantasma: f, bersaglio: null, sorgente: el };
@@ -3934,7 +4007,7 @@ function abilitaTrascina(scope: ParentNode, onRilascio: (id: string, bersaglio: 
         var b = bersaglioSotto(x, y);
         evidenzia(b);
         var ap = anteprima(b, y);
-        trasc.fantasma.querySelector<HTMLElement>('i').textContent = ap.testo;
+        trasc.presa(fantasma.querySelector<HTMLElement>('i')).textContent = ap.testo;
         trasc.fantasma.classList.toggle('pronto', !!b);
         guida(ap);
       }
@@ -4609,7 +4682,8 @@ function disegnaOrizzonte() {
 
 function htmlGiornataStrip() {
   var d = nodiGiornata();
-  var wake = d.wake, bed = d.sleep;
+  const wake = d.wake;
+  let bed = d.sleep;
   if (bed <= wake) bed += 1440; // a letto dopo mezzanotte
   function em(m) { return (m != null && bed > 1440 && m < wake) ? m + 1440 : m; }
   var span = Math.max(60, bed - wake);
@@ -5009,7 +5083,7 @@ function sezAndamento(c: HTMLElement): void {
       .map(function (r) { return { label: r.area.nome, icona: ICO(r.area.icona, 15), value: r.minuti, colore: LM.coloreArea(r.area) }; }),
     { unita: 'min' });
 
-  document.getElementById('seg-periodo').querySelectorAll<HTMLElement>('[data-g]').forEach(function (b) {
+  presa(document.getElementById('seg-periodo')).querySelectorAll<HTMLElement>('[data-g]').forEach(function (b) {
     b.addEventListener('click', function () { periodoTrend = +b.getAttribute('data-g'); disegnaSezione(); });
   });
 }
@@ -5046,7 +5120,7 @@ function sezDiario(c: HTMLElement): void {
   c.innerHTML = html;
   var b = document.getElementById('diario-altro');
   if (b) b.addEventListener('click', function () { diarioGiorni += 30; disegnaSezione(); });
-  document.getElementById('diario-filtro').querySelectorAll<HTMLElement>('[data-tutto]').forEach(function (bt) {
+  presa(document.getElementById('diario-filtro')).querySelectorAll<HTMLElement>('[data-tutto]').forEach(function (bt) {
     bt.addEventListener('click', function () { diarioTutto = bt.getAttribute('data-tutto') === '1'; disegnaSezione(); });
   });
   c.querySelectorAll<HTMLElement>('[data-annulla]').forEach(function (bt) {
@@ -5474,15 +5548,15 @@ function wireNotte(scope: HTMLElement, dopo?: () => void): void {
     if (dopo) dopo();
     render();
   }
-  scope.querySelector<HTMLElement>('#notte-solito').addEventListener('click', function () {
+  presa(scope.querySelector<HTMLElement>('#notte-solito')).addEventListener('click', function () {
     var r = LM.ritmoDi(t);
     salva(r.sonnoRoutine, r.svegliaRoutine, 'circa');
   });
-  scope.querySelector<HTMLElement>('#notte-salva').addEventListener('click', function () {
+  presa(scope.querySelector<HTMLElement>('#notte-salva')).addEventListener('click', function () {
     salva(campo(scope, '#notte-sonno').value || null,
       campo(scope, '#notte-sveglia').value || null, prec());
   });
-  scope.querySelector<HTMLElement>('#notte-boh').addEventListener('click', function () {
+  presa(scope.querySelector<HTMLElement>('#notte-boh')).addEventListener('click', function () {
     /* nessun orario: il giorno resta sul ritmo di base, e non si richiede.
        Meglio un dato che non c'è di un numero inventato. */
     LM.segnaChiesto(t, 'notte');
@@ -5629,7 +5703,7 @@ function wireRecupero(scope: HTMLElement, dopo?: () => void): void {
       rifai();
     });
   });
-  scope.querySelector<HTMLElement>('#rec-fine').addEventListener('click', function () {
+  presa(scope.querySelector<HTMLElement>('#rec-fine')).addEventListener('click', function () {
     LM.segnaChiesto(t, 'giorno');
     toast('Giornata registrata.', 0, 'check');
     if (dopo) dopo();
@@ -5769,7 +5843,7 @@ function ritualeMattina(corpo: HTMLElement): void {
     LM.aggiungiAzione(testo, sel ? sel.value : 'altro', { mit: LM.serveMit() });
     render();
   });
-  document.getElementById('btn-salva-piano').addEventListener('click', function () {
+  presa(document.getElementById('btn-salva-piano')).addEventListener('click', function () {
     var eraSalvato = !!piano;
     var xp = LM.salvaPianoMattina(presa(campoId('piano-ifthen')).value.trim());
     var mit = LM.azioniDiOggi().find(function (a) { return a.mit; });
@@ -6050,11 +6124,11 @@ function ritualeCheckin(corpo: HTMLElement): void {
         sc.querySelectorAll<HTMLElement>('button').forEach(function (x) { x.classList.remove('sel'); });
         b.classList.add('sel');
         voti[sc.getAttribute('data-campo')] = +b.getAttribute('data-v');
-        document.getElementById('btn-salva-checkin').disabled = !(voti.energia && voti.focus && voti.umore);
+        presa(document.getElementById('btn-salva-checkin')).disabled = !(voti.energia && voti.focus && voti.umore);
       });
     });
   });
-  document.getElementById('btn-salva-checkin').addEventListener('click', function (ev) {
+  presa(document.getElementById('btn-salva-checkin')).addEventListener('click', function (ev) {
     var xp = LM.registraCheckin(voti.energia, voti.focus, voti.umore);
     var r = ev.currentTarget.getBoundingClientRect();
     flyXp(r.left + r.width / 2, r.top, xp);
@@ -6156,7 +6230,7 @@ function ritualeSera(corpo: HTMLElement): void {
       });
     });
   });
-  document.getElementById('btn-salva-sera').addEventListener('click', function () {
+  presa(document.getElementById('btn-salva-sera')).addEventListener('click', function () {
     var xp = LM.salvaReviewSera({
       vittoria: presa(campoId('sera-vittoria')).value.trim(),
       blocco: presa(campoId('sera-blocco')).value.trim(),
@@ -6198,7 +6272,7 @@ function ritualeSettimana(corpo: HTMLElement): void {
   collegaTenutaLezione(corpo, 'w-vittorie', 'w-vitt-lez', 'si', 'ripetuto');
   collegaTenutaLezione(corpo, 'w-blocchi', 'w-blocchi-lez', 'no', 'ripetuto');
 
-  document.getElementById('btn-salva-sett').addEventListener('click', function () {
+  presa(document.getElementById('btn-salva-sett')).addEventListener('click', function () {
     var xp = LM.salvaReviewSettimana({
       vittorie: presa(campoId('w-vittorie')).value.trim(),
       blocchi: presa(campoId('w-blocchi')).value.trim(),
@@ -6349,7 +6423,7 @@ function disegnaDaFare(box: HTMLElement): void {
   wireAggiunta(box);
   var q = box.querySelector<HTMLElement>('#att-q');
   if (q) q.addEventListener('input', function () { attQuery = q.value; renderLista(); });
-  box.querySelector<HTMLElement>('#att-filtro').addEventListener('click', apriFiltri);
+  presa(box.querySelector<HTMLElement>('#att-filtro')).addEventListener('click', apriFiltri);
   renderLista();
 
   /* la scelta del filtro è un elenco, come tutti gli altri elenchi */
@@ -6860,7 +6934,7 @@ function disegnaScoperte() {
       '</select></div></div>' +
       '<div class="riga-flex mt"><button class="btn btn-primario" id="exp-crea">' + ICO('flask', 15) + ' Avvia</button>' +
       '<button class="btn btn-ghost" id="exp-annulla">Annulla</button></div></div>';
-    document.getElementById('exp-annulla').addEventListener('click', function () {
+    presa(document.getElementById('exp-annulla')).addEventListener('click', function () {
       formExp = null; zona.innerHTML = '';
     });
     /* i valori scelti si rimettono dopo, non nell'HTML: un `selected` da
@@ -7331,7 +7405,7 @@ function sottoNav(v: string): void {
     else riga.className += ' testa-porta-sola';
   }
   riga.insertAdjacentHTML('beforeend', bottoneImpostazioni());
-  riga.querySelector<HTMLElement>('[data-imp]').addEventListener('click', apriImpostazioni);
+  presa(riga.querySelector<HTMLElement>('[data-imp]')).addEventListener('click', apriImpostazioni);
   /* la riga delle sezioni è SEMPRE il primo blocco della pagina */
   $vista.prepend(riga);
   /* niente più sfumatura di scorrimento: a colonne uguali la riga ci sta per
