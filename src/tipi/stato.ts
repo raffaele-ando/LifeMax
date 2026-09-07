@@ -238,8 +238,16 @@ export interface Promemoria {
 }
 
 /* ------------------------------------------------------------- il profilo */
-export type Skin = 'quiete' | 'aurora' | 'arcade';
-export type Modo = 'auto' | 'chiaro' | 'scuro';
+/* DUE TIPI CHE AVEVO INVENTATO, e il compilatore l'ha detto appena qualcuno
+   ha provato a confrontarli.
+   `Skin` non ha un valore `'aurora'`: «Aurora» è l'ETICHETTA che si legge nel
+   pannello, e il valore è `'quiete'`. Ne avevo fatto un terzo valore leggendo
+   la parola sullo schermo invece del codice.
+   `Modo` non parla italiano: sono `'light'` e `'dark'`, come li scrive
+   `data-mode` sul documento e come li mandano i tasti del pannello. Ci avevo
+   messo `'chiaro'` e `'scuro'` — che sono, di nuovo, le parole sui tasti. */
+export type Skin = 'quiete' | 'arcade';
+export type Modo = 'auto' | 'light' | 'dark';
 export type Effetti = 'pieni' | 'ridotti' | 'minimi';
 export type SiNo = 'si' | 'no';
 export type GiornataPos = 'oggi-strip' | 'panoramica' | 'oggi-full' | 'menu';
@@ -259,10 +267,14 @@ export interface Profilo {
   chiedi: Chiedi;
   nav?: Nav;
   promemoria?: Promemoria;
-  /* L'INTERRUTTORE DELLE SCHERMATE NUOVE STA ANCORA QUI, ed è l'ultima
-     parola per chi ce l'aveva già messo — ma la scelta vera vive in
-     localStorage, perché `profilo` si sincronizza e una via d'uscita che un
-     altro dispositivo può riaccendere da lontano non è una via d'uscita. */
+  /* L'INTERRUTTORE DELLE SCHERMATE NUOVE, e non lo legge più nessuno.
+     Serviva mentre le schermate passavano una per una al motore nuovo; adesso
+     ce n'è uno solo, e il campo resta dichiarato per una ragione sola: c'è
+     scritto nei dati di chi l'ha toccato, arriva dal cloud, e `COME_UNIRE`
+     pretende una regola per ogni campo di `Stato` — quindi togliere il campo
+     e lasciare il dato vorrebbe dire un campo scoperto alla prima fusione,
+     che è esattamente il difetto da cui è nato tutto questo file. Se ne va
+     quando `normalizza` lo butterà via, e quello è un altro lavoro. */
   react?: boolean;
 }
 
