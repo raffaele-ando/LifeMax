@@ -1756,7 +1756,7 @@ function creaLM() {
     var s = load();
     var b = s.backlog.find(function (x) { return x.id === bid; });
     var st = b && b.steps && b.steps.find(function (x) { return x.id === sid; });
-    if (!st) return;
+    if (!st || !b) return;
     st.done = !st.done;
     var suoT = b, passiT = b.steps || [];
     registra('backlog', (st.done ? 'Fatto un passo' : 'Tolta la spunta a un passo') + ' di «' + suoT.testo + '»: ' + st.testo, false);
@@ -1802,11 +1802,12 @@ function creaLM() {
     s.azioni.forEach(function (a) { if (!a.done && a.passoDi && a.passoDi.b === bid) giaFuori[a.passoDi.s] = true; });
     var daFare = b.steps.filter(function (st) { return !st.done && !giaFuori[st.id]; });
     if (!daFare.length) return 0;
+    var suo = b;
     daFare.forEach(function (st, i) {
-      var giorno = addDays(k, i * passo);
-      aggiungiAzione(st.testo, b.areaId, { data: giorno, mit: serveMit(giorno), passoDi: { b: bid, s: st.id }, interna: true });
+      var quando = addDays(k, i * passo);
+      aggiungiAzione(st.testo, suo.areaId, { data: quando, mit: serveMit(quando), passoDi: { b: bid, s: st.id }, interna: true });
     });
-    registra('backlog', daFare.length + ' passi di «' + b.testo + '» distribuiti da ' + fmtShort(k) +
+    registra('backlog', daFare.length + ' passi di «' + suo.testo + '» distribuiti da ' + fmtShort(k) +
       (passo === 1 ? ', uno al giorno' : ', uno ogni ' + passo + ' giorni'), true);
     save();
     return daFare.length;
@@ -2120,7 +2121,7 @@ function creaLM() {
     var giorni = Object.keys(h.fatti || {});
     if (!giorni.length) return 0;
     giorni.sort();
-    var k = presa(giorni[0]), fine = todayKey(), record = 0, corrente = 0;
+    var k: Giorno = giorno(presa(giorni[0])), fine = todayKey(), record = 0, corrente = 0;
     for (var i = 0; i < 1500 && k <= fine; i++) {
       if (abitudinePrevista(h, k) || (h.fatti && h.fatti[k])) {
         if (h.fatti && h.fatti[k]) { corrente++; if (corrente > record) record = corrente; }
@@ -2215,20 +2216,20 @@ function creaLM() {
     var s = load();
     var i = s.inbox.findIndex(function (x) { return x.id === id; });
     if (i < 0) return;
-    var el = s.inbox[i];
+    var nota = presa(s.inbox[i]);
     if (esito === 'azione') {
       s.inbox.splice(i, 1);
-      aggiungiAzione(el.testo, areaId, { interna: true });
-      registra('inbox', 'Smistata in Oggi: «' + el.testo + '»', true);
+      aggiungiAzione(nota.testo, areaId, { interna: true });
+      registra('inbox', 'Smistata in Oggi: «' + nota.testo + '»', true);
       premiaXp('triage');
     } else if (esito === 'backlog') {
       s.inbox.splice(i, 1);
-      aggiungiBacklog(el.testo, areaId, true);
-      registra('inbox', 'Smistata tra le cose da fare: «' + el.testo + '»', true);
+      aggiungiBacklog(nota.testo, areaId, true);
+      registra('inbox', 'Smistata tra le cose da fare: «' + nota.testo + '»', true);
       premiaXp('triage');
     } else if (esito === 'scarta') {
       s.inbox.splice(i, 1);
-      registra('inbox', 'Scartata la nota: «' + el.testo + '»', true);
+      registra('inbox', 'Scartata la nota: «' + nota.testo + '»', true);
       premiaXp('triage');
     }
     save();
@@ -2313,20 +2314,33 @@ function creaLM() {
      giorno quel confronto non lo fa nessuno.
      Qui si scarta il vuoto: una review compilata senza scrivere niente non è
      una riga da rileggere, è un giorno in cui si è premuto «salva». */
-  function tutteLeReview() {
+  /* la forma di una riga di questa fila: la legge la scheda «Le review di
+     prima», e averla scritta qui vuol dire che il pannello non può leggere un
+     campo che non esiste */
+  interface RigaReview {
+    tipo: 'mattina' | 'sera' | 'settimana';
+    ico: string;
+    k: string;
+    quando: string;
+    campi: { eti: string; val: string }[];
+  }
+
+  function tutteLeReview(): RigaReview[] {
     var s = load();
-    var out = [];
+    var out: RigaReview[] = [];
     function pulisci(campi: { eti: string; val: unknown }[]) {
       return campi.filter(function (c) { return c.val && String(c.val).trim(); })
         .map(function (c) { return { eti: c.eti, val: String(c.val).trim() }; });
     }
     Object.keys(s.pianoMattina || {}).forEach(function (k) {
-      var v = s.pianoMattina[k] || {};
+      var v = s.pianoMattina[k];
+      if (!v) return;
       var campi = pulisci([{ eti: 'Intenzione', val: v.intenzione }]);
       if (campi.length) out.push({ tipo: 'mattina', ico: 'sun', k: k, quando: 'Mattina · ' + k, campi: campi });
     });
     Object.keys(s.reviewSera || {}).forEach(function (k) {
-      var v = s.reviewSera[k] || {};
+      var v = s.reviewSera[k];
+      if (!v) return;
       var campi = pulisci([
         { eti: 'È andata bene', val: v.vittoria },
         { eti: 'Mi ha bloccato', val: v.blocco },
@@ -2335,7 +2349,8 @@ function creaLM() {
       if (campi.length) out.push({ tipo: 'sera', ico: 'moon', k: k, quando: 'Sera · ' + k, campi: campi });
     });
     Object.keys(s.reviewSettimana || {}).forEach(function (k) {
-      var v = s.reviewSettimana[k] || {};
+      var v = s.reviewSettimana[k];
+      if (!v) return;
       var campi = pulisci([
         { eti: 'Vittorie', val: v.vittorie },
         { eti: 'Blocchi', val: v.blocchi },
@@ -2374,23 +2389,23 @@ function creaLM() {
      trenta giorni con i trenta di prima. Una percentuale da sola non si legge
      — «66%» non dice se va bene — e l'unica cosa che la rende leggibile è
      sapere da dove viene. */
-  function bilancio(giorni: number, salta?: boolean) {
+  function bilancio(giorni: number, salta?: number) {
     var s = load();
-    salta = salta || 0;
-    var a2 = addDays(todayKey(), -salta);
-    var da = giorni ? addDays(a2, -giorni) : '0000-00-00';
+    var indietro = salta || 0;
+    var a2 = addDays(todayKey(), -indietro);
+    var da = giorni ? addDays(a2, -giorni) : giorno('0000-00-00');
     var fino = a2;
-    var perArea: Record<string, { areaId: string; messe: number; fatte: number; mancate: number }> = {};
+    var perArea: Record<string, { areaId: string; messe: number; fatte: number; mancate: number; tasso: number }> = {};
     var messe = 0, fatte = 0, mancate = 0;
     function segna(areaId: string, fatta: number, persa: number) {
-      var a = perArea[areaId] || (perArea[areaId] = { areaId: areaId, messe: 0, fatte: 0, mancate: 0 });
+      var a = perArea[areaId] || (perArea[areaId] = { areaId: areaId, messe: 0, fatte: 0, mancate: 0, tasso: 0 });
       a.messe++; messe++;
       if (fatta) { a.fatte++; fatte++; }
       if (persa) { a.mancate++; mancate++; }
     }
     s.azioni.forEach(function (a) {
       if (!a.data || a.data < da || a.data >= fino || !chiuso(a.data)) return;
-      segna(a.areaId || 'altro', !!a.done, !!a.mancata);
+      segna(a.areaId || 'altro', a.done ? 1 : 0, a.mancata ? 1 : 0);
     });
     /* le abitudini contano come le altre: un giorno in cui l'abitudine era
        prevista è una cosa che ti eri messo */
@@ -2403,7 +2418,7 @@ function creaLM() {
       }
     });
     var righe = Object.keys(perArea).map(function (id) {
-      var a = perArea[id];
+      var a = presa(perArea[id]);
       a.tasso = a.messe ? a.fatte / a.messe : 0;
       return a;
     }).sort(function (x, y) { return x.tasso - y.tasso; });
@@ -2427,11 +2442,12 @@ function creaLM() {
     for (var w = n - 1; w >= 0; w--) {
       var fine = addDays(todayKey(), -(w * 7));
       var inizio = addDays(fine, -7);
-      secchi.push({ da: inizio, a: fine, fatte: 0, messe: 0 });
+      secchi.push({ da: inizio, a: fine, fatte: 0, messe: 0, pct: null });
     }
     function metti(k: Giorno, fatta: boolean) {
       for (var i = 0; i < secchi.length; i++) {
-        if (k >= secchi[i].da && k < secchi[i].a) { secchi[i].messe++; if (fatta) secchi[i].fatte++; return; }
+        var sec = secchi[i];
+        if (sec && k >= sec.da && k < sec.a) { sec.messe++; if (fatta) sec.fatte++; return; }
       }
     }
     s.azioni.forEach(function (a) { if (a.data && chiuso(a.data)) metti(a.data, !!a.done); });
@@ -2469,15 +2485,15 @@ function creaLM() {
     });
     return Object.keys(conta).map(function (k) {
       var d = PERCHE_MANCATA.find(function (x) { return x.id === k; });
-      return { id: k, eti: d ? d.eti : k, n: conta[k] };
+      return { id: k, eti: d ? d.eti : k, n: conta[k] || 0 };
     }).sort(function (a, b) { return b.n - a.n; });
   }
 
   function registraMinuti(areaId: string, minuti: number, quando?: Giorno) {
     var s = load();
     var k = quando || todayKey();
-    if (!s.minuti[k]) s.minuti[k] = {};
-    s.minuti[k][areaId] = (s.minuti[k][areaId] || 0) + minuti;
+    var delGiorno = s.minuti[k] || (s.minuti[k] = {});
+    delGiorno[areaId] = (delGiorno[areaId] || 0) + minuti;
     var ar = s.aree.find(function (x) { return x.id === areaId; });
     registra('focus', 'Timer: ' + minuti + ' min su ' + (ar ? ar.nome : areaId), true);
     save();
@@ -2524,11 +2540,29 @@ function creaLM() {
      sette — l'unica cosa che aveva in programma. Ognuna porta con sé di che
      specie è, perché a schermo si vedono diverse e i comandi cambiano: una
      cosa di oggi si «rimanda», un'abitudine si «salta per oggi». */
-  function voceAzione(a: Azione) {
+  /* la forma di una voce di «Adesso»: la leggono la schermata e i suoi
+     comandi, e scriverla qui vuol dire che una delle due non può leggere un
+     campo che l'altra non mette */
+  interface VoceAdesso {
+    tipo: 'azione' | 'abitudine';
+    id: string;
+    testo: string;
+    areaId: string;
+    ora: Ora | null;
+    durata: number | null;
+    mit: boolean;
+    ifThen: string;
+    mancata?: Mancata | null;
+    serie?: number;
+    giorni?: GiornoSettimana[];
+    record?: number;
+  }
+
+  function voceAzione(a: Azione): VoceAdesso {
     return { tipo: 'azione', id: a.id, testo: a.testo, areaId: a.areaId, ora: a.ora,
       durata: a.durata, mit: !!a.mit, ifThen: a.ifThen || '', mancata: a.mancata || null };
   }
-  function voceAbitudine(h: Abitudine) {
+  function voceAbitudine(h: Abitudine): VoceAdesso {
     /* `giorni` e `record` viaggiano con la voce perché la scheda di «Adesso»
        ci disegna sopra la settimana dell'abitudine: quali giorni si ripete e
        a che punto è la serie. Senza, la scheda dovrebbe ripescare l'abitudine
@@ -2550,8 +2584,10 @@ function creaLM() {
     return out;
   }
 
-  function azioneAdesso(nowMin: number) {
+  function azioneAdesso(nowMin?: number) {
     if (nowMin == null) { var dd = new Date(); nowMin = dd.getHours() * 60 + dd.getMinutes(); }
+    var adesso: number = nowMin;
+    void adesso;
     function mm(hhmm: string | null | undefined) { var p = String(hhmm).split(':'); return (+(p[0] || 0)) * 60 + (+(p[1] || 0)); }
     var k0 = todayKey();
     var oggi = vociDiAdesso(k0);
@@ -2568,10 +2604,10 @@ function creaLM() {
     }
     /* 1. blocco che contiene adesso → è quello che il piano dice ora */
     var corso = timed.filter(function (t) { return t.min <= nowMin && nowMin < fineSlot(t.min, t.a.durata); });
-    if (corso.length) { var c = corso[0]; return { azione: c.a, stato: 'corso', min: c.min, fine: fineSlot(c.min, c.a.durata) }; }
+    if (corso.length) { var c = presa(corso[0]); return { azione: c.a, stato: 'corso', min: c.min, fine: fineSlot(c.min, c.a.durata) }; }
     /* 2. blocco già passato e non fatto → riprendilo (in ordine) */
     var ritardo = timed.filter(function (t) { return nowMin >= fineSlot(t.min, t.a.durata); });
-    if (ritardo.length) { var r = ritardo[0]; return { azione: r.a, stato: 'ritardo', min: r.min, fine: fineSlot(r.min, r.a.durata) }; }
+    if (ritardo.length) { var r = presa(ritardo[0]); return { azione: r.a, stato: 'ritardo', min: r.min, fine: fineSlot(r.min, r.a.durata) }; }
     /* 3. vuoto nel piano → lavoro flessibile: la priorità, poi le altre cose
           di oggi senza orario, e per ultime le abitudini senza orario — una
           cosa che hai scelto stamattina viene prima di una che fai sempre */
@@ -2582,15 +2618,16 @@ function creaLM() {
     var abit = oggi.find(function (a) { return !a.ora; });
     if (abit) return { azione: abit, stato: 'libera', min: null, fine: null };
     /* 4. tutto in agenda più tardi → la prossima in programma */
-    if (timed.length) { var u = timed[0]; return { azione: u.a, stato: 'programmata', min: u.min, fine: fineSlot(u.min, u.a.durata) }; }
+    if (timed.length) { var u = presa(timed[0]); return { azione: u.a, stato: 'programmata', min: u.min, fine: fineSlot(u.min, u.a.durata) }; }
     return { azione: null, stato: null, min: null, fine: null };
   }
   function prossimaAzione() { return azioneAdesso().azione; }
 
   function giornoAttivo(k: Giorno) {
     var s = load();
-    if (s.xpPerGiorno[k] > 0) return true;
-    if (s.valutazioni[k] && Object.keys(s.valutazioni[k]).length) return true;
+    if ((s.xpPerGiorno[k] || 0) > 0) return true;
+    var voti = s.valutazioni[k];
+    if (voti && Object.keys(voti).length) return true;
     if (s.checkins.some(function (c) { return c.data === k; })) return true;
     if (s.azioni.some(function (a) { return a.data === k && a.done; })) return true;
     return false;
@@ -2638,8 +2675,8 @@ function creaLM() {
     var s = load();
     var perGiorno: Record<string, number[]> = {};
     s.checkins.forEach(function (c) {
-      if (!perGiorno[c.data]) perGiorno[c.data] = [];
-      perGiorno[c.data].push(c[campo]);
+      var lista = perGiorno[c.data] || (perGiorno[c.data] = []);
+      lista.push(c[campo]);
     });
     return lastNDays(giorni).map(function (k) {
       var arr = perGiorno[k];
@@ -2677,7 +2714,7 @@ function creaLM() {
   function mediaValutazioneArea(areaId: string, giorni: number) {
     var vals = serieValutazioni(areaId, giorni).filter(function (p) { return p.valore !== null; });
     if (!vals.length) return null;
-    return vals.reduce(function (x, p) { return x + p.valore; }, 0) / vals.length;
+    return vals.reduce(function (x, p) { return x + (p.valore || 0); }, 0) / vals.length;
   }
 
   /* ---------- diario / storico ---------- */
@@ -2699,7 +2736,8 @@ function creaLM() {
        importanti; con `tutto` anche le minori (impostazioni, modifiche…). */
     (s.registro || []).forEach(function (rg) {
       if (!tutto && !rg.imp) return;
-      var ev = { ts: rg.ts, tipo: 'registro', cat: rg.cat, testo: rg.testo, imp: rg.imp };
+      var ev: { ts: number; tipo: string; cat: string; testo: string; imp: boolean; chiave?: string; tipoDisfa?: string } =
+        { ts: rg.ts, tipo: 'registro', cat: rg.cat, testo: rg.testo, imp: rg.imp };
       if (rg.disfa) { ev.chiave = rg.disfa.k; ev.tipoDisfa = rg.disfa.t; }
       agg(dayKey(new Date(rg.ts)), ev);
     });
@@ -2712,16 +2750,19 @@ function creaLM() {
     s.checkins.forEach(function (c) {
       agg(c.data, { ts: c.ts || parseKey(c.data).getTime(), tipo: 'checkin', chiave: String(c.ts || parseKey(c.data).getTime()), energia: c.energia, focus: c.focus, umore: c.umore });
     });
-    Object.keys(s.pianoMattina).forEach(function (k) {
-      var p = s.pianoMattina[k];
+    Object.keys(s.pianoMattina).forEach(function (kk) {
+      var k = giorno(kk), p = s.pianoMattina[kk];
+      if (!p) return;
       agg(k, { ts: p.ts || parseKey(k).getTime() + 8 * 3600000, tipo: 'mattina', chiave: k, intenzione: p.intenzione });
     });
-    Object.keys(s.reviewSera).forEach(function (k) {
-      var r = s.reviewSera[k];
+    Object.keys(s.reviewSera).forEach(function (kk) {
+      var k = giorno(kk), r = s.reviewSera[kk];
+      if (!r) return;
       agg(k, { ts: r.ts || parseKey(k).getTime() + 21 * 3600000, tipo: 'sera', chiave: k, vittoria: r.vittoria, blocco: r.blocco });
     });
-    Object.keys(s.reviewSettimana).forEach(function (k) {
-      var r = s.reviewSettimana[k];
+    Object.keys(s.reviewSettimana).forEach(function (kk) {
+      var k = giorno(kk), r = s.reviewSettimana[kk];
+      if (!r) return;
       agg(k, { ts: r.ts || parseKey(k).getTime() + 20 * 3600000, tipo: 'settimana', chiave: k, vittorie: r.vittorie, blocchi: r.blocchi, imparato: r.imparato, prossima: r.prossima });
     });
     s.inbox.forEach(function (el) {
@@ -2830,8 +2871,8 @@ function creaLM() {
     var s = load();
     k = k || todayKey();
     if (!s.ritmoGiorno) s.ritmoGiorno = {};
-    if (!s.ritmoGiorno[k]) s.ritmoGiorno[k] = {};
-    s.ritmoGiorno[k][quale === 'notte' ? 'chiestoNotte' : 'chiestoGiorno'] = true;
+    var g = s.ritmoGiorno[k] || (s.ritmoGiorno[k] = {});
+    if (quale === 'notte') g.chiestoNotte = true; else g.chiestoGiorno = true;
     save();
   }
   function giaChiesto(k: Giorno, quale: string) {
@@ -2846,7 +2887,7 @@ function creaLM() {
     var r = ritmoDi(k);
     var ora = oraOra == null ? oraDelGiorno() : oraOra;
     return (r.pasti || []).filter(function (pa) {
-      if (pa.fatto !== undefined) return false;         /* già risposto */
+      if ((pa as Pasto & { fatto?: boolean }).fatto !== undefined) return false;  /* già risposto */
       return minutiDaOra(pa.ora) <= ora + 30;           /* mezz'ora di grazia */
     });
   }
@@ -2929,7 +2970,7 @@ function creaLM() {
     var l = {
       id: uid(),
       testo: String(testo || '').trim(),
-      verso: verso === 'no' ? 'no' : 'si',
+      verso: (verso === 'no' ? 'no' : 'si') as Verso,
       forza: forzaLezione(opts.forza).id,
       areaId: opts.areaId || null,
       espId: opts.espId || null,
@@ -2938,7 +2979,7 @@ function creaLM() {
     };
     if (!l.testo) return null;
     s.lezioni.unshift(l);
-    if (!opts.interna) {
+    if (!(opts as { interna?: boolean }).interna) {
       registraLezione(l, 'Scoperta · ' + (l.verso === 'si' ? 'funziona' : 'non funziona') + ': «' + l.testo + '»');
     }
     save();
@@ -2960,7 +3001,7 @@ function creaLM() {
     l.aggiornata = Date.now();
     /* si racconta solo quello che è cambiato davvero: «rinominata» su una
        riga in cui è cambiata l'area sarebbe una riga di diario che mente */
-    if (!campi.interna) {
+    if (!(campi as { interna?: boolean }).interna) {
       if (prima.verso !== l.verso) {
         registraLezione(l, 'Spostata: «' + l.testo + '» adesso è fra quelle che ' +
           (l.verso === 'si' ? 'funzionano' : 'non funzionano'));
@@ -2984,7 +3025,7 @@ function creaLM() {
     var s = load();
     var i = s.lezioni.findIndex(function (x) { return x.id === id; });
     if (i < 0) return;
-    var l = s.lezioni[i];
+    var l = presa(s.lezioni[i]);
     s.lezioni.splice(i, 1);
     registraLezione(l, 'Tolta dalle Scoperte: «' + l.testo + '»');
     save();
@@ -3054,7 +3095,8 @@ function creaLM() {
     var m = METRICHE_ESPERIMENTO.find(function (x) { return x.id === e.metrica; });
     if (!m) return null;
     if (m.fonte === 'checkin') {
-      var vals = s.checkins.filter(function (c) { return c.data === k; }).map(function (c) { return c[m.campo]; });
+      var quale = m as { campo: 'energia' | 'focus' | 'umore' };
+      var vals = s.checkins.filter(function (c) { return c.data === k; }).map(function (c) { return c[quale.campo]; });
       return vals.length ? vals.reduce(function (a, b) { return a + b; }, 0) / vals.length : null;
     }
     if (m.fonte === 'valutazione') {
@@ -3077,21 +3119,22 @@ function creaLM() {
     if (daysBetween(k, fine) > 366) fine = addDays(k, 366);
     while (daysBetween(k, fine) >= 0) {
       var fase = daysBetween(e.inizioIntervento, k) >= 0 ? 'B' : 'A';
-      punti.push({ data: k, valore: valoreMetrica(e, k), fase: fase });
+      punti.push({ k: k, v: valoreMetrica(e, k), fase: fase });
       k = addDays(k, 1);
     }
-    function stats(fase: (number | null)[]) {
-      var v = punti.filter(function (p) { return p.fase === fase && p.valore !== null; }).map(function (p) { return p.valore; });
+    function stats(fase: 'A' | 'B'): { n: number; media: number | null; sd: number | null } {
+      var v = punti.filter(function (p) { return p.fase === fase && p.v !== null; }).map(function (p) { return p.v as number; });
       if (!v.length) return { n: 0, media: null, sd: null };
       var m = v.reduce(function (a, b) { return a + b; }, 0) / v.length;
       var sd = v.length > 1 ? Math.sqrt(v.reduce(function (a, b) { return a + (b - m) * (b - m); }, 0) / (v.length - 1)) : 0;
       return { n: v.length, media: m, sd: sd };
     }
     var A = stats('A'), B = stats('B');
-    var d = null;
-    if (A.n > 1 && B.n > 1) {
-      var pooled = Math.sqrt(((A.n - 1) * A.sd * A.sd + (B.n - 1) * B.sd * B.sd) / (A.n + B.n - 2));
-      d = pooled > 0 ? (B.media - A.media) / pooled : null;
+    var d: number | null = null;
+    if (A.n > 1 && B.n > 1 && A.sd !== null && B.sd !== null && A.media !== null && B.media !== null) {
+      var sdA = A.sd, sdB = B.sd, mA = A.media, mB = B.media;
+      var pooled = Math.sqrt(((A.n - 1) * sdA * sdA + (B.n - 1) * sdB * sdB) / (A.n + B.n - 2));
+      d = pooled > 0 ? (mB - mA) / pooled : null;
     }
     return { punti: punti, baseline: A, intervento: B, effetto: d };
   }
