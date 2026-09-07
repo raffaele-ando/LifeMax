@@ -4,3 +4,4 @@ node_modules/
 # che ne mette una copia con l'impronta nel nome dentro assets/pacco/. Quella
 # serve, questa no: è un passaggio intermedio.
 assets/react/
+docs/

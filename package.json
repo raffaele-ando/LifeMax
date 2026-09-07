@@ -1,19 +1,26 @@
 {
   "name": "lifemax",
   "private": true,
-  "description": "Il sito è statico e non ha bisogno di npm per funzionare: si apre index.html e va. npm serve solo a costruire il pacco (esbuild) e a lanciare le prove (playwright, che sta installato di suo).",
+  "description": "Il sito di adesso è statico e non ha bisogno di npm per funzionare. npm serve a costruire il pacco (esbuild, in uscita), a lanciare le prove (playwright) e — dalla riscrittura in corso — a Vite + TypeScript, che escono in docs/ senza toccare la radice.",
   "scripts": {
     "build": "node costruisci.mjs",
     "build:pulito": "node costruisci.mjs --pulisci",
     "build:react": "vite build --config react/vite.config.mjs",
-    "build:tutto": "npm run build:react && npm run build"
+    "build:tutto": "npm run build:react && npm run build",
+    "tipi": "tsc --noEmit",
+    "dev": "vite",
+    "build:nuovo": "tsc --noEmit && vite build"
   },
   "devDependencies": {
+    "@types/node": "^26.4.1",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.7",
     "@vitejs/plugin-react": "^6.1.1",
     "esbuild": "^0.28.2",
     "preact": "^10.29.8",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
+    "typescript": "^7.0.2",
     "vite": "^8.2.2"
   }
 }

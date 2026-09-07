@@ -1,0 +1,37 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+    "types": ["vite/client", "node"],
+
+    /* STRETTO DAVVERO, e non per gusto del rigore.
+       Questa app è arrivata a diecimila righe con dieci oggetti globali che
+       si parlano fra loro, e i difetti che ha prodotto — una casella che
+       mostrava il testo della nota di prima, un campo senza regola di
+       fusione, uno stato letto un disegno troppo presto — sono tutti difetti
+       di CONTRATTO fra due pezzi. Sono esattamente quelli che un tipo prende
+       a compilazione invece di farli scoprire a chi usa l'app.
+       `strict` da solo non basta: le tre righe dopo sono quelle che
+       riguardano i casi veri di qui — un indice che può non esserci, una
+       proprietà che si dimentica, un ramo di switch che manca. */
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+
+    "verbatimModuleSyntax": true,
+    "isolatedModules": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "resolveJsonModule": true,
+    "allowJs": false,
+    "forceConsistentCasingInFileNames": true
+  },
+  "include": ["src", "vite.config.ts"]
+}
