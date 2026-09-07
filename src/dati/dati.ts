@@ -1526,20 +1526,24 @@ function creaLM() {
      `server` e `chiave` sono l'indirizzo del postino e la sua chiave
      pubblica: si scrivono da Impostazioni, senza toccare il codice. La
      privata non passa mai da qui — sta su Cloudflare e basta. */
-  var PROMEMORIA_DEFAULT = {
+  /* dichiarato `Promemoria` e non lasciato indovinare: e' la forma che il
+     pannello, `normalizza` e il modulo dei promemoria si passano fra loro, e
+     scritta a mano `voci.abitudini` non aveva l'`ora` facoltativa — quindi
+     chi la leggeva per nome non compilava */
+  var PROMEMORIA_DEFAULT: Promemoria = {
     server: '', chiave: '',
     fissa: false,
     voci: {
-      mattina:   { on: true, ora: '08:30' },
-      checkin:   { on: true, ora: '13:00' },
-      mit:       { on: true, ora: '16:30' },
-      sera:      { on: true, ora: '21:30' },
+      mattina:   { on: true, ora: ora('08:30') },
+      checkin:   { on: true, ora: ora('13:00') },
+      mit:       { on: true, ora: ora('16:30') },
+      sera:      { on: true, ora: ora('21:30') },
       /* le abitudini non hanno un'ora qui: ognuna ha la sua */
       abitudini: { on: true }
     },
     /* la fascia in cui non arriva niente. Non è un dettaglio: un promemoria
        alle due di notte non si legge, sveglia, e insegna a spegnere tutto. */
-    silenzio: { on: true, da: '23:00', a: '07:00' }
+    silenzio: { on: true, da: ora('23:00'), a: ora('07:00') }
   };
   var ORA_VALIDA = /^([01][0-9]|2[0-3]):[0-5][0-9]$/;
 

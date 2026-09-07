@@ -17,6 +17,7 @@ import type { StatoAuth, StatoSync, ApiCloud } from '../nuvola/nuvola';
 import type { Segni } from '../segni/segni';
 import type { Forma } from '../forma/forma';
 import type { Grafici } from '../grafici/grafici';
+import type { Promemoria } from '../promemoria/promemoria';
 
 declare global {
   interface Window {
@@ -35,5 +36,7 @@ declare global {
     LM_FORMA?: Forma;
     /* i grafici: sei funzioni che scrivono SVG dentro a un contenitore */
     LMCharts: Grafici;
+    /* i promemoria: il pezzo che parla col Worker postino */
+    LM_PROMEMORIA?: Promemoria;
   }
 }
