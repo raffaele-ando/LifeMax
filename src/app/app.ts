@@ -40,11 +40,12 @@ import type { VoceAdesso, CosaAdesso, VoceDiario, GiornoDiDiario } from '../dati
 import { ICO, GOOGLE_G, LOGO } from '../segni/segni';
 import { LMCharts } from '../grafici/grafici';
 import { LM_FORMA } from '../forma/forma';
+import type { Lab } from '../lab/lab';
 import { presa } from '../tipi/presa';
 import { esc as escapa, riga as pzRiga } from '../pezzi/stringhe';
 import type {
   Giorno, Ora, GiornoSettimana, Stato, Area, Azione, Attivita, Abitudine,
-  Lezione, Esperimento, Passo, Pasto, Timer as TimerVivo,
+  Lezione, Verso, Esperimento, Passo, Pasto, Timer as TimerVivo,
   Mancata, PassoDi
 } from '../tipi/stato';
 import { giorno as comeGiorno, ora as comeOra } from '../tipi/stato';
@@ -7090,7 +7091,8 @@ export function ridisegnaLezioni(tornaNelCampo?: boolean): void {
   if (!vecchia || !vecchia.parentNode) { render(); return; }
   var tmp = document.createElement('div');
   tmp.innerHTML = bloccoLezioniHtml();
-  var nuova = tmp.firstChild;
+  /* `bloccoLezioniHtml` scrive un `div` e uno solo: il figlio c'è */
+  const nuova = presa(tmp.firstElementChild) as HTMLElement;
   vecchia.parentNode.replaceChild(nuova, vecchia);
   wireLezioni(nuova);
   if (tornaNelCampo) {
@@ -7102,8 +7104,9 @@ export function ridisegnaLezioni(tornaNelCampo?: boolean): void {
 function wireLezioni(scope: HTMLElement): void {
   wireRigaAggiunta(scope, 'agg-lez', function (testo, opz) {
     var sceltoVerso = opz ? opz.querySelector<HTMLElement>('.lez-scelta-verso .q-chip.on') : null;
-    var verso = sceltoVerso ? sceltoVerso.getAttribute('data-verso') : 'si';
-    var sel = opz ? opz.querySelector<HTMLElement>('#agg-lez-area') : null;
+    /* i due valori li scrive la riga di opzioni qui accanto: 'si' o 'no' */
+    const verso: Verso = sceltoVerso && sceltoVerso.getAttribute('data-verso') === 'no' ? 'no' : 'si';
+    var sel = opz ? opz.querySelector<HTMLSelectElement>('#agg-lez-area') : null;
     LM.aggiungiLezione(testo, verso, { areaId: sel ? sel.value : null, forza: 'notato' });
     /* il messaggio dice in quale mucchio è finita: la scelta sta in una riga
        di opzioni che si apre scrivendo, e chi non l'ha guardata deve poter
@@ -7115,13 +7118,13 @@ function wireLezioni(scope: HTMLElement): void {
   /* la scelta del verso nella riga di aggiunta */
   scope.querySelectorAll<HTMLElement>('.lez-scelta-verso .q-chip').forEach(function (b) {
     b.addEventListener('click', function () {
-      b.parentNode.querySelectorAll<HTMLElement>('.q-chip').forEach(function (x) { x.classList.remove('on'); });
+      presa(b.parentElement).querySelectorAll<HTMLElement>('.q-chip').forEach(function (x) { x.classList.remove('on'); });
       b.classList.add('on');
     });
   });
   scope.querySelectorAll<HTMLElement>('[data-lezgira]').forEach(function (b) {
     b.addEventListener('click', function () {
-      var l = LM.giraLezione(b.getAttribute('data-lezgira'));
+      var l = LM.giraLezione(b.getAttribute('data-lezgira') || '');
       if (!l) return;
       toast(l.verso === 'si' ? 'Spostata in «Funziona».' : 'Spostata in «Non funziona».',
         0, l.verso === 'si' ? 'funziona' : 'nonFunziona');
@@ -7129,7 +7132,7 @@ function wireLezioni(scope: HTMLElement): void {
     });
   });
   scope.querySelectorAll<HTMLElement>('[data-lezapri]').forEach(function (b) {
-    b.addEventListener('click', function () { apriLezione(b.getAttribute('data-lezapri')); });
+    b.addEventListener('click', function () { apriLezione(b.getAttribute('data-lezapri') || ''); });
   });
 }
 
@@ -7180,25 +7183,28 @@ export function disegnaScoperte() {
     '<div id="form-exp-zona"></div><div class="griglia mt" id="lista-exp" style="gap:16px"></div>';
 
   var bNuovo = document.getElementById('btn-nuovo-exp');
-  if (bNuovo) bNuovo.addEventListener('click', mostraFormExp);
+  /* avvolto: `mostraFormExp` prende una riga imparata, non un evento */
+  if (bNuovo) bNuovo.addEventListener('click', function () { mostraFormExp(); });
 
-  var lista = document.getElementById('lista-exp');
+  const lista = perId('lista-exp');
   if (!s.esperimenti.length) {
     /* uno stato vuoto porta con sé la sua via d'uscita: il pulsante sta
        qui dentro, dove si sta guardando, non solo in cima alla pagina */
     lista.innerHTML = '<div class="card vuoto">' + illoFlask() + '<b>Non hai ancora nessun esperimento.</b><br>Qualche idea per iniziare: verificare se fare sport al mattino migliora il focus, se tenere il telefono in un’altra stanza aumenta i minuti di studio, o se andare a letto prima ti dà più energia.' +
       '<div class="vuoto-azione"><button class="btn btn-primario" id="btn-primo-exp">' + ICO('plus', 15) + ' Crea il primo esperimento</button></div></div>';
     var primo = document.getElementById('btn-primo-exp');
-    if (primo) primo.addEventListener('click', mostraFormExp);
+    if (primo) primo.addEventListener('click', function () { mostraFormExp(); });
   }
   s.esperimenti.forEach(function (e, i) {
     var ris = LM.risultatiEsperimento(e);
     var m = LM.METRICHE_ESPERIMENTO.find(function (x) { return x.id === e.metrica; });
     var card = document.createElement('div');
     card.className = 'card exp-card';
-    card.style.setProperty('--i', i);
+    card.style.setProperty('--i', String(i));
     var verdetto = '';
-    if (ris.baseline.n > 1 && ris.intervento.n > 1) {
+    if (ris.baseline.n > 1 && ris.intervento.n > 1 && ris.baseline.media !== null && ris.intervento.media !== null) {
+      /* `media` è `null` solo con zero giorni misurati, e qui i giorni sono
+         più di uno per fase: il controllo qui sopra è per il tipo. */
       var diff = ris.intervento.media - ris.baseline.media;
       var dEff = ris.effetto;
       var forza = dEff === null ? '' : (Math.abs(dEff) < 0.2 ? 'trascurabile' : Math.abs(dEff) < 0.5 ? 'piccola' : Math.abs(dEff) < 0.8 ? 'media' : 'grande');
@@ -7229,7 +7235,7 @@ export function disegnaScoperte() {
     lista.appendChild(card);
     var bSalva = card.querySelector<HTMLElement>('[data-expsalva]');
     if (bSalva) bSalva.addEventListener('click', function () { salvaEsitoInLezione(e, ris); });
-    LMCharts.experiment(document.getElementById('exp-chart-' + i), ris, {
+    LMCharts.experiment(perId('exp-chart-' + i), ris, {
       label: 'Esperimento ' + e.nome,
       max: (m && m.fonte !== 'minuti' && m.fonte !== 'xp') ? 5 : undefined,
       ticks: (m && m.fonte !== 'minuti' && m.fonte !== 'xp') ? [1, 3, 5] : undefined,
@@ -7246,11 +7252,12 @@ export function disegnaScoperte() {
      che gira senza cloud e quindi riceve subito «account non disponibile»).
      Adesso quello che c'è scritto vive in `formExp`, e il disegno lo rimette. */
   function mostraFormExp(daLezione?: Lezione | null): void {
-    var zona = document.getElementById('form-exp-zona');
-    if (!zona) return;
+    const forseZona = document.getElementById('form-exp-zona');
+    if (!forseZona) return;
+    const zona = forseZona;
     /* la riga da cui parte, se parte da una riga: il nome è la domanda,
        l'intervento è la cosa stessa */
-    var pre = daLezione && daLezione.testo
+    const pre: ModuloEsperimento = daLezione && daLezione.testo
       ? { nome: '«' + daLezione.testo + '»: è vero?', int: daLezione.testo, area: daLezione.areaId || '',
           metrica: '', durata: '', lez: daLezione.id }
       : (schermo.formExp || { nome: '', int: '', area: '', metrica: '', durata: '', lez: null });
@@ -7274,37 +7281,41 @@ export function disegnaScoperte() {
       schermo.formExp = null; zona.innerHTML = '';
     });
     /* i valori scelti si rimettono dopo, non nell'HTML: un `selected` da
-       costruire dentro tre `map` diversi è tre posti dove sbagliarsi */
-    var campo = function (id) { return document.getElementById(id); };
-    if (pre.area) campo('exp-area').value = pre.area;
-    if (pre.metrica) campo('exp-metrica').value = pre.metrica;
-    if (pre.durata) campo('exp-durata').value = pre.durata;
+       costruire dentro tre `map` diversi è tre posti dove sbagliarsi. I
+       cinque nodi li ha appena scritti la riga qui sopra: `dentro` li
+       prende dalla zona del modulo, non da tutta la pagina. */
+    const dentro = function (id: string): HTMLInputElement | HTMLSelectElement {
+      return presa(zona.querySelector<HTMLInputElement | HTMLSelectElement>('#' + id));
+    };
+    if (pre.area) dentro('exp-area').value = pre.area;
+    if (pre.metrica) dentro('exp-metrica').value = pre.metrica;
+    if (pre.durata) dentro('exp-durata').value = pre.durata;
     /* quello che si scrive resta scritto anche se la pagina si ridisegna */
-    var tieni = function (id, chiave) {
-      var el = campo(id);
-      if (!el) return;
-      var scrivi = function () { if (schermo.formExp) schermo.formExp[chiave] = el.value; };
+    const tieni = function (id: string, chiave: keyof ModuloEsperimento): void {
+      const el = dentro(id);
+      const scrivi = function () { if (schermo.formExp) schermo.formExp[chiave] = el.value; };
       el.addEventListener('input', scrivi);
       el.addEventListener('change', scrivi);
     };
     tieni('exp-nome', 'nome'); tieni('exp-int', 'int');
     tieni('exp-metrica', 'metrica'); tieni('exp-area', 'area'); tieni('exp-durata', 'durata');
     zona.scrollIntoView({ block: 'nearest' });
-    var primo = campo('exp-nome');
-    if (primo && !pre.nome && !daLezione) primo.focus();
-    campo('exp-crea').addEventListener('click', function () {
-      var nome = campo('exp-nome').value.trim();
+    const primo = dentro('exp-nome');
+    if (!pre.nome && !daLezione) primo.focus();
+    dentro('exp-crea').addEventListener('click', function () {
+      var nome = dentro('exp-nome').value.trim();
       if (!nome) { toast('Scrivi cosa vuoi scoprire con l’esperimento.', 0, 'flask'); return; }
-      var dur = campo('exp-durata').value.split('-');
+      /* «14-14»: giorni di base e giorni di test */
+      const dur = dentro('exp-durata').value.split('-');
       var t = LM.todayKey();
       LM.creaEsperimento({
         nome: nome,
-        intervento: campo('exp-int').value.trim(),
-        metrica: campo('exp-metrica').value,
-        areaId: campo('exp-area').value,
-        inizioBaseline: LM.addDays(t, -(+dur[0])),
+        intervento: dentro('exp-int').value.trim(),
+        metrica: dentro('exp-metrica').value,
+        areaId: dentro('exp-area').value,
+        inizioBaseline: LM.addDays(t, -(+(dur[0] || 14))),
         inizioIntervento: t,
-        fine: LM.addDays(t, +dur[1]),
+        fine: LM.addDays(t, +(dur[1] || 14)),
         lezioneId: pre.lez
       });
       schermo.formExp = null;
@@ -7327,8 +7338,10 @@ function lezDi(e: Esperimento): Lezione | null {
    questa app sono «più è meglio» (focus, energia, umore, voto, minuti, XP),
    quindi il verso lo decide il segno della differenza. */
 function salvaEsitoInLezione(e: Esperimento, ris: EsitoProva): void {
-  var diff = ris.intervento.media - ris.baseline.media;
-  var verso = diff > 0 ? 'si' : 'no';
+  /* il tasto che porta qui compare solo con un verdetto in mano, e il
+     verdetto ha bisogno di due medie: qui ci sono */
+  var diff = (ris.intervento.media ?? 0) - (ris.baseline.media ?? 0);
+  const verso: Verso = diff > 0 ? 'si' : 'no';
   var testo = e.intervento || e.nome;
   var l = lezDi(e);
   if (l) {
@@ -7348,7 +7361,22 @@ function salvaEsitoInLezione(e: Esperimento, ris: EsitoProva): void {
    VISTA: SCIENZA
    ============================================================ */
 
-var PRINCIPI = [
+/* UN PRINCIPIO su cui è costruita l'app: cosa dice, quanto è solido, dove
+   si vede nell'app, e da dove viene. `evidenza` sono tre gradi e non un
+   testo libero: la schermata li colora. */
+export interface Principio {
+  titolo: string;
+  /* tre gradi, e la parola è quella che si legge in pagina: `alta` è
+     meta-analisi o studi clinici controllati, `media` studi solidi ma non
+     conclusivi, `euristica` pratica clinica ragionevole e non dimostrata.
+     Non è `bassa`: «bassa evidenza» suona come «probabilmente falso», e
+     una pratica sensata non ancora misurata è un'altra cosa. */
+  evidenza: 'alta' | 'media' | 'euristica';
+  claim: string;
+  uso: string;
+  fonti: string;
+}
+export const PRINCIPI: Principio[] = [
   {
     titolo: 'Cattura istantanea (brain dump)',
     evidenza: 'alta',
@@ -7476,8 +7504,8 @@ var PRINCIPI = [
    `import()`: Vite lo riconosce, mette quel codice e quello stile in un
    pezzo a parte, e del nome col trattino si occupa lui. Una tabella in meno
    da tenere allineata a mano. */
-var labChiesto = null;
-function caricaLab() {
+let labChiesto: Promise<Lab> | null = null;
+function caricaLab(): Promise<Lab> {
   if (labChiesto) return labChiesto;
   labChiesto = Promise.all([
     import('../lab/lab'),
@@ -7494,16 +7522,15 @@ function caricaLab() {
   return labChiesto;
 }
 
-schermo('lab', vistaLab);
-function vistaLab(dove) {
+registraSchermo('lab', vistaLab);
+function vistaLab(dove: HTMLElement): void {
   dove.innerHTML = topbar('Design lab', 'Scegli la base grafica del sito.') +
     '<div id="lab-radice"></div>';
-  var radice = document.getElementById('lab-radice');
-  if (!radice) return;
+  const radice = presa(dove.querySelector<HTMLElement>('#lab-radice'));
   /* arriva da fuori: su una rete lenta questa attesa si vede, e uno schermo
      bianco senza spiegazioni sembra un guasto */
   radice.innerHTML = '<div class="card vuoto">Sto caricando il laboratorio…</div>';
-  caricaLab().then(function (lab) {
+  void caricaLab().then(function (lab) {
     /* la schermata può essere cambiata mentre il file arrivava: si scrive
        solo se quel contenitore sta ancora in pagina */
     if (!radice.isConnected) return;
@@ -7523,7 +7550,10 @@ function vistaLab(dove) {
 function onboarding() {
   var root = perId('onboarding-root');
   var passo = 0;
-  var scelte = { nome: '', visione: '', aree: LM.AREE_DEFAULT.map(function (a) { return a.id; }), modo: 'oggi' };
+  /* `modo` è la schermata su cui si apre l'app la prima volta: il valore
+     è l'id di una vista, e i tasti che lo scrivono lo portano dentro */
+  const scelte: { nome: string; visione: string; aree: string[]; modo: string } =
+    { nome: '', visione: '', aree: LM.AREE_DEFAULT.map(function (a) { return a.id; }), modo: 'oggi' };
 
   function disegna() {
     var step = '';
@@ -7595,7 +7625,7 @@ function onboarding() {
     if (indietro) indietro.addEventListener('click', function () { passo--; disegna(); });
     root.querySelectorAll<HTMLElement>('[data-area]').forEach(function (b) {
       b.addEventListener('click', function () {
-        var id = b.getAttribute('data-area');
+        const id = b.getAttribute('data-area') || '';
         var i = scelte.aree.indexOf(id);
         if (i >= 0) { if (scelte.aree.length > 1) scelte.aree.splice(i, 1); }
         else scelte.aree.push(id);
@@ -7603,7 +7633,7 @@ function onboarding() {
       });
     });
     root.querySelectorAll<HTMLElement>('[data-modo]').forEach(function (b) {
-      b.addEventListener('click', function () { scelte.modo = b.getAttribute('data-modo'); disegna(); });
+      b.addEventListener('click', function () { scelte.modo = b.getAttribute('data-modo') || 'oggi'; disegna(); });
     });
     var fineDemo = document.getElementById('ob-fine-demo');
     if (fineDemo) fineDemo.addEventListener('click', function () { fine(true); });
@@ -7765,7 +7795,7 @@ var postoSezione = -1;
 function postoDi(id: string): number {
   var g = gruppoDi(id);
   if (!g || !g.viste) return -1;
-  for (var i = 0; i < g.viste.length; i++) if (g.viste[i].id === id) return i;
+  for (var i = 0; i < g.viste.length; i++) if (presa(g.viste[i]).id === id) return i;
   return -1;
 }
 
@@ -7787,8 +7817,8 @@ export function render() {
   var cambioPagina = v !== vistaMostrata;
   /* dentro la stessa porta si cambia sezione, non pagina: è quello che
      succede fra Adesso, La giornata e Rituali */
-  var cambioSezione = cambioPagina && vistaMostrata &&
-    gruppoDi(v).id === gruppoDi(vistaMostrata).id;
+  const cambioSezione = !!(cambioPagina && vistaMostrata &&
+    gruppoDi(v).id === gruppoDi(vistaMostrata).id);
   var scrollPrima = cambioPagina ? 0 : (window.scrollY || document.documentElement.scrollTop || 0);
   /* IL RAMO PER REACT NON C'È PIÙ, ed è la cosa migliore che sia successa a
      questa funzione. Qui c'era un `if`: React se la schermata era fra quelle
@@ -7836,9 +7866,10 @@ function staDigitando() {
    pulsante di accesso dell'onboarding. */
 window.addEventListener('lm:auth', function () {
   var inOnboarding = !!perId('onboarding-root').innerHTML;
-  var a = window.LM_AUTH || {};
-  if (inOnboarding && !a.user) { refreshObAccount(); return; }
-  if (staDigitando() && !a.user) return;
+  /* la nuvola può non esserci affatto: senza SDK non c'è nessun utente */
+  const chi = window.LM_AUTH ? window.LM_AUTH.user : null;
+  if (inOnboarding && !chi) { refreshObAccount(); return; }
+  if (staDigitando() && !chi) return;
   render();
 });
 
@@ -7889,9 +7920,9 @@ document.addEventListener('focusout', function () {
 /* cambio area di un'azione (da Focus o dal Diario), anche a distanza
    di tempo — listener delegato unico */
 document.addEventListener('change', function (e) {
-  var sel = e.target;
+  const sel = e.target as HTMLSelectElement | null;
   if (sel && sel.matches && sel.matches('select[data-azione-area]')) {
-    LM.cambiaAreaAzione(sel.getAttribute('data-azione-area'), sel.value);
+    LM.cambiaAreaAzione(sel.getAttribute('data-azione-area') || '', sel.value);
     toast('Area aggiornata.', 0, 'check');
     render();
   }
@@ -7950,7 +7981,7 @@ function battito() {
 }
 /* a schermo spento o in un'altra scheda non serve battere (batteria); al
    ritorno si riallinea subito, senza aspettare il prossimo giro. */
-var battitoTimer = null;
+let battitoTimer: ReturnType<typeof setInterval> | null = null;
 function avviaBattito() {
   if (battitoTimer) return;
   battitoTimer = setInterval(battito, 15000);
@@ -8054,17 +8085,17 @@ var SCORRI = {
 function scorriAcceso() { return (LM.load().profilo || {}).scorri !== 'no'; }
 
 /* la riga di linguette della pagina di adesso, e dove siamo dentro */
-function lingueDiPagina() {
+interface Lingue { voci: HTMLElement[]; qui: number }
+function lingueDiPagina(): Lingue | null {
   var bar = document.querySelector<HTMLElement>('#vista .segmenti.sez-nav');
   if (!bar) return null;
-  var voci = [];
-  for (var i = 0; i < bar.children.length; i++) {
-    var c = bar.children[i];
-    if (c.nodeType !== 1) continue;
-    if (c.tagName !== 'A' && c.tagName !== 'BUTTON') continue;
-    if (c.hidden || c.disabled) continue;
-    voci.push(c);
-  }
+  /* solo le linguette che si possono premere: quelle nascoste o spente non
+     sono un posto dove lo sfoglio può portare */
+  const voci = Array.from(bar.children).filter(function (c) {
+    if (c.tagName !== 'A' && c.tagName !== 'BUTTON') return false;
+    const el = c as HTMLElement & { disabled?: boolean };
+    return !el.hidden && !el.disabled;
+  }) as HTMLElement[];
   if (voci.length < 2) return null;
   var qui = voci.findIndex(function (x) { return x.classList.contains('attivo'); });
   if (qui < 0) return null;
@@ -8072,14 +8103,14 @@ function lingueDiPagina() {
 }
 
 /* qualcuno qui sotto scorre gia' di lato per conto suo? */
-function scorreDiLato(el: HTMLElement | null): boolean {
-  var n = el;
+function scorreDiLato(el: Element | null): boolean {
+  let n: Element | null = el;
   while (n && n !== document.body) {
-    if (n.nodeType === 1 && n.scrollWidth > n.clientWidth + 2) {
+    if (n.scrollWidth > n.clientWidth + 2) {
       var ox = getComputedStyle(n).overflowX;
       if (ox === 'auto' || ox === 'scroll') return true;
     }
-    n = n.parentNode;
+    n = n.parentElement;
   }
   return false;
 }
@@ -8102,13 +8133,15 @@ function qualcosaSopra() {
    qui non c'e' niente da scorrere di lato, quindi non c'e' niente da
    impedire al browser, e un ascoltatore non passivo su `touchmove`
    rallenterebbe ogni scorrimento della pagina per un gesto raro. */
-var sw = null;
+/* dov'è partito il dito, quando, e se il gesto è ancora uno sfoglio */
+interface Sfoglio { x: number; y: number; t: number; vivo: boolean }
+let sw: Sfoglio | null = null;
 
 document.addEventListener('touchstart', function (ev) {
   sw = null;
   if (ev.touches.length !== 1) return;
   if (!scorriAcceso() || qualcosaSopra()) return;
-  var d = ev.touches[0];
+  const d = presa(ev.touches[0]);
   if (d.clientX < SCORRI.bordo || d.clientX > innerWidth - SCORRI.bordo) return;
   var t = ev.target;
   if (!(t instanceof Element)) return;
@@ -8130,7 +8163,7 @@ document.addEventListener('touchmove', function (ev) {
   if (!sw || !sw.vivo) return;
   /* due dita non sono uno sfoglio: e' una pinzata */
   if (ev.touches.length !== 1) { sw.vivo = false; return; }
-  var d = ev.touches[0];
+  const d = presa(ev.touches[0]);
   var dx = d.clientX - sw.x, dy = d.clientY - sw.y;
   /* IL DITO SCENDE: era uno scorrimento. Da qui in poi non si torna piu'
      indietro, nemmeno se dopo va tutto di lato — un gesto che comincia a
@@ -8161,13 +8194,14 @@ document.addEventListener('touchend', function (ev) {
     /* IL MURO SI DEVE SENTIRE. Senza niente, uno sfoglio in fondo alla fila
        e uno sfoglio non riconosciuto sono la stessa cosa: non succede
        niente, e non si impara mai quale dei due era. */
-    var bar = l.voci[0].parentNode;
+    /* `voci` ne ha almeno due (lo controlla `lingueDiPagina`) */
+    const bar = presa(presa(l.voci[0]).parentElement);
     bar.classList.remove('sez-muro');
     void bar.offsetWidth;
     bar.classList.add('sez-muro');
     return;
   }
-  l.voci[dove].click();
+  presa(l.voci[dove]).click();
 }, { passive: true });
 
 document.addEventListener('touchcancel', function () { sw = null; }, { passive: true });
@@ -8183,8 +8217,12 @@ document.addEventListener('touchcancel', function () { sw = null; }, { passive: 
    scorri. Qui si misura la differenza e si passa al foglio di stile.
    Dove i due riquadri coincidono (ogni telefono, ogni computer) vale zero e
    non cambia niente. */
-var vv = window.visualViewport;
-if (vv) {
+const forseVV = window.visualViewport;
+if (forseVV) {
+  /* ricopiato dopo il controllo: `misuraFondo` gira più tardi, a ogni
+     `resize` e a ogni `scroll`, e il compilatore non tiene il controllo di
+     qui dentro una funzione che vive oltre */
+  const vv = forseVV;
   var ultimoGiu = -1;
   var misuraFondo = function () {
     var impianto = document.documentElement.clientHeight;

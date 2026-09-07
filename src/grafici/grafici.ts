@@ -35,20 +35,26 @@ export interface Voce { label: string; value: number; colore?: string; icona?: s
 export interface GiornoCaldo { data: Giorno; valore: number | null }
 
 /* le opzioni: nessuna è obbligatoria, e questo era già vero */
+/* I CAMPI SONO DICHIARATI `| undefined` E NON SOLO `?`, e la differenza
+   conta con `exactOptionalPropertyTypes`: chi chiama passa `max: qualcosa ?
+   5 : undefined` — un valore che a volte è `undefined` — e senza `|
+   undefined` quello va rifiutato mentre omettere il campo va bene. Sono
+   due modi di dire la stessa cosa, e la funzione tratta entrambi allo
+   stesso modo: se non c'è, decide lei. */
 export interface Opzioni {
-  w?: number;
-  h?: number;
-  min?: number;
-  max?: number;
-  colore?: string;
-  label?: string;
-  unita?: string;
+  w?: number | undefined;
+  h?: number | undefined;
+  min?: number | undefined;
+  max?: number | undefined;
+  colore?: string | undefined;
+  label?: string | undefined;
+  unita?: string | undefined;
   /* i valori dell'asse verticale, scritti a mano dal chiamante */
-  ticks?: number[];
+  ticks?: number[] | undefined;
   /* solo l'anello */
-  size?: number;
-  centro?: string;
-  fontSize?: number;
+  size?: number | undefined;
+  centro?: string | undefined;
+  fontSize?: number | undefined;
 }
 
 /* il punto di un esperimento sa anche in che fase sta: prima o dopo */

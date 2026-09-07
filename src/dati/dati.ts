@@ -3186,17 +3186,19 @@ function creaLM() {
   }
 
   function risultatiEsperimento(e: Esperimento) {
-    var punti: { k: Giorno; v: number | null; fase: string }[] = [];
+    /* i nomi dei due campi sono `data` e `valore`, e non `k`/`v`: li legge
+       `LMCharts.experiment`, che disegna il grafico dell'esperimento. */
+    var punti: { data: Giorno; valore: number | null; fase: 'A' | 'B' }[] = [];
     var k: Giorno = e.inizioBaseline;
     var fine = e.fine || todayKey();
     if (daysBetween(k, fine) > 366) fine = addDays(k, 366);
     while (daysBetween(k, fine) >= 0) {
-      var fase = daysBetween(e.inizioIntervento, k) >= 0 ? 'B' : 'A';
-      punti.push({ k: k, v: valoreMetrica(e, k), fase: fase });
+      const fase: 'A' | 'B' = daysBetween(e.inizioIntervento, k) >= 0 ? 'B' : 'A';
+      punti.push({ data: k, valore: valoreMetrica(e, k), fase: fase });
       k = addDays(k, 1);
     }
     function stats(fase: 'A' | 'B'): { n: number; media: number | null; sd: number | null } {
-      var v = punti.filter(function (p) { return p.fase === fase && p.v !== null; }).map(function (p) { return p.v as number; });
+      var v = punti.filter(function (p) { return p.fase === fase && p.valore !== null; }).map(function (p) { return p.valore as number; });
       if (!v.length) return { n: 0, media: null, sd: null };
       var m = v.reduce(function (a, b) { return a + b; }, 0) / v.length;
       var sd = v.length > 1 ? Math.sqrt(v.reduce(function (a, b) { return a + (b - m) * (b - m); }, 0) / (v.length - 1)) : 0;
