@@ -27,6 +27,40 @@ import type {
 import { COME_UNIRE, giorno, ora } from '../tipi/stato';
 import { presa } from '../tipi/presa';
 
+/* ---------------------------------------------------------------- ADESSO
+   Queste due forme escono dalla chiusura di `creaLM` e stanno qui perché le
+   legge anche il guscio: `vistaFocus` costruisce tutta la schermata «Adesso»
+   su `azioneAdesso()`, e finché il tipo viveva dentro alla funzione doveva
+   ricavarselo dai cinque `return`.
+
+   UNA VOCE DI ADESSO è un'azione o un'abitudine viste con la stessa faccia:
+   è tutto il punto di quella schermata — «cosa faccio ora» non distingue fra
+   le due — e i tre campi in più (`serie`, `giorni`, `record`) ce li ha solo
+   l'abitudine. */
+export interface VoceAdesso {
+  tipo: 'azione' | 'abitudine';
+  id: string;
+  testo: string;
+  areaId: string;
+  ora: Ora | null;
+  durata: number | null;
+  mit: boolean;
+  ifThen: string;
+  mancata?: Mancata | null;
+  serie?: number;
+  giorni?: GiornoSettimana[];
+  record?: number;
+}
+
+/* COSA DICE IL PIANO ADESSO. Cinque uscite diverse, e tutte hanno la stessa
+   forma: la cosa, in che stato è, e i due capi del suo blocco quando ce li ha. */
+export interface CosaAdesso {
+  azione: VoceAdesso | null;
+  stato: 'corso' | 'ritardo' | 'libera' | 'programmata' | 'scelta' | null;
+  min: number | null;
+  fine: number | null;
+}
+
 function creaLM() {
 
   /* ---------------------------------------------------------------------
@@ -2541,20 +2575,6 @@ function creaLM() {
   /* la forma di una voce di «Adesso»: la leggono la schermata e i suoi
      comandi, e scriverla qui vuol dire che una delle due non può leggere un
      campo che l'altra non mette */
-  interface VoceAdesso {
-    tipo: 'azione' | 'abitudine';
-    id: string;
-    testo: string;
-    areaId: string;
-    ora: Ora | null;
-    durata: number | null;
-    mit: boolean;
-    ifThen: string;
-    mancata?: Mancata | null;
-    serie?: number;
-    giorni?: GiornoSettimana[];
-    record?: number;
-  }
 
   function voceAzione(a: Azione): VoceAdesso {
     return { tipo: 'azione', id: a.id, testo: a.testo, areaId: a.areaId, ora: a.ora,
@@ -2582,7 +2602,12 @@ function creaLM() {
     return out;
   }
 
-  function azioneAdesso(nowMin?: number) {
+  /* COSA DICE IL PIANO ADESSO. Cinque uscite diverse, e tutte hanno la stessa
+     forma: la cosa, in che stato è, e i due capi del suo blocco quando ce li
+     ha. Era un'unione di cinque oggetti letterali, e chi la leggeva —
+     `vistaFocus`, che ci costruisce sopra tutta la schermata «Adesso» — doveva
+     ricavarsela dai cinque `return`. */
+  function azioneAdesso(nowMin?: number): CosaAdesso {
     if (nowMin == null) { var dd = new Date(); nowMin = dd.getHours() * 60 + dd.getMinutes(); }
     var adesso: number = nowMin;
     void adesso;

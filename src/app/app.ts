@@ -36,6 +36,7 @@
    schermi — è quello che rende possibile il resto.
    ============================================================ */
 import { LM } from '../dati/dati';
+import type { VoceAdesso, CosaAdesso } from '../dati/dati';
 import { ICO, GOOGLE_G, LOGO } from '../segni/segni';
 import { LMCharts } from '../grafici/grafici';
 import { LM_FORMA } from '../forma/forma';
@@ -3007,7 +3008,18 @@ function festeggia(che: string, x?: number, y?: number): void {
    accelerazione, deriva laterale costante, rotazione propria, e lo spessore
    che si assottiglia col coseno — un rettangolo che gira su se stesso, che
    è quello che fa un coriandolo vero. */
-var telaFesta = null, festaAttiva = 0, pezziFesta = [], telaCtx = null, telaW = 0, telaH = 0, dprFesta = 1;
+/* UN CORIANDOLO: dove sta, quanto va, come gira, e di che colore è. Era un
+   oggetto letterale creato in due punti e letto nel ciclo di disegno. */
+interface Coriandolo {
+  x: number; y: number; vx: number; vy: number;
+  a: number; va: number; w: number; h: number;
+  col: string; vita: number;
+}
+let telaFesta: HTMLCanvasElement | null = null;
+let festaAttiva = 0;
+let pezziFesta: Coriandolo[] = [];
+let telaCtx: CanvasRenderingContext2D | null = null;
+let telaW = 0, telaH = 0, dprFesta = 1;
 
 /* UNA TELA SOLA PER TUTTE LE FESTE.
    Prima ogni festa creava i suoi elementi: trentaquattro per la pioggia,
@@ -3110,9 +3122,9 @@ function pioggiaCoriandoli() { festa({ da: 'alto', quanti: 40 }); }
 /* "fuocoScelto": quando l'utente decide di fare un'altra cosa invece di
    quella suggerita dal piano, la fissa lui e resta finché non la finisce o
    torna al piano. "mostraAltre": la lista delle altre cose di oggi, a vista. */
-var fuocoScelto = null;
-var mostraAltre = false;
-var ultimoFuocoKey = '';
+let fuocoScelto: string | null = null;
+let mostraAltre = false;
+let ultimoFuocoKey = '';
 
 /* «fra quattro ore»: un orario da solo non dice quanto manca, e quanto manca
    è la cosa che fa decidere se cominciare qualcos'altro */
@@ -3120,8 +3132,8 @@ var ultimoFuocoKey = '';
    Senza, «era alle 15:00» non dice se il ritardo è di cinque minuti o di
    cinque ore, e sono due situazioni diverse. */
 function daQuanto(min: number): string {
-  var d = new Date();
-  var q = (d.getHours() * 60 + d.getMinutes()) - min;
+  const d = new Date();
+  const q = (d.getHours() * 60 + d.getMinutes()) - min;
   if (q <= 0 || q > 12 * 60) return '';
   if (q < 60) return ', ' + q + ' minuti fa';
   var ore = Math.round(q / 60);
@@ -3165,8 +3177,8 @@ function fraQuanto(min: number): string {
    messa lì per bellezza: è l'unico modo di scriverla che non incolla ogni
    schermata a tutte le altre.
    ============================================================ */
-var SCHERMI = {};
-function schermo(id: string, disegna: DisegnaSchermo): void { SCHERMI[id] = disegna; }
+const SCHERMI: Record<string, DisegnaSchermo> = {};
+export function schermo(id: string, disegna: DisegnaSchermo): void { SCHERMI[id] = disegna; }
 
 /* ---------------------------------------------------------- E I PANNELLI
    Lo stesso taglio, per la stessa ragione. Un pannello si apre da dentro a
@@ -3189,26 +3201,36 @@ function schermo(id: string, disegna: DisegnaSchermo): void { SCHERMI[id] = dise
    sono moduli, e quello che una schermata vuole se lo importa. Un elenco
    scritto a mano di cosa è lecito chiamare era il modo di avere un confine
    senza avere i moduli.  */
-var FOGLI = {};
-function foglio(id: string, monta: MontaFoglio): void { FOGLI[id] = monta; }
+const FOGLI: Record<string, MontaFoglio> = {};
+export function foglio(id: string, monta: MontaFoglio): void { FOGLI[id] = monta; }
 
 /* IL GANCIO PER SMONTARE. Chiudendo il foglio, chi ci ha disegnato dentro
    deve poterlo sapere: React tiene i suoi nodi in mano a una radice, e
    buttarli via senza dirglielo vuol dire che al giro dopo riconcilia contro
    nodi che non esistono più. Non è un import: questo file non conosce
    React, ed è la stessa scelta del registro qui sopra. */
-var ganci = { smontaFoglio: function () {} };
+export const ganci: { smontaFoglio: () => void } = { smontaFoglio: function () { /* lo riempie chi monta */ } };
 /* Aprire un pannello. Stessa porta di sempre — il foglio è quello, la pila
    del ritorno è quella, il gesto per chiuderlo è quello — ma il corpo lo
    possiede chi si è iscritto: si apre vuoto e ci si monta dentro. */
 function apriFoglio(titolo: string, quale: string, props?: Record<string, unknown>, largo?: boolean, riapri?: Riapri | null): void {
   apriSheet(titolo, '', function (root) {
-    var monta = FOGLI[quale];
+    const monta = FOGLI[quale];
     if (monta) monta(root, props || {});
   }, largo, riapri);
 }
 
-var fuocoOra = {};
+/* QUELLO CHE SERVE DOPO, quando gli elementi sono in pagina. Sta in un
+   oggetto di modulo perché il cablaggio è uscito da `vistaFocus` e non vede
+   più le sue variabili locali. Era `{}` e si riempiva a mano di tre campi:
+   il compilatore, giustamente, non ne conosceva nessuno. */
+interface FuocoOra {
+  prossima: VoceAdesso | null;
+  adesso: CosaAdesso;
+  oggi: Azione[] | null;
+  minTimer: number;
+}
+let fuocoOra: FuocoOra = { prossima: null, adesso: { azione: null, stato: null, min: null, fine: null }, oggi: null, minTimer: 25 };
 
 /* LA SCENA DI «ADESSO», senza toccare la pagina: restituisce il dentro e le
    classi, e chi la usa disegna il contenitore. `wireFuoco()` fa quello che
@@ -3217,18 +3239,19 @@ var fuocoOra = {};
    {classi, dentro} senza toccare la pagina. La usa React, che il
    contenitore lo disegna per conto suo — avvolgere un blocco già completo
    vorrebbe dire un elemento in più nell'albero. */
-function vistaFocus(soloScena?: boolean): Scena | undefined {
-  var adesso;
+export function vistaFocus(soloScena?: boolean): Scena | undefined {
+  let adesso: CosaAdesso;
   if (fuocoScelto) {
     /* la cosa scelta a mano può essere un'abitudine come una cosa di oggi:
        si cerca fra tutte e due, con la stessa forma */
-    var pin = LM.vociDiAdesso().find(function (a) { return a.id === fuocoScelto; });
+    const scelto = fuocoScelto;
+    const pin = LM.vociDiAdesso(LM.todayKey()).find(function (a) { return a.id === scelto; });
     if (pin) adesso = { azione: pin, stato: 'scelta', min: pin.ora ? minOf(pin.ora) : null, fine: null };
     else { fuocoScelto = null; adesso = LM.azioneAdesso(); }
   } else {
     adesso = LM.azioneAdesso();
   }
-  var prossima = adesso.azione;
+  const prossima = adesso.azione;
   /* quello che serve DOPO, quando gli elementi sono in pagina: sta in un
      oggetto di modulo perché il cablaggio è uscito da qui e non vede più le
      variabili locali di questa chiamata. Si riempie QUI e non prima: la
@@ -3236,7 +3259,7 @@ function vistaFocus(soloScena?: boolean): Scena | undefined {
      e al primo tocco su «Fatto» leggeva un null. */
   fuocoOra = { prossima: prossima, adesso: adesso, oggi: null, minTimer: 25 };
   ultimoFuocoKey = fuocoScelto ? 'pin:' + fuocoScelto : (prossima ? prossima.id : '') + '|' + adesso.stato;
-  var oggi = LM.azioniDiOggi();
+  const oggi = LM.azioniDiOggi();
   fuocoOra.oggi = oggi;
   var inCoda = oggi.filter(function (a) { return !a.done; }).length - (prossima ? 1 : 0);
 
@@ -3372,20 +3395,37 @@ function vistaFocus(soloScena?: boolean): Scena | undefined {
      non aveva nessuna barra. L'assenza però non è un segno: sembrava solo
      una scheda con meno roba, e a parità di tutto il resto le due schede
      erano identiche. Un tratteggio è la stessa cosa detta con una forma. */
-  var haOra = adesso.min != null;
-  var haDurata = !!prossima.durata;
-  var stato = { parola: '', dett: '', cls: 'libera', barra: 'libera', quota: 0, ico: null };
+  const haOra = adesso.min != null;
+  const haDurata = !!prossima.durata;
+  /* COM'È QUESTA COSA, ADESSO: la parola in cima, il dettaglio, la classe e
+     la forma della barra. `ico` può non esserci — «quando vuoi» non ha un
+     segno — e prima era `null` in un ramo e una stringa in altri cinque, su
+     un oggetto senza forma. */
+  interface StatoScena {
+    parola: string;
+    dett: string;
+    cls: string;
+    barra: string;
+    quota: number;
+    ico: string | null;
+  }
+  /* i due capi del blocco: dove `adesso.stato` li ha, ci sono per costruzione
+     — li mette `azioneAdesso` insieme allo stato. Letti una volta qui invece
+     di difenderli in dodici punti dentro alle frasi. */
+  const daMin = adesso.min ?? 0;
+  const aMin = adesso.fine ?? 0;
+  let stato: StatoScena = { parola: '', dett: '', cls: 'libera', barra: 'libera', quota: 0, ico: null };
   if (adesso.stato === 'scelta') {
-    stato = { parola: 'Scelta da te', dett: haOra ? 'in programma alle ' + fmtMin(adesso.min) : 'quando vuoi',
+    stato = { parola: 'Scelta da te', dett: haOra ? 'in programma alle ' + fmtMin(daMin) : 'quando vuoi',
       cls: 'ora', barra: 'scelta', quota: 1, ico: 'target' };
   } else if (adesso.stato === 'corso') {
-    var durata = Math.max(1, adesso.fine - adesso.min);
-    var restano = Math.max(0, adesso.fine - oraAdesso);
-    stato = { parola: 'Adesso', dett: fmtMin(adesso.min) + ' → ' + fmtMin(adesso.fine) + ' · restano ' + restano + '′',
+    const durata = Math.max(1, aMin - daMin);
+    const restano = Math.max(0, aMin - oraAdesso);
+    stato = { parola: 'Adesso', dett: fmtMin(daMin) + ' → ' + fmtMin(aMin) + ' · restano ' + restano + '′',
       cls: 'ora', barra: 'corso', ico: 'target',
-      quota: Math.max(0.02, Math.min(1, (oraAdesso - adesso.min) / durata)) };
+      quota: Math.max(0.02, Math.min(1, (oraAdesso - daMin) / durata)) };
   } else if (adesso.stato === 'ritardo') {
-    stato = { parola: 'In ritardo', dett: 'era alle ' + fmtMin(adesso.min) + daQuanto(adesso.fine),
+    stato = { parola: 'In ritardo', dett: 'era alle ' + fmtMin(daMin) + daQuanto(aMin),
       cls: 'ritardo', barra: 'ritardo', quota: 1, ico: 'avviso' };
   } else if (adesso.stato === 'programmata') {
     /* con una durata è un BLOCCO e la barra è un binario; senza durata è un
@@ -3393,7 +3433,7 @@ function vistaFocus(soloScena?: boolean): Scena | undefined {
        due impegni diversi da prendere: «alle 15 per tre quarti d'ora» non è
        «alle 15». */
     stato = { parola: 'Più tardi',
-      dett: 'alle ' + fmtMin(adesso.min) + (haDurata ? ' · ' + prossima.durata + '′' : '') + fraQuanto(adesso.min),
+      dett: 'alle ' + fmtMin(daMin) + (haDurata ? ' · ' + prossima.durata + '′' : '') + fraQuanto(daMin),
       cls: 'dopo', barra: haDurata ? 'dopo' : 'punto', quota: 0, ico: 'clock' };
   } else if (prossima.mit) {
     stato = { parola: 'La più importante', dett: 'quando vuoi, ma prima delle altre', cls: 'mit', barra: 'libera', quota: 0, ico: 'star' };
@@ -3416,15 +3456,18 @@ function vistaFocus(soloScena?: boolean): Scena | undefined {
      avere, e si legge senza leggere. */
   var ripeteHtml = '';
   if (prossima.tipo === 'abitudine') {
-    var oggiDow = new Date().getDay();
-    var giorni = prossima.giorni && prossima.giorni.length ? prossima.giorni : GIORNI_ORD;
+    const oggiDow = new Date().getDay();
+    const giorni = prossima.giorni && prossima.giorni.length ? prossima.giorni : GIORNI_ORD;
+    /* la serie ce l'ha solo un'abitudine, e qui siamo in quel ramo: zero
+       quando non c'è, che è la stessa cosa che diceva `> 0` su `undefined` */
+    const serie = prossima.serie || 0;
     ripeteHtml = '<div class="focus-ripete" role="img" aria-label="' +
-      esc('Abitudine' + (prossima.serie > 0 ? ', ' + prossima.serie + (prossima.serie === 1 ? ' giorno di fila' : ' giorni di fila') : '')) + '">' +
+      esc('Abitudine' + (serie > 0 ? ', ' + serie + (serie === 1 ? ' giorno di fila' : ' giorni di fila') : '')) + '">' +
       '<span class="fr-pips">' + GIORNI_ORD.map(function (d) {
         return '<i class="' + (giorni.indexOf(d) >= 0 ? 'on' : '') + (d === oggiDow ? ' oggi' : '') + '"></i>';
       }).join('') + '</span>' +
-      (prossima.serie > 0
-        ? '<span class="fr-serie">' + ICO('flame', 13, 'fiamma') + '<b>' + prossima.serie + '</b></span>'
+      (serie > 0
+        ? '<span class="fr-serie">' + ICO('flame', 13, 'fiamma') + '<b>' + serie + '</b></span>'
         : '') + '</div>';
   }
 
@@ -3592,7 +3635,9 @@ $vista.querySelectorAll<HTMLElement>('[data-fa-fuoco]').forEach(function (b) {
 });
 $vista.querySelectorAll<HTMLElement>('[data-fa-fatto]').forEach(function (b) {
   b.addEventListener('click', function (ev) {
-    feedbackSpunta(ev, LM.completaAzione(b.getAttribute('data-fa-fatto')), 'Fatto.', 'check');
+    const id = b.getAttribute('data-fa-fatto');
+    if (!id) return;
+    feedbackSpunta(ev, LM.completaAzione(id), 'Fatto.', 'check');
     render();
   });
 });
@@ -3601,60 +3646,76 @@ $vista.querySelectorAll<HTMLElement>('[data-fa-fatto]').forEach(function (b) {
    prima quel ramo usciva prima di arrivare qui; adesso che il cablaggio è
    una funzione a sé, ci si può arrivare comunque — e senza questa guardia
    il primo tocco su una giornata vuota rompeva tutta la schermata. */
-var bFatto = document.getElementById('btn-fatto');
+const bFatto = document.getElementById('btn-fatto');
 if (bFatto) bFatto.addEventListener('click', function (ev) {
-  var eraTimer = !!timerDiQuesta(fuocoOra.prossima.id);
+  /* SENZA UNA COSA DA FARE QUESTO TASTO NON ESISTE, e il commento qui sopra
+     dice perché: la giornata vuota è un altro ramo della scena. Il controllo
+     era implicito nel fatto che il tasto non ci fosse; adesso è scritto. */
+  const q = fuocoOra.prossima;
+  const dove = ev.currentTarget as HTMLElement | null;
+  if (!q || !dove) return;
+  const eraTimer = !!timerDiQuesta(q.id);
   if (eraTimer) fermaTimer(true);
-  var abitudine = fuocoOra.prossima.tipo === 'abitudine';
-  var xp = abitudine ? LM.completaAbitudine(fuocoOra.prossima.id) : LM.completaAzione(fuocoOra.prossima.id);
-  var r = ev.currentTarget.getBoundingClientRect();
+  const abitudine = q.tipo === 'abitudine';
+  const xp = abitudine ? LM.completaAbitudine(q.id) : LM.completaAzione(q.id);
+  const r = dove.getBoundingClientRect();
   flyXp(r.left + r.width / 2, r.top, xp);
   /* la pioggia di coriandoli per QUALUNQUE cosa finita, non solo per la
      più importante: una cosa fatta è una cosa fatta, e il momento in cui
      la ricompensa conta è questo, non un contatore da un'altra parte */
   festeggia('pieno', r.left + r.width / 2, r.top + r.height / 2);
   toast(abitudine ? 'Abitudine spuntata.'
-    : (fuocoOra.prossima.mit ? 'Hai completato l’azione più importante di oggi.' : 'Azione completata.'),
-    xp, abitudine ? 'refresh' : (fuocoOra.prossima.mit ? 'star' : 'check'));
+    : (q.mit ? 'Hai completato l’azione più importante di oggi.' : 'Azione completata.'),
+    xp, abitudine ? 'refresh' : (q.mit ? 'star' : 'check'));
   render();
 });
 /* «Falla adesso» non è «Fatto»: è la scelta di spostare qui una cosa che
    il piano metteva più in là. La scheda passa a «Scelta da te», con la
    via del ritorno al piano accanto. */
-var bAdesso = document.getElementById('btn-adesso');
+const bAdesso = document.getElementById('btn-adesso');
 if (bAdesso) bAdesso.addEventListener('click', function () {
-  fuocoScelto = fuocoOra.prossima.id; mostraAltre = false; render();
+  const q = fuocoOra.prossima;
+  if (!q) return;
+  fuocoScelto = q.id; mostraAltre = false; render();
 });
-var bNonOra = document.getElementById('btn-nonora');
+const bNonOra = document.getElementById('btn-nonora');
 if (bNonOra) bNonOra.addEventListener('click', function () {
+  const q = fuocoOra.prossima;
+  if (!q) return;
   fermaTimer(false);
-  if (fuocoScelto === fuocoOra.prossima.id) fuocoScelto = null;
-  LM.rimandaAzione(fuocoOra.prossima.id);
+  if (fuocoScelto === q.id) fuocoScelto = null;
+  LM.rimandaAzione(q.id);
   toast('Rimandata.', 0, 'rimanda');
   render();
 });
-var bSalta = document.getElementById('btn-salta');
+const bSalta = document.getElementById('btn-salta');
 if (bSalta) bSalta.addEventListener('click', function () {
+  const q = fuocoOra.prossima;
+  if (!q) return;
   fermaTimer(false);
-  if (fuocoScelto === fuocoOra.prossima.id) fuocoScelto = null;
-  LM.saltaGiornoAbitudine(fuocoOra.prossima.id);
+  if (fuocoScelto === q.id) fuocoScelto = null;
+  LM.saltaGiornoAbitudine(q.id);
   toast('Saltata per oggi: la serie non si azzera.', 0, 'salta');
   render();
 });
-var bm = document.getElementById('btn-mancata');
-if (bm) bm.addEventListener('click', function () { chiediMancata(fuocoOra.prossima.id, fuocoOra.prossima.testo); });
-var bc = document.getElementById('btn-concentra');
+const bm = document.getElementById('btn-mancata');
+if (bm) bm.addEventListener('click', function () {
+  const q = fuocoOra.prossima;
+  if (q) chiediMancata(q.id, q.testo);
+});
+const bc = document.getElementById('btn-concentra');
 if (bc) bc.addEventListener('click', function () { apriConcentrazione(); });
-var bt = document.getElementById('btn-timer');
+const bt = document.getElementById('btn-timer');
 if (bt) bt.addEventListener('click', function () {
-  scegliTimer(fuocoOra.prossima.id, fuocoOra.prossima.areaId, fuocoOra.prossima.testo, fuocoOra.minTimer);
+  const q = fuocoOra.prossima;
+  if (q) scegliTimer(q.id, q.areaId, q.testo, fuocoOra.minTimer);
 });
 }
 
 
 /* la barra compatta della giornata è sempre in cima a Oggi */
-function montaOggiGiornata() {
-  var zona = document.getElementById('oggi-giornata');
+function montaOggiGiornata(): void {
+  const zona = document.getElementById('oggi-giornata');
   if (zona) montaGiornataStrip(zona);
 }
 
