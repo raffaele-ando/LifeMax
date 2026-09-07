@@ -18,6 +18,7 @@ import type { Segni } from '../segni/segni';
 import type { Forma } from '../forma/forma';
 import type { Grafici } from '../grafici/grafici';
 import type { Promemoria } from '../promemoria/promemoria';
+import type { Lab } from '../lab/lab';
 
 declare global {
   interface Window {
@@ -38,5 +39,7 @@ declare global {
     LMCharts: Grafici;
     /* i promemoria: il pezzo che parla col Worker postino */
     LM_PROMEMORIA?: Promemoria;
+    /* il laboratorio di design: dieci mock, e si apre da una pagina sola */
+    LM_LAB?: Lab;
   }
 }

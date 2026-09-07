@@ -13,5 +13,10 @@
    ragione, la ragione è che si sta usando al posto di un controllo.
 
    SI USA SOLO subito dopo un controllo sull'indice, o su una tabella scritta
-   a mano di cui si vede la riga due centimetri sopra. Mai per «speriamo». */
-export function presa<T>(v: T | undefined): T { return v as T; }
+   a mano di cui si vede la riga due centimetri sopra. Mai per «speriamo».
+
+   Prende anche `null` e non solo `undefined`, perché `querySelector` risponde
+   `null`: «l'HTML l'ho appena scritto io tre righe sopra, e questo nodo ci
+   sta dentro» è la stessa affermazione di «l'indice l'ho appena
+   controllato». */
+export function presa<T>(v: T | undefined | null): T { return v as T; }
