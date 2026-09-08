@@ -27,8 +27,19 @@ export default defineConfig({
   base: './',
   plugins: [react()],
   build: {
-    outDir: resolve(QUI, 'docs'),
-    emptyOutDir: true,
+    /* SI COSTRUISCE NELLA RADICE, e non in una cartella d'uscita.
+       GitHub Pages serve il ramo così com'è, dalla radice: un `index.html`
+       in `docs/` vuol dire che l'indirizzo del sito non ha un `index.html`
+       e Pages mostra il README. È successo.
+       E c'è una seconda ragione, che vale anche il giorno che si cambia
+       ospite: UN SERVICE WORKER CONTROLLA SOLO LE PAGINE AL SUO LIVELLO O
+       SOTTO. In `docs/sw.js` i promemoria valgono per `/docs/…` e per
+       nient'altro; in radice valgono per tutto il sito.
+       `emptyOutDir: false` è obbligatorio: qui dentro ci sono anche `src/`,
+       `prove/`, `promemoria/` — svuotare vorrebbe dire cancellarli. Quello
+       che resta di vecchio lo trova `prove/pacco.js`. */
+    outDir: QUI,
+    emptyOutDir: false,
     /* i telefoni di qualche anno fa: la stessa scelta del build di prima */
     target: 'es2019',
     /* MA LO STILE NON SI TRADUCE, e queste due righe valgono un bug vero.

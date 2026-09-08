@@ -2,7 +2,7 @@
   "name": "lifemax",
   "private": true,
   "comment-type": "NIENTE `type: module`: le trenta prove in prove/ sono CommonJS e usano require(). La configurazione di Vite risolve la sua metà da sé chiamandosi vite.config.mts.",
-  "description": "TypeScript + React + Vite. `npm run build:nuovo` controlla i tipi e scrive il sito in docs/, che è quello che GitHub Pages serve — il ramo così com'è, senza nessun passaggio di build. Per questo docs/ è committato, e prove/pacco.js controlla che non sia più vecchio dei sorgenti.",
+  "description": "TypeScript + React + Vite. `npm run build:nuovo` controlla i tipi e scrive il sito nella radice (index.html + pacco/), che e' quello che GitHub Pages serve — il ramo cosi' com'e', senza nessun passaggio di build. Per questo il costruito e' committato, e prove/pacco.js controlla che non sia piu' vecchio dei sorgenti.",
   "scripts": {
     "dev": "vite",
     "tipi": "tsc --noEmit",

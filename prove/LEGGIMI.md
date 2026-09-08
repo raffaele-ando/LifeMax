@@ -8,7 +8,7 @@ rompe. Sono nati da problemi veri.
 pilotano un browser vero e interrogano il DOM da fuori: non sanno né gli
 importa chi ha scritto il markup, ed è per questo che sono sopravvissute
 intere al passaggio a TypeScript + React + Vite — cambiava il percorso.
-Adesso si serve `docs/`, quello che esce dal build, e quelle che leggono il
+Adesso si serve la radice, dove esce il build, e quelle che leggono il
 CODICE invece di guardare la pagina leggono `src/` tutto intero: prima
 avevano un elenco di file scritto a mano, e un elenco va aggiornato quando
 nasce un modulo — il giorno che qualcuno se ne dimentica, la prova continua a
@@ -637,10 +637,10 @@ genera le chiavi, in un browser vero).
   ha un solo modo di fare danni: qualcuno cambia il codice, prova col server
   di sviluppo, non ricostruisce, e in rete resta la versione di ieri. Non se
   ne accorge nessuno finché non lo usa qualcuno — e qui il rischio è vero, non
-  teorico: GitHub Pages serve il ramo così com'è, quindi quello che sta in
-  `docs/` **è** il sito. Se `docs/` è vecchio, il sito è vecchio.
-  La prova ricostruisce con Vite in una cartella temporanea e confronta con
-  `docs/`, file per file e byte per byte. Il build è deterministico — il nome
+  teorico: GitHub Pages serve il ramo così com'è, quindi `index.html` e
+  `pacco/` in radice **sono** il sito. Se sono vecchi, il sito è vecchio.
+  La prova ricostruisce con Vite in una cartella temporanea e confronta con la
+  radice, file per file e byte per byte. Il build è deterministico — il nome
   di ogni file porta dentro l'impronta del suo contenuto — quindi una
   differenza vuol dire che i sorgenti sono cambiati dopo l'ultimo build.
   Le mappe dei sorgenti restano fuori dal confronto, e non è una scorciatoia:
@@ -809,13 +809,13 @@ genera le chiavi, in un browser vero).
 
 ## Come si lanciano
 
-**Prima si costruisce.** Le prove aprono `docs/index.html`, che è generato:
+**Prima si costruisce.** Le prove aprono `index.html`, che è generato:
 se il sito costruito è vecchio, provano il codice di ieri e dicono che va
 tutto bene. `prove/pacco.js` è quello che se ne accorge, ma girarlo per
 secondo non serve a niente — si costruisce e basta.
 
     npm install
-    npm run build:nuovo      # tsc --noEmit && vite build → docs/
+    npm run build:nuovo      # tsc --noEmit && vite build → index.html + pacco/
     node prove/pacco.js         # solo Node: il pacco è quello dei sorgenti di adesso?
     node prove/intestazioni.js  # solo Node: la cache di _headers non fa danni
     node prove/pezzi.js         # solo Node: il cricchetto delle forme

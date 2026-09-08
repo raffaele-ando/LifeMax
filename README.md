@@ -14,20 +14,21 @@ TypeScript + React + Vite. Serve `npm install` una volta, e poi:
 
 ```bash
 npm run dev            # server di sviluppo, ricarica a caldo
-npm run build:nuovo    # tsc --noEmit && vite build → esce in docs/
+npm run build:nuovo    # tsc --noEmit && vite build → index.html + pacco/
 npm run tipi           # solo il controllo dei tipi
 ```
 
-Il sito costruito sta in **`docs/`**, ed è quello che GitHub Pages serve — il
-ramo così com'è, senza nessun passaggio di build. Vuol dire che `docs/` va
-**committato**, e che se è vecchio il sito è vecchio: `node prove/pacco.js`
-ricostruisce in una cartella temporanea e lo confronta, così quel «vecchio» si
-scopre lì invece che in rete.
+Il build esce **nella radice** — `index.html` più `pacco/` — perché è da lì
+che GitHub Pages serve il ramo, così com'è, senza nessun passaggio. Vuol dire
+che quei file vanno **committati**, e che se sono vecchi il sito è vecchio:
+`node prove/pacco.js` ricostruisce in una cartella temporanea e confronta,
+così quel «vecchio» si scopre lì invece che in rete.
 
-**Da fare una volta sola, e non si può fare dal codice:** in *Settings →
-Pages → Build and deployment*, accanto al ramo, scegliere **`/docs`** invece
-di **`/ (root)`**. Finché non è fatto la radice non ha più un `index.html` e
-l'indirizzo risponde 404.
+Per un giro il build usciva in `docs/`, e la radice era rimasta senza
+`index.html`: Pages, non trovandolo, mostrava il README come pagina del sito.
+C'è anche una seconda ragione per stare in radice, e vale a prescindere
+dall'ospite: **un service worker controlla solo le pagine al suo livello o
+sotto.** Da `docs/sw.js` i promemoria valgono per `/docs/…` e per nient'altro.
 
 ## Com'è fatto
 
@@ -296,16 +297,8 @@ sicurezza dell'accesso non la guardava nessuno.
 ### Dove sta ospitato, e cosa cambierebbe a spostarlo
 
 Oggi è su **GitHub Pages**, che serve il ramo così com'è: `git push` e in un
-minuto è online — nessun passaggio di build, per questo `docs/` è committato.
+minuto è online — nessun passaggio di build, per questo il costruito è committato.
 Ogni risposta esce con `Cache-Control: max-age=600`, e non si può cambiare.
-
-> **UNA COSA DA FARE A MANO, UNA VOLTA SOLA.** Il sito adesso esce in
-> `docs/`, e Pages va detto dove guardare: *Settings → Pages → Build and
-> deployment → Branch*, e accanto al ramo si sceglie **`/docs`** invece di
-> **`/ (root)`**. È l'unico passaggio della riscrittura che non si può fare
-> dal codice, e finché non è fatto la radice non ha più un `index.html`:
-> l'indirizzo risponde 404. Il resto — il ramo, il dominio, i domini
-> autorizzati di Firebase — non cambia.
 
 C'è un `_headers` pronto per **Cloudflare Pages**, che quel limite non ce l'ha
 e che comprime in Brotli invece che in gzip. I tempi misurati sul build di
@@ -332,7 +325,7 @@ sa esattamente quanto vale.
 
 Il passaggio a Cloudflare, se un giorno si fa, sono due cose: collegare il
 deposito senza comando di build (i file costruiti stanno già dentro, in
-`docs/`), e aggiungere il nuovo dominio ai **domini autorizzati** di Firebase,
+la radice), e aggiungere il nuovo dominio ai **domini autorizzati** di Firebase,
 se no l'accesso con Google smette di funzionare.
 
 `_headers` ha una regola sola, e ci sono due motivi per cui deve restarne una
@@ -601,7 +594,7 @@ src/promemoria/     le notifiche: il pezzo che parla col Worker postino
 src/registro/       il registro tecnico
 src/stile/app.css   design system: token, 2 skin, chiaro/scuro, mobile
 public/             icone, manifest, sw.js, _headers: copiati così come sono
-docs/               ← il sito costruito, committato: è quello che Pages serve
+index.html pacco/   ← il sito costruito, committato: è quello che Pages serve
 prove/              trenta controlli, e prove/dove.js dice da dove servire
 firestore.rules     regole di sicurezza (accesso limitato ai propri dati)
 promemoria/         il Worker su Cloudflare, con le sue prove

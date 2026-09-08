@@ -1,8 +1,8 @@
 node_modules
 node_modules/
-# QUI NON C'È `docs/`, ED È APPOSTA.
+# QUI NON C'È NIENTE DEL BUILD, ED È APPOSTA.
 # GitHub Pages serve il ramo così com'è, senza nessun passaggio di build:
-# quello che sta in `docs/` È il sito. Ignorarlo vorrebbe dire che il sito
-# non esiste per nessuno. Si costruisce con `npm run build:nuovo` e si
+# `index.html` e `pacco/` in radice SONO il sito. Ignorarli vorrebbe dire che
+# il sito non esiste per nessuno. Si costruisce con `npm run build:nuovo` e si
 # committa insieme al codice che l'ha prodotto — `prove/pacco.js` controlla
 # che i due non divergano.

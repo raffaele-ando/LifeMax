@@ -5,11 +5,11 @@
    la versione di ieri. Non se ne accorge nessuno finché non lo usa qualcuno.
 
    E QUI IL RISCHIO È VERO, non teorico: GitHub Pages serve il ramo così
-   com'è, senza nessun passaggio di build. Quello che sta in `docs/` È il
-   sito. Se `docs/` è vecchio, il sito è vecchio.
+   com'è, senza nessun passaggio di build. `index.html` e `pacco/` in radice
+   SONO il sito. Se sono vecchi, il sito è vecchio.
 
    Questa prova ricostruisce in una cartella temporanea e confronta con
-   `docs/`. Il build di Vite è deterministico — il nome di ogni file porta
+   la radice. Il build di Vite è deterministico — il nome di ogni file porta
    dentro l'impronta del suo contenuto — quindi due giri sugli stessi
    sorgenti danno gli stessi byte: una differenza vuol dire che i sorgenti
    sono cambiati dopo l'ultimo build.
@@ -44,7 +44,7 @@ function elenca(dir, base) {
 const fresco = fs.mkdtempSync(path.join(os.tmpdir(), 'lifemax-pacco-'));
 
 try {
-  console.log('IL SITO IN docs/ È QUELLO CHE USCIREBBE ADESSO DAL BUILD');
+  console.log('IL SITO IN RADICE È QUELLO CHE USCIREBBE ADESSO DAL BUILD');
   try {
     execFileSync('npx', ['vite', 'build', '--outDir', fresco, '--emptyOutDir'],
       { cwd: RAMO, stdio: 'pipe' });
@@ -56,20 +56,24 @@ try {
   }
 
   const nuovi = elenca(fresco).sort();
-  const vecchi = elenca(SERVITO).sort();
 
   /* 1. gli stessi file, con gli stessi nomi. Il nome porta dentro
         l'impronta del contenuto: un nome che combacia è un contenuto che
         combacia — ma si legge lo stesso, perché un file scritto a metà ha
         ancora il nome giusto. */
-  const mancanti = nuovi.filter((f) => vecchi.indexOf(f) < 0);
-  const avanzi = vecchi.filter((f) => nuovi.indexOf(f) < 0);
-  ok('ogni file del build sta in docs/', mancanti.length === 0,
+  const mancanti = nuovi.filter((f) => !fs.existsSync(path.join(SERVITO, f)));
+  ok('ogni file del build sta in radice', mancanti.length === 0,
     mancanti.length ? 'manca ' + mancanti.slice(0, 5).join(', ') + ' — `npm run build:nuovo`'
       : nuovi.length + ' file');
-  /* niente avanzi di build vecchi: pesano nel deposito e non li serve
-     nessuno, perché nessuna pagina li nomina più */
-  ok('e in docs/ non restano pezzi di build vecchi', avanzi.length === 0,
+  /* GLI AVANZI SI CERCANO SOLO IN `pacco/`, e non in tutta la radice.
+     Il build esce nella radice, che è anche il deposito: là dentro `src/`,
+     `prove/` e i tre LEGGIMI non sono avanzi di un build vecchio, sono il
+     progetto. `pacco/` invece la scrive solo Vite, quindi tutto quello che
+     c'è dentro e non esce dal build di adesso è roba di ieri — pesa nel
+     deposito e non la nomina più nessuna pagina. */
+  const suoi = new Set(nuovi.filter((f) => f.indexOf('pacco' + path.sep) === 0));
+  const avanzi = elenca(path.join(SERVITO, 'pacco')).filter((f) => !suoi.has(path.join('pacco', f)));
+  ok('e in pacco/ non restano pezzi di build vecchi', avanzi.length === 0,
     avanzi.slice(0, 6).join(', ') || 'nessuno');
 
   /* LE MAPPE NON SI CONFRONTANO, e non è una scorciatoia: dentro a una
@@ -144,7 +148,7 @@ try {
   /* si guarda il TAG, non la stringa: `main.tsx` è nominato anche in un
      commento della testa — «se lo stile lo carica main.tsx…» — e Vite i
      commenti se li tiene */
-  ok('e docs/index.html chiama il pezzo costruito',
+  ok('e index.html chiama il pezzo costruito',
     !/<script[^>]+src="[^"]*main\.tsx"/.test(htmlFatto) && /\.\/pacco\/index-[\w-]+\.js/.test(htmlFatto),
     (htmlFatto.match(/\.\/pacco\/index-[\w-]+\.js/) || ['?'])[0]);
   /* lo stile lo scrive Vite, col nome che porta l'impronta: uno scritto a

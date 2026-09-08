@@ -5,15 +5,11 @@
    sopravvissute intere al cambio di motore — venti file, e quello che
    cambiava era il percorso da cui servire i file.
 
-   `SERVITO` è la cartella che il server delle prove pubblica: `docs/`, quello
-   che esce da Vite. Il sito non si serve più dalla radice del deposito perché
-   dalla radice, adesso, i file da servire non esistono — `index.html` è un
-   modello dentro `src/`, e i moduli non sono ancora né TypeScript compilato
-   né uno solo.
-
-   `RAMO` è la radice del deposito: la usano le prove che leggono il CODICE
-   invece di guardare la pagina (i nomi dei segni, le regole di fusione, le
-   intestazioni della cache).
+   `SERVITO` è la cartella che il server delle prove pubblica, e `RAMO` la
+   radice del deposito: sono lo stesso posto, perché il build esce lì. Restano
+   due nomi perché dicono due cose diverse — «da dove si serve il sito» e «da
+   dove si legge il codice» — e il giorno che tornassero a essere due cartelle
+   diverse cambierebbe una riga qui invece di trenta file.
 
    Da provare va SEMPRE il costruito, non il sorgente. Un `npm run build:nuovo`
    prima di far girare le prove non è un passaggio in più: è quello che
@@ -22,7 +18,10 @@
 const path = require('path');
 
 const RAMO = path.join(__dirname, '..');
-const SERVITO = path.join(RAMO, 'docs');
+/* il sito si costruisce NELLA RADICE, perché Pages serve la radice e perché
+   un service worker controlla solo le pagine al suo livello o sotto: sono lo
+   stesso posto (vedi vite.config.mts) */
+const SERVITO = RAMO;
 const SRC = path.join(RAMO, 'src');
 
 /* TUTTO IL CODICE DI SRC, IN UNA STRINGA. Le prove che leggono il codice
