@@ -1,0 +1,7 @@
+# IL PACCO NON È CODICE SCRITTO A MANO — È L'OUTPUT DI VITE.
+# È committato perché GitHub Pages lo serva (nessun passaggio di build in
+# produzione, vedi README), non perché qualcuno lo legga o lo scriva. Senza
+# questa riga GitHub lo conta come JavaScript "vero" nelle statistiche del
+# repository, che è come contare due volte lo stesso lavoro: una in
+# TypeScript sorgente, una nel suo output minificato.
+pacco/* linguist-generated=true
