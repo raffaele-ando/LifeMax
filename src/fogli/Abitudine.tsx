@@ -21,8 +21,7 @@ import {
   conAnnulla, chiudiSheet, toast
 } from '../app/app';
 import type { CasellaCatena } from '../app/app';
-
-const html = (s: string) => ({ dangerouslySetInnerHTML: { __html: s } });
+import { html } from '../pezzi/grezzo';
 
 /* TRE NUMERI IN FILA NON SONO UN'INFORMAZIONE.
    Qui c'era «3 giorni di fila · record 5 · 8 volte in tutto»: tre fatti della

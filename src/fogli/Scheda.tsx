@@ -25,8 +25,7 @@ import {
   apriQuandoPasso, apriDaAbitudine, chiediMancata, conAnnulla,
   chiudiSheet, aggiornaNav, toast, render
 } from '../app/app';
-
-const html = (s: string) => ({ dangerouslySetInnerHTML: { __html: s } });
+import { html } from '../pezzi/grezzo';
 
 /* una riga per attributo, valore a destra: è la forma degli elenchi di iOS, e
    ha preso il posto di tre riquadri che contenevano altri riquadri */

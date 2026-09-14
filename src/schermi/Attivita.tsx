@@ -23,8 +23,7 @@ import {
   chipsGiorni, riepilogoGiorni, selectAree, leggiGiorni, wireRigaAggiunta,
   illoInbox, render
 } from '../app/app';
-
-const html = (s: string) => ({ dangerouslySetInnerHTML: { __html: s } });
+import { html } from '../pezzi/grezzo';
 
 /* ---------------------------------------------------------------- LE LINGUETTE
    La prima esiste solo finché c'è una coda da svuotare: una destinazione

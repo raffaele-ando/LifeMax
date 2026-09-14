@@ -10,8 +10,7 @@ import { Segno } from '../pezzi/pezzi';
 import { usaCambioNativo } from '../pezzi/nativo';
 import { LM } from '../dati/dati';
 import { schermo, selectAreeOpz, ridisegnaLezioni, chiudiSheet, conAnnulla, render } from '../app/app';
-
-const html = (s: string) => ({ dangerouslySetInnerHTML: { __html: s } });
+import { html } from '../pezzi/grezzo';
 
 function RigaSc({ eti, cls, children }: { eti: ReactNode; cls?: string; children?: ReactNode }) {
   return <div className={'lista-riga sc-riga' + (cls ? ' ' + cls : '')}>

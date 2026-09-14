@@ -6,26 +6,35 @@
    è finita nel pacco in versione di sviluppo senza che nessuno lo notasse.
    Adesso è Vite e basta.
 
-   ESCE IN `docs/` E NON TOCCA LA RADICE. Il sito che sta in piedi adesso è
-   `index.html` alla radice con `assets/`: finché la riscrittura non passa
-   tutte le prove, quella resta dov'è e continua a funzionare. Quando è
-   pronta si cambia una sola impostazione di GitHub Pages, da «/» a «/docs».
-   Una riscrittura non deve chiedere di stare senza l'app per giorni.
-
    `base: './'`, perché il sito non sta alla radice del dominio ma sotto
-   /LifeMax/: un indirizzo assoluto come /assets/x.js là non esiste.  */
+   /LifeMax/: un indirizzo assoluto come /pacco/x.js là non esiste.  */
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { rmSync } from 'node:fs';
 
 const QUI = dirname(fileURLToPath(import.meta.url));
+
+/* SI SVUOTA `pacco/` A MANO, PRIMA DI OGNI BUILD.
+   Il nome dei file porta dentro l'impronta del contenuto, quindi ogni build
+   ne scrive di nuovi e lascia in pace i vecchi. Con `emptyOutDir: false` —
+   che qui è obbligatorio, vedi sotto — nessuno li toglieva: otto generazioni
+   di `index-*.js` con le loro mappe, cinque megabyte di roba morta, tutta
+   committata. `pacco/` la scrive solo il build, quindi svuotarla è sicuro
+   quanto svuotare una normale cartella d'uscita: è quello che Vite farebbe
+   da sé se potesse. */
+const svuotaPacco = {
+  name: 'lm-svuota-pacco',
+  apply: 'build' as const,
+  buildStart() { rmSync(resolve(QUI, 'pacco'), { recursive: true, force: true }); }
+};
 
 export default defineConfig({
   root: resolve(QUI, 'src'),
   publicDir: resolve(QUI, 'public'),
   base: './',
-  plugins: [react()],
+  plugins: [react(), svuotaPacco],
   build: {
     /* SI COSTRUISCE NELLA RADICE, e non in una cartella d'uscita.
        GitHub Pages serve il ramo così com'è, dalla radice: un `index.html`
@@ -36,8 +45,9 @@ export default defineConfig({
        SOTTO. In `docs/sw.js` i promemoria valgono per `/docs/…` e per
        nient'altro; in radice valgono per tutto il sito.
        `emptyOutDir: false` è obbligatorio: qui dentro ci sono anche `src/`,
-       `prove/`, `promemoria/` — svuotare vorrebbe dire cancellarli. Quello
-       che resta di vecchio lo trova `prove/pacco.js`. */
+       `prove/`, `promemoria/` — svuotare vorrebbe dire cancellarli. A
+       svuotare `pacco/`, che è l'unica cartella che il build possiede
+       davvero, ci pensa il pezzo qui sopra. */
     outDir: QUI,
     emptyOutDir: false,
     /* i telefoni di qualche anno fa: la stessa scelta del build di prima */

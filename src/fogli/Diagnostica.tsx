@@ -18,8 +18,7 @@ import { LM } from '../dati/dati';
 import { esc } from '../pezzi/stringhe';
 import { presa } from '../tipi/presa';
 import { schermo, statoSalvataggioSpiegato, righeLogHtml, toast } from '../app/app';
-
-const html = (s: string) => ({ dangerouslySetInnerHTML: { __html: s } });
+import { html } from '../pezzi/grezzo';
 
 export default function Diagnostica() {
   const cons = useRef<HTMLDivElement>(null);

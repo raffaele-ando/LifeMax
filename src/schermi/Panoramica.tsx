@@ -11,8 +11,7 @@ import { useEffect, useRef } from 'react';
 import { usaLM } from '../pezzi/usaLM';
 import { Segno, Testa } from '../pezzi/pezzi';
 import { schermo, eroePlancia, wireEroePlancia, disegnaSezione, render } from '../app/app';
-
-const html = (s: string) => ({ dangerouslySetInnerHTML: { __html: s } });
+import { html } from '../pezzi/grezzo';
 
 const SEZIONI = [
   { id: 'riepilogo', ico: 'riepilogo', eti: 'Riepilogo' },
@@ -27,6 +26,13 @@ export default function Panoramica() {
   const eroe = eroePlancia();
   const vistaPrima = useRef<string | null>(null);
 
+  /* si ricabla a ogni disegno, ed è giusto così: quando i numeri cambiano
+     davvero, l'HTML dell'eroe cambia, React riscrive il nodo e cancella il
+     valore animato — se non si ripassasse resterebbe lo `0` del markup.
+     Che il nodo NON venga riscritto quando non è cambiato niente lo garantisce
+     `html()` di `pezzi/grezzo`: è là che sta la ragione, e vale la pena
+     leggerla, perché per un po' quel numero è ripartito da zero a ogni
+     salvataggio. */
   useEffect(() => { wireEroePlancia(); });
   /* come per «La giornata»: il corpo si chiede al primo montaggio e a ogni
      cambio di sezione, non a ogni ridisegno — `disegnaSezione` anima solo

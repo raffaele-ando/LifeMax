@@ -10,11 +10,11 @@
    per la stessa forma, che è precisamente il difetto che il lavoro sui pezzi
    sta togliendo di mezzo. Quando quelle forme saranno pezzi, spariranno di là
    e di qua nello stesso momento. */
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import type { ReactNode } from 'react';
 import { usaLM } from '../pezzi/usaLM';
 import { Segno, Testa } from '../pezzi/pezzi';
-import { schermo, disegnaScoperte, render } from '../app/app';
+import { schermo, disegnaScoperte, giroDiDisegno, render } from '../app/app';
 
 function Linguetta({ id, ico, eti, quanti, attiva, onScegli }: {
   id: string; ico: string; eti: ReactNode; quanti: number | null;
@@ -37,9 +37,21 @@ export default function Scoperte() {
   if (schermo.lezDaProvare || schermo.formExp) schermo.sezScoperte = 'esperimenti';
   const quale = schermo.sezScoperte;
 
-  /* il corpo si ridisegna dopo ogni commit: React ha appena rifatto il
-     contenitore, e i fili vanno riattaccati a quello nuovo */
-  useEffect(() => { disegnaScoperte(); });
+  /* IL CORPO SI RIFÀ A UN DISEGNO VERO O A UN CAMBIO DI SEZIONE, non a ogni
+     cambiamento dei dati. Il contenitore lo scrive `disegnaScoperte` con
+     `innerHTML`, e React quel nodo non lo tocca: sopravvive ai suoi
+     ridisegni da solo. Rifarlo a ogni commit voleva dire riscrivere sotto le
+     dita il modulo del nuovo esperimento — il testo tornava (lo tiene
+     `schermo.formExp`) ma il cursore saltava in fondo.
+     È la stessa distinzione dei Rituali e della Panoramica: `render()` è un
+     disegno, `lm:change` è un dato che si è mosso. */
+  const chiave = giroDiDisegno() + '|' + quale;
+  const disegnato = useRef('');
+  useEffect(() => {
+    if (disegnato.current === chiave) return;
+    disegnato.current = chiave;
+    disegnaScoperte();
+  });
 
   const scegli = (id: string) => {
     schermo.sezScoperte = id;

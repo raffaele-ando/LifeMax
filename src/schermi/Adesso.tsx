@@ -14,8 +14,7 @@ import { Testa } from '../pezzi/pezzi';
 import { LM } from '../dati/dati';
 import { vistaFocus, wireFuoco, montaOggiGiornata, wireRigaAggiunta, render } from '../app/app';
 import { presa } from '../tipi/presa';
-
-const html = (s: string) => ({ dangerouslySetInnerHTML: { __html: s } });
+import { html } from '../pezzi/grezzo';
 
 export default function Adesso() {
   usaLM();

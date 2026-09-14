@@ -4,8 +4,7 @@ import type { CSSProperties } from 'react';
 import { Segno, Testa } from '../pezzi/pezzi';
 import { PRINCIPI } from '../app/app';
 import type { Principio } from '../app/app';
-
-const html = (s: string) => ({ dangerouslySetInnerHTML: { __html: s } });
+import { html } from '../pezzi/grezzo';
 
 const CLASSE: Record<Principio['evidenza'], string> = {
   alta: 'evidenza-alta', media: 'evidenza-media', euristica: 'evidenza-euristica'

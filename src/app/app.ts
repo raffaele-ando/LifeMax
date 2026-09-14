@@ -2485,6 +2485,20 @@ export function rigaAggiunta(id: string, segnaposto: string, opzioniHtml?: strin
 export function wireRigaAggiunta(scope: ParentNode, id: string, onInvio: (testo: string, opz: HTMLElement) => void): void {
   const form = scope.querySelector<HTMLElement>('#' + id);
   if (!form) return;
+  /* UNA VOLTA SOLA PER NODO, e non è prudenza: è una perdita misurata.
+     Chi chiama è un effetto di React che gira a ogni ridisegno, e React il
+     `<form>` lo TIENE fra un disegno e l'altro — è lo stesso nodo. Senza
+     questo controllo ogni giro ne attaccava altri cinque: dieci ridisegni,
+     cinquanta ascoltatori, e l'app sta aperta per giorni su un telefono.
+     Il `submit` sembrava innocuo perché il campo si svuota e i doppioni
+     escono subito dal controllo del testo vuoto — ma `input`, `focus`,
+     `keydown` e `focusout` scattavano davvero N volte, e ognuno dei
+     `focusout` metteva giù il suo `setTimeout`.
+     Il segno sta sul NODO e non in una variabile di modulo: quando React
+     rifà il form per davvero, il nodo nuovo non ce l'ha e si ricollega —
+     che è quello che deve succedere. */
+  if (form.dataset['collegata'] === id) return;
+  form.dataset['collegata'] = id;
   /* il campo lo ha scritto `rigaAggiunta` dentro a quel form: se non c'è,
      non c'è niente da collegare — e prima si andava avanti a chiamare
      `inp.addEventListener` su un niente */
@@ -5455,7 +5469,16 @@ export function wireEroePlancia() {
   var pct = Math.round(LM.bilancio(30).tasso * 100);
   var serie = LM.serieRiuscita(12);
   var elPct = document.getElementById('som-pct');
-  if (elPct) countUp(elPct, pct);
+  /* IL NUMERO RIPARTE DA ZERO SOLO SE È DAVVERO A ZERO.
+     Questa funzione la chiama un effetto di React a ogni disegno, e deve
+     essere così: quando la percentuale cambia, il nodo dell'eroe viene
+     riscritto e il valore animato sparisce — se non si ripassasse resterebbe
+     lo `0` del markup per sempre.
+     La domanda giusta non è «React ha ridisegnato?» ma «il numero ci è già
+     arrivato?», e la risposta sta scritta nel nodo stesso: se c'è già il
+     valore giusto l'animazione è finita e non si rifà, se c'è lo zero del
+     markup il nodo è nuovo e si parte. */
+  if (elPct && elPct.textContent !== String(pct)) countUp(elPct, pct);
   var elSpark = document.getElementById('som-spark');
   /* sotto i tre punti una linea non è un andamento, è un segmento: mostrarla
      vorrebbe dire far leggere una tendenza a chi non ne ha ancora una */

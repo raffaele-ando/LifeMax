@@ -9,8 +9,7 @@ import { Segno } from '../pezzi/pezzi';
 import { LM } from '../dati/dati';
 import { ora as comeOra } from '../tipi/stato';
 import { chipsGiorni, leggiGiorni, DURATE, chiudiSheet, aggiornaNav, toast, render } from '../app/app';
-
-const html = (s: string) => ({ dangerouslySetInnerHTML: { __html: s } });
+import { html } from '../pezzi/grezzo';
 
 export default function DaAbitudine({ id }: { id: string }) {
   const b = LM.load().backlog.find((x) => x.id === id);
