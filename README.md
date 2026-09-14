@@ -598,8 +598,9 @@ index.html pacco/   ← il sito costruito, committato: è quello che Pages serve
 prove/              un file, un controllo — `npm run prove` li gira tutti
 prove/comune/       quello che le prove si passano (dove servire il sito)
 firestore.rules     regole di sicurezza (accesso limitato ai propri dati)
-promemoria/         il Worker su Cloudflare, con le sue prove
-segni/              gli strumenti che generano le icone (Node, fuori dal sito)
+postino/            il Worker su Cloudflare, con le sue prove
+segni/              gli strumenti che riempiono src/segni/segni.ts (Node)
+promemoria/         solo chiavi.html, generata: la pagina che fa le chiavi VAPID
 ```
 
 **Cosa non c'è più.** `costruisci.mjs` e `assets/` (il build a esbuild e i

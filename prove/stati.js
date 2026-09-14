@@ -35,7 +35,7 @@ const PORTA = 8829;
 let guai = 0;
 const ok = (n, c, d) => { if (!c) guai++; console.log('  ' + (c ? 'ok  ' : 'KO  ') + n + (d ? '  → ' + d : '')); };
 
-const SCENE = JSON.parse(fs.readFileSync(path.join(RAMO, 'segni/scene.json'), 'utf8'));
+const SCENE = JSON.parse(fs.readFileSync(path.join(__dirname, 'scene.json'), 'utf8'));
 
 /* IL CONTROLLO, dentro la pagina. Gli stati si accendono con
    `CSS.forcePseudoState` del protocollo di Chrome: `:hover` non si può

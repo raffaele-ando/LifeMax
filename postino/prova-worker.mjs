@@ -2,12 +2,12 @@
    Un KV finto (una Map) e un servizio push finto (fetch intercettato): così
    si vede davvero il giro intero — l'app deposita il piano, passa il tempo,
    partono le notifiche, e non partono due volte.
-     node promemoria/prova-worker.mjs   */
+     node postino/prova-worker.mjs   */
 /* Si prova il Worker vero E il file unico da incollare in Cloudflare: quello
    è generato dai tre moduli, e senza girarci sopra le prove potrebbe restare
    verde mentre il file che finisce davvero online dice un'altra cosa.
-     node promemoria/prova-worker.mjs            i moduli
-     node promemoria/prova-worker.mjs --unico    il file da incollare */
+     node postino/prova-worker.mjs            i moduli
+     node postino/prova-worker.mjs --unico    il file da incollare */
 const UNICO = process.argv.includes('--unico');
 const worker = (await import(UNICO ? './worker-unico.js' : './worker.js')).default;
 const { base64url: B } = await import('./push.js');
@@ -372,7 +372,7 @@ if (!UNICO) {
   execFileSync(process.execPath, [new URL('./impacchetta.mjs', import.meta.url).pathname], { stdio: 'ignore' });
   const dopo = fs.readFileSync(url, 'utf8');
   ok('rifacendolo viene identico', prima === dopo,
-    prima === dopo ? '' : 'lancia: node promemoria/impacchetta.mjs');
+    prima === dopo ? '' : 'lancia: node postino/impacchetta.mjs');
 }
 
 console.log(fail ? '\n>>> ' + fail + ' PROBLEMI' : '\n>>> TUTTO A POSTO' + (UNICO ? ' (file unico)' : ' (moduli)'));

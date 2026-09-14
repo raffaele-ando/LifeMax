@@ -1,5 +1,5 @@
 /* FA UN FILE SOLO da incollare nel pannello di Cloudflare.
-     node promemoria/impacchetta.mjs
+     node postino/impacchetta.mjs
 
    Il Worker è scritto in tre file perché così si legge e si prova a pezzi
    (push.js la crittografia, piano.js la decisione, worker.js le porte). Ma il
@@ -43,13 +43,13 @@ const testa = `/* ============================================================
    IL POSTINO DEI PROMEMORIA — un file solo, da incollare.
 
    QUESTO FILE È GENERATO. Non modificarlo: le modifiche vanno in
-   promemoria/push.js, promemoria/piano.js e promemoria/worker.js, e poi
-     node promemoria/impacchetta.mjs
+   postino/push.js, postino/piano.js e postino/worker.js, e poi
+     node postino/impacchetta.mjs
    lo rifà. Quello che c'è scritto qui sotto è la somma di quei tre.
 
    Serve al pannello di Cloudflare, che vuole del codice da incollare in una
    finestra invece di tre moduli separati. Le istruzioni, passo per passo e
-   senza terminale, sono in promemoria/LEGGIMI.md.
+   senza terminale, sono in postino/LEGGIMI.md.
    ============================================================ */
 
 `;
@@ -60,7 +60,7 @@ const corpo = pezzi.map((f) =>
 
 /* SI PUÒ DIRE DOVE SCRIVERE, e serve a una prova.
    Senza argomenti fa quello che ha sempre fatto: riscrive
-   `promemoria/worker-unico.js`. Con un percorso scrive là, e così
+   `postino/worker-unico.js`. Con un percorso scrive là, e così
    `prove/postino.js` può rifare il file in una cartella temporanea e
    confrontarlo con quello committato — cioè chiedere «è ancora la somma dei
    tre?» senza toccare il ramo. */

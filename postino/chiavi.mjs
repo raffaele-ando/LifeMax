@@ -3,7 +3,7 @@
    stesso mittente. Sono una coppia: la pubblica finisce nell'app e la vedono
    tutti, la privata resta un segreto del Worker.
 
-     node promemoria/chiavi.mjs
+     node postino/chiavi.mjs
 
    Non serve installare niente: usa la crittografia che Node ha già dentro.
 

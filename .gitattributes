@@ -24,8 +24,8 @@ _headers               linguist-generated=true
 icone/**               linguist-generated=true
 promemoria/chiavi.html linguist-generated=true
 
-# E questo non viene dal build del sito ma da `promemoria/impacchetta.mjs`:
+# E questo non viene dal build del sito ma da `postino/impacchetta.mjs`:
 # è worker.js + push.js + piano.js in un file solo, perché il pannello di
 # Cloudflare vuole del codice da incollare in una finestra. Si modificano i
 # tre, poi si rifà lui.
-promemoria/worker-unico.js linguist-generated=true
+postino/worker-unico.js linguist-generated=true

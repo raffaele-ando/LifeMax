@@ -223,7 +223,7 @@ type VoceProm = 'mattina' | 'checkin' | 'mit' | 'sera' | 'abitudini';
    `/prova` — perché `spiegaProva` le legge insieme: la salute dice se il
    Worker ha le chiavi, la prova dice cosa ne ha fatto il servizio push, e
    la diagnosi utile nasce dal confronto fra le due. Tutto opzionale: sono
-   campi che il Worker aggiunge quando li ha (vedi `promemoria/worker.js`).
+   campi che il Worker aggiunge quando li ha (vedi `postino/worker.js`).
    `stato` e `detto` sono il numero e il testo che ha risposto il servizio
    push; `dove` compare solo quando il Worker non è nemmeno arrivato a
    parlargli, e allora vale `'firma'`. */
@@ -1814,7 +1814,7 @@ export function apriPromemoria() {
     '<div class="imp-sezione" style="padding-top:0"><div class="imp-eti">Il postino</div>' +
       '<div class="imp-nota" style="margin-top:0">' +
         (conf ? 'Collegato. Da qui si cambia, se serve.'
-              : 'Le notifiche a orario hanno bisogno di un piccolo servizio che stia sveglio: una pagina chiusa non si sveglia da sé. Si fa una volta, è gratis, e le istruzioni sono nel file <code>promemoria/LEGGIMI.md</code>.') +
+              : 'Le notifiche a orario hanno bisogno di un piccolo servizio che stia sveglio: una pagina chiusa non si sveglia da sé. Si fa una volta, è gratis, e le istruzioni sono nel file <code>postino/LEGGIMI.md</code>.') +
       '</div>' +
       '<label class="campo mt-s" for="prom-server">Indirizzo</label>' +
       '<input type="url" id="prom-server" inputmode="url" autocapitalize="off" spellcheck="false" ' +

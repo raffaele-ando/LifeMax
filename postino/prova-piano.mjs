@@ -1,6 +1,6 @@
 /* La prova della sola decisione che prende il server: chi tocca adesso.
    Non serve rete né Cloudflare — è tutta aritmetica su dati finti.
-     node promemoria/prova-piano.mjs   */
+     node postino/prova-piano.mjs   */
 import { dovute, potaSegni, oraLocale, minutiDaOra, endpointValido, inSilenzio, RITARDO_MAX, MAX_PER_VOLTA } from './piano.js';
 
 let fail = 0;

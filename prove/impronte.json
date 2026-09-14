@@ -1486,7 +1486,7 @@
   "0|div|imp-sezione||||",
   "1|div|imp-eti|||Il postino|",
   "1|div|imp-nota|||Le notifiche a orario hanno bisogno di un piccolo servizio che stia sveglio: una pagina chiusa non si sveglia da sé. Si fa una volta, è gratis, e le istruzioni sono nel file .|",
-  "2|code||||promemoria/LEGGIMI.md|",
+  "2|code||||postino/LEGGIMI.md|",
   "1|label|campo.mt-s|||Indirizzo|",
   "1|input||prom-server|||",
   "1|label|campo.mt-s|||Chiave pubblica|",

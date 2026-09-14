@@ -182,7 +182,7 @@ si strozzerebbe. Chi non è mai stato visto in pagina resta capsula, e il
 generatore stampa l'elenco: adesso sono diciotto pastiglie che vivono in stati
 dove il giro non passa — l'accoglienza al primo avvio, la guida che compare
 mentre si trascina, il segnino della scadenza nel mese, la legenda della
-striscia. Per farle entrare basta una scena in più in `segni/scene.json`.
+striscia. Per farle entrare basta una scena in più in `prove/scene.json`.
 
 **E la stessa misura taglia TUTTI i raggi, non solo quelli delle pastiglie.**
 Il limite `min(px, %)` dentro il tracciato non basta: le percentuali di un
@@ -399,7 +399,7 @@ tema. A occhio se ne erano visti tre o quattro; lei ne ha contati settanta.
     davvero, col dito.
 12. **Le scene possono sbagliare strada, e nessuno se ne accorge.** Il giorno
     in cui la porta delle impostazioni si è spostata dalla testa di
-    «Panoramica» alla barra in basso, otto voci di `segni/scene.json` su
+    «Panoramica» alla barra in basso, otto voci di `prove/scene.json` su
     quarantadue hanno smesso di aprire il pannello: il clic finiva nel vuoto e
     la scena misurava la pagina che c'era sotto. Otto misure identiche della
     stessa schermata, e nessun errore da nessuna parte — il generatore ha

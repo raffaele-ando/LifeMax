@@ -164,6 +164,22 @@ function daBase64Url(s: string): Uint8Array {
 }
 
 /* ---------- il service worker ---------- */
+/* IL REGISTRO, ANCHE QUANDO LA PROMESSA DELL'AVVIO NON SI È CHIUSA.
+   `reg` lo riempie `registra()`, che parte una volta sola all'avvio. Ogni
+   posto che scriveva `if (!reg) return` stava dicendo «se quella promessa
+   non si è ancora chiusa, non faccio niente» — e non lo diceva a nessuno:
+   la notifica non compariva, la nota fissa non si aggiornava, e sullo
+   schermo non cambiava niente. Il browser però il registro ce l'ha, e lo
+   dà a chi lo chiede. Chiederlo costa un giro di promessa e rimette a
+   posto `reg` per la volta dopo. */
+function registro(): Promise<ServiceWorkerRegistration | null> {
+  if (reg) return Promise.resolve(reg);
+  if (!('serviceWorker' in navigator)) return Promise.resolve(null);
+  return navigator.serviceWorker.getRegistration()
+    .then(function (r) { if (r) reg = r; return r || null; })
+    .catch(function () { return null; });
+}
+
 function registra(): Promise<ServiceWorkerRegistration | null> {
   if (!('serviceWorker' in navigator)) return Promise.resolve(null);
   return navigator.serviceWorker.register('sw.js').then(function (r) {
@@ -366,22 +382,27 @@ function testoFissa(): { titolo: string; corpo: string } {
   };
 }
 function scriviFissa(): boolean {
-  if (!fissaAccesa() || stato() !== 'granted' || !reg || !reg.showNotification) return false;
+  if (!fissaAccesa() || stato() !== 'granted') return false;
   const t = testoFissa();
   /* `renotify` e `requireInteraction` non stanno nei tipi standard di
      `NotificationOptions` e sono proprio quello che tiene la nota lì senza
      far rumore: sono i due campi per cui questa notifica esiste. */
-  void reg.showNotification(t.titolo, {
-    body: t.corpo, icon: 'icone/icona-192.png', badge: 'icone/badge-96.png',
-    lang: 'it', tag: 'lifemax-stato', renotify: false, silent: true, requireInteraction: true,
-    data: { vai: '#/oggi', tipo: 'stato' }
-  } as NotificationOptions & { renotify: boolean; requireInteraction: boolean });
+  void registro().then(function (r) {
+    if (!r || !r.showNotification) return undefined;
+    return r.showNotification(t.titolo, {
+      body: t.corpo, icon: 'icone/icona-192.png', badge: 'icone/badge-96.png',
+      lang: 'it', tag: 'lifemax-stato', renotify: false, silent: true, requireInteraction: true,
+      data: { vai: '#/oggi', tipo: 'stato' }
+    } as NotificationOptions & { renotify: boolean; requireInteraction: boolean });
+  });
   return true;
 }
 function togliFissa(): void {
-  if (!reg || !reg.getNotifications) return;
-  void reg.getNotifications({ tag: 'lifemax-stato' }).then(function (l) {
-    l.forEach(function (n) { n.close(); });
+  void registro().then(function (r) {
+    if (!r || !r.getNotifications) return undefined;
+    return r.getNotifications({ tag: 'lifemax-stato' }).then(function (l) {
+      l.forEach(function (n) { n.close(); });
+    });
   }).catch(function () { /* ignora */ });
 }
 
@@ -507,14 +528,40 @@ function spegni(): Promise<boolean> {
    pagina è ancora viva. È l'unica cosa che sul web si può fare da soli. */
 function locale(titolo: string, corpo?: string, vai?: string): boolean {
   if (stato() !== 'granted') return false;
-  if (reg && reg.showNotification) {
-    void reg.showNotification(titolo, {
-      body: corpo || '', icon: 'icone/icona-192.png', badge: 'icone/badge-96.png', lang: 'it',
-      tag: 'lifemax-locale', data: { vai: vai || '#/oggi' }
-    });
+  const opz: NotificationOptions = {
+    body: corpo || '', icon: 'icone/icona-192.png', badge: 'icone/badge-96.png', lang: 'it',
+    tag: 'lifemax-locale', data: { vai: vai || '#/oggi' }
+  };
+  if (reg && reg.showNotification) { void reg.showNotification(titolo, opz); return true; }
+  /* vedi `registro()`: il browser ce l'ha anche quando noi non ce l'abbiamo */
+  /* IL SERVICE WORKER C'È ANCHE QUANDO NON CE L'ABBIAMO IN MANO.
+     `reg` lo riempie una promessa che parte all'avvio, e finché quella non
+     si è chiusa questa riga vedeva `null` e ripiegava su `new Notification`
+     — che mostra sì una notifica, ma SENZA `data`: toccarla non porta da
+     nessuna parte, e senza `lang` chi la fa leggere ad alta voce la sente in
+     inglese. Una notifica che non porta dove deve è quasi peggio di nessuna
+     notifica, e il difetto non si vede: la notifica compare.
+     Succede più di quanto sembri, perché il momento in cui questa funzione
+     serve — un timer che finisce — non ha niente a che fare col momento in
+     cui la registrazione si chiude. Misurato: sotto le prove quella promessa
+     resta aperta, e tutte le notifiche locali uscivano mutilate.
+     Quindi il registro si richiede al browser, che ce l'ha già, e
+     l'occasione serve anche a rimettere a posto `reg` per la volta dopo. */
+  if ('serviceWorker' in navigator) {
+    void registro().then(function (r) {
+      if (r && r.showNotification) return r.showNotification(titolo, opz);
+      senzaWorker(titolo, corpo);
+      return undefined;
+    }).catch(function () { senzaWorker(titolo, corpo); });
     return true;
   }
-  try { new Notification(titolo, { body: corpo || '' }); return true; } catch { return false; }
+  return senzaWorker(titolo, corpo);
+}
+
+/* l'ultima spiaggia: una notifica del browser, senza dove andare. Meglio di
+   niente, e su un browser senza service worker è tutto quello che c'è. */
+function senzaWorker(titolo: string, corpo?: string): boolean {
+  try { new Notification(titolo, { body: corpo || '', lang: 'it' }); return true; } catch { return false; }
 }
 
 export const LM_PROMEMORIA = {

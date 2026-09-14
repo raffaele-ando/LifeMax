@@ -14,7 +14,7 @@ avevano un elenco di file scritto a mano, e un elenco va aggiornato quando
 nasce un modulo — il giorno che qualcuno se ne dimentica, la prova continua a
 dire «tutto a posto» avendo guardato metà del codice.
 
-Le prove dei promemoria stanno di là, in `promemoria/`, perché lì c'è anche
+Le prove del postino stanno di là, in `postino/`, perché lì c'è anche
 la parte che gira sul server: `prova.mjs` (la cifratura, byte per byte contro
 `http_ece`), `prova-piano.mjs` (chi tocca adesso: fusi e ora legale),
 `prova-worker.mjs` (il giro intero con un KV finto, e il pacchetto decifrato
@@ -482,7 +482,7 @@ genera le chiavi, in un browser vero).
   passate da 40 MB a 8, e `bordi.js` adesso controlla l'esenzione nei due
   versi e conta quanti elementi la usano, se no i due controlli sono muti.)
 - **bordi.js** — la stessa cosa, ma DAPPERTUTTO. Guarda ogni elemento di
-  cinquantadue schermate, pannelli e stati (`segni/scene.json`) per cinque
+  cinquantadue schermate, pannelli e stati (`prove/scene.json`) per cinque
   combinazioni di larghezza e tema: 260 schermate, più di ventimila angoli.
   Nasce da «quelli sono solo alcuni, ce ne sono in varie sezioni e pagine»: i
   difetti li aveva trovati l'occhio, tre o quattro per volta, e ogni volta la
@@ -575,7 +575,7 @@ genera le chiavi, in un browser vero).
   lavorava tre volte sugli stessi e mai sugli altri.
 
   **E che ogni scena sia arrivata dove doveva.** Ogni voce di
-  `segni/scene.json` porta un `prova`: un selettore che DEVE esserci quando la
+  `prove/scene.json` porta un `prova`: un selettore che DEVE esserci quando la
   scena è pronta. Senza, una scena che sbaglia strada non fallisce — mostra
   un'altra schermata, e la prova promuove quella. È esattamente quello che è
   successo: il giorno in cui la porta delle impostazioni si è spostata, otto

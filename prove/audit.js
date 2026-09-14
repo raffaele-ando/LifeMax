@@ -21,7 +21,7 @@
    UNA COSA IMPARATA SCRIVENDOLO, che vale più di metà del codice qui sotto:
    il primo giro dava «41 raggi diversi, sistema incoerente». Falso. Tutte e
    152 le regole del foglio usano un token (--r-1/2/3/tondo), e la dispersione
-   la fa forma.js, che riscrive il raggio al 99% perché l'arco resti dentro al
+   la fa forma.ts, che riscrive il raggio al 99% perché l'arco resti dentro al
    ritaglio — più lo schiacciamento che fa il browser sugli elementi piccoli.
    Un numero grosso non è una diagnosi: prima di scrivere «incoerente» si va a
    vedere da dove viene. */
@@ -34,7 +34,7 @@ const T = { '.html': 'text/html', '.css': 'text/css', '.js': 'text/javascript', 
    contarle qui vorrebbe dire chiamare «incoerenza» proprio la cosa che quella
    schermata esiste per mostrare. Prima ci stava dentro e faceva il 70% del
    rumore. */
-const SCENE = JSON.parse(fs.readFileSync(path.join(RAMO, 'segni/scene.json'), 'utf8'))
+const SCENE = JSON.parse(fs.readFileSync(path.join(__dirname, 'scene.json'), 'utf8'))
   .filter((s) => !/^Design lab/.test(s.nome));
 
 const RILEVA = `(function () {

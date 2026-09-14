@@ -48,8 +48,8 @@ const PORTA = 8825;
 let guai = 0;
 const ok = (n, c, d) => { if (!c) guai++; console.log('  ' + (c ? 'ok  ' : 'KO  ') + n + (d ? '  → ' + d : '')); };
 
-/* LE SCENE stanno in segni/scene.json, una lista sola per tutti. */
-const SCENE = JSON.parse(fs.readFileSync(path.join(RAMO, 'segni/scene.json'), 'utf8'));
+/* LE SCENE stanno in prove/scene.json, una lista sola per tutte. */
+const SCENE = JSON.parse(fs.readFileSync(path.join(__dirname, 'scene.json'), 'utf8'));
 
 /* --- il controllo, dentro la pagina --- */
 const CONTROLLA = `(function (conFuoco) {

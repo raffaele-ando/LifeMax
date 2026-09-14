@@ -8,7 +8,7 @@
    le notifiche arriverebbero su Android e non sull'iPhone.
 
    La cifratura è verificata byte per byte contro `http_ece`, la libreria che
-   usa `web-push`: vedi promemoria/prova.mjs. */
+   usa `web-push`: vedi postino/prova.mjs. */
 
 const B = {
   /* base64url senza riempimento, nei due sensi */

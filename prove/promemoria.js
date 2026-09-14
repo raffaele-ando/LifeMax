@@ -476,17 +476,19 @@ const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  
   /* e la pagina esiste davvero all'indirizzo a cui il link manda */
   const rr = await p.evaluate(() => fetch('promemoria/chiavi.html').then(r => r.status).catch(() => 0));
   ok('la pagina risponde a quell’indirizzo', rr === 200, String(rr));
-  /* LA PAGINA STA DUE VOLTE NEL DEPOSITO, e per una ragione: `promemoria/`
-     è il Worker, che gira su Cloudflare e nel sito non ci va; `chiavi.html`
-     invece è una pagina del sito, e in `docs/` ci finisce quello che sta in
-     `public/`. Si copia un file solo invece di pubblicare tutta la cartella.
-     Due copie però divergono, e allora il link apre una pagina che non è
-     quella che è stata scritta: qui si pretende che siano la stessa. */
+  /* LA PAGINA STA DUE VOLTE NEL DEPOSITO, e la seconda la scrive il build:
+     la sorgente è `public/promemoria/chiavi.html`, e in radice ci finisce
+     perché il build copia `public/` là — cioè perché quello è l'indirizzo a
+     cui la pagina si apre dall'app. Due copie però divergono, e allora il
+     link apre una pagina che non è quella che è stata scritta.
+     (Il Worker non sta più qui accanto: è in `postino/`, e su Cloudflare
+     ci va per conto suo. La pagina delle chiavi ha tenuto il suo indirizzo
+     apposta — è un link che si può avere salvato.) */
   {
     const su = fs.readFileSync(path.join(RAMO, 'promemoria', 'chiavi.html'), 'utf8');
     const giu = fs.readFileSync(path.join(RAMO, 'public', 'promemoria', 'chiavi.html'), 'utf8');
     ok('e in public/ c’è la stessa pagina, non una più vecchia', su === giu,
-      su === giu ? 'identiche' : 'cp promemoria/chiavi.html public/promemoria/chiavi.html');
+      su === giu ? 'identiche' : 'la sorgente è public/promemoria/chiavi.html — `npm run build:nuovo`');
   }
   const collega = async (srv, kk) => {
     await p.evaluate(x => {

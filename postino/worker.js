@@ -17,7 +17,7 @@
    Quanto costa: zero. Il cron gira 288 volte al giorno, ogni giro è una
    lettura di KV per dispositivo e una scrittura solo quando manda davvero.
    Il piano gratuito dà 100.000 richieste al giorno e 1.000 scritture: siamo
-   a due ordini di grandezza sotto.  Istruzioni: promemoria/LEGGIMI.md */
+   a due ordini di grandezza sotto.  Istruzioni: postino/LEGGIMI.md */
 
 import { manda } from './push.js';
 import { dovute, potaSegni, endpointValido, minutiDaOra } from './piano.js';

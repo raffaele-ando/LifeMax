@@ -1,4 +1,9 @@
-# I promemoria
+# I promemoria — il postino
+
+*(la cartella si chiama `postino/` perché è così che il codice lo chiama da
+sempre. In radice è rimasta una `promemoria/` con dentro una cosa sola,
+`chiavi.html`: quella è una pagina del SITO, la scrive il build, e ha tenuto
+il suo indirizzo perché è un link che si può avere salvato.)*
 
 **Se non vuoi leggere niente:** [le istruzioni cliccabili sono qui sotto, dal
 punto 1](#cosa-devi-fare). Non serve il terminale, non serve installare nulla,
@@ -59,7 +64,7 @@ Su Android e su computer non serve, ma conviene comunque.
 4. Come nome scrivi `lifemax-promemoria` → **Deploy**.
 5. Ora premi **Edit code** (o **< > Edit code**).
 6. Nell'editor: **seleziona tutto quello che c'è e cancellalo.**
-7. Apri il file **`promemoria/worker-unico.js`** di questo progetto, copia
+7. Apri il file **`postino/worker-unico.js`** di questo progetto, copia
    tutto, e incollalo lì.
 8. **Deploy** (in alto a destra).
 
@@ -427,22 +432,22 @@ ed è quello che il pannello adesso ti scrive.
 |---|---|
 | `public/sw.js` (il build ne mette una copia in radice) | il service worker: riceve la notifica, la mostra, mette il numero sull'icona |
 | `src/promemoria/promemoria.ts` | il lato app: registra il service worker, chiede il permesso quando lo chiedi tu, costruisce il piano e lo manda |
-| `promemoria/push.js` | la cifratura (RFC 8291, `aes128gcm`) e la firma (RFC 8292, VAPID), con la sola WebCrypto |
-| `promemoria/piano.js` | l'unica decisione del server: chi tocca adesso, nel fuso di chi riceve |
-| `promemoria/worker.js` | il Worker: due porte e una sveglia |
-| `promemoria/worker-unico.js` | **generato** — i tre di sopra in un file, per il pannello di Cloudflare |
-| `promemoria/impacchetta.mjs` | lo rifà: `node promemoria/impacchetta.mjs` |
+| `postino/push.js` | la cifratura (RFC 8291, `aes128gcm`) e la firma (RFC 8292, VAPID), con la sola WebCrypto |
+| `postino/piano.js` | l'unica decisione del server: chi tocca adesso, nel fuso di chi riceve |
+| `postino/worker.js` | il Worker: due porte e una sveglia |
+| `postino/worker-unico.js` | **generato** — i tre di sopra in un file, per il pannello di Cloudflare |
+| `postino/impacchetta.mjs` | lo rifà: `node postino/impacchetta.mjs` |
 | `promemoria/chiavi.html` | genera la coppia VAPID nel browser, senza rete — si apre dall'app, in «Come ti avviso» |
-| `promemoria/wrangler.toml` | per chi preferisce il terminale a mano (`npx wrangler deploy`) |
+| `postino/wrangler.toml` | per chi preferisce il terminale a mano (`npx wrangler deploy`) |
 
 Le prove, senza installare niente e senza toccare Cloudflare:
 
 ```sh
-node promemoria/prova.mjs                  # la cifratura, byte per byte contro http_ece
-node promemoria/prova-piano.mjs            # chi tocca adesso: fusi, ora legale, ritardi
-node promemoria/prova-worker.mjs           # il giro intero, con un KV finto
-node promemoria/prova-worker.mjs --unico   # lo stesso, sul file da incollare
-node promemoria/prova-chiavi.mjs           # la pagina delle chiavi, in un browser vero
+node postino/prova.mjs                  # la cifratura, byte per byte contro http_ece
+node postino/prova-piano.mjs            # chi tocca adesso: fusi, ora legale, ritardi
+node postino/prova-worker.mjs           # il giro intero, con un KV finto
+node postino/prova-worker.mjs --unico   # lo stesso, sul file da incollare
+node postino/prova-chiavi.mjs           # la pagina delle chiavi, in un browser vero
 node prove/promemoria.js                   # il lato app, in un browser vero
 ```
 

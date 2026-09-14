@@ -5,7 +5,7 @@
    Questa prova apre la pagina in un browser vero, preme il pulsante, prende le
    due chiavi e ci firma un JWT — poi verifica la firma con la pubblica.
 
-     node promemoria/prova-chiavi.mjs      (CHROMIUM=… se serve)  */
+     node postino/prova-chiavi.mjs      (CHROMIUM=… se serve)  */
 import path from 'path';
 import { chromium } from 'playwright';
 import { intestazioneVapid, base64url as B } from './push.js';

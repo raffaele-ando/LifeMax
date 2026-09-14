@@ -2,13 +2,13 @@
    IL POSTINO DEI PROMEMORIA — un file solo, da incollare.
 
    QUESTO FILE È GENERATO. Non modificarlo: le modifiche vanno in
-   promemoria/push.js, promemoria/piano.js e promemoria/worker.js, e poi
-     node promemoria/impacchetta.mjs
+   postino/push.js, postino/piano.js e postino/worker.js, e poi
+     node postino/impacchetta.mjs
    lo rifà. Quello che c'è scritto qui sotto è la somma di quei tre.
 
    Serve al pannello di Cloudflare, che vuole del codice da incollare in una
    finestra invece di tre moduli separati. Le istruzioni, passo per passo e
-   senza terminale, sono in promemoria/LEGGIMI.md.
+   senza terminale, sono in postino/LEGGIMI.md.
    ============================================================ */
 
 /* ══════════ push.js ══════════ */
@@ -22,7 +22,7 @@
    le notifiche arriverebbero su Android e non sull'iPhone.
 
    La cifratura è verificata byte per byte contro `http_ece`, la libreria che
-   usa `web-push`: vedi promemoria/prova.mjs. */
+   usa `web-push`: vedi postino/prova.mjs. */
 
 const B = {
   /* base64url senza riempimento, nei due sensi */
@@ -308,7 +308,7 @@ function endpointValido(url) {
    Quanto costa: zero. Il cron gira 288 volte al giorno, ogni giro è una
    lettura di KV per dispositivo e una scrittura solo quando manda davvero.
    Il piano gratuito dà 100.000 richieste al giorno e 1.000 scritture: siamo
-   a due ordini di grandezza sotto.  Istruzioni: promemoria/LEGGIMI.md */
+   a due ordini di grandezza sotto.  Istruzioni: postino/LEGGIMI.md */
 
 
 

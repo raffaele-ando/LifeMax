@@ -13,7 +13,7 @@
    Qui il file si rifà in una cartella temporanea e si confronta byte per
    byte. Niente browser: dura un istante, e sta fra le prove svelte.
 
-   E TIRA DENTRO LE DUE PROVE DEL WORKER, che stavano in `promemoria/` e non
+   E TIRA DENTRO LE DUE PROVE DEL WORKER, che stavano in `postino/` e non
    le lanciava nessuno. `prova-piano.mjs` prova l'unica decisione che prende
    il server — chi tocca adesso, nel fuso di chi riceve — e `prova-worker.mjs`
    fa girare il giro intero con un KV finto e un push finto. Cinquecento
@@ -34,14 +34,14 @@ const dice = (cond, nome, dettaglio) => {
   console.log('  ' + (cond ? 'ok  ' : 'KO  ') + nome + (dettaglio ? '  → ' + dettaglio : ''));
 };
 
-const committato = path.join(RAMO, 'promemoria', 'worker-unico.js');
+const committato = path.join(RAMO, 'postino', 'worker-unico.js');
 const cartella = fs.mkdtempSync(path.join(os.tmpdir(), 'lifemax-postino-'));
 const rifatto = path.join(cartella, 'worker-unico.js');
 
 console.log('\nIL POSTINO CHE SI INCOLLA È QUELLO DEI TRE SORGENTI');
 
 try {
-  execFileSync(process.execPath, [path.join(RAMO, 'promemoria', 'impacchetta.mjs'), rifatto],
+  execFileSync(process.execPath, [path.join(RAMO, 'postino', 'impacchetta.mjs'), rifatto],
     { cwd: RAMO, stdio: 'pipe' });
 } catch (e) {
   dice(false, 'impacchetta.mjs gira', String((e.stderr || e.message || '')).slice(-300));
@@ -53,7 +53,7 @@ const a = fs.readFileSync(committato);
 const b = fs.readFileSync(rifatto);
 dice(a.equals(b), 'worker-unico.js è quello che uscirebbe adesso',
   a.equals(b) ? a.length + ' byte' : 'committato ' + a.length + ' byte, rifatto ' + b.length +
-    ' byte — `node promemoria/impacchetta.mjs`');
+    ' byte — `node postino/impacchetta.mjs`');
 
 /* e che nessuno l'abbia scritto a mano credendo fosse il sorgente */
 const testa = a.toString('utf8').slice(0, 400);
@@ -66,7 +66,7 @@ for (const prova of ['prova-piano.mjs', 'prova-worker.mjs']) {
   let uscita = '';
   let andata = true;
   try {
-    uscita = execFileSync(process.execPath, [path.join(RAMO, 'promemoria', prova)],
+    uscita = execFileSync(process.execPath, [path.join(RAMO, 'postino', prova)],
       { cwd: RAMO, stdio: 'pipe' }).toString('utf8');
   } catch (e) {
     andata = false;
@@ -75,9 +75,9 @@ for (const prova of ['prova-piano.mjs', 'prova-worker.mjs']) {
   /* quelle prove contano da sé e stampano «KO» sulle righe che non vanno:
      si guarda l'uscita del processo e, per sicurezza, anche quelle righe */
   const koDentro = (uscita.match(/^\s*KO\s/gm) || []).length;
-  dice(andata && !koDentro, 'promemoria/' + prova,
+  dice(andata && !koDentro, 'postino/' + prova,
     andata && !koDentro ? 'passa' : (koDentro ? koDentro + ' righe KO' : 'non gira') +
-      ' — `node promemoria/' + prova + '`');
+      ' — `node postino/' + prova + '`');
   if (!andata || koDentro) uscita.trimEnd().split('\n').slice(-8).forEach((r) => console.log('      │ ' + r));
 }
 console.log(guai ? '\n>>> ' + guai + (guai > 1 ? ' PROBLEMI' : ' PROBLEMA') : '\n>>> TUTTO A POSTO');

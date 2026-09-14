@@ -5,7 +5,7 @@
    Si controlla anche il JWT della firma: che si verifichi con la chiave
    pubblica e che dica le cose giuste.
 
-   node promemoria/prova.mjs      (serve: npm i http_ece web-push)  */
+   node postino/prova.mjs      (serve: npm i http_ece web-push)  */
 import { cifra, intestazioneVapid, base64url as B } from './push.js';
 import crypto32 from 'node:crypto';
 import ece from 'http_ece';
