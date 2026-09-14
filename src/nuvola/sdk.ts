@@ -41,6 +41,14 @@ export interface Documento {
   id: string;
   exists(): boolean;
   data(): DatiDocumento | undefined;
+  /* Firestore consegna OGNI scrittura anche a chi l'ha fatta, e la consegna
+     due volte: subito, dal suo ottimismo locale (`hasPendingWrites`), e di
+     nuovo quando il server l'ha accettata. Chi ascolta deve saperlo
+     distinguere, altrimenti si scambia la propria eco per un altro
+     dispositivo — vedi `ascolta` in nuvola.ts. Facoltativo perché nelle
+     versioni vecchie dell'SDK poteva non esserci, e qui non si finge di
+     sapere più di quello che si usa. */
+  metadata?: { hasPendingWrites: boolean; fromCache: boolean };
 }
 
 /* il documento come lo scriviamo noi: lo stato in JSON, più quattro etichette */

@@ -5482,7 +5482,13 @@ export function wireEroePlancia() {
   var elSpark = document.getElementById('som-spark');
   /* sotto i tre punti una linea non è un andamento, è un segmento: mostrarla
      vorrebbe dire far leggere una tendenza a chi non ne ha ancora una */
+  /* e non si ridisegna se dice le stesse cose: `sparkline` butta via l'SVG e
+     ne fa uno nuovo, cioè una ventina di nodi, e questa funzione gira a ogni
+     disegno della Panoramica. La firma è la serie stessa. */
+  var firma = serie.map(function (x) { return x.valore; }).join(',');
+  if (elSpark && elSpark.dataset['firma'] === firma) elSpark = null;
   if (elSpark && serie.length >= 3) {
+    elSpark.dataset['firma'] = firma;
     LMCharts.sparkline(elSpark, serie, { h: 40, min: 0, max: 100,
       colore: 'var(--accento)',
       label: 'Com’è andata la riuscita nelle ultime ' + serie.length + ' settimane, da ' +

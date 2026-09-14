@@ -90,7 +90,20 @@ let auth: Auth | null = null, db: Db | null = null, provider: Provider | null = 
 let currentUser: Utente | null = null;
 let unsubDoc: (() => void) | null = null;
 let applyingRemote = false;   /* stiamo scrivendo lo stato ricevuto dal cloud */
-let lastWrittenAt = 0;        /* updatedAt dell'ultima nostra scrittura (evita l'eco) */
+/* LE NOSTRE SCRITTURE, NON SOLO L'ULTIMA.
+   Riconoscere la propria eco tenendo a mente un solo numero funziona finché
+   si scrive una volta ogni tanto. Con due salvataggi ravvicinati — che qui
+   sono la norma, si tocca tanto e in fretta — l'eco della prima torna
+   indietro quando il ricordo porta già il numero della seconda: non
+   combacia, e il dispositivo scambia se stesso per un altro. Da lì partiva
+   tutto il corteo sbagliato: una copia di sicurezza, una fusione dei propri
+   dati con i propri dati, e l'avviso «aggiornato da un altro dispositivo»
+   mentre stavi soltanto scrivendo. E siccome applicare un'eco riportava il
+   ricordo al numero vecchio, anche la seconda scrittura sembrava di
+   qualcun altro: una sola raffica bastava a far partire la catena.
+   Si tengono quindi le ultime trentadue, che una raffica non le riempie. */
+const nostreScritture = new Set<number>();
+const RICORDO = 32;
 let ascoltoAttivo = false;    /* il listener degli altri dispositivi è vivo? */
 let riprovaTimer: ReturnType<typeof setTimeout> | null = null;
 let attesaRiprova = 0;        /* quanto aspettare la prossima volta */
@@ -103,6 +116,14 @@ let pushPendente = false;     /* sono arrivate modifiche mentre scrivevamo */
    così anche prima, e perché tenerlo dice a chi legge che il modulo di
    autenticazione è stato caricato. */
 void AUTHM;
+
+function ricorda(at: number): void {
+  if (!at) return;
+  nostreScritture.add(at);
+  if (nostreScritture.size <= RICORDO) return;
+  const piuVecchia = nostreScritture.values().next();
+  if (!piuVecchia.done) nostreScritture.delete(piuVecchia.value);
+}
 
 function log(liv: 'info' | 'avviso' | 'errore', msg: string, dati?: unknown): void {
   if (window.LMLog) window.LMLog.add(liv, 'cloud', msg, dati);
@@ -491,7 +512,7 @@ function applicaRemoto(d: DatiDocumento, notifica: boolean, sostituisci?: boolea
   log('info', (sostituisci ? 'sostituisco con i dati' : 'unisco i dati ') + (notifica ? ' arrivati da un altro dispositivo' : ' del cloud'), window.LM.ricchezza(obj) + ' elementi');
   if (notifica) window.LM.backup('prima-di-aggiornamento-da-altro-dispositivo');
   applyingRemote = true;
-  lastWrittenAt = d.updatedAt || (obj as Partial<Stato>).updatedAt || 0;
+  ricorda(d.updatedAt || (obj as Partial<Stato>).updatedAt || 0);
   /* arrivano dati da un altro dispositivo: i punti a cui tornare parlavano di
      una storia diversa e tornarci mescolerebbe due timeline */
   if (window.LM.scordaPunti) window.LM.scordaPunti();
@@ -508,7 +529,19 @@ function applicaRemoto(d: DatiDocumento, notifica: boolean, sostituisci?: boolea
        di sicurezza presa qui sopra è la via di uscita. */
     log('errore', 'dopo la fusione ci sono MENO elementi di prima', prima + ' → ' + dopo);
   }
-  if (notifica) window.dispatchEvent(new CustomEvent('lm:remote'));
+  if (notifica) {
+    /* QUELLO CHE AVEVAMO SOLO NOI DEVE RISALIRE, e non alla prossima volta
+       che tocchi qualcosa. Arrivato un documento da un altro dispositivo, la
+       fusione lascia qui l'unione delle due parti — ma nel cloud resta
+       quella dell'altro, che la nostra metà non ce l'ha. Prima quell'unione
+       risaliva solo per caso, al primo `lm:change` di questo dispositivo:
+       fino ad allora, per tutti gli altri, la nostra metà non esisteva.
+       Si rimanda su solo se la fusione ha davvero aggiunto qualcosa,
+       altrimenti due dispositivi si rimbalzerebbero lo stesso documento
+       all'infinito. */
+    if (dopo > prima && currentUser) programmaPush();
+    window.dispatchEvent(new CustomEvent('lm:remote'));
+  }
 }
 
 let ultimaPartenza = 0;
@@ -542,7 +575,7 @@ async function push(uid: string): Promise<void> {
   const s = window.LM.snapshot();
   const at = s.updatedAt || Date.now();
   const payload = JSON.stringify(s);
-  lastWrittenAt = at;
+  ricorda(at);
   opInizio('scrittura');
   log('info', 'scrivo nel cloud', Math.round(payload.length / 1024) + ' KB · updatedAt ' + new Date(at).toLocaleTimeString('it-IT'));
   try {
@@ -605,9 +638,12 @@ function ascolta(uid: string): void {
       attesaRiprova = 0;
       if (!ascoltoAttivo) { ascoltoAttivo = true; emitAuth(); }
       if (!snap.exists()) return;
+      /* la nostra stessa scrittura, ancora non confermata dal server: è la
+         copia ottimistica che Firestore rimanda indietro all'istante */
+      if (snap.metadata && snap.metadata.hasPendingWrites) return;
       const d = snap.data();
       if (!d) return;
-      if (typeof d.updatedAt === 'number' && d.updatedAt === lastWrittenAt) return; /* nostra scrittura */
+      if (typeof d.updatedAt === 'number' && nostreScritture.has(d.updatedAt)) return; /* nostra scrittura */
       applicaRemoto(d, true);
     }, function (err) {
       ascoltoAttivo = false;

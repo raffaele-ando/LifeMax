@@ -72,10 +72,10 @@
    WebKit non fa e che aveva spento tutto.
 
    COME ARRIVA A CHI LO USA
-   Nel sito di prima era `window.LM_FORMA`, messo lì da uno `<script>`. Qui è
-   un modulo: `avvia()` parte all'import, esattamente come partiva alla fine
-   dello `<script>`, e la funzione resta anche su `window` finché il vecchio
-   `app.js` gira accanto a questo.  */
+   Nel sito di prima era `window.LM_FORMA`, messo lì da uno `<script>`. Adesso
+   è un modulo e basta: `avvia()` parte all'import, esattamente come partiva
+   alla fine dello `<script>`, e chi ha bisogno di rifare le forme importa
+   `LM_FORMA` — su `window` non ci sta più niente.  */
 
 /* ---------------------------------------------------------------
    I TIPI DI QUESTO FILE, e sono quattro.
@@ -964,6 +964,24 @@ function osserva(e: HTMLElement): void {
   ro.observe(e);
 }
 
+/* CHI ESCE DALLA PAGINA VA ANCHE TOLTO DALL'OSSERVATORE.
+   `ResizeObserver` tiene un riferimento FORTE a quello che guarda: un
+   elemento tolto dal documento e mai smesso di osservare non viene buttato
+   via dalla memoria, e con lui resta tutto il suo ramo. Qui gli elementi
+   nascono e muoiono in continuazione — ogni lista riscritta è un ramo
+   intero che se ne va — quindi senza questo la memoria cresce e non torna
+   più giù finché non si ricarica la pagina.
+   Si toglie anche il segno, così se lo stesso nodo rientra (React sposta,
+   non solo crea) viene osservato di nuovo. */
+function smettiDiOsservare(n: Node): void {
+  if (!ro || n.nodeType !== 1) return;
+  const e = n as HTMLElement;
+  if (e.dataset.formaOss) { ro.unobserve(e); delete e.dataset.formaOss; }
+  e.querySelectorAll<HTMLElement>('[data-forma-oss]').forEach(function (f) {
+    ro.unobserve(f); delete f.dataset.formaOss;
+  });
+}
+
 /* UN ELEMENTO CHE SCOPPIA NON PUÒ PORTARSI DIETRO TUTTI GLI ALTRI.
    La passata è un ciclo solo su tutta la pagina: un'eccezione a metà lo
    interrompe, e da lì in poi nessuno ha più la forma. È successo davvero —
@@ -1059,6 +1077,7 @@ function avvia(): void {
            stile invece che da quello che abbiamo scritto noi */
         scordaUno(t);
       }
+      m.removedNodes.forEach(smettiDiOsservare);
       mossi.push(t);
     });
     piano();

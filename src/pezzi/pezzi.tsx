@@ -37,7 +37,13 @@ const ATTRIBUTO: Record<string, string> = {
   'stroke-linejoin': 'strokeLinejoin', 'fill-rule': 'fillRule', 'clip-rule': 'clipRule',
   'aria-hidden': 'aria-hidden'
 };
-interface Smontato { attributi: Record<string, string>; dentro: string }
+/* `grezzo` sta qui dentro insieme al resto, e non si costruisce al volo nel
+   JSX: React confronta `dangerouslySetInnerHTML` per identità dell'oggetto,
+   quindi un oggetto nuovo a ogni disegno vuol dire ri-analizzare l'SVG a
+   ogni disegno. Su una schermata i segni sono decine, e i disegni sono
+   tanti — è la stessa ragione per cui esiste `pezzi/grezzo`, applicata al
+   posto in cui il conto si moltiplica di più. */
+interface Smontato { attributi: Record<string, string>; grezzo: { __html: string } }
 const smontati = new Map<string, Smontato | null>();
 function smonta(testo: string): Smontato | null {
   const gia = smontati.get(testo);
@@ -51,7 +57,7 @@ function smonta(testo: string): Smontato | null {
             o[ATTRIBUTO[nome] || nome] = a[2] || '';
             return o;
           }, {}),
-        dentro: m[2] || ''
+        grezzo: { __html: m[2] || '' }
       }
     : null;
   smontati.set(testo, fuori);
@@ -68,7 +74,7 @@ export function Segno({ nome, dim = 15, piu }: { nome?: string | undefined; dim?
 export function Disegno({ svg }: { svg?: string | undefined }) {
   const p = svg ? smonta(svg) : null;
   if (!p) return null;
-  return <svg {...p.attributi} dangerouslySetInnerHTML={{ __html: p.dentro }} />;
+  return <svg {...p.attributi} dangerouslySetInnerHTML={p.grezzo} />;
 }
 
 /* IL RUOLO, NON IL COLORE. Cinque, e sono cinque mestieri diversi: quello

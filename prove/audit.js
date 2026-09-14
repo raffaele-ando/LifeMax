@@ -163,10 +163,19 @@ const RILEVA = `(function () {
     for (const { nome, via, tab, poi, prova } of SCENE) {
       const p = await ctx.newPage();
       try {
-        await p.goto('http://localhost:' + PORTA + '/index.html'); await p.waitForTimeout(250);
+        /* SI ASPETTA CHE L'APP CI SIA, non un quarto di secondo.
+           Duecentocinquanta millisecondi bastano quasi sempre, e «quasi
+           sempre» su centocinquanta caricamenti vuol dire tre o quattro
+           volte no: la pagina non aveva ancora eseguito il modulo, `LM` non
+           esisteva, e la scena finiva fra le saltate con un
+           «LM is not defined» che sembrava un guasto dell'app. */
+        await p.goto('http://localhost:' + PORTA + '/index.html');
+        await p.waitForFunction(() => !!window.LM, null, { timeout: 15000 });
         await p.evaluate(() => { localStorage.clear(); LM.seedDemo(); });
         await p.evaluate((v) => { location.hash = '#/' + v; }, via);
-        await p.reload(); await p.waitForTimeout(via === 'lab' ? 1300 : 650);
+        await p.reload();
+        await p.waitForFunction(() => !!window.LM, null, { timeout: 15000 });
+        await p.waitForTimeout(via === 'lab' ? 1300 : 650);
         if (tab !== null) {
           await p.evaluate((i) => { const s = document.querySelectorAll('#vista .segmenti button, #vista .sez-nav button'); if (s[i]) s[i].click(); }, tab);
           await p.waitForTimeout(400);
