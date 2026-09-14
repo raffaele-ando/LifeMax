@@ -17,7 +17,7 @@
 'use strict';
 const path = require('path');
 
-const RAMO = path.join(__dirname, '..');
+const RAMO = path.join(__dirname, '..', '..');
 /* il sito si costruisce NELLA RADICE, perché Pages serve la radice e perché
    un service worker controlla solo le pagine al suo livello o sotto: sono lo
    stesso posto (vedi vite.config.mts) */

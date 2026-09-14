@@ -595,7 +595,8 @@ src/registro/       il registro tecnico
 src/stile/app.css   design system: token, 2 skin, chiaro/scuro, mobile
 public/             icone, manifest, sw.js, _headers: copiati così come sono
 index.html pacco/   ← il sito costruito, committato: è quello che Pages serve
-prove/              trenta controlli, e prove/dove.js dice da dove servire
+prove/              un file, un controllo — `npm run prove` li gira tutti
+prove/comune/       quello che le prove si passano (dove servire il sito)
 firestore.rules     regole di sicurezza (accesso limitato ai propri dati)
 promemoria/         il Worker su Cloudflare, con le sue prove
 segni/              gli strumenti che generano le icone (Node, fuori dal sito)

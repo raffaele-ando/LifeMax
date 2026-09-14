@@ -23,7 +23,7 @@
    node prove/campi.js        (CHROMIUM=/percorso/di/chrome se serve)  */
 'use strict';
 const http = require('http'), fs = require('fs'), path = require('path'), { chromium } = require('playwright');
-const RADICE = require('./dove').SERVITO;
+const RADICE = require('./comune/dove').SERVITO;
 const T = { '.html': 'text/html', '.css': 'text/css', '.js': 'text/javascript', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.webmanifest': 'application/manifest+json' };
 let fail = 0;
 const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  ') + n + (d ? '  → ' + d : '')); };
@@ -204,7 +204,7 @@ const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  
        campo dell'ora sta anche in `fogli/Ritmo.tsx` e in `fogli/Scheda.tsx`.
        Guardare solo `app.ts` vorrebbe dire dire «a posto» avendo controllato
        il posto da cui la cosa è già stata tolta. */
-    const vivo = require('./dove').codiceVivo();
+    const vivo = require('./comune/dove').codiceVivo();
     ok('l’app non chiede l’orologio a mano da nessuna parte',
       vivo.indexOf('showPicker') < 0, (vivo.match(/.{0,40}showPicker.{0,40}/g) || []).join(' · '));
   }

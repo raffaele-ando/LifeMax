@@ -16,7 +16,7 @@
    node prove/squircle.js        (CHROMIUM=/percorso/di/chrome se serve)  */
 'use strict';
 const http = require('http'), fs = require('fs'), path = require('path'), { chromium } = require('playwright');
-const { SERVITO: RADICE, RAMO } = require('./dove');
+const { SERVITO: RADICE, RAMO } = require('./comune/dove');
 const T = { '.html': 'text/html', '.css': 'text/css', '.js': 'text/javascript', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.webmanifest': 'application/manifest+json' };
 const PORTA = 8772;
 let guai = 0;

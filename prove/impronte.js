@@ -32,7 +32,7 @@
 'use strict';
 const http = require('http'), fs = require('fs'), path = require('path');
 const { chromium } = require('playwright');
-const RADICE = require('./dove').SERVITO, PORTA = 8799;
+const RADICE = require('./comune/dove').SERVITO, PORTA = 8799;
 const ALBO = path.join(__dirname, 'impronte.json');
 const T = { '.html': 'text/html', '.css': 'text/css', '.js': 'text/javascript', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.webmanifest': 'application/manifest+json', '.map': 'application/json' };
 

@@ -25,7 +25,7 @@
    Si lancia con: node prove/pezzi.js   (solo Node, niente browser)  */
 'use strict';
 const fs = require('fs'), path = require('path');
-const { RAMO, tuttoIlCodice } = require('./dove');
+const { RAMO, tuttoIlCodice } = require('./comune/dove');
 
 let guai = 0;
 const ok = (nome, cond, det) => {

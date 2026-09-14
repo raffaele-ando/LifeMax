@@ -1,13 +1,16 @@
 {
   "name": "lifemax",
   "private": true,
-  "comment-type": "NIENTE `type: module`: le trenta prove in prove/ sono CommonJS e usano require(). La configurazione di Vite risolve la sua metà da sé chiamandosi vite.config.mts.",
+  "comment-type": "NIENTE `type: module`: le prove in prove/ sono CommonJS e usano require(). La configurazione di Vite risolve la sua meta' da se' chiamandosi vite.config.mts.",
+  "comment-prove": "`npm run prove` le gira tutte (prove/tutte.js si prende i file .js di quella cartella, in ordine: non c'e' nessun elenco da tenere aggiornato). Quasi tutte pilotano un Chromium vero, e per questo playwright sta fra le dipendenze: senza, su una macchina appena clonata le prove non partono. I browser si prendono con `npx playwright install chromium`, oppure si indica quello che c'e' gia' con CHROMIUM=/percorso/di/chrome.",
   "description": "TypeScript + React + Vite. `npm run build:nuovo` controlla i tipi e scrive il sito nella radice (index.html + pacco/), che e' quello che GitHub Pages serve — il ramo cosi' com'e', senza nessun passaggio di build. Per questo il costruito e' committato, e prove/pacco.js controlla che non sia piu' vecchio dei sorgenti.",
   "scripts": {
     "dev": "vite",
     "tipi": "tsc --noEmit",
     "build:nuovo": "tsc --noEmit && vite build",
-    "prove": "node prove/pacco.js && node prove/pezzi.js && node prove/segni.js && node prove/intestazioni.js"
+    "prove": "node prove/tutte.js",
+    "prove:svelte": "node prove/tutte.js intestazioni pacco pezzi postino segni",
+    "test": "node prove/tutte.js"
   },
   "devDependencies": {
     "@types/node": "^26.4.1",
@@ -15,6 +18,7 @@
     "@types/react-dom": "^19.2.7",
     "@vitejs/plugin-react": "^6.1.1",
     "esbuild": "^0.28.2",
+    "playwright": "^1.56.1",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "typescript": "^7.0.2",

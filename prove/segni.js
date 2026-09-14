@@ -5,7 +5,7 @@
    Si lancia con: node prove/segni.js  (non serve né Chromium né npm) */
 'use strict';
 const fs = require('fs'), path = require('path');
-const { RAMO, tuttoIlCodice } = require('./dove');
+const { RAMO, tuttoIlCodice } = require('./comune/dove');
 const ico = fs.readFileSync(path.join(RAMO, 'src', 'segni', 'segni.ts'), 'utf8');
 /* TUTTO src, e non un elenco di file: da quando le schermate sono componenti
    un `ICO('flame')` sta in venti file invece di tre, e un elenco scritto a

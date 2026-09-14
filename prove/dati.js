@@ -34,7 +34,7 @@
    node prove/dati.js        (CHROMIUM=/percorso/di/chrome se serve)  */
 'use strict';
 const http = require('http'), fs = require('fs'), path = require('path'), { chromium } = require('playwright');
-const RADICE = require('./dove').SERVITO;
+const RADICE = require('./comune/dove').SERVITO;
 const T = { '.html': 'text/html', '.css': 'text/css', '.js': 'text/javascript', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.webmanifest': 'application/manifest+json' };
 const PORTA = 8829;
 let guai = 0;
@@ -76,7 +76,7 @@ const ok = (n, c, d) => { if (!c) guai++; console.log('  ' + (c ? 'ok  ' : 'KO  
     {
       /* si leggono TUTTI i sorgenti, non un elenco scritto a mano: vedi
          `prove/dove.js` per la ragione */
-      const fonti = require('./dove').tuttoIlCodice();
+      const fonti = require('./comune/dove').tuttoIlCodice();
       const nati = [...fonti.matchAll(/(?:load|snapshot)\(\)\.([A-Za-z_][A-Za-z0-9_]*)\s*=[^=]/g)]
         .map((m) => m[1]);
       const noti = await p.evaluate(() => Object.keys(LM.statoVuoto()).concat(Object.keys(LM.COME_UNIRE)));

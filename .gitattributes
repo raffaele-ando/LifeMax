@@ -1,7 +1,31 @@
-# IL PACCO NON È CODICE SCRITTO A MANO — È L'OUTPUT DI VITE.
-# È committato perché GitHub Pages lo serva (nessun passaggio di build in
-# produzione, vedi README), non perché qualcuno lo legga o lo scriva. Senza
-# questa riga GitHub lo conta come JavaScript "vero" nelle statistiche del
-# repository, che è come contare due volte lo stesso lavoro: una in
-# TypeScript sorgente, una nel suo output minificato.
-pacco/* linguist-generated=true
+# QUELLO CHE È GENERATO, DETTO UNA VOLTA SOLA.
+#
+# Questo ramo è il sito: GitHub Pages serve la radice così com'è, senza
+# nessun passaggio di build (vedi README). Quindi l'uscita del build è
+# committata — non perché qualcuno la legga o la scriva, ma perché senza di
+# lei l'indirizzo non ha una pagina.
+#
+# Il risultato è che in radice ci sono DUE copie di parecchie cose: la
+# sorgente in `public/` e il suo gemello generato qui fuori. Chi arriva non
+# ha modo di sapere quale delle due si tocca — e chi tocca quella sbagliata
+# la vede sparire al build successivo, senza un errore.
+# `linguist-generated` lo dice a GitHub: niente nelle statistiche dei
+# linguaggi, e niente nei diff a meno di chiederlo. Che le due copie restino
+# identiche lo controlla `prove/pacco.js`, byte per byte.
+#
+# LA REGOLA, in una riga: se un file esiste anche sotto `public/`, quello in
+# radice è il gemello e si modifica l'altro.
+
+pacco/**               linguist-generated=true
+index.html             linguist-generated=true
+sw.js                  linguist-generated=true
+manifest.webmanifest   linguist-generated=true
+_headers               linguist-generated=true
+icone/**               linguist-generated=true
+promemoria/chiavi.html linguist-generated=true
+
+# E questo non viene dal build del sito ma da `promemoria/impacchetta.mjs`:
+# è worker.js + push.js + piano.js in un file solo, perché il pannello di
+# Cloudflare vuole del codice da incollare in una finestra. Si modificano i
+# tre, poi si rifà lui.
+promemoria/worker-unico.js linguist-generated=true

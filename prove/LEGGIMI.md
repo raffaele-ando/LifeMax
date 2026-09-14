@@ -4,7 +4,7 @@ Ventinove controlli automatici che guardano una cosa sola ciascuno, ma
 quella cosa fa morire l'app — o la fa diventare illeggibile — quando si
 rompe. Sono nati da problemi veri.
 
-**DA DOVE SI SERVE IL SITO lo dice `dove.js`, in un posto solo.** Le prove
+**DA DOVE SI SERVE IL SITO lo dice `comune/dove.js`, in un posto solo.** Le prove
 pilotano un browser vero e interrogano il DOM da fuori: non sanno né gli
 importa chi ha scritto il markup, ed è per questo che sono sopravvissute
 intere al passaggio a TypeScript + React + Vite — cambiava il percorso.
@@ -809,44 +809,45 @@ genera le chiavi, in un browser vero).
 
 ## Come si lanciano
 
-**Prima si costruisce.** Le prove aprono `index.html`, che è generato:
-se il sito costruito è vecchio, provano il codice di ieri e dicono che va
-tutto bene. `prove/pacco.js` è quello che se ne accorge, ma girarlo per
-secondo non serve a niente — si costruisce e basta.
+**Prima si costruisce.** Le prove aprono `index.html`, che è generato: se il
+sito costruito è vecchio, provano il codice di ieri e dicono che va tutto
+bene. `prove/pacco.js` è quello che se ne accorge, ma girarlo per secondo non
+serve a niente — si costruisce e basta.
 
     npm install
-    npm run build:nuovo      # tsc --noEmit && vite build → index.html + pacco/
-    node prove/pacco.js         # solo Node: il pacco è quello dei sorgenti di adesso?
-    node prove/intestazioni.js  # solo Node: la cache di _headers non fa danni
-    node prove/pezzi.js         # solo Node: il cricchetto delle forme
-    node prove/impronte.js      # l'albero è ancora quello di ieri?
-                                # sette schermate e diciotto pannelli
-    node prove/smista.js        # e una coda smistata gesto per gesto?
-    node prove/audit.js         # non è una prova: stampa un rapporto da leggere
+    npm run build:nuovo    # tsc --noEmit && vite build → index.html + pacco/
+    npm run prove          # tutte, in fila: una quarantina di minuti
+
+`npm run prove` è `node prove/tutte.js`, che si prende i file `.js` di questa
+cartella in ordine e li gira uno dopo l'altro. **L'elenco non sta scritto da
+nessuna parte**: una prova nuova è un file nuovo e basta. Le librerie che le
+prove si passano stanno in `prove/comune/`, che è esattamente perché ci
+stanno.
+
+Di ognuna stampa una riga — nome, esito, secondi — e di quelle che cadono
+anche le ultime dodici righe; il racconto completo di tutte finisce in una
+cartella temporanea, e l'ultima riga dice quale.
+
+    node prove/tutte.js                 tutte
+    node prove/tutte.js segni bordi     solo quelle
+    node prove/tutte.js --da pacco      da lì in avanti, per riprendere
+    npm run prove:svelte                le quattro che non aprono un browser
+
+Una si lancia anche da sola, che è quello che si fa mentre si lavora su una
+cosa sola:
+
     node prove/clic.js
-    node prove/modalita.js
-    node prove/segni.js      # solo Node, niente browser
-    node prove/lezioni.js
-    node prove/campi.js
-    node prove/larghezze.js
-    node prove/giornata.js
-    node prove/adesso.js
-    node prove/squircle.js
-    node prove/dati.js       # niente va perso
-    node prove/cloud.js      # la sincronizzazione, con un Firebase finto
-    node prove/bordi.js      # 312 schermate, una ventina di minuti
-    node prove/stati.js      # 50 schermate × 4 stati × 2 vie
-    node prove/promemoria.js
-    node prove/doppioni.js   # qualche minuto
-    node prove/sezioni.js
-    node prove/annulla.js
-    node prove/colori.js
-    node prove/spazi.js
-    node prove/gesto.js
-    node prove/scorri.js
-    node prove/timer.js
-    node prove/disegno.js    # quanto costa stare fermi
-    node prove/lezioni.js
+
+**Quanto durano.** Quasi tutte stanno sotto il minuto. Quattro no, e sono
+quelle che aprono centinaia di schermate: `bordi` (312 schermate, una
+ventina di minuti), `stati` (50 schermate × 4 stati × 2 vie), `doppioni`
+(clicca ogni comando di ogni scena, uno per volta) e `audit` (120 scene).
+
+**La porta occupata non è un guasto.** Ogni prova alza un server suo su una
+porta fissa, e quando una passata è stata interrotta il sistema tiene giù
+quella porta ancora per un po'. `tutte.js` riconosce l'`EADDRINUSE` e
+riprova una volta sola dopo qualche secondo: se cade di nuovo, allora è un
+problema vero.
 
 Servono Node e Chromium (segni.js si accontenta di Node). Se Chromium sta in un posto suo:
 

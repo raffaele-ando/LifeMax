@@ -1,8 +1,13 @@
 /* AUDIT DI DESIGN — su tutte le scene, tutte insieme.
 
-   ATTENZIONE: questa NON è una prova. Non dice sì o no e non fallisce mai:
-   stampa un rapporto, e i numeri vanno letti da qualcuno. Le prove qui
-   accanto tengono ferme cose già decise; questo serve a decidere.
+   ATTENZIONE: sui numeri questa NON è una prova. Gerarchia, raggi, colori,
+   righe lunghe: stampa un rapporto e non dice sì o no — quei numeri vanno
+   letti da qualcuno. Le prove qui accanto tengono ferme cose già decise;
+   questo serve a decidere.
+   SU UNA COSA SOLA però fallisce, ed è su sé stessa: se una scena non si è
+   aperta, esce con un errore invece di tacere. È già successo due volte —
+   una con un ReferenceError che faceva morire ogni scena, una con quattro
+   scene saltate — e tutt'e due le volte il rapporto è uscito verde.
 
    Si lancia con: node prove/audit.js   (CHROMIUM=… se serve)
 
@@ -23,7 +28,7 @@
 'use strict';
 const http = require('http'), fs = require('fs'), path = require('path');
 const { chromium } = require('playwright');
-const { SERVITO: RADICE, RAMO } = require('./dove'), PORTA = 8781;
+const { SERVITO: RADICE, RAMO } = require('./comune/dove'), PORTA = 8781;
 const T = { '.html': 'text/html', '.css': 'text/css', '.js': 'text/javascript', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.webmanifest': 'application/manifest+json' };
 /* Il Design lab sta fuori: sono dieci interfacce diverse per scelta, e
    contarle qui vorrebbe dire chiamare «incoerenza» proprio la cosa che quella

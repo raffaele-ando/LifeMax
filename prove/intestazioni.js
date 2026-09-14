@@ -24,7 +24,7 @@
    Si lancia con: node prove/intestazioni.js   (solo Node, niente browser)  */
 'use strict';
 const fs = require('fs'), path = require('path');
-const { SERVITO: RADICE } = require('./dove');
+const { SERVITO: RADICE } = require('./comune/dove');
 /* `_headers` sta in `public/`, che Vite copia in `docs/` così com'è: la
    copia in `docs/` è quella che Cloudflare legge, ed è quella da guardare —
    il sorgente potrebbe essere più nuovo del sito pubblicato, ed è

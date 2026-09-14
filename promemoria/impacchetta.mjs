@@ -58,7 +58,14 @@ const corpo = pezzi.map((f) =>
   '/* ══════════ ' + f + ' ══════════ */\n' + spoglia(leggi(f)).trim() + '\n'
 ).join('\n');
 
-fs.writeFileSync(path.join(QUI, 'worker-unico.js'), testa + corpo);
-const kb = (fs.statSync(path.join(QUI, 'worker-unico.js')).size / 1024).toFixed(1);
-console.log('  scritto promemoria/worker-unico.js — ' + kb + ' kB, ' +
+/* SI PUÒ DIRE DOVE SCRIVERE, e serve a una prova.
+   Senza argomenti fa quello che ha sempre fatto: riscrive
+   `promemoria/worker-unico.js`. Con un percorso scrive là, e così
+   `prove/postino.js` può rifare il file in una cartella temporanea e
+   confrontarlo con quello committato — cioè chiedere «è ancora la somma dei
+   tre?» senza toccare il ramo. */
+const dove = process.argv[2] ? path.resolve(process.argv[2]) : path.join(QUI, 'worker-unico.js');
+fs.writeFileSync(dove, testa + corpo);
+const kb = (fs.statSync(dove).size / 1024).toFixed(1);
+console.log('  scritto ' + dove + ' — ' + kb + ' kB, ' +
   (testa + corpo).split('\n').length + ' righe');

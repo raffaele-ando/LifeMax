@@ -10,7 +10,7 @@
 
    node prove/promemoria.js        (CHROMIUM=/percorso/di/chrome se serve)  */
 const http = require('http'), fs = require('fs'), path = require('path'), { chromium } = require('playwright');
-const { SERVITO: RADICE, RAMO } = require('./dove');
+const { SERVITO: RADICE, RAMO } = require('./comune/dove');
 
 /* DA DOVE SI ENTRA. I promemoria si guidano da dentro alla pagina — il piano
    di oggi, quante ne restano, il testo della nota fissa — perché una notifica

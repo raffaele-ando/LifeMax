@@ -23,7 +23,7 @@
 'use strict';
 const fs = require('fs'), path = require('path'), os = require('os');
 const { execFileSync } = require('child_process');
-const { RAMO, SERVITO } = require('./dove');
+const { RAMO, SERVITO } = require('./comune/dove');
 
 let guai = 0;
 const ok = (nome, cond, det) => {
