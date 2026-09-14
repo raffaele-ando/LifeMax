@@ -320,10 +320,10 @@ const CONTORNO = `(function (b64, R, dritto) {
   }
 
   /* ============ 8. la forma la fa forma.js, e la fa davvero ============ */
-  console.log('\nLA FORMA LA FA assets/forma.js, A RUNTIME');
+  console.log('\nLA FORMA LA FA forma.ts, A RUNTIME');
   /* Fino a ieri qui si rigenerava il blocco di CSS e lo si confrontava con
      quello sul disco. Quel blocco non esiste più: la forma la disegna
-     `assets/forma.js` in pixel, sulla misura vera di ogni elemento, quindi
+     `forma.ts` in pixel, sulla misura vera di ogni elemento, quindi
      non c'è niente da rigenerare e niente da confrontare. Le cose da
      pretendere sono altre tre, e la terza è quella che conta. */
   {

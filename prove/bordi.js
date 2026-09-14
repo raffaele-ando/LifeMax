@@ -1,6 +1,6 @@
 /* OGNI FORMA E OGNI BORDO, IN OGNI SCHERMATA, A OGNI LARGHEZZA, IN TUTTI E DUE I TEMI.
 
-   La forma non è più un foglio di stile generato: la disegna `assets/forma.js`
+   La forma non è più un foglio di stile generato: la disegna `forma.ts`
    a runtime, in pixel, sulla misura vera di ogni elemento. Cambiando il
    sistema sono cambiate le cose che possono rompersi, e questa prova è stata
    riscritta sulle nuove.
@@ -534,7 +534,7 @@ catch (e) {
            sola condizione in cui la misura vuol dire qualcosa. */
         await p.bringToFront();
         /* SI ASPETTA CHE LA FORMA SI SIA FERMATA, e non un tempo fisso.
-           `assets/forma.js` lavora a fotogrammi: una passata si accoda e si fa
+           `forma.ts` lavora a fotogrammi: una passata si accoda e si fa
            al primo fra il prossimo disegno e trentadue millisecondi. Misurando
            mentre una passata è ancora in coda si trovano elementi «senza la
            curva» che la curva ce l'hanno un decimo di secondo dopo — e infatti

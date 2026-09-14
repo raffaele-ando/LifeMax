@@ -5,7 +5,7 @@
    e ogni cinque minuti si sveglia da solo, guarda chi tocca e manda.
 
    Quello che NON fa: decidere cosa vale la pena ricordare. Quella decisione
-   sta nell'app, dove stanno i dati; qui arriva già presa (assets/promemoria.js).
+   sta nell'app, dove stanno i dati; qui arriva già presa (src/promemoria/promemoria.ts).
    Al server resta l'orologio, che è l'unica cosa che l'app non può avere:
    una pagina chiusa non si sveglia alle 8:30.
 

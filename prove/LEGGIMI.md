@@ -173,11 +173,11 @@ genera le chiavi, in un browser vero).
   un valore rotto venga davvero rifiutato.
   Poi le **proporzioni**, perché una maschera SVG stirata farebbe un'ellisse:
   l'angolo misura 27.5×27.3px identico su 300×90, su 90×300 e su 160×160.
-  Poi che **la forma la faccia `assets/forma.js`**: che il blocco generato sia
-  sparito da `app.css`, che nessuna regola scritta a mano dia una forma col
-  ritaglio, che `forma.js` sia caricato prima di `app.js` (se arrivasse dopo,
-  il primo disegno della pagina avrebbe gli angoli tondi normali) e che le sue
-  costanti non siano divergute da `segni/apple.mjs`.
+  Poi che **la forma la faccia `src/forma/forma.ts`**: che il blocco generato
+  sia sparito da `app.css`, che nessuna regola scritta a mano dia una forma
+  col ritaglio, che in `src/main.tsx` la forma sia importata prima dell'app
+  (se arrivasse dopo, il primo disegno della pagina avrebbe gli angoli tondi
+  normali) e che le sue costanti non siano divergute da `segni/apple.mjs`.
   Poi — ed è la prova che l'utente ha chiesto guardando una fotografia
   ingrandita, «non sono veri squircle di Apple» — **la curva che esce davvero**,
   misurata sui pixel di un elemento vero disegnato da `forma.js` nell'app: la

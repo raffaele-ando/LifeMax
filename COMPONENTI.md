@@ -3,9 +3,10 @@
 Il catalogo. Ogni forma dell'interfaccia sta scritta qui una volta, e da qui
 si prende — invece di reinventarla ogni volta.
 
-Non è un elenco di buone intenzioni: è stato **contato**. Nel markup generato
-da `app.js` ci sono **544 classi diverse** e **1630 usi**, e sotto ci sono
-molte meno forme di quante sembrino.
+Non è un elenco di buone intenzioni: è stato **contato**. Nel markup che esce
+da `src/` ci sono **747 classi diverse** e **1888 usi** (erano 544 e 1630
+quando tutto stava in `app.js`, prima di React). Sotto ci sono molte meno
+forme di quante sembrino.
 
 ## Perché serve, misurato
 

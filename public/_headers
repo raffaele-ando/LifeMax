@@ -14,7 +14,7 @@
 #
 # QUI SOTTO C'È UNA REGOLA SOLA, E DEVE RESTARE UNA SOLA.
 # Cloudflare, quando due blocchi prendono lo stesso file, non sceglie il più
-# preciso: unisce i due valori con una virgola. Un `/assets/*` in fondo, messo
+# preciso: unisce i due valori con una virgola. Un `/pacco/*.js` in fondo, messo
 # con le migliori intenzioni, farebbe uscire
 #   Cache-Control: public, max-age=31536000, immutable, no-cache
 # cioè una riga che non vuol dire niente. Tutto il resto sta benissimo con

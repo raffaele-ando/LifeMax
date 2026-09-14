@@ -275,9 +275,9 @@ Quindi:
 | cambiare l'ora di uno | Impostazioni → Come ti avviso | — |
 | la fascia di silenzio | Impostazioni → Come ti avviso | — |
 | la nota fissa | Impostazioni → Come ti avviso | — |
-| **un tipo di promemoria nuovo** | `piano()` in `assets/promemoria.js` | — |
-| **cambiare il testo di uno** | `assets/promemoria.js` | — |
-| un pulsante *dentro* la notifica | `assets/promemoria.js` + `sw.js` | — |
+| **un tipo di promemoria nuovo** | `piano()` in `src/promemoria/promemoria.ts` | — |
+| **cambiare il testo di uno** | `src/promemoria/promemoria.ts` | — |
+| un pulsante *dentro* la notifica | `src/promemoria/promemoria.ts` + `sw.js` | — |
 
 L'unico caso che tocca il Worker è aggiungere un **campo nuovo** al pacchetto
 (oggi passano: titolo, corpo, dove andare, tag, tipo, il numero per l'icona).
@@ -425,8 +425,8 @@ ed è quello che il pannello adesso ti scrive.
 
 | file | cosa fa |
 |---|---|
-| `sw.js` (nella radice) | il service worker: riceve la notifica, la mostra, mette il numero sull'icona |
-| `assets/promemoria.js` | il lato app: registra il service worker, chiede il permesso quando lo chiedi tu, costruisce il piano e lo manda |
+| `public/sw.js` (il build ne mette una copia in radice) | il service worker: riceve la notifica, la mostra, mette il numero sull'icona |
+| `src/promemoria/promemoria.ts` | il lato app: registra il service worker, chiede il permesso quando lo chiedi tu, costruisce il piano e lo manda |
 | `promemoria/push.js` | la cifratura (RFC 8291, `aes128gcm`) e la firma (RFC 8292, VAPID), con la sola WebCrypto |
 | `promemoria/piano.js` | l'unica decisione del server: chi tocca adesso, nel fuso di chi riceve |
 | `promemoria/worker.js` | il Worker: due porte e una sveglia |

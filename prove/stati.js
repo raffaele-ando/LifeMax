@@ -56,7 +56,7 @@ const CONTROLLA = `(function (stato) {
   /* un ritaglio che ARRIVA FUORI dal riquadro: è quello a quattro morsi, e
      lascia vivere l'ombra e il contorno. Un ritaglio che sta tutto dentro se
      li mangia. */
-  /* Il tracciato di assets/forma.js comincia a -200 e finisce a w+200: nel
+  /* Il tracciato di forma.ts comincia a -200 e finisce a w+200: nel
      valore i numeri sono NUDI, senza unita': un tracciato SVG non ha
      lunghezze CSS). Il vecchio poligono invece scriveva -200px, e cercando
      quel px questa prova, dopo il cambio di sistema, ha detto che

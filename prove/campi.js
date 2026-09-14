@@ -109,7 +109,7 @@ const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  
            unici che hanno sempre funzionato su Android. Qui la pretesa era
            l'opposta («un bordo suo, come gli altri campi»), ed era la pretesa
            sbagliata: un bordo vuol dire un angolo, un angolo vuol dire che
-           assets/forma.js gli riscrive lo stile (colore spento, filo, ritaglio),
+           forma.ts gli riscrive lo stile (colore spento, filo, ritaglio),
            e su Android l'orologio di sistema si richiude se l'elemento che
            l'ha aperto viene rimaneggiato mentre è aperto. Era la terza volta
            che questo campo si rompeva, e le prime due volte si era cercata la
