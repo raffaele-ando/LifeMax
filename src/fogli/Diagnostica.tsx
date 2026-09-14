@@ -12,7 +12,7 @@
      il filo del bordo è uno pseudo-elemento assoluto: dentro un contenitore
      che scorre se ne va a spasso col contenuto, e la cornice della console
      finiva in mezzo alle righe. */
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Segno } from '../pezzi/pezzi';
 import { LM } from '../dati/dati';
 import { esc } from '../pezzi/stringhe';
@@ -20,12 +20,31 @@ import { presa } from '../tipi/presa';
 import { schermo, statoSalvataggioSpiegato, righeLogHtml, toast } from '../app/app';
 import { html } from '../pezzi/grezzo';
 
+/* LA RIGA DI STATO SI RIFÀ DA SÉ, ed è un pezzo suo per questo.
+   Stava nel corpo grande, e l'ascoltatore del registro la riscriveva con
+   `innerHTML`: ma quel `<b>` e quello `<span>` li disegna React, e
+   riscriverli gli porta via due nodi che crede ancora di avere — lo stesso
+   guasto della colonna degli stati nei Rituali, con la stessa faccia.
+   Non basta far ridisegnare tutto il pannello, perché il registro qui sotto
+   le righe se le infila a mano apposta: rifarlo vorrebbe dire riportare lo
+   scorrimento in cima a ogni riga nuova. Un pezzo separato ridisegna
+   soltanto sé stesso, che è precisamente quello che serve. */
+function StatoSalvataggio() {
+  const [, rifai] = useState(0);
+  useEffect(() => {
+    const f = (e: WindowEventMap['lm:log']) => { if (e.detail && e.detail.can === 'sync') rifai((n) => n + 1); };
+    window.addEventListener('lm:log', f);
+    return () => window.removeEventListener('lm:log', f);
+  }, []);
+  const st = statoSalvataggioSpiegato();
+  return <div className={'diag-stato ' + st.cls}><b>{st.tit}</b><span>{st.txt.trim()}</span></div>;
+}
+
 export default function Diagnostica() {
   const cons = useRef<HTMLDivElement>(null);
   const area = useRef<HTMLTextAreaElement>(null);
   const filtro = useRef<HTMLDivElement>(null);
 
-  const st = statoSalvataggioSpiegato();
   const nProblemi = window.LMLog ? window.LMLog.righe().filter((x) => x.liv !== 'info').length : 0;
   const testoCompleto = () => (window.LMLog ? window.LMLog.testo() : '');
 
@@ -49,12 +68,6 @@ export default function Diagnostica() {
       d.innerHTML = '<span class="diag-ora">' + reg.ora(x.t) + '</span><span class="diag-can">' + esc(x.can) +
         '</span><span class="diag-msg">' + esc(x.msg) + (x.dati ? '<i>' + esc(x.dati) + '</i>' : '') + '</span>';
       box.insertBefore(d, box.firstChild);
-      const testa = document.querySelector('#sheet-corpo .diag-stato');
-      if (testa && x.can === 'sync') {
-        const s2 = statoSalvataggioSpiegato();
-        testa.className = 'diag-stato ' + s2.cls;
-        testa.innerHTML = '<b>' + esc(s2.tit) + '</b><span>' + esc(s2.txt.trim()) + '</span>';
-      }
     };
     window.addEventListener('lm:log', nuovaRiga);
     return () => window.removeEventListener('lm:log', nuovaRiga);
@@ -87,7 +100,7 @@ export default function Diagnostica() {
   };
 
   return (<>
-    <div className={'diag-stato ' + st.cls}><b>{st.tit}</b><span>{st.txt.trim()}</span></div>
+    <StatoSalvataggio />
     <div className="diag-barra">
       <button className="btn btn-mini btn-primario" id="diag-copia" onClick={copia}><Segno nome="copy" /> Copia tutto</button>
       {navigator.share ? (

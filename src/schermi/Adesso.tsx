@@ -4,8 +4,8 @@
    i quattro difetti d'impianto erano già pagati.
 
    React possiede la struttura e il ciclo di vita. La scena la calcola
-   `vistaFocus(true)` — che si ferma un attimo prima di scrivere in pagina e
-   restituisce il dentro e le classi — e i comandi li attacca `wireFuoco()`.
+   `vistaFocus()` — che in pagina non scrive: restituisce il dentro e le
+   classi — e i comandi li attacca `wireFuoco()`.
    Sono la stessa scena e gli stessi comandi, non copie: qui dentro non c'è
    una riga di markup riscritta. */
 import { useEffect } from 'react';
@@ -13,14 +13,11 @@ import { usaLM } from '../pezzi/usaLM';
 import { Testa } from '../pezzi/pezzi';
 import { LM } from '../dati/dati';
 import { vistaFocus, wireFuoco, montaOggiGiornata, wireRigaAggiunta, render } from '../app/app';
-import { presa } from '../tipi/presa';
 import { html } from '../pezzi/grezzo';
 
 export default function Adesso() {
   usaLM();
-  /* `vistaFocus(true)` si ferma prima di toccare la pagina: torna sempre
-     una scena quando gli si passa `true` */
-  const scena = presa(vistaFocus(true));
+  const scena = vistaFocus();
 
   useEffect(() => {
     /* la striscia della giornata in cima e i fili della scena: tutte e due

@@ -2294,79 +2294,14 @@ export function apriDiagnostica() {
   apriFoglio('Registro tecnico', 'diagnostica', {}, true);
 }
 
-export function wireDiagnostica(root: HTMLElement): void {
-  /* i quattro nodi li ha scritti il pannello che sta chiamando questo
-     cablaggio, tre righe sopra: `presa` dice che è quella la ragione */
-  const cons = presa(root.querySelector<HTMLElement>('#diag-console'));
-  const area = presa(root.querySelector<HTMLTextAreaElement>('#diag-testo'));
-
-  function testoCompleto() { return window.LMLog ? window.LMLog.testo() : ''; }
-
-  presa(root.querySelector<HTMLElement>('#diag-copia')).addEventListener('click', function () {
-    const t = testoCompleto();
-    function aMano() {
-      /* niente clipboard (Safari in certi contesti): mostriamo il testo già
-         selezionato, così "copia" è comunque a un gesto di distanza */
-      area.classList.add('mostra');
-      area.value = t; area.focus(); area.select();
-      toast('Testo selezionato: tienilo premuto e scegli «Copia».', 0, 'copy');
-    }
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      void navigator.clipboard.writeText(t).then(function () {
-        toast('Registro copiato.', 0, 'copy');
-      }, aMano);
-    } else aMano();
-  });
-
-  const cond = root.querySelector<HTMLElement>('#diag-condividi');
-  if (cond) cond.addEventListener('click', function () {
-    void navigator.share({ title: 'LifeMax — registro diagnostico', text: testoCompleto() }).catch(function () { /* annullato */ });
-  });
-
-  presa(root.querySelector<HTMLElement>('#diag-riprova')).addEventListener('click', function () {
-    LM.save();   /* forza un giro di salvataggio: rilancia anche il push sul cloud */
-    if (window.LMLog) window.LMLog.info('registro', 'Salvataggio richiesto a mano dall’utente');
-    toast('Salvataggio richiesto: l’esito è nelle righe qui sotto.', 0, 'riprova');
-  });
-
-  presa(root.querySelector<HTMLElement>('#diag-svuota')).addEventListener('click', function () {
-    if (window.LMLog) window.LMLog.svuota();
-    cons.innerHTML = righeLogHtml();
-  });
-
-  root.querySelectorAll<HTMLElement>('#diag-filtro [data-filtro]').forEach(function (b) {
-    b.addEventListener('click', function () {
-      LOG_SOLO_PROBLEMI = b.getAttribute('data-filtro') === 'problemi';
-      root.querySelectorAll<HTMLElement>('#diag-filtro [data-filtro]').forEach(function (x) { x.classList.toggle('attivo', x === b); });
-      cons.innerHTML = righeLogHtml();
-      cons.scrollTop = 0;
-    });
-  });
-
-  /* aggiornamento dal vivo: si aggiunge una riga in cima, il resto non si
-     muove. Guardare il registro mentre agisci è metà della diagnosi. */
-  function nuovaRiga(e: Event) {
-    if (!document.body.contains(cons)) { window.removeEventListener('lm:log', nuovaRiga); return; }
-    const reg = window.LMLog;
-    const x = (e as CustomEvent).detail as { t: number; liv: string; can: string; msg: string; dati?: string } | null;
-    if (!x || !reg) return;
-    if (LOG_SOLO_PROBLEMI && x.liv === 'info') return;
-    const vuoto = cons.querySelector<HTMLElement>('.diag-vuoto');
-    if (vuoto) vuoto.remove();
-    const d = document.createElement('div');
-    d.className = 'diag-riga liv-' + x.liv + ' diag-nuova';
-    d.innerHTML = '<span class="diag-ora">' + reg.ora(x.t) + '</span><span class="diag-can">' + esc(x.can) +
-      '</span><span class="diag-msg">' + esc(x.msg) + (x.dati ? '<i>' + esc(x.dati) + '</i>' : '') + '</span>';
-    cons.insertBefore(d, cons.firstChild);
-    const testa = root.querySelector<HTMLElement>('.diag-stato');
-    if (testa && x.can === 'sync') {
-      const st = statoSalvataggioSpiegato();
-      testa.className = 'diag-stato ' + st.cls;
-      testa.innerHTML = '<b>' + esc(st.tit) + '</b><span>' + esc(st.txt.trim()) + '</span>';
-    }
-  }
-  window.addEventListener('lm:log', nuovaRiga);
-}
+/* IL CABLAGGIO DEL REGISTRO TECNICO NON STA PIÙ QUI.
+   C'era `wireDiagnostica(root)`, il gemello in vanilla del pannello: le
+   stesse righe che si infilano in cima, lo stesso filtro, la stessa riga di
+   stato. Da quando il pannello è `fogli/Diagnostica.tsx` non lo chiamava più
+   nessuno, e tenerlo costava più di quanto rendesse: riscriveva con
+   `innerHTML` una riga che adesso disegna React, cioè era una copia
+   funzionante del guasto che abbiamo appena tolto dai Rituali, pronta per
+   chi passa di qui e copia una riga che «lì funzionava». */
 
 /* ---------- gestione aree (personalizzabili) ---------- */
 
@@ -3429,11 +3364,16 @@ let fuocoOra: FuocoOra = { prossima: null, adesso: { azione: null, stato: null, 
 /* LA SCENA DI «ADESSO», senza toccare la pagina: restituisce il dentro e le
    classi, e chi la usa disegna il contenitore. `wireFuoco()` fa quello che
    va fatto dopo, con gli elementi già attaccati. */
-/* `soloScena` la fa fermare un attimo prima: calcola tutto e restituisce
-   {classi, dentro} senza toccare la pagina. La usa React, che il
-   contenitore lo disegna per conto suo — avvolgere un blocco già completo
-   vorrebbe dire un elemento in più nell'albero. */
-export function vistaFocus(soloScena?: boolean): Scena | undefined {
+/* NON SCRIVE IN PAGINA, e la parola «senza» qui sopra è recente.
+   Fino a ieri c'era anche l'altra metà: due code che facevano
+   `$vista.innerHTML = …` e poi riattaccavano i fili a mano. Erano la strada
+   del sito di prima, e da quando «Adesso» è un pezzo React non le chiamava
+   più nessuno — `soloScena` arrivava sempre vero. Codice morto, ma non
+   innocuo: `$vista` è il contenitore della radice di React, e scriverci
+   dentro vuol dire portargli via i nodi mentre crede ancora di averli. È
+   esattamente il guasto che ha fermato il Design lab, e lasciarlo scritto
+   qui era lasciarlo a portata di mano di chi passa e copia una riga. */
+export function vistaFocus(): Scena {
   let adesso: CosaAdesso;
   if (fuocoScelto) {
     /* la cosa scelta a mano può essere un'abitudine come una cosa di oggi:
@@ -3503,20 +3443,7 @@ export function vistaFocus(soloScena?: boolean): Scena | undefined {
       '</div>' +
       '<div class="focus-agg">' + rigaAggiunta('agg-rapida', 'Scrivi una cosa da fare…') + '</div>' +
       '';
-    if (soloScena) return scena;
-    $vista.innerHTML = html + '<div class="' + scena.classi + '">' + scena.dentro + '</div>';
-    montaOggiGiornata();
-    $vista.querySelectorAll<HTMLElement>('[data-vai]').forEach(function (b) {
-      b.addEventListener('click', function () {
-        if (b.getAttribute('data-sub')) schermo.sottoRituale = b.getAttribute('data-sub');
-        location.hash = '#/' + b.getAttribute('data-vai');
-      });
-    });
-    wireRigaAggiunta($vista, 'agg-rapida', function (testo) {
-      LM.aggiungiAzione(testo, 'altro', { mit: LM.serveMit() });
-      render();
-    });
-    return;
+    return scena;
   }
 
   var area = areaById(prossima.areaId);
@@ -3797,10 +3724,7 @@ export function vistaFocus(soloScena?: boolean): Scena | undefined {
     altreHtml +
     '';
 
-  if (soloScena) return scena;
-  $vista.innerHTML = html + '<div class="' + scena.classi + '">' + scena.dentro + '</div>';
-  montaOggiGiornata();
-  wireFuoco();
+  return scena;
 }
 
 /* IL CABLAGGIO DI «ADESSO» — quello che va fatto quando gli elementi
@@ -5577,12 +5501,6 @@ export function eroePlancia() {
       '<div class="som-tutto">In tutto, ' + quante + (quante === 1 ? ' cosa fatta' : ' cose fatte') + ' da quando hai cominciato.</div>';
   }
   return { classi: classi, dentro: html };
-}
-
-/* per il codice di prima, che scrive stringhe: lo stesso pezzo già avvolto */
-export function eroePlanciaHtml() {
-  var e = eroePlancia();
-  return '<div class="' + e.classi + '">' + e.dentro + '</div>';
 }
 
 
