@@ -2479,6 +2479,9 @@ export function rigaAggiunta(id: string, segnaposto: string, opzioniHtml?: strin
     '</form>';
 }
 
+/* i form già collegati: vedi il commento dentro a `wireRigaAggiunta` */
+const collegate = new WeakSet<Element>();
+
 /* Collega la riga: le opzioni si aprono al primo carattere, si chiudono
    quando il campo torna vuoto e si perde il fuoco. `onInvio(testo, opz)`
    riceve il testo e il contenitore delle opzioni. */
@@ -2495,10 +2498,14 @@ export function wireRigaAggiunta(scope: ParentNode, id: string, onInvio: (testo:
      `keydown` e `focusout` scattavano davvero N volte, e ognuno dei
      `focusout` metteva giù il suo `setTimeout`.
      Il segno sta sul NODO e non in una variabile di modulo: quando React
-     rifà il form per davvero, il nodo nuovo non ce l'ha e si ricollega —
-     che è quello che deve succedere. */
-  if (form.dataset['collegata'] === id) return;
-  form.dataset['collegata'] = id;
+     rifà il form per davvero, il nodo nuovo non è in questo insieme e si
+     ricollega — che è quello che deve succedere.
+     E sta in un `WeakSet` e non in un attributo `data-`: un attributo è DOM,
+     cioè una cosa che si vede in pagina, e `prove/impronte.js` ha ragione a
+     chiamarla una differenza. Un insieme debole dice la stessa cosa senza
+     lasciare traccia, e lascia andare il nodo appena la pagina lo butta. */
+  if (collegate.has(form)) return;
+  collegate.add(form);
   /* il campo lo ha scritto `rigaAggiunta` dentro a quel form: se non c'è,
      non c'è niente da collegare — e prima si andava avanti a chiamare
      `inp.addEventListener` su un niente */
@@ -5464,6 +5471,9 @@ function sezDiario(c: HTMLElement): void {
    le somiglia. `wireEroePlancia()` fa quello che va fatto dopo, quando gli
    elementi sono in pagina: il numero che sale e la linea dell'andamento.
    ============================================================ */
+/* l'ultima serie disegnata in ogni linea d'andamento: vedi sotto */
+const firmeSpark = new WeakMap<Element, string>();
+
 /* quello che va fatto DOPO, quando gli elementi sono in pagina */
 export function wireEroePlancia() {
   var pct = Math.round(LM.bilancio(30).tasso * 100);
@@ -5484,11 +5494,12 @@ export function wireEroePlancia() {
      vorrebbe dire far leggere una tendenza a chi non ne ha ancora una */
   /* e non si ridisegna se dice le stesse cose: `sparkline` butta via l'SVG e
      ne fa uno nuovo, cioè una ventina di nodi, e questa funzione gira a ogni
-     disegno della Panoramica. La firma è la serie stessa. */
+     disegno della Panoramica. La firma è la serie stessa, e sta in una mappa
+     debole e non in un attributo: un attributo si vedrebbe in pagina. */
   var firma = serie.map(function (x) { return x.valore; }).join(',');
-  if (elSpark && elSpark.dataset['firma'] === firma) elSpark = null;
+  if (elSpark && firmeSpark.get(elSpark) === firma) elSpark = null;
   if (elSpark && serie.length >= 3) {
-    elSpark.dataset['firma'] = firma;
+    firmeSpark.set(elSpark, firma);
     LMCharts.sparkline(elSpark, serie, { h: 40, min: 0, max: 100,
       colore: 'var(--accento)',
       label: 'Com’è andata la riuscita nelle ultime ' + serie.length + ' settimane, da ' +

@@ -24,10 +24,25 @@ const QUI = dirname(fileURLToPath(import.meta.url));
    committata. `pacco/` la scrive solo il build, quindi svuotarla è sicuro
    quanto svuotare una normale cartella d'uscita: è quello che Vite farebbe
    da sé se potesse. */
+/* SI SVUOTA LA CARTELLA DI QUESTO BUILD, non «la cartella `pacco`».
+   La differenza è costata mezz'ora: `prove/pacco.js` ricostruisce il sito in
+   una cartella temporanea per confrontarlo byte a byte con quello
+   committato, e un pezzo che cancella `pacco/` della RADICE cancella il sito
+   servito mentre le altre prove ci stanno girando sopra. Sono cadute sette
+   prove di fila con «LM is not defined», che è quello che si vede quando il
+   pacco non c'è: la pagina si apre e dentro non c'è niente.
+   Quindi il posto da svuotare si chiede alla configurazione risolta, che sa
+   dove sta uscendo QUESTO build. */
+let cartellaPacco = '';
 const svuotaPacco = {
   name: 'lm-svuota-pacco',
   apply: 'build' as const,
-  buildStart() { rmSync(resolve(QUI, 'pacco'), { recursive: true, force: true }); }
+  configResolved(cfg: { build: { outDir: string; assetsDir: string } }) {
+    cartellaPacco = resolve(cfg.build.outDir, cfg.build.assetsDir);
+  },
+  buildStart() {
+    if (cartellaPacco) rmSync(cartellaPacco, { recursive: true, force: true });
+  }
 };
 
 export default defineConfig({
