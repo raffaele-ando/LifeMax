@@ -5960,7 +5960,7 @@ function bloccoRecupero(tutti?: boolean): string {
          prima non apriva niente, le altre due aprivano e richiudevano
          subito. La differenza fra quelle e questa non era il `<label>`, era
          il BORDO: un campo con la cornice se la vede ridisegnare da
-         `assets/forma.js` (colore spento, filo, ritaglio), e su Android
+         `forma.ts` (colore spento, filo, ritaglio), e su Android
          l’orologio di sistema si richiude se l’elemento che l’ha aperto
          viene rimaneggiato mentre è aperto. `.sc-inline` non ha cornice né
          angolo, quindi la forma non lo tocca mai — ed è esattamente per

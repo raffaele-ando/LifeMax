@@ -13,20 +13,39 @@
    cinque rimessi, a ogni commit, senza che una virgola fosse cambiata.
 
    Qui la stessa stringa ridà lo stesso oggetto, così React non trova niente
-   da cambiare e il nodo resta in pace. Il magazzino è piccolo apposta: le
-   stringhe in giro sono una ventina di posti, e quando sfonda il tetto si
-   butta la più vecchia. */
+   da cambiare e il nodo resta in pace.
+
+   IL MAGAZZINO HA DUE TETTI, e il secondo conta più del primo. Alcune di
+   queste stringhe sono minuscole («Da sistemare» con la sua icona), altre
+   sono la lista intera delle attività — decine di migliaia di caratteri che
+   cambiano a ogni modifica, quindi una voce nuova ogni volta. Contare solo
+   quante voci ci sono vorrebbe dire tenersi in casa duecentocinquantasei
+   liste vecchie: un magazzino che ricorda tutto è una perdita di memoria con
+   un altro nome. Si contano anche i caratteri, e si butta la più vecchia
+   finché non si rientra. Le stringhe che tornano davvero uguali — le icone,
+   le etichette, le schede ferme — restano dentro comunque, perché ogni volta
+   che si ripresentano si rimettono in coda. */
 const MAGAZZINO = new Map<string, { dangerouslySetInnerHTML: { __html: string } }>();
 const TETTO = 256;
+const TETTO_CARATTERI = 1 << 20;   /* un megabyte scarso */
+let quantiCaratteri = 0;
 
 export function html(s: string): { dangerouslySetInnerHTML: { __html: string } } {
   const gia = MAGAZZINO.get(s);
-  if (gia) return gia;
-  const nuovo = { dangerouslySetInnerHTML: { __html: s } };
-  if (MAGAZZINO.size >= TETTO) {
-    const primo = MAGAZZINO.keys().next();
-    if (!primo.done) MAGAZZINO.delete(primo.value);
+  if (gia) {
+    /* rimessa in coda: così la più vecchia è davvero quella che nessuno usa */
+    MAGAZZINO.delete(s);
+    MAGAZZINO.set(s, gia);
+    return gia;
   }
+  const nuovo = { dangerouslySetInnerHTML: { __html: s } };
   MAGAZZINO.set(s, nuovo);
+  quantiCaratteri += s.length;
+  while (MAGAZZINO.size > TETTO || quantiCaratteri > TETTO_CARATTERI) {
+    const primo = MAGAZZINO.keys().next();
+    if (primo.done || MAGAZZINO.size <= 1) break;
+    quantiCaratteri -= primo.value.length;
+    MAGAZZINO.delete(primo.value);
+  }
   return nuovo;
 }

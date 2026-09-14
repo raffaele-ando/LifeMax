@@ -3539,6 +3539,37 @@ function creaLM() {
     save();
   }
 
+  /* ==================================================================
+     DUE FINESTRE DELLA STESSA APP, SULLO STESSO DISPOSITIVO
+     ==================================================================
+     Succede più di quanto sembri: la scheda aperta ieri e mai chiusa, l'app
+     installata accanto al sito nel browser, il computer con due finestre.
+     Ognuna teneva il suo stato in memoria e scriveva sopra a quello
+     dell'altra: l'ultima che salvava vinceva, e quello che avevi fatto
+     nell'altra spariva senza dire niente. Con l'account acceso se ne
+     accorgeva il cloud, dopo un giro dal server; senza account — che è come
+     parte l'app — non se ne accorgeva nessuno.
+     Il browser lo dice da sé: l'evento `storage` arriva alle ALTRE finestre
+     quando una scrive, e porta il testo nuovo. Da lì è lo stesso lavoro che
+     si fa con un altro dispositivo: si unisce.
+     E si unisce solo se cambia qualcosa davvero. Senza questo controllo le
+     due finestre si rispondono a vicenda — io scrivo, tu ricevi e scrivi, io
+     ricevo e scrivo — e non si fermano più. */
+  window.addEventListener('storage', function (ev) {
+    if (ev.key !== STORAGE_KEY || !ev.newValue) return;
+    var venuto: unknown;
+    try { venuto = JSON.parse(ev.newValue); } catch (e) { return; }
+    if (!venuto || typeof venuto !== 'object') return;
+    var fuso = unisci(load(), venuto);
+    if (!fuso) return;
+    /* si confronta quello che verrebbe fuori con quello che c'è già, senza
+       l'orologio: `updatedAt` cambia a ogni salvataggio e da solo farebbe
+       sembrare un cambiamento ogni volta */
+    if (senzaOrologio(JSON.stringify(normalizza(fuso))) === senzaOrologio(JSON.stringify(state))) return;
+    if (window.LMLog) window.LMLog.add('info', 'dati', 'un’altra finestra ha salvato: unisco');
+    hydrate(venuto);
+  });
+
   /* ---------- API pubblica ---------- */
 
   return {

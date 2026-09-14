@@ -295,5 +295,14 @@ export const LMLog = {
 
 export type Registro = typeof LMLog;
 
-/* finché qualcosa del vecchio sito lo cerca su `window` */
+/* SU `window` PERCHÉ LO LEGGONO LE PROVE, e non perché serva all'app: dentro
+   a `src/` chi ha bisogno del registro se lo importa. Da fuori invece un
+   modulo non si raggiunge — un pacco costruito non esporta niente — e
+   `prove/cloud.js` e `prove/impronte.js` il registro lo leggono davvero: è
+   l'unico posto dove si vede se l'ascolto degli altri dispositivi è caduto e
+   quante volte si è riattaccato, cose che sullo schermo non lasciano traccia.
+   Le chiamate qui dentro restano scritte `window.LMLog` con il controllo
+   davanti: il registro è la cosa che deve funzionare quando tutto il resto
+   non funziona, e un registro che fa cadere chi lo chiama è peggio di
+   nessun registro. */
 window.LMLog = LMLog;
