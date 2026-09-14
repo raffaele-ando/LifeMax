@@ -36,7 +36,7 @@ Portarne uno dentro l'app:
 node segni/prendi.mjs calendar-clock scadenza "una data entro cui"
 ```
 
-Scrive il tracciato in `assets/icons.js`, in fondo, con accanto da dove
+Scrive il tracciato in `src/segni/segni.ts`, in fondo, con accanto da dove
 viene e che cosa vuol dire. Quel commento non è decorazione: `cerca.mjs` lo
 legge per dire «già preso», e `prove/segni.js` per controllare che ogni
 segno abbia un significato e che nessun significato sia scritto due volte.
@@ -51,8 +51,8 @@ node prove/segni.js
 
 - Non aggiungere una voce a `PATHS` a mano: senza il commento di provenienza
   il segno diventa invisibile ai due controlli qui sopra.
-- Non caricare `pacco.json` nel browser. Sono 360 kB per ottanta segni usati:
-  `assets/icons.js` ne pesa venti e contiene solo quelli che servono.
+- Non caricare `lucide.json` nel browser. Sono 360 kB per ottanta segni usati:
+  `src/segni/segni.ts` ne pesa venti e contiene solo quelli che servono.
 - Non riusare un segno «che ci sta abbastanza». Costa meno prenderne uno.
 
 ## Aggiornare il pacco
@@ -62,7 +62,7 @@ npm pack lucide-static && tar xzf lucide-static-*.tgz
 node segni/aggiorna.mjs ./package
 ```
 
-I segni già presi restano dove sono: `assets/icons.js` è un file a sé e non
+I segni già presi restano dove sono: `src/segni/segni.ts` è un file a sé e non
 si rigenera. Se un tracciato cambia a monte, cambia solo per chi lo prende da
 quel momento in poi — e se un segno che stiamo usando sparisce dal pacco,
 `aggiorna.mjs` lo dice subito invece di lasciarlo scoprire a chi lo cerca.
@@ -77,7 +77,7 @@ che non c'entra con i segni ma vive di formule come loro.
   sé finché lo scarto dalla curva vera sta sotto la tolleranza), il contorno
   rientrato per il bordo, e il tracciato SVG per il logo e le icone.
   Serve al logo, alle icone e alle prove: nell'app la stessa geometria vive in
-  `assets/forma.js`, scritta una seconda volta perché quella deve girare nel
+  `src/forma/forma.ts`, scritta una seconda volta perché quella deve girare nel
   browser senza moduli. Le costanti sono le stesse e `prove/squircle.js`
   controlla che non divergano.
 - ~~`squircle.mjs`~~ e ~~`misure.mjs`~~ **sono in pensione**, e con loro
@@ -86,7 +86,7 @@ che non c'entra con i segni ma vive di formule come loro.
   tagliare i raggi in anticipo — perché in un poligono le percentuali si
   risolvono per asse, quindi non si può dire «metà del lato corto» senza aver
   misurato l'app con un browser. **Adesso la forma la disegna
-  `assets/forma.js` a runtime**, in pixel, sulla misura vera di ogni elemento:
+  `src/forma/forma.ts` a runtime**, in pixel, sulla misura vera di ogni elemento:
   il limite si applica sul posto, non serve nessuna tabella, non c'è niente da
   rigenerare, e i selettori mai apparsi in una scena non restano più indietro.
   Non si tocca più niente qui quando si cambia un raggio: si cambia il
@@ -168,7 +168,7 @@ per asse, quindi non si può dire «metà del lato CORTO», e su una pastiglia d
 300×54 il ritaglio dava una foglia con la punta da 151px invece di un angolo da
 27. Per un anno l'unico modo di dare anche a loro la curva è stato misurare
 l'app con un browser e tenersi una tabella delle altezze.
-Adesso `assets/forma.js` la misura ce l'ha in mano — `offsetWidth` e
+Adesso `src/forma/forma.ts` la misura ce l'ha in mano — `offsetWidth` e
 `offsetHeight` di quell'elemento in quel momento — e il limite lo applica sul
 posto: niente tabella, niente selettori dimenticati, e le pastiglie che
 compaiono solo in uno stato raro hanno la curva come tutte le altre. Il raggio

@@ -1,8 +1,8 @@
-/* CERCA UN SEGNO nel pacco, per parola.
+/* CERCA UN SEGNO nella libreria, per parola.
      node segni/cerca.mjs orologio
      node segni/cerca.mjs calendar --tutti
 
-   Cerca nel nome e nelle parole chiave (che sono in inglese: il pacco è
+   Cerca nel nome e nelle parole chiave (che sono in inglese: la libreria è
    Lucide). Stampa i candidati e, per ognuno, se è già in uso nell'app e con
    che significato — così non si prende per la seconda volta un segno che sta
    già dicendo un'altra cosa da un'altra parte. */
@@ -10,26 +10,26 @@ import fs from 'fs';
 import path from 'path';
 const QUI = path.dirname(new URL(import.meta.url).pathname);
 
-const pacco = JSON.parse(fs.readFileSync(path.join(QUI, 'pacco.json'), 'utf8'));
+const lucide = JSON.parse(fs.readFileSync(path.join(QUI, 'lucide.json'), 'utf8'));
 const parole = JSON.parse(fs.readFileSync(path.join(QUI, 'parole.json'), 'utf8'));
-const icone = fs.readFileSync(path.join(QUI, '..', 'assets', 'icons.js'), 'utf8');
+const icone = fs.readFileSync(path.join(QUI, '..', 'src', 'segni', 'segni.ts'), 'utf8');
 
 /* i segni già nostri: `prendi.mjs` lascia accanto a ognuno da dove viene e
    che cosa vuol dire, e questo serve proprio a dirlo qui */
 const daLucide = new Map();
-for (const m of icone.matchAll(/^\s{4}([a-zA-Z0-9_]+):.*\/\* *lucide:([a-z0-9-]+) *— *([^*]*?) *\*\//gm)) {
+for (const m of icone.matchAll(/^ {2}([a-zA-Z0-9_]+):.*\/\* *lucide:([a-z0-9-]+) *— *([^*]*?) *\*\//gm)) {
   daLucide.set(m[2], m[1] + '»: ' + m[3]);
 }
 
 const q = process.argv.slice(2).filter((a) => a[0] !== '-').map((s) => s.toLowerCase());
 const tutti = process.argv.includes('--tutti');
 if (!q.length) {
-  console.log('  uso: node segni/cerca.mjs <parola> [...]      (' + Object.keys(pacco).length + ' segni nel pacco)');
+  console.log('  uso: node segni/cerca.mjs <parola> [...]      (' + Object.keys(lucide).length + ' segni nella libreria)');
   process.exit(1);
 }
 
 const punti = [];
-for (const nome of Object.keys(pacco)) {
+for (const nome of Object.keys(lucide)) {
   const tag = (parole[nome] || []).join(' ');
   let p = 0;
   for (const w of q) {
@@ -43,7 +43,7 @@ for (const nome of Object.keys(pacco)) {
 }
 punti.sort((a, b) => b[0] - a[0] || a[1].localeCompare(b[1]));
 
-if (!punti.length) { console.log('  niente. Le parole del pacco sono in inglese.'); process.exit(0); }
+if (!punti.length) { console.log('  niente. Le parole della libreria sono in inglese.'); process.exit(0); }
 const mostra = tutti ? punti : punti.slice(0, 40);
 console.log('');
 for (const [, nome] of mostra) {
