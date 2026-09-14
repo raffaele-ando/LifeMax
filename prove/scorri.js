@@ -176,8 +176,14 @@ const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  
       document.addEventListener('click', () => { window.__clic++; }, true);
     });
   }
-  const soglia = +(fs.readFileSync(path.join(RAMO, 'src', 'app', 'app.ts'), 'utf8')
-    .match(/colpo:\s*(\d+)/) || [])[1];
+  /* LA SOGLIA SI LEGGE DAL FILE CHE LA CONTIENE, e adesso è `scorri.ts`:
+     il gesto è uscito da `app.ts`, e questa riga lo ha scoperto da sé — ha
+     detto «soglia NaNpx», che è esattamente quello che deve dire quando non
+     trova più il numero invece di lasciar passare il confronto. */
+  const fileGesto = path.join(RAMO, "src", "app", "scorri.ts");
+  const soglia = +(fs.readFileSync(fileGesto, "utf8").match(/colpo:\s*(\d+)/) || [])[1];
+  ok('la soglia si trova ancora, dove il gesto è scritto', !Number.isNaN(soglia),
+    Number.isNaN(soglia) ? 'non c’è nessun `colpo:` in src/app/scorri.ts' : soglia + 'px');
   ok('il browser sintetizza ancora un clic a qualche distanza (se no la misura è muta)',
     ultimoConClic > 0, 'l’ultima con clic: ' + ultimoConClic + 'px');
   ok('la soglia del colpo secco sta sopra quella distanza',
