@@ -1,0 +1,5 @@
+{
+  "private": true,
+  "type": "module",
+  "comment": "SOLO PER DIRE CHE QUI SI SCRIVE IN MODULI. Il package.json della radice non ha `type: module` perché le prove in prove/ sono CommonJS e usano require(). Ma il Worker è scritto in moduli — `export` in worker.js, piano.js, push.js — e senza questa riga Node se ne accorge da solo, li ri-analizza e avvisa a ogni lancio. Un avviso che compare sempre è un avviso che non si legge più, e il giorno che ne arriva uno vero sta in mezzo agli altri. Cloudflare non guarda questo file: il suo punto di entrata lo dice wrangler.toml."
+}

@@ -11,7 +11,18 @@
    notifica che non arriva non lascia traccia da nessuna parte.
 
    Qui il file si rifà in una cartella temporanea e si confronta byte per
-   byte. Niente browser: dura un istante, e sta fra le prove svelte. */
+   byte. Niente browser: dura un istante, e sta fra le prove svelte.
+
+   E TIRA DENTRO LE DUE PROVE DEL WORKER, che stavano in `promemoria/` e non
+   le lanciava nessuno. `prova-piano.mjs` prova l'unica decisione che prende
+   il server — chi tocca adesso, nel fuso di chi riceve — e `prova-worker.mjs`
+   fa girare il giro intero con un KV finto e un push finto. Cinquecento
+   righe di prove che c'erano già e non venivano mai chieste: il postino è il
+   pezzo dell'app in cui un guasto non si vede e non si sente, quindi è
+   l'ultimo posto dove tenere delle prove spente.
+   (`prova.mjs` e `prova-chiavi.mjs` restano fuori di proposito: una vuole
+   `http_ece` e `web-push` per il confronto con il mondo, l'altra apre un
+   browser. Le loro intestazioni dicono come si lanciano.) */
 'use strict';
 const fs = require('fs'), path = require('path'), os = require('os');
 const { execFileSync } = require('child_process');
@@ -49,5 +60,25 @@ const testa = a.toString('utf8').slice(0, 400);
 dice(/QUESTO FILE È GENERATO/.test(testa), 'e dice di sé che è generato');
 
 fs.rmSync(cartella, { recursive: true, force: true });
-console.log(guai ? '\n>>> ' + guai + ' PROBLEMA' + (guai > 1 ? 'I' : '') : '\n>>> TUTTO A POSTO');
+
+/* --- e le due prove del Worker, che girano qui dentro --- */
+for (const prova of ['prova-piano.mjs', 'prova-worker.mjs']) {
+  let uscita = '';
+  let andata = true;
+  try {
+    uscita = execFileSync(process.execPath, [path.join(RAMO, 'promemoria', prova)],
+      { cwd: RAMO, stdio: 'pipe' }).toString('utf8');
+  } catch (e) {
+    andata = false;
+    uscita = String((e.stdout || '') + (e.stderr || '') || e.message);
+  }
+  /* quelle prove contano da sé e stampano «KO» sulle righe che non vanno:
+     si guarda l'uscita del processo e, per sicurezza, anche quelle righe */
+  const koDentro = (uscita.match(/^\s*KO\s/gm) || []).length;
+  dice(andata && !koDentro, 'promemoria/' + prova,
+    andata && !koDentro ? 'passa' : (koDentro ? koDentro + ' righe KO' : 'non gira') +
+      ' — `node promemoria/' + prova + '`');
+  if (!andata || koDentro) uscita.trimEnd().split('\n').slice(-8).forEach((r) => console.log('      │ ' + r));
+}
+console.log(guai ? '\n>>> ' + guai + (guai > 1 ? ' PROBLEMI' : ' PROBLEMA') : '\n>>> TUTTO A POSTO');
 process.exit(guai ? 1 : 0);
