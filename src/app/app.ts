@@ -5672,30 +5672,24 @@ export const RITUALI: Rituale[] = [
   { id: 'sera',      ico: 'moon',     nome: 'Review della sera',      quando: 'giorno' },
   { id: 'settimana', ico: 'calendar', nome: 'Review della settimana', quando: 'ogni tanto' }
 ];
-/* Le sezioni si ridisegnano da sole (le abitudini, per esempio, si
-   riscrivono senza passare da render()): senza questo, la riga sopra
-   continuava a dire «0 di 3 oggi» dopo che ne avevi spuntata una.
-   Si riscrivono solo le etichette di stato: niente ridisegno, niente fuoco
-   perso mentre si scrive in un campo. */
-function aggiornaStatiRituali() {
-  var righe = document.querySelectorAll<HTMLElement>('#vista .rit-riga');
-  if (!righe.length) return;
-  righe.forEach(function (riga) {
-    var id = riga.getAttribute('data-sub');
-    var el = riga.querySelector<HTMLElement>('.rit-stato');
-    if (!id || !el) return;
-    var st = statoRituale(id);
-    el.className = 'rit-stato' + (st.fatto ? ' fatto' : '');
-    /* il dettaglio va riscritto insieme allo stato: senza la seconda riga
-       qui sotto, «2 di 3» spariva al primo aggiornamento e la colonna
-       cambiava altezza sotto gli occhi */
-    el.innerHTML = '<span class="rs-che">' + (st.fatto ? ICO('check', 13) + ' ' : '') + esc(st.testo) + '</span>' +
-      (st.dett ? '<span class="rs-dett">' + esc(st.dett) + '</span>' : '');
-  });
-}
-document.addEventListener('lm:change', function () {
-  if (vistaCorrente() === 'rituali') aggiornaStatiRituali();
-});
+/* LA COLONNA DEGLI STATI LA DISEGNA REACT, e qui non c'è più niente.
+
+   C'era `aggiornaStatiRituali()`: a ogni `lm:change`, se eri sui Rituali,
+   riscriveva l'`innerHTML` di ogni `.rit-stato`. Aveva una buona ragione nel
+   sito di prima — le sezioni si ridisegnano da sole, senza passare da
+   `render()`, e senza quella riga la colonna continuava a dire «0 di 3 oggi»
+   dopo che ne avevi spuntata una.
+   Adesso quella colonna è JSX (`Riga` in schermi/Rituali.tsx), e `usaLM` è
+   già iscritto a `lm:change`: React la rifà da sé. Le due strade insieme
+   erano un guasto vero, non un doppio lavoro: React si teneva il riferimento
+   allo `<span class="rs-dett">` che questa funzione aveva appena buttato via,
+   e al ridisegno dopo provava a toglierlo da un padre che non ce l'aveva più
+   — `NotFoundError: removeChild`, e da lì in poi la schermata non si
+   aggiornava più. Si vedeva premendo «Salva e parti» nel rituale del
+   mattino, che è il tasto con cui quella schermata comincia: l'ha trovato
+   `prove/doppioni.js`.
+   È la stessa lezione del Design lab e della lista di «Da fare»: un nodo ha
+   UN padrone. Se lo disegna React, nessun altro ci mette le mani. */
 
 export function ritualeDellOra() {
   var ora = new Date().getHours();
