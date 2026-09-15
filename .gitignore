@@ -17,3 +17,7 @@ node_modules/
 .agents/
 .claude/
 skills-lock.json
+
+/* i banchi di prova del disegno: mockup, scatti, tavole di confronto.
+   Si guardano una volta e si buttano — non sono il sito. */
+scratchpad/
