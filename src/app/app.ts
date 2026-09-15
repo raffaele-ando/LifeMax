@@ -1562,6 +1562,21 @@ function rigaPorta(id: string, ico: string, eti: string, val?: string): string {
 function rigaFa(id: string, ico: string, eti: string, cls?: string): string {
   return pzRiga({ mestiere: 'fa', id: id, ico: ico, eti: eti, piu: cls }, segnoDi);
 }
+/* LA RIGA A SEGMENTI, che era scritta otto volte a mano.
+   Nel pannello delle impostazioni ogni scelta ripeteva la stessa forma —
+   `rigaScelta(eti, '<span class="segmenti imp-seg" id="seg-X">' + … )` — e
+   `prove/pezzi.js` conta esattamente questo: quante volte una forma è
+   scritta a mano invece di passare da un pezzo. Il suo commento dice, con
+   le sue parole, «non alzare il numero: usa il pezzo». Il pezzo non
+   c'era, e adesso c'è. */
+/* LA NOTA SOTTO UN ELENCO, stessa storia: `<p class="lista-nota">…</p>`
+   era scritto a mano in tredici punti di questo file. Il testo arriva già
+   come HTML — dentro ci sono `<b>` e virgolette — quindi non si passa dal
+   pezzo che scappa il testo, ma la forma sta scritta in un posto solo. */
+function nota(html: string): string { return '<p class="lista-nota">' + html + '</p>'; }
+function rigaSegmenti(eti: string, id: string, bottoni: string): string {
+  return rigaScelta(eti, '<span class="segmenti imp-seg" id="seg-' + id + '">' + bottoni + '</span>');
+}
 /* una riga con una scelta che vale subito: l'etichetta sopra, i segmenti
    larghi quanto la riga sotto (su un telefono un segmento da tre voci e
    un'etichetta sulla stessa riga non ci stanno) */
@@ -1648,7 +1663,7 @@ export function htmlImpostazioni(): string {
       : '<div class="lista-riga sc-riga"><span class="sc-eti">' + ICO('campana', 15) + ' Promemoria</span>' +
         '<span class="sc-val">' + pr.val + '</span></div>') +
     '</div>' +
-    (pr.nota ? '<p class="lista-nota">' + pr.nota + '</p>' : '') +
+    (pr.nota ? nota(pr.nota) : '') +
     (pr.azione ? '<div class="imp-azioni">' + pr.azione + '</div>' : '') +
 
     /* --- COME SI VEDE: tre scelte che valgono subito, tutte insieme.
@@ -1656,31 +1671,31 @@ export function htmlImpostazioni(): string {
            domanda, e «Navigazione» stava in mezzo ai backup. --- */
     etichetta('Aspetto', 'palette') +
     '<div class="lista">' +
-    rigaScelta('Tema', '<span class="segmenti imp-seg" id="seg-modo">' +
-      segM('auto', 'automatico', 'Auto') + segM('light', 'sun', 'Chiaro') + segM('dark', 'moon', 'Scuro') + '</span>') +
-    rigaScelta('Stile', '<span class="segmenti imp-seg" id="seg-skin">' +
-      segS('quiete', 'Aurora') + segS('arcade', 'Arcade') + '</span>') +
-    rigaScelta('Schermata «Adesso»', '<span class="segmenti imp-seg" id="seg-forma">' +
-      segFo('scheda', 'Scheda') + segFo('spina', 'Spina') + segFo('poi', 'Poi') + '</span>') +
-    rigaScelta('Barra di navigazione', '<span class="segmenti imp-seg" id="seg-nav">' +
-      segN('tre', 'Tre porte') + segN('tutte', 'Tutte le pagine') + '</span>') +
-    rigaScelta('Scorri fra le schermate', '<span class="segmenti imp-seg" id="seg-scorri">' +
-      segSc('si', 'Acceso') + segSc('no', 'Spento') + '</span>') +
-    rigaScelta('Effetti', '<span class="segmenti imp-seg" id="seg-eff">' +
-      segEf('pieni', 'Pieni') + segEf('ridotti', 'Ridotti') + segEf('minimi', 'Minimi') + '</span>') +
-    rigaScelta('Suono', '<span class="segmenti imp-seg" id="seg-suono">' +
-      segSu('si', 'Acceso') + segSu('no', 'Muto') + '</span>') +
-    rigaScelta('Vibrazione', '<span class="segmenti imp-seg" id="seg-vibra">' +
-      segVi('si', 'Accesa') + segVi('no', 'Spenta') + '</span>') +
+    rigaSegmenti('Tema', 'modo',
+      segM('auto', 'automatico', 'Auto') + segM('light', 'sun', 'Chiaro') + segM('dark', 'moon', 'Scuro')) +
+    rigaSegmenti('Stile', 'skin',
+      segS('quiete', 'Aurora') + segS('arcade', 'Arcade')) +
+    rigaSegmenti('Schermata «Adesso»', 'forma',
+      segFo('scheda', 'Scheda') + segFo('spina', 'Spina') + segFo('poi', 'Poi')) +
+    rigaSegmenti('Barra di navigazione', 'nav',
+      segN('tre', 'Tre porte') + segN('tutte', 'Tutte le pagine')) +
+    rigaSegmenti('Scorri fra le schermate', 'scorri',
+      segSc('si', 'Acceso') + segSc('no', 'Spento')) +
+    rigaSegmenti('Effetti', 'eff',
+      segEf('pieni', 'Pieni') + segEf('ridotti', 'Ridotti') + segEf('minimi', 'Minimi')) +
+    rigaSegmenti('Suono', 'suono',
+      segSu('si', 'Acceso') + segSu('no', 'Muto')) +
+    rigaSegmenti('Vibrazione', 'vibra',
+      segVi('si', 'Accesa') + segVi('no', 'Spenta')) +
     /* QUI C'ERA «SCHERMATE NUOVE», e non c'è più.
        Era la via d'uscita mentre le schermate passavano una per una al
        motore nuovo: due tocchi e si tornava a quello di prima. Adesso quello
        di prima non esiste, quindi l'interruttore portava a un posto vuoto —
        e un interruttore che non fa niente è peggio che non averlo. */
     '</div>' +
-    '<p class="lista-nota"><b>Effetti</b> serve se compaiono rettangoli grigi o neri a spigolo vivo in mezzo alle schermate, o se l’app va a scatti. <b>Ridotti</b> toglie le sfocature dietro ai pannelli e alla barra, e la forma resta. <b>Minimi</b> spegne tutto — niente curva degli angoli, niente sfocature, niente fondo colorato. Se il difetto sparisce a un gradino e non all’altro, si sa da cosa dipende.</p>' +
-    '<p class="lista-nota"><b>Schermata «Adesso»</b>: con <b>Scheda</b> vedi una cosa sola, grande e in mezzo. Con <b>Spina</b> la giornata diventa una colonna — sopra quello che hai già fatto, in mezzo questa, sotto quello che viene — e il tasto scende in fondo allo schermo. Con <b>Poi</b> resta la scheda e sotto si apre la coda di oggi, che altrimenti sta chiusa.</p>' +
-    '<p class="lista-nota">Aurora è più sobrio, Arcade più acceso. Con <b>tre porte</b> le altre schermate stanno in una riga di linguette sotto al titolo; con <b>tutte le pagine</b> torna la barra lunga. In entrambi i casi ci sono tutte: cambia solo da dove ci si arriva. Con lo <b>scorrimento acceso</b> si passa da una schermata all’altra trascinando il dito di lato, come si sfoglia: le linguette restano dove sono.</p>' +
+    nota('<b>Effetti</b> serve se compaiono rettangoli grigi o neri a spigolo vivo in mezzo alle schermate, o se l’app va a scatti. <b>Ridotti</b> toglie le sfocature dietro ai pannelli e alla barra, e la forma resta. <b>Minimi</b> spegne tutto — niente curva degli angoli, niente sfocature, niente fondo colorato. Se il difetto sparisce a un gradino e non all’altro, si sa da cosa dipende.') +
+    nota('<b>Schermata «Adesso»</b>: con <b>Scheda</b> vedi una cosa sola, grande e in mezzo. Con <b>Spina</b> la giornata diventa una colonna — sopra quello che hai già fatto, in mezzo questa, sotto quello che viene — e il tasto scende in fondo allo schermo. Con <b>Poi</b> resta la scheda e sotto si apre la coda di oggi, che altrimenti sta chiusa.') +
+    nota('Aurora è più sobrio, Arcade più acceso. Con <b>tre porte</b> le altre schermate stanno in una riga di linguette sotto al titolo; con <b>tutte le pagine</b> torna la barra lunga. In entrambi i casi ci sono tutte: cambia solo da dove ci si arriva. Con lo <b>scorrimento acceso</b> si passa da una schermata all’altra trascinando il dito di lato, come si sfoglia: le linguette restano dove sono.') +
 
     /* --- I TUOI DATI: due cose che si fanno e una porta --- */
     etichetta('I tuoi dati', 'dati') +
@@ -1690,7 +1705,7 @@ export function htmlImpostazioni(): string {
     rigaPorta('imp-backup', 'archivio', 'Backup e ripristino', nBackup ? String(nBackup) : 'nessuno') +
     '</div>' +
     '<input type="file" id="imp-file" accept="application/json,.json" hidden>' +
-    '<p class="lista-nota">Prima di sostituire i dati l’app fa sempre un backup, e da lì si torna indietro.</p>' +
+    nota('Prima di sostituire i dati l’app fa sempre un backup, e da lì si torna indietro.') +
 
     /* --- CAPIRE L'APP: le pagine che si leggono, non si usano --- */
     etichetta('Guida', 'aiuto') +
@@ -1700,7 +1715,7 @@ export function htmlImpostazioni(): string {
     rigaPorta('imp-diag', 'terminale', 'Registro tecnico') +
     rigaPorta('imp-lab', 'palette', 'Design lab') +
     '</div>' +
-    '<p class="lista-nota">Il registro tecnico mostra se i dati sono davvero salvati: si copia e si manda quando qualcosa non torna.</p>' +
+    nota('Il registro tecnico mostra se i dati sono davvero salvati: si copia e si manda quando qualcosa non torna.') +
 
     /* --- RIPARTIRE: staccato, e in fondo. Quello che cancella non può
            stare in fila con quello che salva. --- */
@@ -1709,7 +1724,7 @@ export function htmlImpostazioni(): string {
     rigaFa('imp-demo', 'sparkles', 'Carica dati di esempio') +
     rigaFa('imp-azzera', 'trash', 'Azzera tutto', 'sc-pericolo') +
     '</div>' +
-    '<p class="lista-nota">Anche l’azzeramento fa un backup: i dati si recuperano da «Backup e ripristino».</p>' +
+    nota('Anche l’azzeramento fa un backup: i dati si recuperano da «Backup e ripristino».') +
     '</div>';
 }
 
@@ -2304,7 +2319,7 @@ function htmlAccount() {
   }
   if (a.available) {
     return '<button class="btn btn-accedi" id="imp-accedi" style="width:100%;justify-content:center">' + GOOGLE_G(15) + ' Accedi con Google</button>' +
-      '<p class="lista-nota">I dati stanno su questo dispositivo. Accedi per ritrovarli su tutti.</p>';
+      nota('I dati stanno su questo dispositivo. Accedi per ritrovarli su tutti.');
   }
   return '<div class="lista"><div class="lista-riga sc-riga">' +
     '<span class="sc-eti">' + ICO('soloQui', 15) + ' Dove stanno i dati</span>' +
@@ -5007,7 +5022,7 @@ function sezRiepilogo(c: HTMLElement): void {
             '<span class="bil-num"><b>' + Math.round(a.tasso * 100) + '%</b> <span>' + a.fatte + '/' + a.messe + '</span></span>' +
             '</div>';
         }).join('') + '</div>'
-      : '<p class="lista-nota">Ancora nessun giorno chiuso da contare.</p>') +
+      : nota('Ancora nessun giorno chiuso da contare.')) +
     (function () {
       const perse = LM.mancate(90), motivi = LM.motiviMancate(90);
       if (!perse.length) return '';
@@ -5538,7 +5553,7 @@ function bloccoNotte(forzaAperto?: boolean): string {
     '</div>' +
     '<div class="riga-flex mt"><button class="btn btn-tonale" id="notte-salva">' + ICO('save', 15) + ' Salva</button>' +
     '<button class="btn btn-ghost" id="notte-boh">Non me lo ricordo</button></div>' +
-    '<p class="lista-nota">Gli orari «più o meno» restano segnati come tali e non fanno da misura. Se chiudi senza rispondere la domanda non torna oggi: resta nei <b>Rituali</b>.</p>' +
+    nota('Gli orari «più o meno» restano segnati come tali e non fanno da misura. Se chiudi senza rispondere la domanda non torna oggi: resta nei <b>Rituali</b>.') +
     '</div>';
 }
 
@@ -5701,7 +5716,7 @@ function bloccoRecupero(tutti?: boolean): string {
           '<button class="icona-btn icona-pericolo" data-ftogli="' + a.id + '" title="Togli" aria-label="Togli «' + esc(a.testo) + '»">' + ICO('trash', 15) + '</button>' +
           '</div>';
       }).join('') + '</div>'
-      : '<p class="lista-nota">Per esempio: «camminata di mezz’ora», «chiamato mio fratello». Vale come una cosa fatta oggi, con i suoi XP: che l’abbia scritta prima o dopo non cambia niente.</p>') +
+      : nota('Per esempio: «camminata di mezz’ora», «chiamato mio fratello». Vale come una cosa fatta oggi, con i suoi XP: che l’abbia scritta prima o dopo non cambia niente.')) +
     '<div class="riga-flex mt"><button class="btn btn-tonale" id="rec-fine">' + ICO('check', 15) + ' Ho finito</button></div>' +
     '</div>';
 }
@@ -6658,7 +6673,7 @@ function bloccoLezioniHtml() {
       '</div>' +
       '<label class="agg-area"><span class="agg-eti">in</span>' + selectAreeOpz('agg-lez-area', null) + '</label>') +
     (vuoto
-      ? '<p class="lista-nota">Per esempio: «studiare in biblioteca invece che in camera» fra le cose che funzionano, «dire <i>lo faccio dopo</i> senza scrivere quando» fra quelle che no.</p>'
+      ? nota('Per esempio: «studiare in biblioteca invece che in camera» fra le cose che funzionano, «dire <i>lo faccio dopo</i> senza scrivere quando» fra quelle che no.')
       : '') +
     (si.length
       ? etichetta('Funziona', 'funziona', si.length) +

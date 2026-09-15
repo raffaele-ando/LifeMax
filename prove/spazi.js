@@ -207,8 +207,18 @@ const sullaScala = g => SCALA.some(v => Math.abs(g - v) <= TOLL);
       if (!m) continue;
       /* `.focus-scena` centra il suo cuore con margini automatici e appoggia
          la porta in fondo: la distanza fra i due È lo spazio che resta, e
-         cambia con l'altezza dello schermo. Non è un numero scelto. */
-      m.spazi.filter(x => x.liv <= 1 && x.cont !== 'div.focus-scena').forEach(x => {
+         cambia con l'altezza dello schermo. Non è un numero scelto.
+
+         E SI GUARDA LA CLASSE, non la stringa intera. Prima qui c'era
+         `x.cont !== 'div.focus-scena'`, cioè un confronto col nome esatto:
+         il giorno in cui la scena ha preso una seconda classe — `forma-scheda`,
+         per la forma scelta nelle impostazioni — la stringa è diventata
+         `div.focus-scena.forma-scheda`, l'eccezione ha smesso di valere, e
+         la prova ha segnato come difetto uno spazio che questo commento
+         dichiara di non voler misurare. Un'eccezione scritta sul nome
+         esatto scade alla prima classe in più. */
+      const nellaScena = c => String(c || '').split('.').includes('focus-scena');
+      m.spazi.filter(x => x.liv <= 1 && !nellaScena(x.cont)).forEach(x => {
         misurati++;
         if (!sullaScala(x.g)) {
           const k = x.g + '|' + x.cont + '|' + x.a + '|' + x.b;

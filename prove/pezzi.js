@@ -38,8 +38,14 @@ const ok = (nome, cond, det) => {
    alzare il numero. Usa il pezzo. */
 const TETTO = {
   btn: 84, card: 33, 'lista-riga': 25, campo: 30, 'q-chip': 5,
-  segmenti: 13, stat: 6, vuoto: 11, 'lista-nota': 23
+  segmenti: 8, stat: 6, vuoto: 11, 'lista-nota': 14
 };
+/* `segmenti` da 13 a 8 e `lista-nota` da 23 a 14: il pannello delle
+   impostazioni scriveva a mano la stessa riga a segmenti otto volte e la
+   stessa nota tredici, e adesso passano da `rigaSegmenti()` e da `nota()`.
+   Il tetto è sceso perché è sceso il conto, che è l'unico motivo per cui
+   questo numero si muove. (Quattordici e non tredici perché la forma
+   resta scritta una volta, dentro a `nota()`: il pezzo conta come uno.) */
 
 const sorgente = tuttoIlCodice();
 
