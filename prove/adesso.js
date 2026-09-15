@@ -115,7 +115,7 @@ const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  
        incastrare in una giornata, e «alle 15:00» da solo non basta a
        deciderlo */
     ok('e dice anche quanto dura e quanto manca',
-      /alle 15:00/.test(s.dett || '') && /60′/.test(s.dett || '') && /fra 5 ore/.test(s.dett || ''), s.dett);
+      /alle 15:00/.test(s.dett || '') && /60 min/.test(s.dett || '') && /fra 5 ore/.test(s.dett || ''), s.dett);
     ok('la fascia è quella spenta, non quella accesa', /st-dopo/.test(s.classe || ''), s.classe);
     /* il punto di tutto: la schermata deve rispondere «e adesso?» */
     ok('e dice a chiare lettere che adesso non c’è niente',

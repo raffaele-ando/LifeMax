@@ -4050,3 +4050,153 @@ input.rec-ora { min-width: 96px; text-align: left; font-weight: var(--peso-forte
    forma.js legge quello, ci applica il limite del lato corto e ne fa la curva
    di Apple. Chi non ha un raggio non ha una forma, e le pastiglie
    (`--r-tondo`) restano capsule, che è quello che sono anche da Apple. */
+
+/* ═══════════════════════════════════════════════════════════════════════
+   LE ALTRE DUE FORME DI «ADESSO» — `spina` e `poi`.
+
+   Si scelgono in Impostazioni → Aspetto → «Schermata "Adesso"», e non sono
+   un tema: sono tre risposte diverse alla stessa domanda. La scheda dice
+   «e adesso?»; la spina dice anche «e poi?», mettendo in pagina la giornata
+   invece di duecento pixel di niente.
+
+   Quello che segue nasce da un censimento fatto sulla scheda di oggi: sui
+   sei stati c'erano 103 elementi visibili, e trentacinque erano icone da
+   13px. Uno per uno hanno dovuto rispondere a tre domande — serve? si
+   capisce? è bella? — e otto non hanno passato nessuna delle tre:
+     · il filo da 4px in cima, che codificava lo stato con quattro colori
+       senza che nessuno possa impararli;
+     · il suo tratteggio, per «nessun orario»;
+     · la tessera del tipo e il segno dello stato, 13×13, illeggibili a
+       quella misura e ridondanti col testo che avevano accanto;
+     · «nessun orario» e «quando vuoi, ma prima delle altre», che
+       dichiarano un'assenza e spiegano una funzione;
+     · «Adesso non hai niente in programma», che ripete il dato e il tasto;
+     · «Non del tutto…», acceso in tutte e sei le situazioni e utile in due.
+   Qui sotto sono tolti, e il CSS che li toglie sta accanto al CSS che
+   disegna le forme nuove perché è la stessa decisione. */
+
+/* ---- quello che se ne va, nelle due forme nuove ---------------------- */
+.forma-poi .focus-cuore::before,
+.forma-poi .focus-cuore .fs-barra,
+.forma-poi .focus-cuore .fs-tipo,
+.forma-poi .focus-cuore .fs-ico,
+.forma-poi .focus-cuore .fd-area,
+.forma-poi .focus-coda,
+.forma-poi .focus-ripete { display: none; }
+/* IL DATO SMETTE DI ESSERE GRIGIO A 13px. Tolto il filo colorato, è lui
+   — insieme al tasto della fascia — a distinguere uno stato dall'altro:
+   «15:00 → 16:00 · restano 50′» non è la stessa cosa di «era alle 15:00,
+   7 ore fa», e si legge senza nessuna legenda. */
+.forma-poi .focus-cuore .fs-dett { font-size: 15px; font-weight: var(--peso-titolo); color: var(--inchiostro-1); }
+.forma-poi .focus-cuore.st-ritardo .fs-dett { color: #8a5c00; }
+:root[data-mode="dark"] .forma-poi .focus-cuore.st-ritardo .fs-dett { color: var(--avviso); }
+/* la tinta di fondo resta SOLO dove si legge senza impararla: il crema di
+   una cosa rimasta indietro. Il rosa pallido dell'area diceva a colori una
+   cosa che il nome dell'area dice già a parole. */
+.forma-poi .focus-cuore:not(.st-ritardo) { background: var(--superficie-1); border-color: var(--bordo); }
+
+/* ---- la coda: le altre di oggi, aperte ------------------------------- */
+/* le tessere di `poi` stanno fra la scheda e la coda, centrate come tutto
+   il resto della scheda — nella spina sono a sinistra perché lì è a
+   sinistra anche il titolo. */
+.fuoco-tessere { display: flex; justify-content: center; margin-top: 10px; }
+.fuoco-tessere .spina-tessere { margin-top: 0; justify-content: center; }
+.fuoco-poi { margin-top: var(--s3); }
+.fuoco-poi-eti {
+  font-size: 11px; font-weight: var(--peso-titolo); letter-spacing: .1em;
+  text-transform: uppercase; color: var(--inchiostro-muto); padding: 0 4px 8px;
+}
+.coda-riga {
+  display: flex; align-items: center; gap: 11px; width: 100%;
+  padding: 13px 14px; margin-bottom: 7px; text-align: left;
+  background: var(--superficie-1); border: 1px solid var(--bordo); border-radius: var(--r-2);
+}
+.coda-riga b { font-size: 15px; font-weight: var(--peso-forte); flex: 1; }
+.coda-riga span { font-size: 12px; color: var(--inchiostro-muto); font-variant-numeric: tabular-nums; }
+.coda-pt { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+.coda-fatta { background: none; border-color: transparent; padding-top: 6px; padding-bottom: 6px; margin-bottom: 0; }
+.coda-fatta b { color: var(--inchiostro-muto); font-weight: var(--peso-forte); }
+
+/* ---- la spina: la giornata come una colonna -------------------------- */
+.spina { padding-top: 2px; }
+.spina-nodo { display: grid; grid-template-columns: 22px 1fr; column-gap: 10px; }
+/* IL FILO È UN FONDO, non un elemento: così non si spezza fra un nodo e
+   l'altro e non chiede una riga di markup per ogni tratto. */
+.spina-filo { position: relative; }
+.spina-filo::before {
+  content: ''; position: absolute; left: 50%; top: 0; bottom: 0; width: 2px;
+  transform: translateX(-50%); background: var(--griglia);
+}
+.spina-nodo:first-child .spina-filo::before { top: 12px; }
+.spina-nodo:last-child .spina-filo::before { bottom: calc(100% - 12px); }
+.spina-filo i {
+  position: relative; z-index: 1; display: block;
+  width: 9px; height: 9px; border-radius: 50%; margin: 8px auto 0;
+  background: var(--superficie-1); border: 2px solid var(--griglia);
+}
+.spina-gia .spina-filo i { background: var(--ok); border-color: var(--ok); }
+/* il nodo di adesso è più grosso degli altri: è l'unica differenza di
+   forma sulla colonna, e non ha bisogno di una legenda perché è anche
+   l'unico che porta un titolo grande. */
+.spina-ora .spina-filo i { width: 13px; height: 13px; margin-top: 6px; background: var(--accento); border-color: var(--accento); }
+.spina-ora.st-ritardo .spina-filo i { background: var(--avviso); border-color: var(--avviso); }
+.spina-min { padding-bottom: 12px; }
+.spina-qui { padding: 2px 0 22px; text-align: left; }
+.spina-area { font-size: 13px; font-weight: var(--peso-titolo); margin-bottom: 5px; }
+.spina-tit { font-size: clamp(27px, 8vw, 33px); line-height: 1.04; letter-spacing: -.025em; }
+.spina-tit b { font-weight: var(--peso-titolo); }
+/* IL SECONDO TONO. Quasi sempre la prima parola è il verbo — «Confrontare
+   piani telefonici» — e staccarla fa leggere il titolo come una cosa da
+   fare invece che come un'etichetta. `em` qui non è enfasi: è il tono in
+   meno, quindi niente corsivo. */
+.spina-tit em { font-style: normal; font-weight: var(--peso-forte); color: var(--inchiostro-2); }
+.spina-tessere { display: flex; gap: 7px; flex-wrap: wrap; margin-top: 11px; }
+.spina-tessere > span {
+  display: inline-flex; align-items: center; gap: 5px; padding: 5px 10px;
+  border-radius: var(--r-tondo); background: var(--superficie-2);
+  font-size: 12px; font-weight: var(--peso-forte); color: var(--inchiostro-2);
+}
+.spina .focus-ifthen { margin-top: 11px; }
+
+/* ---- la fascia d'azione --------------------------------------------- */
+/* IL TERZO ESITO sta DENTRO la fascia, non sopra di lei nel flusso.
+   Lasciato nel flusso finiva 59px sotto la cima della fascia — che su un
+   telefono è `position: fixed` — e il verde ci passava sopra a metà
+   parola. La pastiglia gli serve per lo stesso motivo: lì sotto scorre il
+   resto della pagina. */
+.fuoco-mancata { display: flex; justify-content: center; padding: 0 0 8px; }
+.fuoco-mancata .btn-mancata {
+  font-size: 12px; font-weight: var(--peso-forte); color: var(--inchiostro-muto);
+  padding: 7px 14px; border-radius: var(--r-tondo);
+  background: var(--superficie-1); border: 1px solid var(--bordo);
+}
+.fascia-barra { display: flex; gap: 2px; border-radius: var(--r-3); overflow: hidden; }
+.fascia-barra button { border: 0; height: 54px; display: flex; align-items: center; justify-content: center; gap: 8px; color: #fff; }
+.fascia-primo { flex: 1; font-size: 16px; font-weight: var(--peso-titolo); }
+.fascia-slot { width: 56px; }
+/* IL COLORE DICE LO STATO, e può farlo perché la parola è scritta sopra:
+   nessuno deve imparare che petrolio vuol dire «non è ancora ora», lo
+   legge. È la differenza fra un segno e un codice. */
+.fascia-ora button { background: #0a7f28; }
+.fascia-dopo button { background: var(--accento); }
+.fascia-ritardo button { background: #a4671f; }
+.fascia-barra .fascia-slot { filter: brightness(.88); }
+:root[data-mode="dark"] .fascia-dopo button { background: #2b5668; }
+/* SU UNO SCHERMO LARGO LA FASCIA NON SI STACCA. Lì la barra in basso non
+   c'è (c'è la colonna di lato), il pollice non c'entra niente, e un blocco
+   appiccicato al fondo di un monitor è solo un blocco fuori posto. */
+.fuoco-fascia { margin-top: var(--s3); }
+@media (max-width: 860px) {
+  /* stessa aritmetica della `.tabbar`: `--vv-giu` è quanto dista il fondo
+     visibile da quello d'impianto, e senza di lui la fascia finisce sotto
+     il bordo dello schermo appena la pagina viene mostrata rimpicciolita. */
+  .fuoco-fascia {
+    position: fixed; left: 14px; right: 14px; z-index: 39; margin: 0;
+    bottom: calc(84px + var(--vv-giu, 0px) + env(safe-area-inset-bottom) / 2);
+    transform: translateZ(0);
+  }
+  .fascia-barra { box-shadow: var(--e3); }
+  /* e la pagina si fa da parte: quello che sta sotto la fascia non lo
+     legge nessuno, e la coda di oggi finisce lì. */
+  .forma-spina .spina, .forma-poi .fuoco-poi { padding-bottom: 72px; }
+}

@@ -419,6 +419,24 @@ function setEffetti(v: Stato['profilo']['effetti']): void {
   LM_FORMA.scorda();
   render();
 }
+/* LA FORMA DI «ADESSO». Le altre voci di «Aspetto» cambiano come si vede
+   l'app; questa cambia COSA C'È SULLA SCHERMATA, e per questo non basta
+   ridisegnare: `spina` e `poi` mettono in pagina anche la coda di oggi,
+   che la scheda non nomina. Un `render()` basta lo stesso — la scena si
+   ricostruisce da capo a ogni giro — ma la barra d'azione di `spina` e
+   `poi` vive FUORI dalla scena, appoggiata in fondo allo schermo, e quella
+   va tolta a mano quando si torna a `scheda`: se no resta lì, sopra una
+   schermata che ha già i suoi tasti, e sono due. */
+function setForma(v: NonNullable<Stato['profilo']['forma']>): void {
+  const s = LM.load();
+  if ((s.profilo.forma || 'scheda') === v) return;
+  s.profilo.forma = v;
+  LM.registra('impostazioni', 'Schermata «Adesso» impostata su ' + v, false);
+  LM.save();
+  const vecchia = document.querySelector('.fuoco-fascia');
+  if (vecchia) vecchia.remove();
+  render();
+}
 function setScorri(v: Stato['profilo']['scorri']): void {
   const s = LM.load();
   if ((s.profilo.scorri || 'si') === v) return;
@@ -1602,6 +1620,8 @@ export function htmlImpostazioni(): string {
   function segSc(v: string, et: string) { return '<button data-scorri="' + v + '" class="' + (scorri === v ? 'attivo' : '') + '">' + et + '</button>'; }
   const eff = s.profilo.effetti || 'pieni';
   function segEf(v: string, et: string) { return '<button data-eff="' + v + '" class="' + (eff === v ? 'attivo' : '') + '">' + et + '</button>'; }
+  const forma = s.profilo.forma || 'scheda';
+  function segFo(v: string, et: string) { return '<button data-forma="' + v + '" class="' + (forma === v ? 'attivo' : '') + '">' + et + '</button>'; }
   const suo = s.profilo.suono || 'si', vib = s.profilo.vibra || 'si';
   function segSu(v: string, et: string) { return '<button data-suono="' + v + '" class="' + (suo === v ? 'attivo' : '') + '">' + et + '</button>'; }
   function segVi(v: string, et: string) { return '<button data-vibra="' + v + '" class="' + (vib === v ? 'attivo' : '') + '">' + et + '</button>'; }
@@ -1640,6 +1660,8 @@ export function htmlImpostazioni(): string {
       segM('auto', 'automatico', 'Auto') + segM('light', 'sun', 'Chiaro') + segM('dark', 'moon', 'Scuro') + '</span>') +
     rigaScelta('Stile', '<span class="segmenti imp-seg" id="seg-skin">' +
       segS('quiete', 'Aurora') + segS('arcade', 'Arcade') + '</span>') +
+    rigaScelta('Schermata «Adesso»', '<span class="segmenti imp-seg" id="seg-forma">' +
+      segFo('scheda', 'Scheda') + segFo('spina', 'Spina') + segFo('poi', 'Poi') + '</span>') +
     rigaScelta('Barra di navigazione', '<span class="segmenti imp-seg" id="seg-nav">' +
       segN('tre', 'Tre porte') + segN('tutte', 'Tutte le pagine') + '</span>') +
     rigaScelta('Scorri fra le schermate', '<span class="segmenti imp-seg" id="seg-scorri">' +
@@ -1657,6 +1679,7 @@ export function htmlImpostazioni(): string {
        e un interruttore che non fa niente è peggio che non averlo. */
     '</div>' +
     '<p class="lista-nota"><b>Effetti</b> serve se compaiono rettangoli grigi o neri a spigolo vivo in mezzo alle schermate, o se l’app va a scatti. <b>Ridotti</b> toglie le sfocature dietro ai pannelli e alla barra, e la forma resta. <b>Minimi</b> spegne tutto — niente curva degli angoli, niente sfocature, niente fondo colorato. Se il difetto sparisce a un gradino e non all’altro, si sa da cosa dipende.</p>' +
+    '<p class="lista-nota"><b>Schermata «Adesso»</b>: con <b>Scheda</b> vedi una cosa sola, grande e in mezzo. Con <b>Spina</b> la giornata diventa una colonna — sopra quello che hai già fatto, in mezzo questa, sotto quello che viene — e il tasto scende in fondo allo schermo. Con <b>Poi</b> resta la scheda e sotto si apre la coda di oggi, che altrimenti sta chiusa.</p>' +
     '<p class="lista-nota">Aurora è più sobrio, Arcade più acceso. Con <b>tre porte</b> le altre schermate stanno in una riga di linguette sotto al titolo; con <b>tutte le pagine</b> torna la barra lunga. In entrambi i casi ci sono tutte: cambia solo da dove ci si arriva. Con lo <b>scorrimento acceso</b> si passa da una schermata all’altra trascinando il dito di lato, come si sfoglia: le linguette restano dove sono.</p>' +
 
     /* --- I TUOI DATI: due cose che si fanno e una porta --- */
@@ -2044,6 +2067,17 @@ export function wireAspettoDati(root: HTMLElement): void {
     b.addEventListener('click', function () {
       root.querySelectorAll<HTMLElement>('#seg-scorri [data-scorri]').forEach(function (o) { o.classList.toggle('attivo', o === b); });
       setScorri(b.getAttribute('data-scorri') === 'no' ? 'no' : 'si');
+    });
+  });
+  /* come gli altri segmenti, ma il valore non si può indovinare con un
+     ternario: sono tre. Si legge l'attributo e si scarta quello che non è
+     uno dei tre — il pannello è HTML, e l'HTML lo può cambiare chiunque
+     apra gli strumenti del browser. */
+  root.querySelectorAll<HTMLElement>('#seg-forma [data-forma]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      root.querySelectorAll<HTMLElement>('#seg-forma [data-forma]').forEach(function (o) { o.classList.toggle('attivo', o === b); });
+      const q = b.getAttribute('data-forma');
+      setForma(q === 'spina' ? 'spina' : q === 'poi' ? 'poi' : 'scheda');
     });
   });
   root.querySelectorAll<HTMLElement>('#seg-nav [data-nav]').forEach(function (b) {
@@ -3186,6 +3220,19 @@ export function vistaFocus(): Scena {
   fuocoOra.oggi = oggi;
   var inCoda = oggi.filter(function (a) { return !a.done; }).length - (prossima ? 1 : 0);
 
+  /* LA FORMA SCELTA NELLE IMPOSTAZIONI. Non cambia i dati e non cambia i
+     comandi: cambia dove stanno. Va letta PRIMA di costruire, perché tre
+     pezzi del markup dipendono da lei — le frasi che dichiarano un'assenza,
+     il terzo esito, e i tasti, che in `spina` e `poi` scendono in una fascia
+     in fondo allo schermo.
+     I TASTI NON POSSONO STARE IN TUTTI E DUE I POSTI. Il cablaggio li cerca
+     per `id` (`btn-fatto`, `btn-timer`, …): lasciarli nella scheda e
+     ripeterli nella fascia vorrebbe dire due elementi con lo stesso id, e
+     `getElementById` restituisce il primo — quello nascosto. Il tasto
+     sembrerebbe morto. Quindi o di qua o di là, mai tutti e due. */
+  const forma: NonNullable<Stato['profilo']['forma']> = LM.load().profilo.forma || 'scheda';
+  const inScheda = forma === 'scheda';
+
   /* In cima non c'è niente da leggere. Prima c'erano tre nomi per la stessa
      idea a cento pixel l'uno dall'altro — il sottotitolo «L'azione da fare
      adesso.», la linguetta «Adesso» e l'occhiello «La tua prossima azione» —
@@ -3331,7 +3378,10 @@ export function vistaFocus(): Scena {
   } else if (adesso.stato === 'corso') {
     const durata = Math.max(1, aMin - daMin);
     const restano = Math.max(0, aMin - oraAdesso);
-    stato = { parola: 'Adesso', dett: fmtMin(daMin) + ' → ' + fmtMin(aMin) + ' · restano ' + restano + '′',
+    /* «50 min», non «50′». Il primo è il segno del minuto d'arco: lo usano
+       gli orologiai e le carte nautiche, non le app. Chi legge lo prende
+       per un apostrofo o non lo vede proprio. */
+    stato = { parola: 'Adesso', dett: fmtMin(daMin) + ' → ' + fmtMin(aMin) + ' · restano ' + restano + ' min',
       cls: 'ora', barra: 'corso', ico: 'target',
       quota: Math.max(0.02, Math.min(1, (oraAdesso - daMin) / durata)) };
   } else if (adesso.stato === 'ritardo') {
@@ -3343,7 +3393,7 @@ export function vistaFocus(): Scena {
        due impegni diversi da prendere: «alle 15 per tre quarti d'ora» non è
        «alle 15». */
     stato = { parola: 'Più tardi',
-      dett: 'alle ' + fmtMin(daMin) + (haDurata ? ' · ' + prossima.durata + '′' : '') + fraQuanto(daMin),
+      dett: 'alle ' + fmtMin(daMin) + (haDurata ? ' · ' + prossima.durata + ' min' : '') + fraQuanto(daMin),
       cls: 'dopo', barra: haDurata ? 'dopo' : 'punto', quota: 0, ico: 'clock' };
   } else if (prossima.mit) {
     stato = { parola: 'La più importante', dett: 'quando vuoi, ma prima delle altre', cls: 'mit', barra: 'libera', quota: 0, ico: 'star' };
@@ -3384,8 +3434,12 @@ export function vistaFocus(): Scena {
   /* Le ALTRE cose di oggi, a portata di mano: se devi fare qualcos'altro la
      vedi e la scegli, senza sentirti obbligato da quella suggerita. */
   var altre = oggi.filter(function (a) { return !a.done && (!prossima || a.id !== prossima.id); });
+  /* «LE ALTRE DI OGGI», la fisarmonica. Esiste solo nella forma `scheda`:
+     in `spina` e in `poi` la coda sta già in pagina, aperta, ed è
+     esattamente la stessa lista — disegnarla due volte vorrebbe dire due
+     liste delle stesse cose, una sopra l'altra. */
   var altreHtml = '';
-  if (altre.length) {
+  if (altre.length && inScheda) {
     /* L'elenco è quello di tutta l'app: un contenitore con i separatori e il
        comando da 26px DENTRO la riga. Prima era un quarto disegno — una
        spunta quadrata staccata a sinistra di una pastiglia bianca — e ogni
@@ -3420,8 +3474,8 @@ export function vistaFocus(): Scena {
      tutti figli della stessa colonna centrata, e «Le altre di oggi» finiva
      incollata sotto ai tasti con duecento pixel di niente sotto di sé: la
      schermata sembrava interrotta a metà. */
-  scena.classi = 'focus-scena' + (timerAttivo ? ' timer-attivo' : '');
-  scena.dentro +=
+  scena.classi = 'focus-scena forma-' + forma + (timerAttivo ? ' timer-attivo' : '');
+  const dentroCuore =
     '<div class="focus-cuore st-' + stato.cls + ' tipo-' + tipoCls + '" style="--c-area:' + colArea + '">' +
     '<div class="focus-stato st-' + stato.cls + '">' +
     (stato.barra
@@ -3438,7 +3492,11 @@ export function vistaFocus(): Scena {
     (stato.ico ? '<span class="fs-ico">' + ICO(stato.ico, 13) + '</span>' : '') +
     /* la parola resta per chi non vede la forma */
     '<span class="fs-parola solo-lettori">' + stato.parola + '</span>' +
-    (stato.dett ? '<span class="fs-dett">' + esc(stato.dett) + '</span>' : '') +
+    /* «nessun orario» e «quando vuoi, ma prima delle altre» dichiarano
+       un'assenza e spiegano una funzione: nelle forme nuove non ci sono, e
+       la scheda senza orario diventa semplicemente la più corta. */
+    (stato.dett && (inScheda || !/nessun orario|prima delle altre/.test(stato.dett))
+      ? '<span class="fs-dett">' + esc(stato.dett) + '</span>' : '') +
     '</div></div>' +
     '<div class="focus-didascalia' + perCls + '" style="--c-area:' + colArea + '">' +
     segnoArea(area, 15, 'fd-area') + '<span class="fd-nome">' + esc(area.nome) + '</span>' +
@@ -3458,49 +3516,57 @@ export function vistaFocus(): Scena {
        mostrava la cosa delle tre del pomeriggio come se fosse da fare
        subito, e chi la leggeva alle dieci restava a chiedersi se doveva
        cominciarla. */
-    (adesso.stato === 'programmata'
+    /* fuori da `scheda` questa frase non serve: lo dicono già il dato
+       («alle 15:00, fra 5 ore») e il tasto della fascia, che lì sotto
+       diventa «Falla adesso» e cambia colore. */
+    (adesso.stato === 'programmata' && inScheda
       ? '<div class="focus-nota-dopo">Adesso non hai niente in programma.</div>'
       : '') +
     (prossima.ifThen ? '<div class="focus-ifthen">' + ICO('ancora', 15) + '<span>' + esc(prossima.ifThen) + '</span></div>' : '') +
-    /* gerarchia chiara: un'unica azione dominante, il resto recede */
-    '<div class="focus-primaria">' +
-    /* «Fatto», e basta. Il «+10 XP» sul tasto trasformava l'unico comando
-       che deve essere ovvio in due cose da leggere, e prometteva un premio
-       prima di averlo dato: il premio si vede quando lo premi, e lì è
-       immediato per davvero.
-       Quando la cosa è PIÙ TARDI il tasto pieno non può dire «Fatto»: quello
-       che uno vuole fare in quel momento è deciderlo — «la faccio adesso» —
-       e «Fatto» resta lì accanto, smorzato, per chi l'ha già fatta davvero. */
-    (adesso.stato === 'programmata'
-      ? '<button class="btn btn-primario btn-grande" id="btn-adesso">' + ICO('target', 18) + ' Falla adesso</button>'
-      : '<button class="btn btn-ok btn-grande" id="btn-fatto">' + ICO('check', 18) + ' Fatto</button>') +
-    '</div>' +
-    '<div class="focus-secondarie">' +
-    /* Un tasto, non quattro. «Timer 25′ 10′ 50′» erano tre bersagli su otto
-       di tutta la schermata: il cronometro pesava come l'azione. E la
-       durata era una scelta in più da fare PRIMA di cominciare, quando è
-       già scritta sulla cosa stessa — quella che si dà nella «Giornata»
-       trascinando un blocco. Se non c'è, venticinque minuti. */
-    (adesso.stato === 'programmata'
-      ? '<button class="btn btn-mini" id="btn-fatto">' + ICO('check', 15) + ' Fatto</button>'
-      : (timerAttivo
-        ? '<button class="btn btn-mini" id="btn-concentra">' + ICO('target', 15) + ' Torna al timer</button>'
-        : '<button class="btn btn-mini" id="btn-timer" data-min="' + minTimer + '">' +
-          ICO('play', 15) + ' Timer</button>')) +
-    /* un'abitudine non si rimanda a domani: domani c'è già. Si salta oggi,
-       e la serie lo sa. */
-    (prossima.tipo === 'abitudine'
-      ? '<button class="btn btn-mini btn-ghost" id="btn-salta">Salta oggi ' + ICO('salta', 15) + '</button>'
-      : '<button class="btn btn-mini btn-ghost" id="btn-nonora">Più tardi ' + ICO('rimanda', 15) + '</button>') +
-    /* IL TERZO ESITO. «Più tardi» dice che la farai; cancellare la fa
-       sparire dal registro di quello che è successo. Quello che manca in
-       mezzo — e che capita più spesso di tutti e due — è averci provato e
-       non esserci riuscito. Sta qui, smorzato: va potuto dire in un tocco,
-       e non va invitato. Per un'abitudine c'è già «Salta oggi», che è la
-       stessa cosa detta nel modo giusto per una cosa che torna. */
-    (prossima.tipo === 'abitudine' ? ''
-      : '<button class="btn btn-mini btn-ghost btn-mancata" id="btn-mancata">Non del tutto…</button>') +
-    '</div>' +
+    /* I TASTI, e solo nella forma `scheda`. In `spina` e in `poi`
+       scendono nella fascia in fondo allo schermo: vedi il commento
+       su `forma` qui sopra — gli stessi `id` non possono stare in
+       due posti. */
+    (!inScheda ? '' :
+      /* gerarchia chiara: un'unica azione dominante, il resto recede */
+      '<div class="focus-primaria">' +
+      /* «Fatto», e basta. Il «+10 XP» sul tasto trasformava l'unico comando
+         che deve essere ovvio in due cose da leggere, e prometteva un premio
+         prima di averlo dato: il premio si vede quando lo premi, e lì è
+         immediato per davvero.
+         Quando la cosa è PIÙ TARDI il tasto pieno non può dire «Fatto»: quello
+         che uno vuole fare in quel momento è deciderlo — «la faccio adesso» —
+         e «Fatto» resta lì accanto, smorzato, per chi l'ha già fatta davvero. */
+      (adesso.stato === 'programmata'
+        ? '<button class="btn btn-primario btn-grande" id="btn-adesso">' + ICO('target', 18) + ' Falla adesso</button>'
+        : '<button class="btn btn-ok btn-grande" id="btn-fatto">' + ICO('check', 18) + ' Fatto</button>') +
+      '</div>' +
+      '<div class="focus-secondarie">' +
+      /* Un tasto, non quattro. «Timer 25′ 10′ 50′» erano tre bersagli su otto
+         di tutta la schermata: il cronometro pesava come l'azione. E la
+         durata era una scelta in più da fare PRIMA di cominciare, quando è
+         già scritta sulla cosa stessa — quella che si dà nella «Giornata»
+         trascinando un blocco. Se non c'è, venticinque minuti. */
+      (adesso.stato === 'programmata'
+        ? '<button class="btn btn-mini" id="btn-fatto">' + ICO('check', 15) + ' Fatto</button>'
+        : (timerAttivo
+          ? '<button class="btn btn-mini" id="btn-concentra">' + ICO('target', 15) + ' Torna al timer</button>'
+          : '<button class="btn btn-mini" id="btn-timer" data-min="' + minTimer + '">' +
+            ICO('play', 15) + ' Timer</button>')) +
+      /* un'abitudine non si rimanda a domani: domani c'è già. Si salta oggi,
+         e la serie lo sa. */
+      (prossima.tipo === 'abitudine'
+        ? '<button class="btn btn-mini btn-ghost" id="btn-salta">Salta oggi ' + ICO('salta', 15) + '</button>'
+        : '<button class="btn btn-mini btn-ghost" id="btn-nonora">Più tardi ' + ICO('rimanda', 15) + '</button>') +
+      /* IL TERZO ESITO. «Più tardi» dice che la farai; cancellare la fa
+         sparire dal registro di quello che è successo. Quello che manca in
+         mezzo — e che capita più spesso di tutti e due — è averci provato e
+         non esserci riuscito. Sta qui, smorzato: va potuto dire in un tocco,
+         e non va invitato. Per un'abitudine c'è già «Salta oggi», che è la
+         stessa cosa detta nel modo giusto per una cosa che torna. */
+      (prossima.tipo === 'abitudine' ? ''
+        : '<button class="btn btn-mini btn-ghost btn-mancata" id="btn-mancata">Non del tutto…</button>') +
+      '</div>') +
     /* Quante ne restano lo dice già il contatore in cima e il tasto delle
        altre. Qui resta solo la cosa che nessuno dei due dice: che dopo
        questa non c'è più niente. Scritto come un'etichetta e non come una
@@ -3513,6 +3579,122 @@ export function vistaFocus(): Scena {
     altreHtml +
     '';
 
+  /* IL TERZO ESITO non se ne va con i tasti: «averci provato e non esserci
+     riuscito» capita più spesso degli altri due, e se non si può dire
+     resta solo mentire o cancellare. Qui sta sotto, smorzato, e SOLO dove
+     vuol dire qualcosa — su una cosa che aveva un tempo. Su una cosa che
+     puoi fare quando vuoi non significa niente, e nella scheda di oggi
+     compare invece in tutte e sei le situazioni. */
+  const mancata = (prossima.tipo !== 'abitudine' && (adesso.stato === 'corso' || adesso.stato === 'ritardo'))
+    ? '<div class="fuoco-mancata"><button class="btn-mancata" id="btn-mancata">Non del tutto…</button></div>'
+    : '';
+
+  /* ------------------------------------------------------------------
+     LA FASCIA D'AZIONE di `spina` e `poi`: i comandi escono dalla scheda e
+     si appoggiano in fondo allo schermo, dove arriva il pollice senza
+     spostare la mano.
+     IL COLORE DICE LO STATO, ed è l'unico posto dove un colore lo può dire
+     senza che nessuno debba impararlo: la parola è scritta sopra. Verde
+     «Fatto» quando c'è da spuntare, petrolio «Falla adesso» quando c'è da
+     cominciare. Gli `id` sono quelli di sempre — `wireFuoco()` lega per
+     `id` e non sa né vuole sapere dov'è finito il tasto. */
+  const cls = adesso.stato === 'programmata' ? 'dopo' : adesso.stato === 'ritardo' ? 'ritardo' : 'ora';
+  const fascia = (mancata: string) =>
+    '<div class="fuoco-fascia">' + mancata + '<div class="fascia-barra fascia-' + cls + '">' +
+    (adesso.stato === 'programmata'
+      ? '<button class="fascia-primo" id="btn-adesso">' + ICO('target', 18) + '<b>Falla adesso</b></button>' +
+        '<button class="fascia-slot" id="btn-fatto" aria-label="Segna come fatta">' + ICO('check', 18) + '</button>'
+      : '<button class="fascia-primo" id="btn-fatto">' + ICO('check', 18) + '<b>Fatto</b></button>' +
+        (timerAttivo
+          ? '<button class="fascia-slot" id="btn-concentra" aria-label="Torna al timer">' + ICO('target', 18) + '</button>'
+          : '<button class="fascia-slot" id="btn-timer" data-min="' + minTimer + '" aria-label="Timer">' + ICO('play', 18) + '</button>')) +
+    (prossima.tipo === 'abitudine'
+      ? '<button class="fascia-slot" id="btn-salta" aria-label="Salta oggi">' + ICO('salta', 18) + '</button>'
+      : '<button class="fascia-slot" id="btn-nonora" aria-label="Rimanda a più tardi">' + ICO('rimanda', 18) + '</button>') +
+    '</div></div>';
+
+  if (forma === 'scheda') { scena.dentro += dentroCuore; return scena; }
+
+  /* le due liste che riempiono il basso: quello che è già andato — le
+     ultime due, non tutte: questa non è la pagina della giornata — e
+     quello che viene dopo questa. */
+  const fatte = oggi.filter(function (a) { return a.done; }).slice(-2);
+  const restano = oggi.filter(function (a) { return !a.done && a.id !== prossima.id; }).slice(0, 4);
+  /* IL PALLINO SOLO DOVE NON C'È GIÀ. Nella spina ogni riga ha il suo nodo
+     sul filo, a sinistra: ripetere un pallino colorato dentro la riga vuol
+     dire due segni tondi per la stessa cosa, a dieci pixel l'uno
+     dall'altro. In `poi` il filo non c'è, e il pallino serve — è l'unico
+     posto dove si vede di che area è quella riga. */
+  function rigaCoda(a: typeof oggi[number], fatta: boolean, conPunto: boolean): string {
+    const ar = areaById(a.areaId);
+    return '<button class="coda-riga' + (fatta ? ' coda-fatta' : '') + '" data-fa-fuoco="' + a.id + '">' +
+      (conPunto ? '<i class="coda-pt" style="background:' + (fatta ? 'var(--ok)' : LM.coloreArea(ar)) + '"></i>' : '') +
+      '<b>' + esc(a.testo) + '</b>' + (a.ora ? '<span>' + esc(a.ora) + '</span>' : '') + '</button>';
+  }
+
+  /* LE TESSERE: solo quello che c'è. Una cosa senza durata non porta la
+     tessera della durata, e nessuno scrive «nessuna durata» — che è
+     esattamente l'errore di «nessun orario» nella scheda. */
+  const tessere: string[] = [];
+  if (prossima.tipo === 'abitudine') {
+    const h = LM.load().abitudini.find(function (x) { return x.id === prossima.id; });
+    const gg = (h && h.giorni) || [];
+    const NOMI = ['Dom', 'Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab'];
+    /* la settimana in parole e non a pallini: sei cerchi mezzi pieni sono
+       un codice che va imparato, «Lun Mer Ven» no. */
+    const quando = gg.length >= 7 ? 'Ogni giorno' : gg.map(function (i) { return NOMI[i] || ''; }).join(' ');
+    tessere.push(ICO('refresh', 13) + '<span>' + esc(quando || 'Abitudine') + '</span>');
+  }
+  if (prossima.durata) tessere.push(ICO('durata', 13) + '<span>' + prossima.durata + ' min</span>');
+  const tessereHtml = tessere.length
+    ? '<div class="spina-tessere">' + tessere.map(function (t) { return '<span>' + t + '</span>'; }).join('') + '</div>'
+    : '';
+
+  if (forma === 'poi') {
+    /* LA SETTIMANA A PALLINI se ne va anche qui. Sei cerchi mezzi pieni
+       sotto al titolo sono un codice che va imparato; «Lun Mar Gio» no, e
+       occupa lo stesso posto. La toglie il foglio di stile, e al suo posto
+       arrivano le stesse tessere della spina. */
+    scena.dentro += dentroCuore + (tessereHtml ? '<div class="fuoco-tessere">' + tessereHtml + '</div>' : '') +
+      (restano.length
+        ? '<div class="fuoco-poi"><div class="fuoco-poi-eti">Poi</div>' +
+          restano.map(function (a) { return rigaCoda(a, false, true); }).join('') + '</div>'
+        : '') +
+      fascia(mancata);
+    return scena;
+  }
+
+  /* ------------------------------------------------------------------
+     LA SPINA. Niente scheda: la schermata è una colonna di tempo, e questa
+     cosa è il nodo grosso in mezzo. Risponde a due domande invece che a
+     una — «e adesso?» la scheda la sapeva già dire, «e poi?» no — e
+     riempie il basso con la giornata invece che con niente.
+     IL TITOLO È A DUE TONI: la prima parola porta il peso, il resto scende.
+     Quasi sempre la prima parola è il verbo («Confrontare piani
+     telefonici», «Scrivere il changelog»), e un titolo che comincia con un
+     verbo si legge come una cosa da fare invece che come un'etichetta.
+     Quando il titolo è una parola sola non c'è niente da smorzare, e
+     resta tutto pieno. */
+  const parti = prossima.testo.trim().split(/\s+/);
+  const primo = parti[0] || prossima.testo;
+  const titolo = parti.length > 1
+    ? '<b>' + esc(primo) + '</b> <em>' + esc(parti.slice(1).join(' ')) + '</em>'
+    : '<b>' + esc(primo) + '</b>';
+
+  function nodo(dentro: string, cls: string): string {
+    return '<div class="spina-nodo ' + cls + '"><div class="spina-filo"><i></i></div>' + dentro + '</div>';
+  }
+  scena.dentro +=
+    '<div class="spina">' +
+    fatte.map(function (a) { return nodo('<div class="spina-min">' + rigaCoda(a, true, false) + '</div>', 'spina-gia'); }).join('') +
+    nodo('<div class="spina-qui">' +
+      '<div class="spina-area" style="color:' + colArea + '">' + esc(area.nome) + '</div>' +
+      '<div class="spina-tit">' + titolo + '</div>' +
+      tessereHtml +
+      (prossima.ifThen ? '<div class="focus-ifthen">' + ICO('ancora', 15) + '<span>' + esc(prossima.ifThen) + '</span></div>' : '') +
+      '</div>', 'spina-ora st-' + stato.cls) +
+    restano.map(function (a) { return nodo('<div class="spina-min">' + rigaCoda(a, false, false) + '</div>', ''); }).join('') +
+    '</div>' + fascia(mancata);
   return scena;
 }
 

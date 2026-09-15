@@ -267,6 +267,18 @@ export type Effetti = 'pieni' | 'ridotti' | 'minimi';
 export type SiNo = 'si' | 'no';
 export type GiornataPos = 'oggi-strip' | 'panoramica' | 'oggi-full' | 'menu';
 export type Nav = 'tre' | 'tutte';
+/* LA FORMA DELLA SCHERMATA «ADESSO».
+   Non è un tema e non è un gusto: sono tre risposte diverse alla stessa
+   domanda, e quale sia la migliore dipende da come è fatta la tua giornata.
+     · `scheda`  quella di sempre: una cosa sola, in mezzo, grande.
+     · `spina`   la giornata come una colonna: sopra quello che hai già
+                 fatto, in mezzo questa, sotto quello che viene. Risponde
+                 anche a «e poi?», che la scheda da sola non fa.
+     · `poi`     la scheda dov'è, e sotto la coda di oggi aperta invece che
+                 chiusa in una fisarmonica.
+   In `spina` e `poi` il comando scende in fondo allo schermo, dove arriva
+   il pollice, e cambia colore con lo stato. */
+export type Forma = 'scheda' | 'spina' | 'poi';
 
 export interface Profilo {
   nome: string;
@@ -281,6 +293,7 @@ export interface Profilo {
   ritmo: Ritmo;
   chiedi: Chiedi;
   nav?: Nav;
+  forma?: Forma;
   promemoria?: Promemoria;
   /* L'INTERRUTTORE DELLE SCHERMATE NUOVE, e non lo legge più nessuno.
      Serviva mentre le schermate passavano una per una al motore nuovo; adesso
