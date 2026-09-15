@@ -3704,8 +3704,38 @@ export function vistaFocus(): Scena {
    stanno in `fuocoOra`, riempito da chi ha appena costruito la scena. */
 export function wireFuoco() {
 
+/* UN ELEMENTO SI COLLEGA UNA VOLTA SOLA, e questa riga vale un guasto che
+   spuntava tre cose per un tocco.
+
+   `Adesso.tsx` chiama `wireFuoco()` dentro a un `useEffect` SENZA array di
+   dipendenze: gira dopo ogni render, ed è giusto così — la scena può
+   cambiare a ogni giro e i fili vanno rimessi. Finché React riscriveva il
+   nodo a ogni render i gestori se ne andavano insieme ai vecchi elementi,
+   e riattaccarli era l'unico modo di averli.
+   Poi è arrivata la memoizzazione di `grezzo.ts`, che serve a tutt'altro
+   (la Panoramica si rianimava a ogni giro perché l'oggetto passato a
+   `dangerouslySetInnerHTML` era nuovo ogni volta, e React lo confronta per
+   IDENTITÀ, non per contenuto). Da allora, quando l'HTML non cambia, React
+   NON tocca il nodo: gli elementi sopravvivono, e `wireFuoco()` gli attacca
+   un gestore in più a ogni render.
+   Tre gestori su «Fatto» non vogliono dire tre volte la stessa cosa: il
+   primo chiama `render()`, che ricalcola qual è LA PROSSIMA, e il secondo
+   legge quella nuova. Un tocco solo spuntava tre attività diverse. Nessun
+   errore, nessun avviso — l'ha trovato `prove/forme.js` contando quante
+   volte `completaAzione` viene chiamata per una pressione.
+
+   `collegate` è lo stesso WeakSet dei form: gli elementi ci entrano per
+   riferimento, e quando React li butta via se ne vanno da soli. E quando
+   l'HTML cambia gli elementi sono nuovi davvero — `innerHTML` li ricrea
+   tutti — quindi il filo si riattacca, che è quello che deve succedere. */
+function lega(e: Element | null, fn: (ev: Event) => void): void {
+  if (!e || collegate.has(e)) return;
+  collegate.add(e);
+  e.addEventListener('click', fn);
+}
+
 $vista.querySelectorAll<HTMLElement>('[data-vai]').forEach(function (b) {
-  b.addEventListener('click', function () {
+  lega(b, function () {
     if (b.getAttribute('data-sub')) schermo.sottoRituale = b.getAttribute('data-sub');
     location.hash = '#/' + b.getAttribute('data-vai');
   });
@@ -3716,14 +3746,14 @@ var btnAltre = document.getElementById('btn-altre');
    $vista, riga delle sezioni compresa, e solo render() la rimette. Aprendo
    «le altre» la riga spariva fino al ridisegno successivo. Con la pagina
    che non cambia, render() conserva lo scorrimento e non anima niente. */
-if (btnAltre) btnAltre.addEventListener('click', function () { mostraAltre = !mostraAltre; render(); });
+lega(btnAltre, function () { mostraAltre = !mostraAltre; render(); });
 var btnTorna = document.getElementById('btn-torna-piano');
-if (btnTorna) btnTorna.addEventListener('click', function () { fuocoScelto = null; render(); });
+lega(btnTorna, function () { fuocoScelto = null; render(); });
 $vista.querySelectorAll<HTMLElement>('[data-fa-fuoco]').forEach(function (b) {
-  b.addEventListener('click', function () { fuocoScelto = b.getAttribute('data-fa-fuoco'); mostraAltre = false; render(); });
+  lega(b, function () { fuocoScelto = b.getAttribute('data-fa-fuoco'); mostraAltre = false; render(); });
 });
 $vista.querySelectorAll<HTMLElement>('[data-fa-fatto]').forEach(function (b) {
-  b.addEventListener('click', function (ev) {
+  lega(b, function (ev) {
     const id = b.getAttribute('data-fa-fatto');
     if (!id) return;
     feedbackSpunta(ev, LM.completaAzione(id), 'Fatto.', 'check');
@@ -3736,7 +3766,7 @@ $vista.querySelectorAll<HTMLElement>('[data-fa-fatto]').forEach(function (b) {
    una funzione a sé, ci si può arrivare comunque — e senza questa guardia
    il primo tocco su una giornata vuota rompeva tutta la schermata. */
 const bFatto = document.getElementById('btn-fatto');
-if (bFatto) bFatto.addEventListener('click', function (ev) {
+lega(bFatto, function (ev) {
   /* SENZA UNA COSA DA FARE QUESTO TASTO NON ESISTE, e il commento qui sopra
      dice perché: la giornata vuota è un altro ramo della scena. Il controllo
      era implicito nel fatto che il tasto non ci fosse; adesso è scritto. */
@@ -3762,13 +3792,13 @@ if (bFatto) bFatto.addEventListener('click', function (ev) {
    il piano metteva più in là. La scheda passa a «Scelta da te», con la
    via del ritorno al piano accanto. */
 const bAdesso = document.getElementById('btn-adesso');
-if (bAdesso) bAdesso.addEventListener('click', function () {
+lega(bAdesso, function () {
   const q = fuocoOra.prossima;
   if (!q) return;
   fuocoScelto = q.id; mostraAltre = false; render();
 });
 const bNonOra = document.getElementById('btn-nonora');
-if (bNonOra) bNonOra.addEventListener('click', function () {
+lega(bNonOra, function () {
   const q = fuocoOra.prossima;
   if (!q) return;
   fermaTimer(false);
@@ -3778,7 +3808,7 @@ if (bNonOra) bNonOra.addEventListener('click', function () {
   render();
 });
 const bSalta = document.getElementById('btn-salta');
-if (bSalta) bSalta.addEventListener('click', function () {
+lega(bSalta, function () {
   const q = fuocoOra.prossima;
   if (!q) return;
   fermaTimer(false);
@@ -3788,14 +3818,14 @@ if (bSalta) bSalta.addEventListener('click', function () {
   render();
 });
 const bm = document.getElementById('btn-mancata');
-if (bm) bm.addEventListener('click', function () {
+lega(bm, function () {
   const q = fuocoOra.prossima;
   if (q) chiediMancata(q.id, q.testo);
 });
 const bc = document.getElementById('btn-concentra');
-if (bc) bc.addEventListener('click', function () { apriConcentrazione(); });
+lega(bc, function () { apriConcentrazione(); });
 const bt = document.getElementById('btn-timer');
-if (bt) bt.addEventListener('click', function () {
+lega(bt, function () {
   const q = fuocoOra.prossima;
   if (q) scegliTimer(q.id, q.areaId, q.testo, fuocoOra.minTimer);
 });
