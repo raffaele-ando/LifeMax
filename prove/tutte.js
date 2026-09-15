@@ -49,6 +49,31 @@ if (da >= 0) {
 
 const ESITI = fs.mkdtempSync(path.join(os.tmpdir(), 'lifemax-prove-'));
 
+/* IL PACCO NON DEVE CAMBIARE MENTRE LE PROVE CI GIRANO SOPRA.
+   Le prove servono la radice del ramo così com'è: un `npm run build:nuovo`
+   in un'altra finestra cancella `pacco/` e lo riscrive con nomi nuovi, e
+   quelle che in quel momento stanno caricando la pagina la trovano vuota.
+   Cadono con errori che non c'entrano niente — «LM is not defined», una
+   soglia letta a NaN — e si perde mezz'ora a cercare un guasto che non
+   esiste. È successo tre volte in un giorno solo.
+   Qui si prende il nome del pezzo principale prima e dopo: se è cambiato,
+   la passata non vale, e vale la pena dirlo invece di lasciar credere agli
+   esiti. */
+/* Si guarda il NOME e l'ISTANTE in cui è stato scritto. Il nome da solo non
+   basta: ricostruire senza aver cambiato una riga rifà lo stesso nome — ma
+   intanto la cartella è stata cancellata e riscritta, e chi stava caricando
+   la pagina in quel mezzo secondo l'ha trovata vuota lo stesso. */
+const pezzoPrincipale = () => {
+  try {
+    const m = /\.\/pacco\/(index-[A-Za-z0-9_-]+\.js)/.exec(
+      fs.readFileSync(path.join(QUI, '..', 'index.html'), 'utf8'));
+    if (!m) return '(non trovato)';
+    const quando = fs.statSync(path.join(QUI, '..', 'pacco', m[1])).mtimeMs;
+    return m[1] + ' scritto alle ' + new Date(quando).toLocaleTimeString('it-IT');
+  } catch (e) { return '(index.html non leggibile)'; }
+};
+const paccoPrima = pezzoPrincipale();
+
 function gira(file) {
   return new Promise((risolvi) => {
     const dentro = [];
@@ -78,6 +103,14 @@ const attendi = (ms) => new Promise((r) => setTimeout(r, ms));
     const t0 = Date.now();
     process.stdout.write('  ' + nome.padEnd(14));
     let esito = await gira(file);
+    /* «Cannot find module 'playwright'» non è un guasto dell'app: è una
+       macchina senza le dipendenze. Detto così com'è, manda a leggere lo
+       stack di Node per scoprire una cosa che si risolve con un comando. */
+    if (esito.codice !== 0 && /Cannot find module 'playwright'/.test(esito.testo)) {
+      console.log('KO   manca playwright — `npm install` (e `npx playwright install chromium` per il browser)');
+      caduti.push(nome);
+      continue;
+    }
     if (esito.codice !== 0 && PORTA_OCCUPATA.test(esito.testo)) {
       process.stdout.write('porta occupata, riprovo… ');
       await attendi(5000);
@@ -96,6 +129,15 @@ const attendi = (ms) => new Promise((r) => setTimeout(r, ms));
   }
   const min = Math.round((Date.now() - partenza) / 60000);
   console.log('');
+  const paccoDopo = pezzoPrincipale();
+  if (paccoDopo !== paccoPrima) {
+    console.log('  ⚠  IL SITO È STATO RICOSTRUITO DURANTE LA PASSATA');
+    console.log('     ' + paccoPrima + '  →  ' + paccoDopo);
+    console.log('     Gli esiti qui sopra non valgono: le prove hanno letto due siti');
+    console.log('     diversi, e quelle passate nel mezzo hanno trovato il pacco a metà.');
+    console.log('     Si rilancia a build fermo.');
+    process.exit(2);
+  }
   console.log('  il racconto completo di ognuna: ' + ESITI);
   if (!caduti.length) {
     console.log('  ' + elenco.length + ' prove, tutte a posto (' + min + ' minuti)');
