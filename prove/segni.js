@@ -212,34 +212,10 @@ const larghi = [...usi.entries()].filter(function (e) { return !generici.has(e[0
 ok('nessun segno preciso accanto a ' + TETTO + ' frasi diverse', larghi.length === 0,
   larghi.map(function (e) { return e[0] + ' (' + e[1].frasi.size + ': ' + [...e[1].frasi].sort().join(', ') + ')'; }).join(' — ') || 'nessuno');
 
-/* ============================================================
-   GLI STRUMENTI PUNTANO A FILE CHE ESISTONO
-   ============================================================
-   `segni/` contiene quattro strumenti da riga di comando: cercano un'icona
-   nella libreria, la portano dentro all'app, rifanno il logo e le PNG. Sono
-   l'unico modo sensato di aggiungere un segno.
-   Tutti e tre quelli che toccano l'app leggevano e scrivevano
-   `assets/icons.js` e `assets/icone/`, che non esistono da quando l'app è in
-   TypeScript. Quindi non funzionavano — e non è il genere di cosa che si
-   scopre: si scopre il giorno che serve un'icona nuova, cioè nel momento
-   peggiore, e la strada breve diventa incollare un tracciato a mano.
-   Un percorso scritto dentro a uno strumento è una promessa come un'altra. */
-console.log('\nGLI STRUMENTI DI segni/ SANNO DOVE SONO LE COSE');
-const fsT = require('fs'), pathT = require('path');
-const { RAMO: RADICE_T } = require('./comune/dove');
-const CARTELLA = pathT.join(RADICE_T, 'segni');
-fsT.readdirSync(CARTELLA).filter((f) => f.endsWith('.mjs')).sort().forEach(function (f) {
-  const testo = fsT.readFileSync(pathT.join(CARTELLA, f), 'utf8');
-  /* i percorsi del ramo scritti come stringhe: `path.join(QUI, '..', 'src', …)`
-     e i letterali tipo 'public/icone/icona.svg' */
-  const voluti = new Set();
-  for (const m of testo.matchAll(/path\.join\(QUI, '\.\.'((?:, '[^']+')+)\)/g)) {
-    voluti.add(m[1].split(',').map((x) => x.trim().replace(/^'|'$/g, '')).filter(Boolean).join('/'));
-  }
-  for (const m of testo.matchAll(/'((?:src|public|prove|promemoria|segni)\/[A-Za-z0-9_./-]+)'/g)) voluti.add(m[1]);
-  const persi = [...voluti].filter((r) => !fsT.existsSync(pathT.join(RADICE_T, r)));
-  ok('segni/' + f, persi.length === 0, persi.length ? 'punta a ' + persi.join(', ') : voluti.size + ' percorsi, tutti veri');
-});
+/* (il controllo che gli strumenti di `segni/` puntino a file che esistono
+   stava qui, ed è passato a `prove/riferimenti.js`: là dentro vale per tutte
+   le cartelle di strumenti, e insieme al controllo che il sito non nomini
+   indirizzi che non ha. Erano la stessa domanda chiesta in due posti.) */
 
 console.log(guai ? '\n>>> ' + guai + (guai > 1 ? ' PROBLEMI' : ' PROBLEMA') : '\n>>> TUTTO A POSTO');
 process.exit(guai ? 1 : 0);

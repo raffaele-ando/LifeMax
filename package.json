@@ -9,7 +9,7 @@
     "tipi": "tsc --noEmit",
     "build:nuovo": "tsc --noEmit && vite build",
     "prove": "node prove/tutte.js",
-    "prove:svelte": "node prove/tutte.js intestazioni pacco pezzi postino segni",
+    "prove:svelte": "node prove/tutte.js intestazioni pacco pezzi postino riferimenti segni",
     "test": "node prove/tutte.js"
   },
   "devDependencies": {
