@@ -1175,12 +1175,39 @@ function creaLM() {
        per chi voleva davvero ripartire da quel file: da Impostazioni →
        Backup si torna a com'era un istante fa. */
     var quanti = ricchezza(st);
+    /* QUANTO DI QUESTO FILE NON ENTRERÀ, e perché va detto PRIMA di dire
+       «fatto». «Azzera tutto» scrive l'istante in cui è stato chiesto, e la
+       fusione taglia tutto quello che è più vecchio: serve, se no il cloud
+       si rimangerebbe l'azzeramento alla prima sincronizzazione (vedi il
+       commento lungo in `unisci`). Ma vuol dire che chi azzera e POI
+       ripesca il suo backup si ritrova quasi niente — e finora l'app gli
+       diceva «Dati importati (322 elementi)», che era il conto di quello
+       che stava NEL FILE, non di quello che era entrato. Misurato: 322
+       dichiarati, 91 arrivati, e nessuno lo diceva.
+       Si contano le righe che il taglio prenderà, una per una. Non si guarda
+       invece «quanto è cresciuto lo stato», che sarebbe zero anche
+       reimportando un file che hai già — e gridare al lupo lì sarebbe il
+       modo di non farsi più credere il giorno che il lupo c'è. */
+    var taglio = Number((load() as unknown as Mappa)['azzerato']) || 0;
+    var tagliati = 0;
+    if (taglio && eMappa(st)) {
+      var regoleImp = COME_UNIRE as unknown as Record<string, ModoFusione | undefined>;
+      Object.keys(st).forEach(function (k) {
+        if (regoleImp[k] !== 'elenco' || k === 'cancellati') return;
+        var lista = (st as Mappa)[k];
+        if (!Array.isArray(lista)) return;
+        lista.forEach(function (r: unknown) { if (momentoRiga(r, 0) < taglio) tagliati++; });
+      });
+    }
     hydrate(st);
-    registra('dati', 'Dati importati da file (' + quanti + ' elementi, uniti a quelli che c\u2019erano)', true);
+    registra('dati', tagliati
+      ? 'Dati importati da file (' + quanti + ' elementi; ' + tagliati +
+        ' righe più vecchie dell\u2019ultimo «Azzera tutto» non sono rientrate)'
+      : 'Dati importati da file (' + quanti + ' elementi, uniti a quelli che c\u2019erano)', true);
     senzaLapidi++;
     save();
     senzaLapidi--;
-    return { ok: true, ricchezza: quanti };
+    return { ok: true, ricchezza: quanti, tagliati: tagliati };
   }
 
   /* METTE DENTRO UNO STATO CHE ARRIVA DA FUORI (il cloud, un file).

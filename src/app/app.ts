@@ -2123,7 +2123,24 @@ export function wireAspettoDati(root: HTMLElement): void {
       const reader = new FileReader();
       reader.onload = function () {
         const r = LM.importJson(String(reader.result));
-        if (r.ok) { chiudiSheet(); applicaTema(); render(); toast('Dati importati (' + r.ricchezza + ' elementi).', 0, 'upload'); }
+        if (r.ok) {
+          chiudiSheet(); applicaTema(); render();
+          /* QUANDO IL FILE È PIÙ VECCHIO DI UN «AZZERA TUTTO», va detto qui e
+             non nel registro tecnico: chi ha appena ripescato il suo backup
+             sta guardando questo messaggio, e «importati 322 elementi» mentre
+             ne sono entrati 91 è la bugia peggiore che l'app possa dire —
+             perché toglie la voglia di controllare. Si dice anche la via
+             d'uscita, che c'è: la copia presa un istante fa. */
+          if (r.tagliati) {
+            avviso({
+              titolo: 'Importato, ma in parte',
+              testo: r.tagliati + ' righe del file sono più vecchie dell’ultimo «Azzera tutto», e l’azzeramento le tiene fuori: è quello che impedisce al cloud di rimettere indietro quello che hai cancellato.<br><br>Se volevi davvero riavere quel file com’era, in «Backup e ripristino» c’è la copia presa un istante fa, prima di questa importazione.',
+              azione: 'Ho capito'
+            });
+          } else {
+            toast('Dati importati (' + r.ricchezza + ' elementi).', 0, 'upload');
+          }
+        }
         else { toast(r.err || 'Importazione non riuscita.', 0, 'avviso'); }
       };
       reader.readAsText(f);
