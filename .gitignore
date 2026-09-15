@@ -18,6 +18,14 @@ node_modules/
 .claude/
 skills-lock.json
 
-/* i banchi di prova del disegno: mockup, scatti, tavole di confronto.
-   Si guardano una volta e si buttano — non sono il sito. */
+# I BANCHI DI PROVA DEL DISEGNO: mockup, scatti dei dodici stati di
+# «Adesso», tavole di confronto. Si guardano una volta per decidere e si
+# buttano, e pesano in megabyte di PNG: nel ramo che Pages serve non ci
+# devono stare, come già `.agents/` e `.claude/`.
+# (E il commento qui va con `#`. La prima stesura l'aveva scritto come in
+#  C — `/* … */` — che in un .gitignore non è un commento ma un PATTERN:
+#  quella riga diceva a git di ignorare un file chiamato «/* i banchi di
+#  prova del disegno…». Non ha ignorato niente per puro caso, perché il
+#  pattern comprendeva tutta la frase; scritto `/*` da solo avrebbe
+#  ignorato ogni cosa in radice.)
 scratchpad/
