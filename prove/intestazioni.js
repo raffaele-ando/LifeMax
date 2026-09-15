@@ -106,11 +106,22 @@ eterni.forEach((b) => {
        cosa che conta è la stessa — se cambia una riga cambia il nome, quindi
        quel file lì non cambierà mai e si può promettere «per sempre» — e la
        prova cercava l'alfabeto invece della cosa.
-       Si accettano entrambi, e il pezzo dell'impronta non può avere trattini
-       dentro: senza quel dettaglio `icona-maskable-512.png` passerebbe
-       contando `-maskable-512` come un'impronta. */
+       IL TRATTINO STA ANCHE DENTRO ALL'IMPRONTA, ed è il difetto che questa
+       riga ha avuto finché non è uscito un nome che lo conteneva:
+       `nuvola-Vr-HhkUA.js`. Base64url è A-Z a-z 0-9 `-` `_`, quindi un'impronta
+       su otto caratteri ha una possibilità su qualcosa come venti di avere un
+       trattino dentro — e il controllo, che i trattini li vietava, chiamava
+       «senza impronta» un file che ce l'aveva. Un falso allarme raro è peggio
+       di un allarme che non scatta mai: costa mezz'ora ogni volta che capita,
+       e insegna a non credergli.
+       La domanda non è «di che alfabeto è fatto il nome» ma «quel nome cambia
+       quando cambia il contenuto», e la risposta è: gli ULTIMI OTTO caratteri
+       prima del punto, preceduti da un trattino. Otto è quello che scrive
+       Vite, e contarli è quello che separa `nuvola-Vr-HhkUA.js` da
+       `icona-maskable-512.png`, dove gli otto prima del punto sono `able-512`
+       e davanti non hanno un trattino ma una «k». */
     const senzaMappa = f.replace(/\.map$/, '');
-    if (!/[.-][A-Za-z0-9_]{8,}\.[a-z0-9]+$/.test(senzaMappa)) senzaImpronta.push(cartella + '/' + f);
+    if (!/-[A-Za-z0-9_-]{8}\.[a-z0-9]+$/.test(senzaMappa)) senzaImpronta.push(cartella + '/' + f);
   });
 });
 ok('ogni file sotto una regola eterna ha l’impronta nel nome', senzaImpronta.length === 0,
