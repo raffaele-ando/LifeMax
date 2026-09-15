@@ -6,3 +6,14 @@ node_modules/
 # il sito non esiste per nessuno. Si costruisce con `npm run build:nuovo` e si
 # committa insieme al codice che l'ha prodotto — `prove/pacco.js` controlla
 # che i due non divergano.
+
+# LE SKILL INSTALLATE DA `npx skills add` NON SONO DI QUESTO PROGETTO.
+# Sono undici megabyte di istruzioni di terze parti, scaricate per provare
+# se aiutavano col disegno. Stanno sulla macchina di chi le ha installate,
+# non nel ramo: questo ramo È il sito, e ogni file qui dentro si deve
+# giustificare davanti a chi lo legge.
+# Se un giorno una di queste diventa parte del modo di lavorare, si toglie
+# la riga e si committa quella sola, con scritto perché.
+.agents/
+.claude/
+skills-lock.json
