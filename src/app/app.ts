@@ -1636,7 +1636,21 @@ export function htmlImpostazioni(): string {
   const eff = s.profilo.effetti || 'pieni';
   function segEf(v: string, et: string) { return '<button data-eff="' + v + '" class="' + (eff === v ? 'attivo' : '') + '">' + et + '</button>'; }
   const forma = s.profilo.forma || 'scheda';
-  function segFo(v: string, et: string) { return '<button data-forma="' + v + '" class="' + (forma === v ? 'attivo' : '') + '">' + et + '</button>'; }
+  /* `data-schermata`, e il nome è la parte interessante.
+     Il primo tentativo era `data-forma`, che sembra l'ovvio: ma
+     `data-forma` è GIÀ DI QUALCUN ALTRO — `src/forma/forma.ts` ci scrive
+     dentro la firma della forma che ha disegnato (`e.dataset.forma =
+     p.firma`), su ogni elemento a cui dà gli angoli a supercerchio, questi
+     bottoni compresi. Il valore «spina» durava fino al primo giro del
+     sistema delle forme, poi diventava «105x44|14.39,…|0|»: il gestore non
+     riconosceva più niente, ripiegava su «scheda» — che è già il valore
+     corrente — e `setForma` usciva subito. Si cliccava e non succedeva
+     niente, senza un errore da nessuna parte.
+     Il secondo tentativo era `data-adesso`, preso anche lui: lo porta la
+     griglia della giornata per marcare l'ora corrente. Contesto diverso,
+     quindi non si sarebbero pestati i piedi — ma un nome che significa già
+     un'altra cosa è il modo di rifare lo stesso guasto fra sei mesi. */
+  function segFo(v: string, et: string) { return '<button data-schermata="' + v + '" class="' + (forma === v ? 'attivo' : '') + '">' + et + '</button>'; }
   const suo = s.profilo.suono || 'si', vib = s.profilo.vibra || 'si';
   function segSu(v: string, et: string) { return '<button data-suono="' + v + '" class="' + (suo === v ? 'attivo' : '') + '">' + et + '</button>'; }
   function segVi(v: string, et: string) { return '<button data-vibra="' + v + '" class="' + (vib === v ? 'attivo' : '') + '">' + et + '</button>'; }
@@ -2088,10 +2102,10 @@ export function wireAspettoDati(root: HTMLElement): void {
      ternario: sono tre. Si legge l'attributo e si scarta quello che non è
      uno dei tre — il pannello è HTML, e l'HTML lo può cambiare chiunque
      apra gli strumenti del browser. */
-  root.querySelectorAll<HTMLElement>('#seg-forma [data-forma]').forEach(function (b) {
+  root.querySelectorAll<HTMLElement>('#seg-forma [data-schermata]').forEach(function (b) {
     b.addEventListener('click', function () {
-      root.querySelectorAll<HTMLElement>('#seg-forma [data-forma]').forEach(function (o) { o.classList.toggle('attivo', o === b); });
-      const q = b.getAttribute('data-forma');
+      root.querySelectorAll<HTMLElement>('#seg-forma [data-schermata]').forEach(function (o) { o.classList.toggle('attivo', o === b); });
+      const q = b.getAttribute('data-schermata');
       setForma(q === 'spina' ? 'spina' : q === 'poi' ? 'poi' : 'scheda');
     });
   });

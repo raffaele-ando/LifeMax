@@ -167,6 +167,59 @@ const CASI = [
     await ctx.close();
   }
 
+  /* ------------------------------------------------------------------
+     E SI SCEGLIE DAL PANNELLO, non scrivendo nei dati.
+
+     Tutto quello che sta sopra metteva `profilo.forma` con `LM.save()` e
+     poi guardava la schermata: provava il DISEGNO e saltava l'unico pezzo
+     che l'utente tocca davvero, cioè i tre pulsanti in Impostazioni. Con
+     quel buco è passata una cosa che rendeva l'impostazioneinutile:
+     i pulsanti portavano il valore in `data-forma`, e `data-forma` è già
+     di `src/forma/forma.ts`, che ci scrive dentro la firma della forma
+     disegnata. Al primo giro «spina» diventava «105x44|14.39,…|0|», il
+     gestore non riconosceva più niente, ripiegava sul valore corrente e
+     usciva: si cliccava e non succedeva niente, senza un errore da
+     nessuna parte.
+     Da qui in giù si clicca il pulsante vero, e si pretendono tre cose:
+     che il dato cambi, che sopravviva al ricaricamento, e che la
+     schermata diventi davvero quell'altra. */
+  console.log('\nSI SCEGLIE DAL PANNELLO, E LA SCHERMATA CAMBIA');
+  for (const forma of ['spina', 'poi', 'scheda']) {
+    const { ctx, p } = await apri('scheda', '2026-08-25T15:10:00', CASI[0][2]);
+    /* la strada vera: plancia → impostazioni → il pulsante */
+    await p.evaluate(() => { location.hash = '#/plancia'; }); await p.waitForTimeout(650);
+    await p.evaluate(() => {
+      const b = document.getElementById('fondo-impostazioni') || document.querySelector('[data-imp]');
+      if (b) b.click();
+    });
+    await p.waitForTimeout(700);
+    const c1 = await p.evaluate(f => {
+      const b = document.querySelector('#seg-forma [data-schermata="' + f + '"]');
+      if (!b) return 'il pulsante non c’è';
+      b.click(); return '';
+    }, forma);
+    ok(forma + ': il pulsante c’è nel pannello', c1 === '', c1);
+    await p.waitForTimeout(600);
+    const salvato = await p.evaluate(() => LM.load().profilo.forma);
+    ok(forma + ': il clic salva la scelta', salvato === forma, 'salvato: ' + salvato);
+    /* e resta dopo aver chiuso e riaperto l'app */
+    await p.evaluate(() => { location.hash = '#/oggi'; });
+    await p.reload(); await p.waitForTimeout(900);
+    const dopo = await p.evaluate(() => ({
+      dato: LM.load().profilo.forma,
+      classe: (document.querySelector('.focus-scena') || {}).className || '',
+      spina: document.querySelectorAll('.spina').length,
+      fascia: document.querySelectorAll('.fuoco-fascia').length
+    }));
+    ok(forma + ': resta dopo il ricaricamento', dopo.dato === forma, 'dato: ' + dopo.dato);
+    ok(forma + ': e la schermata è davvero quell’altra',
+      new RegExp('forma-' + forma + '(\\s|$)').test(dopo.classe) &&
+      (forma === 'spina' ? dopo.spina === 1 : dopo.spina === 0) &&
+      (forma === 'scheda' ? dopo.fascia === 0 : dopo.fascia === 1),
+      JSON.stringify(dopo));
+    await ctx.close();
+  }
+
   if (err.length) { fail += err.length; console.log('\nERRORI DI PAGINA:'); err.forEach(e => console.log('  ' + e)); }
   await b.close(); srv.close();
   console.log('\n' + (fail ? fail + ' PROBLEMI' : 'tutto a posto'));
