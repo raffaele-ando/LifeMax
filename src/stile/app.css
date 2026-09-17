@@ -4118,6 +4118,12 @@ input.rec-ora { min-width: 96px; text-align: left; font-weight: var(--peso-forte
 .coda-fatta b { color: var(--inchiostro-muto); font-weight: var(--peso-forte); }
 
 /* ---- la spina: la giornata come una colonna -------------------------- */
+/* UNA COLONNA SOLA PER TUTTA LA SCHERMATA. `.focus-altre` — la lista delle
+   altre cose di oggi — sta dentro 560px da sempre; la spina e la coda
+   aperta non avevano un tetto, e su un monitor la riga di testo correva da
+   un bordo all'altro mentre la fascia sotto restava nella sua colonna.
+   Tre larghezze diverse per la stessa pagina. Adesso è una. */
+.spina, .fuoco-poi { width: 100%; max-width: 560px; margin-inline: auto; }
 .spina { padding-top: 2px; }
 .spina-nodo { display: grid; grid-template-columns: 22px 1fr; column-gap: 10px; }
 /* IL FILO È UN FONDO, non un elemento: così non si spezza fra un nodo e
@@ -4159,18 +4165,41 @@ input.rec-ora { min-width: 96px; text-align: left; font-weight: var(--peso-forte
 .spina .focus-ifthen { margin-top: 11px; }
 
 /* ---- la fascia d'azione --------------------------------------------- */
+/* FUORI DALL'ANIMAZIONE DI CAMBIO SCHERMATA. Adesso la fascia è un figlio
+   diretto di `#vista`, e `.vista-enter > *` anima tutti i figli diretti:
+   una cosa appoggiata allo schermo non entra scivolando insieme al
+   contenuto, e mentre scivola porterebbe con sé una `transform` propria. */
+.vista-enter > .fuoco-fascia,
+.sez-enter > .fuoco-fascia,
+.sez-enter-dx > .fuoco-fascia,
+.sez-enter-sx > .fuoco-fascia { animation: none; }
 /* IL TERZO ESITO sta DENTRO la fascia, non sopra di lei nel flusso.
    Lasciato nel flusso finiva 59px sotto la cima della fascia — che su un
    telefono è `position: fixed` — e il verde ci passava sopra a metà
    parola. La pastiglia gli serve per lo stesso motivo: lì sotto scorre il
    resto della pagina. */
 .fuoco-mancata { display: flex; justify-content: center; padding: 0 0 8px; }
+/* il terzo esito segue la barra: centrato sulla stessa colonna */
+.fuoco-fascia { max-width: 588px; margin-inline: auto; }
+/* IL PAVIMENTO DEI BERSAGLI VALE ANCHE QUI: 40px, come i tre più piccoli
+   dell'app (`prove/tocco.js`). Era 34 — smorzato nel colore, e smorzato
+   anche nella misura, che è un'altra cosa: un comando che si vuole
+   disponibile ma non invitante si spegne col colore, non rimpicciolendo
+   il punto dove va il dito. */
 .fuoco-mancata .btn-mancata {
   font-size: 12px; font-weight: var(--peso-forte); color: var(--inchiostro-muto);
-  padding: 7px 14px; border-radius: var(--r-tondo);
+  min-height: 40px; padding: 0 16px; border-radius: var(--r-tondo);
   background: var(--superficie-1); border: 1px solid var(--bordo);
 }
-.fascia-barra { display: flex; gap: 2px; border-radius: var(--r-3); overflow: hidden; }
+/* LARGA QUANTO IL CONTENUTO, non quanto la finestra. Senza tetto, su un
+   monitor la barra diventava una striscia verde da parete a parete sotto
+   una colonna di testo larga un terzo: il comando più vistoso della
+   schermata era anche l'unica cosa che non seguiva la colonna. 560px è la
+   stessa misura di `.focus-altre`, che è la lista qui sopra. */
+.fascia-barra {
+  display: flex; gap: 2px; border-radius: var(--r-3); overflow: hidden;
+  max-width: 560px; margin: 0 auto;
+}
 .fascia-barra button { border: 0; height: 54px; display: flex; align-items: center; justify-content: center; gap: 8px; color: #fff; }
 .fascia-primo { flex: 1; font-size: 16px; font-weight: var(--peso-titolo); }
 .fascia-slot { width: 56px; }
@@ -4196,7 +4225,14 @@ input.rec-ora { min-width: 96px; text-align: left; font-weight: var(--peso-forte
     transform: translateZ(0);
   }
   .fascia-barra { box-shadow: var(--e3); }
-  /* e la pagina si fa da parte: quello che sta sotto la fascia non lo
-     legge nessuno, e la coda di oggi finisce lì. */
-  .forma-spina .spina, .forma-poi .fuoco-poi { padding-bottom: 72px; }
+  /* E LA PAGINA SI FA DA PARTE, di quanto è alta la fascia davvero.
+     Erano 72px, tarati sulla fascia con la sola barra: quando c'è anche il
+     terzo esito («Non del tutto…», che compare su una cosa in corso o in
+     ritardo) la fascia è alta 40 + 8 + 54 = 102px, e copriva l'ultima riga
+     della coda. Misurato su 144 combinazioni di forma, situazione,
+     larghezza e tema: la fascia copriva `coda-riga` in dodici.
+     Il valore sta sulla scena e non sulle due liste, perché la fascia le
+     copre tutte e due allo stesso modo. */
+  .forma-spina .focus-scena, .forma-poi .focus-scena,
+  .forma-spina .spina, .forma-poi .fuoco-poi { padding-bottom: 124px; }
 }

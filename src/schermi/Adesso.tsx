@@ -39,5 +39,17 @@ export default function Adesso() {
     <Testa titolo="Oggi" giaNellaNav />
     <div id="oggi-giornata" />
     <div className={scena.classi} {...html(scena.dentro)} />
+    {/* LA FASCIA STA FUORI DALLA SCENA, e deve restarci.
+        Su un telefono è `position: fixed`, e un elemento fisso si aggancia
+        al viewport soltanto se nessun antenato ha una `transform`.
+        L'animazione di cambio schermata ne mette una sulla scena — è
+        `.vista-enter > *`, e la scena è un figlio diretto di `#vista` —
+        quindi da dentro la fascia si agganciava alla SCENA: per i
+        novecento millisecondi dell'animazione compariva a metà pagina,
+        sopra la coda, e poi scattava in fondo.
+        Qui è sorella, non figlia. Il foglio la tiene anche fuori
+        dall'animazione: una cosa appoggiata allo schermo non entra
+        scivolando insieme al contenuto. */}
+    {scena.fascia ? <div className="fuoco-fascia" {...html(scena.fascia)} /> : null}
   </>);
 }

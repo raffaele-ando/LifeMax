@@ -93,7 +93,17 @@ export type DisegnaSchermo = (dove: HTMLElement) => void;
 export type MontaFoglio<K extends NomeFoglio> = (dove: HTMLElement, props: PropDiFoglio[K]) => void;
 
 /* LA SCENA DI «ADESSO»: il dentro e le classi, senza toccare la pagina. */
-export interface Scena { dentro: string; classi: string }
+/* LA FASCIA ESCE DALLA SCENA, e non è una preferenza di ordine.
+   `position: fixed` si aggancia al viewport SOLO se nessun antenato ha una
+   `transform` — e l'animazione di cambio schermata ne mette una proprio
+   sulla scena (`.vista-enter > *`, e la scena è un figlio diretto di
+   `#vista`). Per i novecento millisecondi dell'animazione la fascia si
+   agganciava alla SCENA invece che allo schermo: compariva a metà pagina,
+   sopra la coda, e poi scattava in fondo. Da fuori si vedeva un tremolio a
+   ogni cambio di schermata.
+   Quindi la scena restituisce due pezzi: il dentro, e la fascia. Chi
+   disegna li mette uno accanto all'altro, non uno dentro l'altro. */
+export interface Scena { dentro: string; classi: string; fascia: string }
 
 /* ------------------------------------------------------- la giornata
    UN NODO della griglia: un pasto, un'abitudine o un'azione, con l'ora in
@@ -3280,7 +3290,7 @@ export function vistaFocus(): Scena {
      disegnare lui il contenitore, se no si ritrova un elemento in più
      nell'albero — l'errore che prove/gemelle.js ha già trovato quattro
      volte. Il codice di prima riavvolge tutto due righe più sotto. */
-  var scena = { classi: 'focus-scena', dentro: '' };
+  var scena = { classi: 'focus-scena', dentro: '', fascia: '' };
   var html = topbar('Oggi', '', '', '', true);
   html += '<div id="oggi-giornata"></div>';
 
@@ -3629,7 +3639,7 @@ export function vistaFocus(): Scena {
      `id` e non sa né vuole sapere dov'è finito il tasto. */
   const cls = adesso.stato === 'programmata' ? 'dopo' : adesso.stato === 'ritardo' ? 'ritardo' : 'ora';
   const fascia = (mancata: string) =>
-    '<div class="fuoco-fascia">' + mancata + '<div class="fascia-barra fascia-' + cls + '">' +
+    mancata + '<div class="fascia-barra fascia-' + cls + '">' +
     (adesso.stato === 'programmata'
       ? '<button class="fascia-primo" id="btn-adesso">' + ICO('target', 18) + '<b>Falla adesso</b></button>' +
         '<button class="fascia-slot" id="btn-fatto" aria-label="Segna come fatta">' + ICO('check', 18) + '</button>'
@@ -3640,7 +3650,7 @@ export function vistaFocus(): Scena {
     (prossima.tipo === 'abitudine'
       ? '<button class="fascia-slot" id="btn-salta" aria-label="Salta oggi">' + ICO('salta', 18) + '</button>'
       : '<button class="fascia-slot" id="btn-nonora" aria-label="Rimanda a più tardi">' + ICO('rimanda', 18) + '</button>') +
-    '</div></div>';
+    '</div>';
 
   if (forma === 'scheda') { scena.dentro += dentroCuore; return scena; }
 
@@ -3689,7 +3699,8 @@ export function vistaFocus(): Scena {
         ? '<div class="fuoco-poi"><div class="fuoco-poi-eti">Poi</div>' +
           restano.map(function (a) { return rigaCoda(a, false, true); }).join('') + '</div>'
         : '') +
-      fascia(mancata);
+      '';
+    scena.fascia = fascia(mancata);
     return scena;
   }
 
@@ -3723,7 +3734,8 @@ export function vistaFocus(): Scena {
       (prossima.ifThen ? '<div class="focus-ifthen">' + ICO('ancora', 15) + '<span>' + esc(prossima.ifThen) + '</span></div>' : '') +
       '</div>', 'spina-ora st-' + stato.cls) +
     restano.map(function (a) { return nodo('<div class="spina-min">' + rigaCoda(a, false, false) + '</div>', ''); }).join('') +
-    '</div>' + fascia(mancata);
+    '</div>';
+  scena.fascia = fascia(mancata);
   return scena;
 }
 
