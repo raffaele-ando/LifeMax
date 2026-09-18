@@ -1,0 +1,162 @@
+{
+  "typography": [
+    {
+      "role": "heading",
+      "fontFamily": "ui-sans-serif",
+      "fontSize": "17px",
+      "fontWeight": "750",
+      "lineHeight": "25.5px",
+      "letterSpacing": "-0.34px",
+      "color": "#101116",
+      "sampleText": "Come ti chiami"
+    },
+    {
+      "role": "body",
+      "fontFamily": "ui-sans-serif",
+      "fontSize": "14.5px",
+      "fontWeight": "400",
+      "lineHeight": "21.75px",
+      "letterSpacing": "normal",
+      "color": "#565863",
+      "sampleText": "Uno spazio unico per organizzare, misurare e migliorare le d"
+    },
+    {
+      "role": "label",
+      "fontFamily": "ui-sans-serif",
+      "fontSize": "12.5px",
+      "fontWeight": "750",
+      "lineHeight": "18.75px",
+      "letterSpacing": "normal",
+      "color": "#565863",
+      "sampleText": "Nome"
+    }
+  ],
+  "spacing": {
+    "observed": [
+      2,
+      3,
+      4,
+      7,
+      8,
+      10,
+      11,
+      12,
+      16,
+      22,
+      28,
+      56
+    ],
+    "baseUnit": 4
+  },
+  "radius": [
+    "11.88px"
+  ],
+  "shadows": [
+    {
+      "value": "rgba(16, 17, 22, 0.05) 0px 1px 2px 0px",
+      "count": 3
+    }
+  ],
+  "buttons": [
+    {
+      "label": "Aggiungi una notaC",
+      "background": "#FFFFFF",
+      "backgroundImage": "",
+      "backdropFilter": "",
+      "color": "#565863",
+      "padding": "0px 12px",
+      "borderRadius": "11.88px",
+      "border": "1px solid rgba(0, 0, 0, 0)",
+      "boxShadow": "rgba(16, 17, 22, 0.05) 0px 1px 2px 0px",
+      "fontSize": "14px",
+      "fontWeight": "750",
+      "height": "42px"
+    },
+    {
+      "label": "Aggiungi una nota",
+      "background": "transparent",
+      "backgroundImage": "",
+      "backdropFilter": "",
+      "color": "#565863",
+      "padding": "0px",
+      "borderRadius": "0px",
+      "border": "0px none rgb(86, 88, 99)",
+      "boxShadow": "none",
+      "fontSize": "14px",
+      "fontWeight": "750",
+      "height": "21px"
+    },
+    {
+      "label": "Avanti",
+      "background": "#17323F",
+      "backgroundImage": "",
+      "backdropFilter": "",
+      "color": "#FFFFFF",
+      "padding": "0px 24px",
+      "borderRadius": "11.88px",
+      "border": "1px solid rgba(0, 0, 0, 0)",
+      "boxShadow": "rgba(16, 17, 22, 0.05) 0px 1px 2px 0px",
+      "fontSize": "16px",
+      "fontWeight": "750",
+      "height": "52px"
+    },
+    {
+      "label": "Salta e vai alla demo",
+      "background": "transparent",
+      "backgroundImage": "",
+      "backdropFilter": "",
+      "color": "#565863",
+      "padding": "0px 16px",
+      "borderRadius": "11.88px",
+      "border": "1px solid rgba(0, 0, 0, 0)",
+      "boxShadow": "none",
+      "fontSize": "14px",
+      "fontWeight": "750",
+      "height": "42px"
+    }
+  ],
+  "cards": [
+    {
+      "label": "card",
+      "background": "#FFFFFF",
+      "backgroundImage": "",
+      "backdropFilter": "",
+      "color": "#101116",
+      "padding": "28px",
+      "borderRadius": "17.82px",
+      "border": "1px solid rgba(0, 0, 0, 0)",
+      "boxShadow": "rgba(16, 17, 22, 0.05) 0px 1px 2px 0px",
+      "fontSize": "15px",
+      "fontWeight": "400",
+      "height": "381.75px"
+    }
+  ],
+  "nav": null,
+  "chips": [
+    {
+      "label": "Beta",
+      "background": "color(srgb 0.0901961 0.196078 0.247059 / 0.08)",
+      "color": "#17323F",
+      "padding": "2px 7px",
+      "borderRadius": "7.45px",
+      "border": "1px solid rgba(0, 0, 0, 0)",
+      "boxShadow": "none",
+      "fontSize": "11px",
+      "fontWeight": "850",
+      "height": "22.5px"
+    }
+  ],
+  "statCells": [],
+  "tabs": [],
+  "backgrounds": [],
+  "glass": [
+    {
+      "backdropFilter": "blur(18px) saturate(1.3)",
+      "background": "rgba(255, 255, 255, 0.78)",
+      "border": "",
+      "borderRadius": "0px",
+      "boxShadow": "",
+      "area": 267840
+    }
+  ]
+}

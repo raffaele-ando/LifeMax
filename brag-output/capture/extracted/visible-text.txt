@@ -1,0 +1,21 @@
+[div] LifeMax
+[span] Beta
+[span] Aggiungi una nota
+[span] Finisce tra le cose da sistemare.
+[button] Chiudi
+[div] LifeMax
+[div] Misura. Ingegnerizza.
+[em] Massimizza.
+[p] Uno spazio unico per organizzare, misurare e migliorare le diverse aree della tua vita. È pensato per chi fatica a mantenere costanza e concentrazione: poca fatica per usarlo, riscontro immediato.
+[b] Annota subito.
+[span] Un tasto per salvare qualsiasi pensiero; deciderai dopo cosa farne.
+[b] Una cosa alla volta.
+[span] Ti proponiamo la prossima azione, così eviti la paralisi da troppe scelte.
+[b] Scienza applicata a te.
+[span] Esperimenti sui tuoi dati per capire cosa funziona davvero, non sulle medie di altri.
+[h2] Come ti chiami
+[div] Puoi compilare ora oppure saltare: quasi tutto qui è facoltativo.
+[label] Nome
+[label] In una frase, cosa vuoi ottenere
+[button] Avanti
+[button] Salta e vai alla demo
