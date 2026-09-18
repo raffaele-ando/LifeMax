@@ -1,3 +1,3 @@
-Ho fatto LifeMax, un sistema operativo personale per misurare la vita in otto aree.
-Poi ho misurato l'app: 13 pesi tipografici dichiarati e 2 disegnati davvero, un'aurora sfocata che costava 18,7 fps e non si vedeva, e un gradiente viola→blu che era soltanto l'impronta digitale di una macchina.
-Misura. Ingegnerizza. Massimizza. Anche su se stesso.
+Ho fatto LifeMax perché il problema non era la lista: era decidere da dove cominciare.
+Ti mette davanti una cosa sola. Il timer parte da cinque minuti, perché il difficile è iniziare.
+Dopo un mese sai cosa funziona per te — sui tuoi dati, non sulle medie di altri.

@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="it">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1080, height=1920" />
+    <title>LifeMax — 9:16</title>
+    <script src="assets/js/gsap.min.js"></script>
+    <style>
+      /* ============================================================
+         LifeMax — verticale 1080x1920.
+         Fondo inchiostro (#17323f, l'accento vero dell'app), sopra le
+         schermate del telefono ritagliate sul pezzo che conta, così il
+         testo dell'interfaccia resta leggibile su uno schermo piccolo.
+         Durate dalla scala dell'app: 150/250/350/400/500ms.
+         ============================================================ */
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+
+      html, body { width: 1080px; height: 1920px; overflow: hidden; background: #17323f; }
+
+      :root {
+        --inchiostro: #17323f;
+        --pagina: #f6f6f8;
+        --chiaro: #ffffff;
+        --chiaro-2: rgba(255, 255, 255, 0.74);
+        --font: ui-sans-serif, -apple-system, "SF Pro Display", "Segoe UI", Inter, Roboto, sans-serif;
+        --font-cifre: "New York", "Iowan Old Style", Cambria, Georgia, "Noto Serif", serif;
+        --peso-testo: 400;
+        --peso-forte: 600;
+        --peso-titolo: 750;
+        --peso-display: 850;
+      }
+
+      #root {
+        position: relative; width: 100%; height: 100%; overflow: hidden;
+        background: var(--inchiostro);
+        font-family: var(--font); color: var(--chiaro);
+        -webkit-font-smoothing: antialiased;
+      }
+      .clip { position: absolute; inset: 0; }
+
+      /* ---------- il blocco di testo, uguale in tutte le scene ---------- */
+      .testo { position: absolute; left: 80px; top: 168px; width: 920px; }
+      .t1 {
+        font-family: var(--font-cifre);
+        font-size: 76px; font-weight: var(--peso-display);
+        line-height: 1.14; letter-spacing: -0.02em;
+        color: var(--chiaro); text-wrap: balance;
+      }
+      .t2 {
+        font-family: var(--font);
+        font-size: 40px; font-weight: var(--peso-testo);
+        line-height: 1.34; color: var(--chiaro-2);
+        margin-top: 22px; text-wrap: pretty;
+      }
+
+      /* ---------- la finestra sulla schermata vera ----------
+         Ogni riquadro mostra una fetta della schermata catturata a 390x844
+         su un telefono: l'immagine è larga 1000px (cioè 2,564x le misure
+         logiche), e `top` la fa scorrere fino al punto giusto. */
+      .schermo {
+        position: absolute; left: 40px; width: 1000px;
+        overflow: hidden;
+        border-radius: 28px;
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        box-shadow: 0 40px 90px -30px rgba(0, 0, 0, 0.55);
+        background: var(--pagina);
+      }
+      .schermo img { position: absolute; left: 0; width: 1000px; height: 2164px; display: block; }
+
+      /* la lista piena: linguette + cosa catturata + le altre in coda */
+      #sc-lista { top: 519px; height: 1282px; }
+      #sc-lista img { top: -51px; }
+      /* la scheda del fuoco, una sola */
+      #sc-fuoco { top: 588px; height: 1154px; }
+      #sc-fuoco img { top: -385px; }
+      /* il timer a tutto schermo */
+      #sc-timer { top: 544px; height: 1231px; background: #0a0a0d; border-color: rgba(255,255,255,0.22); }
+      #sc-timer img { top: -449px; }
+      /* il riquadro dei conti */
+      #sc-conti { top: 732px; height: 867px; }
+      #sc-conti img { top: -236px; }
+
+      /* ---------- chiusura ---------- */
+      #s5 { background: var(--pagina); }
+      #firma {
+        position: absolute; left: 0; right: 0; top: 50%;
+        transform: translateY(-50%); text-align: center; padding: 0 80px;
+      }
+      #firma-marchio { display: block; margin: 0 auto 44px; width: 150px; height: 150px; }
+      #firma-nome {
+        font-family: var(--font-cifre); font-size: 104px;
+        font-weight: var(--peso-display); letter-spacing: -0.025em;
+        color: #101116; line-height: 1;
+      }
+      #firma-claim {
+        font-family: var(--font); font-size: 46px; font-weight: var(--peso-forte);
+        color: #565863; margin-top: 30px;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="20.74"
+         data-width="1080" data-height="1920">
+
+      <!-- ===== 1 — il problema: la lista ===== -->
+      <section id="s1" class="clip" data-start="0" data-duration="4.10" data-track-index="0">
+        <div class="testo">
+          <p class="t1" id="s1-t1">Il problema non è la lista.</p>
+          <p class="t2" id="s1-t2">È decidere da dove cominciare.</p>
+        </div>
+        <div class="schermo" id="sc-lista" data-layout-allow-overflow><img src="assets/img/02-attivita.png" alt="" /></div>
+      </section>
+
+      <!-- ===== 2 — la risposta: una sola ===== -->
+      <section id="s2" class="clip" data-start="4.10" data-duration="4.12" data-track-index="1">
+        <div class="testo">
+          <p class="t1" id="s2-t1">LifeMax ne sceglie una.</p>
+          <p class="t2" id="s2-t2">E ti fa vedere solo quella.</p>
+        </div>
+        <div class="schermo" id="sc-fuoco" data-layout-allow-overflow><img src="assets/img/01-adesso.png" alt="" /></div>
+      </section>
+
+      <!-- ===== 3 — cominciare ===== -->
+      <section id="s3" class="clip" data-start="8.22" data-duration="4.34" data-track-index="0">
+        <div class="testo">
+          <p class="t1" id="s3-t1">Il difficile è iniziare.</p>
+          <p class="t2" id="s3-t2">Cinque minuti. Poi va avanti da solo.</p>
+        </div>
+        <div class="schermo" id="sc-timer" data-layout-allow-overflow><img src="assets/img/04-timer-anello.png" alt="" /></div>
+      </section>
+
+      <!-- ===== 4 — i conti ===== -->
+      <section id="s4" class="clip" data-start="12.56" data-duration="4.91" data-track-index="1">
+        <div class="testo">
+          <p class="t1" id="s4-t1">Dopo un mese sai cosa funziona.</p>
+          <p class="t2" id="s4-t2">Sui tuoi dati, non sulle medie di altri.</p>
+        </div>
+        <div class="schermo" id="sc-conti" data-layout-allow-overflow><img src="assets/img/05-andamento.png" alt="" /></div>
+      </section>
+
+      <!-- ===== 5 — chiusura ===== -->
+      <section id="s5" class="clip" data-start="17.47" data-duration="3.27" data-track-index="0">
+        <div id="firma">
+          <svg id="firma-marchio" viewBox="0 0 48 48" aria-hidden="true">
+            <rect x="2" y="2" width="44" height="44" rx="13" fill="#17323f" />
+            <path d="M12 30.5l7-7 5 5L34.5 18" fill="none" stroke="white" stroke-width="4.4"
+                  stroke-linecap="round" stroke-linejoin="round" />
+            <path d="M27.5 17h7.5v7.5" fill="none" stroke="white" stroke-width="4.4"
+                  stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+          <p id="firma-nome">LifeMax</p>
+          <p id="firma-claim">Una cosa alla volta.</p>
+        </div>
+      </section>
+
+      <!-- ===== audio ===== -->
+      <audio id="bgm" src="assets/music/happy-beats-business-moves-vol-10-by-ende-dot-app.mp3"
+             data-start="0" data-duration="20.74" data-track-index="10" data-volume="1"></audio>
+      <audio id="sfx-2" src="assets/sfx/bong_001.ogg" data-start="4.45" data-track-index="11" data-volume="0.3"></audio>
+      <audio id="sfx-3" src="assets/sfx/click2.ogg" data-start="8.57" data-track-index="12" data-volume="0.28"></audio>
+      <audio id="sfx-4" src="assets/sfx/impactSoft_medium_001.ogg" data-start="12.91" data-track-index="13" data-volume="0.34"></audio>
+    </div>
+
+    <script>
+      const D_CAMBIO = 0.25, D_ESCE = 0.35, D_ENTRA = 0.4;
+      const EASE = "cubic-bezier(.22, 1, .36, 1)"; /* --ease-out dell'app */
+      const tl = gsap.timeline({ paused: true });
+
+      /* Ogni scena entra e se ne va sul fondo inchiostro, così i tagli
+         si leggono come dissolvenze invece che come stacchi secchi. */
+      function scena(inizio, fine, t1, t2, sc) {
+        tl.fromTo(t1, { opacity: 0, y: 26 }, { opacity: 1, y: 0, duration: D_ENTRA, ease: EASE }, inizio + 0.1);
+        tl.fromTo(t2, { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: D_ENTRA, ease: EASE }, inizio + 0.3);
+        tl.fromTo(sc, { opacity: 0, y: 48 }, { opacity: 1, y: 0, duration: 0.55, ease: EASE }, inizio + 0.35);
+        tl.to([t1, t2, sc], { opacity: 0, duration: D_ESCE, ease: EASE }, fine - D_ESCE);
+      }
+
+      scena(0,     4.10,  "#s1-t1", "#s1-t2", "#sc-lista");
+      scena(4.10,  8.22,  "#s2-t1", "#s2-t2", "#sc-fuoco");
+      scena(8.22,  12.56, "#s3-t1", "#s3-t2", "#sc-timer");
+      scena(12.56, 17.47, "#s4-t1", "#s4-t2", "#sc-conti");
+
+      /* chiusura: la pagina chiara, il marchio, il nome, la promessa */
+      tl.fromTo("#s5", { opacity: 0 }, { opacity: 1, duration: D_CAMBIO, ease: EASE }, 17.47);
+      tl.fromTo("#firma-marchio", { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: D_ENTRA, ease: EASE }, 17.62);
+      tl.fromTo("#firma-nome", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: D_ENTRA, ease: EASE }, 17.77);
+      // beat-locked: 18.55s (strong cue 0.98)
+      tl.fromTo("#firma-claim", { opacity: 0 }, { opacity: 1, duration: D_CAMBIO, ease: EASE }, 18.55);
+
+      /* musica: bassa sotto tutto, entra e se ne va senza farsi notare */
+      tl.fromTo("#bgm", { volume: 0 }, { volume: 0.2, duration: 0.4, ease: "none" }, 0);
+      tl.to("#bgm", { volume: 0, duration: 1.24, ease: "none" }, 19.5);
+
+      window.__timelines["main"] = tl;
+      tl.seek(0);
+    </script>
+  </body>
+</html>
