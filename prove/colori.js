@@ -155,7 +155,18 @@ const CONTRASTI = `(function () {
        tutta l'app (il viola e il blu cambiano appena, #7c5df0→#7a5bf0 e
        #4a7bf5→#356bf4; il ciano diventa un turchese, #2ab8e8→#127fa3), che è
        una decisione sull'aspetto, non un ritocco. */
-    var ammesso = !!el.closest('.btn-primario, .tab-catt, .eroe2-cta');
+    /* QUI C'ERA UN'ESENZIONE, e ha coperto un guasto per mesi.
+       «.btn-primario» e «.tab-catt» erano «ammessi» sotto il minimo: quando
+       il marchio era una sfumatura viola-ciano il bianco sopra non passava,
+       e la scelta era stata di scriverlo invece di nasconderlo. Poi il
+       marchio è diventato un petrolio pieno — su cui il bianco passa a
+       13:1 — e l'esenzione è rimasta. Nel tema scuro quel petrolio si
+       ribalta in un quasi-bianco, il testo dei tasti restava bianco fisso,
+       e il risultato era 1,28:1 su OGNI tasto principale dell'app: questa
+       prova lo misurava, lo metteva fra gli «ammessi», e diceva verde.
+       Un'eccezione senza scadenza diventa il posto dove i guasti nuovi
+       vanno a nascondersi. Adesso non ce n'è nessuna. */
+    var ammesso = false;
     var peggio = null;
     fondi(el).forEach(function (bg) {
       var testo = sopra(risolvi(st.color), bg);

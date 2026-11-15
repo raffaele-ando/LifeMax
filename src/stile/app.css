@@ -643,7 +643,7 @@ kbd { margin-left: auto; }
   .tabbar .tab-catt {
     flex: none; width: 46px; align-self: stretch; margin-left: 6px;
     padding: 0; border-radius: var(--r-2);
-    background: var(--grad-brand); color: #fff; box-shadow: var(--e1);
+    background: var(--accento-pieno); color: var(--accento-ink); box-shadow: var(--e1);
     align-items: center; justify-content: center;
   }
   /* il filo che stacca la cattura dalle linguette sta sulla BARRA, non sul
@@ -855,9 +855,21 @@ b, strong { font-weight: var(--peso-titolo); }
    Prima lo portavano anche i numeretti della barra, le spunte, l'icona dei
    rituali, la card dei punti e le pastiglie: diciannove gradienti in giro,
    e quello sul pulsante non voleva più dire «premi qui». */
-.btn-primario { background: var(--grad-brand); color: #fff; border-color: transparent; box-shadow: var(--e1); }
+/* IL PIENO E IL SUO INCHIOSTRO VANNO IN COPPIA, e qui non andavano.
+   Questo tasto scriveva `color: #fff` fisso sopra `var(--grad-brand)`, che è
+   l'accento. Nel tema chiaro l'accento è petrolio scuro e il bianco ci sta
+   a 13:1. Nel tema scuro l'accento si ribalta — #d7e6e9, quasi bianco — e
+   il bianco sopra faceva 1,28:1: OGNI tasto principale dell'app, e il `+`
+   della cattura, erano bianco su bianco. Il gettone giusto c'era già
+   (`--accento-ink`, che in scuro è #10222b) ed era usato in sedici posti;
+   mancava nei due più importanti.
+   Nessuna prova lo vedeva perché `prove/colori.js` aveva un'esenzione
+   scritta apposta per questi tasti, nata quando il marchio era una
+   sfumatura viola-ciano su cui il bianco non passava. Il marchio è
+   cambiato, l'esenzione è rimasta, ed è diventata una coperta. Tolta. */
+.btn-primario { background: var(--accento-pieno); color: var(--accento-ink); border-color: transparent; box-shadow: var(--e1); }
 .btn-primario:hover { filter: brightness(1.06); box-shadow: var(--e2); }
-.btn-primario small { color: rgba(255, 255, 255, .92); }
+.btn-primario small { color: color-mix(in srgb, var(--accento-ink) 92%, transparent); }
 
 /* IL SALVATAGGIO DI UN BLOCCO, che non è l'azione della schermata.
 
@@ -3229,7 +3241,7 @@ select.agg-sel-area { width: auto; max-width: 190px; flex: 0 1 auto; font-size: 
   pointer-events: none;
   border-radius: 0 var(--r-tondo) var(--r-tondo) 0; background: var(--accento);
 }
-.rit-blocco.ora .rit-ico { background: var(--accento); color: #fff; }
+.rit-blocco.ora .rit-ico { background: var(--accento-pieno); color: var(--accento-ink); }
 /* la colonna dello stato: sempre la stessa forma, la stessa domanda, lo
    stesso posto. Il numero, quando c'è, sta sotto e non compete. */
 .rit-stato { flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 0; line-height: 1.25; }
@@ -3415,7 +3427,7 @@ body.sto-trascinando { cursor: grabbing; user-select: none; -webkit-user-select:
 .trasc-guida { position: absolute; left: 0; right: 0; height: 0; border-top: 2px dashed var(--accento); z-index: 6; pointer-events: none; }
 .trasc-guida span {
   position: absolute; left: 0; top: -9px; font-size: 11px; font-weight: var(--peso-display);
-  color: #fff; background: var(--accento-testo); padding: 1px 6px; border-radius: var(--r-tondo);
+  color: var(--accento-ink); background: var(--accento-pieno); padding: 1px 6px; border-radius: var(--r-tondo);
   font-variant-numeric: tabular-nums;
 }
 /* pastiglie delle cose da fare nel calendario del mese */
@@ -3532,7 +3544,7 @@ body.sto-trascinando { cursor: grabbing; user-select: none; -webkit-user-select:
 .me-mattoni { display: flex; gap: 3px; flex-wrap: wrap; align-content: flex-start; }
 .me-mattoni i { width: 9px; height: 9px; border-radius: var(--r-1); display: inline-block; }
 .me-piu { font-size: 11px; font-weight: var(--peso-titolo); color: var(--inchiostro-muto); }
-.me-scad { flex: none; display: inline-flex; align-items: center; gap: 1px; font-size: 11px; font-weight: var(--peso-display); color: #fff; background: var(--avviso); height: 15px; border-radius: var(--r-tondo); padding: 0 5px; }
+.me-scad { flex: none; display: inline-flex; align-items: center; gap: 1px; font-size: 11px; font-weight: var(--peso-display); color: #3d2a00; background: var(--avviso); height: 15px; border-radius: var(--r-tondo); padding: 0 5px; }
 .me-legenda { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 12px; font-size: 11px; color: var(--inchiostro-muto); }
 .me-legenda .lg { display: inline-flex; align-items: center; gap: 6px; }
 .me-heatkey { width: 26px; height: 11px; border-radius: var(--r-1); background: linear-gradient(90deg, var(--superficie-2), color-mix(in srgb, var(--accento) 32%, var(--superficie-1))); display: inline-block; }
@@ -3719,7 +3731,7 @@ body.sto-trascinando { cursor: grabbing; user-select: none; -webkit-user-select:
 .backup-riga small { display: block; color: var(--inchiostro-muto); font-size: 11.5px; margin-top: 2px; }
 .backup-riga .btn { flex: none; }
 
-::selection { background: color-mix(in srgb, var(--accento) 80%, #000); color: #fff; }
+::selection { background: var(--accento-pieno); color: var(--accento-ink); }
 
 /* il selettore dell'area dentro una riga di aggiunta: stretto quanto basta
    sul telefono, largo abbastanza da leggere il nome intero col mouse */
@@ -4138,10 +4150,9 @@ input.rec-ora { min-width: 96px; text-align: left; font-weight: var(--peso-forte
    nessuno deve imparare che petrolio vuol dire «non è ancora ora», lo
    legge. È la differenza fra un segno e un codice. */
 .fascia-ora button { background: #0a7f28; }
-.fascia-dopo button { background: var(--accento); }
+.fascia-dopo button { background: var(--accento-pieno); color: var(--accento-ink); }
 .fascia-ritardo button { background: #a4671f; }
 .fascia-barra .fascia-slot { filter: brightness(.88); }
-:root[data-mode="dark"] .fascia-dopo button { background: #2b5668; }
 /* SU UNO SCHERMO LARGO LA FASCIA NON SI STACCA. Lì la barra in basso non
    c'è (c'è la colonna di lato), il pollice non c'entra niente, e un blocco
    appiccicato al fondo di un monitor è solo un blocco fuori posto. */
