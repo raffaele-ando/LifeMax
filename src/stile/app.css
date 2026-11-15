@@ -1291,8 +1291,8 @@ kbd {
 }
 .stat .stat-val .ico { color: var(--brand-b); }
 .stat .stat-eti { font-size: 12px; color: var(--inchiostro-2); font-weight: var(--peso-forte); margin-top: 1px; }
-.stat .stat-sub { font-size: 11.5px; color: var(--inchiostro-muto); margin-top: 1px; }
-.delta-ok { color: var(--ok-testo); font-weight: var(--peso-titolo); }
+
+
 .fiamma { color: #eb6834 !important; animation: fiammeggia 1.8s ease-in-out infinite; transform-origin: 50% 85%; }
 @keyframes fiammeggia { 0%, 100% { transform: scale(1) rotate(-1.5deg); } 50% { transform: scale(1.08) rotate(1.5deg); } }
 
@@ -1305,8 +1305,8 @@ kbd {
   box-shadow: 0 4px 10px -3px color-mix(in srgb, var(--c-area, var(--accento)) 60%, transparent);
   background: linear-gradient(135deg, color-mix(in srgb, var(--c-area, var(--accento)) 88%, #fff), var(--c-area, var(--accento)));
 }
-.card-area .metrica-riga { display: flex; align-items: baseline; gap: 6px; font-size: 12.5px; color: var(--inchiostro-2); }
-.card-area .metrica-riga b { font-size: 17px; color: var(--inchiostro-1); font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+
+
 .card-area .sistema-nota { font-size: 11.5px; color: var(--inchiostro-muto); border-top: 1px solid var(--griglia); padding-top: var(--s2); margin-top: 0; }
 
 .lista-azioni { display: flex; flex-direction: column; gap: 7px; }
@@ -1342,30 +1342,15 @@ kbd {
 }
 .riga-azione .tag-area { display: inline-flex; align-items: center; color: var(--c-area, var(--inchiostro-muto)); }
 
-/* ---------- inbox ---------- */
 
-.riga-inbox {
-  display: flex; gap: 10px; align-items: flex-start;
-  padding: 14px; border-radius: var(--r-2);
-  background: var(--superficie-1); border: 1px solid var(--bordo); box-shadow: var(--e1);
-  transition: transform var(--t-veloce), box-shadow var(--t-media);
-}
-.riga-inbox:hover { transform: translateY(-1px); box-shadow: var(--e2); }
-.riga-inbox .testo { font-weight: var(--peso-forte); }
-.riga-inbox .quando { margin-top: 1px; }
-.riga-inbox .azioni-riga { display: flex; gap: 7px; flex-wrap: wrap; align-items: center; }
 /* riga di servizio: quando è arrivato il pensiero e in che area finisce.
    Il menu dell'area era il comando più grande della card pur essendo la
    decisione che conta meno: adesso è una pastiglia come le altre. */
-select.sel-compatto {
-  width: auto; max-width: 62%; min-height: 34px; padding: 5px 30px 5px 11px;
-  font-size: 12.5px; font-weight: var(--peso-forte); border-radius: var(--r-tondo);
-}
+
 /* le tre scelte: tre colonne uguali, sempre nello stesso ordine, mai a capo */
 /* col mouse la card è larga più di mille pixel: tre pulsanti tirati per
    tutta quella larghezza sono tre bersagli enormi per tre parole. Restano
    della loro misura, in fila da sinistra. */
-@media (pointer: coarse) { select.sel-compatto { min-height: 44px; } }
 
 /* IL MURO IN FONDO ALLA FILA. Sfogliando oltre l'ultima linguetta non c'e'
    niente da mostrare, e senza un segno quel gesto e' identico a un gesto non
@@ -1963,16 +1948,12 @@ body.in-concentrazione { overflow: hidden; }
 }
 .banda-demo b { color: var(--inchiostro-1); }
 
-.separatore { height: 1px; background: var(--griglia); margin: 16px 0; border: none; }
+
 .mt { margin-top: var(--s4); }
 .mt-s { margin-top: var(--s2); }
-.mb { margin-bottom: 16px; }
+
 .riga-flex { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-.titolo-sezione {
-  display: flex; align-items: center; gap: 9px;
-  margin: 26px 0 12px; font-size: 16px; font-weight: var(--peso-titolo); letter-spacing: -0.02em;
-}
-.titolo-sezione .ico { color: var(--inchiostro-muto); }
+
 
 /* ---------- pannello (sheet) ---------- */
 
@@ -2111,25 +2092,6 @@ label.campo {
    quanto la sezione si stacchi dalla prossima */
 .imp-eti + .imp-nota { margin-top: 0; }
 
-/* UNA SCELTA DENTRO UNA SEZIONE — la nota fissa dei promemoria.
-   Non è una sezione a sé: sta dentro «Promemoria», perché accenderla ha senso
-   solo se i promemoria sono accesi. Quindi non prende un'altra etichetta in
-   maiuscoletto (sarebbe un secondo livello dove non ce n'è uno) ma un filetto
-   e un rientro: si vede che dipende da sopra. */
-.imp-sotto-sez {
-  margin-top: var(--s4);
-  padding-left: var(--s3);
-  border-left: 2px solid var(--griglia);
-}
-.imp-riga-int {
-  display: flex; align-items: flex-start; gap: var(--s3);
-  /* il testo si prende quello che c'è, il pulsante resta della sua misura:
-     a 320px il pulsante scende sotto invece di schiacciarsi */
-  flex-wrap: wrap;
-}
-.imp-riga-testo { flex: 1 1 190px; min-width: 0; }
-.imp-riga-testo b { display: flex; align-items: center; gap: 6px; font-size: 14px; }
-.imp-riga-int .btn { flex: none; }
 
 /* L'ANTEPRIMA — com'è fatta la notifica che arriverà.
    Una promessa scritta a parole («ti arriva una notifica») si capisce a metà.
@@ -2269,8 +2231,6 @@ input.prom-ora:disabled, input.prom-t:disabled { background: var(--superficie-2)
 
 /* ---------- rituali: sotto-navigazione ---------- */
 
-@media (max-width: 860px) {
-}
 
 /* ---------- banda demo (richiudibile) ---------- */
 
@@ -2288,8 +2248,8 @@ input.prom-ora:disabled, input.prom-t:disabled { background: var(--superficie-2)
 /* ---------- account & cloud ---------- */
 
 .account { display: inline-flex; align-items: center; gap: 8px; }
-.account-sync { display: inline-flex; color: var(--ok); }
-:root[data-mode="dark"] .account-sync { color: #0ca30c; }
+
+
 .avatar {
   width: 30px; height: 30px; border-radius: var(--r-tondo); flex: none;
   object-fit: cover; border: 1.5px solid var(--bordo-forte);
@@ -2321,23 +2281,8 @@ input.prom-ora:disabled, input.prom-t:disabled { background: var(--superficie-2)
 /* ---------- semplificazione layout v3 ---------- */
 
 /* eroe essenziale */
-.eroe2 {
-  display: grid; grid-template-columns: auto 1fr auto; gap: 24px; align-items: center;
-  /* era l'unica card con due aloni di brand dietro: adesso è bianca come le
-     altre, e quello che si nota sono i numeri */
-  background: var(--superficie-1);
-}
-.eroe2-corpo { min-width: 0; }
-.eroe2-xp { font-size: 34px; font-weight: var(--peso-display); letter-spacing: -0.03em; line-height: 1; font-variant-numeric: tabular-nums; }
-.eroe2-xp .eroe2-unita { font-size: 16px; font-weight: var(--peso-titolo); color: var(--inchiostro-2); letter-spacing: 0; }
-.eroe2-sub { margin-top: 5px; }
-.eroe2-chips { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 13px; }
-.eroe2-chips .chip .fiamma { color: #eb6834; }
-.eroe2-cta { align-self: center; white-space: nowrap; }
-@media (max-width: 860px) {
-  .eroe2 { grid-template-columns: auto 1fr; gap: 16px; }
-  .eroe2-cta { grid-column: 1 / -1; width: 100%; justify-content: center; }
-}
+
+
 
 /* schede-sezione dentro una pagina (progressive disclosure) */
 /* Il margine sopra lo dà la testa, non questa riga: due margini che si
@@ -2450,8 +2395,7 @@ button.attivo .seg-n, a.attivo .seg-n { background: var(--superficie-2); color: 
    è l'unica cosa piena, e si vede da lontano che è quella da premere */
 .focus-primaria .btn-grande { width: 100%; max-width: 320px; }
 .focus-secondarie { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; justify-content: center; margin-top: 6px; }
-.timer-gruppo { display: inline-flex; align-items: center; gap: 7px; font-size: 13px; color: var(--inchiostro-2); font-weight: var(--peso-forte); }
-.timer-gruppo .ico { color: var(--inchiostro-muto); }
+
 
 /* Cattura: FAB solo su mobile (su desktop c'è il pulsante in sidebar) */
 
@@ -2849,7 +2793,7 @@ button.lista-riga { width: 100%; text-align: left; }
 /* ---------- Attività: da smistare + backlog ---------- */
 
 /* la testata: campo per aggiungere, ricerca, filtro. Un solo riquadro. */
-.att-testa { padding-bottom: 12px; }
+
 /* la barra sopra la lista: cercare e filtrare, due modi di guardare quello
    che c'è già. Il campo per aggiungere sta altrove: è un'azione. */
 .att-barra { display: flex; align-items: center; gap: var(--s2); margin: var(--s4) 0 0; flex-wrap: wrap; }
@@ -3155,28 +3099,22 @@ select.agg-sel-area { width: auto; max-width: 190px; flex: 0 1 auto; font-size: 
 .att-cerca { display: flex; align-items: center; gap: 8px; padding: 0 11px; border: 1px solid var(--bordo-forte); border-radius: var(--r-2); color: var(--inchiostro-muto); margin-bottom: 12px; }
 .att-cerca input { flex: 1; min-width: 0; border: none; background: none; box-shadow: none; padding: 9px 0; font-size: 13.5px; }
 .att-cerca input:focus { box-shadow: none; }
-.att-chips { display: flex; gap: 7px; flex-wrap: wrap; margin-top: 10px; }
+
 .att-chip { gap: 6px; padding: 0 12px; border-radius: var(--r-tondo); border: 1px solid var(--bordo-forte); background: var(--superficie-1); color: var(--inchiostro-2); cursor: pointer; transition: all var(--t-veloce); }
 .att-chip:hover { border-color: color-mix(in srgb, var(--c-area, var(--accento)) 45%, var(--bordo-forte)); }
 .att-chip span { font-size: 11px; font-weight: var(--peso-display); padding: 0 5px; border-radius: var(--r-tondo); background: var(--superficie-3); color: var(--inchiostro-muto); font-variant-numeric: tabular-nums; }
 .att-chip.on { background: color-mix(in srgb, var(--c-area, var(--accento)) 14%, transparent); border-color: color-mix(in srgb, var(--c-area, var(--accento)) 50%, transparent); color: var(--c-area, var(--accento-testo)); }
 .att-chip.vuota { opacity: .72; }
 .att-chip.vuota:hover { opacity: 1; }
-/* il ritorno indietro: si legge come un comando, non come un'altra area */
-.att-chip-chiudi { border-style: dashed; color: var(--inchiostro-muto); }
-.att-chip-chiudi:hover { border-style: solid; color: var(--inchiostro-1); }
+
+
 @media (max-width: 700px) {
   /* i chip scorrono in una riga sola invece di impilarsi su quattro */
   /* i filtri vanno a capo: una fila che scorre di lato nasconde metà dei
      modi di guardare la lista dietro un gesto che non si vede che c'è */
-  .att-chips { flex-wrap: wrap; overflow: visible; }
-  .att-chips::-webkit-scrollbar { display: none; }
-  /* le aree sono tante e scorrono di lato: la sfumatura sul bordo destro dice
-     che c'è dell'altro, invece di far sembrare la fila tagliata */
-  .att-chips.scorre {
-    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 26px), transparent);
-    mask-image: linear-gradient(to right, #000 calc(100% - 26px), transparent);
-  }
+  
+  
+  
   .att-chip { flex: none; }
   /* Le schede in cima NON scorrono più di lato. Quattro pastiglie con icona,
      etichetta e numero chiedevano 519px: su un telefono ce ne sono 356, e le
@@ -3211,9 +3149,8 @@ select.agg-sel-area { width: auto; max-width: 190px; flex: 0 1 auto; font-size: 
   .segmenti.tabs-fisse .seg-eti { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .segmenti.tabs-fisse .att-badge { position: absolute; top: 4px; right: 6px; margin: 0; }
   .segmenti.tabs-fisse > button.attivo .seg-ico, .segmenti.tabs-fisse > a.attivo .seg-ico { color: var(--accento-testo); }
-  /* cinque voci in 320px: un filo più piccole per non troncare «Abitudini» */
-  .segmenti.tabs-fisse.tabs-cinque > button { padding-left: 1px; padding-right: 1px; letter-spacing: -0.01em; }
-  .segmenti.tabs-fisse.tabs-tre > a { padding-left: 2px; padding-right: 2px; }
+  
+  
   /* con due sole voci lo spazio c'è: icona e parola in fila, come una
      normale barra a segmenti, senza la pila verticale che serve in quattro */
   /* con due voci l'icona e la parola stanno in fila, ma l'altezza resta quella
@@ -3413,7 +3350,7 @@ select.tl-dur { flex: none; width: auto; min-width: 136px; }
 .tl-piede .btn small { flex-basis: 100%; font-weight: var(--peso-forte); opacity: .7; font-size: 11.5px; }
 
 /* editor completo (pagina Giornata): titolo + aggiunta rapida */
-.tl-ed-riga.senzaora { background: color-mix(in srgb, var(--avviso) 10%, transparent); border-radius: var(--r-1); padding: 6px 7px; }
+
 .tl-add { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--griglia); }
 .tl-add .agg { margin-bottom: 0; }
 
@@ -3614,8 +3551,8 @@ body.sto-trascinando { cursor: grabbing; user-select: none; -webkit-user-select:
 /* striscia compatta della giornata (in Oggi) */
 .giornata-strip { display: block; width: 100%; text-align: left; background: var(--superficie-1); border: 1px solid var(--bordo); border-radius: var(--r-2); padding: 10px 14px 8px; margin-bottom: var(--s4); box-shadow: var(--e1); cursor: pointer; transition: border-color var(--t-veloce), transform var(--t-veloce); }
 .giornata-strip:hover { border-color: color-mix(in srgb, var(--accento) 40%, var(--bordo-forte)); }
-.strip-testa { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
-.strip-tit { font-size: 13px; font-weight: var(--peso-titolo); display: inline-flex; align-items: center; gap: 6px; flex: none; white-space: nowrap; }
+
+
 /* il testo di destra si accorcia, il titolo no: prima con mezzo punto in più
    di carattere «La giornata» andava a capo su due righe */
 .strip-sotto { display: inline-flex; align-items: center; gap: 5px; min-width: 0; overflow: hidden; }
@@ -3641,13 +3578,7 @@ body.sto-trascinando { cursor: grabbing; user-select: none; -webkit-user-select:
 .strip-estremi { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-top: 6px; font-size: 11px; color: var(--inchiostro-muto); font-variant-numeric: tabular-nums; }
 .strip-estremi > span:first-child, .strip-estremi > span:last-child { flex: none; }
 .strip-estremi .strip-sotto { flex: 1 1 auto; justify-content: center; font-variant-numeric: normal; font-weight: var(--peso-forte); color: var(--inchiostro-2); }
-.strip-legenda { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 9px; font-size: 11px; color: var(--inchiostro-muto); }
-.strip-legenda .lg { display: inline-flex; align-items: center; gap: 5px; }
-.strip-legenda i { display: inline-block; flex: none; background: var(--inchiostro-muto); }
-.lg-seg { width: 13px; height: 7px; border-radius: var(--r-1); }
-.lg-dot { width: 8px; height: 8px; border-radius: var(--r-tondo); }
-.lg-pasto { width: 2px; height: 10px; border-radius: var(--r-1); }
-.lg-none { width: 8px; height: 8px; border-radius: var(--r-tondo); background: transparent !important; border: 1.5px dashed var(--inchiostro-muto); }
+
 
 /* editor del ritmo (sonno e pasti) */
 /* `1fr` per i due campi e non `auto`: con un browser in inglese l'orario
@@ -3703,7 +3634,7 @@ body.sto-trascinando { cursor: grabbing; user-select: none; -webkit-user-select:
 .gio-sonno-corpo[hidden] { display: none; }
 
 /* sonno e pasti del giorno (registro) sulla pagina Giornata */
-.tl-sonno-sez { margin-top: var(--s4); padding-top: var(--s3); border-top: 1px solid var(--griglia); }
+
 .sp-sonno { display: flex; align-items: center; gap: 8px 12px; flex-wrap: wrap; margin: 4px 0 10px; }
 .sp-lab { font-size: 12.5px; font-weight: var(--peso-forte); color: var(--inchiostro-2); display: inline-flex; align-items: center; gap: 5px; }
 .sp-sonno input.tl-time { min-width: 118px; }
@@ -3842,7 +3773,7 @@ body.sto-trascinando { cursor: grabbing; user-select: none; -webkit-user-select:
   .abd-g { min-height: 44px; }
   .q-chip { padding: 11px 16px; }
   .giorno-chip { min-width: 40px; min-height: 44px; }
-  .strip-legenda .lg { min-height: 32px; } /* è una legenda, non un comando */
+   /* è una legenda, non un comando */
   .segmenti button { min-height: 44px; }
   .voto-area .stelline button { min-width: 44px; height: 44px; }
   .ico-pick { width: 44px; height: 44px; }
