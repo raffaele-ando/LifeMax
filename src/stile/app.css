@@ -3549,6 +3549,43 @@ body.sto-trascinando { cursor: grabbing; user-select: none; -webkit-user-select:
 .me-piu { font-size: 11px; font-weight: var(--peso-titolo); color: var(--inchiostro-muto); }
 .me-scad { flex: none; display: inline-flex; align-items: center; gap: 1px; font-size: 11px; font-weight: var(--peso-display); color: #3d2a00; background: var(--avviso); height: 15px; border-radius: var(--r-tondo); padding: 0 5px; }
 .me-legenda { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 12px; font-size: 11px; color: var(--inchiostro-muto); }
+.me-vuotokey { width: 9px; height: 9px; border-radius: 50%; display: inline-block; background: radial-gradient(circle, transparent 0 2.4px, var(--inchiostro-muto) 2.9px); }
+.lg-stretta { display: none; }
+/* SU UN TELEFONO IL MESE SI VEDE TUTTO, sabato e domenica compresi.
+   Qui la tabella aveva `min-width: 490px` dentro un contenitore che scorre
+   di lato: su uno schermo da 390 si vedevano cinque colonne, e per sapere
+   cosa c'era nel weekend bisognava trascinare. La ragione scritta accanto
+   al markup era «è quello che fa qualunque calendario su un telefono», che
+   non è vero: Calendario di iOS tiene sempre le sette colonne e al posto
+   del testo mette dei segni. Un mese che non mostra la settimana intera
+   non risponde alla prima domanda che gli si fa, che è «com'è messo il
+   mese».
+   Quindi sotto i 520px le sette colonne ci stanno, e le pastiglie col
+   titolo — che in una cella da quaranta pixel erano «Alle…», «Ripa…» —
+   diventano pallini VUOTI col colore dell'area: una cosa ancora da fare.
+   I pallini pieni restano quelli di sempre, le cose fatte. Per leggere i
+   titoli si tocca il giorno, che si apre; per spostare una cosa c'è la sua
+   scheda. Trascinare una pastiglia da undici pixel con un dito non
+   riusciva comunque. */
+@media (max-width: 520px) {
+  .me-scorri { overflow-x: visible; }
+  .me-tabella { min-width: 0; }
+  .me-dow, .me-grid { gap: 3px; }
+  .me-cella { min-height: 62px; padding: 5px 4px; gap: 4px; }
+  .me-pills { flex-direction: row; flex-wrap: wrap; gap: 3px; margin-top: 0; }
+  /* UN ANELLO, e disegnato col FONDO invece che col bordo: il sistema delle
+     forme ritaglia ogni elemento sul suo supercerchio, e di un bordo da un
+     pixel e mezzo su nove pixel lasciava in pagina due frammenti d'angolo.
+     Pieno = fatta, vuoto = da fare: è la convenzione che non va spiegata. */
+  .me-pill {
+    flex: none; width: 9px; height: 9px; padding: 0; font-size: 0; border: 0;
+    border-radius: 50%;
+    background: radial-gradient(circle, transparent 0 2.4px, var(--c-area) 2.9px);
+  }
+  .me-pill-piu { font-size: 10px; padding-left: 0; line-height: 9px; }
+  .me-mattoni i { border-radius: 3px; }
+  .lg-stretta { display: inline-flex; }
+}
 .me-legenda .lg { display: inline-flex; align-items: center; gap: 6px; }
 .me-heatkey { width: 26px; height: 11px; border-radius: var(--r-1); background: linear-gradient(90deg, var(--superficie-2), color-mix(in srgb, var(--accento) 32%, var(--superficie-1))); display: inline-block; }
 .me-sqkey { width: 9px; height: 9px; border-radius: var(--r-1); background: var(--brand-b); display: inline-block; }

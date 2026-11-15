@@ -4630,18 +4630,20 @@ function montaMese(container: HTMLElement): void {
   }
   var dowh = ['L', 'M', 'M', 'G', 'V', 'S', 'D'].map(function (x) { return '<span>' + x + '</span>'; }).join('');
   container.innerHTML = orizzNav('mese', schermo.giornataAncora, null, (mesi[mese] || '') + ' ' + anno) +
-    /* le sette colonne stanno dentro un contenitore che SCORRE di lato: su un
-       telefono da 320px, sette colonne in duecentottanta pixel fanno celle da
-       trentun pixel, dove non ci sta né una pastiglia né un numero. Meglio
-       celle vere e un trascinamento laterale — che è quello che fa qualunque
-       calendario su un telefono — che sette colonne illeggibili.
-       Il giorno della settimana scorre insieme alla griglia: sono la stessa
-       tabella, e se scorresse solo una delle due le lettere finirebbero sopra
-       la colonna sbagliata. */
+    /* SU UN TELEFONO LE SETTE COLONNE CI STANNO TUTTE: il foglio di stile,
+       sotto i 520px, toglie lo scorrimento laterale e trasforma le
+       pastiglie col titolo in pallini vuoti (vedi `.me-pill` in app.css,
+       dove sta scritto anche perché). Il contenitore che scorre resta per
+       gli schermi di mezzo, dove le celle hanno posto per un titolo ma la
+       tabella non entra intera.
+       Il giorno della settimana sta nella stessa tabella della griglia: se
+       scorresse solo una delle due le lettere finirebbero sopra la colonna
+       sbagliata. */
     '<div class="card"><div class="me-scorri"><div class="me-tabella">' +
     '<div class="me-dow">' + dowh + '</div><div class="me-grid">' + celle + '</div></div></div>' +
     '<div class="me-legenda"><span class="lg"><i class="me-heatkey"></i> più lo sfondo è acceso, più la giornata è stata piena</span>' +
-    '<span class="lg"><i class="me-sqkey"></i> ogni quadretto è una cosa fatta, col colore dell’area</span>' +
+    '<span class="lg"><i class="me-sqkey"></i> ogni pallino è una cosa fatta, col colore dell’area</span>' +
+    '<span class="lg lg-stretta"><i class="me-vuotokey"></i> un pallino vuoto è una cosa ancora da fare</span>' +
     '<span class="lg">' + ICO('scadenza', 11) + ' scadenza · tocca un giorno per aprirlo</span></div></div>';
   wireOrizzNav(container, 'mese');
   celleGiorno(container);
