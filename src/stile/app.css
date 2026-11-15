@@ -2325,7 +2325,7 @@ input.prom-ora:disabled, input.prom-t:disabled { background: var(--superficie-2)
    destinazione. Questo non è un posto dove andare, è un comando. */
 .btn-tu {
   margin-left: auto; flex: none;
-  width: 40px; height: 40px; display: inline-flex; align-items: center; justify-content: center;
+  width: 44px; height: 44px; display: inline-flex; align-items: center; justify-content: center;
   border: none; background: transparent; color: var(--inchiostro-muto);
   border-radius: var(--r-2);
   transition: color var(--t-veloce), background var(--t-veloce);
@@ -2591,7 +2591,7 @@ button.attivo .seg-n, a.attivo .seg-n { background: var(--superficie-2); color: 
 /* col dito 40 pixel pieni: l'area del dito non può venire da uno pseudo-elemento
    che sporge, perché il ritaglio della forma lo taglia (vedi il blocco
    «pointer: coarse» più sotto) */
-@media (pointer: coarse) { .diario-annulla { min-height: 40px; min-width: 40px; padding: 3px 11px; justify-content: center; } }
+@media (pointer: coarse) { .diario-annulla { min-height: 44px; min-width: 44px; padding: 3px 11px; justify-content: center; } }
 /* Sul telefono resta il solo segno. Con l'annulla su ogni riga la pillola
    con la parola si prendeva una cinquantina di pixel di colonna del testo, e
    le righe andavano a capo tre volte: il diario diventava una colonna di
@@ -3841,7 +3841,18 @@ body.sto-trascinando { cursor: grabbing; user-select: none; -webkit-user-select:
      prende meglio. `.sheet-indietro` e `.cattura-chiudi` sono già larghe
      quanto basta e il loro pseudo-elemento resta dentro il riquadro —
      misurato, non dato per buono. */
-  .riga-azione .spunta, .tl-check, .lista-azione { width: 40px; height: 40px; }
+  .riga-azione .spunta, .tl-check, .lista-azione { width: 44px; height: 44px; }
+  /* QUARANTAQUATTRO, NON QUARANTA. Il pavimento di questa app era 40px, con
+     tre comandi ammessi a quella misura: una scelta presa una volta e tenuta
+     ferma da `prove/tocco.js`. Le linee guida di Apple dicono 44pt, e la
+     differenza non è di gusto — sotto i 44 il dito comincia a mancare il
+     bersaglio una volta ogni tante, che è il genere di difetto che non dà
+     errore e non si vede in nessuno scatto. Le righe che ospitano queste
+     caselle sono già alte più di 44, quindi non si sposta niente.
+     Il selettore dell'area nello smistamento era rimasto a 32: la regola
+     generale dei `select` qui sopra lo porta a 44, ma lui ne aveva una sua,
+     più specifica, che vinceva. */
+  select.sm-area-sel { min-height: 44px; }
   /* l'interruttore dei promemoria resta piccolo com'era: a quaranta pixel un
      supercerchio pieno di colore si mangia la riga. L'area del dito ce la dà
      la RIGA, che è alta più di quaranta e adesso si tocca tutta (il nome, la
@@ -4124,14 +4135,14 @@ input.rec-ora { min-width: 96px; text-align: left; font-weight: var(--peso-forte
 .fuoco-mancata { display: flex; justify-content: center; padding: 0 0 8px; }
 /* il terzo esito segue la barra: centrato sulla stessa colonna */
 .fuoco-fascia { max-width: 588px; margin-inline: auto; }
-/* IL PAVIMENTO DEI BERSAGLI VALE ANCHE QUI: 40px, come i tre più piccoli
-   dell'app (`prove/tocco.js`). Era 34 — smorzato nel colore, e smorzato
-   anche nella misura, che è un'altra cosa: un comando che si vuole
-   disponibile ma non invitante si spegne col colore, non rimpicciolendo
-   il punto dove va il dito. */
+/* IL PAVIMENTO DEI BERSAGLI VALE ANCHE QUI: 44px, come in tutta l'app
+   (`prove/tocco.js`). Era 34 — smorzato nel colore, e smorzato anche nella
+   misura, che è un'altra cosa: un comando che si vuole disponibile ma non
+   invitante si spegne col colore, non rimpicciolendo il punto dove va il
+   dito. */
 .fuoco-mancata .btn-mancata {
   font-size: 12px; font-weight: var(--peso-forte); color: var(--inchiostro-muto);
-  min-height: 40px; padding: 0 16px; border-radius: var(--r-tondo);
+  min-height: 44px; padding: 0 16px; border-radius: var(--r-tondo);
   background: var(--superficie-1); border: 1px solid var(--bordo);
 }
 /* LARGA QUANTO IL CONTENUTO, non quanto la finestra. Senza tetto, su un

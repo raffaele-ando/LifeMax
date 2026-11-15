@@ -9,12 +9,12 @@
    nessuno — meno che mai a chi ha fatto quella richiesta apposta per non
    doverlo chiedere ogni volta.
 
-   IL BERSAGLIO. Le linee guida dicono 44px (Apple) o 48 (Material). Qui i
-   più piccoli sono tre, tutti 40×40 e uguali fra loro: è una scelta, presa
-   una volta, non una svista che si ripete. Quindi non si pretendono i 44 —
-   sarebbe rifare un disegno che funziona — si pretende che NESSUNO SCENDA
-   SOTTO quello che c'è oggi, e che i tre a 40 restino tre. È un cricchetto,
-   come `FERMI` in `pezzi.js`: da qui si sale, non si scende.
+   IL BERSAGLIO. Le linee guida di Apple dicono 44pt, e l'app le segue: su
+   uno schermo che si tocca nessun comando ha un lato più corto di 44px.
+   Per un pezzo il pavimento è stato 40, con tre comandi ammessi a quella
+   misura; è salito quando si è deciso di stare alle linee guida invece che
+   vicino. È un cricchetto, come `FERMI` in `pezzi.js`: da qui si sale, non
+   si scende.
 
    IL MOVIMENTO RIDOTTO è rispettato in due posti, e servono tutti e due: il
    foglio di stile azzera durate di transizione e animazione per tutto, e il
@@ -32,8 +32,13 @@ const T = { '.html': 'text/html', '.css': 'text/css', '.js': 'text/javascript', 
 
 /* IL PAVIMENTO DI OGGI, misurato. Si alza quando il disegno migliora; non
    si abbassa mai per far passare una prova. */
-const PAVIMENTO = 40;
-const AMMESSI_AL_PAVIMENTO = 3;
+/* QUARANTAQUATTRO, da quando l'app segue le linee guida di Apple. Era 40,
+   con tre comandi ammessi a quella misura e una seconda riga che contava
+   quanti ci stavano sopra: a 40 aveva senso, perché 40 era un'eccezione
+   dichiarata e andava tenuta piccola. A 44 non ne ha più — 44 è la misura
+   normale di un comando, ed è giusto che ci stiano quasi tutti. Resta una
+   regola sola, ed è quella che conta: sotto non ci sta nessuno. */
+const PAVIMENTO = 44;
 
 let guai = 0;
 const ok = (nome, cond, det) => { if (!cond) guai++; console.log('  ' + (cond ? 'ok  ' : 'KO  ') + nome + (det ? '  → ' + det : '')); };
@@ -83,11 +88,8 @@ const MISURA = `(function () {
       r.filter((x) => x.lato < PAVIMENTO + 4).forEach((x) => piccoli.push(v + ': «' + x.che + '» ' + x.lato + 'px'));
     }
     const sotto = piccoli.filter((s) => +(/(\d+)px$/.exec(s) || [])[1] < PAVIMENTO);
-    const tipi = new Set(piccoli.map((s) => s.split(': ')[1]));
     ok('nessun bersaglio sotto i ' + PAVIMENTO + 'px', sotto.length === 0,
       sotto.length ? sotto.join('; ') : guardati + ' bersagli guardati su ' + VIE.length + ' schermate');
-    ok('e quelli al pavimento restano ' + AMMESSI_AL_PAVIMENTO, tipi.size <= AMMESSI_AL_PAVIMENTO,
-      tipi.size ? [...tipi].join(', ') : 'nessuno');
     /* se un giorno il selettore non trova più niente, questa prova direbbe
        «tutto a posto» per non aver guardato */
     ok('e ce n’è un numero sensato da guardare', guardati > 60, guardati + '');
