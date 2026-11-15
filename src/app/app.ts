@@ -2637,9 +2637,9 @@ export interface TipoTimer {
 export type NomeTimer = 'avvio' | 'blocco' | 'pomodoro' | 'libero';
 
 export const TIPI_TIMER: Record<NomeTimer, TipoTimer> = {
-  avvio:    { nome: 'Solo per partire', min: 5,  eti: '5′',  ico: 'play', poi: 25,
+  avvio:    { nome: 'Solo per partire', min: 5,  eti: '5 min',  ico: 'play', poi: 25,
               dice: 'Cinque minuti, poi va avanti da solo di 25.' },
-  blocco:   { nome: 'Un blocco',        min: 25, eti: '25′', ico: 'clock',
+  blocco:   { nome: 'Un blocco',        min: 25, eti: '25 min', ico: 'clock',
               dice: 'Un pezzo di tempo con una fine.' },
   pomodoro: { nome: 'Pomodoro',         min: 25, pausa: 5, ico: 'refresh',
               dice: '25 minuti, poi 5 di pausa. E si ricomincia.' },

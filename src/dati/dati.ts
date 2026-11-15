@@ -2444,21 +2444,30 @@ function creaLM() {
       return campi.filter(function (c) { return c.val && String(c.val).trim(); })
         .map(function (c) { return { eti: c.eti, val: String(c.val).trim() }; });
     }
+    /* LA DATA COME LA SI LEGGE, non come la si archivia. Qui c'era
+       `'Mattina · ' + k`, e `k` è la chiave del giorno: «Mattina ·
+       2026-08-17». È il formato giusto per ordinare e quello sbagliato per
+       una persona — l'archivio delle review era l'unico posto dell'app dove
+       una data usciva così. */
+    function quando(k: string) { return weekdayShort(giorno(k)) + ' ' + fmtShort(giorno(k)); }
     Object.keys(s.pianoMattina || {}).forEach(function (k) {
       var v = s.pianoMattina[k];
       if (!v) return;
       var campi = pulisci([{ eti: 'Intenzione', val: v.intenzione }]);
-      if (campi.length) out.push({ tipo: 'mattina', ico: 'sun', k: k, quando: 'Mattina · ' + k, campi: campi });
+      if (campi.length) out.push({ tipo: 'mattina', ico: 'sun', k: k, quando: 'Mattina · ' + quando(k), campi: campi });
     });
     Object.keys(s.reviewSera || {}).forEach(function (k) {
       var v = s.reviewSera[k];
       if (!v) return;
+      /* `shutdown` NON È UNA COSA SCRITTA: è il segno che la giornata è
+         stata chiusa, un sì/no, e la review della sera lo salva sempre a
+         `true`. Messo qui in mezzo ai campi finiva in pagina come «Domani
+         true», su ogni sera dell'archivio. */
       var campi = pulisci([
         { eti: 'È andata bene', val: v.vittoria },
-        { eti: 'Mi ha bloccato', val: v.blocco },
-        { eti: 'Domani', val: v.shutdown }
+        { eti: 'Mi ha bloccato', val: v.blocco }
       ]);
-      if (campi.length) out.push({ tipo: 'sera', ico: 'moon', k: k, quando: 'Sera · ' + k, campi: campi });
+      if (campi.length) out.push({ tipo: 'sera', ico: 'moon', k: k, quando: 'Sera · ' + quando(k), campi: campi });
     });
     Object.keys(s.reviewSettimana || {}).forEach(function (k) {
       var v = s.reviewSettimana[k];
@@ -2469,7 +2478,7 @@ function creaLM() {
         { eti: 'Ho imparato', val: v.imparato },
         { eti: 'La prossima', val: v.prossima }
       ]);
-      if (campi.length) out.push({ tipo: 'settimana', ico: 'calendar', k: k, quando: 'Settimana del ' + k, campi: campi });
+      if (campi.length) out.push({ tipo: 'settimana', ico: 'calendar', k: k, quando: 'Settimana del ' + fmtShort(giorno(k)), campi: campi });
     });
     out.sort(function (a, b) { return a.k < b.k ? 1 : (a.k > b.k ? -1 : 0); });
     return out;
@@ -3296,7 +3305,7 @@ function creaLM() {
        gli id delle aree di partenza: senza il tipo, `esempiAzioni[area]` era
        `any` e un'area in piu' avrebbe fatto crollare la demo in silenzio. */
     var esempiAzioni: Record<string, string[]> = {
-      studio:       ['Capitolo di Analisi II + 10 esercizi', 'Ripasso attivo con flashcard (30′)', 'Preparare domande per il ricevimento', 'Sessione deep work biblioteca (90′)'],
+      studio:       ['Capitolo di Analisi II + 10 esercizi', 'Ripasso attivo con flashcard (30 min)', 'Preparare domande per il ricevimento', 'Sessione deep work biblioteca (90′)'],
       salute:       ['Allenamento forza — gambe', 'Corsa 5 km zona 2', 'Prep pasti per 3 giorni', 'In letto entro le 23:30'],
       relazioni:    ['Chiamare i nonni', 'Organizzare cena con il gruppo', 'Rispondere a Marco con proposta concreta'],
       finanze:      ['Registrare spese settimana', 'Spostare 10% su conto risparmio', 'Confrontare piani telefonici'],
@@ -3314,7 +3323,7 @@ function creaLM() {
       'Domanda: il progetto X vale ancora la mia energia?'
     ];
     var vittorie = [
-      'Finita la sessione da 90′ senza telefono',
+      'Finita la sessione da 90 minuti senza telefono',
       'Prima call utente andata benissimo',
       'Allenamento fatto anche se non ne avevo voglia',
       'Detto di no a una cosa che non era mia',

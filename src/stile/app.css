@@ -1552,7 +1552,10 @@ kbd {
 
 /* L'archivio delle review: ogni riga porta dentro quello che avevi scritto,
    perché una lista di date da aprire una per una non si scorre mai. */
-.rev-riga { align-items: flex-start; }
+/* le righe dell'archivio portano tre o quattro righe di testo ciascuna: la
+   riga normale di un elenco è tarata per una, e qui i titoli finivano
+   attaccati alla riga sopra. */
+.rev-riga { align-items: flex-start; padding-top: 12px; padding-bottom: 12px; }
 .rev-ico { color: var(--inchiostro-2); }
 .rev-ico.rev-sera { color: var(--brand-a); }
 .rev-ico.rev-mattina { color: var(--avviso); }
