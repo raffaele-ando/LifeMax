@@ -49,7 +49,7 @@ const ok = (n, c, d) => { if (!c) guai++; console.log('  ' + (c ? 'ok  ' : 'KO  
     });
   });
   await new Promise(r => srv.listen(PORTA, r));
-  const b = await chromium.launch({ executablePath: process.env.CHROMIUM || undefined });
+  const b = await require('./comune/lancia')();
   const ctx = await b.newContext({ viewport: { width: 390, height: 900 }, hasTouch: true, isMobile: true });
   const p = await ctx.newPage();
   const errori = [];

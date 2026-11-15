@@ -107,7 +107,7 @@ function cercaScritteFuori(toll) {
     });
   });
   await new Promise(r => srv.listen(PORTA, r));
-  const b = await chromium.launch({ executablePath: process.env.CHROMIUM || undefined });
+  const b = await require('./comune/lancia')();
 
   async function apri(via, dopo) {
     const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, hasTouch: true, isMobile: true });

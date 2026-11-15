@@ -59,7 +59,7 @@ const CASI = [
     });
   });
   await new Promise(r => srv.listen(PORTA, r));
-  const b = await chromium.launch({ executablePath: process.env.CHROMIUM || undefined });
+  const b = await require('./comune/lancia')();
   const err = [];
 
   async function apri(forma, oraIso, prepara) {

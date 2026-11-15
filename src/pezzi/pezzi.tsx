@@ -43,7 +43,27 @@ const ATTRIBUTO: Record<string, string> = {
    ogni disegno. Su una schermata i segni sono decine, e i disegni sono
    tanti — è la stessa ragione per cui esiste `pezzi/grezzo`, applicata al
    posto in cui il conto si moltiplica di più. */
-interface Smontato { attributi: Record<string, string>; grezzo: { __html: string } }
+/* `style` NON È UN ATTRIBUTO COME GLI ALTRI, e scordarselo svuotava il Menu.
+   In HTML è una stringa; React lo vuole come oggetto, e se riceve una
+   stringa non la ignora: lancia (errore #62) e butta giù tutto il ramo che
+   sta disegnando. Il marchio di Google porta `style="flex:none;
+   vertical-align:-3px"`, e sta sul tasto «Accedi con Google» — cioè si
+   disegna solo quando il cloud è raggiungibile e non hai fatto l'accesso.
+   In quel caso, e solo in quello, il foglio «Menu» si apriva vuoto.
+   Nessuna prova l'aveva mai visto perché dove girano le prove il cloud non
+   si caricava: era un guasto che esisteva soltanto in produzione. */
+function stile(testo: string): Record<string, string> {
+  const o: Record<string, string> = {};
+  testo.split(';').forEach(function (coppia) {
+    const i = coppia.indexOf(':');
+    if (i < 0) return;
+    const nome = coppia.slice(0, i).trim().replace(/-([a-z])/g, function (_m, c: string) { return c.toUpperCase(); });
+    const valore = coppia.slice(i + 1).trim();
+    if (nome && valore) o[nome] = valore;
+  });
+  return o;
+}
+interface Smontato { attributi: Record<string, string | Record<string, string>>; grezzo: { __html: string } }
 const smontati = new Map<string, Smontato | null>();
 function smonta(testo: string): Smontato | null {
   const gia = smontati.get(testo);
@@ -52,9 +72,10 @@ function smonta(testo: string): Smontato | null {
   const fuori: Smontato | null = m
     ? {
         attributi: [...(m[1] || '').matchAll(/([\w-]+)="([^"]*)"/g)]
-          .reduce<Record<string, string>>(function (o, a) {
+          .reduce<Record<string, string | Record<string, string>>>(function (o, a) {
             const nome = a[1] || '';
-            o[ATTRIBUTO[nome] || nome] = a[2] || '';
+            if (nome === 'style') o.style = stile(a[2] || '');
+            else o[ATTRIBUTO[nome] || nome] = a[2] || '';
             return o;
           }, {}),
         grezzo: { __html: m[2] || '' }

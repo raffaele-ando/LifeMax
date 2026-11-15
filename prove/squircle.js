@@ -60,7 +60,7 @@ const CONTORNO = `(function (b64, R, dritto) {
     });
   });
   await new Promise(r => srv.listen(PORTA, r));
-  const b = await chromium.launch({ executablePath: process.env.CHROMIUM || undefined });
+  const b = await require('./comune/lancia')();
   const A = await import('../segni/apple.mjs');
 
   const p1 = await b.newPage({ viewport: { width: 420, height: 560 }, deviceScaleFactor: DPR });

@@ -58,7 +58,7 @@ const CHI_SPORGE = `(() => {
     });
   });
   await new Promise(r => srv.listen(8768, r));
-  const b = await chromium.launch({ executablePath: process.env.CHROMIUM || undefined });
+  const b = await require('./comune/lancia')();
 
   console.log('LA PAGINA NON È MAI PIÙ LARGA DELLA FINESTRA');
   for (const W of LARGHEZZE) {

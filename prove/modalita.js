@@ -7,7 +7,7 @@ const T={'.html':'text/html','.js':'text/javascript','.css':'text/css','.svg':'i
 const IGN=/gstatic|firebase|firestore|identitytoolkit|googleapis|net::|Failed|ERR_/i;
 let fail=0;const ok=(n,c,x)=>{console.log((c?'  ok   ':'  BUG  ')+n+(x?'  → '+x:''));if(!c)fail++;};
 (async()=>{const srv=http.createServer((q,r)=>{let p=decodeURIComponent(q.url.split('?')[0]);if(p==='/')p='/index.html';fs.readFile(path.join(RADICE,p),(e,d)=>{if(e){r.statusCode=404;r.end('x');return;}r.setHeader('Content-Type',T[path.extname(p)]||'application/octet-stream');r.end(d);});});
-await new Promise(r=>srv.listen(8621,r));const b=await chromium.launch({executablePath: process.env.CHROMIUM || undefined});
+await new Promise(r=>srv.listen(8621,r));const b=await require('./comune/lancia')();
 const p=await b.newPage({viewport:{width:390,height:844},hasTouch:true,isMobile:true});
 const errs=[];p.on('pageerror',e=>{if(!IGN.test(e.message))errs.push(e.message);});
 await p.addInitScript(t=>{const D=Date;class F extends D{constructor(...a){if(!a.length)super(t);else super(...a);}static now(){return t;}}window.Date=F;}, new Date('2026-08-18T10:30:00').getTime());

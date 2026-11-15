@@ -154,7 +154,7 @@ const RILEVA = `(function () {
     });
   });
   await new Promise((r) => srv.listen(PORTA, r));
-  const b = await chromium.launch({ executablePath: process.env.CHROMIUM || undefined });
+  const b = await require('./comune/lancia')();
 
   const conto = { testo: new Map(), raggi: new Map(), ombre: new Map(), colori: new Map(), sfondi: new Map() };
   const trovate = { primari: [], orfane: [], righeLunghe: [], fuori: [] };

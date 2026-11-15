@@ -15,7 +15,7 @@ const T={'.html':'text/html','.css':'text/css','.js':'text/javascript','.json':'
 let fail=0;const ok=(n,c,d)=>{if(!c)fail++;console.log('  '+(c?'ok  ':'KO  ')+n+(d?'  → '+d:''));};
 (async()=>{const srv=http.createServer((q,r)=>{let p=decodeURIComponent(q.url.split('?')[0]);if(p==='/')p='/index.html';fs.readFile(path.join(RADICE,p),(e,d)=>{if(e){r.statusCode=404;r.end('x');return;}r.setHeader('Content-Type',T[path.extname(p)]||'application/octet-stream');r.end(d);});});
 await new Promise(r=>srv.listen(8751,r));
-const b=await chromium.launch({executablePath: process.env.CHROMIUM || undefined});
+const b=await require('./comune/lancia')();
 const p=await b.newPage({viewport:{width:390,height:900},hasTouch:true,isMobile:true});
 const err=[];p.on('pageerror',e=>err.push(''+e));
 const chiesti=[];p.on('request',q=>chiesti.push(q.url()));

@@ -59,7 +59,7 @@ const FINGI_PIENO = () => {
     });
   });
   await new Promise((r) => srv.listen(PORTA, r));
-  const b = await chromium.launch({ executablePath: process.env.CHROMIUM || undefined });
+  const b = await require('./comune/lancia')();
 
   const apri = async () => {
     const ctx = await b.newContext({ viewport: { width: 390, height: 900 } });

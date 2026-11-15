@@ -39,7 +39,7 @@ const NOTE = ['Prima nota da sistemare', 'Seconda, tutta diversa', 'Terza e dist
     });
   });
   await new Promise((r) => srv.listen(PORTA, r));
-  const b = await chromium.launch({ executablePath: process.env.CHROMIUM || undefined });
+  const b = await require('./comune/lancia')();
 
   for (const react of [false, true]) {
     const ctx = await b.newContext({ viewport: { width: 390, height: 900 }, hasTouch: true, isMobile: true });

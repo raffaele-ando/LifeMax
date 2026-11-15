@@ -34,7 +34,7 @@ const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  
     });
   });
   await new Promise(r => srv.listen(8762, r));
-  const b = await chromium.launch({ executablePath: process.env.CHROMIUM || undefined });
+  const b = await require('./comune/lancia')();
   const err = [];
 
   /* una giornata costruita a mano, con l'orologio fermo: è l'unico modo di

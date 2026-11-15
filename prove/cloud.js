@@ -109,7 +109,7 @@ export function onSnapshot(ref, suDati, suErrore) {
     });
   });
   await new Promise(r => srv.listen(PORTA, r));
-  const b = await chromium.launch({ executablePath: process.env.CHROMIUM || undefined });
+  const b = await require('./comune/lancia')();
   const ctx = await b.newContext({ viewport: { width: 390, height: 900 } });
   /* le tre librerie di Firebase non arrivano dalla rete: le serviamo noi */
   await ctx.route('https://www.gstatic.com/firebasejs/**', (route) => {
@@ -127,6 +127,36 @@ export function onSnapshot(ref, suDati, suErrore) {
   const vivo = await p.evaluate(() => !!(window.LMCloud && window.LMCloud.available));
   ok('il cloud finto è entrato al posto di quello vero', vivo,
     vivo ? 'LMCloud.available' : 'l’app non ha caricato nemmeno il finto');
+
+  /* ============ 0. col cloud disponibile e senza accesso, il Menu c’è ============
+     È il solo momento in cui in pagina compare il tasto «Accedi con Google»,
+     e quel tasto porta il marchio di Google, che è l'unico SVG dell'app con
+     un attributo `style`. React lo vuole come oggetto: ricevendolo come
+     stringa lanciava l'errore #62 e il foglio «Menu» si apriva VUOTO. In
+     produzione succedeva a chiunque non avesse fatto l'accesso; nelle prove
+     mai, perché il cloud non c'era. Questa è la prima cosa che si guarda,
+     prima di entrare: dopo l'accesso il tasto non c'è più. */
+  console.log('\nSENZA ACCESSO, IL MENU SI APRE E DICE COME ENTRARE');
+  {
+    await p.evaluate(() => { LM.seedDemo(); const s = LM.load(); s.profilo.nav = 'tutte'; LM.save(); location.hash = '#/oggi'; });
+    await p.reload(); await p.waitForTimeout(900);
+    await p.evaluate(() => { const x = document.querySelector('#nav-tab [data-menu]'); if (x) x.click(); });
+    await p.waitForTimeout(700);
+    const r = await p.evaluate(() => ({
+      voci: document.querySelectorAll('#sheet-corpo .menu-voce').length,
+      accedi: !!document.querySelector('#sheet-corpo #menu-accedi'),
+      marchio: !!document.querySelector('#sheet-corpo #menu-accedi svg')
+    }));
+    ok('il foglio ha dentro le sue voci', r.voci > 0, r.voci + ' voci');
+    ok('e il tasto «Accedi con Google»', r.accedi);
+    ok('col suo marchio disegnato', r.marchio);
+    ok('senza un solo errore in pagina', errori.length === 0, errori.slice(0, 2).join(' | '));
+    await p.evaluate(() => {
+      const x = document.getElementById('sheet-chiudi') || document.getElementById('sheet-maniglia'); if (x) x.click();
+      const s = LM.load(); s.profilo.nav = 'tre'; LM.save();
+    });
+    await p.waitForTimeout(500);
+  }
 
   /* ============ 1. all’accesso l’ascolto si attacca ============ */
   console.log('\nALL’ACCESSO L’ASCOLTO SI ATTACCA');

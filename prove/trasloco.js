@@ -42,7 +42,7 @@ const ok = (nome, cond, det) => { if (!cond) guai++; console.log('  ' + (cond ? 
     });
   });
   await new Promise((r) => srv.listen(PORTA, r));
-  const b = await chromium.launch({ executablePath: process.env.CHROMIUM || undefined });
+  const b = await require('./comune/lancia')();
   const p = await b.newPage({ viewport: { width: 390, height: 900 } });
   p.on('pageerror', (e) => { guai++; console.log('  KO  errore in pagina  → ' + e); });
   await p.goto('http://localhost:' + PORTA + '/index.html');

@@ -40,7 +40,7 @@ const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  
     });
   });
   await new Promise(r => srv.listen(8761, r));
-  const b = await chromium.launch({ executablePath: process.env.CHROMIUM || undefined });
+  const b = await require('./comune/lancia')();
   const err = [];
 
   /* una pagina con l'orologio fermo a un'ora scelta, e la possibilità di

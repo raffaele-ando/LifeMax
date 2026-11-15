@@ -37,7 +37,7 @@ const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  
     });
   });
   await new Promise(r => srv.listen(8767, r));
-  const b = await chromium.launch({ executablePath: process.env.CHROMIUM || undefined });
+  const b = await require('./comune/lancia')();
 
   /* l'orologio fermo alle nove di sera: la review della sera è quella
      dell'ora, quindi è già aperta, e i tre pasti sono tutti passati */

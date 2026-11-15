@@ -33,7 +33,7 @@ const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  
     });
   });
   await new Promise(r => srv.listen(8757, r));
-  const b = await chromium.launch({ executablePath: process.env.CHROMIUM || undefined });
+  const b = await require('./comune/lancia')();
   const p = await b.newPage({ viewport: { width: 390, height: 900 }, hasTouch: true, isMobile: true });
   const err = []; p.on('pageerror', e => err.push('' + e));
   await p.goto('http://localhost:8757/index.html'); await p.waitForTimeout(400);

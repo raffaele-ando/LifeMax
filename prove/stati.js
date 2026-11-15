@@ -129,7 +129,7 @@ const CONTROLLA = `(function (stato) {
     });
   });
   await new Promise(r => srv.listen(PORTA, r));
-  const b = await chromium.launch({ executablePath: process.env.CHROMIUM || undefined });
+  const b = await require('./comune/lancia')();
 
   const tot = { contorni: new Map(), ombre: new Map(), rettangoli: new Map() };
   const rotte = new Map();

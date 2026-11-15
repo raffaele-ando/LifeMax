@@ -65,7 +65,7 @@ const COPERTI=`(() => {
   }).filter(Boolean);
 })()`;
 (async()=>{const srv=http.createServer((q,r)=>{let p=decodeURIComponent(q.url.split('?')[0]);if(p==='/')p='/index.html';fs.readFile(path.join(RADICE,p),(e,d)=>{if(e){r.statusCode=404;r.end('x');return;}r.setHeader('Content-Type',T[path.extname(p)]||'application/octet-stream');r.end(d);});});
-await new Promise(r=>srv.listen(8561,r));const b=await chromium.launch({executablePath: process.env.CHROMIUM || undefined});
+await new Promise(r=>srv.listen(8561,r));const b=await require('./comune/lancia')();
 const guai=[], coperti=[];
 for (const [w,h,tocco] of [[390,844,true],[768,1024,true],[1440,1000,false]]) {
   const p=await b.newPage({viewport:{width:w,height:h},hasTouch:tocco,isMobile:tocco});
