@@ -4267,12 +4267,16 @@ function montaGiornata(container: HTMLElement, opzioni?: OpzGriglia): void {
      la cosa (meno campi da riempire = meno attrito per buttarla giù). */
   var quickAdd = '';
   if (!compact && interactive) {
-    var doveAdd = d.isToday ? 'a oggi' : ('a ' + etichettaGiorno(k).toLowerCase());
+    /* IL SEGNAPOSTO DEVE STARCI, e «Aggiungi qualcosa a oggi…» non ci stava:
+       accanto c'è il tasto «Aggiungi», che su un telefono lascia al campo
+       centosessanta pixel. Il verbo lo dice già il tasto; al campo resta da
+       dire PER QUANDO, che è l'unica cosa che cambia da un giorno all'altro. */
+    var doveAdd = d.isToday ? 'oggi' : etichettaGiorno(k).toLowerCase();
     /* l'ultima riga d'aggiunta rimasta col vecchio schema: campo, tendina
        dell'area sempre aperta e tasto pieno, tutti in fila. Adesso è quella
        di tutte le altre — cinque schermate, una riga sola. */
     quickAdd = '<div class="tl-add">' +
-      rigaAggiunta('agg-gio', 'Aggiungi qualcosa ' + doveAdd + '…',
+      rigaAggiunta('agg-gio', 'Per ' + doveAdd + '…',
         '<label class="agg-area"><span class="agg-eti">in</span>' + selectAree('agg-gio-area') + '</label>') +
       '</div>';
   }
@@ -5012,7 +5016,7 @@ function sezRiepilogo(c: HTMLElement): void {
        gli stessi tre su tre righe; in «Da fare» e nelle abitudini quella
        giusta. Ora è una sola, e l'area si apre solo quando serve. */
     '<div class="mt-s">' +
-    rigaAggiunta('agg-riep', 'Aggiungi un’altra cosa a oggi…',
+    rigaAggiunta('agg-riep', 'Un’altra cosa…',
       '<label class="agg-area"><span class="agg-eti">in</span>' + selectAree('agg-riep-area') + '</label>') +
     '</div></div>' +
     '<div class="card" style="--i:1"><h2>' + ICO('trendUp', 15) + ' Costanza</h2>' +
@@ -5903,7 +5907,7 @@ function ritualeMattina(corpo: HTMLElement): void {
        Prima qui c'erano campo, tendina e tasto tutti in fila, che sul
        telefono andavano a capo su tre righe per aggiungere una cosa. */
     '<div class="mt-s">' +
-    rigaAggiunta('agg-piano', oggi.length === 0 ? 'La cosa più importante di oggi…' : 'Un’altra cosa (se vuoi)…',
+    rigaAggiunta('agg-piano', oggi.length === 0 ? 'La cosa più importante di oggi…' : 'Un’altra, se vuoi…',
       '<label class="agg-area"><span class="agg-eti">in</span>' + selectAree('agg-piano-area') + '</label>') +
     '</div>' +
     /* Tre è il consiglio, e lo diciamo in una riga sola: «Hai 5 azioni per
@@ -5912,7 +5916,7 @@ function ritualeMattina(corpo: HTMLElement): void {
        e un posto dove andare. */
     (oggi.length >= 3 ? '<div class="sotto" style="margin:8px 0 0">' + oggi.length + ' azioni per oggi: oltre tre è difficile chiuderle tutte. Da <i>La giornata</i> puoi spostarne a domani.</div>' : '') +
     '<label class="campo" for="piano-ifthen">Quando e dove inizi la prima</label>' +
-    '<input type="text" id="piano-ifthen" placeholder="Es. alle 9:00, appena mi siedo alla scrivania, apro solo il file su cui devo lavorare" value="' + (piano ? esc(piano.intenzione) : '') + '">' +
+    '<input type="text" id="piano-ifthen" placeholder="Es. alle 9:00, alla scrivania" value="' + (piano ? esc(piano.intenzione) : '') + '">' +
     /* Un pulsante, non due. C'erano «Salva e parti» (pieno, con la freccia,
        +5 XP) e «Inizia ora» accanto: il primo salvava e NON si muoveva,
        nonostante la freccia e la parola «parti»; il secondo andava a Oggi
@@ -6694,7 +6698,7 @@ function bloccoLezioniHtml() {
      sono vuoti — là non c'è niente da guardare, e serve capire che tipo di
      frase ci va. */
   return '<div class="card lez-card">' +
-    rigaAggiunta('agg-lez', 'Cosa hai capito su di te…',
+    rigaAggiunta('agg-lez', 'Cosa hai capito…',
       '<div class="q-chips lez-scelta-verso">' +
       '<button type="button" class="q-chip on" data-verso="si">' + ICO('funziona', 13) + ' Funziona</button>' +
       '<button type="button" class="q-chip" data-verso="no">' + ICO('nonFunziona', 13) + ' Non funziona</button>' +

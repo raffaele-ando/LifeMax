@@ -1214,7 +1214,7 @@ label.campo { display: block; margin: var(--s4) 0 var(--s2); }
   font-size: 27px; font-weight: var(--peso-display); letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums; line-height: 1;
 }
-.timer-eti { font-size: 9.5px; font-weight: var(--peso-titolo); letter-spacing: .12em; color: var(--inchiostro-muto); margin-top: 3px; }
+.timer-eti { font-size: 11px; font-weight: var(--peso-titolo); letter-spacing: .12em; color: var(--inchiostro-muto); margin-top: 3px; }
 /* mentre il timer corre l'azione resta l'azione: cala di un soffio, non di
    metà, e tiene il suo peso */
 .timer-attivo .focus-azione { font-size: clamp(24px, 3.6vw, 38px); }
@@ -1771,6 +1771,21 @@ body.in-concentrazione { overflow: hidden; }
 .lm-hbar { display: flex; flex-direction: column; gap: 9px; }
 .lm-hbar-row { display: grid; grid-template-columns: 185px 1fr 76px; gap: 11px; align-items: center; font-size: 13px; border-radius: var(--r-1); }
 @media (max-width: 860px) { .lm-hbar-row { grid-template-columns: 132px 1fr 64px; } }
+/* SU UN TELEFONO IL NOME STA SOPRA LA BARRA, non accanto.
+   In tre colonne il nome aveva 132px (88 in «Dove ti riesce»), e le aree
+   hanno nomi da venti lettere: uscivano «Relazioni &», «Studio / Un»,
+   «Altro / Espl», «Progetti Fo» — sei righe troncate su otto, in due
+   grafici diversi. Un'etichetta che non si legge non etichetta niente, e
+   qui era l'unica cosa che diceva di CHI è la barra.
+   Con due righe il nome ha tutta la larghezza, il numero sta alla sua
+   destra, e la barra sotto è più lunga di prima: si confronta meglio. */
+@media (max-width: 520px) {
+  .lm-hbar-row, .bil-riga { grid-template-columns: minmax(0, 1fr) auto; row-gap: 5px; }
+  .lm-hbar-label, .bil-nome { grid-column: 1; grid-row: 1; }
+  .lm-hbar-track, .bil-barra { grid-column: 1 / -1; grid-row: 2; }
+  .lm-hbar-val, .bil-num { grid-column: 2; grid-row: 1; }
+  .lm-hbar { gap: 13px; }
+}
 .lm-hbar-label {
   color: var(--inchiostro-2); font-weight: var(--peso-forte);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
@@ -1785,7 +1800,7 @@ body.in-concentrazione { overflow: hidden; }
 }
 @keyframes cresci { from { transform: scaleX(0); } }
 .lm-hbar-val { text-align: right; font-weight: var(--peso-titolo); font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
-.lm-hbar-val small { color: var(--inchiostro-muto); font-weight: var(--peso-forte); }
+.lm-hbar-val small { font-size: 11px; color: var(--inchiostro-muto); font-weight: var(--peso-forte); }
 
 /* `overscroll-behavior-x: contain` su tutto quello che scorre in orizzontale:
    arrivato in fondo, il gesto non deve diventare il «torna indietro» del
@@ -2735,7 +2750,7 @@ button.lista-riga { width: 100%; text-align: left; }
 .abd-scala-num .ico { color: #eb6834; flex: none; }
 .abd-scala-meta .abd-scala-num { font-size: 15px; color: var(--inchiostro-2); }
 .abd-scala-meta .abd-scala-num .ico { color: var(--inchiostro-muto); }
-.abd-scala-lato small { font-size: 10.5px; font-weight: var(--peso-forte); color: var(--inchiostro-muto); white-space: nowrap; }
+.abd-scala-lato small { font-size: 11px; font-weight: var(--peso-forte); color: var(--inchiostro-muto); white-space: nowrap; }
 /* la barra prende tutto lo spazio che avanza: è lei il messaggio */
 .abd-scala-barra {
   flex: 1 1 auto; min-width: 40px; height: 10px; border-radius: var(--r-tondo);
@@ -2753,7 +2768,7 @@ button.lista-riga { width: 100%; text-align: left; }
 @media (max-width: 420px) {
   .abd-scala { gap: 9px; padding: 11px 12px; }
   .abd-scala-num { font-size: 17px; }
-  .abd-scala-lato small { font-size: 10px; }
+  .abd-scala-lato small { font-size: 11px; }
 }
 /* la catena: quattro settimane incolonnate per giorno della settimana */
 .abd-testa { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; margin-top: 2px; }
@@ -3250,7 +3265,7 @@ select.agg-sel-area { width: auto; max-width: 190px; flex: 0 1 auto; font-size: 
 .rit-stato { flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 0; line-height: 1.25; }
 .rit-stato .rs-che { font-size: 12px; font-weight: var(--peso-forte); color: var(--inchiostro-2); display: inline-flex; align-items: center; gap: 4px; }
 .rit-stato.fatto .rs-che { color: var(--ok-testo); font-weight: var(--peso-titolo); }
-.rit-stato .rs-dett { font-size: 10.5px; font-weight: var(--peso-forte); color: var(--inchiostro-muto); }
+.rit-stato .rs-dett { font-size: 11px; font-weight: var(--peso-forte); color: var(--inchiostro-muto); }
 .rit-chevron { flex: none; display: inline-flex; color: var(--inchiostro-muto); transition: transform var(--t-media); }
 .rit-chevron.aperta { transform: rotate(180deg); }
 /* IL DENTRO SI VEDE. Il corpo aperto era bianco come la riga sopra e come
@@ -3582,7 +3597,7 @@ body.sto-trascinando { cursor: grabbing; user-select: none; -webkit-user-select:
     border-radius: 50%;
     background: radial-gradient(circle, transparent 0 2.4px, var(--c-area) 2.9px);
   }
-  .me-pill-piu { font-size: 10px; padding-left: 0; line-height: 9px; }
+  .me-pill-piu { font-size: 11px; padding-left: 0; line-height: 9px; }
   .me-mattoni i { border-radius: 3px; }
   .lg-stretta { display: inline-flex; }
 }
