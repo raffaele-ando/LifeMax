@@ -4301,3 +4301,63 @@ input.rec-ora { min-width: 96px; text-align: left; font-weight: var(--peso-forte
   .forma-spina .focus-scena, .forma-poi .focus-scena,
   .forma-spina .spina, .forma-poi .fuoco-poi { padding-bottom: 124px; }
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════════
+   LA CASA — la schermata che si apre ogni mattina.
+   Saluto, data, quanto hai fatto oggi; la cosa di adesso in una scheda
+   col suo colore; il resto del giorno come un elenco che si spunta.
+   ═══════════════════════════════════════════════════════════════════════ */
+.casa-testa { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 6px 2px 16px; }
+.casa-saluto { font-size: 28px; font-weight: 800; letter-spacing: -0.03em; line-height: 1.1; margin: 0; }
+.casa-data { font-size: 15px; color: var(--inchiostro-2); margin-top: 3px; }
+.casa-data::first-letter { text-transform: uppercase; }
+.casa-serie {
+  flex: none; display: inline-flex; align-items: center; gap: 5px; padding: 8px 13px;
+  border-radius: var(--r-tondo); font-size: 16px; font-weight: 800; font-variant-numeric: tabular-nums;
+  background: color-mix(in srgb, #eb6834 15%, var(--superficie-1)); color: #b4470f;
+}
+:root[data-mode="dark"] .casa-serie { color: #ff9a62; }
+.casa-passo { background: var(--superficie-1); border-radius: 20px; padding: 16px 18px; margin-bottom: 12px; box-shadow: var(--e1); }
+.casa-passo-riga { display: flex; align-items: baseline; gap: 8px; margin-bottom: 10px; }
+.casa-passo-riga b { font-size: 19px; font-weight: 800; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.casa-passo-riga span { font-size: 14px; color: var(--inchiostro-2); }
+.casa-barra { height: 10px; border-radius: var(--r-tondo); background: var(--superficie-2); overflow: hidden; }
+.casa-barra i { display: block; height: 100%; min-width: 10px; border-radius: var(--r-tondo); background: var(--ok-pieno); transition: width .5s var(--ease-out); }
+.casa-rito {
+  display: flex; align-items: center; gap: 13px; width: 100%; min-height: 64px; padding: 12px 16px;
+  margin-bottom: 12px; border: 0; border-radius: 20px; text-align: left;
+  background: var(--superficie-1); box-shadow: var(--e1); color: var(--inchiostro-1);
+}
+.casa-rito > .ico { color: var(--inchiostro-muto); flex: none; }
+.casa-rito-ico { flex: none; width: 40px; height: 40px; border-radius: 13px; display: grid; place-items: center;
+  background: color-mix(in srgb, var(--avviso) 24%, var(--superficie-1)); color: #8a5c00; }
+:root[data-mode="dark"] .casa-rito-ico { color: var(--avviso); }
+.casa-rito-testo { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.casa-rito-testo b { font-size: 16px; font-weight: 700; }
+.casa-rito-testo small { font-size: 13px; color: var(--inchiostro-2); }
+
+.focus-scena.forma-poi { align-items: stretch; text-align: left; gap: 20px; padding: 0 0 8px; min-height: 0; }
+.casa-cuore {
+  align-items: stretch; text-align: left; gap: 8px; padding: 22px 20px 20px;
+  border: 0; border-radius: 24px; box-shadow: var(--e2);
+  background: color-mix(in srgb, var(--c-area, var(--accento)) 10%, var(--superficie-1));
+}
+.forma-poi .casa-cuore.st-ritardo { background: color-mix(in srgb, var(--avviso) 14%, var(--superficie-1)); }
+.forma-poi .focus-cuore.casa-cuore:not(.st-ritardo) { background: color-mix(in srgb, var(--c-area, var(--accento)) 10%, var(--superficie-1)); border: 0; }
+.casa-cuore .focus-didascalia { order: 0; justify-content: flex-start; margin: 0; }
+.casa-cuore .focus-didascalia .fd-nome { font-size: 14px; }
+.casa-cuore .focus-azione { order: 1; text-align: left; font-size: 27px; line-height: 1.12; letter-spacing: -0.03em; }
+.casa-cuore .timer-anello { order: 1; align-self: center; }
+.casa-cuore .focus-stato { order: 2; align-items: flex-start; max-width: none; }
+.casa-cuore .fs-riga { justify-content: flex-start; }
+.forma-poi .casa-cuore .fs-dett { font-size: 15px; font-weight: 600; color: var(--inchiostro-2); }
+.casa-cuore .focus-ifthen { order: 3; align-self: flex-start; }
+.casa-cuore .focus-primaria { order: 4; margin-top: 12px; }
+.casa-cuore .focus-primaria .btn-grande { max-width: none; min-height: 54px; border-radius: 16px; font-size: 17px; }
+.casa-cuore .focus-secondarie { order: 5; justify-content: flex-start; gap: 8px; margin-top: 8px; }
+.casa-sez { width: 100%; }
+.casa-tit { font-size: 20px; font-weight: 800; letter-spacing: -0.02em; margin: 0 2px 10px; display: flex; align-items: baseline; gap: 8px; }
+.casa-tit span { font-size: 14px; font-weight: 600; color: var(--inchiostro-muto); }
+.casa-riga.fatta .lista-tit { text-decoration: line-through; color: var(--inchiostro-muto); }
+.casa-riga .lista-sub { display: inline-flex; align-items: center; gap: 5px; }

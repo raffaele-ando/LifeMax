@@ -439,7 +439,7 @@ function setEffetti(v: Stato['profilo']['effetti']): void {
    schermata che ha già i suoi tasti, e sono due. */
 function setForma(v: NonNullable<Stato['profilo']['forma']>): void {
   const s = LM.load();
-  if ((s.profilo.forma || 'scheda') === v) return;
+  if ((s.profilo.forma || 'poi') === v) return;
   s.profilo.forma = v;
   LM.registra('impostazioni', 'Schermata «Adesso» impostata su ' + v, false);
   LM.save();
@@ -3223,6 +3223,48 @@ interface FuocoOra {
 }
 let fuocoOra: FuocoOra = { prossima: null, adesso: { azione: null, stato: null, min: null, fine: null }, oggi: null, minTimer: 25 };
 
+/* LA TESTA DELLA CASA: chi sei, che giorno è, a che punto sei.
+   Tre cose che ogni buona app dice appena la apri, e che qui mancavano:
+   al loro posto c'era una barra del tempo senza una parola. */
+export function testaCasa(): string {
+  const s = LM.load();
+  const ora = new Date().getHours();
+  const saluto = ora < 5 ? 'Buonanotte' : ora < 12 ? 'Buongiorno' : ora < 18 ? 'Buon pomeriggio' : 'Buonasera';
+  const nome = (s.profilo.nome || '').trim().split(/\s+/)[0] || '';
+  const d = new Date();
+  const GIORNI = ['domenica', 'lunedì', 'martedì', 'mercoledì', 'giovedì', 'venerdì', 'sabato'];
+  const MESI = ['gennaio', 'febbraio', 'marzo', 'aprile', 'maggio', 'giugno', 'luglio', 'agosto', 'settembre', 'ottobre', 'novembre', 'dicembre'];
+  const oggi = LM.azioniDiOggi();
+  const fatte = oggi.filter(function (a) { return a.done; }).length;
+  const tot = oggi.length;
+  const serie = LM.streak().corrente;
+  const p = tot ? fatte / tot : 0;
+  /* il rituale dell'ora, se non è ancora fatto: una porta sola, quella giusta */
+  const rid = ritualeDellOra();
+  const NOMI: Record<string, [string, string, string]> = {
+    mattina: ['sun', 'Pianifica la giornata', 'Un minuto'],
+    checkin: ['polso', 'Come stai adesso?', 'Dieci secondi'],
+    sera: ['moon', 'Chiudi la giornata', 'Due minuti']
+  };
+  const r = NOMI[rid];
+  const porta = (r && !statoRituale(rid).fatto)
+    ? '<button class="casa-rito" data-vai="rituali" data-sub="' + rid + '">' +
+      '<span class="casa-rito-ico">' + ICO(r[0], 18) + '</span>' +
+      '<span class="casa-rito-testo"><b>' + r[1] + '</b><small>' + r[2] + '</small></span>' + ICO('arrowRight', 15) + '</button>'
+    : '';
+  return '<header class="casa-testa">' +
+    '<div><h1 class="casa-saluto">' + saluto + (nome ? ', ' + esc(nome) : '') + '</h1>' +
+    '<div class="casa-data">' + (GIORNI[d.getDay()] || '') + ' ' + d.getDate() + ' ' + (MESI[d.getMonth()] || '') + '</div></div>' +
+    (serie > 0 ? '<div class="casa-serie" aria-label="' + serie + ' giorni di fila">' + ICO('flame', 15) + '<b>' + serie + '</b></div>' : '') +
+    '</header>' +
+    (tot
+      ? '<div class="casa-passo" role="img" aria-label="' + fatte + ' di ' + tot + ' fatte oggi">' +
+        '<div class="casa-passo-riga"><b>' + fatte + ' di ' + tot + '</b><span>' + (fatte === tot ? 'giornata finita' : 'fatte oggi') + '</span></div>' +
+        '<div class="casa-barra"><i style="width:' + Math.round(p * 100) + '%"></i></div></div>'
+      : '') +
+    porta;
+}
+
 /* LA SCENA DI «ADESSO», senza toccare la pagina: restituisce il dentro e le
    classi, e chi la usa disegna il contenitore. `wireFuoco()` fa quello che
    va fatto dopo, con gli elementi già attaccati. */
@@ -3269,8 +3311,10 @@ export function vistaFocus(): Scena {
      ripeterli nella fascia vorrebbe dire due elementi con lo stesso id, e
      `getElementById` restituisce il primo — quello nascosto. Il tasto
      sembrerebbe morto. Quindi o di qua o di là, mai tutti e due. */
-  const forma: NonNullable<Stato['profilo']['forma']> = LM.load().profilo.forma || 'scheda';
-  const inScheda = forma === 'scheda';
+  const forma: NonNullable<Stato['profilo']['forma']> = LM.load().profilo.forma || 'poi';
+  /* i comandi stanno NELLA scheda in «scheda» e nella casa nuova («poi»);
+     solo la spina li porta nella fascia in fondo */
+  const inScheda = forma !== 'spina';
 
   /* In cima non c'è niente da leggere. Prima c'erano tre nomi per la stessa
      idea a cento pixel l'uno dall'altro — il sottotitolo «L'azione da fare
@@ -3478,7 +3522,7 @@ export function vistaFocus(): Scena {
      esattamente la stessa lista — disegnarla due volte vorrebbe dire due
      liste delle stesse cose, una sopra l'altra. */
   var altreHtml = '';
-  if (altre.length && inScheda) {
+  if (altre.length && forma === 'scheda') {
     /* L'elenco è quello di tutta l'app: un contenitore con i separatori e il
        comando da 26px DENTRO la riga. Prima era un quarto disegno — una
        spunta quadrata staccata a sinistra di una pastiglia bianca — e ogni
@@ -3534,7 +3578,7 @@ export function vistaFocus(): Scena {
     /* «nessun orario» e «quando vuoi, ma prima delle altre» dichiarano
        un'assenza e spiegano una funzione: nelle forme nuove non ci sono, e
        la scheda senza orario diventa semplicemente la più corta. */
-    (stato.dett && (inScheda || !/nessun orario|prima delle altre/.test(stato.dett))
+    (stato.dett && (forma === 'scheda' || !/nessun orario|prima delle altre/.test(stato.dett))
       ? '<span class="fs-dett">' + esc(stato.dett) + '</span>' : '') +
     '</div></div>' +
     '<div class="focus-didascalia' + perCls + '" style="--c-area:' + colArea + '">' +
@@ -3558,7 +3602,7 @@ export function vistaFocus(): Scena {
     /* fuori da `scheda` questa frase non serve: lo dicono già il dato
        («alle 15:00, fra 5 ore») e il tasto della fascia, che lì sotto
        diventa «Falla adesso» e cambia colore. */
-    (adesso.stato === 'programmata' && inScheda
+    (adesso.stato === 'programmata' && forma === 'scheda'
       ? '<div class="focus-nota-dopo">Adesso non hai niente in programma.</div>'
       : '') +
     (prossima.ifThen ? '<div class="focus-ifthen">' + ICO('ancora', 15) + '<span>' + esc(prossima.ifThen) + '</span></div>' : '') +
@@ -3603,7 +3647,9 @@ export function vistaFocus(): Scena {
          non esserci riuscito. Sta qui, smorzato: va potuto dire in un tocco,
          e non va invitato. Per un'abitudine c'è già «Salta oggi», che è la
          stessa cosa detta nel modo giusto per una cosa che torna. */
-      (prossima.tipo === 'abitudine' ? ''
+      /* nella casa nuova solo dove vuol dire qualcosa: su una cosa che
+         aveva un tempo. Altrove era un quarto bersaglio sempre acceso. */
+      ((prossima.tipo === 'abitudine' || (forma === 'poi' && adesso.stato !== 'corso' && adesso.stato !== 'ritardo')) ? ''
         : '<button class="btn btn-mini btn-ghost btn-mancata" id="btn-mancata">Non del tutto…</button>') +
       '</div>') +
     /* Quante ne restano lo dice già il contatore in cima e il tasto delle
@@ -3690,17 +3736,25 @@ export function vistaFocus(): Scena {
     : '';
 
   if (forma === 'poi') {
-    /* LA SETTIMANA A PALLINI se ne va anche qui. Sei cerchi mezzi pieni
-       sotto al titolo sono un codice che va imparato; «Lun Mar Gio» no, e
-       occupa lo stesso posto. La toglie il foglio di stile, e al suo posto
-       arrivano le stesse tessere della spina. */
-    scena.dentro += dentroCuore + (tessereHtml ? '<div class="fuoco-tessere">' + tessereHtml + '</div>' : '') +
+    /* LA CASA: la cosa di adesso in una scheda, e sotto il resto di oggi
+       come un elenco che si spunta. Niente fascia: i comandi stanno nella
+       scheda, dove sta la cosa a cui si riferiscono. */
+    const fatteOggi = oggi.filter(function (a) { return a.done; });
+    function riga(a: typeof oggi[number]): string {
+      const ar = areaById(a.areaId);
+      return '<div class="lista-riga casa-riga' + (a.done ? ' fatta' : '') + '">' +
+        '<button class="lista-azione spunta" data-fa-fatto="' + a.id + '" aria-label="Segna come fatta">' + ICO('check', 13) + '</button>' +
+        '<button class="lista-apri" data-fa-fuoco="' + a.id + '">' +
+        '<span class="lista-corpo"><span class="lista-tit">' + esc(a.testo) + '</span>' +
+        '<span class="lista-sub">' + segnoArea(ar, 11, 'tit-area') + esc(ar.nome) + (a.ora ? ' · ' + esc(a.ora) : '') + '</span></span></button></div>';
+    }
+    scena.dentro += dentroCuore.replace('class="focus-cuore ', 'class="focus-cuore casa-cuore ') +
       (restano.length
-        ? '<div class="fuoco-poi"><div class="fuoco-poi-eti">Poi</div>' +
-          restano.map(function (a) { return rigaCoda(a, false, true); }).join('') + '</div>'
+        ? '<div class="casa-sez"><h2 class="casa-tit">Poi</h2><div class="lista">' + restano.map(riga).join('') + '</div></div>'
         : '') +
-      '';
-    scena.fascia = fascia(mancata);
+      (fatteOggi.length
+        ? '<div class="casa-sez"><h2 class="casa-tit">Fatte <span>' + fatteOggi.length + '</span></h2><div class="lista">' + fatteOggi.slice(-3).reverse().map(riga).join('') + '</div></div>'
+        : '');
     return scena;
   }
 

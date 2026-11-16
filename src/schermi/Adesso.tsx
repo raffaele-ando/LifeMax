@@ -12,7 +12,7 @@ import { useEffect } from 'react';
 import { usaLM } from '../pezzi/usaLM';
 import { Testa } from '../pezzi/pezzi';
 import { LM } from '../dati/dati';
-import { vistaFocus, wireFuoco, montaOggiGiornata, wireRigaAggiunta, render } from '../app/app';
+import { vistaFocus, wireFuoco, testaCasa, wireRigaAggiunta, render } from '../app/app';
 import { html } from '../pezzi/grezzo';
 
 export default function Adesso() {
@@ -20,9 +20,6 @@ export default function Adesso() {
   const scena = vistaFocus();
 
   useEffect(() => {
-    /* la striscia della giornata in cima e i fili della scena: tutte e due
-       vogliono gli elementi già attaccati */
-    montaOggiGiornata();
     wireFuoco();
     /* a giornata vuota la scena ha il campo per scrivere una cosa e basta:
        quel filo `wireFuoco` non lo attacca, perché sta nell'altro ramo */
@@ -37,7 +34,9 @@ export default function Adesso() {
 
   return (<>
     <Testa titolo="Oggi" giaNellaNav />
-    <div id="oggi-giornata" />
+    {/* chi sei, che giorno è, a che punto sei: al posto della barra del
+        tempo senza parole che stava qui */}
+    <div className="casa" {...html(testaCasa())} />
     <div className={scena.classi} {...html(scena.dentro)} />
     {/* LA FASCIA STA FUORI DALLA SCENA, e deve restarci.
         Su un telefono è `position: fixed`, e un elemento fisso si aggancia
