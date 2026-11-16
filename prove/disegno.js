@@ -112,7 +112,7 @@ function cercaScritteFuori(toll) {
   async function apri(via, dopo) {
     const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, hasTouch: true, isMobile: true });
     const p = await ctx.newPage();
-    await p.goto('http://localhost:' + PORTA + '/index.html'); await p.waitForTimeout(300);
+    await p.goto('http://localhost:' + PORTA + '/index.html?forma=motore'); await p.waitForTimeout(300);
     await p.evaluate((v) => { localStorage.clear(); LM.seedDemo(); location.hash = '#/' + v; }, via);
     await p.reload(); await p.waitForTimeout(1100);
     if (dopo) { await p.evaluate(dopo); await p.waitForTimeout(900); }
@@ -155,7 +155,7 @@ function cercaScritteFuori(toll) {
     const { ctx, p } = await apri('oggi', null);
     await p.evaluate(() => {
       const s = document.createElement('style');
-      s.textContent = '.aurora { filter: blur(70px) saturate(1.15); }';
+      s.textContent = '.aurora { filter: blur(70px) saturate(1.15); } .aurora i { animation: deriva1 46s ease-in-out infinite alternate !important; }';
       document.head.appendChild(s);
     });
     await p.waitForTimeout(300);
@@ -186,7 +186,7 @@ function cercaScritteFuori(toll) {
     await cdp.send('Emulation.setCPUThrottlingRate', { rate: 6 });
     await p.evaluate(() => {
       const s = document.createElement('style');
-      s.textContent = '.aurora { filter: blur(70px) saturate(1.15); }';
+      s.textContent = '.aurora { filter: blur(70px) saturate(1.15); } .aurora i { animation: deriva1 46s ease-in-out infinite alternate !important; }';
       document.head.appendChild(s);
     });
     await p.waitForTimeout(600);
@@ -229,7 +229,7 @@ function cercaScritteFuori(toll) {
       await ctx.close();
       return r;
     };
-    const TRE = '.tl-grid-mini .tl-blk-t { -webkit-line-clamp: 3 !important; line-clamp: 3 !important; }';
+    const TRE = '.tl-grid-mini .tl-blk-t { -webkit-line-clamp: 3 !important; line-clamp: 3 !important; } .tl-blk-att { border: 1px solid red !important; border-left: 3px solid red !important; }';
     const conSafe = await conStile(TRE);
     ok('controprova 1: rimettendo le tre righe fisse per tutti, il controllo si accorge',
       conSafe.fuori.length > 0 && conSafe.peggioSotto > TOLL,
@@ -249,7 +249,7 @@ function cercaScritteFuori(toll) {
       const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 3, hasTouch: true, isMobile: true });
       const p = await ctx.newPage();
       const err = []; p.on('pageerror', (e) => err.push('' + e));
-      await p.goto('http://localhost:' + PORTA + '/index.html'); await p.waitForTimeout(300);
+      await p.goto('http://localhost:' + PORTA + '/index.html?forma=motore'); await p.waitForTimeout(300);
       await p.evaluate((l) => { localStorage.clear(); LM.seedDemo(); const s = LM.load(); s.profilo.effetti = l; LM.save(); location.hash = '#/giornata'; }, liv);
       await p.reload(); await p.waitForTimeout(1200); await p.bringToFront();
       const r = await p.evaluate(() => {

@@ -225,7 +225,7 @@ const CONTORNO = `(function (b64, R, dritto) {
      quelle dove i conti danno decimali lunghi o zeri. */
   console.log('\nIL TRACCIATO CHE forma.js EMETTE È CSS VALIDO, A OGNI MISURA');
   {
-    await p1.goto('http://localhost:' + PORTA + '/index.html');
+    await p1.goto('http://localhost:' + PORTA + '/index.html?forma=motore');
     await p1.waitForTimeout(400);
     const esito = await p1.evaluate(() => {
       const casi = [];
@@ -381,7 +381,7 @@ const CONTORNO = `(function (b64, R, dritto) {
   {
     const R = 40;
     const p2 = await b.newPage({ viewport: { width: 420, height: 560 }, deviceScaleFactor: DPR });
-    await p2.goto('http://localhost:' + PORTA + '/index.html');
+    await p2.goto('http://localhost:' + PORTA + '/index.html?forma=motore');
     await p2.waitForTimeout(400);
     await p2.evaluate((r) => {
       /* un elemento come tutti gli altri: un bordo, un raggio, e forma.js che

@@ -493,7 +493,7 @@ catch (e) {
     for (const { nome, via, tab, poi, prova } of SCENE) {
       const p = await ctx.newPage();
       try {
-        await p.goto('http://localhost:' + PORTA + '/index.html'); await p.waitForTimeout(300);
+        await p.goto('http://localhost:' + PORTA + '/index.html?forma=motore'); await p.waitForTimeout(300);
         await p.evaluate((opz) => {
           localStorage.clear(); LM.seedDemo();
           if (!opz.lunghi) return;
@@ -626,7 +626,7 @@ catch (e) {
      il controllo la trovi. */
   {
     const pg = await b.newPage({ viewport: { width: 390, height: 700 } });
-    await pg.goto('http://localhost:' + PORTA + '/index.html');
+    await pg.goto('http://localhost:' + PORTA + '/index.html?forma=motore');
     await pg.bringToFront(); await pg.waitForTimeout(500);
     const trovata = await pg.evaluate((codice) => {
       const d = document.createElement('div');

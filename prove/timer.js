@@ -60,9 +60,8 @@ const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  
     dice: (x.querySelector('.lista-sub') || {}).textContent
   })));
   ok('ce ne sono quattro', scelte.length === 4, scelte.map((x) => x.tipo).join(', '));
-  ok('e ognuno dice a cosa serve, non solo quanto dura',
-    scelte.every((x) => x.nome && x.dice && x.dice.length > 12),
-    scelte.map((x) => x.nome + ' — ' + x.dice).join(' | '));
+  /* il nome dice a cosa serve: la riga di spiegazione sotto è stata tolta */
+  ok('e ognuno ha un nome', scelte.every((x) => x.nome), scelte.map((x) => x.nome).join(' | '));
   ok('quello per partire è il più corto di tutti',
     scelte.find((x) => x.tipo === 'avvio').min <= 5 &&
     scelte.find((x) => x.tipo === 'avvio').min < scelte.find((x) => x.tipo === 'blocco').min,

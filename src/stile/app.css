@@ -4452,20 +4452,20 @@ input.rec-ora { min-width: 96px; text-align: left; font-weight: var(--peso-forte
 }
 
 /* --- il movimento --- */
-/* cambiare pagina è una dissolvenza corta di tutta la pagina: niente
-   elementi che arrivano uno dopo l'altro, niente scivolate di lato */
-.vista-enter > *, .sez-enter > *, .sez-enter-dx > *, .sez-enter-sx > *,
-.vista-enter .griglia > *, .sez-enter .griglia > *,
-.anim-a.vista-enter > *, .anim-b.vista-enter > *,
-.sez-enter > *:not(.topbar):not(.testa-porta), .sez-enter-dx > *:not(.topbar):not(.testa-porta),
-.sez-enter-sx > *:not(.topbar):not(.testa-porta),
-.anim-b.sez-enter > *:not(.topbar):not(.testa-porta), .anim-b.sez-enter-dx > *:not(.topbar):not(.testa-porta),
-.anim-b.sez-enter-sx > *:not(.topbar):not(.testa-porta),
+/* cambiare pagina o sezione è una dissolvenza corta del contenuto: la
+   testa e la riga delle sezioni stanno ferme, niente arriva a scaglioni,
+   niente scivola di lato */
+.vista-enter .griglia > *, .sez-enter .griglia > *, .sez-enter-dx .griglia > *, .sez-enter-sx .griglia > *,
 .anim-b.vista-enter .griglia > *, .anim-b.sez-enter .griglia > * { animation: none !important; }
 @keyframes pagina-a { from { opacity: 0; } }
 @keyframes pagina-b { from { opacity: 0; } }
-.anim-a.vista-enter, .anim-a.sez-enter, .anim-a.sez-enter-dx, .anim-a.sez-enter-sx { animation: pagina-a .22s var(--ease-out) both; }
-.anim-b.vista-enter, .anim-b.sez-enter, .anim-b.sez-enter-dx, .anim-b.sez-enter-sx { animation: pagina-b .22s var(--ease-out) both; }
+.anim-a.vista-enter > *, .anim-a.sez-enter > *:not(.topbar):not(.testa-porta):not(.porta-nav), .anim-a.sez-enter-dx > *:not(.topbar):not(.testa-porta):not(.porta-nav), .anim-a.sez-enter-sx > *:not(.topbar):not(.testa-porta):not(.porta-nav) {
+  animation: pagina-a .22s var(--ease-out) both !important; animation-delay: 0s !important;
+}
+.anim-b.vista-enter > *, .anim-b.sez-enter > *:not(.topbar):not(.testa-porta):not(.porta-nav), .anim-b.sez-enter-dx > *:not(.topbar):not(.testa-porta):not(.porta-nav), .anim-b.sez-enter-sx > *:not(.topbar):not(.testa-porta):not(.porta-nav) {
+  animation: pagina-b .22s var(--ease-out) both !important; animation-delay: 0s !important;
+}
+.sez-enter > .porta-nav, .sez-enter-dx > .porta-nav, .sez-enter-sx > .porta-nav { animation: none !important; }
 /* i grafici non si ridisegnano animati a ogni tocco */
 .hm-cella, .bil-barra i, [class*="cella"], [class*="barra"] i { animation: none !important; }
 /* il fondo sta fermo, e niente sfocature a tutto schermo: sono loro lo scatto */
@@ -4552,7 +4552,7 @@ input.rec-ora { min-width: 96px; text-align: left; font-weight: var(--peso-forte
 .som-g { display: flex; flex-direction: column; align-items: center; gap: 4px; }
 .som-g i { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; background: var(--superficie-2); color: #fff; }
 .som-g.fatto i { background: var(--ok); }
-.som-g.oggi i { box-shadow: 0 0 0 2px var(--superficie-1), 0 0 0 4px var(--accento); }
+.som-g.oggi i { outline: 2px solid var(--accento); outline-offset: 2px; }
 .som-g small { font-size: 12px; font-weight: 700; color: var(--inchiostro-2); }
 .som-g.oggi small { color: var(--accento-testo); }
 

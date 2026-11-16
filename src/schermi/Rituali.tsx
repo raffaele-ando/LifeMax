@@ -43,8 +43,9 @@ export default function Rituali() {
   usaLM();
   const adesso = ritualeDellOra();
 
-  /* si apre da solo quello dell'ora, ma solo se è ancora da fare */
-  if (!schermo.ritualiAperti) schermo.ritualiAperti = statoRituale(adesso).fatto ? {} : { [adesso]: true };
+  /* la pagina parte chiusa: cinque righe, e apri quella che ti serve.
+     Quello dell'ora lo apre già la scheda in Oggi. */
+  if (!schermo.ritualiAperti) schermo.ritualiAperti = {};
   /* chi arriva da un collegamento apre quella sezione SENZA chiudere le altre */
   if (schermo.sottoRituale) {
     schermo.ritualiAperti[schermo.sottoRituale] = true;
