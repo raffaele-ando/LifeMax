@@ -44,7 +44,7 @@ import { countUp, burst, flyXp, pioggiaCoriandoli } from './moto';
 import { abilitaTrascina } from './trascina';
 import { fmtMin, fmtOre, etichettaGiorno, oraDi } from './tempo';
 import { avviaScorrimento } from './scorri';
-import { illoSole, illoInbox, illoFlask, illoOrbita } from './illustrazioni';
+import { illoInbox, illoFlask, illoOrbita, mascotte } from './illustrazioni';
 export { illoInbox } from './illustrazioni';
 export { fmtOre, etichettaGiorno } from './tempo';
 import type { OpzFesta } from './moto';
@@ -1525,7 +1525,7 @@ function footerSidebar(): string {
   } else {
     acct = '<div class="fondo-locale">' + ICO('soloQui', 13) + ' Dati salvati su questo dispositivo</div>';
   }
-  return acct + '<button class="btn-strumento-largo" id="fondo-impostazioni">' + ICO('ingranaggio', 15) + '<span>Impostazioni</span></button>';
+  return acct + '<button class="btn-strumento-largo" id="fondo-impostazioni">' + ICO('ingranaggio', 15) + '<span>Profilo e impostazioni</span></button>';
 }
 
 function wireFooterSidebar(): void {
@@ -3372,9 +3372,9 @@ export function vistaFocus(): Scena {
 
   if (!prossima) {
     var finita = oggi.length > 0;
-    scena.dentro += '<div class="vuoto">' + illoSole() +
-      (oggi.length ? '<b>Per oggi hai finito tutto.</b><br>Restano la review della sera, o una cosa in più se ne hai voglia.'
-                   : '<b>Oggi non hai ancora scelto cosa fare.</b><br>Bastano pochi secondi: scegli la prima cosa e parti.') +
+    scena.dentro += '<div class="vuoto">' + mascotte(oggi.length ? 'festa' : undefined) +
+      (oggi.length ? '<b>Per oggi hai finito tutto.</b>'
+                   : '<b>Cosa fai oggi?</b>') +
       '</div>' +
       /* UN pieno, ed è il passo che il testo qui sopra consiglia: a giornata
          finita la review della sera, a giornata vuota scegliere le azioni.
@@ -4670,7 +4670,7 @@ function spostaSuGiorno(id: string, bersaglio: HTMLElement, _x?: number, y?: num
   const g = comeGiorno(quale);
   /* nella settimana il giorno ha la sua griglia delle ore: lasciando la
      cosa a un'altezza le si dà anche l'orario, come nel giorno */
-  const griglia = bersaglio.querySelector<HTMLElement>('[data-pxh]');
+  const griglia = bersaglio.querySelector<HTMLElement>('[data-pxh]') || bersaglio.closest<HTMLElement>('[data-pxh]');
   let ora = '';
   if (griglia && y != null) {
     const gs = +(griglia.getAttribute('data-gs') || ''), pxh = +(griglia.getAttribute('data-pxh') || '');
@@ -5954,7 +5954,7 @@ export function apriCheckinVeloce(): void {
   const voti: Record<Voto, number> = { energia: 0, focus: 0, umore: 0 };
   const DOM: [Voto, string][] = [['energia', 'Energia'], ['focus', 'Concentrazione'], ['umore', 'Umore']];
   const FACCE = ['😫', '😕', '😐', '🙂', '🤩'];
-  apriSheet('Come stai?', '<div class="ck">' + DOM.map(function (q) {
+  apriSheet('Come stai?', '<div class="ck"><div class="ck-masc">' + mascotte() + '</div>' + DOM.map(function (q) {
     return '<div class="ck-riga"><span class="ck-eti">' + q[1] + '</span><div class="ck-scala" data-campo="' + q[0] + '">' +
       [1, 2, 3, 4, 5].map(function (v) {
         return '<button data-v="' + v + '" aria-label="' + q[1] + ': ' + ANCORE[q[0]][v - 1] + '">' + FACCE[v - 1] + '</button>';

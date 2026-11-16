@@ -60,7 +60,7 @@ function anteprima(bers: HTMLElement | null, y: number): Anteprima {
   if (bers.hasAttribute('data-drop-senzaora')) return { testo: 'Senza orario' };
   const quale = bers.getAttribute('data-drop-giorno');
   if (quale) {
-    const gr = bers.querySelector<HTMLElement>('[data-pxh]');
+    const gr = bers.querySelector<HTMLElement>('[data-pxh]') || bers.closest<HTMLElement>('[data-pxh]');
     if (gr) {
       const gs = +(gr.getAttribute('data-gs') || ''), pxh = +(gr.getAttribute('data-pxh') || '');
       const r = gr.getBoundingClientRect();

@@ -168,10 +168,7 @@ if (S) {
 console.log('\nI PEZZI CHE NESSUNO USA (ANCORA)');
 /* Da qui si TOLGONO nomi, mai se ne aggiungono. Se questa prova diventa
    rossa perché hai scritto un pezzo nuovo: usalo, o non scriverlo. */
-const FERMI = [
-  'Scheda', 'Campo', 'Pastiglie', 'Segmenti', 'Statistica', 'Niente',
-  'Nota', 'Icona', 'Etichetta', 'Valore', 'Titolo', 'Fila', 'Barra'
-];
+const FERMI = [];
 {
   const via = path.join(RAMO, 'src', 'pezzi', 'pezzi.tsx');
   const testo = fs.readFileSync(via, 'utf8');

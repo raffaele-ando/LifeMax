@@ -128,8 +128,6 @@ for (const cartella of ['segni', 'postino', 'prove']) {
    aggiunta all'elenco sapendolo, o è un pannello che si sta disegnando da
    solo. */
 const GANCI = [
-  /* il contenitore della testa di casa: lo disegnano i figli */
-  'casa',
   /* i comandi dentro agli avvisi e ai pannelli della giornata: si cercano
      per classe, e l'aspetto lo prendono da `btn` */
   'avv-no', 'ig-finequi', 'ig-indietro', 'ig-noora', 'ig-rimuovi', 'ig-salta', 'ig-vairituali',

@@ -35,7 +35,6 @@ export default function Timer({ azioneId, areaId, testo, minBlocco }: PropTimer)
               <span className="lista-azione ts-ico"><Segno nome={T.ico} /></span>
               <span className="lista-corpo">
                 <span className="lista-tit">{T.nome}</span>
-                <span className="lista-sub">{T.dice}</span>
               </span>
               <span className="sc-val">{quanto}</span>
             </button>
