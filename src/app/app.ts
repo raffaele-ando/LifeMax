@@ -3646,7 +3646,7 @@ export function vistaFocus(): Scena {
          stessa cosa detta nel modo giusto per una cosa che torna. */
       /* nella casa nuova solo dove vuol dire qualcosa: su una cosa che
          aveva un tempo. Altrove era un quarto bersaglio sempre acceso. */
-      ((prossima.tipo === 'abitudine' || (forma === 'poi' && adesso.stato !== 'corso' && adesso.stato !== 'ritardo')) ? ''
+      (prossima.tipo === 'abitudine' ? ''
         : '<button class="btn btn-mini btn-ghost btn-mancata" id="btn-mancata">Non del tutto…</button>') +
       '</div>') +
     /* Quante ne restano lo dice già il contatore in cima e il tasto delle
@@ -5316,9 +5316,9 @@ export function eroePlancia() {
       '</div>' +
       '<div class="som-dice"><b>' + bil.fatte + '</b> fatte su ' + bil.messe + '</div>' +
       '<div class="som-tessere">' +
-      '<span class="som-tessera">' + ICO('flame', 16, 'fiamma') + '<b>' + st.corrente + '</b><span>di fila</span></span>' +
-      '<span class="som-tessera">' + ICO('check', 16) + '<b>' + quanteSett + '</b><span>in settimana</span></span>' +
-      '<span class="som-tessera">' + ICO('star', 16) + '<b>' + quante + '</b><span>in tutto</span></span>' +
+      '<span class="som-tessera">' + ICO('flame', 15, 'fiamma') + '<b>' + st.corrente + '</b><span>di fila</span></span>' +
+      '<span class="som-tessera">' + ICO('check', 15) + '<b>' + quanteSett + '</b><span>in settimana</span></span>' +
+      '<span class="som-tessera">' + ICO('star', 15) + '<b>' + quante + '</b><span>in tutto</span></span>' +
       '</div>';
   }
   return { classi: classi, dentro: html };

@@ -192,7 +192,7 @@ const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  
      cose» — con lo stato scritto a destra — più la nota e il tasto sotto al
      gruppo. Si guarda quel pezzo: la riga, la nota, il tasto. */
   const pannello = () => p.evaluate(() => {
-    const corpo = document.getElementById('sheet-corpo');
+    const corpo = document.querySelector('.prof-righe');
     if (!corpo) return null;
     const riga = [...corpo.querySelectorAll('.lista-riga')]
       .find(e => /Promemoria/.test(e.textContent || ''));
@@ -214,10 +214,10 @@ const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  
     };
   });
   await p.evaluate(() => { location.hash = '#/oggi'; }); await p.waitForTimeout(600);
-  await p.evaluate(() => { const b = document.querySelector('[data-imp],#btn-impostazioni,[data-vai="impostazioni"]'); if (b) b.click(); });
+  await p.evaluate(() => { location.hash = '#/profilo'; });
   await p.waitForTimeout(300);
   let pan = await pannello();
-  if (!pan) { await p.evaluate(() => { const b = document.getElementById('fondo-impostazioni') || document.querySelector('[data-imp]'); if (b) b.click(); }); await p.waitForTimeout(400); pan = await pannello(); }
+  if (!pan) { await p.evaluate(() => { location.hash = '#/profilo'; }); await p.waitForTimeout(400); pan = await pannello(); }
   ok('c’è, dentro Impostazioni', !!pan, pan ? '' : 'non trovato');
   if (pan) {
     console.log('  «' + pan.testo.slice(0, 110) + '»');
@@ -458,7 +458,7 @@ const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  
   await p.evaluate(() => { localStorage.clear(); LM.seedDemo(); });
   await p.reload(); await p.waitForTimeout(900);
   await p.evaluate(() => { location.hash = '#/oggi'; }); await p.waitForTimeout(500);
-  await p.evaluate(() => { const b = document.getElementById('fondo-impostazioni') || document.querySelector('[data-imp]'); if (b) b.click(); });
+  await p.evaluate(() => { location.hash = '#/profilo'; });
   await p.waitForTimeout(400);
   await p.evaluate(() => { const b = document.getElementById('imp-prom-come'); if (b) b.click(); });
   await p.waitForTimeout(500);
@@ -540,7 +540,7 @@ const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  
     await p.evaluate(() => { const b = document.getElementById('sheet-chiudi'); if (b) b.click(); });
     await p.waitForTimeout(300);
     await p.evaluate(() => { location.hash = '#/andamento'; }); await p.waitForTimeout(400);
-    await p.evaluate(() => { const b = document.getElementById('fondo-impostazioni') || document.querySelector('[data-imp]'); if (b) b.click(); });
+    await p.evaluate(() => { location.hash = '#/profilo'; });
     await p.waitForTimeout(400);
     await p.evaluate(() => { const b = document.getElementById('imp-prom-come'); if (b) b.click(); });
     await p.waitForTimeout(500);

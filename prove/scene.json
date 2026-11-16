@@ -74,7 +74,7 @@
   "via": "rituali",
   "tab": null,
   "poi": null,
-  "prova": "#vista .card"
+  "prova": "#vista .rit-riga"
  },
  {
   "nome": "Andamento · riepilogo",
@@ -113,58 +113,58 @@
  },
  {
   "nome": "Impostazioni",
-  "via": "plancia",
+  "via": "profilo",
   "tab": null,
-  "poi": "(async () => {\n  const g = document.getElementById('fondo-impostazioni') || document.querySelector('[data-imp]');\n  if (!g) throw new Error('la porta delle impostazioni non c\\u2019\\u00e8');\n  g.click();\n  await new Promise((r) => setTimeout(r, 500));\n})()",
+  "poi": "(async () => {\n  const g = document.getElementById('imp-aspetto');\n  if (!g) throw new Error('la porta delle impostazioni non c\\u2019\\u00e8');\n  g.click();\n  await new Promise((r) => setTimeout(r, 500));\n})()",
   "prova": "#seg-modo"
  },
  {
   "nome": "Promemoria",
-  "via": "plancia",
+  "via": "profilo",
   "tab": null,
-  "poi": "(async () => {\n  const g = document.getElementById('fondo-impostazioni') || document.querySelector('[data-imp]');\n  if (!g) throw new Error('la porta delle impostazioni non c\\u2019\\u00e8');\n  g.click();\n  await new Promise((r) => setTimeout(r, 500));\n  const c = document.getElementById('imp-prom-come');\n  if (!c) throw new Error('manca #imp-prom-come');\n  c.click();\n})()",
+  "poi": "(async () => {\n  const g = document.getElementById('imp-aspetto');\n  if (!g) throw new Error('la porta delle impostazioni non c\\u2019\\u00e8');\n  const c = document.getElementById('imp-prom-come');\n  if (!c) throw new Error('manca #imp-prom-come');\n  c.click();\n})()",
   "prova": ".prom-riga"
  },
  {
   "nome": "Sonno e pasti",
-  "via": "plancia",
+  "via": "profilo",
   "tab": null,
-  "poi": "(async () => {\n  const g = document.getElementById('fondo-impostazioni') || document.querySelector('[data-imp]');\n  if (!g) throw new Error('la porta delle impostazioni non c\\u2019\\u00e8');\n  g.click();\n  await new Promise((r) => setTimeout(r, 500));\n  const c = document.getElementById('imp-ritmo');\n  if (!c) throw new Error('manca #imp-ritmo');\n  c.click();\n})()",
+  "poi": "(async () => {\n  const g = document.getElementById('imp-aspetto');\n  if (!g) throw new Error('la porta delle impostazioni non c\\u2019\\u00e8');\n  const c = document.getElementById('imp-ritmo');\n  if (!c) throw new Error('manca #imp-ritmo');\n  c.click();\n})()",
   "prova": "#ritmo-sonno"
  },
  {
   "nome": "Le tue aree",
-  "via": "plancia",
+  "via": "profilo",
   "tab": null,
-  "poi": "(async () => {\n  const g = document.getElementById('fondo-impostazioni') || document.querySelector('[data-imp]');\n  if (!g) throw new Error('la porta delle impostazioni non c\\u2019\\u00e8');\n  g.click();\n  await new Promise((r) => setTimeout(r, 500));\n  const c = document.getElementById('imp-aree');\n  if (!c) throw new Error('manca #imp-aree');\n  c.click();\n})()",
+  "poi": "(async () => {\n  const g = document.getElementById('imp-aspetto');\n  if (!g) throw new Error('la porta delle impostazioni non c\\u2019\\u00e8');\n  const c = document.getElementById('imp-aree');\n  if (!c) throw new Error('manca #imp-aree');\n  c.click();\n})()",
   "prova": ".aree-lista"
  },
  {
   "nome": "Backup",
-  "via": "plancia",
+  "via": "profilo",
   "tab": null,
-  "poi": "(async () => {\n  const g = document.getElementById('fondo-impostazioni') || document.querySelector('[data-imp]');\n  if (!g) throw new Error('la porta delle impostazioni non c\\u2019\\u00e8');\n  g.click();\n  await new Promise((r) => setTimeout(r, 500));\n  const c = document.getElementById('imp-backup');\n  if (!c) throw new Error('manca #imp-backup');\n  c.click();\n})()",
+  "poi": "(async () => {\n  const g = document.getElementById('imp-aspetto');\n  if (!g) throw new Error('la porta delle impostazioni non c\\u2019\\u00e8');\n  const c = document.getElementById('imp-backup');\n  if (!c) throw new Error('manca #imp-backup');\n  c.click();\n})()",
   "prova": ".sheet-corpo .lista, .bk-riga, .sheet-corpo"
  },
  {
   "nome": "Primi passi",
-  "via": "plancia",
+  "via": "profilo",
   "tab": null,
-  "poi": "(async () => {\n  const g = document.getElementById('fondo-impostazioni') || document.querySelector('[data-imp]');\n  if (!g) throw new Error('la porta delle impostazioni non c\\u2019\\u00e8');\n  g.click();\n  await new Promise((r) => setTimeout(r, 500));\n  const c = document.getElementById('imp-guida');\n  if (!c) throw new Error('manca #imp-guida');\n  c.click();\n})()",
+  "poi": "(async () => {\n  const g = document.getElementById('imp-aspetto');\n  if (!g) throw new Error('la porta delle impostazioni non c\\u2019\\u00e8');\n  const c = document.getElementById('imp-guida');\n  if (!c) throw new Error('manca #imp-guida');\n  c.click();\n})()",
   "prova": ".sheet-corpo"
  },
  {
   "nome": "Cosa sta succedendo",
-  "via": "plancia",
+  "via": "profilo",
   "tab": null,
-  "poi": "(async () => {\n  const g = document.getElementById('fondo-impostazioni') || document.querySelector('[data-imp]');\n  if (!g) throw new Error('la porta delle impostazioni non c\\u2019\\u00e8');\n  g.click();\n  await new Promise((r) => setTimeout(r, 500));\n  const c = document.getElementById('imp-diag');\n  if (!c) throw new Error('manca #imp-diag');\n  c.click();\n})()",
+  "poi": "(async () => {\n  const g = document.getElementById('imp-aspetto');\n  if (!g) throw new Error('la porta delle impostazioni non c\\u2019\\u00e8');\n  const c = document.getElementById('imp-diag');\n  if (!c) throw new Error('manca #imp-diag');\n  c.click();\n})()",
   "prova": ".diag-stato"
  },
  {
   "nome": "La scienza",
-  "via": "plancia",
+  "via": "profilo",
   "tab": null,
-  "poi": "(async () => {\n  const g = document.getElementById('fondo-impostazioni') || document.querySelector('[data-imp]');\n  if (!g) throw new Error('la porta delle impostazioni non c\\u2019\\u00e8');\n  g.click();\n  await new Promise((r) => setTimeout(r, 500));\n  const c = document.getElementById('imp-scienza');\n  if (!c) throw new Error('manca #imp-scienza');\n  c.click();\n})()",
+  "poi": "(async () => {\n  const g = document.getElementById('imp-aspetto');\n  if (!g) throw new Error('la porta delle impostazioni non c\\u2019\\u00e8');\n  const c = document.getElementById('imp-scienza');\n  if (!c) throw new Error('manca #imp-scienza');\n  c.click();\n})()",
   "prova": ".sci-card, #vista .card"
  },
  {
@@ -372,9 +372,9 @@
  },
  {
   "nome": "Un avviso",
-  "via": "plancia",
+  "via": "profilo",
   "tab": null,
-  "poi": "(async () => {\n  const g = document.getElementById('fondo-impostazioni') || document.querySelector('[data-imp]');\n  if (!g) throw new Error('la porta delle impostazioni non c\\u2019\\u00e8');\n  g.click();\n  await new Promise((r) => setTimeout(r, 500));\n  const z = document.getElementById('imp-azzera');\n  if (!z) throw new Error('manca #imp-azzera');\n  z.click();\n  await new Promise((r) => setTimeout(r, 500));\n})()",
+  "poi": "(async () => {\n  const g = document.getElementById('imp-aspetto');\n  if (!g) throw new Error('la porta delle impostazioni non c\\u2019\\u00e8');\n  const z = document.getElementById('imp-azzera');\n  if (!z) throw new Error('manca #imp-azzera');\n  z.click();\n  await new Promise((r) => setTimeout(r, 500));\n})()",
   "prova": ".avviso"
  },
  {

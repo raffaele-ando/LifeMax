@@ -49,13 +49,12 @@ const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  
   await p.evaluate(() => { localStorage.clear(); LM.seedDemo(); });
 
   const apri = async () => {
-    await p.evaluate(() => { location.hash = '#/plancia'; }); await p.reload(); await p.waitForTimeout(680);
+    await p.evaluate(() => { location.hash = '#/profilo'; }); await p.reload(); await p.waitForTimeout(680);
     /* la porta delle impostazioni sta nella barra in basso, non più nella testa
        di «Panoramica»: cercandola dentro #vista non si trovava più niente, e
        il foglio non si apriva — undici prove rosse per una porta spostata */
     await p.evaluate(() => {
-      var b = document.querySelector('[data-imp]') ||
-        document.getElementById('fondo-impostazioni');
+      var b = document.getElementById('imp-aspetto');
       if (b) b.click();
     });
     await p.waitForTimeout(680);
@@ -177,12 +176,12 @@ const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  
   console.log('IL FOGLIO RICEVE IL TOCCO DOVE LO TOCCHI');
   {
     const pannelli = [
-      ['Impostazioni', () => { const b = (document.querySelector('[data-imp]') || document.getElementById('fondo-impostazioni')); if (b) b.click(); }],
+      ['Impostazioni', () => { const b = document.getElementById('imp-aspetto'); if (b) b.click(); }],
       ['Scheda di un’attività', () => { const r = document.querySelector('[data-bkapri]'); if (r) r.click(); }]
     ];
     for (const [nome, apriQuesto] of pannelli) {
       await p.evaluate(() => { location.hash = '#/' + (document.querySelector('[data-bkapri]') ? 'inbox' : 'plancia'); });
-      await p.evaluate(v => { location.hash = '#/' + v; }, nome === 'Impostazioni' ? 'plancia' : 'inbox');
+      await p.evaluate(v => { location.hash = '#/' + v; }, nome === 'Impostazioni' ? 'profilo' : 'inbox');
       await p.reload(); await p.waitForTimeout(680);
       if (nome !== 'Impostazioni') { await p.evaluate(() => { const t = document.querySelectorAll('#vista .segmenti button')[1]; if (t) t.click(); }); await p.waitForTimeout(420); }
       await p.evaluate(apriQuesto); await p.waitForTimeout(700);
@@ -253,7 +252,7 @@ const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  
   await p.evaluate(() => document.getElementById('sheet-indietro').click());
   await p.waitForTimeout(650);
   const tornato = await p.evaluate(() => (document.getElementById('sheet-titolo') || {}).textContent);
-  ok('dopo un tiro corto la via del ritorno funziona ancora', /Impostazioni/.test(tornato || ''),
+  ok('dopo un tiro corto la via del ritorno funziona ancora', /Aspetto/.test(tornato || ''),
     '«' + dentro.tit + '» (indietro: ' + dentro.ind + ') → «' + tornato + '»');
   await p.evaluate(() => { const c = document.getElementById('sheet-chiudi'); if (c) c.click(); });
   await p.waitForTimeout(500);
@@ -264,9 +263,9 @@ const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  
   {
     const pm = await b.newPage({ viewport: { width: 420, height: 900 }, hasTouch: false, isMobile: false });
     await pm.goto('http://localhost:' + PORTA + '/index.html'); await pm.waitForTimeout(400);
-    await pm.evaluate(() => { localStorage.clear(); LM.seedDemo(); location.hash = '#/plancia'; });
+    await pm.evaluate(() => { localStorage.clear(); LM.seedDemo(); location.hash = '#/profilo'; });
     await pm.reload(); await pm.waitForTimeout(700);
-    await pm.evaluate(() => { const b = (document.querySelector('[data-imp]') || document.getElementById('fondo-impostazioni')); if (b) b.click(); });
+    await pm.evaluate(() => { const b = document.getElementById('imp-aspetto'); if (b) b.click(); });
     await pm.waitForTimeout(700);
     const yt = await pm.evaluate(() => Math.round(document.querySelector('.sheet').getBoundingClientRect().top));
     await pm.mouse.move(200, yt + 200); await pm.mouse.down();
@@ -277,7 +276,7 @@ const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  
       'larghezza da telefono, ma senza tocco');
     /* e premere DENTRO rilasciando FUORI non deve chiudere */
     await pm.evaluate(() => { const c = document.getElementById('sheet-chiudi'); if (c) c.click(); }); await pm.waitForTimeout(300);
-    await pm.evaluate(() => { const b = (document.querySelector('[data-imp]') || document.getElementById('fondo-impostazioni')); if (b) b.click(); });
+    await pm.evaluate(() => { const b = document.getElementById('imp-aspetto'); if (b) b.click(); });
     await pm.waitForTimeout(700);
     const yt2 = await pm.evaluate(() => Math.round(document.querySelector('.sheet').getBoundingClientRect().top));
     await pm.mouse.move(200, yt2 + 60); await pm.mouse.down();

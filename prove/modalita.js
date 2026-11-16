@@ -29,13 +29,13 @@ const apriAbitudini=async()=>{await vaiA('inbox');
   await p.waitForTimeout(700);};
 
 const PANNELLI=[
-  ['Impostazioni', async()=>{await vaiA('oggi');await p.evaluate(()=>{const b=[...document.querySelectorAll('button')].find(x=>/impostazioni/i.test(x.getAttribute('aria-label')||x.title||x.textContent));b.click();});}],
-  ['Impostazioni → Le tue aree', async()=>{await vaiA('oggi');await p.evaluate(()=>{const b=[...document.querySelectorAll('button')].find(x=>/impostazioni/i.test(x.getAttribute('aria-label')||x.title||x.textContent));b.click();});await p.waitForTimeout(600);await p.evaluate(()=>{const b=[...document.querySelectorAll('.sheet button')].find(x=>/^\s*Aree/i.test(x.textContent));if(b)b.click();});}],
-  ['Impostazioni → Primi passi', async()=>{await vaiA('oggi');await p.evaluate(()=>{const b=[...document.querySelectorAll('button')].find(x=>/impostazioni/i.test(x.getAttribute('aria-label')||x.title||x.textContent));b.click();});await p.waitForTimeout(600);await p.evaluate(()=>{const b=[...document.querySelectorAll('.sheet button')].find(x=>/primi passi/i.test(x.textContent));if(b)b.click();});}],
-  ['Impostazioni → Sonno e pasti', async()=>{await vaiA('oggi');await p.evaluate(()=>{const b=[...document.querySelectorAll('button')].find(x=>/impostazioni/i.test(x.getAttribute('aria-label')||x.title||x.textContent));b.click();});await p.waitForTimeout(600);await p.evaluate(()=>{const b=[...document.querySelectorAll('.sheet button')].find(x=>/sonno e pasti/i.test(x.textContent));if(b)b.click();});}],
-  ['Impostazioni → Backup', async()=>{await vaiA('oggi');await p.evaluate(()=>{const b=[...document.querySelectorAll('button')].find(x=>/impostazioni/i.test(x.getAttribute('aria-label')||x.title||x.textContent));b.click();});await p.waitForTimeout(600);await p.evaluate(()=>{const b=[...document.querySelectorAll('.sheet button')].find(x=>/backup/i.test(x.textContent));if(b)b.click();});}],
-  ['Impostazioni → Promemoria', async()=>{await vaiA('oggi');await p.evaluate(()=>{const b=[...document.querySelectorAll('button')].find(x=>/impostazioni/i.test(x.getAttribute('aria-label')||x.title||x.textContent));b.click();});await p.waitForTimeout(600);await p.evaluate(()=>{const b=[...document.querySelectorAll('.sheet button')].find(x=>/Promemoria/i.test(x.textContent));if(b)b.click();});}],
-  ['Impostazioni → Registro tecnico', async()=>{await vaiA('oggi');await p.evaluate(()=>{const b=[...document.querySelectorAll('button')].find(x=>/impostazioni/i.test(x.getAttribute('aria-label')||x.title||x.textContent));b.click();});await p.waitForTimeout(600);await p.evaluate(()=>{const b=[...document.querySelectorAll('.sheet button')].find(x=>/registro tecnico/i.test(x.textContent));if(b)b.click();});}],
+  ['Impostazioni', async()=>{await vaiA('profilo');await p.evaluate(()=>{const b=document.getElementById('imp-aspetto');if(b)b.click();});}],
+  ['Impostazioni → Le tue aree', async()=>{await vaiA('profilo');await p.waitForTimeout(600);await p.evaluate(()=>{const b=[...document.querySelectorAll('#vista button')].find(x=>/^\s*Aree/i.test(x.textContent));if(b)b.click();});}],
+  ['Impostazioni → Primi passi', async()=>{await vaiA('profilo');await p.waitForTimeout(600);await p.evaluate(()=>{const b=[...document.querySelectorAll('#vista button')].find(x=>/primi passi/i.test(x.textContent));if(b)b.click();});}],
+  ['Impostazioni → Sonno e pasti', async()=>{await vaiA('profilo');await p.waitForTimeout(600);await p.evaluate(()=>{const b=[...document.querySelectorAll('#vista button')].find(x=>/sonno e pasti/i.test(x.textContent));if(b)b.click();});}],
+  ['Impostazioni → Backup', async()=>{await vaiA('profilo');await p.waitForTimeout(600);await p.evaluate(()=>{const b=[...document.querySelectorAll('#vista button')].find(x=>/backup/i.test(x.textContent));if(b)b.click();});}],
+  ['Impostazioni → Promemoria', async()=>{await vaiA('profilo');await p.waitForTimeout(600);await p.evaluate(()=>{const b=[...document.querySelectorAll('#vista button')].find(x=>/Promemoria/i.test(x.textContent));if(b)b.click();});}],
+  ['Impostazioni → Registro tecnico', async()=>{await vaiA('profilo');await p.waitForTimeout(600);await p.evaluate(()=>{const b=[...document.querySelectorAll('#vista button')].find(x=>/registro tecnico/i.test(x.textContent));if(b)b.click();});}],
   ['La giornata (da Oggi)', async()=>{await vaiA('oggi');await p.evaluate(()=>{const b=document.querySelector('.giornata-strip');if(b)b.click();});}],
   ['Blocco della giornata', async()=>{await vaiA('giornata');await p.evaluate(()=>{const b=document.querySelector('.tl-blk-clic');if(b)b.click();});}],
   ['Scheda abitudine', async()=>{await apriAbitudini();await p.evaluate(()=>{const b=document.querySelector('[data-abdett]');if(b)b.click();});}],
@@ -69,15 +69,10 @@ for (const [nome, apri] of PANNELLI.filter(x=>/→/.test(x[0]))) {
     return {tit:(document.getElementById('sheet-titolo')||{}).textContent,
       testo:b?b.textContent.replace(/\s+/g,' ').trim():null,
       visibile:!!(r&&r.width>2&&r.height>2)};});
-  if (!dentro.visibile) { ok(nome+' — la via del ritorno', false, 'nessun tasto indietro (titolo: '+dentro.tit+')'); continue; }
-  await p.evaluate(()=>document.getElementById('sheet-indietro').click());
-  await p.waitForTimeout(700);
-  const tornato=await p.evaluate(()=>({tit:(document.getElementById('sheet-titolo')||{}).textContent,
-    aperto:!document.getElementById('sheet-overlay').hidden,
-    indietro:!document.getElementById('sheet-indietro') || document.getElementById('sheet-indietro').hidden}));
-  ok(nome+' — «'+dentro.testo+'» riporta al pannello di prima',
-    tornato.aperto && /Impostazioni/.test(tornato.tit||'') && tornato.indietro,
-    JSON.stringify(tornato));
+  /* le impostazioni adesso sono una pagina (Profilo): un pannello aperto da
+     lì non ha un foglio a cui tornare, si chiude e sotto c'è la pagina */
+  const aperto=await p.evaluate(()=>!document.getElementById('sheet-overlay').hidden);
+  ok(nome+' — si apre dalla pagina, senza tasto indietro', aperto && !dentro.visibile, JSON.stringify(dentro));
   await p.evaluate(()=>{const c=document.getElementById('sheet-chiudi');if(c)c.click();});
   await p.waitForTimeout(400);
 }
