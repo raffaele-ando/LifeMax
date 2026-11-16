@@ -34,7 +34,7 @@ export default function Scienza() {
             <span className={'evidenza ' + CLASSE[p.evidenza]}>{ETICHETTA[p.evidenza]}</span>
           </div>
           <p style={{ fontSize: '13.5px', color: 'var(--inchiostro-2)' }} {...html(p.claim)} />
-          <div className="uso" {...html('<b>Nel prototipo:</b> ' + p.uso)} />
+          <div className="uso" {...html('<b>Nell’app:</b> ' + p.uso)} />
           <div className="fonte"><Segno nome="fonte" /><span {...html(p.fonti)} /></div>
         </div>
       ))}

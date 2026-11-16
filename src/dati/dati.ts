@@ -22,7 +22,7 @@ import type {
   Stato, Area, Azione, Attivita, Abitudine, Lezione, Esperimento,
   Ritmo, Pasto, Timer, VoceRegistro, Slot, Disfa,
   Giorno, Ora, GiornoSettimana, Verso, ModoFusione, PassoDi, Mancata,
-  RegistroGiorno, GiornataPos, Promemoria, VocePromemoria, Chiedi, PatchChiedi
+  RegistroGiorno, Promemoria, VocePromemoria, Chiedi, PatchChiedi
 } from '../tipi/stato';
 import { COME_UNIRE, giorno, ora } from '../tipi/stato';
 import { presa } from '../tipi/presa';
@@ -231,13 +231,6 @@ function creaLM() {
     triage: 2,        // smistare un elemento dall'inbox
     abitudine: 8      // completare un'abitudine ricorrente del giorno
   };
-
-  function livelloDaXp(xp: number) {
-    var lvl = Math.floor(Math.sqrt(Math.max(0, xp) / 50)) + 1;
-    var base = 50 * (lvl - 1) * (lvl - 1);
-    var next = 50 * lvl * lvl;
-    return { livello: lvl, base: base, prossimo: next, pct: Math.min(1, (xp - base) / (next - base)) };
-  }
 
   /* ---------- stato ---------- */
 
@@ -1773,12 +1766,6 @@ function creaLM() {
     var dur = b - a; if (dur <= 0) dur += 1440;
     return dur;
   }
-  function impostaGiornataPos(pos: GiornataPos) {
-    var s = load();
-    s.profilo.giornataPos = pos;
-    registra('impostazioni', 'Cambiata la posizione della «Giornata»', false);
-    save();
-  }
 
   /* ---------- backlog (attività "da fare", senza data) ---------- */
 
@@ -1836,14 +1823,6 @@ function creaLM() {
     passi.push({ id: uid(), testo: testo, done: false });
     registra('backlog', 'Aggiunto un passo a «' + b.testo + '»: ' + testo, false);
     save();
-  }
-  function modificaPasso(bid: string, sid: string, testo: string) {
-    var s = load();
-    var b = s.backlog.find(function (x) { return x.id === bid; });
-    if (!b || !b.steps) return;
-    var suo = b;
-    var st = suo.steps ? suo.steps.find(function (x) { return x.id === sid; }) : undefined;
-    if (st) { st.testo = testo; registra('backlog', 'Modificato un passo di «' + suo.testo + '»', false); save(); }
   }
   function rimuoviPasso(bid: string, sid: string) {
     var s = load();
@@ -2099,14 +2078,6 @@ function creaLM() {
     registra('backlog', scadenza ? 'Scadenza a «' + b.testo + '» → ' + fmtShort(scadenza) : 'Tolta la scadenza a «' + b.testo + '»', false);
     save();
   }
-  /* attività con scadenza entro N giorni (o già scadute), dalla più vicina */
-  function scadenzeVicine(giorni: number) {
-    var s = load();
-    var oggi = todayKey();
-    return s.backlog.filter(function (b) { return !!b.scadenza; })
-      .filter(function (b) { return daysBetween(oggi, b.scadenza as Giorno) <= (giorni == null ? 3650 : giorni); })
-      .sort(function (a, b) { return (a.scadenza as Giorno) < (b.scadenza as Giorno) ? -1 : 1; });
-  }
 
   /* ---------- abitudini ricorrenti ---------- */
 
@@ -2262,11 +2233,6 @@ function creaLM() {
     var s = load();
     var a = s.aree.find(function (x) { return x.id === id; });
     if (a && nome.trim()) { registra('area', 'Area rinominata «' + a.nome + '» → «' + nome.trim() + '»', false); a.nome = nome.trim(); save(); }
-  }
-  function modificaRegolaArea(id: string, regola: string) {
-    var s = load();
-    var a = s.aree.find(function (x) { return x.id === id; });
-    if (a) { a.sistema = regola; registra('area', 'Modificata la regola dell’area «' + a.nome + '»', false); save(); }
   }
   function toggleArea(id: string, attiva: boolean) {
     var s = load();
@@ -2735,7 +2701,6 @@ function creaLM() {
     if (timed.length) { var u = presa(timed[0]); return { azione: u.a, stato: 'programmata', min: u.min, fine: fineSlot(u.min, u.a.durata) }; }
     return { azione: null, stato: null, min: null, fine: null };
   }
-  function prossimaAzione() { return azioneAdesso().azione; }
 
   function giornoAttivo(k: Giorno) {
     var s = load();
@@ -2799,12 +2764,6 @@ function creaLM() {
     });
   }
 
-  function serieXp(giorni: number) {
-    var s = load();
-    return lastNDays(giorni).map(function (k) {
-      return { data: k, valore: s.xpPerGiorno[k] || 0 };
-    });
-  }
 
   function heatmapConsistenza(settimane: number) {
     /* celle = XP del giorno, ultime N settimane concluse a oggi */
@@ -2999,15 +2958,6 @@ function creaLM() {
   /* `oraOra` sono MINUTI dalla mezzanotte, non un 'HH:MM': gli avevo messo
      `Ora` per il nome, e il confronto con `+ 30` qui sotto non ha piu' avuto
      senso. Nessuno la passa: il ripiego e' l'ora di adesso. */
-  function pastiDaChiedere(k: Giorno, oraOra?: number) {
-    k = k || todayKey();
-    var r = ritmoDi(k);
-    var ora = oraOra == null ? oraDelGiorno() : oraOra;
-    return (r.pasti || []).filter(function (pa) {
-      if (pa.fatto !== undefined) return false;          /* già risposto */
-      return minutiDaOra(pa.ora) <= ora + 30;           /* mezz'ora di grazia */
-    });
-  }
   function oraDelGiorno() {
     var d = new Date();
     return d.getHours() * 60 + d.getMinutes();
@@ -3621,7 +3571,7 @@ function creaLM() {
     tornaAlPunto: tornaAlPunto, annullaRecord: annullaRecord, scordaPunti: scordaPunti,
     todayKey: todayKey, dayKey: dayKey, addDays: addDays, lastNDays: lastNDays,
     weekKey: weekKey, weekdayShort: weekdayShort, fmtShort: fmtShort, daysBetween: daysBetween,
-    coloreArea: coloreArea, livelloDaXp: livelloDaXp,
+    coloreArea: coloreArea,
     aggiungiAzione: aggiungiAzione, completaAzione: completaAzione, rimandaAzione: rimandaAzione,
     segnaMancata: segnaMancata, togliMancata: togliMancata, mancate: mancate,
     PERCHE_MANCATA: PERCHE_MANCATA, QUANTO_FATTO: QUANTO_FATTO,
@@ -3629,23 +3579,23 @@ function creaLM() {
     modificaAzione: modificaAzione, rimuoviAzione: rimuoviAzione, serveMit: serveMit,
     spostaAzione: spostaAzione, rimandaNonFatte: rimandaNonFatte, azioneInBacklog: azioneInBacklog,
     setOraAzione: setOraAzione, setDurataAzione: setDurataAzione, azioniDelGiorno: azioniDelGiorno,
-    impostaRitmo: impostaRitmo, impostaGiornataPos: impostaGiornataPos, RITMO_DEFAULT: RITMO_DEFAULT,
+    impostaRitmo: impostaRitmo, RITMO_DEFAULT: RITMO_DEFAULT,
     impostaChiedi: impostaChiedi, chiediQuando: chiediQuando, CHIEDI_DEFAULT: CHIEDI_DEFAULT,
     promemoria: promemoria, impostaPromemoria: impostaPromemoria, PROMEMORIA_DEFAULT: PROMEMORIA_DEFAULT,
     ritmoDi: ritmoDi, setRitmoGiorno: setRitmoGiorno, azzeraRitmoGiorno: azzeraRitmoGiorno, minutiSonno: minutiSonno,
     aggiungiBacklog: aggiungiBacklog, modificaBacklog: modificaBacklog, cambiaAreaBacklog: cambiaAreaBacklog,
     rimuoviBacklog: rimuoviBacklog, backlogInOggi: backlogInOggi, backlogPerArea: backlogPerArea,
-    aggiungiPasso: aggiungiPasso, modificaPasso: modificaPasso, rimuoviPasso: rimuoviPasso, togglePasso: togglePasso,
+    aggiungiPasso: aggiungiPasso, rimuoviPasso: rimuoviPasso, togglePasso: togglePasso,
     distribuisciPassi: distribuisciPassi, backlogInAbitudine: backlogInAbitudine, pianificaPasso: pianificaPasso,
     avanzamentoProgetto: avanzamentoProgetto, prossimoPassoInOggi: prossimoPassoInOggi,
-    impostaScadenzaBacklog: impostaScadenzaBacklog, scadenzeVicine: scadenzeVicine,
+    impostaScadenzaBacklog: impostaScadenzaBacklog,
     appuntaBacklog: appuntaBacklog, importanzaBacklog: importanzaBacklog,
     backlogPerImportanza: backlogPerImportanza, azioniDiBacklog: azioniDiBacklog,
     aggiungiAbitudine: aggiungiAbitudine, modificaAbitudine: modificaAbitudine, rimuoviAbitudine: rimuoviAbitudine,
     abitudinePrevista: abitudinePrevista, abitudiniDiOggi: abitudiniDiOggi, completaAbitudine: completaAbitudine, streakAbitudine: streakAbitudine,
     impostaPeriodoAbitudine: impostaPeriodoAbitudine, saltaGiornoAbitudine: saltaGiornoAbitudine,
     recordAbitudine: recordAbitudine, prossimaAbitudine: prossimaAbitudine,
-    rinominaArea: rinominaArea, modificaRegolaArea: modificaRegolaArea, toggleArea: toggleArea,
+    rinominaArea: rinominaArea, toggleArea: toggleArea,
     aggiungiArea: aggiungiArea, rimuoviArea: rimuoviArea, baselineCheckin: baselineCheckin,
     registraCheckin: registraCheckin, salvaPianoMattina: salvaPianoMattina,
     valutaArea: valutaArea, registraMinuti: registraMinuti,
@@ -3654,11 +3604,11 @@ function creaLM() {
     serieRiuscita: serieRiuscita,
     timerVivo: timerVivo, avviaTimerDati: avviaTimerDati, fermaTimerDati: fermaTimerDati, aggiornaTimerDati: aggiornaTimerDati,
     salvaReviewSera: salvaReviewSera, salvaReviewSettimana: salvaReviewSettimana,
-    azioniDiOggi: azioniDiOggi, prossimaAzione: prossimaAzione, azioneAdesso: azioneAdesso,
+    azioniDiOggi: azioniDiOggi, azioneAdesso: azioneAdesso,
     vociDiAdesso: vociDiAdesso,
     giornoAttivo: giornoAttivo, streak: streak,
     serieValutazioni: serieValutazioni, serieMinuti: serieMinuti, serieCheckin: serieCheckin,
-    serieXp: serieXp, heatmapConsistenza: heatmapConsistenza,
+    heatmapConsistenza: heatmapConsistenza,
     minutiSettimanaPerArea: minutiSettimanaPerArea, mediaValutazioneArea: mediaValutazioneArea,
     diario: diario, giorniConAttivita: giorniConAttivita, registra: registra,
     creaEsperimento: creaEsperimento, risultatiEsperimento: risultatiEsperimento,
@@ -3666,7 +3616,7 @@ function creaLM() {
     PRECISIONE: PRECISIONE, segnaVisto: segnaVisto,
     registraNotte: registraNotte, registraPasto: registraPasto,
     segnaChiesto: segnaChiesto, giaChiesto: giaChiesto,
-    pastiDaChiedere: pastiDaChiedere, oraDelGiorno: oraDelGiorno, minutiDaOra: minutiDaOra,
+    oraDelGiorno: oraDelGiorno, minutiDaOra: minutiDaOra,
     registraFatta: registraFatta,
     FORZE_LEZIONE: FORZE_LEZIONE, forzaLezione: forzaLezione, lezioni: lezioni,
     aggiungiLezione: aggiungiLezione, modificaLezione: modificaLezione,

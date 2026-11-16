@@ -7014,24 +7014,24 @@ export interface Principio {
 }
 export const PRINCIPI: Principio[] = [
   {
-    titolo: 'Cattura istantanea (brain dump)',
+    titolo: 'Cattura istantanea',
     evidenza: 'alta',
     claim: 'Nell’ADHD i pensieri arrivano di continuo e la memoria di lavoro ha una capacità limitata. Annotarli subito da qualche parte libera attenzione per il compito in corso e riduce l’ansia di doverli ricordare.',
-    uso: 'Tasto C / ⌘K / bottone + ovunque: un solo campo, zero categorie al momento della cattura. Le decisioni sono rimandate al triage.',
+    uso: 'Il tasto + è in ogni schermata (da tastiera, C oppure ⌘K): un solo campo, nessuna categoria da scegliere mentre annoti. Cosa farne lo decidi dopo, in Attività → Da sistemare.',
     fonti: 'Knouse & Safren (2010), Clinical Psychology Review — la CBT per ADHD adulto prescrive sistemi esterni di cattura · Risko & Gilbert (2016), Trends in Cognitive Sciences — cognitive offloading.'
   },
   {
     titolo: 'Una sola prossima azione',
     evidenza: 'media',
     claim: 'Quando le risorse di autocontrollo sono limitate, ogni scelta in più ha un costo e aumenta la probabilità di distrarsi. Mostrare una sola opzione riduce il rischio di bloccarsi davanti a troppe possibilità.',
-    uso: 'La vista Focus mostra una sola azione a schermo intero. Le altre restano in lista ma non sono visibili; con «Più tardi» le fai scorrere una alla volta, senza penalità.',
+    uso: 'La schermata «Adesso» mostra una sola azione. Le altre di oggi restano a un tocco di distanza, e con «Più tardi» passi alla successiva senza nessuna penalità.',
     fonti: 'Barkley (1997), Psychological Bulletin — ADHD come deficit di inibizione/funzioni esecutive · Iyengar & Lepper (2000), JPSP — il sovraccarico di scelta riduce l’azione.'
   },
   {
     titolo: 'Intenzioni «Se… allora…» (implementation intentions)',
     evidenza: 'alta',
     claim: 'Legare l’azione a un segnale concreto («se sono alla scrivania alle 9, allora…») quasi raddoppia la probabilità di eseguirla: l’avvio diventa automatico invece che affidato alla volontà.',
-    uso: 'Il piano del mattino chiede una sola intenzione «se… allora…», collegata all’azione più importante, che poi ricompare nella vista Focus.',
+    uso: 'Il piano del mattino chiede una sola intenzione «se… allora…», collegata all’azione più importante, che poi ricompare nella schermata «Adesso».',
     fonti: 'Gollwitzer & Sheeran (2006), Advances in Experimental Social Psychology — meta-analisi, 94 studi, effetto medio-grande (d≈0.65) · Gawrilow & Gollwitzer (2008) — efficacia specifica in ADHD.'
   },
   {
@@ -7045,7 +7045,7 @@ export const PRINCIPI: Principio[] = [
     titolo: 'Ricompense immediate (XP a ogni micro-azione)',
     evidenza: 'media',
     claim: 'Nell’ADHD le ricompense lontane nel tempo perdono valore più in fretta: una ricompensa immediata motiva molto più di una futura. Per questo l’app dà un riscontro subito, a ogni piccolo passo.',
-    uso: 'XP immediati con un riscontro visivo per ogni azione: annotare un pensiero (+1), fare un check-in (+3), completare un’azione (+10), completare quella più importante (+15). I livelli e l’anello di progresso sono sempre visibili.',
+    uso: 'XP immediati con un riscontro visivo per ogni azione: annotare un pensiero (+1), fare un check-in (+3), completare un’azione (+10), completare quella più importante (+15). I punti di ogni giorno disegnano la mappa della costanza, in Andamento.',
     fonti: 'Jackson & MacKillop (2016), J. of Attention Disorders — meta-analisi: maggiore delay discounting in ADHD · Sonuga-Barke (2003) — delay aversion · Hamari et al. (2014); Sailer & Homner (2020), Educational Psychology Review — la gamification funziona, ma dipende dal design.'
   },
   {
@@ -7073,14 +7073,14 @@ export const PRINCIPI: Principio[] = [
     titolo: 'Esperimenti N-of-1 su te stesso',
     evidenza: 'alta',
     claim: 'Le medie calcolate su tanti individui non dicono cosa funziona per te in particolare. Il confronto tra una fase iniziale e una fase con la modifica, sulla stessa persona e con misure ripetute, è un metodo riconosciuto per personalizzare gli interventi. È l’idea scientifica su cui si basa questa app.',
-    uso: 'La vista Esperimenti confronta baseline e intervento su una metrica che già registri (focus, minuti, energia…), con medie, effect size e l’avvertenza onesta sui limiti.',
+    uso: 'In Andamento → Scoperte, gli esperimenti confrontano il periodo di base con quello della modifica su una misura che già registri (focus, minuti, energia…): le due medie, quanto è grande la differenza, e l’avvertenza onesta sui limiti.',
     fonti: 'Lillie et al. (2011), Personalized Medicine — the n-of-1 clinical trial · Vohra et al. (2015), BMJ — CENT: standard di reporting per trial N-of-1.'
   },
   {
     titolo: 'Novità e varietà controllata',
     evidenza: 'euristica',
     claim: 'Nell’ADHD l’interesse è la fonte di motivazione più affidabile: quando uno strumento annoia, viene abbandonato. Conviene quindi dare spazio al bisogno di novità dentro l’app, invece di ignorarlo.',
-    uso: 'Tre modalità intercambiabili (Focus, Panoramica, Rituali) e due temi visivi (Aurora e Arcade) mostrano gli stessi dati in forme diverse. Puoi cambiare aspetto quando vuoi, senza perdere nulla.',
+    uso: 'Tre schermate da cui partire (Oggi, Panoramica, Rituali), tre forme per «Adesso» e due stili (Aurora e Arcade) mostrano gli stessi dati in modi diversi. Si cambia dalle impostazioni quando vuoi, senza perdere nulla.',
     fonti: 'Coerente con la self-determination theory (Deci & Ryan 2000: autonomia e scelta sostengono la motivazione intrinseca); la prescrizione specifica «varietà di interfaccia» è pratica clinica, non ancora letteratura sperimentale.'
   },
   {
@@ -7101,7 +7101,7 @@ export const PRINCIPI: Principio[] = [
     titolo: 'Un posto per le cose da fare',
     evidenza: 'media',
     claim: 'Le intenzioni non ancora completate restano attive nella mente e disturbano finché non hanno un posto affidabile dove stare. Un elenco esterno, diviso per area, chiude questi «cerchi aperti» e libera attenzione, senza costringere a decidere subito.',
-    uso: 'La vista Attività separa la cattura grezza dalle cose «Da fare» divise per area: da lì porti in «Oggi» poche cose per volta, così l’inbox non diventa una lista infinita e ansiogena.',
+    uso: 'In Attività quello che annoti resta in «Da sistemare» finché non decidi cosa farne; le cose «Da fare» sono divise per area, e in «Oggi» ne porti poche per volta. Così l’elenco non diventa una lista infinita e ansiogena.',
     fonti: 'Masicampo & Baumeister (2011), JPSP — fare un piano concreto attenua l’effetto Zeigarnik dei compiti aperti · Risko & Gilbert (2016), Trends in Cognitive Sciences — cognitive offloading.'
   },
   {
