@@ -419,6 +419,23 @@ function heatmap(container: HTMLElement, giorni: GiornoCaldo[], opzioni?: Opzion
   });
   container.appendChild(wrap);
 
+  /* SI PARTE DA OGGI, non da gennaio. La mappa di un anno intero è larga
+     ottocento pixel e su un telefono ne entrano trecento: il contenitore
+     scorre, e scorrendo da sinistra si aprono i mesi PIÙ VECCHI. Chi apre
+     «Anno» ad agosto con due mesi di dati vedeva una griglia tutta grigia,
+     senza un solo giorno colorato, e niente che dicesse di trascinare — la
+     mappa sembrava vuota, mentre i dati erano fuori dallo schermo a destra.
+     Si porta in vista l'ultimo giorno che non è nel futuro, appoggiato al
+     bordo destro: è lì che si guarda prima. */
+  const oggi = LM.todayKey();
+  let ultimo = -1;
+  giorni.forEach(function (g, i) { if (g.data <= oggi) ultimo = i; });
+  const cella = wrap.querySelectorAll<HTMLElement>('.lm-cell:not(.lm-cell-vuota)')[ultimo];
+  if (cella && wrap.scrollWidth > wrap.clientWidth + 1) {
+    const dove = cella.getBoundingClientRect().right - wrap.getBoundingClientRect().left + wrap.scrollLeft;
+    wrap.scrollLeft = Math.max(0, dove - wrap.clientWidth + 12);
+  }
+
   const legenda = document.createElement('div');
   legenda.className = 'lm-heatmap-legend';
   legenda.innerHTML = '<span>meno</span>' +
@@ -426,35 +443,6 @@ function heatmap(container: HTMLElement, giorni: GiornoCaldo[], opzioni?: Opzion
     rampa.map(function (col) { return '<span class="lm-cell" style="background:' + col + '"></span>'; }).join('') +
     '<span>più</span>';
   container.appendChild(legenda);
-}
-
-/* ---------- anello progresso XP ---------- */
-
-function ring(container: HTMLElement, pct: number, opzioni?: Opzioni): void {
-  const opts: Opzioni = opzioni || {};
-  container.innerHTML = '';
-  const S = opts.size || 84, r = (S - 10) / 2, C = 2 * Math.PI * r;
-  const svg = el('svg', { width: S, height: S, viewBox: '0 0 ' + S + ' ' + S, role: 'img' }, container);
-  el('title', {}, svg).textContent = opts.label || ('Progresso ' + Math.round(pct * 100) + '%');
-  /* stroke con gradiente brand (i grafici-dato restano sulla palette serie) */
-  const rgId = 'rg' + Math.random().toString(36).slice(2, 8);
-  const rgDefs = el('defs', {}, svg);
-  const rgGrad = el('linearGradient', { id: rgId, x1: 0, y1: 1, x2: 1, y2: 0 }, rgDefs);
-  el('stop', { offset: '0', style: 'stop-color:var(--brand-a)' }, rgGrad);
-  el('stop', { offset: '.55', style: 'stop-color:var(--brand-b)' }, rgGrad);
-  el('stop', { offset: '1', style: 'stop-color:var(--brand-c)' }, rgGrad);
-  el('circle', { cx: S / 2, cy: S / 2, r: r, fill: 'none', stroke: 'var(--griglia)', 'stroke-width': 6 }, svg);
-  const arc = el('circle', {
-    cx: S / 2, cy: S / 2, r: r, fill: 'none', stroke: opts.colore || ('url(#' + rgId + ')'),
-    'stroke-width': 6, 'stroke-linecap': 'round',
-    'stroke-dasharray': C, 'stroke-dashoffset': C * (1 - Math.max(0, Math.min(1, pct))),
-    transform: 'rotate(-90 ' + S / 2 + ' ' + S / 2 + ')'
-  }, svg);
-  arc.style.transition = 'stroke-dashoffset .6s cubic-bezier(.22,1,.36,1)';
-  if (opts.centro) {
-    const t = el('text', { x: S / 2, y: S / 2 + 1, 'text-anchor': 'middle', 'dominant-baseline': 'middle', 'font-size': opts.fontSize || 18, 'font-weight': 700, fill: 'var(--inchiostro-1)' }, svg);
-    t.textContent = opts.centro;
-  }
 }
 
 /* ---------- grafico esperimento A/B (N-of-1) ---------- */
@@ -553,7 +541,7 @@ function esc(s: unknown): string {
 
 export const LMCharts = {
   sparkline: sparkline, trend: trend, hbar: hbar, heatmap: heatmap,
-  ring: ring, experiment: experiment, hideTip: hideTip, esc: esc, fmtNum: fmtNum
+  experiment: experiment, hideTip: hideTip, esc: esc, fmtNum: fmtNum
 };
 export type Grafici = typeof LMCharts;
 
