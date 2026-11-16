@@ -4739,10 +4739,7 @@ function montaMese(container: HTMLElement): void {
        sbagliata. */
     '<div class="card"><div class="me-scorri"><div class="me-tabella">' +
     '<div class="me-dow">' + dowh + '</div><div class="me-grid">' + celle + '</div></div></div>' +
-    '<div class="me-legenda"><span class="lg"><i class="me-heatkey"></i> più lo sfondo è acceso, più la giornata è stata piena</span>' +
-    '<span class="lg"><i class="me-sqkey"></i> ogni pallino è una cosa fatta, col colore dell’area</span>' +
-    '<span class="lg lg-stretta"><i class="me-vuotokey"></i> un pallino vuoto è una cosa ancora da fare</span>' +
-    '<span class="lg">' + ICO('scadenza', 11) + ' scadenza · tocca un giorno per aprirlo</span></div></div>';
+    '</div>';
   wireOrizzNav(container, 'mese');
   celleGiorno(container);
   /* nel mese si trascinano le cose ancora da fare (le pastiglie in fondo alla
