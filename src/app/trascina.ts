@@ -110,19 +110,103 @@ function fineTrascina(): void {
 }
 
 /* onRilascio(id, bersaglio, x, y) */
-/* lo scorrimento della pagina si ferma mentre si trascina. L'ascoltatore
-   sta lì da sempre e non passivo: Safari non ne rispetta uno aggiunto a
-   gesto già cominciato, ed era per questo che la cosa «scappava» */
-document.addEventListener('touchmove', function (e) { if (trasc) e.preventDefault(); }, { passive: false });
+/* COL DITO SI USANO GLI EVENTI DI TOCCO. Con quelli di puntatore, su
+   Android, appena il dito si muove il browser decide che è uno scorrimento,
+   manda `pointercancel` e il trascinamento muore senza aver fatto niente:
+   si teneva premuto e non succedeva nulla. Gli eventi di tocco continuano ad
+   arrivare all'elemento da cui sono partiti, e fermando `touchmove` la pagina
+   non scorre. */
 document.addEventListener('contextmenu', function (e) {
   const t = e.target as HTMLElement | null;
   if (trasc || (t && t.closest && t.closest('[data-drag-az]'))) e.preventDefault();
 });
+/* il trascinamento NATIVO del browser (l'anteprima grigia che segue il dito
+   dopo una pressione lunga) si porta via il gesto: qui non serve mai */
+document.addEventListener('dragstart', function (e) {
+  const t = e.target as HTMLElement | null;
+  if (t && t.closest && t.closest('[data-drag-az]')) e.preventDefault();
+});
+
+function prendi(el: HTMLElement, id: string, x: number, y: number): void {
+  if (trasc) return;
+  const r = el.getBoundingClientRect();
+  const f = document.createElement('div');
+  f.className = 'trasc-fantasma';
+  f.innerHTML = '<b></b><i></i>';
+  presa(f.querySelector<HTMLElement>('b')).textContent = (el.getAttribute('title') || el.textContent || '').trim().slice(0, 44);
+  f.style.width = Math.min(280, Math.max(150, r.width)) + 'px';
+  document.body.appendChild(f);
+  trasc = { id: id, fantasma: f, bersaglio: null, el: el };
+  el.classList.add('sto-prendendo');
+  document.body.classList.add('sto-trascinando');
+  if (navigator.vibrate) navigator.vibrate(12);
+  porta(x, y);
+}
+function porta(x: number, y: number): void {
+  if (!trasc) return;
+  trasc.fantasma.style.left = x + 'px';
+  trasc.fantasma.style.top = y + 'px';
+  const b = bersaglioSotto(x, y);
+  evidenzia(b);
+  const ap = anteprima(b, y);
+  presa(trasc.fantasma.querySelector<HTMLElement>('i')).textContent = ap.testo;
+  trasc.fantasma.classList.toggle('pronto', !!b);
+  guida(ap);
+}
+function colDito(el: HTMLElement, onRilascio: (id: string, bersaglio: HTMLElement, x: number, y: number) => void): void {
+  let attesa: ReturnType<typeof setTimeout> | undefined;
+  let x0 = 0, y0 = 0, mio = false;
+  el.addEventListener('touchstart', function (ev) {
+    if (ev.touches.length !== 1 || trasc) return;
+    const bers = ev.target as HTMLElement | null;
+    if (!bers) return;
+    const btn = bers.closest('button');
+    if (btn && btn !== el && el.contains(btn)) return;
+    const id = el.getAttribute('data-drag-az') || '';
+    if (!id) return;
+    const t = presa(ev.touches[0]);
+    x0 = t.clientX; y0 = t.clientY; mio = false;
+    const manico = el.matches('[data-manico]') ? el : el.querySelector<HTMLElement>('[data-manico]');
+    const dalManico = !!(manico && (bers === manico || manico.contains(bers)));
+    clearTimeout(attesa);
+    /* dal manico parte quasi subito; dal corpo tenendo premuto un attimo */
+    attesa = setTimeout(function () { mio = true; prendi(el, id, x0, y0); }, dalManico ? 90 : 280);
+  }, { passive: true });
+  el.addEventListener('touchmove', function (ev) {
+    const t = ev.touches[0];
+    if (!t) return;
+    if (!mio) {
+      if (Math.abs(t.clientX - x0) + Math.abs(t.clientY - y0) > 10) clearTimeout(attesa);
+      return;
+    }
+    if (ev.cancelable) ev.preventDefault();
+    porta(t.clientX, t.clientY);
+  }, { passive: false });
+  const fine = function (ev: TouchEvent): void {
+    clearTimeout(attesa);
+    if (!mio) return;
+    mio = false;
+    const t = ev.changedTouches[0];
+    if (!trasc) return;
+    const x = t ? t.clientX : x0, y = t ? t.clientY : y0;
+    const b = ev.type === 'touchend' ? bersaglioSotto(x, y) : null;
+    const idFin = trasc.id;
+    fineTrascina();
+    /* il clic che il browser manda dopo il rilascio non deve aprire niente */
+    const ingoia = function (ce: Event) { ce.stopPropagation(); ce.preventDefault(); };
+    window.addEventListener('click', ingoia, true);
+    setTimeout(function () { window.removeEventListener('click', ingoia, true); }, 350);
+    if (b) onRilascio(idFin, b, x, y);
+  };
+  el.addEventListener('touchend', fine);
+  el.addEventListener('touchcancel', fine);
+}
 
 export function abilitaTrascina(scope: ParentNode, onRilascio: (id: string, bersaglio: HTMLElement, x: number, y: number) => void): void {
   scope.querySelectorAll<HTMLElement>('[data-drag-az]').forEach(function (el) {
+    colDito(el, onRilascio);
     el.addEventListener('pointerdown', function (ev) {
-      if (ev.button > 0) return;
+      if (ev.button > 0 || ev.pointerType === 'touch') return;
       const bersaglio = ev.target as HTMLElement | null;
       if (!bersaglio) return;
       const btnDentro = bersaglio.closest('button');

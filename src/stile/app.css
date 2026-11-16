@@ -155,9 +155,9 @@
   --peso-titolo: 750;
   --peso-display: 850;
 
-  --r-1: 8px;
-  --r-2: 12px;
-  --r-3: 18px;
+  --r-1: calc(8px * var(--sq));
+  --r-2: calc(12px * var(--sq));
+  --r-3: calc(18px * var(--sq));
   --r-tondo: 99px;
   /* TAGLIE DEI BOTTONI — tre, non diciannove */
   --h-btn-s: 34px;   /* mini: dentro le righe e le card */
@@ -245,9 +245,9 @@
   --accento: #8b5cf6;
   --accento-testo: #6d34e0; /* viola arcade abbastanza scuro per AA su chiaro */
   --accento-pieno: #6d34e0; /* il viola chiaro non regge il bianco: pieno più scuro */
-  --r-1: 6px;
-  --r-2: 10px;
-  --r-3: 14px;
+  --r-1: calc(6px * var(--sq));
+  --r-2: calc(10px * var(--sq));
+  --r-3: calc(14px * var(--sq));
   --raggio: var(--r-3);
   --raggio-s: var(--r-2);
 }
@@ -329,7 +329,7 @@ small { color: var(--inchiostro-2); }
    portava via tutto, e chi naviga da tastiera vedeva il fuoco spostarsi senza
    nessun segno di dove fosse arrivato. Adesso il ritaglio toglie solo i
    quattro morsi d'angolo e il contorno c'è. */
-:focus-visible { outline: 2px solid var(--accento); outline-offset: 2px; }
+:focus-visible { outline: calc(2px * var(--sq)) solid var(--accento); outline-offset: 2px; }
 /* IL CONTORNO DEL FUOCO NON VA SUI CONTENITORI CHE IL FUOCO SE LO VEDONO DARE.
    `tabindex="-1"` vuol dire «con il Tab non ci arrivi»: sono la vista, il
    pannello e la cattura, e il fuoco ce lo porta il codice quando si aprono —
@@ -3658,7 +3658,7 @@ body.sto-trascinando { cursor: grabbing; user-select: none; -webkit-user-select:
     background: radial-gradient(circle, transparent 0 2.4px, var(--c-area) 2.9px);
   }
   .me-pill-piu { font-size: 11px; padding-left: 0; line-height: 9px; }
-  .me-mattoni i { border-radius: 3px; }
+  .me-mattoni i { border-radius: calc(3px * var(--sq)); }
   .lg-stretta { display: inline-flex; }
 }
 .me-legenda .lg { display: inline-flex; align-items: center; gap: 6px; }
@@ -4321,7 +4321,7 @@ input.rec-ora { min-width: 96px; text-align: left; font-weight: var(--peso-forte
   background: color-mix(in srgb, #eb6834 15%, var(--superficie-1)); color: #b4470f;
 }
 :root[data-mode="dark"] .casa-serie { color: #ff9a62; }
-.casa-passo { background: var(--superficie-1); border-radius: 20px; padding: 16px 18px; margin-bottom: 12px; box-shadow: var(--e1); }
+.casa-passo { background: var(--superficie-1); border-radius: calc(20px * var(--sq)); padding: 16px 18px; margin-bottom: 12px; box-shadow: var(--e1); }
 .casa-passo-riga { display: flex; align-items: baseline; gap: 8px; margin-bottom: 10px; }
 .casa-passo-riga b { font-size: 19px; font-weight: 800; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
 .casa-passo-riga span { font-size: 14px; color: var(--inchiostro-2); }
@@ -4329,11 +4329,11 @@ input.rec-ora { min-width: 96px; text-align: left; font-weight: var(--peso-forte
 .casa-barra i { display: block; height: 100%; min-width: 10px; border-radius: var(--r-tondo); background: var(--ok-pieno); transition: width .5s var(--ease-out); }
 .casa-rito {
   display: flex; align-items: center; gap: 13px; width: 100%; min-height: 64px; padding: 12px 16px;
-  margin-bottom: 12px; border: 0; border-radius: 20px; text-align: left;
+  margin-bottom: 12px; border: 0; border-radius: calc(20px * var(--sq)); text-align: left;
   background: var(--superficie-1); box-shadow: var(--e1); color: var(--inchiostro-1);
 }
 .casa-rito > .ico { color: var(--inchiostro-muto); flex: none; }
-.casa-rito-ico { flex: none; width: 40px; height: 40px; border-radius: 13px; display: grid; place-items: center;
+.casa-rito-ico { flex: none; width: 40px; height: 40px; border-radius: calc(13px * var(--sq)); display: grid; place-items: center;
   background: color-mix(in srgb, var(--avviso) 24%, var(--superficie-1)); color: #8a5c00; }
 :root[data-mode="dark"] .casa-rito-ico { color: var(--avviso); }
 .casa-rito-testo { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
@@ -4343,7 +4343,7 @@ input.rec-ora { min-width: 96px; text-align: left; font-weight: var(--peso-forte
 .focus-scena.forma-poi { align-items: stretch; text-align: left; gap: 20px; padding: 0 0 8px; min-height: 0; }
 .casa-cuore {
   align-items: stretch; text-align: left; gap: 8px; padding: 22px 20px 20px;
-  border: 0; border-radius: 24px; box-shadow: var(--e2);
+  border: 0; border-radius: calc(24px * var(--sq)); box-shadow: var(--e2);
   background: color-mix(in srgb, var(--c-area, var(--accento)) 10%, var(--superficie-1));
 }
 .forma-poi .casa-cuore.st-ritardo { background: color-mix(in srgb, var(--avviso) 14%, var(--superficie-1)); }
@@ -4357,7 +4357,7 @@ input.rec-ora { min-width: 96px; text-align: left; font-weight: var(--peso-forte
 .forma-poi .casa-cuore .fs-dett { font-size: 15px; font-weight: 600; color: var(--inchiostro-2); }
 .casa-cuore .focus-ifthen { order: 3; align-self: flex-start; }
 .casa-cuore .focus-primaria { order: 4; margin-top: 12px; }
-.casa-cuore .focus-primaria .btn-grande { max-width: none; min-height: 54px; border-radius: 16px; font-size: 17px; }
+.casa-cuore .focus-primaria .btn-grande { max-width: none; min-height: 54px; border-radius: calc(16px * var(--sq)); font-size: 17px; }
 .casa-cuore .focus-secondarie { order: 5; justify-content: flex-start; gap: 8px; margin-top: 8px; }
 .casa-sez { width: 100%; }
 .casa-tit { font-size: 20px; font-weight: 800; letter-spacing: -0.02em; margin: 0 2px 10px; display: flex; align-items: baseline; gap: 8px; }
@@ -4380,7 +4380,7 @@ input.rec-ora { min-width: 96px; text-align: left; font-weight: var(--peso-forte
 .prof-numeri { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 24px; }
 .prof-numero {
   display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 14px 6px;
-  background: var(--superficie-1); border-radius: 18px; box-shadow: var(--e1);
+  background: var(--superficie-1); border-radius: calc(18px * var(--sq)); box-shadow: var(--e1);
 }
 .prof-numero .ico { color: var(--inchiostro-muto); }
 .prof-numero b { font-size: 22px; font-weight: 800; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
@@ -4391,9 +4391,9 @@ input.rec-ora { min-width: 96px; text-align: left; font-weight: var(--peso-forte
    Le schede e gli elenchi perdono il bordo e prendono un'ombra morbida e
    angoli più larghi; i titoli crescono. È lo stesso linguaggio della casa
    e del profilo, portato su tutte le schermate. */
-:root:not([data-skin="arcade"]) { --r-2: 14px; --r-3: 22px; }
+:root:not([data-skin="arcade"]) { --r-2: calc(14px * var(--sq)); --r-3: calc(22px * var(--sq)); }
 .card { border-color: transparent; }
-.lista { border-color: transparent; border-radius: 18px; box-shadow: var(--e1); }
+.lista { border-color: transparent; border-radius: calc(18px * var(--sq)); box-shadow: var(--e1); }
 :root[data-mode="dark"] .card, :root[data-mode="dark"] .lista { border-color: var(--bordo); box-shadow: none; }
 .lista-riga { min-height: 60px; }
 .lista-tit { font-size: 16px; }
@@ -4409,7 +4409,7 @@ input.rec-ora { min-width: 96px; text-align: left; font-weight: var(--peso-forte
 .som-tessere { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 12px; }
 .som-tessera {
   display: flex; flex-direction: column; align-items: center; gap: 0; padding: 12px 4px;
-  background: var(--superficie-2); border-radius: 16px;
+  background: var(--superficie-2); border-radius: calc(16px * var(--sq));
 }
 .som-tessera .ico { color: var(--inchiostro-muto); }
 .som-tessera b { font-size: 20px; font-weight: 800; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
@@ -4488,7 +4488,7 @@ input.rec-ora { min-width: 96px; text-align: left; font-weight: var(--peso-forte
 /* --- i coriandoli --- */
 .festa { position: fixed; left: 50%; top: 42%; width: 0; height: 0; z-index: 400; pointer-events: none; }
 .festa i {
-  position: absolute; width: 9px; height: 14px; border-radius: 3px; opacity: 0;
+  position: absolute; width: 9px; height: 14px; border-radius: calc(3px * var(--sq)); opacity: 0;
   animation: coriandolo 1.25s var(--ease-out) var(--d) both;
 }
 @keyframes coriandolo {
@@ -4517,7 +4517,7 @@ input.rec-ora { min-width: 96px; text-align: left; font-weight: var(--peso-forte
 .ck-eti { display: block; font-size: 17px; font-weight: 700; margin-bottom: 12px; }
 .ck-scala { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
 .ck-scala button {
-  height: 56px; border: 0; border-radius: 18px; background: var(--superficie-2); font-size: 26px; line-height: 1;
+  height: 56px; border: 0; border-radius: calc(18px * var(--sq)); background: var(--superficie-2); font-size: 26px; line-height: 1;
   transition: transform var(--t-molla), background-color var(--t-veloce), opacity var(--t-veloce), filter var(--t-veloce);
 }
 .ck-scala.scelta button:not(.sel) { opacity: .45; filter: grayscale(1); }
@@ -4557,9 +4557,9 @@ input.rec-ora { min-width: 96px; text-align: left; font-weight: var(--peso-forte
 .som-g.oggi small { color: var(--accento-testo); }
 
 /* --- i Rituali: righe più alte, il corpo che si apre sul posto --- */
-.rit-gruppo { border: 0; border-radius: 20px; }
+.rit-gruppo { border: 0; border-radius: calc(20px * var(--sq)); }
 .rit-riga { min-height: 60px; }
-.rit-ico { width: 36px; height: 36px; border-radius: 12px; }
+.rit-ico { width: 36px; height: 36px; border-radius: calc(12px * var(--sq)); }
 .rit-nome { font-size: 16px; }
 
 /* ============================================================
@@ -4572,11 +4572,11 @@ input.rec-ora { min-width: 96px; text-align: left; font-weight: var(--peso-forte
   .interr, .interr i, .nav-badge, .punto-vivo, .casa-barra, .casa-barra i, .bil-barra, .bil-barra i { corner-shape: round; }
 }
 /* una scala sola di raggi: 12 i comandi, 16 le righe e i campi, 22 le schede */
-.btn, .q-chip, .segmenti button, .lista-azione, .rit-vai, .tag-mit, .som-g i { border-radius: 12px; }
+.btn, .q-chip, .segmenti button, .lista-azione, .rit-vai, .tag-mit, .som-g i { border-radius: calc(12px * var(--sq)); }
 .btn-grande, .segmenti, input[type="text"], input[type="url"], input[type="time"], input[type="date"],
-input[type="number"], textarea, select, .rit-ico, .casa-rito-ico { border-radius: 14px; }
-.card, .lista, .rit-gruppo, .casa-rito, .casa-cuore, .focus-cuore, .tabbar, .toast { border-radius: 22px; }
-.casa-serie, .casa-avatar, .prof-avatar, .prof-mod { border-radius: 14px; }
+input[type="number"], textarea, select, .rit-ico, .casa-rito-ico { border-radius: calc(14px * var(--sq)); }
+.card, .lista, .rit-gruppo, .casa-rito, .casa-cuore, .focus-cuore, .tabbar, .toast { border-radius: calc(22px * var(--sq)); }
+.casa-serie, .casa-avatar, .prof-avatar, .prof-mod { border-radius: calc(14px * var(--sq)); }
 
 /* una scheda dentro una scheda non è una scheda: è contenuto */
 .card .card, .rit-corpo .card, .rit-corpo > .card, .sheet .card, .lista .card {
@@ -4593,7 +4593,7 @@ input[type="number"], textarea, select, .rit-ico, .casa-rito-ico { border-radius
 .rit-blocco.ora > .rit-riga { padding-left: 14px; }
 .tl-blk-att, .tl-blk-att.fatta, .scienza-card .uso, .diag-stato, .me-pill, [class*="pill"] { border-left-width: 0; }
 .tl-blk-att { border: 0; background: color-mix(in srgb, var(--c-area) 22%, var(--superficie-1)); }
-.scienza-card .uso { border-radius: 14px; }
+.scienza-card .uso { border-radius: calc(14px * var(--sq)); }
 
 /* --- la Home: una riga in testa, poi la cosa da fare --- */
 .casa-testa { align-items: center; margin: 0 2px 16px; }
@@ -4614,9 +4614,9 @@ input[type="number"], textarea, select, .rit-ico, .casa-rito-ico { border-radius
 /* --- il Profilo --- */
 .prof-testa {
   flex-direction: row; align-items: center; text-align: left; gap: 16px; padding: 16px;
-  background: var(--superficie-1); border-radius: 22px; box-shadow: var(--e1); margin-bottom: 12px;
+  background: var(--superficie-1); border-radius: calc(22px * var(--sq)); box-shadow: var(--e1); margin-bottom: 12px;
 }
-.prof-avatar { flex: none; width: 64px; height: 64px; font-size: 26px; font-weight: 800; display: grid; place-items: center; border-radius: 20px; }
+.prof-avatar { flex: none; width: 64px; height: 64px; font-size: 26px; font-weight: 800; display: grid; place-items: center; border-radius: calc(20px * var(--sq)); }
 .prof-chi { flex: 1; min-width: 0; }
 .prof-nome { font-size: 22px; margin: 0; }
 .prof-visione { font-size: 14px; line-height: 1.35; margin: 4px 0 0; }
@@ -4624,7 +4624,7 @@ input[type="number"], textarea, select, .rit-ico, .casa-rito-ico { border-radius
 .prof-form { max-width: none; flex: 1; }
 .prof-numeri {
   display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; margin: 0 0 24px; padding: 12px 0;
-  background: var(--superficie-1); border-radius: 22px; box-shadow: var(--e1);
+  background: var(--superficie-1); border-radius: calc(22px * var(--sq)); box-shadow: var(--e1);
 }
 .prof-numero { display: flex; flex-direction: row; align-items: baseline; justify-content: center; gap: 4px; }
 .prof-numero + .prof-numero { border-left: 1px solid var(--bordo); }
@@ -4636,10 +4636,10 @@ input[type="number"], textarea, select, .rit-ico, .casa-rito-ico { border-radius
 .rit-gruppo { margin-top: 8px; }
 
 /* --- sonno e pasti nella Giornata: righe basse, un pasto per riga --- */
-.gio-sonno { border: 0; border-radius: 16px; }
+.gio-sonno { border: 0; border-radius: calc(16px * var(--sq)); }
 .gio-sonno-corpo { padding: 0 12px 4px; }
 .gio-sonno-corpo input, .gio-sonno-corpo select {
-  height: 36px; min-height: 0; padding: 0 8px; font-size: 14px; border-radius: 10px; min-width: 0; max-width: none; width: 100%;
+  height: 36px; min-height: 0; padding: 0 8px; font-size: 14px; border-radius: calc(10px * var(--sq)); min-width: 0; max-width: none; width: 100%;
 }
 .gio-sonno-corpo input[type="time"]::-webkit-calendar-picker-indicator { display: none; }
 .sp-sonno { display: grid; grid-template-columns: auto minmax(0, 1fr) auto minmax(0, 1fr); grid-template-rows: auto; grid-auto-flow: row; align-items: center; gap: 8px; margin: 0 0 8px; }
@@ -4684,7 +4684,7 @@ input[type="number"], textarea, select, .rit-ico, .casa-rito-ico { border-radius
 .voto-area { display: flex; flex-direction: row; align-items: center; flex-wrap: nowrap; gap: 8px; padding: 4px 0; border: 0; }
 .voto-area .nome { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; }
 .voto-area .stelline { flex: none; display: flex; gap: 4px; }
-.voto-area .stelline button { width: 36px; height: 36px; min-width: 0; padding: 0; border-radius: 10px; font-size: 14px; }
+.voto-area .stelline button { width: 36px; height: 36px; min-width: 0; padding: 0; border-radius: calc(10px * var(--sq)); font-size: 14px; }
 .voto-area .stelline button::after { content: ''; position: absolute; inset: -4px; }
 .voto-area .stelline button { position: relative; }
 /* le scelte del giorno nella scheda: una riga che scorre, non due righe */
@@ -4723,3 +4723,46 @@ input[type="number"], textarea, select, .rit-ico, .casa-rito-ico { border-radius
 }
 :root[data-effetti="minimi"] .anim-a.vista-enter > *, :root[data-effetti="minimi"] .anim-b.vista-enter > *,
 :root[data-effetti="minimi"] [class*="sez-enter"] > * { animation: none !important; }
+
+
+/* ============================================================
+   L'ANGOLO CONTINUO SI VEDE. Con `corner-shape: squircle` lo stesso numero
+   di raggio dà una curva che sta più stretta nell'angolo: 22px sembrano 13.
+   Dove il browser lo sa fare, ogni raggio dell'app cresce di `--sq`, e la
+   curva torna quella che si vede sulle icone di un telefono.
+   ============================================================ */
+:root { --sq: 1; }
+@supports (corner-shape: squircle) { :root { --sq: 1.75; } }
+
+/* --- i campi dell'ora: il valore si vede sempre --- */
+input[type="time"], input[type="date"] { -webkit-appearance: none; appearance: none; color: var(--inchiostro-1); line-height: 1.25; min-width: 5.5em; }
+input[type="time"]::-webkit-date-and-time-value, input[type="date"]::-webkit-date-and-time-value { text-align: left; min-height: 1.25em; margin: 0; }
+input[type="time"]::-webkit-datetime-edit { padding: 0; color: var(--inchiostro-1); }
+.gio-sonno-corpo input[type="time"] { padding: 0 6px; }
+.sp-riga { grid-template-columns: minmax(0, 1fr) 96px 76px 36px; }
+.sc-riga-alta[data-pasto] .rec-ora { width: 96px; }
+
+/* --- il velo del foglio: un elemento, cambia solo l'opacità --- */
+.sheet-overlay::before { content: none; }
+.sheet-overlay { background: none; }
+.sheet-velo { position: absolute; inset: 0; z-index: 0; background: rgba(10, 10, 20, .5); pointer-events: none; will-change: opacity; }
+/* il foglio sta su un suo strato: salire e seguire il dito costa solo uno spostamento */
+.sheet { will-change: transform; contain: layout paint; box-shadow: none; }
+.sheet-entra { animation: sheetSu .28s var(--ease-out) both; }
+.sheet-molla { transition: transform .28s var(--ease-out); }
+.sheet-via { transition: transform .22s var(--ease-in-out); }
+
+/* --- gli avvisi: si prendono e si mandano via in su --- */
+.toast { pointer-events: auto; touch-action: none; transition: transform var(--t-veloce), opacity var(--t-veloce); }
+
+/* --- tu, in cima a ogni pagina --- */
+.testa-porta { display: flex; align-items: center; gap: 8px; }
+.testa-porta > .segmenti, .testa-porta > nav { flex: 1; min-width: 0; }
+.nav-avatar { flex: none; }
+.testa-porta.testa-porta-sola { justify-content: flex-end; }
+
+/* --- la maniglia dei blocchi del calendario si vede --- */
+.tl-blk .manico { opacity: 1; color: var(--inchiostro-2); width: 24px; left: 0; top: 0; bottom: 0; display: grid; place-items: center; }
+.tl-blk:has(.manico) .tl-blk-t, .tl-blk:has(.manico) .tl-blk-ora { padding-left: 24px; }
+.trasc-fantasma { background: var(--superficie-1); color: var(--inchiostro-1); border: 0; box-shadow: 0 12px 32px rgba(20, 20, 60, .28); }
+[data-drag-az] { -webkit-user-drag: none; -webkit-tap-highlight-color: transparent; }

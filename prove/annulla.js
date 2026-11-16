@@ -36,8 +36,8 @@ await p.addInitScript(t=>{const D=Date;const base=D.now();
 await p.goto('http://localhost:8753/index.html');await p.waitForTimeout(400);
 await p.evaluate(()=>{localStorage.clear();LM.seedDemo();});await p.reload();await p.waitForTimeout(800);
 
-const alDiario = async () => { await p.evaluate(()=>{location.hash='#/plancia';});await p.waitForTimeout(700);
-  await p.evaluate(()=>{const t=[...document.querySelectorAll('#sez-plancia button')].find(x=>/Diario/.test(x.textContent));if(t)t.click();});
+const alDiario = async () => { await p.evaluate(()=>{location.hash='#/profilo';});await p.waitForTimeout(700);
+  await p.evaluate(()=>{const t=document.getElementById('imp-diario');if(t)t.click();});
   await p.waitForTimeout(700);
   await p.evaluate(()=>{const t=[...document.querySelectorAll('#diario-filtro button')].find(x=>/Tutto/.test(x.textContent));if(t)t.click();});
   await p.waitForTimeout(600); };

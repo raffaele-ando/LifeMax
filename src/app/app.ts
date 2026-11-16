@@ -632,6 +632,18 @@ export function toast(testo: string, xp?: number, icona?: string, azione?: Azion
     (xp ? ' <span class="xp">+' + xp + ' XP</span>' : '') +
     (azione ? '<button class="toast-azione">' + esc(azione.eti) + '</button>' : '');
   zona.appendChild(t);
+  let ty0 = -1, tdy = 0;
+  t.addEventListener('touchstart', function (e) { const p = e.touches[0]; ty0 = p ? p.clientY : -1; tdy = 0; t.style.transition = 'none'; }, { passive: true });
+  t.addEventListener('touchmove', function (e) {
+    const p = e.touches[0]; if (!p || ty0 < 0) return;
+    tdy = Math.min(0, p.clientY - ty0);
+    if (e.cancelable) e.preventDefault();
+    t.style.transform = 'translateY(' + tdy + 'px)'; t.style.opacity = String(Math.max(0, 1 + tdy / 80));
+  }, { passive: false });
+  t.addEventListener('touchend', function () {
+    ty0 = -1; t.style.transition = '';
+    if (tdy < -24) t.remove(); else { t.style.transform = ''; t.style.opacity = ''; }
+  });
   if (azione) {
     const tasto = t.querySelector<HTMLElement>('.toast-azione');
     if (tasto) tasto.addEventListener('click', function () { t.remove(); azione.fai(); });
@@ -744,9 +756,20 @@ perId('sheet-maniglia').addEventListener('click', chiudiSheet);
    senza un pointerdown davanti, come quello che manda una tecnologia
    assistiva o una prova automatica, non avrebbe chiuso niente. */
 let giuDentroSheet = false;
+/* quando un campo del foglio ha appena avuto il fuoco o cambiato valore:
+   chiudendosi, il selettore dell'ora di Android manda un clic che può
+   cadere sul velo, e il foglio si richiudeva appena scelto l'orario */
+let campoToccato = 0;
 $sheet.addEventListener('pointerdown', function (e) { giuDentroSheet = e.target !== $sheet; }, true);
+['focusin', 'change', 'input'].forEach(function (ev) {
+  $sheet.addEventListener(ev, function (e) {
+    const t = e.target as HTMLElement | null;
+    if (t && /^(INPUT|SELECT|TEXTAREA)$/.test(t.tagName)) campoToccato = Date.now();
+  }, true);
+});
 $sheet.addEventListener('click', function (e) {
   var dentro = giuDentroSheet; giuDentroSheet = false;
+  if (Date.now() - campoToccato < 1200) return;
   if (e.target === $sheet && !dentro) chiudiSheet();
 });
 
@@ -972,9 +995,12 @@ document.addEventListener('keydown', function (e) {
      dietro è a metà strada, e quello che stai per raggiungere si legge già.
      È il gesto che mostra la sua destinazione mentre lo fai — la stessa
      cosa che fa il pinch per chiudere un'app su iOS. */
+  /* IL VELO È UN ELEMENTO SUO. Era una variabile CSS sul contenitore: a
+     ogni fotogramma del gesto il browser ricalcolava lo stile di TUTTO
+     quello che c'è nel foglio, ed era quello a farlo andare a scatti. */
   function scriviVelo(k: number): void {
-    $sheet.style.setProperty('--velo', String(k));
-    $sheet.style.setProperty('--sfoca', (8 * Math.max(0, Math.min(1, k))).toFixed(2) + 'px');
+    const v = $sheet.querySelector<HTMLElement>('.sheet-velo');
+    if (v) v.style.opacity = String(k);
   }
 
   /* qualunque cosa sia rimasta di un gesto interrotto */
@@ -1355,14 +1381,14 @@ const GRUPPI: Porta[] = [
     { id: 'inbox', eti: 'Attività' }
   ] },
   { id: 'plancia', nome: 'Andamento', icona: 'dashboard', viste: [
-    { id: 'plancia', eti: 'Andamento' }
+    { id: 'plancia', eti: 'Riepilogo' }, { id: 'esperimenti', eti: 'Scoperte' }
   ],
     /* Queste due appartengono alla porta ma NON stanno fra le linguette:
        si leggono una volta e poi mai più, e una linguetta che non si tocca
        è solo una parola in più da scartare ogni volta che si guarda la riga.
        Si aprono dalle impostazioni, e la linguetta compare soltanto mentre
        ci sei dentro, per sapere dove sei e come tornare. */
-    anche: ['esperimenti', 'scienza', 'lab'] },
+    anche: ['scienza', 'lab'] },
   /* IL PROFILO: tu, i tuoi numeri, e le impostazioni in righe. Prima le
      impostazioni stavano dietro un ingranaggio in alto a destra, e di «tu»
      nell'app non c'era niente. */
@@ -1733,7 +1759,7 @@ export function htmlImpostazioni(pezzo?: 'profilo'): string {
       (pr.nota ? nota(pr.nota) : '') +
       (pr.azione ? '<div class="imp-azioni">' + pr.azione + '</div>' : '') +
       '<div class="lista mt-s">' +
-      rigaPorta('imp-scoperte', 'funziona', 'Scoperte') +
+      rigaPorta('imp-diario', 'quaderno', 'Diario') +
       rigaPorta('imp-tutte', 'ingranaggio', 'Impostazioni') +
       '</div></div>';
   }
@@ -2105,8 +2131,8 @@ export function wireAspettoDati(root: HTMLElement): void {
   });
   const tutte = root.querySelector<HTMLElement>('#imp-tutte');
   if (tutte) tutte.addEventListener('click', apriImpostazioni);
-  const scop = root.querySelector<HTMLElement>('#imp-scoperte');
-  if (scop) scop.addEventListener('click', function () { location.hash = '#/esperimenti'; });
+  const dia = root.querySelector<HTMLElement>('#imp-diario');
+  if (dia) dia.addEventListener('click', function () { schermo.sezPlancia = 'diario'; location.hash = '#/plancia'; window.scrollTo(0, 0); });
   root.querySelectorAll<HTMLElement>('#seg-suono [data-suono]').forEach(function (b) {
     b.addEventListener('click', function () {
       root.querySelectorAll<HTMLElement>('#seg-suono [data-suono]').forEach(function (o) { o.classList.toggle('attivo', o === b); });
@@ -3261,8 +3287,6 @@ let fuocoOra: FuocoOra = { prossima: null, adesso: { azione: null, stato: null, 
    Tre cose che ogni buona app dice appena la apri, e che qui mancavano:
    al loro posto c'era una barra del tempo senza una parola. */
 export function testaCasa(): string {
-  const s = LM.load();
-  const nome = (s.profilo.nome || '').trim().split(/\s+/)[0] || '';
   const d = new Date();
   const GIORNI = ['domenica', 'lunedì', 'martedì', 'mercoledì', 'giovedì', 'venerdì', 'sabato'];
   const MESI = ['gennaio', 'febbraio', 'marzo', 'aprile', 'maggio', 'giugno', 'luglio', 'agosto', 'settembre', 'ottobre', 'novembre', 'dicembre'];
@@ -3292,7 +3316,6 @@ export function testaCasa(): string {
     '</div>' +
     '<div class="casa-destra">' +
     (serie > 0 ? '<span class="casa-serie" role="img" aria-label="' + serie + ' giorni di fila">' + ICO('flame', 15, 'fiamma') + '<b>' + serie + '</b></span>' : '') +
-    '<a class="casa-avatar" href="#/profilo" aria-label="Profilo">' + esc((nome || 'Tu').charAt(0).toUpperCase()) + '</a>' +
     '</div></header>' +
     porta;
 }
@@ -3736,7 +3759,7 @@ export function vistaFocus(): Scena {
      ultime due, non tutte: questa non è la pagina della giornata — e
      quello che viene dopo questa. */
   const fatte = oggi.filter(function (a) { return a.done; }).slice(-2);
-  const restano = oggi.filter(function (a) { return !a.done && a.id !== prossima.id; }).slice(0, 4);
+  const restano = oggi.filter(function (a) { return !a.done && a.id !== prossima.id; });
   /* IL PALLINO SOLO DOVE NON C'È GIÀ. Nella spina ogni riga ha il suo nodo
      sul filo, a sinistra: ripetere un pallino colorato dentro la riga vuol
      dire due segni tondi per la stessa cosa, a dieci pixel l'uno
@@ -7498,6 +7521,14 @@ function sottoNav(v: string): void {
     else riga.className += ' testa-porta-sola';
   }
   if (!riga.firstElementChild) return;
+  /* TU, in cima a ogni pagina, accanto alle linguette */
+  if (v !== 'profilo') {
+    const nomeTuo = ((LM.load().profilo.nome || '').trim() || 'Tu');
+    const av = document.createElement('a');
+    av.className = 'casa-avatar nav-avatar'; av.href = '#/profilo'; av.setAttribute('aria-label', 'Profilo');
+    av.textContent = nomeTuo.charAt(0).toUpperCase();
+    riga.appendChild(av);
+  }
   /* la riga delle sezioni è SEMPRE il primo blocco della pagina */
   $vista.prepend(riga);
   /* niente più sfumatura di scorrimento: a colonne uguali la riga ci sta per

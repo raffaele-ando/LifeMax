@@ -144,9 +144,9 @@ const SCENE_PREMUTO=[
   ['Abitudini','inbox',2,null],
   ['Rituali','rituali',null,null],
   ['Andamento','plancia',null,null],
-  ['Diario','plancia',1,null],
+  ['Diario','profilo',null,()=>{const b=document.getElementById('imp-diario');if(b)b.click();}],
   ['Esperimenti','esperimenti',null,null],
-  ['Impostazioni','plancia',null,()=>{const b=document.getElementById('fondo-impostazioni')||document.querySelector('[data-imp]');if(b)b.click();}],
+  ['Impostazioni','profilo',null,()=>{const b=document.getElementById('imp-tutte');if(b)b.click();}],
   /* i due clic uno dopo l'altro, senza aspettare: il pannello si scrive con
      innerHTML dentro la stessa chiamata, quindi il secondo pulsante c'è già.
      Con un setTimeout la prova andava avanti prima che la schermata si

@@ -13,10 +13,6 @@ import { Segno, Testa } from '../pezzi/pezzi';
 import { schermo, eroePlancia, wireEroePlancia, disegnaSezione, render } from '../app/app';
 import { html } from '../pezzi/grezzo';
 
-const SEZIONI = [
-  { id: 'riepilogo', ico: 'riepilogo', eti: 'Riepilogo' },
-  { id: 'diario', ico: 'quaderno', eti: 'Diario' }
-];
 
 export default function Panoramica() {
   usaLM();
@@ -65,22 +61,12 @@ export default function Panoramica() {
      le linguette in cima, e sotto solo quello che la linguetta dice. */
   return (<>
     <Testa titolo="Panoramica" piu="t-plancia" giaNellaNav />
-    {quale === 'aree' || quale === 'andamento' ? (<>
+    {quale !== 'riepilogo' ? (<>
       <button className="rit-indietro" onClick={() => { schermo.sezPlancia = 'riepilogo'; render(); }}>
         <Segno nome="chevronGiu" /> Andamento
       </button>
-      <h1 className="rit-titolo">{quale === 'aree' ? 'Aree' : 'Grafici'}</h1>
-    </>) : (
-    <div className="segmenti mini-seg sotto-seg" id="sez-plancia">
-      {SEZIONI.map((x) => (
-        <button key={x.id} data-sez={x.id} className={quale === x.id ? 'attivo' : ''}
-          onClick={() => { schermo.sezPlancia = x.id; render(); }}>
-          <span className="seg-ico"><Segno nome={x.ico} dim={13} /></span>
-          <span className="seg-eti">{x.eti}</span>
-        </button>
-      ))}
-    </div>
-    )}
+      <h1 className="rit-titolo">{quale === 'aree' ? 'Aree' : quale === 'diario' ? 'Diario' : 'Grafici'}</h1>
+    </>) : null}
     {quale === 'riepilogo' ? <div className={eroe.classi} {...html(eroe.dentro)} /> : null}
     <div id="sez-corpo" />
   </>);
