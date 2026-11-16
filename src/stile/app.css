@@ -4361,3 +4361,25 @@ input.rec-ora { min-width: 96px; text-align: left; font-weight: var(--peso-forte
 .casa-tit span { font-size: 14px; font-weight: 600; color: var(--inchiostro-muto); }
 .casa-riga.fatta .lista-tit { text-decoration: line-through; color: var(--inchiostro-muto); }
 .casa-riga .lista-sub { display: inline-flex; align-items: center; gap: 5px; }
+
+
+/* ═══ IL PROFILO ═══ */
+.prof-testa { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 8px; padding: 12px 0 18px; }
+.prof-avatar {
+  width: 84px; height: 84px; border-radius: 50%; display: grid; place-items: center;
+  font-size: 36px; font-weight: 800; color: var(--accento-ink); background: var(--accento-pieno);
+  box-shadow: var(--e2);
+}
+.prof-nome { font-size: 26px; font-weight: 800; letter-spacing: -0.03em; margin: 6px 0 0; }
+.prof-visione { font-size: 15px; color: var(--inchiostro-2); margin: 0; max-width: 30em; }
+.prof-form { display: flex; flex-direction: column; gap: 8px; width: 100%; max-width: 360px; }
+.prof-form .btn { justify-content: center; }
+.prof-numeri { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 22px; }
+.prof-numero {
+  display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 14px 6px;
+  background: var(--superficie-1); border-radius: 18px; box-shadow: var(--e1);
+}
+.prof-numero .ico { color: var(--inchiostro-muto); }
+.prof-numero b { font-size: 22px; font-weight: 800; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.prof-numero span { font-size: 12px; color: var(--inchiostro-2); }
+.prof-righe { max-width: 640px; margin: 0 auto; width: 100%; }

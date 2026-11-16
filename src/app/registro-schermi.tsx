@@ -39,6 +39,7 @@ import Panoramica from '../schermi/Panoramica';
 import Rituali from '../schermi/Rituali';
 import Adesso from '../schermi/Adesso';
 import Lab from '../schermi/Lab';
+import Profilo from '../schermi/Profilo';
 
 import Filtri from '../fogli/Filtri';
 import Menu from '../fogli/Menu';
@@ -91,7 +92,8 @@ const SCHERMI: Record<string, Schermo> = {
   giornata: Giornata, plancia: Panoramica, rituali: Rituali, oggi: Adesso,
   /* il laboratorio si disegna da sé dentro al suo contenitore, ma passa da
      qui come tutti: `#vista` deve avere un padrone solo */
-  lab: Lab
+  lab: Lab,
+  profilo: Profilo
 };
 
 /* quali schermate hanno una fila di linguette propria, e com'è fatta.

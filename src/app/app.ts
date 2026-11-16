@@ -1312,6 +1312,7 @@ const VISTE: Vista[] = [
   { id: 'inbox',       nome: 'Attività',    icona: 'lista',     gruppo: 'primaria',   livello: 'quotidiana' },
   { id: 'rituali',     nome: 'Rituali',     icona: 'rituali',   gruppo: 'primaria',   livello: 'quotidiana' },
   { id: 'plancia',     nome: 'Panoramica',  icona: 'dashboard', gruppo: 'primaria',   livello: 'quotidiana' },
+  { id: 'profilo',     nome: 'Profilo',     icona: 'user',      gruppo: 'primaria',   livello: 'quotidiana' },
   /* La pagina non si chiama più «Esperimenti»: l'esperimento è UNO dei due
      modi di rispondere alla domanda che uno si fa davvero — «questa cosa a
      me funziona?». L'altro è dirlo e basta, e quello è il modo che si usa
@@ -1360,7 +1361,13 @@ const GRUPPI: Porta[] = [
        è solo una parola in più da scartare ogni volta che si guarda la riga.
        Si aprono dalle impostazioni, e la linguetta compare soltanto mentre
        ci sei dentro, per sapere dove sei e come tornare. */
-    anche: ['scienza', 'lab'] }
+    anche: ['scienza', 'lab'] },
+  /* IL PROFILO: tu, i tuoi numeri, e le impostazioni in righe. Prima le
+     impostazioni stavano dietro un ingranaggio in alto a destra, e di «tu»
+     nell'app non c'era niente. */
+  { id: 'profilo', nome: 'Profilo', icona: 'user', viste: [
+    { id: 'profilo', eti: 'Profilo' }
+  ] }
 ];
 function navTre(): boolean { return ((LM.load().profilo || {}).nav || 'tre') !== 'tutte'; }
 function gruppoDi(id: string): Porta {
@@ -1633,7 +1640,7 @@ function statoPromemoria(): StatoPromemoria {
     azione: '<button class="btn btn-mini btn-tinta" id="imp-prom-on">' + ICO('campana', 15) + ' Accendi i promemoria</button>' };
 }
 
-export function htmlImpostazioni(): string {
+export function htmlAspetto(): string {
   const s = LM.load();
   const modo = s.profilo.modo || 'auto';
   const skin = s.profilo.skin || 'quiete';
@@ -1665,6 +1672,30 @@ export function htmlImpostazioni(): string {
   function segSu(v: string, et: string) { return '<button data-suono="' + v + '" class="' + (suo === v ? 'attivo' : '') + '">' + et + '</button>'; }
   function segVi(v: string, et: string) { return '<button data-vibra="' + v + '" class="' + (vib === v ? 'attivo' : '') + '">' + et + '</button>'; }
 
+  return '<div class="sc"><div class="lista">' +
+    rigaSegmenti('Tema', 'modo',
+      segM('auto', 'automatico', 'Auto') + segM('light', 'sun', 'Chiaro') + segM('dark', 'moon', 'Scuro')) +
+    rigaSegmenti('Stile', 'skin',
+      segS('quiete', 'Aurora') + segS('arcade', 'Arcade')) +
+    rigaSegmenti('Schermata «Adesso»', 'forma',
+      segFo('scheda', 'Scheda') + segFo('spina', 'Spina') + segFo('poi', 'Poi')) +
+    rigaSegmenti('Barra di navigazione', 'nav',
+      segN('tre', 'Tre porte') + segN('tutte', 'Tutte le pagine')) +
+    rigaSegmenti('Scorri fra le schermate', 'scorri',
+      segSc('si', 'Acceso') + segSc('no', 'Spento')) +
+    rigaSegmenti('Effetti', 'eff',
+      segEf('pieni', 'Pieni') + segEf('ridotti', 'Ridotti') + segEf('minimi', 'Minimi')) +
+    rigaSegmenti('Suono', 'suono',
+      segSu('si', 'Acceso') + segSu('no', 'Muto')) +
+    rigaSegmenti('Vibrazione', 'vibra',
+      segVi('si', 'Accesa') + segVi('no', 'Spenta')) +
+    '</div></div>';
+}
+
+export function htmlImpostazioni(): string {
+  const s = LM.load();
+  const modo = s.profilo.modo || 'auto';
+
   const r = s.profilo.ritmo;
   const pasti = (r.pasti || []).length;
   const valRitmo = (r.sonno || '—') + '–' + (r.sveglia || '—') + (pasti ? ' · ' + pasti + ' pasti' : '');
@@ -1682,6 +1713,7 @@ export function htmlImpostazioni(): string {
     '<div class="lista">' +
     rigaPorta('imp-aree', 'aree', 'Aree', nAree + ' attive') +
     rigaPorta('imp-ritmo', 'ritmo', 'Sonno e pasti', valRitmo) +
+    rigaPorta('imp-aspetto', 'palette', 'Aspetto', modo === 'auto' ? 'automatico' : modo === 'dark' ? 'scuro' : 'chiaro') +
     (pr.porta
       ? rigaPorta('imp-prom-come', 'campana', 'Promemoria', pr.val)
       : '<div class="lista-riga sc-riga"><span class="sc-eti">' + ICO('campana', 15) + ' Promemoria</span>' +
@@ -1689,37 +1721,6 @@ export function htmlImpostazioni(): string {
     '</div>' +
     (pr.nota ? nota(pr.nota) : '') +
     (pr.azione ? '<div class="imp-azioni">' + pr.azione + '</div>' : '') +
-
-    /* --- COME SI VEDE: tre scelte che valgono subito, tutte insieme.
-           Prima «Tema» e «Aspetto» erano due sezioni diverse per la stessa
-           domanda, e «Navigazione» stava in mezzo ai backup. --- */
-    etichetta('Aspetto', 'palette') +
-    '<div class="lista">' +
-    rigaSegmenti('Tema', 'modo',
-      segM('auto', 'automatico', 'Auto') + segM('light', 'sun', 'Chiaro') + segM('dark', 'moon', 'Scuro')) +
-    rigaSegmenti('Stile', 'skin',
-      segS('quiete', 'Aurora') + segS('arcade', 'Arcade')) +
-    rigaSegmenti('Schermata «Adesso»', 'forma',
-      segFo('scheda', 'Scheda') + segFo('spina', 'Spina') + segFo('poi', 'Poi')) +
-    rigaSegmenti('Barra di navigazione', 'nav',
-      segN('tre', 'Tre porte') + segN('tutte', 'Tutte le pagine')) +
-    rigaSegmenti('Scorri fra le schermate', 'scorri',
-      segSc('si', 'Acceso') + segSc('no', 'Spento')) +
-    rigaSegmenti('Effetti', 'eff',
-      segEf('pieni', 'Pieni') + segEf('ridotti', 'Ridotti') + segEf('minimi', 'Minimi')) +
-    rigaSegmenti('Suono', 'suono',
-      segSu('si', 'Acceso') + segSu('no', 'Muto')) +
-    rigaSegmenti('Vibrazione', 'vibra',
-      segVi('si', 'Accesa') + segVi('no', 'Spenta')) +
-    /* QUI C'ERA «SCHERMATE NUOVE», e non c'è più.
-       Era la via d'uscita mentre le schermate passavano una per una al
-       motore nuovo: due tocchi e si tornava a quello di prima. Adesso quello
-       di prima non esiste, quindi l'interruttore portava a un posto vuoto —
-       e un interruttore che non fa niente è peggio che non averlo. */
-    '</div>' +
-    nota('<b>Effetti</b> serve se compaiono rettangoli grigi o neri a spigolo vivo in mezzo alle schermate, o se l’app va a scatti. <b>Ridotti</b> toglie le sfocature dietro ai pannelli e alla barra, e la forma resta. <b>Minimi</b> spegne tutto — niente curva degli angoli, niente sfocature, niente fondo colorato. Se il difetto sparisce a un gradino e non all’altro, si sa da cosa dipende.') +
-    nota('<b>Schermata «Adesso»</b>: con <b>Scheda</b> vedi una cosa sola, grande e in mezzo. Con <b>Spina</b> la giornata diventa una colonna — sopra quello che hai già fatto, in mezzo questa, sotto quello che viene — e il tasto scende in fondo allo schermo. Con <b>Poi</b> resta la scheda e sotto si apre la coda di oggi, che altrimenti sta chiusa.') +
-    nota('Aurora è più sobrio, Arcade più acceso. Con <b>tre porte</b> le altre schermate stanno in una riga di linguette sotto al titolo; con <b>tutte le pagine</b> torna la barra lunga. In entrambi i casi ci sono tutte: cambia solo da dove ci si arriva. Con lo <b>scorrimento acceso</b> si passa da una schermata all’altra trascinando il dito di lato, come si sfoglia: le linguette restano dove sono.') +
 
     /* --- I TUOI DATI: due cose che si fanno e una porta --- */
     etichetta('I tuoi dati', 'dati') +
@@ -1729,7 +1730,6 @@ export function htmlImpostazioni(): string {
     rigaPorta('imp-backup', 'archivio', 'Backup e ripristino', nBackup ? String(nBackup) : 'nessuno') +
     '</div>' +
     '<input type="file" id="imp-file" accept="application/json,.json" hidden>' +
-    nota('Prima di sostituire i dati l’app fa sempre un backup, e da lì si torna indietro.') +
 
     /* --- CAPIRE L'APP: le pagine che si leggono, non si usano --- */
     etichetta('Guida', 'aiuto') +
@@ -1739,7 +1739,6 @@ export function htmlImpostazioni(): string {
     rigaPorta('imp-diag', 'terminale', 'Registro tecnico') +
     rigaPorta('imp-lab', 'palette', 'Design lab') +
     '</div>' +
-    nota('Il registro tecnico mostra se i dati sono davvero salvati: si copia e si manda quando qualcosa non torna.') +
 
     /* --- RIPARTIRE: staccato, e in fondo. Quello che cancella non può
            stare in fila con quello che salva. --- */
@@ -1748,7 +1747,6 @@ export function htmlImpostazioni(): string {
     rigaFa('imp-demo', 'sparkles', 'Carica dati di esempio') +
     rigaFa('imp-azzera', 'trash', 'Azzera tutto', 'sc-pericolo') +
     '</div>' +
-    nota('Anche l’azzeramento fa un backup: i dati si recuperano da «Backup e ripristino».') +
     '</div>';
 }
 
@@ -2150,6 +2148,7 @@ export function wireAspettoDati(root: HTMLElement): void {
   var e = root.querySelector<HTMLElement>('#imp-esporta'); if (e) e.addEventListener('click', esportaDati);
   var b2 = root.querySelector<HTMLElement>('#imp-backup'); if (b2) b2.addEventListener('click', apriBackups);
   var ar = root.querySelector<HTMLElement>('#imp-aree'); if (ar) ar.addEventListener('click', apriAree);
+  var asp = root.querySelector<HTMLElement>('#imp-aspetto'); if (asp) asp.addEventListener('click', apriAspetto);
   var gu = root.querySelector<HTMLElement>('#imp-guida'); if (gu) gu.addEventListener('click', apriGuida);
   var sc = root.querySelector<HTMLElement>('#imp-scienza');
   if (sc) sc.addEventListener('click', function () { chiudiSheet(); location.hash = '#/scienza'; });
@@ -2160,7 +2159,7 @@ export function wireAspettoDati(root: HTMLElement): void {
   /* Promemoria: il pulsante racconta com'è andata, e il pannello si riscrive
      da sé — se il permesso è appena cambiato, la riga sopra deve cambiare
      con lui, altrimenti resta a dire «spenti» con le notifiche accese. */
-  function riscriviImpostazioni() { staTornandoSheet = true; apriImpostazioni(); staTornandoSheet = false; }
+  function riscriviImpostazioni() { render(); }
   const pon = root.querySelector<HTMLButtonElement>('#imp-prom-on');
   if (pon) pon.addEventListener('click', function () {
     pon.disabled = true;
@@ -2350,9 +2349,9 @@ function htmlAccount() {
     '<span class="sc-val">su questo dispositivo</span></div></div>';
 }
 
-export function apriImpostazioni() {
-  apriSheet('Impostazioni', htmlImpostazioni(), wireAspettoDati, false,
-    { nome: 'Impostazioni', apri: apriImpostazioni });
+export function apriImpostazioni() { chiudiSheet(); location.hash = '#/profilo'; }
+export function apriAspetto() {
+  apriSheet('Aspetto', htmlAspetto(), wireAspettoDati, false, { nome: 'Aspetto', apri: apriAspetto });
 }
 
 /* CHE COSA C'È NEL MENU — una sola volta, e la leggono in due.
@@ -7370,10 +7369,6 @@ function rituliDaFare() {
    l'angolo più lontano dal pollice, lo stesso su ogni schermata. Fuori dalla
    strada, e sempre nello stesso punto. Sul desktop non c'è: là la colonna la
    tiene già in fondo, che è lo stesso ragionamento. */
-function bottoneImpostazioni() {
-  return '<button type="button" class="btn-tu" data-imp="1" aria-label="Impostazioni" ' +
-    'title="Impostazioni">' + ICO('ingranaggio', 18) + '</button>';
-}
 
 function sottoNav(v: string): void {
   /* SOLO la riga che ha creato questa funzione: `.sez-nav` è la classe
@@ -7448,8 +7443,7 @@ function sottoNav(v: string): void {
     if (sua) riga.appendChild(sua);
     else riga.className += ' testa-porta-sola';
   }
-  riga.insertAdjacentHTML('beforeend', bottoneImpostazioni());
-  presa(riga.querySelector<HTMLElement>('[data-imp]')).addEventListener('click', apriImpostazioni);
+  if (!riga.firstElementChild) return;
   /* la riga delle sezioni è SEMPRE il primo blocco della pagina */
   $vista.prepend(riga);
   /* niente più sfumatura di scorrimento: a colonne uguali la riga ci sta per
