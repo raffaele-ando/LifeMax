@@ -29,6 +29,7 @@ const { RAMO } = require('./comune/dove');
 let guai = 0;
 const ok = (nome, cond, det) => { if (!cond) guai++; console.log('  ' + (cond ? 'ok  ' : 'KO  ') + nome + (det ? '  → ' + det : '')); };
 const c_e = (rel) => fs.existsSync(path.join(RAMO, rel));
+const leggi = (rel) => fs.readFileSync(path.join(RAMO, rel), 'utf8');
 
 /* ============================================================
    1. IL SITO SERVITO
@@ -106,6 +107,71 @@ for (const cartella of ['segni', 'postino', 'prove']) {
     }
   }
   ok(cartella + '/', rotti.length === 0, rotti.length ? rotti.join('; ') : guardati + ' percorsi, tutti veri');
+}
+
+/* ------------------------------------------------------------------
+   LA TERZA: UNA CLASSE SCRITTA NEL MARKUP HA UNA REGOLA CHE LA RIGUARDA.
+
+   Tre fogli — «Da cosa da fare ad abitudine», «Non del tutto», «Quando
+   fare questo passo» — scrivevano `sc-gruppo`, `sc-campo`, `sc-nota`,
+   `sc-intro`, e nel foglio di stile non c'era una riga che ne parlasse.
+   Il browser non lo dice: disegna tutto con lo stile ereditato, e viene
+   fuori un pannello che sembra solo trascurato — l'etichetta attaccata al
+   campo, due campi sulla stessa riga con la tendina a capo, la nota
+   schiacciata contro il tasto. È la stessa faccia delle altre due
+   famiglie: niente errore, e la cosa semplicemente non succede.
+
+   Una classe senza regola può essere voluta: è un GANCIO, un nome che
+   serve al codice per ritrovare l'elemento e non al foglio per disegnarlo.
+   Quelli stanno scritti qui sotto, uno per uno. Tutto il resto deve avere
+   una regola — e se ne compare una nuova senza, o è un gancio e va
+   aggiunta all'elenco sapendolo, o è un pannello che si sta disegnando da
+   solo. */
+const GANCI = [
+  /* i comandi dentro agli avvisi e ai pannelli della giornata: si cercano
+     per classe, e l'aspetto lo prendono da `btn` */
+  'avv-no', 'ig-finequi', 'ig-indietro', 'ig-noora', 'ig-rimuovi', 'ig-salta', 'ig-vairituali',
+  /* stanno accanto a `solo-lettori`, che è quella che li disegna */
+  'fs-parola', 'fs-tipo-nome',
+  /* nomi di blocco: il foglio disegna i loro pezzi, non loro */
+  'abd', 'diario', 'lez-riga', 'lista-parcheggio', 'sc-porta',
+  /* il Design lab ha il suo foglio e le sue demo */
+  'a9-pieno-largo', 'p10-testa', 't6-corta'
+];
+
+console.log('\nUNA CLASSE NEL MARKUP HA UNA REGOLA NEL FOGLIO');
+{
+  const senzaCommenti = (t) => t.replace(/\/\*[\s\S]*?\*\//g, '');
+  const foglio = senzaCommenti(leggi('src/stile/app.css') + leggi('src/stile/lab.css'));
+  const nelFoglio = new Set((foglio.match(/\.(-?[a-zA-Z_][\w-]*)/g) || []).map((x) => x.slice(1)));
+  const scritte = new Map();
+  const giro = (dir) => {
+    for (const f of fs.readdirSync(path.join(RAMO, dir), { withFileTypes: true })) {
+      const rel = dir + '/' + f.name;
+      if (f.isDirectory()) { giro(rel); continue; }
+      if (!/\.tsx?$/.test(f.name)) continue;
+      const t = senzaCommenti(leggi(rel));
+      /* solo i nomi scritti per intero: `'st-' + stato` è un nome composto,
+         e di quello si guarda il prefisso in un altro posto */
+      const re = /class(?:Name)?=(?:"([^"{}+]*)"|\{?'([^'{}]*)')/g; let m;
+      while ((m = re.exec(t))) {
+        (m[1] || m[2] || '').split(/\s+/).forEach((c) => {
+          if (!/^[a-zA-Z_][\w-]*[\w]$/.test(c)) return;
+          if (!scritte.has(c)) scritte.set(c, rel);
+        });
+      }
+    }
+  };
+  giro('src');
+  const orfane = [...scritte.keys()].filter((c) => !nelFoglio.has(c) && GANCI.indexOf(c) < 0).sort();
+  ok('nessuna classe senza regola e senza motivo', orfane.length === 0,
+    orfane.length ? orfane.map((c) => c + ' (' + scritte.get(c) + ')').join('; ')
+      : scritte.size + ' classi guardate, ' + GANCI.length + ' ganci dichiarati');
+  /* e l'elenco dei ganci non diventa un ripostiglio: un nome che ha preso
+     una regola, o che nessuno scrive più, se ne va */
+  const scaduti = GANCI.filter((c) => nelFoglio.has(c) || !scritte.has(c));
+  ok('e i ganci dichiarati sono ancora ganci', scaduti.length === 0,
+    scaduti.length ? 'da togliere dall’elenco: ' + scaduti.join(', ') : 'tutti ancora senza regola e ancora in uso');
 }
 
 console.log(guai ? '\n>>> ' + guai + (guai > 1 ? ' PROBLEMI' : ' PROBLEMA') : '\n>>> TUTTO A POSTO');

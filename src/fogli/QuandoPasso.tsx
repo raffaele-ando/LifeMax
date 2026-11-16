@@ -47,7 +47,7 @@ export default function QuandoPasso({ prog, passo }: PropQuandoPasso) {
           {chip(fraDue, nomeFraDue)}
           {chip(LM.addDays(oggi, 7), 'Tra una settimana')}
         </div>
-        <label className="sc-campo"><span>un altro giorno</span>
+        <label className="sc-campo"><span>Un altro giorno</span>
           <input key={gia ? gia.data : 'nuovo'} type="date" id="qp-data" ref={data}
             defaultValue={gia ? gia.data : LM.addDays(oggi, 1)} /></label>
         {gia ? (

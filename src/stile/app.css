@@ -2940,6 +2940,35 @@ textarea.sm-titolo:focus { box-shadow: none; outline: 2px solid var(--accento); 
 /* niente margini da due pixel: si sommavano a quello dell'etichetta di
    gruppo qui sotto e la stessa distanza diventava 26 o 28 invece di 24 */
 .sc-primaria { width: 100%; justify-content: center; margin: 0; }
+/* I CAMPI DENTRO A UN FOGLIO — quattro classi che tre fogli usavano e che
+   in questo file NON ESISTEVANO.
+   «Da cosa da fare ad abitudine», «Non del tutto» e «Quando fare questo
+   passo» scrivono `sc-gruppo`, `sc-campo`, `sc-nota`, `sc-intro`; qui non
+   c'era una riga che ne parlasse. Il browser non lo dice: disegna tutto
+   con lo stile ereditato, e il risultato è un pannello che sembra solo un
+   po' trascurato — l'etichetta attaccata al suo campo, «a che ora» e
+   «quanto dura» sulla stessa riga con la tendina a capo, la nota
+   schiacciata contro il tasto. Nessuna prova guarda se una classe scritta
+   nel markup ha una regola che la riguarda; adesso `prove/riferimenti.js`
+   sì.
+   La forma è quella di un modulo di iOS: l'etichetta a sinistra, il
+   controllo a destra, la riga alta quanto un dito. Un campo di testo
+   libero fa eccezione e va a capo, perché gli serve la larghezza. */
+.sc-intro { margin: 0 0 var(--s3); font-size: 15px; line-height: 1.4; color: var(--inchiostro-1); }
+.sc-gruppo { display: flex; flex-direction: column; gap: var(--s2); margin-bottom: var(--s4); }
+.sc-campo {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--s3);
+  min-height: 44px;
+}
+.sc-campo > span { font-size: 15px; font-weight: var(--peso-forte); color: var(--inchiostro-1); }
+.sc-campo input, .sc-campo select { flex: none; width: auto; max-width: 62%; }
+.sc-campo:has(input[type="text"]) { flex-direction: column; align-items: stretch; gap: var(--s2); min-height: 0; margin-top: var(--s3); }
+.sc-campo:has(input[type="text"]) > span { font-size: 13px; color: var(--inchiostro-2); }
+.sc-campo input[type="text"] { width: 100%; max-width: none; }
+.sc-nota { font-size: 12.5px; line-height: 1.45; color: var(--inchiostro-muto); }
+.sc-primaria + .sc-nota { margin-top: var(--s3); }
+.sc .imp-azioni { margin-top: var(--s2); }
+.sc .imp-azioni .btn-grande { width: 100%; justify-content: center; }
 .sc-quando { margin-bottom: 0; }
 /* la pastiglia che contiene un campo data: si vede la pastiglia, il campo
    sta dentro e si apre col calendario del sistema */

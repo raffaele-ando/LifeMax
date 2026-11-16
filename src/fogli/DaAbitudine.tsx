@@ -42,9 +42,9 @@ export default function DaAbitudine({ id }: { id: string }) {
             if (c) c.classList.toggle('sel');
           }}
           {...html(chipsGiorni([1, 2, 3, 4, 5, 6, 0]))} />
-        <label className="sc-campo"><span>a che ora</span>
+        <label className="sc-campo"><span>A che ora</span>
           <input type="time" className="tl-time" id="ab-ora" ref={ora} /></label>
-        <label className="sc-campo"><span>quanto dura</span>
+        <label className="sc-campo"><span>Quanto dura</span>
           <select className="tl-dur" id="ab-dur" ref={dur} defaultValue="">
             {DURATE.map((o) => <option key={String(o.v)} value={String(o.v)}>{o.t}</option>)}
           </select></label>

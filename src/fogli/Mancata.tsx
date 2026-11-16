@@ -66,8 +66,8 @@ export default function Mancata({ id, testo, dopo }: PropMancata) {
       <div className="lista-eti"><Segno nome="aiuto" dim={11} />Cos’è successo</div>
       <Chips id="mancata-perche" voci={LM.PERCHE_MANCATA} attributo="data-perche"
         scelto={perche} onScegli={(v) => { scelte.current.perche = v; setPerche(v); }} />
-      <div className="sc-gruppo"><label className="sc-campo"><span>se vuoi, due parole</span>
-        <input type="text" id="mancata-nota" ref={nota} placeholder="facoltativo…" maxLength={140} /></label></div>
+      <div className="sc-gruppo"><label className="sc-campo"><span>Se vuoi, due parole</span>
+        <input type="text" id="mancata-nota" ref={nota} placeholder="Facoltativo" maxLength={140} /></label></div>
       <div className="imp-azioni">
         <button className="btn btn-primario btn-grande" id="mancata-ok" onClick={() => {
           const testoNota = (nota.current ? nota.current.value : '').trim();
