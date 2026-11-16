@@ -1936,6 +1936,30 @@ body.in-concentrazione { overflow: hidden; }
 .passi-punti span.attivo { background: var(--accento); }
 .ob-step .card { padding: 28px; animation: alzati .45s var(--ease-out) both; }
 .ob-step h2 { margin-bottom: 4px; }
+/* IL PRIMO AVVIO SU UN TELEFONO: il tasto per andare avanti si deve vedere.
+   La presentazione — marchio, titolo, cinque righe di testo, tre punti —
+   occupava cinquecento pixel su uno schermo alto 844, e si ripeteva
+   identica a tutti e tre i passi. Il modulo cominciava a y=560 e «Avanti»
+   stava a y=898 al primo passo e a y=1131 al secondo: fuori dallo schermo,
+   dentro a un contenitore che scorre senza dirlo. La prima cosa che l'app
+   chiedeva a chi la apriva era di indovinare che bisognava scorrere.
+   Qui si toglie quello che si ripete. Il paragrafo se ne va — lo dicono
+   già il titolo e i tre punti; dopo il primo passo se ne vanno anche
+   quelli, perché una presentazione si legge una volta: resta il marchio,
+   che dice dove sei. E il comando principale prende tutta la larghezza,
+   come in ogni altro foglio dell'app. */
+@media (max-width: 940px) {
+  .ob-grid { grid-template-rows: auto 1fr; }
+  .ob-brand { padding: 28px 24px 18px; gap: 12px; }
+  .ob-brand p { display: none; }
+  .onboarding:not(.ob-p0) .ob-brand { padding: 16px 24px; }
+  .onboarding:not(.ob-p0) .ob-titolo,
+  .onboarding:not(.ob-p0) .ob-punti,
+  .onboarding:not(.ob-p0) .ob-account { display: none; }
+  .ob-step { justify-content: flex-start; padding: 18px 16px 32px; }
+  .ob-step .card { padding: 20px; }
+  .ob-step .riga-flex .btn-grande { flex: 1 1 100%; justify-content: center; }
+}
 
 .selettore-aree { display: grid; grid-template-columns: repeat(2, 1fr); gap: 9px; }
 @media (max-width: 520px) { .selettore-aree { grid-template-columns: 1fr; } }

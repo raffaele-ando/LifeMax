@@ -7182,9 +7182,9 @@ function onboarding() {
       step = '<div class="card"><h2>Come ti chiami</h2><div class="sotto">Puoi compilare ora oppure saltare: quasi tutto qui è facoltativo.</div>' +
         '<label class="campo" for="ob-nome">Nome</label><input type="text" id="ob-nome" value="' + esc(scelte.nome) + '" placeholder="Il tuo nome">' +
         '<label class="campo" for="ob-visione">In una frase, cosa vuoi ottenere</label>' +
-        '<textarea id="ob-visione" placeholder="Es. imparare più in fretta, restare in salute e costruire progetti che contano">' + esc(scelte.visione) + '</textarea>' +
+        '<textarea id="ob-visione" placeholder="Es. restare in salute e finire gli studi">' + esc(scelte.visione) + '</textarea>' +
         '<div class="riga-flex mt"><button class="btn btn-primario btn-grande" id="ob-avanti">Avanti ' + ICO('arrowRight', 15) + '</button>' +
-        '<button class="btn btn-ghost" id="ob-demo">Salta e vai alla demo</button></div></div>';
+        '<button class="btn btn-ghost" id="ob-demo">Salta e guarda un esempio</button></div></div>';
     } else if (passo === 1) {
       step = '<div class="card"><h2>Le aree della tua vita</h2><div class="sotto">Sono tutte attive: disattiva quelle che non ti servono, potrai riattivarle quando vuoi.</div>' +
         '<div class="selettore-aree">' + LM.AREE_DEFAULT.map(function (a) {
@@ -7202,12 +7202,15 @@ function onboarding() {
         modo('rituali', 'rituali', 'Rituali', 'Brevi routine al mattino e alla sera che ti danno una struttura fissa.') +
         '</div>' +
         '<div class="riga-flex mt">' +
-        '<button class="btn btn-primario btn-grande" id="ob-fine-demo">' + ICO('sparkles', 15) + ' Parti con 8 settimane di dati demo</button>' +
+        '<button class="btn btn-primario btn-grande" id="ob-fine-demo">' + ICO('sparkles', 15) + ' Parti con i dati di esempio</button>' +
         '<button class="btn" id="ob-fine-vuoto">Parti da zero</button>' +
         '<button class="btn btn-ghost" id="ob-indietro">Indietro</button></div></div>';
     }
 
-    root.innerHTML = '<div class="onboarding"><div class="ob-grid">' +
+    /* `ob-p0`, `ob-p1`, `ob-p2`: il passo sta scritto sul contenitore perché
+       su un telefono la presentazione si accorcia dopo il primo — vedi il
+       blocco «il primo avvio su un telefono» in app.css. */
+    root.innerHTML = '<div class="onboarding ob-p' + passo + '"><div class="ob-grid">' +
       '<aside class="ob-brand">' +
       '<div class="logo">' + LOGO(34) + ' LifeMax</div>' +
       '<div class="ob-titolo">Misura. Ingegnerizza.<br><em>Massimizza.</em></div>' +
