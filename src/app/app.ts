@@ -1730,6 +1730,7 @@ export function htmlImpostazioni(pezzo?: 'profilo'): string {
         : '<div class="lista-riga sc-riga"><span class="sc-eti">' + ICO('campana', 15) + ' Promemoria</span>' +
           '<span class="sc-val">' + pr.val + '</span></div>') +
       '</div>' +
+      (pr.nota ? nota(pr.nota) : '') +
       (pr.azione ? '<div class="imp-azioni">' + pr.azione + '</div>' : '') +
       '<div class="lista mt-s">' +
       rigaPorta('imp-scoperte', 'funziona', 'Scoperte') +

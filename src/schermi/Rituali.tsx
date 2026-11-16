@@ -8,7 +8,7 @@
    React possiede la struttura e quali sezioni sono aperte; il contenuto di
    ognuna lo disegna `disegnaCorpiRituali()` — sono cinque schermate intere,
    e devono essere le stesse. */
-import { Fragment, useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { usaLM } from '../pezzi/usaLM';
 import { Segno, Testa } from '../pezzi/pezzi';
 import { schermo, GRUPPI_RIT, RITUALI, ritualeDellOra, statoRituale, disegnaCorpiRituali, giroDiDisegno, render } from '../app/app';
@@ -97,16 +97,12 @@ export default function Rituali() {
     <Testa titolo="Rituali" giaNellaNav />
     {/* un <Fragment> con la chiave, non un <div>: un contenitore in più —
         anche invisibile al layout — è un elemento in più nell'albero */}
-    {GRUPPI_RIT.map((g) => (
-      <Fragment key={g.eti}>
-        <div className="rit-eti">{g.eti}</div>
-        <div className="rit-gruppo">
-          {g.ids.map((id) => {
-            const r = RITUALI.find((x) => x.id === id);
-            return r ? <Riga key={id} r={r} adesso={adesso} aperto={!!aperti[id]} onApri={apri} /> : null;
-          })}
-        </div>
-      </Fragment>
-    ))}
+    {/* un gruppo solo: tre etichette per cinque righe erano più titoli che contenuto */}
+    <div className="rit-gruppo">
+      {GRUPPI_RIT.flatMap((g) => g.ids).map((id) => {
+        const r = RITUALI.find((x) => x.id === id);
+        return r ? <Riga key={id} r={r} adesso={adesso} aperto={!!aperti[id]} onApri={apri} /> : null;
+      })}
+    </div>
   </>);
 }

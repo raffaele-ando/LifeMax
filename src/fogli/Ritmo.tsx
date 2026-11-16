@@ -143,9 +143,6 @@ export default function Ritmo() {
   };
 
   return (<>
-    <div className="imp-nota" style={{ marginTop: 0 }}>
-      È il ritmo di base, quello che disegna lo sfondo della giornata. Un singolo giorno si registra a parte, dalla pagina <i>Giornata</i>.
-    </div>
     <div className="ritmo-riga2">
       <label className="campo" htmlFor="ritmo-sonno">A letto</label>
       <input type="time" id="ritmo-sonno" value={sonno} onChange={(e) => setSonno(e.target.value)} />

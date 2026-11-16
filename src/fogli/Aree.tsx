@@ -96,10 +96,6 @@ export default function Aree() {
   };
 
   return (<>
-    <div className="imp-nota" style={{ marginTop: 0 }}>
-      Rinomina, disattiva o rimuovi le aree, oppure creane di tue (es. i tuoi progetti).
-      Rimuovendo un’area, le sue attività passano ad «Altro»: nulla va perso.
-    </div>
     <div className="aree-lista">
       {s.aree.map((x) => <Riga key={x.id} area={x} attiva={s.areeAttive.indexOf(x.id) >= 0} />)}
     </div>
