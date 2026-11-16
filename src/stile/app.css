@@ -4643,8 +4643,8 @@ input[type="number"], textarea, select, .rit-ico, .casa-rito-ico { border-radius
 .sp-dorm { grid-column: 1 / -1; grid-row: 3; margin-top: 4px; }
 .sp-pasti { gap: 16px; }
 .sp-riga {
-  display: grid; grid-template-columns: 24px 1fr 1fr 44px; align-items: center; gap: 8px;
-  grid-template-areas: "ico nome nome via" ". ora dur .";
+  display: grid; grid-template-columns: 24px minmax(0, 1fr) minmax(0, 1fr) 44px; align-items: center; gap: 8px;
+  grid-template-areas: "ico nome nome via" "ora ora dur dur";
 }
 .sp-riga .sp-ico { grid-area: ico; }
 .sp-riga .sp-nome { grid-area: nome; width: 100%; }
