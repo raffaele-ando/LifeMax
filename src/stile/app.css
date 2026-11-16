@@ -3269,45 +3269,82 @@ select.agg-sel-area { width: auto; max-width: 190px; flex: 0 1 auto; font-size: 
 
 
 /* ============================================================
-   RITUALI — una scheda per rituale; toccandola si entra dentro
+   RITUALI — elenco a gruppi, sezioni indipendenti
+   Impianto preso dagli elenchi «inset grouped» di iOS: ogni gruppo è un
+   riquadro arrotondato con le righe separate da una linea sottile e una
+   breve etichetta sopra. Ogni riga si apre e si chiude per conto suo:
+   aprirne una non chiude le altre, e quello che apri resta aperto.
    ============================================================ */
-.rit-testa { display: flex; align-items: baseline; justify-content: space-between; margin: var(--s2) 0 var(--s4); }
-.rit-grande { font-size: 30px; font-weight: 800; letter-spacing: -0.03em; margin: 0; }
-.rit-conto { font-size: 14px; font-weight: var(--peso-forte); color: var(--inchiostro-2); font-variant-numeric: tabular-nums; }
-.rit-eti { font-size: 13px; font-weight: var(--peso-forte); color: var(--inchiostro-2); margin: var(--s5) 0 var(--s2); }
-.rit-hub { display: flex; flex-direction: column; gap: 12px; }
-.rit-blocco { position: relative; }
+.rit-eti {
+  font-size: 11px; font-weight: var(--peso-display); /* stessi numeri dell'altra etichetta di gruppo: erano 22/2/8 qui e
+     18/2/7 là, per lo stesso mestiere */
+  color: var(--inchiostro-2); margin: var(--s5) 0 var(--s2);
+}
+.rit-eti:first-of-type { margin-top: var(--s1); }
+.rit-gruppo {
+  border: 1px solid var(--bordo); border-radius: var(--r-3);
+  background: var(--superficie-1); box-shadow: var(--e1); overflow: hidden;
+}
+.rit-gruppo > .rit-blocco + .rit-blocco { border-top: 1px solid var(--bordo); }
 .rit-riga {
-  display: flex; align-items: center; gap: 16px; width: 100%; text-align: left;
-  min-height: 76px; padding: 12px 16px; border: 0; border-radius: 22px;
-  background: var(--superficie-1); box-shadow: var(--e1);
-  transition: transform var(--t-veloce), background var(--t-veloce);
+  display: flex; align-items: center; gap: 10px; width: 100%; text-align: left;
+  min-height: 56px; padding: 0 14px; background: none; border: 0; border-radius: 0;
+  transition: background var(--t-veloce);
 }
 .rit-riga:hover { background: var(--superficie-2); }
+.rit-blocco.aperto > .rit-riga { background: var(--superficie-2); }
+/* icona in un quadratino tinto, come le righe di Impostazioni su iOS */
 .rit-ico {
   flex: none; display: inline-flex; align-items: center; justify-content: center;
-  width: 48px; height: 48px; border-radius: 16px;
+  width: 28px; height: 28px; border-radius: var(--r-1);
   background: color-mix(in srgb, var(--accento) 12%, transparent); color: var(--accento-testo);
 }
-.rit-nome { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0; }
-.rit-tit { font-size: 17px; font-weight: 700; letter-spacing: -0.01em; }
-.rit-sub { font-size: 13px; color: var(--inchiostro-2); }
-.rit-ora { font-size: 12px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; opacity: 0.85; }
-.rit-fine { flex: none; display: inline-flex; align-items: center; }
-.rit-chevron { display: inline-flex; color: var(--inchiostro-muto); transform: rotate(-90deg); }
-.rit-spunta {
-  display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px;
-  border-radius: 50%; background: var(--ok); color: #fff;
+.rit-nome { flex: 1; min-width: 0; font-size: 14.5px; font-weight: var(--peso-forte); }
+/* «ADESSO» ERA UNA PASTIGLIA accanto a un'altra pastiglia: due etichette su
+   una riga sola, e quella che conta di più — è fatto o no — sembrava la
+   seconda. Il rituale di questo momento adesso si riconosce dalla RIGA: un
+   filo d'accento a sinistra e l'icona piena invece che sfumata. Si guarda,
+   non si legge; e la parola resta per chi usa un lettore di schermo. */
+.rit-blocco.ora { position: relative; }
+.rit-blocco.ora > .rit-riga { padding-left: 17px; }
+/* il filo appartiene alla SEZIONE, non al tasto della riga. Messo sullo
+   pseudo-elemento del tasto, l'area che il tasto riceve si allungava a tutta
+   l'altezza del blocco aperto — ottocento pixel — e rubava i clic di tutto
+   quello che ci stava dentro. Lo dice prove/clic.js. */
+.rit-blocco.ora::after {
+  content: ''; position: absolute; left: 0; top: 8px; bottom: 8px; width: 3px;
+  pointer-events: none;
+  border-radius: 0 var(--r-tondo) var(--r-tondo) 0; background: var(--accento);
 }
-.rit-blocco.fatto .rit-tit { color: var(--inchiostro-2); }
-/* il rituale di adesso è la scheda piena: si riconosce senza leggere */
-.rit-blocco.ora .rit-riga { background: var(--accento-pieno); color: var(--accento-ink); min-height: 96px; padding: 16px; }
-.rit-blocco.ora .rit-ico { background: color-mix(in srgb, var(--accento-ink) 16%, transparent); color: var(--accento-ink); }
-.rit-blocco.ora .rit-sub { color: inherit; opacity: 0.8; }
-.rit-vai {
-  font-size: 14px; font-weight: 700; padding: 8px 16px; border-radius: var(--r-tondo);
-  background: var(--accento-ink); color: var(--accento-pieno);
-}
+.rit-blocco.ora .rit-ico { background: var(--accento-pieno); color: var(--accento-ink); }
+/* la colonna dello stato: sempre la stessa forma, la stessa domanda, lo
+   stesso posto. Il numero, quando c'è, sta sotto e non compete. */
+.rit-stato { flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 0; line-height: 1.25; }
+.rit-stato .rs-che { font-size: 12px; font-weight: var(--peso-forte); color: var(--inchiostro-2); display: inline-flex; align-items: center; gap: 4px; }
+.rit-stato.fatto .rs-che { color: var(--ok-testo); font-weight: var(--peso-titolo); }
+.rit-stato .rs-dett { font-size: 11px; font-weight: var(--peso-forte); color: var(--inchiostro-muto); }
+.rit-chevron { flex: none; display: inline-flex; color: var(--inchiostro-muto); transition: transform var(--t-media); }
+.rit-chevron.aperta { transform: rotate(180deg); }
+/* IL DENTRO SI VEDE. Il corpo aperto era bianco come la riga sopra e come
+   la riga sotto: un rituale aperto e i due chiusi facevano un muro solo, e
+   dove finiva l'uno e cominciava l'altro lo diceva solo un filo grigio. Con
+   un fondo rientrato il contenuto aperto è chiaramente DENTRO quella riga, e
+   le schede bianche che ci stanno dentro (il grafico, per esempio) si
+   staccano da sole, senza doversi mettere una cornice propria. */
+.rit-corpo { padding: var(--s4) 0; border-top: 1px solid var(--bordo); background: var(--superficie-2); }
+/* TUTTE LE SCHEDE DEL CORPO SI VESTONO ALLO STESSO MODO.
+   Prima no: la prima non aveva né fondo né cornice e arrivava fino ai bordi,
+   le altre erano bianche e rientrate di sedici pixel. Aprendo un rituale si
+   vedevano quindi due larghezze e due fondi diversi nello stesso riquadro —
+   una fascia bianca che partiva da un bordo e una scheda bianca che partiva
+   da un altro, con in mezzo il grigio del vassoio. Da fuori si legge come
+   «strisce bianche che non rispettano i bordi», ed è esattamente quello che
+   era: due sistemi di margini nello stesso posto.
+   Adesso il corpo aperto è un vassoio grigio e quello che ci sta dentro sono
+   schede, tutte con lo stesso rientro, lo stesso angolo e lo stesso fondo. */
+.rit-corpo > .card { margin: 0 var(--s4) var(--s4); box-shadow: var(--e1); background: var(--superficie-1); border: 1px solid var(--bordo); border-radius: var(--r-2); }
+.rit-corpo > .card:last-child { margin-bottom: 0; }
+.rit-corpo .card { padding: 18px 20px 20px; }
 /* dentro a un rituale */
 .rit-indietro {
   display: inline-flex; align-items: center; gap: 4px; min-height: 44px; padding: 0 12px 0 4px;
@@ -3315,10 +3352,6 @@ select.agg-sel-area { width: auto; max-width: 190px; flex: 0 1 auto; font-size: 
 }
 .rit-indietro .ico { transform: rotate(90deg); }
 .rit-titolo { font-size: 28px; font-weight: 800; letter-spacing: -0.03em; margin: 4px 0 16px; }
-.rit-corpo { padding: 0; }
-.rit-corpo > .card { margin: 0 0 16px; }
-.rit-corpo > .card:last-child { margin-bottom: 0; }
-.rit-corpo .card { padding: 18px 20px 20px; }
 .rituale-intro { font-size: 12.5px; color: var(--inchiostro-2); margin: 0 0 14px; line-height: 1.5; }
 @media (max-width: 560px) {
   .rit-corpo .card { padding: 16px; }
@@ -4381,3 +4414,156 @@ input.rec-ora { min-width: 96px; text-align: left; font-weight: var(--peso-forte
 .som-tessera .ico { color: var(--inchiostro-muto); }
 .som-tessera b { font-size: 20px; font-weight: 800; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
 .som-tessera span { font-size: 12px; color: var(--inchiostro-2); }
+
+/* ============================================================
+   SECONDA PELLE — colore, movimento, forme. Sta in fondo perché vince.
+   ============================================================ */
+
+/* --- il colore: un indaco vivo al posto del petrolio, fondo appena caldo --- */
+:root {
+  --brand-a: #5b4ff5; --brand-b: #5b4ff5; --brand-c: #5b4ff5;
+  --accento: #5b4ff5; --accento-ink: #ffffff; --accento-pieno: #5b4ff5; --accento-testo: #4a3fe0;
+  --pagina: #f7f6fb;
+  --ok: #16b364; --ok-pieno: #0c8a4a;
+  /* tre curve, e basta: uscita, andata-e-ritorno, molla */
+  --ease-out: cubic-bezier(.22, 1, .36, 1);
+  --ease-in-out: cubic-bezier(.65, 0, .35, 1);
+  --ease-spring: linear(0, .009, .035 2.1%, .141 4.4%, .723 12.9%, .938 16.7%, 1.017 19.4%, 1.067 22.5%, 1.089 26%, 1.085 30.5%, 1.024 43.8%, 1.004 53.8%, .997 66.5%, 1);
+  --t-veloce: .18s var(--ease-out);
+  --t-media: .3s var(--ease-in-out);
+  --t-molla: .55s var(--ease-spring);
+}
+:root[data-mode="dark"] {
+  --brand-a: #8f87ff; --brand-b: #8f87ff; --brand-c: #8f87ff;
+  --accento: #8f87ff; --accento-ink: #0d0b1f; --accento-pieno: #8f87ff; --accento-testo: #a9a3ff;
+  --pagina: #0c0c12;
+}
+
+/* --- le forme: l'angolo continuo dove il browser lo sa fare --- */
+@supports (corner-shape: squircle) {
+  .card, .btn, .lista, .sheet, input, textarea, select, .rit-gruppo, .casa-passo, .casa-rito,
+  .casa-cuore, .focus-cuore, .segmenti, .segmenti button, .tabbar, .toast, .prof-avatar, .casa-avatar,
+  .q-chip, .som-g i, .ck-scala button { corner-shape: squircle; }
+}
+
+/* --- i campi: un bordo solo, intero, uguale dappertutto --- */
+input[type="text"], input[type="url"], input[type="time"], input[type="date"],
+input[type="number"], textarea, select {
+  border: 1.5px solid var(--bordo); border-radius: 14px; background: var(--superficie-1);
+  box-shadow: none; outline: 0;
+  transition: border-color var(--t-veloce), box-shadow var(--t-veloce);
+}
+input[type="text"]:focus, input[type="url"]:focus, input[type="time"]:focus,
+input[type="date"]:focus, input[type="number"]:focus, textarea:focus, select:focus {
+  border-color: var(--accento); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accento) 18%, transparent);
+}
+
+/* --- il movimento --- */
+/* cambiare pagina è una dissolvenza corta di tutta la pagina: niente
+   elementi che arrivano uno dopo l'altro, niente scivolate di lato */
+.vista-enter > *, .sez-enter > *, .sez-enter-dx > *, .sez-enter-sx > *,
+.vista-enter .griglia > *, .sez-enter .griglia > *,
+.anim-a.vista-enter > *, .anim-b.vista-enter > *,
+.sez-enter > *:not(.topbar):not(.testa-porta), .sez-enter-dx > *:not(.topbar):not(.testa-porta),
+.sez-enter-sx > *:not(.topbar):not(.testa-porta),
+.anim-b.sez-enter > *:not(.topbar):not(.testa-porta), .anim-b.sez-enter-dx > *:not(.topbar):not(.testa-porta),
+.anim-b.sez-enter-sx > *:not(.topbar):not(.testa-porta),
+.anim-b.vista-enter .griglia > *, .anim-b.sez-enter .griglia > * { animation: none !important; }
+@keyframes pagina-a { from { opacity: 0; } }
+@keyframes pagina-b { from { opacity: 0; } }
+.anim-a.vista-enter, .anim-a.sez-enter, .anim-a.sez-enter-dx, .anim-a.sez-enter-sx { animation: pagina-a .22s var(--ease-out) both; }
+.anim-b.vista-enter, .anim-b.sez-enter, .anim-b.sez-enter-dx, .anim-b.sez-enter-sx { animation: pagina-b .22s var(--ease-out) both; }
+/* i grafici non si ridisegnano animati a ogni tocco */
+.hm-cella, .bil-barra i, [class*="cella"], [class*="barra"] i { animation: none !important; }
+/* il fondo sta fermo, e niente sfocature a tutto schermo: sono loro lo scatto */
+.aurora i { animation: none !important; }
+.sheet-overlay { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; background: rgba(10, 10, 20, .42); }
+/* il tocco: si abbassa appena e torna su con la molla */
+.btn, .lista-riga, .lista-apri, .rit-riga, .casa-rito, .tabbar button, .segmenti button, .q-chip, .spunta, .casa-avatar {
+  transition: transform var(--t-molla), background-color var(--t-veloce), color var(--t-veloce), box-shadow var(--t-veloce), opacity var(--t-veloce);
+}
+.btn:active, .casa-rito:active, .q-chip:active, .casa-avatar:active { transform: scale(.96); transition-duration: .08s; opacity: 1; }
+.tabbar button .tab-ico { transition: transform var(--t-molla); }
+.sheet-entra { animation: sheetSu .42s var(--ease-out) both; }
+/* la spunta che si accende */
+@keyframes spunta-su { 0% { transform: scale(.6); } 100% { transform: scale(1); } }
+.fatta .spunta, .rit-stato.fatto .ico { animation: spunta-su .5s var(--ease-spring); }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+}
+
+/* --- i coriandoli --- */
+.festa { position: fixed; left: 50%; top: 42%; width: 0; height: 0; z-index: 400; pointer-events: none; }
+.festa i {
+  position: absolute; width: 9px; height: 14px; border-radius: 3px; opacity: 0;
+  animation: coriandolo 1.25s var(--ease-out) var(--d) both;
+}
+@keyframes coriandolo {
+  0% { transform: translate(0, 0) rotate(0) scale(.4); opacity: 1; }
+  60% { opacity: 1; }
+  100% { transform: translate(var(--x), calc(var(--y) + 260px)) rotate(var(--r)) scale(1); opacity: 0; }
+}
+
+/* --- l'interruttore --- */
+.int-riga { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 56px; }
+.interr {
+  flex: none; position: relative; width: 52px; height: 32px; border-radius: 99px; border: 0; padding: 0;
+  background: var(--superficie-3, #d9d9e0); transition: background-color var(--t-media);
+}
+.interr i {
+  position: absolute; top: 2px; left: 2px; width: 28px; height: 28px; border-radius: 50%; background: #fff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, .22); transition: transform var(--t-molla);
+}
+.interr.on { background: var(--ok); }
+.interr.on i { transform: translateX(20px); }
+.interr::after { content: ''; position: absolute; inset: -6px 0; }
+
+/* --- il check-in in tre tocchi --- */
+.ck { display: flex; flex-direction: column; gap: 24px; padding: 8px 0 16px; }
+.ck-eti { display: block; font-size: 17px; font-weight: 700; margin-bottom: 12px; }
+.ck-scala { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+.ck-scala button {
+  height: 56px; border: 0; border-radius: 18px; background: var(--superficie-2); font-size: 26px; line-height: 1;
+  transition: transform var(--t-molla), background-color var(--t-veloce), opacity var(--t-veloce), filter var(--t-veloce);
+}
+.ck-scala.scelta button:not(.sel) { opacity: .45; filter: grayscale(1); }
+.ck-scala button.sel { background: color-mix(in srgb, var(--accento) 18%, var(--superficie-1)); transform: scale(1.08); }
+
+/* --- la Home: data, titolo, serie e tu --- */
+.casa-testa { align-items: flex-end; margin: 4px 2px 16px; }
+.casa-data { font-size: 13px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--inchiostro-2); margin: 0 0 2px; }
+.casa-saluto { font-size: 34px; }
+.casa-destra { display: flex; align-items: center; gap: 8px; }
+.casa-serie { display: inline-flex; align-items: center; gap: 4px; height: 40px; padding: 0 12px; border-radius: 99px; }
+.casa-avatar {
+  width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; text-decoration: none;
+  background: var(--accento-pieno); color: var(--accento-ink); font-size: 17px; font-weight: 800;
+}
+.casa-barra i { background: var(--ok); }
+
+/* --- il Profilo: i numeri in una riga, non in tre riquadri --- */
+.prof-avatar { background: var(--accento-pieno); color: var(--accento-ink); }
+.prof-numeri { display: flex; justify-content: center; gap: 24px; margin: 0 0 24px; }
+.prof-numero { display: inline-flex; flex-direction: row; align-items: center; gap: 4px; padding: 0; background: none; box-shadow: none; border-radius: 0; }
+.prof-numero b { font-size: 17px; }
+
+/* --- l'Andamento: la serie e la settimana --- */
+.som-testa { display: flex; align-items: center; justify-content: space-between; }
+.som-fiamma { display: inline-flex; align-items: center; gap: 8px; }
+.som-fiamma b { font-size: 40px; font-weight: 800; letter-spacing: -0.03em; line-height: 1; font-variant-numeric: tabular-nums; }
+.som-quota { display: flex; flex-direction: column; align-items: flex-end; }
+.som-quota b { font-size: 20px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.som-quota small { font-size: 13px; color: var(--inchiostro-2); }
+.som-sett { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-top: 8px; }
+.som-g { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.som-g i { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; background: var(--superficie-2); color: #fff; }
+.som-g.fatto i { background: var(--ok); }
+.som-g.oggi i { box-shadow: 0 0 0 2px var(--superficie-1), 0 0 0 4px var(--accento); }
+.som-g small { font-size: 12px; font-weight: 700; color: var(--inchiostro-2); }
+.som-g.oggi small { color: var(--accento-testo); }
+
+/* --- i Rituali: righe più alte, il corpo che si apre sul posto --- */
+.rit-gruppo { border: 0; border-radius: 20px; }
+.rit-riga { min-height: 60px; }
+.rit-ico { width: 36px; height: 36px; border-radius: 12px; }
+.rit-nome { font-size: 16px; }

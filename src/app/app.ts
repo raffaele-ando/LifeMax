@@ -1344,6 +1344,7 @@ interface Porta {
   icona: string;
   viste: { id: string; eti: string }[];
   anche?: string[];
+  nascosta?: boolean;
 }
 
 const GRUPPI: Porta[] = [
@@ -1354,21 +1355,22 @@ const GRUPPI: Porta[] = [
     { id: 'inbox', eti: 'Attività' }
   ] },
   { id: 'plancia', nome: 'Andamento', icona: 'dashboard', viste: [
-    { id: 'plancia', eti: 'Panoramica' }, { id: 'esperimenti', eti: 'Scoperte' }
+    { id: 'plancia', eti: 'Andamento' }
   ],
     /* Queste due appartengono alla porta ma NON stanno fra le linguette:
        si leggono una volta e poi mai più, e una linguetta che non si tocca
        è solo una parola in più da scartare ogni volta che si guarda la riga.
        Si aprono dalle impostazioni, e la linguetta compare soltanto mentre
        ci sei dentro, per sapere dove sei e come tornare. */
-    anche: ['scienza', 'lab'] },
+    anche: ['esperimenti', 'scienza', 'lab'] },
   /* IL PROFILO: tu, i tuoi numeri, e le impostazioni in righe. Prima le
      impostazioni stavano dietro un ingranaggio in alto a destra, e di «tu»
      nell'app non c'era niente. */
-  { id: 'profilo', nome: 'Profilo', icona: 'user', viste: [
+  { id: 'profilo', nome: 'Profilo', icona: 'user', nascosta: true, viste: [
     { id: 'profilo', eti: 'Profilo' }
   ] }
 ];
+const PORTE = GRUPPI.filter(function (g) { return !g.nascosta; });
 function navTre(): boolean { return ((LM.load().profilo || {}).nav || 'tre') !== 'tutte'; }
 function gruppoDi(id: string): Porta {
   return GRUPPI.filter(function (g) {
@@ -1415,7 +1417,7 @@ export function aggiornaNav(): void {
       ICO(g.icona, dim) + '<span>' + g.nome + '</span>' + badgeInbox(g.id, s) + '</a>';
   }
   scriviSe(lato, tre
-    ? GRUPPI.map(function (g) { return voceGruppo(g, 18); }).join('')
+    ? PORTE.map(function (g) { return voceGruppo(g, 18); }).join('')
     : livello('ancora') + livello('quotidiana') +
       '<div class="nav-sep"></div>' + livello('extra'));
 
@@ -1437,7 +1439,7 @@ export function aggiornaNav(): void {
   const primNav = TAB_MOBILE.map(function (id) { return presa(vistaById(id)); });
   const inSecondaria = !tre && !primNav.some(function (v) { return v.id === corrente; });
   const htmlTab = (tre
-    ? GRUPPI.map(function (g) {
+    ? PORTE.map(function (g) {
       return '<button data-vai="' + presa(g.viste[0]).id + '" class="' + (g.id === gCorr.id ? 'attivo' : '') + '">' +
         '<span class="tab-ico">' + ICO(g.icona, 18) + badgeInbox(g.id, s) + '</span>' + g.nome + '</button>';
     }).join('')
@@ -1522,7 +1524,7 @@ function wireFooterSidebar(): void {
   const acc = document.getElementById('fondo-accedi');
   if (acc) acc.addEventListener('click', function () { if (window.LMCloud && window.LMCloud.available) void window.LMCloud.signIn(); });
   const imp = document.getElementById('fondo-impostazioni');
-  if (imp) imp.addEventListener('click', apriImpostazioni);
+  if (imp) imp.addEventListener('click', apriProfilo);
   const fondo = perId('sidebar-fondo');
   if (fondo) fondo.querySelectorAll<HTMLElement>('[data-diag]').forEach(function (b) { b.addEventListener('click', apriDiagnostica); });
 }
@@ -1672,27 +1674,32 @@ export function htmlAspetto(): string {
   function segSu(v: string, et: string) { return '<button data-suono="' + v + '" class="' + (suo === v ? 'attivo' : '') + '">' + et + '</button>'; }
   function segVi(v: string, et: string) { return '<button data-vibra="' + v + '" class="' + (vib === v ? 'attivo' : '') + '">' + et + '</button>'; }
 
+  function interr(eti: string, ico: string, acceso: boolean, su: string, giu: string): string {
+    return '<div class="lista-riga sc-riga int-riga"><span class="sc-eti">' + ICO(ico, 15) + ' ' + eti + '</span>' +
+      '<button class="interr' + (acceso ? ' on' : '') + '" role="switch" aria-checked="' + acceso + '" aria-label="' + eti +
+      '" data-su="' + su + '" data-giu="' + giu + '"><i></i></button></div>';
+  }
+  /* quattro scelte: il tema, e tre interruttori. Le altre (stile, forma
+     della Home, barra, scorrimento) restano nei dati ma non chiedono più
+     niente a nessuno: i loro comandi sono qui sotto, nascosti. */
   return '<div class="sc"><div class="lista">' +
     rigaSegmenti('Tema', 'modo',
       segM('auto', 'automatico', 'Auto') + segM('light', 'sun', 'Chiaro') + segM('dark', 'moon', 'Scuro')) +
-    rigaSegmenti('Stile', 'skin',
-      segS('quiete', 'Aurora') + segS('arcade', 'Arcade')) +
-    rigaSegmenti('Schermata «Adesso»', 'forma',
-      segFo('scheda', 'Scheda') + segFo('spina', 'Spina') + segFo('poi', 'Poi')) +
-    rigaSegmenti('Barra di navigazione', 'nav',
-      segN('tre', 'Tre porte') + segN('tutte', 'Tutte le pagine')) +
-    rigaSegmenti('Scorri fra le schermate', 'scorri',
-      segSc('si', 'Acceso') + segSc('no', 'Spento')) +
-    rigaSegmenti('Effetti', 'eff',
-      segEf('pieni', 'Pieni') + segEf('ridotti', 'Ridotti') + segEf('minimi', 'Minimi')) +
-    rigaSegmenti('Suono', 'suono',
-      segSu('si', 'Acceso') + segSu('no', 'Muto')) +
-    rigaSegmenti('Vibrazione', 'vibra',
-      segVi('si', 'Accesa') + segVi('no', 'Spenta')) +
+    interr('Suoni', 'campana', suo === 'si', '#seg-suono [data-suono=si]', '#seg-suono [data-suono=no]') +
+    interr('Vibrazione', 'polso', vib === 'si', '#seg-vibra [data-vibra=si]', '#seg-vibra [data-vibra=no]') +
+    interr('Animazioni', 'sparkles', eff !== 'minimi', '#seg-eff [data-eff=pieni]', '#seg-eff [data-eff=minimi]') +
+    '</div><div hidden>' +
+    rigaSegmenti('Stile', 'skin', segS('quiete', 'Aurora') + segS('arcade', 'Arcade')) +
+    rigaSegmenti('Schermata', 'forma', segFo('scheda', 'Scheda') + segFo('spina', 'Spina') + segFo('poi', 'Poi')) +
+    rigaSegmenti('Barra', 'nav', segN('tre', 'Tre porte') + segN('tutte', 'Tutte le pagine')) +
+    rigaSegmenti('Scorri', 'scorri', segSc('si', 'Acceso') + segSc('no', 'Spento')) +
+    rigaSegmenti('Effetti', 'eff', segEf('pieni', 'Pieni') + segEf('ridotti', 'Ridotti') + segEf('minimi', 'Minimi')) +
+    rigaSegmenti('Suono', 'suono', segSu('si', 'Acceso') + segSu('no', 'Muto')) +
+    rigaSegmenti('Vibrazione', 'vibra', segVi('si', 'Accesa') + segVi('no', 'Spenta')) +
     '</div></div>';
 }
 
-export function htmlImpostazioni(): string {
+export function htmlImpostazioni(pezzo?: 'profilo'): string {
   const s = LM.load();
   const modo = s.profilo.modo || 'auto';
 
@@ -1703,24 +1710,31 @@ export function htmlImpostazioni(): string {
   const nBackup = LM.listBackups().length;
   const pr = statoPromemoria();
 
+  /* DUE PEZZI. Nel Profilo quello che si tocca spesso; il resto sta in
+     «Impostazioni», che è l'ultima riga del Profilo. */
+  if (pezzo === 'profilo') {
+    return '<div class="sc">' +
+      '<div class="lista">' +
+      rigaPorta('imp-aree', 'aree', 'Aree', nAree + ' attive') +
+      rigaPorta('imp-ritmo', 'ritmo', 'Sonno e pasti', valRitmo) +
+      (pr.porta
+        ? rigaPorta('imp-prom-come', 'campana', 'Promemoria', pr.val)
+        : '<div class="lista-riga sc-riga"><span class="sc-eti">' + ICO('campana', 15) + ' Promemoria</span>' +
+          '<span class="sc-val">' + pr.val + '</span></div>') +
+      '</div>' +
+      (pr.nota ? nota(pr.nota) : '') +
+      (pr.azione ? '<div class="imp-azioni">' + pr.azione + '</div>' : '') +
+      '<div class="lista mt-s">' +
+      rigaPorta('imp-scoperte', 'funziona', 'Scoperte') +
+      rigaPorta('imp-tutte', 'ingranaggio', 'Impostazioni') +
+      '</div></div>';
+  }
   return '<div class="sc">' +
-    /* --- TU: chi sei e dove stanno i dati --- */
     etichetta('Account', 'user') +
     htmlAccount() +
-
-    /* --- LE TUE COSE: quello che l'app sa di te --- */
-    etichetta('Il tuo profilo', 'aree') +
-    '<div class="lista">' +
-    rigaPorta('imp-aree', 'aree', 'Aree', nAree + ' attive') +
-    rigaPorta('imp-ritmo', 'ritmo', 'Sonno e pasti', valRitmo) +
+    '<div class="lista mt-s">' +
     rigaPorta('imp-aspetto', 'palette', 'Aspetto', modo === 'auto' ? 'automatico' : modo === 'dark' ? 'scuro' : 'chiaro') +
-    (pr.porta
-      ? rigaPorta('imp-prom-come', 'campana', 'Promemoria', pr.val)
-      : '<div class="lista-riga sc-riga"><span class="sc-eti">' + ICO('campana', 15) + ' Promemoria</span>' +
-        '<span class="sc-val">' + pr.val + '</span></div>') +
     '</div>' +
-    (pr.nota ? nota(pr.nota) : '') +
-    (pr.azione ? '<div class="imp-azioni">' + pr.azione + '</div>' : '') +
 
     /* --- I TUOI DATI: due cose che si fanno e una porta --- */
     etichetta('I tuoi dati', 'dati') +
@@ -2073,6 +2087,18 @@ export function wirePromemoria(root: HTMLElement): void {
 }
 
 export function wireAspettoDati(root: HTMLElement): void {
+  root.querySelectorAll<HTMLElement>('.interr').forEach(function (b) {
+    b.addEventListener('click', function () {
+      const on = !b.classList.contains('on');
+      b.classList.toggle('on', on); b.setAttribute('aria-checked', String(on));
+      const q = root.querySelector<HTMLElement>(b.getAttribute(on ? 'data-su' : 'data-giu') || 'x-niente');
+      if (q) q.click();
+    });
+  });
+  const tutte = root.querySelector<HTMLElement>('#imp-tutte');
+  if (tutte) tutte.addEventListener('click', apriImpostazioni);
+  const scop = root.querySelector<HTMLElement>('#imp-scoperte');
+  if (scop) scop.addEventListener('click', function () { location.hash = '#/esperimenti'; });
   root.querySelectorAll<HTMLElement>('#seg-suono [data-suono]').forEach(function (b) {
     b.addEventListener('click', function () {
       root.querySelectorAll<HTMLElement>('#seg-suono [data-suono]').forEach(function (o) { o.classList.toggle('attivo', o === b); });
@@ -2347,7 +2373,10 @@ function htmlAccount() {
     '<span class="sc-val">su questo dispositivo</span></div></div>';
 }
 
-export function apriImpostazioni() { chiudiSheet(); location.hash = '#/profilo'; }
+export function apriImpostazioni() {
+  apriSheet('Impostazioni', htmlImpostazioni(), wireAspettoDati, false, { nome: 'Impostazioni', apri: apriImpostazioni });
+}
+function apriProfilo() { chiudiSheet(); location.hash = '#/profilo'; }
 export function apriAspetto() {
   apriSheet('Aspetto', htmlAspetto(), wireAspettoDati, false, { nome: 'Aspetto', apri: apriAspetto });
 }
@@ -3225,8 +3254,6 @@ let fuocoOra: FuocoOra = { prossima: null, adesso: { azione: null, stato: null, 
    al loro posto c'era una barra del tempo senza una parola. */
 export function testaCasa(): string {
   const s = LM.load();
-  const ora = new Date().getHours();
-  const saluto = ora < 5 ? 'Buonanotte' : ora < 12 ? 'Buongiorno' : ora < 18 ? 'Buon pomeriggio' : 'Buonasera';
   const nome = (s.profilo.nome || '').trim().split(/\s+/)[0] || '';
   const d = new Date();
   const GIORNI = ['domenica', 'lunedì', 'martedì', 'mercoledì', 'giovedì', 'venerdì', 'sabato'];
@@ -3249,10 +3276,13 @@ export function testaCasa(): string {
       '<span class="casa-rito-ico">' + ICO(r[0], 18) + '</span>' +
       '<span class="casa-rito-testo"><b>' + r[1] + '</b><small>' + r[2] + '</small></span>' + ICO('arrowRight', 15) + '</button>'
     : '';
+  const data = (GIORNI[d.getDay()] || '') + ' ' + d.getDate() + ' ' + (MESI[d.getMonth()] || '');
   return '<header class="casa-testa">' +
-    '<div><h1 class="casa-saluto">' + saluto + (nome ? ', ' + esc(nome) : '') + '</h1>' +
-    '<div class="casa-data">' + (GIORNI[d.getDay()] || '') + ' ' + d.getDate() + ' ' + (MESI[d.getMonth()] || '') + '</div></div>' +
-    (serie > 0 ? '<div class="casa-serie" aria-label="' + serie + ' giorni di fila">' + ICO('flame', 15) + '<b>' + serie + '</b></div>' : '') +
+    '<div><div class="casa-data">' + data + '</div><h1 class="casa-saluto">Oggi</h1></div>' +
+    '<div class="casa-destra">' +
+    (serie > 0 ? '<span class="casa-serie" role="img" aria-label="' + serie + ' giorni di fila">' + ICO('flame', 15, 'fiamma') + '<b>' + serie + '</b></span>' : '') +
+    '<a class="casa-avatar" href="#/profilo" aria-label="Profilo">' + (nome ? esc(nome.charAt(0).toUpperCase()) : ICO('user', 18)) + '</a>' +
+    '</div>' +
     '</header>' +
     (tot
       ? '<div class="casa-passo" role="img" aria-label="' + fatte + ' di ' + tot + ' fatte oggi">' +
@@ -3829,6 +3859,7 @@ function lega(e: Element | null, fn: (ev: Event) => void): void {
 
 $vista.querySelectorAll<HTMLElement>('[data-vai]').forEach(function (b) {
   lega(b, function () {
+    if (b.getAttribute('data-sub') === 'checkin') { apriCheckinVeloce(); return; }
     if (b.getAttribute('data-sub')) schermo.sottoRituale = b.getAttribute('data-sub');
     location.hash = '#/' + b.getAttribute('data-vai');
   });
@@ -4611,7 +4642,7 @@ function montaSettimana(container: HTMLElement): void {
   container.innerHTML = orizzNav('settimana', presa(giorni[0]), presa(giorni[6])) +
     '<div class="card"><div class="wk-wrap"><div class="wk-rail" style="height:' + Hs + 'px">' + railLines + '</div>' +
     '<div class="wk-cols">' + cols + '</div></div>' +
-    '<div class="sotto mt-s">Tocca un giorno per aprirlo. I blocchi mostrano quanto tempo occupano le cose con un orario.</div></div>';
+    '</div>';
   wireOrizzNav(container, 'settimana');
   celleGiorno(container);
   /* trascinare una cosa da un giorno all'altro: ripianificare la settimana
@@ -4631,12 +4662,24 @@ function celleGiorno(container: HTMLElement): void {
   });
 }
 /* e cosa fare quando si lascia: idem, era scritto due volte */
-function spostaSuGiorno(id: string, bersaglio: HTMLElement): void {
+function spostaSuGiorno(id: string, bersaglio: HTMLElement, _x?: number, y?: number): void {
   const quale = bersaglio.getAttribute('data-drop-giorno');
   if (!quale) return;
   const g = comeGiorno(quale);
-  if (!LM.spostaAzione(id, g)) return;
-  toast('Spostata a ' + etichettaGiorno(g).toLowerCase() + '.', 0, 'calendar');
+  /* nella settimana il giorno ha la sua griglia delle ore: lasciando la
+     cosa a un'altezza le si dà anche l'orario, come nel giorno */
+  const griglia = bersaglio.querySelector<HTMLElement>('[data-pxh]');
+  let ora = '';
+  if (griglia && y != null) {
+    const gs = +(griglia.getAttribute('data-gs') || ''), pxh = +(griglia.getAttribute('data-pxh') || '');
+    const r = griglia.getBoundingClientRect();
+    if (!isNaN(gs) && pxh && y >= r.top && y <= r.bottom) {
+      ora = fmtMin((Math.max(0, Math.round((gs + (y - r.top) / pxh * 60) / 15) * 15)) % 1440);
+      LM.setOraAzione(id, comeOra(ora));
+    }
+  }
+  if (!LM.spostaAzione(id, g) && !ora) return;
+  toast('Spostata a ' + etichettaGiorno(g).toLowerCase() + (ora ? ', ' + ora : ''), 0, 'calendar');
   disegnaOrizzonte(); aggiornaNav();
 }
 
@@ -5115,6 +5158,12 @@ function sezRiepilogo(c: HTMLElement): void {
     '</div></div>' +
     '</div>';
 
+  c.insertAdjacentHTML('beforeend', '<div class="lista mt">' +
+    rigaPorta('riep-aree', 'aree', 'Aree') + rigaPorta('riep-grafici', 'trendUp', 'Grafici') + '</div>');
+  [['riep-aree', 'aree'], ['riep-grafici', 'andamento']].forEach(function (x) {
+    const b = document.getElementById(x[0] || '');
+    if (b) b.addEventListener('click', function () { schermo.sezPlancia = x[1] || 'riepilogo'; render(); window.scrollTo(0, 0); });
+  });
   /* i due contenitori li ha scritti l'HTML qui sopra */
   LMCharts.heatmap(presa(document.getElementById('heatmap')), LM.heatmapConsistenza(12));
 
@@ -5273,13 +5322,8 @@ export function eroePlancia() {
      uscendo la scheda se li porta dietro */
   var st = LM.streak();
   var bil = LM.bilancio(30);
-  var bilPrima = LM.bilancio(30, 30);
-  var serie = LM.serieRiuscita(12);
   var quante = LM.quanteFatte();
-  var quanteSett = LM.quanteFatte(7);
   var pct = Math.round(bil.tasso * 100);
-  var pctPrima = bilPrima.messe ? Math.round(bilPrima.tasso * 100) : null;
-  var passo = pctPrima != null ? pct - pctPrima : null;
 
   if (!bil.messe) {
     /* ANCORA PRESTO. Un «—» al posto di un numero fa sembrare l'app rotta,
@@ -5295,31 +5339,19 @@ export function eroePlancia() {
       '</div>';
   } else {
     classi = 'card som';
+    const sett = LM.heatmapConsistenza(1);
+    const INIZ = ['D', 'L', 'M', 'M', 'G', 'V', 'S'];
+    const oggiK = LM.todayKey();
     html +=
-      '<div class="som-eti">Ultimi 30 giorni</div>' +
-      '<div class="som-riga">' +
-      '<div class="som-cifra">' +
-      '<b id="som-pct">0</b><span class="som-pc">%</span>' +
-      (passo != null && passo !== 0
-        ? '<span class="som-passo ' + (passo > 0 ? 'su' : 'giu') + '">' +
-          ICO(passo > 0 ? 'trendUp' : 'trendDown', 13) + (passo > 0 ? '+' : '') + passo +
-          '</span>'
-        : '') +
-      /* IL NUMERO GRANDE HA UN NOME. Prima il nome glielo dava l'anello,
-         che aveva la percentuale al centro e la parola intorno; tolto
-         l'anello, restava un «66%» di niente. Chi legge fa sempre la stessa
-         domanda — sessantasei per cento DI COSA — e la risposta non può
-         stare tre righe più in basso. */
-      '<span class="som-nome">ti riesce</span>' +
+      '<div class="som-testa">' +
+      '<span class="som-fiamma" role="img" aria-label="' + st.corrente + ' giorni di fila">' + ICO('flame', 26, 'fiamma') + '<b>' + st.corrente + '</b></span>' +
+      '<span class="som-quota"><b>' + pct + '%</b><small>' + bil.fatte + ' di ' + bil.messe + '</small></span>' +
       '</div>' +
-      '<div class="som-spark" id="som-spark" aria-hidden="' + (serie.length < 3) + '"></div>' +
-      '</div>' +
-      '<div class="som-dice"><b>' + bil.fatte + '</b> fatte su ' + bil.messe + '</div>' +
-      '<div class="som-tessere">' +
-      '<span class="som-tessera">' + ICO('flame', 15, 'fiamma') + '<b>' + st.corrente + '</b><span>di fila</span></span>' +
-      '<span class="som-tessera">' + ICO('check', 15) + '<b>' + quanteSett + '</b><span>in settimana</span></span>' +
-      '<span class="som-tessera">' + ICO('star', 15) + '<b>' + quante + '</b><span>in tutto</span></span>' +
-      '</div>';
+      '<div class="som-sett">' + sett.map(function (g) {
+        const d = new Date(g.data + 'T12:00:00');
+        return '<span class="som-g' + (g.valore > 0 ? ' fatto' : '') + (g.data === oggiK ? ' oggi' : '') + '">' +
+          '<i>' + (g.valore > 0 ? ICO('check', 15) : '') + '</i><small>' + (INIZ[d.getDay()] || '') + '</small></span>';
+      }).join('') + '</div>';
   }
   return { classi: classi, dentro: html };
 }
@@ -5876,7 +5908,65 @@ function forseChiedere() {
        fare. */
     if (Date.now() - vistoPrima >= 3 * 3600 * 1000) { apriChiestaNotte(); return; }
   }
-  if (q.giorno.on && min >= LM.minutiDaOra(q.giorno.da) && !LM.giaChiesto(t, 'giorno')) { apriChiestaGiornata(); return; }
+  if (q.giorno.on && min >= LM.minutiDaOra(q.giorno.da) && !LM.giaChiesto(t, 'giorno')) { apriChiestaGiornata(); return; }  /* il check-in si fa comunque: appena apri, una volta al giorno, te lo
+     trovi davanti. Si può chiudere, e per oggi non torna. */
+  let chiesto = '';
+  try { chiesto = localStorage.getItem('lm-checkin-chiesto') || ''; } catch (_e) { /* senza memoria si chiede e basta */ }
+  if (d.getHours() >= 5 && chiesto !== t && !s.checkins.some(function (c) { return c.data === t; })) {
+    try { localStorage.setItem('lm-checkin-chiesto', t); } catch (_e) { /* idem */ }
+    apriCheckinVeloce();
+  }
+}
+
+/* LA FESTA: una manciata di coriandoli dal centro dello schermo. Sta su
+   quello che si chiude davvero — un rituale, la giornata — non su ogni tocco. */
+export function festa(): void {
+  if ((LM.load().profilo.effetti || 'pieni') === 'minimi') return;
+  if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const strato = document.createElement('div');
+  strato.className = 'festa'; strato.setAttribute('aria-hidden', 'true');
+  const COL = ['#ff5a5f', '#ffb400', '#00c781', '#3b82f6', '#a855f7', '#ff7ac6'];
+  let dentro = '';
+  for (let i = 0; i < 36; i++) {
+    const ang = (Math.PI * 2 * i) / 36 + Math.random() * 0.4;
+    const forza = 110 + Math.random() * 190;
+    dentro += '<i style="--x:' + Math.round(Math.cos(ang) * forza) + 'px;--y:' + Math.round(Math.sin(ang) * forza - 90) +
+      'px;--r:' + Math.round(Math.random() * 720 - 360) + 'deg;--d:' + Math.round(Math.random() * 120) + 'ms;background:' +
+      COL[i % COL.length] + (i % 3 === 0 ? ';border-radius:50%' : '') + '"></i>';
+  }
+  strato.innerHTML = dentro;
+  document.body.appendChild(strato);
+  setTimeout(function () { strato.remove(); }, 1500);
+}
+
+/* IL CHECK-IN IN TRE TOCCHI: tre domande, cinque facce, e alla terza
+   risposta è salvato — senza un tasto da cercare. */
+export function apriCheckinVeloce(): void {
+  const voti: Record<Voto, number> = { energia: 0, focus: 0, umore: 0 };
+  const DOM: [Voto, string][] = [['energia', 'Energia'], ['focus', 'Concentrazione'], ['umore', 'Umore']];
+  const FACCE = ['😫', '😕', '😐', '🙂', '🤩'];
+  apriSheet('Come stai?', '<div class="ck">' + DOM.map(function (q) {
+    return '<div class="ck-riga"><span class="ck-eti">' + q[1] + '</span><div class="ck-scala" data-campo="' + q[0] + '">' +
+      [1, 2, 3, 4, 5].map(function (v) {
+        return '<button data-v="' + v + '" aria-label="' + q[1] + ': ' + ANCORE[q[0]][v - 1] + '">' + FACCE[v - 1] + '</button>';
+      }).join('') + '</div></div>';
+  }).join('') + '</div>', function (root) {
+    root.querySelectorAll<HTMLElement>('.ck-scala').forEach(function (sc) {
+      sc.querySelectorAll<HTMLElement>('button').forEach(function (b) {
+        b.addEventListener('click', function () {
+          sc.querySelectorAll<HTMLElement>('button').forEach(function (x) { x.classList.toggle('sel', x === b); });
+          sc.classList.add('scelta');
+          voti[(sc.getAttribute('data-campo') || 'energia') as Voto] = +(b.getAttribute('data-v') || 0);
+          suona('leggero');
+          if (!(voti.energia && voti.focus && voti.umore)) return;
+          const xp = LM.registraCheckin(voti.energia, voti.focus, voti.umore);
+          setTimeout(function () {
+            chiudiSheet(); festa(); toast('Check-in fatto', xp, 'check'); render();
+          }, 320);
+        });
+      });
+    });
+  });
 }
 
 function ritualeMattina(corpo: HTMLElement): void {
@@ -5949,7 +6039,7 @@ function ritualeMattina(corpo: HTMLElement): void {
       mit.ifThen = presa(campoId('piano-ifthen')).value.trim();
       LM.save();
     }
-    toast(xp ? 'Fatto. Ora pensa solo alla prima cosa.' : 'Aggiornato.', xp, 'sun');
+    toast(xp ? 'Piano fatto' : 'Aggiornato', xp, 'sun');
     /* la prima volta del giorno il piano è appena nato: si va a farlo. Se lo
        stai solo aggiornando resti dove sei. */
     if (!eraSalvato) { location.hash = '#/oggi'; return; }
@@ -6255,7 +6345,8 @@ function ritualeCheckin(corpo: HTMLElement): void {
     var xp = LM.registraCheckin(voti.energia, voti.focus, voti.umore);
     var r = (ev.currentTarget as HTMLElement).getBoundingClientRect();
     flyXp(r.left + r.width / 2, r.top, xp);
-    toast('Salvato.', xp, 'polso');
+    festa(); toast('Check-in fatto', xp, 'check');
+    location.hash = '#/oggi';
     render();
   });
 
@@ -6363,7 +6454,8 @@ function ritualeSera(corpo: HTMLElement): void {
       blocco: presa(campoId('sera-blocco')).value.trim(),
       shutdown: true
     });
-    toast('Giornata conclusa.', xp, 'moon');
+    toast('Giornata chiusa', xp, 'moon');
+    if (xp) { festa(); location.hash = '#/oggi'; }
     render();
   });
 }
@@ -6406,7 +6498,8 @@ function ritualeSettimana(corpo: HTMLElement): void {
       imparato: presa(campoId('w-imparato')).value.trim(),
       prossima: presa(campoId('w-prossima')).value.trim()
     });
-    toast('Review della settimana salvata.', xp, 'calendar');
+    toast('Review salvata', xp, 'calendar');
+    if (xp) { festa(); location.hash = '#/oggi'; }
     render();
   });
   corpo.querySelectorAll<HTMLElement>('[data-vai]').forEach(function (b) {

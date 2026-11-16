@@ -1115,4 +1115,8 @@ export const LM_FORMA = {
 export type Forma = typeof LM_FORMA;
 
 
-avvia();
+/* IL MOTORE È SPENTO. La forma la fa il CSS (`border-radius` e, dove c'è,
+   `corner-shape: squircle`): ritagliare ogni elemento a runtime tagliava
+   bordi e ombre, faceva lampeggiare al tocco e rallentava lo scorrimento. */
+void avvia;
+

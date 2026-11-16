@@ -15,9 +15,7 @@ import { html } from '../pezzi/grezzo';
 
 const SEZIONI = [
   { id: 'riepilogo', ico: 'riepilogo', eti: 'Riepilogo' },
-  { id: 'diario', ico: 'quaderno', eti: 'Diario' },
-  { id: 'aree', ico: 'aree', eti: 'Aree' },
-  { id: 'andamento', ico: 'trendUp', eti: 'Grafici' }
+  { id: 'diario', ico: 'quaderno', eti: 'Diario' }
 ];
 
 export default function Panoramica() {
@@ -67,6 +65,12 @@ export default function Panoramica() {
      le linguette in cima, e sotto solo quello che la linguetta dice. */
   return (<>
     <Testa titolo="Panoramica" piu="t-plancia" giaNellaNav />
+    {quale === 'aree' || quale === 'andamento' ? (<>
+      <button className="rit-indietro" onClick={() => { schermo.sezPlancia = 'riepilogo'; render(); }}>
+        <Segno nome="chevronGiu" /> Andamento
+      </button>
+      <h1 className="rit-titolo">{quale === 'aree' ? 'Aree' : 'Grafici'}</h1>
+    </>) : (
     <div className="segmenti mini-seg sotto-seg" id="sez-plancia">
       {SEZIONI.map((x) => (
         <button key={x.id} data-sez={x.id} className={quale === x.id ? 'attivo' : ''}
@@ -76,6 +80,7 @@ export default function Panoramica() {
         </button>
       ))}
     </div>
+    )}
     {quale === 'riepilogo' ? <div className={eroe.classi} {...html(eroe.dentro)} /> : null}
     <div id="sez-corpo" />
   </>);

@@ -15,7 +15,7 @@ export default function Profilo() {
   const [modifica, setModifica] = useState(false);
   const corpo = useRef<HTMLDivElement>(null);
   const nome = (s.profilo.nome || '').trim();
-  const righe = htmlImpostazioni();
+  const righe = htmlImpostazioni('profilo');
   /* i fili si riattaccano solo quando il markup cambia: se è lo stesso,
      il nodo è lo stesso e i fili ci sono già */
   useEffect(() => { if (corpo.current) wireAspettoDati(corpo.current); }, [righe]);
@@ -54,9 +54,9 @@ export default function Profilo() {
     </section>
     <div className="prof-numeri">
       {numeri.map((n) => (
-        <div className="prof-numero" key={n[2]}>
-          <Segno nome={n[0]} dim={15} /><b>{n[1]}</b><span>{n[2]}</span>
-        </div>
+        <span className="prof-numero" key={n[2]} role="img" aria-label={n[1] + ' ' + n[2]}>
+          <Segno nome={n[0]} dim={15} /><b>{n[1]}</b>
+        </span>
       ))}
     </div>
     <div ref={corpo} className="prof-righe" {...html(righe)} />

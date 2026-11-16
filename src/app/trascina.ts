@@ -59,7 +59,18 @@ function anteprima(bers: HTMLElement | null, y: number): Anteprima {
   if (!bers) return { testo: 'Lascia su un giorno o su un’ora' };
   if (bers.hasAttribute('data-drop-senzaora')) return { testo: 'Senza orario' };
   const quale = bers.getAttribute('data-drop-giorno');
-  if (quale) return { testo: etichettaGiorno(comeGiorno(quale)) };
+  if (quale) {
+    const gr = bers.querySelector<HTMLElement>('[data-pxh]');
+    if (gr) {
+      const gs = +(gr.getAttribute('data-gs') || ''), pxh = +(gr.getAttribute('data-pxh') || '');
+      const r = gr.getBoundingClientRect();
+      if (!isNaN(gs) && pxh && y >= r.top && y <= r.bottom) {
+        const min = Math.max(0, Math.round((gs + (y - r.top) / pxh * 60) / 15) * 15);
+        return { testo: etichettaGiorno(comeGiorno(quale)) + ', ' + fmtMin(min % 1440) };
+      }
+    }
+    return { testo: etichettaGiorno(comeGiorno(quale)) };
+  }
   if (bers.hasAttribute('data-drop-ora')) {
     const gs = +(bers.getAttribute('data-gs') || ''), pxh = +(bers.getAttribute('data-pxh') || '');
     if (isNaN(gs) || !pxh) return { testo: '' };
