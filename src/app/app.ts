@@ -3745,7 +3745,8 @@ export function vistaFocus(): Scena {
         '<span class="lista-corpo"><span class="lista-tit">' + esc(a.testo) + '</span>' +
         '<span class="lista-sub">' + segnoArea(ar, 11, 'tit-area') + esc(ar.nome) + (a.ora ? ' · ' + esc(a.ora) : '') + '</span></span></button></div>';
     }
-    scena.dentro += dentroCuore.replace('class="focus-cuore ', 'class="focus-cuore casa-cuore ') +
+    /* i giorni a parole anche qui: i pallini sono un codice da imparare */
+    scena.dentro += (ripeteHtml ? dentroCuore.replace(ripeteHtml, tessereHtml) : dentroCuore).replace('class="focus-cuore ', 'class="focus-cuore casa-cuore ') +
       (restano.length
         ? '<div class="casa-sez"><h2 class="casa-tit">Poi</h2><div class="lista">' + restano.map(riga).join('') + '</div></div>'
         : '') +
@@ -5048,27 +5049,9 @@ export function disegnaSezione(): void {
 function sezRiepilogo(c: HTMLElement): void {
   /* i conti che prima le arrivavano da `vistaPlancia`: uscendo se li fa da
      sé. Sono le stesse chiamate, quindi gli stessi numeri. */
-  const oggi = LM.azioniDiOggi();
   const bil = LM.bilancio(30);
   c.innerHTML = '<div class="griglia griglia-2">' +
-    '<div class="card" style="--i:0"><h2>' + ICO('target', 15) + ' Le azioni di oggi</h2>' +
-    /* «Oggi» non è più un link: il pulsante pieno «Vai a Oggi» sta due
-       riquadri sopra, nella stessa schermata, e portava esattamente allo
-       stesso posto. «Rituali» resta, da questa scheda non si raggiunge
-       altrimenti. */
-    /* Il paragrafo che stava qui («Scelte in Rituali, fatte una per volta
- in Oggi. Qui sono tutte insieme.») spiegava l'architettura dell'app
- sopra una lista di due righe che si legge da sé. Il titolo dice cosa
- sono, le spunte dicono come si usano: la mappa del sito non serve. */
-    '<div class="lista-azioni" id="lista-oggi"></div>' +
-    /* la stessa riga d'aggiunta di tutte le altre: era la terza variante
-       in tre schermate — qui campo, tendina e tasto in fila; in Rituali
-       gli stessi tre su tre righe; in «Da fare» e nelle abitudini quella
-       giusta. Ora è una sola, e l'area si apre solo quando serve. */
-    '<div class="mt-s">' +
-    rigaAggiunta('agg-riep', 'Un’altra cosa…',
-      '<label class="agg-area"><span class="agg-eti">in</span>' + selectAree('agg-riep-area') + '</label>') +
-    '</div></div>' +
+    /* le azioni di oggi stanno in Oggi: qui si guarda indietro */
     '<div class="card" style="--i:1"><h2>' + ICO('trendUp', 15) + ' Costanza</h2>' +
     '' +
     '<div id="heatmap"></div></div>' +
@@ -5135,34 +5118,8 @@ function sezRiepilogo(c: HTMLElement): void {
   /* i due contenitori li ha scritti l'HTML qui sopra */
   LMCharts.heatmap(presa(document.getElementById('heatmap')), LM.heatmapConsistenza(12));
 
-  const lista = presa(document.getElementById('lista-oggi'));
-  if (!oggi.length) {
-    lista.innerHTML = '<div class="vuoto" style="padding:16px 8px">Nessuna azione scelta per oggi.<br><a href="#/rituali">Scegline in Rituali</a>.</div>';
-  } else {
-    lista.innerHTML = oggi.map(function (a) {
-      const ar = areaById(a.areaId);
-      return '<div class="riga-azione' + (a.done ? ' fatta' : '') + '">' +
-        '<button class="spunta" data-id="' + a.id + '" aria-label="Completa">' + ICO('check', 13) + '</button>' +
-        '<span class="testo">' + esc(a.testo) + '</span>' +
-        (a.mit ? '<span class="tag-mit">' + ICO('star', 11) + 'Priorità</span>' : '') +
-        segnoArea(ar, 15, 'tag-area') + '</div>';
-    }).join('');
-    lista.querySelectorAll<HTMLElement>('.spunta').forEach(function (b) {
-      b.addEventListener('click', function (ev) {
-        const id = b.getAttribute('data-id');
-        if (!id) return;
-        feedbackSpunta(ev, LM.completaAzione(id), 'Azione completata.', 'check');
-        render();
-      });
-    });
-  }
   const bRev = document.getElementById('riep-review');
   if (bRev) bRev.addEventListener('click', apriArchivioReview);
-  wireRigaAggiunta(c, 'agg-riep', function (testo, opz) {
-    const sel = opz.querySelector<HTMLSelectElement>('select');
-    LM.aggiungiAzione(testo, sel ? sel.value : 'altro', { mit: LM.serveMit() });
-    render();
-  });
 }
 
 /* --- Aree: griglia delle aree di vita --- */
@@ -5315,8 +5272,6 @@ export function eroePlancia() {
   /* i tre numeri di contorno: stavano fra i conti di `vistaPlancia`, e
      uscendo la scheda se li porta dietro */
   var st = LM.streak();
-  var oggi = LM.azioniDiOggi();
-  var fatte = oggi.filter(function (a) { return a.done; }).length;
   var bil = LM.bilancio(30);
   var bilPrima = LM.bilancio(30, 30);
   var serie = LM.serieRiuscita(12);
@@ -5359,19 +5314,12 @@ export function eroePlancia() {
       '</div>' +
       '<div class="som-spark" id="som-spark" aria-hidden="' + (serie.length < 3) + '"></div>' +
       '</div>' +
-      '<div class="som-dice">' +
-      '<b>' + bil.fatte + ' fatte</b> su ' + bil.messe + ' che ti eri messo' +
-      (passo != null
-        ? ' · ' + (passo === 0 ? 'come nei 30 giorni prima'
-            : (passo > 0 ? 'meglio' : 'peggio') + ' dei 30 prima, che erano il ' + pctPrima + '%')
-        : '') +
-      '</div>' +
-      '<div class="som-piede">' +
-      '<span class="som-voce">' + ICO('flame', 13, 'fiamma') + '<b>' + st.corrente + '</b> giorni di fila</span>' +
-      '<span class="som-voce">' + ICO('check', 13) + '<b>' + quanteSett + '</b> questa settimana</span>' +
-      '<span class="som-voce">' + ICO('target', 13) + '<b>' + fatte + '/' + oggi.length + '</b> oggi</span>' +
-      '</div>' +
-      '<div class="som-tutto">In tutto, ' + quante + (quante === 1 ? ' cosa fatta' : ' cose fatte') + ' da quando hai cominciato.</div>';
+      '<div class="som-dice"><b>' + bil.fatte + '</b> fatte su ' + bil.messe + '</div>' +
+      '<div class="som-tessere">' +
+      '<span class="som-tessera">' + ICO('flame', 16, 'fiamma') + '<b>' + st.corrente + '</b><span>di fila</span></span>' +
+      '<span class="som-tessera">' + ICO('check', 16) + '<b>' + quanteSett + '</b><span>in settimana</span></span>' +
+      '<span class="som-tessera">' + ICO('star', 16) + '<b>' + quante + '</b><span>in tutto</span></span>' +
+      '</div>';
   }
   return { classi: classi, dentro: html };
 }

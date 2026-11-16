@@ -57,6 +57,7 @@ const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  
        scena ha dentro solo quello che serve a lei */
     await p.evaluate(() => {
       const s = LM.load(), t = LM.todayKey();
+      s.profilo.forma = 'scheda';
       s.azioni.filter(a => a.data === t).forEach(a => { a.done = true; });
       s.abitudini.forEach(h => { h.fatti[t] = true; });
       LM.save();

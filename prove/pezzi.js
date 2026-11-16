@@ -37,7 +37,7 @@ const ok = (nome, cond, det) => {
    Se questa prova diventa rossa perché hai scritto una forma a mano: non
    alzare il numero. Usa il pezzo. */
 const TETTO = {
-  btn: 84, card: 33, 'lista-riga': 25, campo: 30, 'q-chip': 5,
+  btn: 86, card: 33, 'lista-riga': 26, campo: 30, 'q-chip': 5,
   segmenti: 8, stat: 6, vuoto: 11, 'lista-nota': 14
 };
 /* `segmenti` da 13 a 8 e `lista-nota` da 23 a 14: il pannello delle

@@ -1542,7 +1542,7 @@ kbd {
 /* «Non ci sono riuscito»: smorzato e col colore dell'avviso solo sul segno.
    Va potuto dire in un tocco, e non va invitato — un tasto rosso pieno
    accanto a «Fatto» inviterebbe a chiudere la giornata dichiarando sconfitte. */
-.btn-mancata { color: var(--inchiostro-muto); }
+.btn-mancata { color: var(--inchiostro-2); }
 .btn-mancata:hover { color: var(--avviso); }
 /* la riga di una cosa mancata, negli elenchi e nella giornata */
 .mancata-riga .lista-tit { color: var(--inchiostro-2); }
@@ -3269,89 +3269,59 @@ select.agg-sel-area { width: auto; max-width: 190px; flex: 0 1 auto; font-size: 
 
 
 /* ============================================================
-   RITUALI — elenco a gruppi, sezioni indipendenti
-   Impianto preso dagli elenchi «inset grouped» di iOS: ogni gruppo è un
-   riquadro arrotondato con le righe separate da una linea sottile e una
-   breve etichetta sopra. Ogni riga si apre e si chiude per conto suo:
-   aprirne una non chiude le altre, e quello che apri resta aperto.
+   RITUALI — una scheda per rituale; toccandola si entra dentro
    ============================================================ */
-.rit-eti {
-  font-size: 11px; font-weight: var(--peso-display); /* stessi numeri dell'altra etichetta di gruppo: erano 22/2/8 qui e
-     18/2/7 là, per lo stesso mestiere */
-  color: var(--inchiostro-2); margin: var(--s5) 0 var(--s2);
-}
-.rit-eti:first-of-type { margin-top: var(--s1); }
-.rit-gruppo {
-  border: 1px solid var(--bordo); border-radius: var(--r-3);
-  background: var(--superficie-1); box-shadow: var(--e1); overflow: hidden;
-}
-.rit-gruppo > .rit-blocco + .rit-blocco { border-top: 1px solid var(--bordo); }
+.rit-testa { display: flex; align-items: baseline; justify-content: space-between; margin: var(--s2) 0 var(--s4); }
+.rit-grande { font-size: 30px; font-weight: 800; letter-spacing: -0.03em; margin: 0; }
+.rit-conto { font-size: 14px; font-weight: var(--peso-forte); color: var(--inchiostro-2); font-variant-numeric: tabular-nums; }
+.rit-eti { font-size: 13px; font-weight: var(--peso-forte); color: var(--inchiostro-2); margin: var(--s5) 0 var(--s2); }
+.rit-hub { display: flex; flex-direction: column; gap: 12px; }
+.rit-blocco { position: relative; }
 .rit-riga {
-  display: flex; align-items: center; gap: 10px; width: 100%; text-align: left;
-  min-height: 56px; padding: 0 14px; background: none; border: 0; border-radius: 0;
-  transition: background var(--t-veloce);
+  display: flex; align-items: center; gap: 16px; width: 100%; text-align: left;
+  min-height: 76px; padding: 12px 16px; border: 0; border-radius: 22px;
+  background: var(--superficie-1); box-shadow: var(--e1);
+  transition: transform var(--t-veloce), background var(--t-veloce);
 }
 .rit-riga:hover { background: var(--superficie-2); }
-.rit-blocco.aperto > .rit-riga { background: var(--superficie-2); }
-/* icona in un quadratino tinto, come le righe di Impostazioni su iOS */
 .rit-ico {
   flex: none; display: inline-flex; align-items: center; justify-content: center;
-  width: 28px; height: 28px; border-radius: var(--r-1);
+  width: 48px; height: 48px; border-radius: 16px;
   background: color-mix(in srgb, var(--accento) 12%, transparent); color: var(--accento-testo);
 }
-.rit-nome { flex: 1; min-width: 0; font-size: 14.5px; font-weight: var(--peso-forte); }
-/* «ADESSO» ERA UNA PASTIGLIA accanto a un'altra pastiglia: due etichette su
-   una riga sola, e quella che conta di più — è fatto o no — sembrava la
-   seconda. Il rituale di questo momento adesso si riconosce dalla RIGA: un
-   filo d'accento a sinistra e l'icona piena invece che sfumata. Si guarda,
-   non si legge; e la parola resta per chi usa un lettore di schermo. */
-.rit-blocco.ora { position: relative; }
-.rit-blocco.ora > .rit-riga { padding-left: 17px; }
-/* il filo appartiene alla SEZIONE, non al tasto della riga. Messo sullo
-   pseudo-elemento del tasto, l'area che il tasto riceve si allungava a tutta
-   l'altezza del blocco aperto — ottocento pixel — e rubava i clic di tutto
-   quello che ci stava dentro. Lo dice prove/clic.js. */
-.rit-blocco.ora::after {
-  content: ''; position: absolute; left: 0; top: 8px; bottom: 8px; width: 3px;
-  pointer-events: none;
-  border-radius: 0 var(--r-tondo) var(--r-tondo) 0; background: var(--accento);
+.rit-nome { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0; }
+.rit-tit { font-size: 17px; font-weight: 700; letter-spacing: -0.01em; }
+.rit-sub { font-size: 13px; color: var(--inchiostro-2); }
+.rit-ora { font-size: 12px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; opacity: 0.85; }
+.rit-fine { flex: none; display: inline-flex; align-items: center; }
+.rit-chevron { display: inline-flex; color: var(--inchiostro-muto); transform: rotate(-90deg); }
+.rit-spunta {
+  display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px;
+  border-radius: 50%; background: var(--ok); color: #fff;
 }
-.rit-blocco.ora .rit-ico { background: var(--accento-pieno); color: var(--accento-ink); }
-/* la colonna dello stato: sempre la stessa forma, la stessa domanda, lo
-   stesso posto. Il numero, quando c'è, sta sotto e non compete. */
-.rit-stato { flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 0; line-height: 1.25; }
-.rit-stato .rs-che { font-size: 12px; font-weight: var(--peso-forte); color: var(--inchiostro-2); display: inline-flex; align-items: center; gap: 4px; }
-.rit-stato.fatto .rs-che { color: var(--ok-testo); font-weight: var(--peso-titolo); }
-.rit-stato .rs-dett { font-size: 11px; font-weight: var(--peso-forte); color: var(--inchiostro-muto); }
-.rit-chevron { flex: none; display: inline-flex; color: var(--inchiostro-muto); transition: transform var(--t-media); }
-.rit-chevron.aperta { transform: rotate(180deg); }
-/* IL DENTRO SI VEDE. Il corpo aperto era bianco come la riga sopra e come
-   la riga sotto: un rituale aperto e i due chiusi facevano un muro solo, e
-   dove finiva l'uno e cominciava l'altro lo diceva solo un filo grigio. Con
-   un fondo rientrato il contenuto aperto è chiaramente DENTRO quella riga, e
-   le schede bianche che ci stanno dentro (il grafico, per esempio) si
-   staccano da sole, senza doversi mettere una cornice propria. */
-.rit-corpo { padding: var(--s4) 0; border-top: 1px solid var(--bordo); background: var(--superficie-2); }
-/* TUTTE LE SCHEDE DEL CORPO SI VESTONO ALLO STESSO MODO.
-   Prima no: la prima non aveva né fondo né cornice e arrivava fino ai bordi,
-   le altre erano bianche e rientrate di sedici pixel. Aprendo un rituale si
-   vedevano quindi due larghezze e due fondi diversi nello stesso riquadro —
-   una fascia bianca che partiva da un bordo e una scheda bianca che partiva
-   da un altro, con in mezzo il grigio del vassoio. Da fuori si legge come
-   «strisce bianche che non rispettano i bordi», ed è esattamente quello che
-   era: due sistemi di margini nello stesso posto.
-   Adesso il corpo aperto è un vassoio grigio e quello che ci sta dentro sono
-   schede, tutte con lo stesso rientro, lo stesso angolo e lo stesso fondo. */
-.rit-corpo > .card { margin: 0 var(--s4) var(--s4); box-shadow: var(--e1); background: var(--superficie-1); border: 1px solid var(--bordo); border-radius: var(--r-2); }
+.rit-blocco.fatto .rit-tit { color: var(--inchiostro-2); }
+/* il rituale di adesso è la scheda piena: si riconosce senza leggere */
+.rit-blocco.ora .rit-riga { background: var(--accento-pieno); color: var(--accento-ink); min-height: 96px; padding: 16px; }
+.rit-blocco.ora .rit-ico { background: color-mix(in srgb, var(--accento-ink) 16%, transparent); color: var(--accento-ink); }
+.rit-blocco.ora .rit-sub { color: inherit; opacity: 0.8; }
+.rit-vai {
+  font-size: 14px; font-weight: 700; padding: 8px 16px; border-radius: var(--r-tondo);
+  background: var(--accento-ink); color: var(--accento-pieno);
+}
+/* dentro a un rituale */
+.rit-indietro {
+  display: inline-flex; align-items: center; gap: 4px; min-height: 44px; padding: 0 12px 0 4px;
+  border: 0; background: none; font-size: 15px; font-weight: var(--peso-forte); color: var(--accento-testo);
+}
+.rit-indietro .ico { transform: rotate(90deg); }
+.rit-titolo { font-size: 28px; font-weight: 800; letter-spacing: -0.03em; margin: 4px 0 16px; }
+.rit-corpo { padding: 0; }
+.rit-corpo > .card { margin: 0 0 16px; }
 .rit-corpo > .card:last-child { margin-bottom: 0; }
 .rit-corpo .card { padding: 18px 20px 20px; }
 .rituale-intro { font-size: 12.5px; color: var(--inchiostro-2); margin: 0 0 14px; line-height: 1.5; }
 @media (max-width: 560px) {
-  .rit-riga { min-height: 54px; padding: 0 12px; gap: 9px; }
-  .rit-nome { font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .rit-stato { font-size: 11.5px; }
-  .rit-corpo .card { padding: 14px 14px 16px; }
-  .rit-corpo > .card { margin: 0 10px 12px; }
+  .rit-corpo .card { padding: 16px; }
 }
 
 
@@ -4001,7 +3971,7 @@ body.sto-trascinando { cursor: grabbing; user-select: none; -webkit-user-select:
 :root { --premuto: color-mix(in srgb, var(--inchiostro-1) 8%, transparent); }
 
 /* le righe e le celle: si accende il fondo */
-.lista-apri:active, .lista-riga:active, .rit-riga:active, .giornata-strip:active,
+.lista-apri:active, .lista-riga:active, .rit-riga:active, .rit-indietro:active, .giornata-strip:active,
 .gio-sonno-testa:active, .gio-so-corpo:active, .menu-voce:active, .lista-eti-btn:active,
 .btn-strumento-largo:active, .att-filtro:active, .riga-inbox:active, .att-chip:active,
 .exp-riga:active, .card-area:active, .aiuto-riga:active {
@@ -4370,11 +4340,11 @@ input.rec-ora { min-width: 96px; text-align: left; font-weight: var(--peso-forte
   font-size: 36px; font-weight: 800; color: var(--accento-ink); background: var(--accento-pieno);
   box-shadow: var(--e2);
 }
-.prof-nome { font-size: 26px; font-weight: 800; letter-spacing: -0.03em; margin: 6px 0 0; }
+.prof-nome { font-size: 26px; font-weight: 800; letter-spacing: -0.03em; margin: 8px 0 0; }
 .prof-visione { font-size: 15px; color: var(--inchiostro-2); margin: 0; max-width: 30em; }
 .prof-form { display: flex; flex-direction: column; gap: 8px; width: 100%; max-width: 360px; }
 .prof-form .btn { justify-content: center; }
-.prof-numeri { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 22px; }
+.prof-numeri { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 24px; }
 .prof-numero {
   display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 14px 6px;
   background: var(--superficie-1); border-radius: 18px; box-shadow: var(--e1);
@@ -4395,5 +4365,19 @@ input.rec-ora { min-width: 96px; text-align: left; font-weight: var(--peso-forte
 .lista-riga { min-height: 60px; }
 .lista-tit { font-size: 16px; }
 .card h2 { font-size: 19px; font-weight: 800; letter-spacing: -0.025em; }
-.lista-eti { font-size: 13px; letter-spacing: 0; text-transform: none; color: var(--inchiostro-2); margin-top: 22px; }
+.lista-eti { font-size: 13px; letter-spacing: 0; text-transform: none; color: var(--inchiostro-2); margin-top: 24px; }
 .sheet-testa h2 { font-size: 22px; font-weight: 800; letter-spacing: -0.03em; }
+
+.casa-rito:active { transform: scale(0.98); opacity: 0.85; }
+
+/* l'eroe dell'Andamento: un numero grande e tre tessere */
+.som-cifra b { font-size: 64px; }
+.som-dice { font-size: 15px; margin-top: 4px; }
+.som-tessere { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 12px; }
+.som-tessera {
+  display: flex; flex-direction: column; align-items: center; gap: 0; padding: 12px 4px;
+  background: var(--superficie-2); border-radius: 16px;
+}
+.som-tessera .ico { color: var(--inchiostro-muto); }
+.som-tessera b { font-size: 20px; font-weight: 800; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.som-tessera span { font-size: 12px; color: var(--inchiostro-2); }

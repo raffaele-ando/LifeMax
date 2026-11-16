@@ -137,7 +137,7 @@ const CASI = [
     const { ctx, p } = await apri(forma, '2026-08-25T15:10:00', CASI[0][2]);
     const v = await p.evaluate(() => ({
       fisarmonica: document.querySelectorAll('.focus-altre').length,
-      aperta: document.querySelectorAll('.coda-riga').length
+      aperta: document.querySelectorAll('.coda-riga, .casa-sez .lista-riga').length
     }));
     ok(forma + ': la fisarmonica non c’è', v.fisarmonica === 0, JSON.stringify(v));
     ok(forma + ': la coda è in pagina', v.aperta > 0, JSON.stringify(v));
@@ -149,7 +149,7 @@ const CASI = [
     const { ctx, p } = await apri('scheda', '2026-08-25T15:10:00', CASI[0][2]);
     const v = await p.evaluate(() => ({
       fisarmonica: document.querySelectorAll('.focus-altre').length,
-      aperta: document.querySelectorAll('.coda-riga').length,
+      aperta: document.querySelectorAll('.coda-riga, .casa-sez .lista-riga').length,
       fascia: document.querySelectorAll('.fuoco-fascia').length
     }));
     ok('scheda: resta com’era', v.fisarmonica === 1 && v.aperta === 0 && v.fascia === 0, JSON.stringify(v));
@@ -186,10 +186,10 @@ const CASI = [
   console.log('\nSI SCEGLIE DAL PANNELLO, E LA SCHERMATA CAMBIA');
   for (const forma of ['spina', 'poi', 'scheda']) {
     const { ctx, p } = await apri('scheda', '2026-08-25T15:10:00', CASI[0][2]);
-    /* la strada vera: plancia → impostazioni → il pulsante */
-    await p.evaluate(() => { location.hash = '#/plancia'; }); await p.waitForTimeout(650);
+    /* la strada vera: profilo → Aspetto → il pulsante */
+    await p.evaluate(() => { location.hash = '#/profilo'; }); await p.waitForTimeout(650);
     await p.evaluate(() => {
-      const b = document.getElementById('fondo-impostazioni') || document.querySelector('[data-imp]');
+      const b = document.getElementById('imp-aspetto');
       if (b) b.click();
     });
     await p.waitForTimeout(700);
@@ -215,7 +215,7 @@ const CASI = [
     ok(forma + ': e la schermata è davvero quell’altra',
       new RegExp('forma-' + forma + '(\\s|$)').test(dopo.classe) &&
       (forma === 'spina' ? dopo.spina === 1 : dopo.spina === 0) &&
-      (forma === 'scheda' ? dopo.fascia === 0 : dopo.fascia === 1),
+      (forma === 'spina' ? dopo.fascia === 1 : dopo.fascia === 0),
       JSON.stringify(dopo));
     await ctx.close();
   }
