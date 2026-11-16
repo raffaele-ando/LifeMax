@@ -4692,3 +4692,6 @@ input[type="number"], textarea, select, .rit-ico, .casa-rito-ico { border-radius
 .sc-quando::-webkit-scrollbar { display: none; }
 .sc-quando > * { flex: none; }
 #notte-solito { flex-wrap: nowrap; gap: 8px; }
+.rit-riga:focus-visible { outline: none; background: var(--superficie-2); }
+.rit-corpo textarea { min-height: 48px; height: 48px; }
+.rit-corpo .eroe-statistiche { display: grid; grid-template-columns: repeat(3, auto); gap: 16px; justify-content: start; }
