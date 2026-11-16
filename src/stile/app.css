@@ -1388,7 +1388,11 @@ kbd {
    larghezza, il numero balla quando sale, e un movimento chiama l'occhio per
    niente.
    ============================================================ */
-.som { display: flex; flex-direction: column; gap: var(--s3); }
+/* IL MARGINE SOTTO è lo stesso passo della griglia delle schede (`--s4`):
+   l'eroe adesso sta dentro al Riepilogo, subito sopra alla prima scheda
+   della sezione, e senza questo margine le due si toccavano. Prima in
+   mezzo c'erano le linguette, che lo spazio se lo portavano da sé. */
+.som { display: flex; flex-direction: column; gap: var(--s3); margin-bottom: var(--s4); }
 .som-eti {
   font-size: 11px; font-weight: var(--peso-titolo); color: var(--inchiostro-muto);
 }

@@ -56,9 +56,17 @@ export default function Panoramica() {
     return () => v.removeEventListener('click', vai);
   }, []);
 
+  /* LE LINGUETTE STANNO SOPRA A QUELLO CHE COMANDANO, e l'eroe è del
+     Riepilogo. Prima l'ordine era eroe → linguette → sezione, e l'eroe
+     restava in cima a tutte e quattro: su un telefono occupava i primi
+     quattrocento pixel, quindi aprendo «Diario», «Aree» o «Grafici» si
+     vedeva di nuovo il 65% e la sezione scelta cominciava sotto la piega.
+     La stessa scheda ripetuta quattro volte non è un'intestazione, è un
+     ostacolo — e un selettore a segmenti messo in mezzo alla pagina non si
+     capisce più di cosa sia il selettore. Adesso è come in «La giornata»:
+     le linguette in cima, e sotto solo quello che la linguetta dice. */
   return (<>
     <Testa titolo="Panoramica" piu="t-plancia" giaNellaNav />
-    <div className={eroe.classi} {...html(eroe.dentro)} />
     <div className="segmenti mini-seg sotto-seg" id="sez-plancia">
       {SEZIONI.map((x) => (
         <button key={x.id} data-sez={x.id} className={quale === x.id ? 'attivo' : ''}
@@ -68,6 +76,7 @@ export default function Panoramica() {
         </button>
       ))}
     </div>
+    {quale === 'riepilogo' ? <div className={eroe.classi} {...html(eroe.dentro)} /> : null}
     <div id="sez-corpo" />
   </>);
 }
