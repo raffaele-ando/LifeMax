@@ -4712,3 +4712,14 @@ input[type="number"], textarea, select, .rit-ico, .casa-rito-ico { border-radius
   #vista > .casa, .forma-poi .casa-sez { max-width: 560px; margin-inline: auto; width: 100%; }
   .prof-testa, .prof-numeri { max-width: 640px; margin-inline: auto; }
 }
+
+/* in fondo a tutto: chi ha chiesto meno movimento non ne riceve. Stessa
+   forza della dissolvenza di pagina, che è l'unica dichiarata `!important` */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .00001s !important; animation-delay: 0s !important; transition-duration: .00001s !important; }
+  .anim-a.vista-enter > *, .anim-b.vista-enter > *,
+  .anim-a.sez-enter > *:not(.topbar):not(.testa-porta):not(.porta-nav), .anim-a.sez-enter-dx > *:not(.topbar):not(.testa-porta):not(.porta-nav), .anim-a.sez-enter-sx > *:not(.topbar):not(.testa-porta):not(.porta-nav),
+  .anim-b.sez-enter > *:not(.topbar):not(.testa-porta):not(.porta-nav), .anim-b.sez-enter-dx > *:not(.topbar):not(.testa-porta):not(.porta-nav), .anim-b.sez-enter-sx > *:not(.topbar):not(.testa-porta):not(.porta-nav) { animation: none !important; }
+}
+:root[data-effetti="minimi"] .anim-a.vista-enter > *, :root[data-effetti="minimi"] .anim-b.vista-enter > *,
+:root[data-effetti="minimi"] [class*="sez-enter"] > * { animation: none !important; }
