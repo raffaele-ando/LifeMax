@@ -4561,3 +4561,72 @@ input.rec-ora { min-width: 96px; text-align: left; font-weight: var(--peso-forte
 .rit-riga { min-height: 60px; }
 .rit-ico { width: 36px; height: 36px; border-radius: 12px; }
 .rit-nome { font-size: 16px; }
+
+/* ============================================================
+   UNA FORMA SOLA, NIENTE SCATOLE NELLE SCATOLE, NIENTE RIGHE DI COLORE
+   ============================================================ */
+/* l'angolo continuo su tutto quello che ha un angolo; restano tondi solo
+   l'interruttore e i puntini */
+@supports (corner-shape: squircle) {
+  *, *::before, *::after { corner-shape: squircle; }
+  .interr, .interr i, .nav-badge, .punto-vivo, .casa-barra, .casa-barra i, .bil-barra, .bil-barra i { corner-shape: round; }
+}
+/* una scala sola di raggi: 12 i comandi, 16 le righe e i campi, 22 le schede */
+.btn, .q-chip, .segmenti button, .lista-azione, .rit-vai, .tag-mit, .som-g i { border-radius: 12px; }
+.btn-grande, .segmenti, input[type="text"], input[type="url"], input[type="time"], input[type="date"],
+input[type="number"], textarea, select, .rit-ico, .casa-rito-ico { border-radius: 14px; }
+.card, .lista, .rit-gruppo, .casa-rito, .casa-cuore, .focus-cuore, .tabbar, .toast { border-radius: 22px; }
+.casa-serie, .casa-avatar, .prof-avatar, .prof-mod { border-radius: 14px; }
+
+/* una scheda dentro una scheda non è una scheda: è contenuto */
+.card .card, .rit-corpo .card, .rit-corpo > .card, .sheet .card, .lista .card {
+  background: none; box-shadow: none; border: 0; padding: 0; margin: 0 0 16px; border-radius: 0;
+}
+.rit-corpo { background: none; border: 0; padding: 4px 16px 16px; }
+.rit-blocco.aperto > .rit-riga { background: none; }
+.rit-gruppo > .rit-blocco + .rit-blocco { border-top: 1px solid var(--bordo); }
+.rit-eti { margin: 16px 4px 8px; }
+.rituale-intro { display: none; }
+
+/* nessuna riga di colore sul fianco: il colore sta nel fondo o nell'icona */
+.rit-blocco.ora::after, .nav-item.attivo::before { content: none; }
+.rit-blocco.ora > .rit-riga { padding-left: 14px; }
+.tl-blk-att, .tl-blk-att.fatta, .scienza-card .uso, .diag-stato, .me-pill, [class*="pill"] { border-left-width: 0; }
+.tl-blk-att { border: 0; background: color-mix(in srgb, var(--c-area) 22%, var(--superficie-1)); }
+.scienza-card .uso { border-radius: 14px; }
+
+/* --- la Home: una riga in testa, poi la cosa da fare --- */
+.casa-testa { align-items: center; margin: 0 2px 16px; }
+.casa-chi { flex: 1; min-width: 0; }
+.casa-data { font-size: 22px; font-weight: 800; letter-spacing: -0.02em; text-transform: none; color: var(--inchiostro-1); margin: 0; }
+.casa-data::first-letter { text-transform: uppercase; }
+.casa-passo { display: flex; align-items: center; gap: 8px; background: none; box-shadow: none; padding: 0; margin: 8px 0 0; border-radius: 0; max-width: 220px; }
+.casa-passo .casa-barra { flex: 1; height: 8px; }
+.casa-passo b { font-size: 13px; font-weight: 700; color: var(--inchiostro-2); font-variant-numeric: tabular-nums; }
+.casa-rito { min-height: 56px; padding: 8px 12px; box-shadow: none; background: var(--superficie-1); }
+
+/* --- il check-in già fatto --- */
+.ck-fatto { display: flex; align-items: center; gap: 16px; padding: 4px 0; flex-wrap: wrap; }
+.ck-fatto-v { display: inline-flex; flex-direction: column; align-items: center; gap: 4px; font-size: 12px; color: var(--inchiostro-2); }
+.ck-fatto-v i { font-style: normal; font-size: 26px; line-height: 1; }
+.ck-fatto .btn { margin-left: auto; }
+
+/* --- il Profilo --- */
+.prof-testa {
+  flex-direction: row; align-items: center; text-align: left; gap: 16px; padding: 16px;
+  background: var(--superficie-1); border-radius: 22px; box-shadow: var(--e1); margin-bottom: 12px;
+}
+.prof-avatar { flex: none; width: 64px; height: 64px; font-size: 26px; font-weight: 800; display: grid; place-items: center; border-radius: 20px; }
+.prof-chi { flex: 1; min-width: 0; }
+.prof-nome { font-size: 22px; margin: 0; }
+.prof-visione { font-size: 14px; line-height: 1.35; margin: 4px 0 0; }
+.prof-mod { flex: none; width: 44px; height: 44px; border: 0; display: grid; place-items: center; background: var(--superficie-2); color: var(--inchiostro-2); }
+.prof-form { max-width: none; flex: 1; }
+.prof-numeri {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; margin: 0 0 24px; padding: 12px 0;
+  background: var(--superficie-1); border-radius: 22px; box-shadow: var(--e1);
+}
+.prof-numero { display: flex; flex-direction: row; align-items: baseline; justify-content: center; gap: 4px; }
+.prof-numero + .prof-numero { border-left: 1px solid var(--bordo); }
+.prof-numero b { font-size: 20px; }
+.prof-numero span { font-size: 13px; color: var(--inchiostro-2); }

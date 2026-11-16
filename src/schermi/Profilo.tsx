@@ -22,15 +22,15 @@ export default function Profilo() {
 
   const bil = LM.bilancio(30);
   const numeri: [string, string, string][] = [
-    ['flame', String(LM.streak().corrente), 'giorni di fila'],
-    ['check', String(LM.quanteFatte()), 'cose fatte'],
-    ['trendUp', bil.messe ? Math.round(bil.tasso * 100) + '%' : '—', 'ti riesce']
+    ['flame', String(LM.streak().corrente), 'giorni'],
+    ['check', String(LM.quanteFatte()), 'fatte'],
+    ['trendUp', bil.messe ? Math.round(bil.tasso * 100) + '%' : '—', 'riuscita']
   ];
 
   return (<>
     <Testa titolo="Profilo" giaNellaNav />
     <section className="prof-testa">
-      <div className="prof-avatar" aria-hidden="true">{nome ? nome.charAt(0).toUpperCase() : <Segno nome="user" dim={18} />}</div>
+      <div className="prof-avatar" aria-hidden="true">{(nome || 'Tu').charAt(0).toUpperCase()}</div>
       {modifica ? (
         <form className="prof-form" onSubmit={(e) => {
           e.preventDefault();
@@ -45,18 +45,18 @@ export default function Profilo() {
           <button className="btn btn-primario" type="submit">Salva</button>
         </form>
       ) : (<>
-        <h1 className="prof-nome">{nome || 'Il tuo profilo'}</h1>
-        {s.profilo.visione ? <p className="prof-visione">{s.profilo.visione}</p> : null}
-        <button className="btn btn-mini" id="prof-modifica" onClick={() => setModifica(true)}>
-          <Segno nome="matita" dim={13} /> {nome ? 'Modifica' : 'Aggiungi il tuo nome'}
+        <div className="prof-chi">
+          <h1 className="prof-nome">{nome || 'Il tuo profilo'}</h1>
+          {s.profilo.visione ? <p className="prof-visione">{s.profilo.visione}</p> : null}
+        </div>
+        <button className="prof-mod" id="prof-modifica" aria-label="Modifica il profilo" onClick={() => setModifica(true)}>
+          <Segno nome="matita" dim={18} />
         </button>
       </>)}
     </section>
     <div className="prof-numeri">
       {numeri.map((n) => (
-        <span className="prof-numero" key={n[2]} role="img" aria-label={n[1] + ' ' + n[2]}>
-          <Segno nome={n[0]} dim={15} /><b>{n[1]}</b>
-        </span>
+        <span className="prof-numero" key={n[2]}><b>{n[1]}</b><span>{n[2]}</span></span>
       ))}
     </div>
     <div ref={corpo} className="prof-righe" {...html(righe)} />

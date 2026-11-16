@@ -1460,7 +1460,15 @@ export function aggiornaNav(): void {
   /* i fili si riattaccano solo se la barra è stata davvero riscritta */
   if (scriviSe(tab, htmlTab)) {
     tab.querySelectorAll<HTMLElement>('[data-vai]').forEach(function (b) {
-      b.addEventListener('click', function () { location.hash = '#/' + b.getAttribute('data-vai'); });
+      b.addEventListener('click', function () {
+        /* toccare la porta in cui sei già riporta alla sua pagina di
+           partenza, in cima: è il «torna indietro» di ogni barra */
+        schermo.sezPlancia = 'riepilogo';
+        schermo.ritualiAperti = null;
+        location.hash = '#/' + b.getAttribute('data-vai');
+        window.scrollTo(0, 0);
+        render();
+      });
     });
     const bMenu = tab.querySelector<HTMLElement>('[data-menu]');
     if (bMenu) bMenu.addEventListener('click', apriMenuAltro);
@@ -1722,7 +1730,6 @@ export function htmlImpostazioni(pezzo?: 'profilo'): string {
         : '<div class="lista-riga sc-riga"><span class="sc-eti">' + ICO('campana', 15) + ' Promemoria</span>' +
           '<span class="sc-val">' + pr.val + '</span></div>') +
       '</div>' +
-      (pr.nota ? nota(pr.nota) : '') +
       (pr.azione ? '<div class="imp-azioni">' + pr.azione + '</div>' : '') +
       '<div class="lista mt-s">' +
       rigaPorta('imp-scoperte', 'funziona', 'Scoperte') +
@@ -3278,17 +3285,14 @@ export function testaCasa(): string {
     : '';
   const data = (GIORNI[d.getDay()] || '') + ' ' + d.getDate() + ' ' + (MESI[d.getMonth()] || '');
   return '<header class="casa-testa">' +
-    '<div><div class="casa-data">' + data + '</div><h1 class="casa-saluto">Oggi</h1></div>' +
+    '<div class="casa-chi"><h1 class="casa-data">' + data + '</h1>' +
+    (tot ? '<div class="casa-passo" role="img" aria-label="' + fatte + ' di ' + tot + ' fatte oggi">' +
+      '<div class="casa-barra"><i style="width:' + Math.round(p * 100) + '%"></i></div><b>' + fatte + '/' + tot + '</b></div>' : '') +
+    '</div>' +
     '<div class="casa-destra">' +
     (serie > 0 ? '<span class="casa-serie" role="img" aria-label="' + serie + ' giorni di fila">' + ICO('flame', 15, 'fiamma') + '<b>' + serie + '</b></span>' : '') +
     '<a class="casa-avatar" href="#/profilo" aria-label="Profilo">' + esc((nome || 'Tu').charAt(0).toUpperCase()) + '</a>' +
-    '</div>' +
-    '</header>' +
-    (tot
-      ? '<div class="casa-passo" role="img" aria-label="' + fatte + ' di ' + tot + ' fatte oggi">' +
-        '<div class="casa-passo-riga"><b>' + fatte + ' di ' + tot + '</b><span>' + (fatte === tot ? 'giornata finita' : 'fatte oggi') + '</span></div>' +
-        '<div class="casa-barra"><i style="width:' + Math.round(p * 100) + '%"></i></div></div>'
-      : '') +
+    '</div></header>' +
     porta;
 }
 
@@ -3766,7 +3770,6 @@ export function vistaFocus(): Scena {
     /* LA CASA: la cosa di adesso in una scheda, e sotto il resto di oggi
        come un elenco che si spunta. Niente fascia: i comandi stanno nella
        scheda, dove sta la cosa a cui si riferiscono. */
-    const fatteOggi = oggi.filter(function (a) { return a.done; });
     function riga(a: typeof oggi[number]): string {
       const ar = areaById(a.areaId);
       return '<div class="lista-riga casa-riga' + (a.done ? ' fatta' : '') + '">' +
@@ -3780,9 +3783,7 @@ export function vistaFocus(): Scena {
       (restano.length
         ? '<div class="casa-sez"><h2 class="casa-tit">Poi</h2><div class="lista">' + restano.map(riga).join('') + '</div></div>'
         : '') +
-      (fatteOggi.length
-        ? '<div class="casa-sez"><h2 class="casa-tit">Fatte <span>' + fatteOggi.length + '</span></h2><div class="lista">' + fatteOggi.slice(-3).reverse().map(riga).join('') + '</div></div>'
-        : '');
+      '';
     return scena;
   }
 
@@ -6303,7 +6304,18 @@ const ANCORE: Record<Voto, [string, string, string, string, string]> = {
   umore: ['giù', 'così così', 'normale', 'bene', 'alla grande']
 };
 
-function ritualeCheckin(corpo: HTMLElement): void {
+function ritualeCheckin(corpo: HTMLElement, rifai?: boolean): void {
+  const diOggi = LM.load().checkins.filter(function (c) { return c.data === LM.todayKey(); }).pop();
+  if (diOggi && !rifai) {
+    const FACCE = ['😫', '😕', '😐', '🙂', '🤩'];
+    const voce = function (eti: string, v: number): string {
+      return '<span class="ck-fatto-v"><i>' + (FACCE[v - 1] || '') + '</i>' + eti + '</span>';
+    };
+    corpo.innerHTML = '<div class="ck-fatto">' + voce('Energia', diOggi.energia) + voce('Concentrazione', diOggi.focus) +
+      voce('Umore', diOggi.umore) + '<button class="btn btn-mini btn-ghost" id="ck-rifai">Rifai</button></div>';
+    perId('ck-rifai').addEventListener('click', function () { ritualeCheckin(corpo, true); });
+    return;
+  }
   const voti: Record<Voto, number> = { energia: 0, focus: 0, umore: 0 };
   corpo.innerHTML = '<div class="card">' +
     testaRituale('polso', 'Energia, focus e umore',
@@ -6353,6 +6365,7 @@ function ritualeCheckin(corpo: HTMLElement): void {
     var r = (ev.currentTarget as HTMLElement).getBoundingClientRect();
     flyXp(r.left + r.width / 2, r.top, xp);
     festa(); toast('Check-in fatto', xp, 'check');
+    schermo.ritualiAperti = null;
     location.hash = '#/oggi';
     render();
   });
@@ -6462,7 +6475,7 @@ function ritualeSera(corpo: HTMLElement): void {
       shutdown: true
     });
     toast('Giornata chiusa', xp, 'moon');
-    if (xp) { festa(); location.hash = '#/oggi'; }
+    if (xp) { festa(); schermo.ritualiAperti = null; location.hash = '#/oggi'; }
     render();
   });
 }
@@ -6506,7 +6519,7 @@ function ritualeSettimana(corpo: HTMLElement): void {
       prossima: presa(campoId('w-prossima')).value.trim()
     });
     toast('Review salvata', xp, 'calendar');
-    if (xp) { festa(); location.hash = '#/oggi'; }
+    if (xp) { festa(); schermo.ritualiAperti = null; location.hash = '#/oggi'; }
     render();
   });
   corpo.querySelectorAll<HTMLElement>('[data-vai]').forEach(function (b) {
