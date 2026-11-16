@@ -4404,9 +4404,9 @@ function montaGiornata(container: HTMLElement, opzioni?: OpzGriglia): void {
         '<span class="sp-dorm">' + ICO('durata', 13) + ' dormi <b id="sp-dorm">' + fmtOre(LM.minutiSonno(k)) + '</b></span>' +
         '</div>' +
         '<div class="sp-pasti" id="sp-pasti">' + pastiRows + '</div>' +
-        '<div class="riga-flex mt-s"><button class="btn btn-mini" id="sp-add">' + ICO('plus', 13) + ' Aggiungi un pasto</button>' +
-        (d.dalRegistro ? '<button class="btn btn-mini btn-ghost" id="sp-reset">Torna al ritmo di base</button>' : '') +
-        '<button class="btn btn-mini btn-ghost" id="sp-base">' + ICO('ritmo', 13) + ' Cambia il ritmo di base</button></div>' +
+        '<div class="sp-piede"><button class="sp-link" id="sp-add">' + ICO('plus', 13) + ' Pasto</button>' +
+        (d.dalRegistro ? '<button class="sp-link" id="sp-reset">Ripristina</button>' : '') +
+        '<button class="sp-link" id="sp-base">Ritmo di base</button></div>' +
         '</div>') + '</div>';
   }
 
@@ -5776,7 +5776,7 @@ function bloccoRecupero(tutti?: boolean): string {
           '<button class="icona-btn icona-pericolo" data-ftogli="' + a.id + '" title="Togli" aria-label="Togli «' + esc(a.testo) + '»">' + ICO('trash', 15) + '</button>' +
           '</div>';
       }).join('') + '</div>'
-      : nota('Per esempio: «camminata di mezz’ora», «chiamato mio fratello». Vale come una cosa fatta oggi, con i suoi XP: che l’abbia scritta prima o dopo non cambia niente.')) +
+      : '') +
     '<div class="riga-flex mt"><button class="btn btn-tonale" id="rec-fine">' + ICO('check', 15) + ' Ho finito</button></div>' +
     '</div>';
 }
@@ -6798,7 +6798,6 @@ function rigaLezioneHtml(l: Lezione): string {
 
 function bloccoLezioniHtml() {
   var si = LM.lezioni('si'), no = LM.lezioni('no');
-  var vuoto = !si.length && !no.length;
   /* NIENTE PARAGRAFO SOTTO IL TITOLO. Ce n'era uno di quattro righe che
      spiegava perché il registro esiste e cosa vuol dire l'etichetta accanto a
      ogni riga. Sotto c'erano già: il campo con scritto cosa scriverci, i due
@@ -6815,9 +6814,6 @@ function bloccoLezioniHtml() {
       '<button type="button" class="q-chip" data-verso="no">' + ICO('nonFunziona', 13) + ' Non funziona</button>' +
       '</div>' +
       '<label class="agg-area"><span class="agg-eti">in</span>' + selectAreeOpz('agg-lez-area', null) + '</label>') +
-    (vuoto
-      ? nota('Per esempio: «studiare in biblioteca invece che in camera» fra le cose che funzionano, «dire <i>lo faccio dopo</i> senza scrivere quando» fra quelle che no.')
-      : '') +
     (si.length
       ? etichetta('Funziona', 'funziona', si.length) +
         '<div class="lista">' + si.map(rigaLezioneHtml).join('') + '</div>'

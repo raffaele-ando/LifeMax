@@ -1115,8 +1115,10 @@ export const LM_FORMA = {
 export type Forma = typeof LM_FORMA;
 
 
-/* IL MOTORE È SPENTO. La forma la fa il CSS (`border-radius` e, dove c'è,
-   `corner-shape: squircle`): ritagliare ogni elemento a runtime tagliava
-   bordi e ombre, faceva lampeggiare al tocco e rallentava lo scorrimento. */
-void avvia;
+/* DOVE IL BROWSER SA FARE L'ANGOLO CONTINUO (`corner-shape: squircle`) lo fa
+   lui, nel foglio di stile, e questo motore resta fermo. Dove non lo sa fare
+   — Safari, Firefox — lo disegna il motore, che è l'unico modo di averlo lì.
+   `?forma=motore` lo accende a forza, per provarlo. */
+const nativo = typeof CSS !== 'undefined' && CSS.supports && CSS.supports('corner-shape', 'squircle');
+if (!nativo || /[?&]forma=motore/.test(location.search)) avvia();
 

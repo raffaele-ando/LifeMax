@@ -110,6 +110,15 @@ function fineTrascina(): void {
 }
 
 /* onRilascio(id, bersaglio, x, y) */
+/* lo scorrimento della pagina si ferma mentre si trascina. L'ascoltatore
+   sta lì da sempre e non passivo: Safari non ne rispetta uno aggiunto a
+   gesto già cominciato, ed era per questo che la cosa «scappava» */
+document.addEventListener('touchmove', function (e) { if (trasc) e.preventDefault(); }, { passive: false });
+document.addEventListener('contextmenu', function (e) {
+  const t = e.target as HTMLElement | null;
+  if (trasc || (t && t.closest && t.closest('[data-drag-az]'))) e.preventDefault();
+});
+
 export function abilitaTrascina(scope: ParentNode, onRilascio: (id: string, bersaglio: HTMLElement, x: number, y: number) => void): void {
   scope.querySelectorAll<HTMLElement>('[data-drag-az]').forEach(function (el) {
     el.addEventListener('pointerdown', function (ev) {
@@ -128,7 +137,8 @@ export function abilitaTrascina(scope: ParentNode, onRilascio: (id: string, bers
          il corpo il browser vorrebbe selezionare il testo (era il bug) e la
          pagina deve restare scorribile. Preso dal manico l'intenzione è
          chiara, quindi parte subito senza tenere premuto. */
-      if (tocco && manico && !dalManico) return;
+      /* dal corpo, col dito, si prende tenendo premuto un attimo: è il gesto
+         di ogni calendario. Dal manico parte subito. */
       let attesa: ReturnType<typeof setTimeout> | undefined;
       let spostato = false, morto = false;
 
@@ -169,7 +179,7 @@ export function abilitaTrascina(scope: ParentNode, onRilascio: (id: string, bers
           /* soglia generosa: un clic con la mano un po' mossa NON deve
              diventare un trascinamento (era la causa dei "pulsanti che non
              funzionano": il clic finiva in uno spostamento). */
-          if (tocco) { if (Math.abs(dx) + Math.abs(dy) > 16) { morto = true; clearTimeout(attesa); } return; }
+          if (tocco) { if (Math.abs(dx) + Math.abs(dy) > 12) { morto = true; clearTimeout(attesa); } return; }
           if (dalManico && Math.abs(dx) + Math.abs(dy) > 4) { avvia(); if (!trasc) return; }
           if (Math.abs(dx) + Math.abs(dy) < 14) return;
           avvia();
@@ -218,7 +228,7 @@ export function abilitaTrascina(scope: ParentNode, onRilascio: (id: string, bers
       window.addEventListener('pointerup', onUp);
       window.addEventListener('pointercancel', suCancel);
       if (tocco && dalManico) { ev.preventDefault(); avvia(); }
-      else if (tocco) attesa = setTimeout(function () { avvia(); spostato = true; }, 260);
+      else if (tocco) attesa = setTimeout(function () { avvia(); spostato = true; if (navigator.vibrate) navigator.vibrate(12); }, 220);
     });
   });
 }

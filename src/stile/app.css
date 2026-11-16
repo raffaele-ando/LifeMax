@@ -4635,19 +4635,60 @@ input[type="number"], textarea, select, .rit-ico, .casa-rito-ico { border-radius
 .overlay { backdrop-filter: none; -webkit-backdrop-filter: none; background: rgba(10, 10, 20, .42); }
 .rit-gruppo { margin-top: 8px; }
 
-/* --- sonno e pasti nella Giornata: una griglia, non campi che vanno a capo --- */
+/* --- sonno e pasti nella Giornata: righe basse, un pasto per riga --- */
 .gio-sonno { border: 0; border-radius: 16px; }
-.gio-sonno-corpo { padding: 4px 12px 16px; }
-.sp-sonno { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: auto auto auto; grid-auto-flow: column; gap: 4px 12px; margin: 4px 0 16px; }
-.sp-sonno input.tl-time { min-width: 0; width: 100%; max-width: none; }
-.sp-dorm { grid-column: 1 / -1; grid-row: 3; margin-top: 4px; }
-.sp-pasti { gap: 16px; }
-.sp-riga {
-  display: grid; grid-template-columns: 24px minmax(0, 1fr) minmax(0, 1fr) 44px; align-items: center; gap: 8px;
-  grid-template-areas: "ico nome nome via" "ora ora dur dur";
+.gio-sonno-corpo { padding: 0 12px 4px; }
+.gio-sonno-corpo input, .gio-sonno-corpo select {
+  height: 36px; min-height: 0; padding: 0 8px; font-size: 14px; border-radius: 10px; min-width: 0; max-width: none; width: 100%;
 }
-.sp-riga .sp-ico { grid-area: ico; }
-.sp-riga .sp-nome { grid-area: nome; width: 100%; }
-.sp-riga input.tl-time { grid-area: ora; width: 100%; max-width: none; }
-.sp-riga select.tl-dur { grid-area: dur; width: 100%; }
-.sp-riga .icona-btn { grid-area: via; }
+.gio-sonno-corpo input[type="time"]::-webkit-calendar-picker-indicator { display: none; }
+.sp-sonno { display: grid; grid-template-columns: auto minmax(0, 1fr) auto minmax(0, 1fr); grid-template-rows: auto; grid-auto-flow: row; align-items: center; gap: 8px; margin: 0 0 8px; }
+.sp-lab { font-size: 13px; }
+.sp-dorm, .sp-riga .sp-ico { display: none; }
+.sp-pasti { gap: 4px; }
+.sp-riga { display: grid; grid-template-columns: minmax(0, 1fr) 84px 76px 36px; grid-template-areas: none; align-items: center; gap: 4px; flex-wrap: nowrap; }
+.sp-riga .sp-nome, .sp-riga input.tl-time, .sp-riga select.tl-dur, .sp-riga .icona-btn { grid-area: auto; }
+.sp-riga .sp-nome { border-color: transparent; background: none; padding-left: 0; font-weight: 600; }
+.sp-riga .icona-btn { width: 36px; height: 36px; border: 0; background: none; }
+.sp-piede { display: flex; gap: 16px; margin-top: 4px; }
+.sp-link {
+  display: inline-flex; align-items: center; gap: 4px; min-height: 44px; padding: 0; border: 0; background: none;
+  font-size: 14px; font-weight: 600; color: var(--accento-testo);
+}
+.sp-link:active { opacity: .5; }
+.prof-mod:active { transform: scale(.94); }
+/* la presa nel calendario si vede: il blocco si alza */
+.sto-prendendo { opacity: 1; transform: scale(1.03); box-shadow: 0 12px 28px rgba(20, 20, 60, .22); z-index: 5; }
+
+/* --- controlli compatti: niente bottoni che vanno a capo, niente frasi sotto --- */
+/* le tre scelte di «Da sistemare»: una riga di tre comandi, non tre riquadri */
+.sm-porta { flex-direction: row; align-items: center; justify-content: center; gap: 8px; min-height: 48px; padding: 0 8px; }
+.sm-porta-nota { display: none; }
+/* la notte: «Come sempre» su una riga, senza la precisione */
+#notte-solito { min-height: 48px; }
+#notte-solito small { flex-basis: auto; font-size: 13px; }
+.sc-riga:has(#notte-prec) { display: none; }
+/* i pasti del registro: nome a sinistra, sì/no e l'ora sulla stessa riga */
+.sc-riga-alta[data-pasto] { flex-wrap: nowrap; align-items: center; gap: 8px; }
+.sc-riga-alta[data-pasto] .sc-eti { flex: 1; min-width: 0; }
+.sc-riga-alta[data-pasto] .sc-val { flex: none; flex-wrap: nowrap; gap: 4px; }
+.sc-riga-alta[data-pasto] .rec-solito, .rec-alt-eti { display: none; }
+.sc-riga-alta[data-pasto] .rec-ora { width: 84px; }
+.sc-riga-alta[data-pasto] .rec-ora::-webkit-calendar-picker-indicator { display: none; }
+/* la cattura: il piede non ha più una frase, resta «Chiudi» a destra */
+.overlay .piede span:empty { display: none; }
+.overlay .piede { justify-content: flex-end; }
+.sp-sonno input.tl-time { min-width: 0; }
+.sp-riga { grid-template-columns: minmax(0, 1fr) 92px 72px 36px; }
+/* la review della sera: un'area per riga, il voto accanto al nome */
+.voto-area { display: flex; flex-direction: row; align-items: center; flex-wrap: nowrap; gap: 8px; padding: 4px 0; border: 0; }
+.voto-area .nome { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; }
+.voto-area .stelline { flex: none; display: flex; gap: 4px; }
+.voto-area .stelline button { width: 36px; height: 36px; min-width: 0; padding: 0; border-radius: 10px; font-size: 14px; }
+.voto-area .stelline button::after { content: ''; position: absolute; inset: -4px; }
+.voto-area .stelline button { position: relative; }
+/* le scelte del giorno nella scheda: una riga che scorre, non due righe */
+.sc-quando { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin-inline: -16px; padding-inline: 16px; }
+.sc-quando::-webkit-scrollbar { display: none; }
+.sc-quando > * { flex: none; }
+#notte-solito { flex-wrap: nowrap; gap: 8px; }
