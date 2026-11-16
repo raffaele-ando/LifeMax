@@ -81,7 +81,6 @@ export default function Mancata({ id, testo, dopo }: PropMancata) {
           render();
         }}>Segna e vai avanti</button>
       </div>
-      <p className="lista-nota">Il pezzo che hai fatto vale i suoi punti. Resta nel registro e nella giornata, non rompe nessuna serie, e risponde alla domanda «cosa non funziona per me» — che senza queste righe non ha dati.</p>
     </div>
   );
 }

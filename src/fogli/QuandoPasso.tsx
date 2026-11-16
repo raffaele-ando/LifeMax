@@ -57,7 +57,6 @@ export default function QuandoPasso({ prog, passo }: PropQuandoPasso) {
             chiudiSheet(); aggiornaNav(); render();
           }}><Segno nome="x" dim={13} /> Togli dal giorno ({etichettaGiorno(gia.data).toLowerCase()})</button>
         ) : null}
-        <div className="sc-nota">Comparirà tra le cose di quel giorno, in <b>La giornata</b>.</div>
       </div>
     </div>
   );

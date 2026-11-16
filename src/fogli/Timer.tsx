@@ -42,7 +42,6 @@ export default function Timer({ azioneId, areaId, testo, minBlocco }: PropTimer)
           );
         })}
       </div>
-      <p className="lista-nota">Mentre gira, lo schermo resta su una cosa sola. Il conto va avanti anche a telefono chiuso, e lo stesso timer si vede su tutti i tuoi dispositivi.</p>
     </div>
   );
 }

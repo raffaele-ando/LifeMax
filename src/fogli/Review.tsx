@@ -32,7 +32,6 @@ export default function Review() {
       ) : (
         <div className="vuoto"><b>Non hai ancora scritto nessuna review.</b><br />Le trovi qui appena ne chiudi una.</div>
       )}
-      {righe.length ? <p className="lista-nota">Dalla più recente. Messe in fila dicono cose che una sera sola non dice: se «cosa mi ha bloccato» si ripete, quello è il posto da cui partire.</p> : null}
     </div>
   );
 }

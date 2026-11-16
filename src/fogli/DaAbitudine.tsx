@@ -1,6 +1,5 @@
 /* DA COSA-DA-FARE A ABITUDINE: si scelgono i giorni e, se serve, l'ora.
 
-   Vuoti vanno bene. Un'abitudine attaccata a un'ora precisa si fa molto più
    spesso di una lasciata a «quando capita» — è la parte «quando e dove» delle
    intenzioni di attuazione — ma pretenderla qui vorrebbe dire due decisioni
    per una cosa che ne chiedeva zero. */
@@ -53,7 +52,6 @@ export default function DaAbitudine({ id }: { id: string }) {
       <button className="btn btn-primario btn-grande sc-primaria" id="ab-crea" onClick={crea}>
         <Segno nome="plus" /> Crea l’abitudine
       </button>
-      <div className="sc-nota" style={{ textAlign: 'center' }}>Esce da «Da fare» e la ritrovi in <b>Attività → Abitudini</b>.</div>
     </div>
   );
 }

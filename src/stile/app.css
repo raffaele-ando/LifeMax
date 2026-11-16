@@ -4383,3 +4383,17 @@ input.rec-ora { min-width: 96px; text-align: left; font-weight: var(--peso-forte
 .prof-numero b { font-size: 22px; font-weight: 800; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
 .prof-numero span { font-size: 12px; color: var(--inchiostro-2); }
 .prof-righe { max-width: 640px; margin: 0 auto; width: 100%; }
+
+/* ═══ PIÙ ARIA, MENO RIGHE ═══
+   Le schede e gli elenchi perdono il bordo e prendono un'ombra morbida e
+   angoli più larghi; i titoli crescono. È lo stesso linguaggio della casa
+   e del profilo, portato su tutte le schermate. */
+:root:not([data-skin="arcade"]) { --r-2: 14px; --r-3: 22px; }
+.card { border-color: transparent; }
+.lista { border-color: transparent; border-radius: 18px; box-shadow: var(--e1); }
+:root[data-mode="dark"] .card, :root[data-mode="dark"] .lista { border-color: var(--bordo); box-shadow: none; }
+.lista-riga { min-height: 60px; }
+.lista-tit { font-size: 16px; }
+.card h2 { font-size: 19px; font-weight: 800; letter-spacing: -0.025em; }
+.lista-eti { font-size: 13px; letter-spacing: 0; text-transform: none; color: var(--inchiostro-2); margin-top: 22px; }
+.sheet-testa h2 { font-size: 22px; font-weight: 800; letter-spacing: -0.03em; }

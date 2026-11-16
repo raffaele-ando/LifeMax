@@ -210,7 +210,6 @@ export default function Abitudine({ id, dopo }: PropAbitudine) {
         LM.completaAbitudine(id, k);
         ridisegna();
       }} />
-      <p className="abd-nota">Tocca un giorno passato se te ne sei ricordato dopo.</p>
 
       {/* «Modifica», non «Come è impostata»: quello è il modo in cui si
           descrive una cosa a voce, non il modo in cui la si chiama. Un comando

@@ -237,7 +237,6 @@ export default function Scheda({ id }: { id: string }) {
           <span className="sc-val">{b.pin ? <><Segno nome="pin" piu="sc-si" /> sì</> : 'no'}</span>
         </button>
       </div>
-      <p className="lista-nota">Scegliere un giorno la sposta fra le cose di quel giorno, anche se è già passato: serve a registrare quello che hai fatto senza averlo scritto prima. La scadenza fa solo da conto alla rovescia e non la mette in agenda.</p>
 
       <div className="lista mt">
         <button className="lista-riga sc-riga sc-tocca" id="sc-abitudine"

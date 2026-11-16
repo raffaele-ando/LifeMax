@@ -171,7 +171,6 @@ export default function Ritmo() {
         spiega="La mattina, se sono passate almeno tre ore dall’ultima volta." v={q.notte} onCambia={cambiaChiedi} />
       <RigaChiedi quale="giorno" nome="Pasti e cose fatte"
         spiega="A fine giornata, una volta sola." v={q.giorno} onCambia={cambiaChiedi} />
-      <p className="lista-nota">Spente, le due domande non arrivano più da sole. Il posto dove rispondere resta: è il <b>Registro di oggi</b>, nei Rituali.</p>
     </div>
     <div className="riga-flex mt">
       <button className="btn btn-tonale btn-grande" id="ritmo-salva" onClick={salva}>

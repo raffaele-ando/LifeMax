@@ -1818,7 +1818,6 @@ export function apriPromemoria() {
       riga('mit', 'La priorità del giorno', 'Un colpetto, se è ancora lì intatta.') +
       riga('sera', 'La chiusura della giornata', 'Solo se non hai ancora chiuso.') +
       riga('abitudini', 'Le abitudini con un’ora', 'Quelle senza orario non suonano mai.') +
-      '<div class="imp-nota">Spegnere un promemoria non cancella la cosa: la review della sera resta da fare, solo senza avviso.</div>' +
     '</div>' +
 
     /* SILENZIO */
@@ -1835,7 +1834,6 @@ export function apriPromemoria() {
         '<label class="campo" for="prom-sil-a">A</label>' +
         '<input type="time" class="prom-t" id="prom-sil-a" value="' + esc(c.silenzio.a) + '"' + (c.silenzio.on ? '' : ' disabled') + '>' +
       '</div>' +
-      '<div class="imp-nota">Un promemoria alle due di notte non si legge: sveglia, e insegna a spegnere tutto.</div>' +
     '</div>' +
 
     /* LA NOTA FISSA */
@@ -4375,7 +4373,6 @@ function montaGiornata(container: HTMLElement, opzioni?: OpzGriglia): void {
         '<div class="riga-flex mt-s"><button class="btn btn-mini" id="sp-add">' + ICO('plus', 13) + ' Aggiungi un pasto</button>' +
         (d.dalRegistro ? '<button class="btn btn-mini btn-ghost" id="sp-reset">Torna al ritmo di base</button>' : '') +
         '<button class="btn btn-mini btn-ghost" id="sp-base">' + ICO('ritmo', 13) + ' Cambia il ritmo di base</button></div>' +
-        '<div class="imp-nota" style="margin-top:8px">Vale per <b>questo giorno</b> e resta nel registro. Il ritmo di base (per gli altri giorni) si cambia da «Cambia il ritmo di base».</div>' +
         '</div>') + '</div>';
   }
 
@@ -5073,7 +5070,7 @@ function sezRiepilogo(c: HTMLElement): void {
       '<label class="agg-area"><span class="agg-eti">in</span>' + selectAree('agg-riep-area') + '</label>') +
     '</div></div>' +
     '<div class="card" style="--i:1"><h2>' + ICO('trendUp', 15) + ' Costanza</h2>' +
-    '<div class="sotto">XP di ogni giorno, nelle ultime 12 settimane.</div>' +
+    '' +
     '<div id="heatmap"></div></div>' +
     /* LE REVIEW DI PRIMA, in Panoramica. Si scrivono in Rituali, ma
        rileggerle è un'altra cosa dallo scriverle: è guardare indietro, e
@@ -5097,7 +5094,7 @@ function sezRiepilogo(c: HTMLElement): void {
        Scoperte e degli Esperimenti.
        ============================================================ */
     '<div class="card" style="--i:2"><h2>' + ICO('aree', 15) + ' Dove ti riesce e dove no</h2>' +
-    '<div class="sotto">Ultimi 30 giorni, dalla peggiore. Il conto è: quante te n’eri messe, quante ne hai fatte.</div>' +
+    '' +
     (bil.aree.length
       ? '<div class="bil-aree">' + bil.aree.map(function (a) {
           var ar = areaById(a.areaId);
@@ -5128,7 +5125,7 @@ function sezRiepilogo(c: HTMLElement): void {
     })() +
     '</div>' +
     '<div class="card" style="--i:3"><h2>' + ICO('archivio', 15) + ' Le review di prima</h2>' +
-    '<div class="sotto">Messe in fila dicono cose che una sera sola non dice.</div>' +
+    '' +
     '<div class="lista mt-s">' +
     rigaPorta('riep-review', 'archivio', 'Aprile tutte',
       (function () { var q = LM.quanteReview(); return q ? q + (q === 1 ? ' scritta' : ' scritte') : 'nessuna ancora'; })()) +
@@ -5195,9 +5192,9 @@ function sezAndamento(c: HTMLElement): void {
     '<div class="segmenti mini-seg" id="seg-periodo">' +
     '<button data-g="14" class="' + (periodoTrend === 14 ? 'attivo' : '') + '">14 giorni</button>' +
     '<button data-g="30" class="' + (periodoTrend === 30 ? 'attivo' : '') + '">30 giorni</button></div></div>' +
-    '<div class="sotto">Media dei check-in, da 1 a 5.</div><div id="trend-checkin"></div></div>' +
+    '<div id="trend-checkin"></div></div>' +
     '<div class="card mt" style="--i:1"><h2>' + ICO('tempospeso', 15) + ' Come hai speso il tempo</h2>' +
-    '<div class="sotto">Minuti per area, negli ultimi 7 giorni.</div><div id="hbar-minuti"></div></div>';
+    '<div id="hbar-minuti"></div></div>';
 
   LMCharts.trend(perId('trend-checkin'), [
     { nome: 'Energia', colore: dark ? '#c98500' : '#eda100', punti: LM.serieCheckin('energia', periodoTrend) },
@@ -5232,7 +5229,7 @@ function sezDiario(c: HTMLElement): void {
        che fai — azioni, note, scelte, impostazioni», che è la definizione
        della parola «diario» scritta sotto la parola «Diario». */
     html = '<div class="card diario"><div class="card-testa">' + filtro +
-      (diarioTutto ? '' : '<div class="sotto" style="margin:0">Con «Tutto» compaiono anche le modifiche minori.</div>') + '</div>';
+      (diarioTutto ? '' : '') + '</div>';
     giorni.forEach(function (g) {
       html += '<div class="diario-giorno">' +
         '<div class="diario-data">' + etichettaGiorno(g.data) + '</div>' +
@@ -5638,7 +5635,6 @@ function bloccoNotte(forzaAperto?: boolean): string {
     '</div>' +
     '<div class="riga-flex mt"><button class="btn btn-tonale" id="notte-salva">' + ICO('save', 15) + ' Salva</button>' +
     '<button class="btn btn-ghost" id="notte-boh">Non me lo ricordo</button></div>' +
-    nota('Gli orari «più o meno» restano segnati come tali e non fanno da misura. Se chiudi senza rispondere la domanda non torna oggi: resta nei <b>Rituali</b>.') +
     '</div>';
 }
 
@@ -6952,7 +6948,7 @@ export function disegnaScoperte() {
       : (schermo.formExp || { nome: '', int: '', area: '', metrica: '', durata: '', lez: null });
     schermo.formExp = { nome: pre.nome, int: pre.int, area: pre.area, metrica: pre.metrica, durata: pre.durata, lez: pre.lez };
     zona.innerHTML = '<div class="card mt">' +
-      '<h2>Nuovo esperimento</h2><div class="sotto">I giorni già passati fanno da base di partenza; la modifica che vuoi testare inizia oggi.</div>' +
+      '<h2>Nuovo esperimento</h2>' +
       '<label class="campo" for="exp-nome">Cosa vuoi scoprire</label><input type="text" id="exp-nome" value="' + esc(pre.nome) + '" placeholder="Es. studiare in biblioteca mi fa studiare di più?">' +
       '<label class="campo" for="exp-int">La modifica che vuoi testare</label><input type="text" id="exp-int" value="' + esc(pre.int) + '" placeholder="Es. ogni pomeriggio studio in biblioteca invece che in camera">' +
       '<div class="griglia griglia-3 mt-s"><div><label class="campo" for="exp-metrica">Cosa misuri</label><select id="exp-metrica">' +
@@ -7232,14 +7228,14 @@ function onboarding() {
   function disegna() {
     var step = '';
     if (passo === 0) {
-      step = '<div class="card"><h2>Come ti chiami</h2><div class="sotto">Puoi compilare ora oppure saltare: quasi tutto qui è facoltativo.</div>' +
+      step = '<div class="card"><h2>Come ti chiami</h2>' +
         '<label class="campo" for="ob-nome">Nome</label><input type="text" id="ob-nome" value="' + esc(scelte.nome) + '" placeholder="Il tuo nome">' +
         '<label class="campo" for="ob-visione">In una frase, cosa vuoi ottenere</label>' +
         '<textarea id="ob-visione" placeholder="Es. restare in salute e finire gli studi">' + esc(scelte.visione) + '</textarea>' +
         '<div class="riga-flex mt"><button class="btn btn-primario btn-grande" id="ob-avanti">Avanti ' + ICO('arrowRight', 15) + '</button>' +
         '<button class="btn btn-ghost" id="ob-demo">Salta e guarda un esempio</button></div></div>';
     } else if (passo === 1) {
-      step = '<div class="card"><h2>Le aree della tua vita</h2><div class="sotto">Sono tutte attive: disattiva quelle che non ti servono, potrai riattivarle quando vuoi.</div>' +
+      step = '<div class="card"><h2>Le aree della tua vita</h2>' +
         '<div class="selettore-aree">' + LM.AREE_DEFAULT.map(function (a) {
           var sel = scelte.aree.indexOf(a.id) >= 0;
           return '<button data-area="' + a.id + '" class="' + (sel ? 'sel' : '') + '" style="--c-area:' + LM.SLOT_COLORI[a.slot][0] + '">' +
@@ -7248,7 +7244,7 @@ function onboarding() {
         '<div class="riga-flex mt"><button class="btn btn-primario btn-grande" id="ob-avanti">Avanti ' + ICO('arrowRight', 15) + '</button>' +
         '<button class="btn btn-ghost" id="ob-indietro">Indietro</button></div></div>';
     } else {
-      step = '<div class="card"><h2>Da dove vuoi partire?</h2><div class="sotto">Sono tre modi di usare la stessa app, sugli stessi dati. Scegline uno per iniziare: potrai cambiare quando vuoi.</div>' +
+      step = '<div class="card"><h2>Da dove vuoi partire?</h2>' +
         '<div class="selettore-modi">' +
         modo('oggi', 'target', 'Oggi', 'Una sola azione alla volta, per quando hai già tante cose in mente.') +
         modo('plancia', 'dashboard', 'Panoramica', 'Una schermata da tenere aperta, con numeri e grafici sempre a portata.') +

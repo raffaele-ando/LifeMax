@@ -113,7 +113,6 @@ function Cloud() {
 export default function Backup() {
   const lista = LM.listBackups();
   return (<>
-    <div className="imp-nota" style={{ marginTop: 0 }}>Ogni voce è una copia salvata prima di una sostituzione dei dati. Ripristinandone una, lo stato attuale viene comunque salvato come nuovo backup.</div>
     <div className="lista-eti"><Segno nome="archivio" dim={11} />Su questo dispositivo{lista.length ? <> <span>{lista.length}</span></> : null}</div>
     {lista.length ? (
       <div className="backup-lista">

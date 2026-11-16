@@ -52,7 +52,6 @@ export default function Lezione({ id }: { id: string }) {
             onClick={() => { LM.modificaLezione(id, { forza: f.id }); ridisegna(); }}>{f.eti}</button>
         ))}
       </div>
-      <p className="lista-nota">Dice quanto è solida questa riga, non quanto vali tu. Serve a poterla scrivere anche dopo averla vista una volta sola.</p>
 
       <div className="lista-eti"><Segno nome="ingranaggio" dim={11} />Dettagli</div>
       <div className="lista">
