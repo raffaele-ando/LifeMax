@@ -4766,3 +4766,6 @@ input[type="time"]::-webkit-datetime-edit { padding: 0; color: var(--inchiostro-
 .tl-blk:has(.manico) .tl-blk-t, .tl-blk:has(.manico) .tl-blk-ora { padding-left: 24px; }
 .trasc-fantasma { background: var(--superficie-1); color: var(--inchiostro-1); border: 0; box-shadow: 0 12px 32px rgba(20, 20, 60, .28); }
 [data-drag-az] { -webkit-user-drag: none; -webkit-tap-highlight-color: transparent; }
+#notte-solito small { display: none; }
+.tl-blk .manico { color: var(--inchiostro-1); background: color-mix(in srgb, var(--c-area, var(--accento)) 30%, transparent); border-radius: 0; }
+.tl-blk .manico .ico { width: 15px; height: 15px; }

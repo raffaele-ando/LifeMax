@@ -1120,5 +1120,10 @@ export type Forma = typeof LM_FORMA;
    — Safari, Firefox — lo disegna il motore, che è l'unico modo di averlo lì.
    `?forma=motore` lo accende a forza, per provarlo. */
 const nativo = typeof CSS !== 'undefined' && CSS.supports && CSS.supports('corner-shape', 'squircle');
-if (!nativo || /[?&]forma=motore/.test(location.search)) avvia();
+if (!nativo || /[?&]forma=motore/.test(location.search)) {
+  /* col motore i raggi restano quelli scritti: l'ingrandimento `--sq` serve
+     solo alla curva del browser, che a parità di numero sta più stretta */
+  document.documentElement.style.setProperty('--sq', '1');
+  avvia();
+}
 
