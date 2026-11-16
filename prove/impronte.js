@@ -67,21 +67,21 @@ const APERTURE = {
     apri: (p) => p.evaluate(() => {
       const b = document.querySelector('#nav-tab [data-menu]'); if (b) b.click();
     }) },
-  impostazioni: { titolo: 'Impostazioni', vai: 'plancia', apri: (p) => p.evaluate(() => {
-    const b = document.getElementById('fondo-impostazioni') || document.querySelector('[data-imp]'); if (b) b.click();
+  impostazioni: { titolo: 'Impostazioni', vai: 'profilo', apri: (p) => p.evaluate(() => {
+    const b = document.getElementById('imp-tutte'); if (b) b.click();
   }) },
-  aree: { titolo: 'Le tue aree', vai: 'plancia', apri: async (p) => {
-    await p.evaluate(() => { const b = document.getElementById('fondo-impostazioni') || document.querySelector('[data-imp]'); if (b) b.click(); });
+  aree: { titolo: 'Le tue aree', vai: 'profilo', apri: async (p) => {
+    await p.evaluate(() => { const b = document.getElementById('imp-tutte'); if (b) b.click(); });
     await p.waitForTimeout(650);
     await p.evaluate(() => { const b = document.getElementById('imp-aree'); if (b) b.click(); });
   } },
-  promemoria: { titolo: 'Promemoria', vai: 'plancia', apri: async (p) => {
-    await p.evaluate(() => { const b = document.getElementById('fondo-impostazioni') || document.querySelector('[data-imp]'); if (b) b.click(); });
+  promemoria: { titolo: 'Promemoria', vai: 'profilo', apri: async (p) => {
+    await p.evaluate(() => { const b = document.getElementById('imp-tutte'); if (b) b.click(); });
     await p.waitForTimeout(650);
     await p.evaluate(() => { const b = document.getElementById('imp-prom-come'); if (b) b.click(); });
   } },
-  ritmo: { titolo: 'Sonno e pasti', vai: 'plancia', apri: async (p) => {
-    await p.evaluate(() => { const b = document.getElementById('fondo-impostazioni') || document.querySelector('[data-imp]'); if (b) b.click(); });
+  ritmo: { titolo: 'Sonno e pasti', vai: 'profilo', apri: async (p) => {
+    await p.evaluate(() => { const b = document.getElementById('imp-tutte'); if (b) b.click(); });
     await p.waitForTimeout(650);
     await p.evaluate(() => { const b = document.getElementById('imp-ritmo'); if (b) b.click(); });
   } },
@@ -92,7 +92,7 @@ const APERTURE = {
      resta vuota. A guardarla è `prove/cloud.js`, che ha un Firebase finto e
      prova la cosa che conta davvero — che sostituire sostituisca — invece
      della forma dei due tasti. */
-  backup: { titolo: 'Backup e ripristino', vai: 'plancia',
+  backup: { titolo: 'Backup e ripristino', vai: 'profilo',
     /* UNA COPIA SOLA, e la stessa a ogni giro: senza svuotare il deposito il
        giro dopo ne trova una in più e l'impronta cambia per un motivo che è
        la prova stessa ad aver creato. L'orologio è fermo, quindi l'ora della
@@ -102,7 +102,7 @@ const APERTURE = {
       LM.backup('prima-import');
     }),
     apri: async (p) => {
-      await p.evaluate(() => { const b = document.getElementById('fondo-impostazioni') || document.querySelector('[data-imp]'); if (b) b.click(); });
+      await p.evaluate(() => { const b = document.getElementById('imp-tutte'); if (b) b.click(); });
       await p.waitForTimeout(650);
       await p.evaluate(() => { const b = document.getElementById('imp-backup'); if (b) b.click(); });
     } },
@@ -140,8 +140,8 @@ const APERTURE = {
   /* del registro tecnico si guarda tutto tranne le righe che ci scorrono
      dentro: dicono cos'è successo in QUESTO giro, e la testa dice a che punto
      sta il salvataggio adesso. */
-  diagnostica: { titolo: 'Registro tecnico', senza: '#diag-console, .diag-stato', vai: 'plancia', apri: async (p) => {
-    await p.evaluate(() => { const b = document.getElementById('fondo-impostazioni') || document.querySelector('[data-imp]'); if (b) b.click(); });
+  diagnostica: { titolo: 'Registro tecnico', senza: '#diag-console, .diag-stato', vai: 'profilo', apri: async (p) => {
+    await p.evaluate(() => { const b = document.getElementById('imp-tutte'); if (b) b.click(); });
     await p.waitForTimeout(650);
     /* IL REGISTRO SI SVUOTA UN ATTIMO PRIMA. Le righe si accumulano per tutta
        la prova, e il numero scritto sulla linguetta «Solo problemi (N)»
@@ -155,8 +155,8 @@ const APERTURE = {
   review: { titolo: 'Le review di prima', vai: 'plancia', apri: (p) => p.evaluate(() => {
     const b = document.getElementById('riep-review'); if (b) b.click();
   }) },
-  guida: { titolo: 'Primi passi', vai: 'plancia', apri: async (p) => {
-    await p.evaluate(() => { const b = document.getElementById('fondo-impostazioni') || document.querySelector('[data-imp]'); if (b) b.click(); });
+  guida: { titolo: 'Primi passi', vai: 'profilo', apri: async (p) => {
+    await p.evaluate(() => { const b = document.getElementById('imp-tutte'); if (b) b.click(); });
     await p.waitForTimeout(650);
     await p.evaluate(() => { const b = document.getElementById('imp-guida'); if (b) b.click(); });
   } },
