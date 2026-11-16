@@ -4424,7 +4424,7 @@ input.rec-ora { min-width: 96px; text-align: left; font-weight: var(--peso-forte
   --brand-a: #5b4ff5; --brand-b: #5b4ff5; --brand-c: #5b4ff5;
   --accento: #5b4ff5; --accento-ink: #ffffff; --accento-pieno: #5b4ff5; --accento-testo: #4a3fe0;
   --pagina: #f7f6fb;
-  --ok: #16b364; --ok-pieno: #0c8a4a;
+  --ok: #16b364; --ok-pieno: #0a7a42;
   /* tre curve, e basta: uscita, andata-e-ritorno, molla */
   --ease-out: cubic-bezier(.22, 1, .36, 1);
   --ease-in-out: cubic-bezier(.65, 0, .35, 1);
@@ -4446,15 +4446,8 @@ input.rec-ora { min-width: 96px; text-align: left; font-weight: var(--peso-forte
   .q-chip, .som-g i, .ck-scala button { corner-shape: squircle; }
 }
 
-/* --- i campi: un bordo solo, intero, uguale dappertutto --- */
-input[type="text"], input[type="url"], input[type="time"], input[type="date"],
-input[type="number"], textarea, select {
-  border: 1.5px solid var(--bordo); border-radius: 14px; background: var(--superficie-1);
-  box-shadow: none; outline: 0;
-  transition: border-color var(--t-veloce), box-shadow var(--t-veloce);
-}
-input[type="text"]:focus, input[type="url"]:focus, input[type="time"]:focus,
-input[type="date"]:focus, input[type="number"]:focus, textarea:focus, select:focus {
+/* --- i campi: l'anello del fuoco, uguale dappertutto --- */
+:where(input[type="text"], input[type="url"], input[type="time"], input[type="date"], input[type="number"], textarea, select):focus {
   border-color: var(--accento); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accento) 18%, transparent);
 }
 
@@ -4520,6 +4513,7 @@ input[type="date"]:focus, input[type="number"]:focus, textarea:focus, select:foc
 
 /* --- il check-in in tre tocchi --- */
 .ck { display: flex; flex-direction: column; gap: 24px; padding: 8px 0 16px; }
+.ck-riga { display: block; }
 .ck-eti { display: block; font-size: 17px; font-weight: 700; margin-bottom: 12px; }
 .ck-scala { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
 .ck-scala button {
@@ -4534,9 +4528,9 @@ input[type="date"]:focus, input[type="number"]:focus, textarea:focus, select:foc
 .casa-data { font-size: 13px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--inchiostro-2); margin: 0 0 2px; }
 .casa-saluto { font-size: 34px; }
 .casa-destra { display: flex; align-items: center; gap: 8px; }
-.casa-serie { display: inline-flex; align-items: center; gap: 4px; height: 40px; padding: 0 12px; border-radius: 99px; }
+.casa-serie { display: inline-flex; align-items: center; gap: 4px; height: 44px; padding: 0 12px; border-radius: 99px; }
 .casa-avatar {
-  width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; text-decoration: none;
+  width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; text-decoration: none;
   background: var(--accento-pieno); color: var(--accento-ink); font-size: 17px; font-weight: 800;
 }
 .casa-barra i { background: var(--ok); }
@@ -4554,7 +4548,7 @@ input[type="date"]:focus, input[type="number"]:focus, textarea:focus, select:foc
 .som-quota { display: flex; flex-direction: column; align-items: flex-end; }
 .som-quota b { font-size: 20px; font-weight: 800; font-variant-numeric: tabular-nums; }
 .som-quota small { font-size: 13px; color: var(--inchiostro-2); }
-.som-sett { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-top: 8px; }
+.som-sett { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-top: 4px; }
 .som-g { display: flex; flex-direction: column; align-items: center; gap: 4px; }
 .som-g i { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; background: var(--superficie-2); color: #fff; }
 .som-g.fatto i { background: var(--ok); }

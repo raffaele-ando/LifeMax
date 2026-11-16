@@ -188,6 +188,8 @@ const CASI = [
     const { ctx, p } = await apri('scheda', '2026-08-25T15:10:00', CASI[0][2]);
     /* la strada vera: profilo → Aspetto → il pulsante */
     await p.evaluate(() => { location.hash = '#/profilo'; }); await p.waitForTimeout(650);
+    await p.evaluate(() => { const b = document.getElementById('imp-tutte'); if (b) b.click(); });
+    await p.waitForTimeout(500);
     await p.evaluate(() => {
       const b = document.getElementById('imp-aspetto');
       if (b) b.click();

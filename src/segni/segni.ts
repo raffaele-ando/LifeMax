@@ -118,7 +118,6 @@ const PATHS: Record<string, string> = {
   /* lo stesso segno rovesciato: una percentuale che scende deve avere la
      forma di una che scende, se no il colore è l'unica cosa che lo dice — e
      il colore non lo vede tutti */
-  trendDown: '<path d="M3.4 6.6l5.4 5.4 3.6-3.6 8.2 8.2"/><path d="M15.4 16.6h5.2v-5.2"/>',
   calendar: '<rect x="3.4" y="4.8" width="17.2" height="16" rx="2.4"/><path d="M8 2.8v4M16 2.8v4M3.4 10h17.2"/>',
   lightbulb: '<path d="M9.2 18.2v-1.4c0-1-.6-1.8-1.3-2.6a6.4 6.4 0 1 1 8.2 0c-.7.8-1.3 1.6-1.3 2.6v1.4z"/><path d="M9.6 21.2h4.8"/>',
   shield: '<path d="M12 2.8s6.4 2.2 8 3.2c0 9.2-4.4 13.6-8 15.2-3.6-1.6-8-6-8-15.2 1.6-1 8-3.2 8-3.2z"/><path d="M8.8 12l2.4 2.4 4-4.8"/>',
@@ -284,7 +283,6 @@ const SENSO: Record<string, string> = {
   mirino: 'la concentrazione',
   smile: 'l’umore',
   trendUp: 'l’andamento nel tempo',
-  trendDown: 'in calo',
   solito: 'il tuo livello di solito',
   confronto: 'prima e dopo messi a confronto',
   flame: 'la serie di giorni di fila',

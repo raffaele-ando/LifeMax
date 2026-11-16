@@ -3281,7 +3281,7 @@ export function testaCasa(): string {
     '<div><div class="casa-data">' + data + '</div><h1 class="casa-saluto">Oggi</h1></div>' +
     '<div class="casa-destra">' +
     (serie > 0 ? '<span class="casa-serie" role="img" aria-label="' + serie + ' giorni di fila">' + ICO('flame', 15, 'fiamma') + '<b>' + serie + '</b></span>' : '') +
-    '<a class="casa-avatar" href="#/profilo" aria-label="Profilo">' + (nome ? esc(nome.charAt(0).toUpperCase()) : ICO('user', 18)) + '</a>' +
+    '<a class="casa-avatar" href="#/profilo" aria-label="Profilo">' + esc((nome || 'Tu').charAt(0).toUpperCase()) + '</a>' +
     '</div>' +
     '</header>' +
     (tot
@@ -5342,7 +5342,7 @@ export function eroePlancia() {
     html +=
       '<div class="som-testa">' +
       '<span class="som-fiamma" role="img" aria-label="' + st.corrente + ' giorni di fila">' + ICO('flame', 26, 'fiamma') + '<b>' + st.corrente + '</b></span>' +
-      '<span class="som-quota"><b>' + pct + '%</b><small>' + bil.fatte + ' di ' + bil.messe + '</small></span>' +
+      '<span class="som-quota"><b><span id="som-pct">' + pct + '</span>%</b><small>' + bil.fatte + ' di ' + bil.messe + '</small></span>' +
       '</div>' +
       '<div class="som-sett">' + sett.map(function (g) {
         const d = new Date(g.data + 'T12:00:00');
@@ -5914,6 +5914,16 @@ function forseChiedere() {
     apriCheckinVeloce();
   }
 }
+
+/* la giornata finita si festeggia: quando l'ultima cosa di oggi passa a
+   fatta, e solo in quel momento */
+let fatteVisteOggi = -1;
+document.addEventListener('lm:change', function () {
+  const oggi = LM.azioniDiOggi();
+  const fatte = oggi.filter(function (x) { return x.done; }).length;
+  if (fatteVisteOggi >= 0 && fatte > fatteVisteOggi && oggi.length > 0 && fatte === oggi.length) festa();
+  fatteVisteOggi = fatte;
+});
 
 /* LA FESTA: una manciata di coriandoli dal centro dello schermo. Sta su
    quello che si chiude davvero — un rituale, la giornata — non su ogni tocco. */
