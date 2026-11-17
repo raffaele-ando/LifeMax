@@ -205,8 +205,11 @@ const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  
        Guardare solo `app.ts` vorrebbe dire dire «a posto» avendo controllato
        il posto da cui la cosa è già stata tolta. */
     const vivo = require('./comune/dove').codiceVivo();
-    ok('l’app non chiede l’orologio a mano da nessuna parte',
-      vivo.indexOf('showPicker') < 0, (vivo.match(/.{0,40}showPicker.{0,40}/g) || []).join(' · '));
+    /* col mouse sì, e in un posto solo: un clic sulla data senza iconcina
+       non apriva niente, e serviva ricliccare. Col dito mai. */
+    const chiamate = (vivo.match(/\.showPicker\(\)/g) || []).length;
+    ok('l’orologio a mano lo si chiede in un posto solo, e solo col mouse',
+      chiamate === 1 && /pointer: fine/.test(vivo), chiamate + ' chiamate');
   }
 
   console.log('LA SCADENZA DI UN’ATTIVITÀ');

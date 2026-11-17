@@ -12,7 +12,7 @@ import { useEffect } from 'react';
 import { usaLM } from '../pezzi/usaLM';
 import { Testa } from '../pezzi/pezzi';
 import { LM } from '../dati/dati';
-import { vistaFocus, wireFuoco, testaCasa, wireRigaAggiunta, render } from '../app/app';
+import { vistaFocus, wireFuoco, testaCasa, wireRigaAggiunta, render, areaNuova } from '../app/app';
 import { html } from '../pezzi/grezzo';
 
 export default function Adesso() {
@@ -26,7 +26,7 @@ export default function Adesso() {
     const v = document.getElementById('vista');
     if (v && v.querySelector('#agg-rapida')) {
       wireRigaAggiunta(v, 'agg-rapida', (testo) => {
-        LM.aggiungiAzione(testo, 'altro', { mit: LM.serveMit() });
+        LM.aggiungiAzione(testo, areaNuova(), { mit: LM.serveMit() });
         render();
       });
     }

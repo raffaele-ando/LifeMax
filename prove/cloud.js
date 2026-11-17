@@ -293,6 +293,10 @@ export function onSnapshot(ref, suDati, suErrore) {
   console.log('\nUN DOCUMENTO REMOTO PIÙ POVERO NON CANCELLA NIENTE');
   {
     const r = await p.evaluate(async () => {
+      /* scoperte vere, scritte qui (l'esempio entrando nell'account se ne va) */
+      const st = LM.load();
+      st.lezioni.push({ id: 'solo-qui-1', testo: 'SCOPERTA SOLO QUI', verso: 'si', forza: 'noto', creata: Date.now() });
+      LM.save();
       const prima = LM.snapshot();
       const quante = prima.lezioni.length;
       /* l'altro dispositivo: nessuna scoperta, ma tante azioni e un
@@ -415,7 +419,7 @@ export function onSnapshot(ref, suDati, suErrore) {
        · prima di unire, il documento vero viene messo da parte nel cloud;
        · e da quella copia si può tornare SOSTITUENDO, non unendo.
      ============================================================ */
-  console.log('\nL’ESEMPIO NON ENTRA NELL’ACCOUNT, E «AZZERA TUTTO» NON CANCELLA IL CLOUD');
+  console.log('\nCON L’ESEMPIO, ENTRANDO CONTA SOLO L’ACCOUNT; «AZZERA TUTTO» NON CANCELLA IL CLOUD; USCENDO SI RESTA PULITI');
   /* Due guai veri, successi in fila. L'esempio entrava nell'account alla
      prima sincronizzazione e da lì su tutti i dispositivi; e per toglierlo si
      usava «Azzera tutto», il cui taglio — alla prima unione con l'account —
@@ -427,6 +431,9 @@ export function onSnapshot(ref, suDati, suErrore) {
       window.__fb.utente = null; if (window.__fb.avvisa) window.__fb.avvisa(null);
       await new Promise((r2) => setTimeout(r2, 300));
       localStorage.clear();
+      /* il caso peggiore: questo dispositivo era GIÀ stato collegato a
+         quell'account, e prima di rientrare si è caricato l'esempio */
+      localStorage.setItem('lm-account-unito', 'uid-esempio');
       LM.seedDemo();
       const conImpronta = !!LM.load().esempio && LM.load().demo;
       LM.aggiungiAzione('SCRITTA DA ME SUL COMPUTER', 'altro', {});
@@ -451,7 +458,10 @@ export function onSnapshot(ref, suDati, suErrore) {
         conImpronta: conImpronta, domanda: domanda,
         esempioQui: /Capitolo di Analisi II/.test(qui), esempioNube: /Capitolo di Analisi II/.test(nube),
         veroQui: /UNA COSA MIA DAVVERO/.test(qui) && /AZIONE MIA DAVVERO/.test(qui),
-        mioNube: /SCRITTA DA ME SUL COMPUTER/.test(nube) && /UNA COSA MIA DAVVERO/.test(nube),
+        veroNube: /UNA COSA MIA DAVVERO/.test(nube) && /AZIONE MIA DAVVERO/.test(nube),
+        sopraEsempioNube: /SCRITTA DA ME SUL COMPUTER/.test(nube) || /SCRITTA DA ME SUL COMPUTER/.test(qui),
+        inBackup: LM.listBackups().some((x) => x.motivo === 'prima-di-entrare-nell-account'),
+        nome: LM.load().profilo.nome,
         copie: vie.length
       };
     });
@@ -459,7 +469,10 @@ export function onSnapshot(ref, suDati, suErrore) {
     ok('collegandosi non serve chiedere niente', !r.domanda);
     ok('l’esempio non va nel cloud', !r.esempioNube);
     ok('e qui sparisce, al posto dei dati veri dell’account', !r.esempioQui && r.veroQui);
-    ok('quello scritto a mano sopra l’esempio resta, e va nel cloud', r.mioNube);
+    ok('i dati dell’account restano tutti, qui e nel cloud', r.veroNube);
+    ok('niente di quello fatto dentro l’esempio entra nell’account', !r.sopraEsempioNube);
+    ok('il profilo dell’esempio non prende il posto del tuo', r.nome !== 'Raffaele', r.nome);
+    ok('l’esempio resta in un backup di questo dispositivo', r.inBackup);
     ok('prima di unire, il documento del cloud è messo da parte', r.copie === 1, r.copie + ' copie');
 
     const z = await p.evaluate(async () => {
@@ -497,6 +510,45 @@ export function onSnapshot(ref, suDati, suErrore) {
     ok('«Togli i dati di esempio» toglie l’esempio', t.n > 0 && !t.esempio, t.n + ' tolti');
     ok('e lascia quello che hai scritto tu', t.mia);
     ok('dopo un backup', t.backup);
+
+    const u = await p.evaluate(async () => {
+      LM.aggiungiAzione('DELL’ACCOUNT', 'altro', {});
+      await new Promise((r2) => setTimeout(r2, 600));
+      await window.LMCloud.signOut();
+      await new Promise((r2) => setTimeout(r2, 300));
+      const qui = JSON.stringify(LM.snapshot());
+      const fuori = { pulito: !/DELL’ACCOUNT/.test(qui), legame: localStorage.getItem('lm-account-unito'), nube: /DELL’ACCOUNT/.test(String((window.__fb.doc || {}).data || '')) };
+      window.__fb.entra('uid-dopo');
+      await new Promise((r2) => setTimeout(r2, 1200));
+      fuori.torna = /DELL’ACCOUNT/.test(JSON.stringify(LM.snapshot()));
+      return fuori;
+    });
+    ok('uscendo, sul dispositivo non restano i dati dell’account', u.pulito && !u.legame);
+    ok('che restano nel cloud', u.nube);
+    ok('e rientrando tornano', u.torna);
+
+    const v = await p.evaluate(async () => {
+      /* un account in cui l'esempio era già entrato, con le versioni di prima */
+      await window.LMCloud.signOut();
+      await new Promise((r2) => setTimeout(r2, 300));
+      const sporco = LM.statoVuoto();
+      sporco.updatedAt = Date.now();
+      sporco.azioni = [{ id: 'mia-x', testo: 'LA MIA', data: LM.todayKey(), creata: Date.now() },
+        { id: 'es-x', testo: 'Capitolo di Analisi II + 10 esercizi', data: LM.todayKey(), creata: Date.now() }];
+      window.__fb.doc = { data: JSON.stringify(sporco), updatedAt: sporco.updatedAt };
+      window.__fb.entra('uid-sporco');
+      let chiesto = false;
+      for (let i = 0; i < 30; i++) {
+        await new Promise((r2) => setTimeout(r2, 100));
+        const t = document.querySelector('.avviso-ovl #avv-tit');
+        if (t && /dati di esempio/i.test(t.textContent)) { chiesto = true; document.querySelector('.avviso-ovl .avv-si, .avviso-ovl .btn-primary, .avviso-ovl [data-avv-si]') ? document.querySelector('.avviso-ovl .avv-si, .avviso-ovl .btn-primary, .avviso-ovl [data-avv-si]').click() : null; break; }
+      }
+      await new Promise((r2) => setTimeout(r2, 800));
+      const qui = JSON.stringify(LM.snapshot());
+      return { chiesto: chiesto, mia: /LA MIA/.test(qui), esempio: /Capitolo di Analisi II/.test(qui) };
+    });
+    ok('se nell’account c’è già l’esempio, all’accesso propone di toglierlo', v.chiesto);
+    ok('e toglie solo quello', v.mia && !v.esempio, JSON.stringify(v));
   }
 
   /* ============================================================

@@ -311,7 +311,7 @@ const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  
     await ctx.close();
   }
 
-  console.log('\nUN PASTO SALTATO SI VEDE NELLA GIORNATA');
+  console.log('\nUN PASTO SALTATO SPARISCE DALLA GIORNATA, E TORNA SE LO SI FA');
   {
     const { ctx, p } = await apri('2026-08-25T20:30:00', 3);
     await p.evaluate(() => { document.getElementById('sheet-chiudi').click(); });
@@ -319,15 +319,13 @@ const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  
     await p.evaluate(() => { LM.registraPasto(LM.todayKey(), 'pranzo', { fatto: false }); });
     await p.evaluate(() => { location.hash = '#/giornata'; });
     await p.waitForTimeout(900);
-    const blk = await p.evaluate(() => {
-      const e = [...document.querySelectorAll('.tl-blk-pasto')].find(x => /Pranzo/.test(x.textContent));
-      if (!e) return null;
-      const s = getComputedStyle(e);
-      return { saltato: e.classList.contains('saltato'), opacita: s.opacity,
-        barrato: getComputedStyle(e.querySelector('.tl-blk-t')).textDecorationLine };
-    });
-    ok('il blocco del pranzo resta al suo posto, sbiadito e barrato',
-      !!blk && blk.saltato && +blk.opacita < 1 && /line-through/.test(blk.barrato), JSON.stringify(blk));
+    const pranzo = () => p.evaluate(() => [...document.querySelectorAll('.tl-blk-pasto')].some(x => /Pranzo/.test(x.textContent)));
+    ok('il pranzo saltato non occupa la giornata', !(await pranzo()));
+    await p.evaluate(() => { LM.registraPasto(LM.todayKey(), 'pranzo', { fatto: true }); location.hash = '#/rituali'; });
+    await p.waitForTimeout(500);
+    await p.evaluate(() => { location.hash = '#/giornata'; });
+    await p.waitForTimeout(900);
+    ok('detto che l’hai fatto, torna al suo posto', await pranzo());
     await ctx.close();
   }
 

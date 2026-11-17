@@ -298,8 +298,16 @@ void (async function init() {
           }
         }
       },
+      /* USCIRE LASCIA IL DISPOSITIVO PULITO. I dati sono dell'account e
+         restano nell'account: qui se ne tiene una copia nei backup locali e
+         si riparte vuoti. Se restassero, chi entra poi con un ALTRO account
+         (o carica l'esempio e rientra) se li vedrebbe mescolare con altri. */
       signOut: async function () {
+        const chi = currentUser;
+        if (chi) { try { await push(chi.uid); } catch { /* resta il backup locale */ } }
         try { await authMod.signOut(autenticazione); } catch { /* ignora */ }
+        try { localStorage.removeItem('lm-account-unito'); } catch { /* pazienza */ }
+        window.LM.lasciaAccount();
       },
       /* LE COPIE CHE STANNO NEL CLOUD, per poterle guardare e riprendere.
          Ogni volta che il documento remoto sta per essere toccato ne viene
@@ -409,7 +417,16 @@ async function primaSincronizzazione(uid: string): Promise<void> {
      i dati veri che stanno nel cloud */
   let giaUnito = false;
   try { giaUnito = localStorage.getItem('lm-account-unito') === uid; } catch { /* senza memoria: come la prima volta */ }
-  if (!giaUnito) {
+  /* QUI C'È L'ESEMPIO: CONTA SOLO L'ACCOUNT. Chi entra con Google dopo
+     aver curiosato fra i dati di esempio vuole ritrovare i SUOI dati, non
+     un miscuglio. Prima si domandava «unisco?», e chi rispondeva di sì (o
+     non rispondeva) si ritrovava l'esempio sopra i dati veri, nel cloud e
+     su tutti i dispositivi. Adesso l'esempio si mette da parte in un backup
+     e il dispositivo prende quello che c'è nell'account, e basta. Vale
+     anche se questo dispositivo era già stato collegato prima. */
+  const eraEsempio = window.LM.lasciaEsempio();
+  if (eraEsempio) log('info', 'qui c’erano i dati di esempio', 'messi da parte: conta solo l’account');
+  else if (!giaUnito) {
     window.LM.primaUnione();
     log('info', 'prima unione da questo dispositivo', 'esempio tenuto fuori, azzeramento locale non applicato al cloud');
   }
@@ -444,12 +461,7 @@ async function primaSincronizzazione(uid: string): Promise<void> {
        Lo stato di esempio si riconosce da sé (`demo`), e allora si domanda.
        Non si decide al posto suo: chi ha caricato l'esempio può averci
        lavorato sopra per settimane, e l'app non ha modo di saperlo. */
-    let sostituendo = false;
-    if (locale.demo && remoteR > 0) {
-      log('info', 'qui ci sono i dati di esempio e nel cloud ce ne sono di veri: chiedo prima di unire');
-      sostituendo = (await chiediDellEsempio(localR, remoteR)) === 'solo-cloud';
-      log('info', 'risposto', sostituendo ? 'tieni solo quelli del cloud' : 'unisci lo stesso');
-    }
+    const sostituendo = eraEsempio;
     await backupRemoto(uid, dati);
     window.LM.backup(sostituendo ? 'prima-di-togliere-i-dati-di-esempio' : 'prima-di-unire-col-cloud');
     applicaRemoto(dati, false, sostituendo);
@@ -458,6 +470,9 @@ async function primaSincronizzazione(uid: string): Promise<void> {
     opCede('lettura iniziale', 'scrittura');
     await push(uid);
     try { localStorage.setItem('lm-account-unito', uid); } catch { /* pazienza */ }
+    /* l'esempio entrato nell'account con le versioni di prima: si offre di toglierlo */
+    const restoEsempio = window.LM.contaEsempio();
+    if (restoEsempio > 0) window.dispatchEvent(new CustomEvent('lm:esempio-nell-account', { detail: restoEsempio }));
   } else {
     /* Nessun documento cloud: carica ciò che c'è in locale. */
     log('info', 'primo salvataggio per questo account');
@@ -465,30 +480,6 @@ async function primaSincronizzazione(uid: string): Promise<void> {
     await push(uid);
     try { localStorage.setItem('lm-account-unito', uid); } catch { /* pazienza */ }
   }
-}
-
-/* La domanda la fa l'app, non questo file: qui non c'è niente che sappia
-   disegnare. Si manda l'evento e si aspetta la risposta.
-   E c'è un salvagente: se non risponde nessuno — l'app non è ancora in piedi,
-   o è una versione che questa domanda non la conosce — dopo venti secondi si
-   UNISCE, che è la scelta che non toglie niente. Una sincronizzazione appesa
-   per sempre in attesa di una risposta che non arriva è peggio del problema
-   che stiamo evitando: è già successo una volta, con «Salvataggio…» che
-   restava lì per sempre. */
-function chiediDellEsempio(qui: number, cloud: number): Promise<RispostaEsempio> {
-  return new Promise(function (risolvi) {
-    let risposto = false;
-    const una = function (v: RispostaEsempio) { if (risposto) return; risposto = true; risolvi(v); };
-    const salvagente = setTimeout(function () {
-      log('avviso', 'nessuna risposta sulla domanda dell’esempio: unisco', 'passati 20 secondi');
-      una('unisci');
-    }, 20000);
-    const dettaglio: DettaglioEsempio = {
-      qui: qui, cloud: cloud,
-      decidi: function (v: RispostaEsempio) { clearTimeout(salvagente); una(v); }
-    };
-    window.dispatchEvent(new CustomEvent('lm:esempio-al-cloud', { detail: dettaglio }));
-  });
 }
 
 /* una copia dal cloud, unita o messa al posto di tutto. Le due strade

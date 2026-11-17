@@ -586,6 +586,11 @@ document.addEventListener('click', function (e) {
   const t = e.target;
   if (!(t instanceof HTMLInputElement) || t.disabled || t.readOnly) return;
   if (!/^(date|time|datetime-local|month|week)$/.test(t.type)) return;
+  /* SOLO COL PUNTATORE FINE. Sul telefono il tocco apre già la ruota da sé,
+     e una seconda richiesta la richiuderebbe (è successo due volte): qui
+     serve solo col mouse, dove un clic sulla data non apre niente finché
+     non si centra l'iconcina, che nei nostri campi non c'è. */
+  if (!window.matchMedia || !window.matchMedia('(pointer: fine)').matches) return;
   const conPicker = t as HTMLInputElement & { showPicker?: () => void };
   if (typeof conPicker.showPicker !== 'function') return;
   try { conPicker.showPicker(); } catch (_e) { /* già aperto, o non permesso: ci pensa il browser */ }
@@ -1789,6 +1794,12 @@ export function htmlImpostazioni(pezzo?: 'profilo'): string {
     etichetta('Account', 'user') +
     htmlAccount() +
     '<div class="lista mt-s">' +
+    '<label class="lista-riga sc-riga" for="imp-area-nuova"><span class="sc-eti">' + ICO('aree', 15) + ' Area delle cose nuove</span>' +
+    '<span class="sc-val"><select id="imp-area-nuova" class="sc-inline">' +
+    '<option value=""' + (s.profilo.areaNuova ? '' : ' selected') + '>Secondo cosa</option>' +
+    '<option value="-"' + (s.profilo.areaNuova === '-' ? ' selected' : '') + '>Nessuna</option>' +
+    areeAttive().map(function (a) { return '<option value="' + a.id + '"' + (a.id === s.profilo.areaNuova ? ' selected' : '') + '>' + esc(a.nome) + '</option>'; }).join('') +
+    '</select></span></label>' +
     rigaPorta('imp-aspetto', 'palette', 'Aspetto', modo === 'auto' ? 'automatico' : modo === 'dark' ? 'scuro' : 'chiaro') +
     '</div>' +
 
@@ -2221,10 +2232,19 @@ export function wireAspettoDati(root: HTMLElement): void {
   if (la) la.addEventListener('click', function () { if (window.LMCloud && window.LMCloud.available) window.LMCloud.signIn(); });
   var le = root.querySelector<HTMLElement>('#imp-esci');
   if (le) le.addEventListener('click', function () {
-    if (window.LMCloud) window.LMCloud.signOut();
-    chiudiSheet(); toast('Hai effettuato la disconnessione.', 0, 'logout');
+    chiudiSheet();
+    Promise.resolve(window.LMCloud ? window.LMCloud.signOut() : undefined).then(function () {
+      location.hash = '#/oggi'; render();
+      toast('Sei uscito. I tuoi dati restano nel tuo account.', 0, 'logout');
+    });
   });
   var d = root.querySelector<HTMLElement>('#imp-demo'); if (d) d.addEventListener('click', caricaDemo);
+  var an = root.querySelector<HTMLSelectElement>('#imp-area-nuova');
+  if (an) an.addEventListener('change', function () {
+    const v = an ? an.value : '';
+    const st = LM.load(); if (v) st.profilo.areaNuova = v; else delete st.profilo.areaNuova; LM.save();
+    toast(v === '-' ? 'Le cose nuove nasceranno senza area' : v ? 'Le cose nuove nasceranno in «' + areaById(v).nome + '»' : 'Ogni cosa nuova prende l’area che le si addice', 0, 'aree');
+  });
   var te = root.querySelector<HTMLElement>('#imp-togli-esempio');
   if (te) te.addEventListener('click', function () {
     const n = LM.contaEsempio();
@@ -2473,7 +2493,7 @@ export function etichetta(testo: string, ico?: string, conta?: number | string):
 }
 
 export function rigaAggiunta(id: string, segnaposto: string, opzioniHtml?: string): string {
-  return '<form class="agg" id="' + id + '" autocomplete="off">' +
+  return '<form class="agg" id="' + id + '" autocomplete="off" novalidate>' +
     '<div class="agg-riga">' +
     '<input type="text" class="agg-testo" placeholder="' + esc(segnaposto) + '" aria-label="' + esc(segnaposto) + '" enterkeyhint="done">' +
     /* il segno più dice da sé cosa fa: quando lo schermo è strettissimo la
@@ -2577,9 +2597,19 @@ export function areeAttive() {
   return s.aree.filter(function (a) { return s.areeAttive.indexOf(a.id) >= 0; });
 }
 
+/* l'area con cui nasce una cosa nuova: quella scelta in Impostazioni, se c'è
+   ed è ancora accesa, se no quella che dice chi chiama, se no «Altro» */
+export function areaNuova(ripiego?: string): string {
+  const s = LM.load();
+  const scelta = s.profilo.areaNuova;
+  if (scelta === '-') return 'altro';
+  if (scelta && s.areeAttive.indexOf(scelta) >= 0) return scelta;
+  return ripiego || 'altro';
+}
 export function selectAree(id: string, selezionata?: string | null, etichetta?: string, cls?: string): string {
+  const sel = selezionata === undefined ? areaNuova() : selezionata;
   return '<select id="' + id + '"' + (cls ? ' class="' + cls + '"' : '') + ' aria-label="' + esc(etichetta || 'Area') + '">' + areeAttive().map(function (a) {
-    return '<option value="' + a.id + '"' + (a.id === selezionata ? ' selected' : '') + '>' + esc(a.nome) + '</option>';
+    return '<option value="' + a.id + '"' + (a.id === sel ? ' selected' : '') + '>' + esc(a.nome) + '</option>';
   }).join('') + '</select>';
 }
 
@@ -4044,9 +4074,10 @@ function nodiGiorno(k: Giorno): NodiDelGiorno {
   var isToday = k === LM.todayKey();
   const placed: Nodo[] = [], tray: Nodo[] = [];
   (r.pasti || []).forEach(function (p) {
-    /* `fatto` arriva dal resoconto della sera: `false` non è un buco, è una
-       risposta — quel pasto si vede SALTATO, non scomparso, perché «non ho
-       pranzato» è un dato che serve */
+    /* `fatto` arriva dal resoconto della sera: un pasto saltato non ha
+       occupato tempo, quindi dalla giornata sparisce. Il dato resta nel
+       registro, che è dove lo si legge e dove lo si può cambiare. */
+    if (p.fatto === false) return;
     if (p.ora) placed.push({ tipo: 'pasto', min: minOf(p.ora), ora: p.ora, dur: p.durata || 30, nome: p.nome, pastoId: p.id, fatto: p.fatto ?? undefined, icona: /colaz|coffee|breakfast/i.test((p.id || '') + ' ' + p.nome) ? 'coffee' : 'utensils' });
   });
   s.abitudini.forEach(function (h) {
@@ -4582,10 +4613,26 @@ function montaGiornata(container: HTMLElement, opzioni?: OpzGriglia): void {
     if (grigliaEl) grigliaEl.setAttribute('data-drop-ora', '1');
     var zonaSo = container.querySelector<HTMLElement>('.gio-so');
     if (zonaSo) zonaSo.setAttribute('data-drop-senzaora', '1');
+    /* togliere l'orario si può sempre, anche quando la lista «Senza orario»
+       non c'è o è fuori schermo: mentre trascini compare in basso una zona
+       dove lasciarla */
+    if (!container.querySelector('.gio-so-drop')) {
+      const zona = document.createElement('div');
+      zona.className = 'gio-so-drop';
+      zona.setAttribute('data-drop-senzaora', '1');
+      zona.innerHTML = ICO('clock', 15) + '<span>Togli l’orario</span>';
+      container.appendChild(zona);
+    }
     abilitaTrascina(container, function (id, bersaglio, _x, y) {
       if (id.indexOf('ab:') === 0) {
         const hid = id.split(':')[1] || '';
-        if (!bersaglio.hasAttribute('data-drop-ora')) { toast('Un’abitudine resta nel suo giorno, con un orario.', 0, 'clock'); return; }
+        if (bersaglio.hasAttribute('data-drop-senzaora')) {
+          LM.spostaAbitudineIlGiorno(hid, k, '-');
+          toast('Oggi senza orario.', 0, 'clock');
+          montaGiornata(container, opts); aggiornaNav();
+          return;
+        }
+        if (!bersaglio.hasAttribute('data-drop-ora')) { toast('Un’abitudine resta nel suo giorno.', 0, 'clock'); return; }
         const gs = +(bersaglio.getAttribute('data-gs') || ''), pxh = +(bersaglio.getAttribute('data-pxh') || '');
         if (isNaN(gs) || !pxh) return;
         const r = bersaglio.getBoundingClientRect();
@@ -5966,7 +6013,7 @@ function bloccoRecupero(tutti?: boolean): string {
       /* si parte da «Altro / Esplorazione»: una camminata messa d'ufficio in
          «Studio» è un dato sbagliato, e la prima area della lista non ha
          niente a che vedere con quello che uno ha appena scritto */
-      '<label class="agg-area"><span class="agg-eti">in</span>' + selectAree('agg-fatto-area', 'altro') + '</label>' +
+      '<label class="agg-area"><span class="agg-eti">in</span>' + selectAree('agg-fatto-area', areaNuova()) + '</label>' +
       '<label class="agg-area"><span class="agg-eti">verso le</span>' +
       '<input type="time" id="agg-fatto-ora" class="sc-inline" aria-label="Verso che ora"></label>') +
     (fatte.length
@@ -6271,6 +6318,25 @@ function ritualeMattina(corpo: HTMLElement): void {
 export const GIORNI_ORD: readonly GiornoSettimana[] = [1, 2, 3, 4, 5, 6, 0];
 export const GIORNI_LAB: Record<GiornoSettimana, string> = { 1: 'L', 2: 'M', 3: 'M', 4: 'G', 5: 'V', 6: 'S', 0: 'D' };
 
+/* Le scelte di un'abitudine nuova, con lo stesso aspetto della sua scheda:
+   un riquadro solo, i giorni in fila tonda, poi ora e area una per riga.
+   L'ora si decide adesso, mentre l'intenzione è fresca. */
+export function opzioniNuovaAbitudine(): string {
+  return '<div class="gr agg-gr">' +
+    '<div class="gr-riga"><span class="gr-eti">Giorni</span><span class="gr-fisso" id="agg-ab-quando">Ogni giorno</span></div>' +
+    '<div class="gr-riga gr-giorni" id="agg-ab-giorni">' + chipsGiorni([]) + '</div>' +
+    '<label class="gr-riga" for="agg-ab-ora"><span class="gr-eti">Ora</span>' +
+    '<span class="gr-data"><input type="time" class="gr-val" id="agg-ab-ora" required aria-label="A che ora (facoltativo)"><span class="gr-mai" aria-hidden="true">Quando vuoi</span></span></label>' +
+    '<label class="gr-riga" for="agg-ab-area"><span class="gr-eti">Area</span>' + selectAree('agg-ab-area', areaNuova('salute'), 'Area', 'gr-val') + '</label>' +
+    '</div>';
+}
+/* tocca una pastiglia dei giorni della riga nuova: accende e riscrive il riassunto */
+export function toccaGiornoNuovo(opz: ParentNode, chip: HTMLElement): void {
+  chip.classList.toggle('sel');
+  const q = opz.querySelector<HTMLElement>('#agg-ab-quando');
+  const g = opz.querySelector<HTMLElement>('#agg-ab-giorni');
+  if (q && g) { const r = riepilogoGiorni(leggiGiorni(g)); q.textContent = r.charAt(0).toUpperCase() + r.slice(1); }
+}
 export function chipsGiorni(giorni: GiornoSettimana[]): string {
   return '<div class="giorni-chips">' + GIORNI_ORD.map(function (d) {
     return '<button type="button" class="giorno-chip' + (giorni.indexOf(d) >= 0 ? ' sel' : '') + '" data-giorno="' + d + '">' + GIORNI_LAB[d] + '</button>';
@@ -6443,14 +6509,7 @@ export function sezioneAbitudini(corpo: HTMLElement): void {
     prog +
     '<div class="ab-nuova">' +
     rigaAggiunta('agg-ab', 'Nuova abitudine…',
-      '<span class="agg-eti">In che giorni</span>' +
-      '<div id="agg-ab-giorni" class="agg-giorni">' + chipsGiorni([]) + '</div>' +
-      '<span class="agg-nota">nessuno selezionato = ogni giorno</span>' +
-      /* l'ora si decide adesso, mentre l'intenzione è fresca: è il
-         momento in cui si sa ancora quando la si vuole fare */
-      '<label class="agg-ora"><span class="agg-eti">alle</span>' +
-      '<input type="time" class="tl-time" id="agg-ab-ora" aria-label="A che ora (facoltativo)"></label>' +
-      '<label class="agg-area"><span class="agg-eti">in</span>' + selectAree('agg-ab-area', 'salute') + '</label>') +
+      opzioniNuovaAbitudine()) +
     '</div>' +
     (oggi.length
       ? '<div class="lista-eti">Oggi</div><div class="lista">' +
@@ -6477,7 +6536,7 @@ export function sezioneAbitudini(corpo: HTMLElement): void {
   });
   var nuovaG = presa(corpo.querySelector<HTMLElement>('#agg-ab-giorni'));
   nuovaG.querySelectorAll<HTMLElement>('.giorno-chip').forEach(function (chip) {
-    chip.addEventListener('click', function () { chip.classList.toggle('sel'); });
+    chip.addEventListener('click', function () { toccaGiornoNuovo(corpo, chip); });
   });
   wireRigaAggiunta(corpo, 'agg-ab', function (testo, opz) {
     var giorni = leggiGiorni(presa(opz.querySelector<HTMLElement>('#agg-ab-giorni')));
@@ -6787,7 +6846,7 @@ export function opzDaFare() {
   return '<button type="button" class="q-chip" data-nuovoq="' + oggiK + '">Oggi</button>' +
     '<button type="button" class="q-chip" data-nuovoq="' + LM.addDays(oggiK, 1) + '">Domani</button>' +
     '<button type="button" class="q-chip on" data-nuovoq="">Senza data</button>' +
-    selectAree('agg-bk-area', areaFiltro() || 'altro', 'Area', 'agg-sel-area');
+    selectAree('agg-bk-area', areaFiltro() || areaNuova(), 'Area', 'agg-sel-area');
 }
 
 export function wireAggiunta(box: HTMLElement): void {
@@ -7844,15 +7903,20 @@ window.addEventListener('lm:auth', function () {
    subito non aveva nessun modo di rimediare.
    L'app non può sapere da sé se quell'esempio è ancora esempio o se ci hai
    lavorato sopra per un mese. Quindi non decide: chiede. */
-window.addEventListener('lm:esempio-al-cloud', function (e) {
-  var d = (e && e.detail) || {};
-  if (typeof d.decidi !== 'function') return;
+/* NELL'ACCOUNT C'È L'ESEMPIO: è entrato prima che l'app sapesse tenerlo
+   fuori. Lo si dice una volta, all'accesso, e lo si toglie con un tocco. */
+window.addEventListener('lm:esempio-nell-account', function (e) {
+  var n = (e && e.detail) || 0;
+  if (!n) return;
   avviso({
-    titolo: 'Su questo dispositivo ci sono i dati di esempio',
-    testo: 'Nel tuo account ce ne sono ' + d.cloud + '. Unendoli, le otto settimane inventate restano dentro per sempre. Posso invece tenere solo i tuoi: l’esempio resta in un backup qui, e da lì si recupera.',
-    azione: 'Tieni solo i miei',
-    annulla: 'Uniscili lo stesso'
-  }, function () { d.decidi('solo-cloud'); }, function () { d.decidi('unisci'); });
+    titolo: 'Nel tuo account ci sono dei dati di esempio',
+    testo: 'Sono ' + n + ' cose inventate, entrate in un accesso di prima. Le tolgo? Quello che hai scritto tu resta.',
+    azione: 'Toglile',
+    annulla: 'Lascia stare'
+  }, function () {
+    var tolte = LM.togliEsempio(); render();
+    toast(tolte ? 'Tolti i dati di esempio.' : 'Niente da togliere.', 0, 'sparkles');
+  });
 });
 
 /* aggiornamento arrivato da un altro dispositivo */

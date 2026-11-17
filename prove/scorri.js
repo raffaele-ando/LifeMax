@@ -276,18 +276,22 @@ const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  
     const c = document.querySelector('.wk-cols');
     return !!c && c.scrollWidth > c.clientWidth + 2;
   });
-  ok('le colonne della settimana scorrono davvero di lato (se no la prova qui sotto è muta)',
-    scorreDavvero, scorreDavvero ? 'sì' : 'no: allarga la finestra o aggiungi giorni');
-  await fermo('dentro le colonne della settimana, che scorrono già di loro', async () => {
+  /* da quando la settimana sta tutta nello schermo non scorre più di lato:
+     la prova sotto resta, e dice che il dito sulla settimana non cambia pagina */
+  console.log('  ..  le colonne della settimana ' + (scorreDavvero ? 'scorrono di lato' : 'stanno tutte nello schermo'));
+  if (await p.evaluate(() => !!document.querySelector('.wk-cols'))) await fermo('dentro le colonne della settimana', async () => {
     const y = await p.evaluate(() => {
       const c = document.querySelector('.wk-cols'); const r = c.getBoundingClientRect();
       return r.top + Math.min(r.height / 2, 200);
     });
     await dito(200, y, 90, y, 160);
   });
-  /* su un blocco che si trascina */
+  /* su un blocco che si trascina: uno lo si mette, perché l'esempio a
+     un'ora qualsiasi del giorno vero può non averne nessuno in vista */
+  await apri('giornata', () => { const a = LM.aggiungiAzione('Blocco di prova', 'altro', {}); LM.setOraAzione(a.id, '12:00'); });
+  await apri('giornata');
   const cB = await p.evaluate(() => {
-    const b = document.querySelector('.tl-grid-mini [data-drag-az]');
+    const b = document.querySelector('.tl-grid [data-drag-az]');
     if (!b) return null;
     const r = b.getBoundingClientRect();
     return { x: r.left + r.width / 2, y: r.top + r.height / 2 };

@@ -2194,13 +2194,18 @@ function creaLM() {
   /* l'orario di un'abitudine in un giorno: quello spostato per quel giorno,
      se c'è, se no il suo di sempre */
   function oraAbitudine(h: Abitudine, k: Giorno): Ora | null {
-    return (h.oreGiorno && h.oreGiorno[k]) || h.ora;
+    const o = h.oreGiorno && h.oreGiorno[k];
+    if (o === '-') return null;
+    return o || h.ora;
   }
-  function spostaAbitudineIlGiorno(id: string, k: Giorno, o: Ora | null) {
+  /* `o` null torna all'ora di sempre; '-' toglie l'ora solo per quel giorno */
+  function spostaAbitudineIlGiorno(id: string, k: Giorno, o: Ora | '-' | null) {
     const h = load().abitudini.find(function (x) { return x.id === id; });
     if (!h) return false;
     h.oreGiorno = h.oreGiorno || {};
-    if (o) h.oreGiorno[k] = o; else delete h.oreGiorno[k];
+    if (o === '-' && !h.ora) delete h.oreGiorno[k];
+    else if (o) h.oreGiorno[k] = o; else delete h.oreGiorno[k];
+    (h as { aggiornata?: number }).aggiornata = Date.now();
     save();
     return true;
   }
@@ -3698,8 +3703,36 @@ function creaLM() {
     var cambiato = false;
     if (st.esempio) { togliEsempioDa(st, false); cambiato = true; }
     if (st.azzerato) { st.azzerato = 0; cambiato = true; }
+    /* le cancellazioni fatte qui da ospite riguardavano righe di qui: nel
+       cloud non devono togliere niente */
+    if (st.cancellati && st.cancellati.length) { st.cancellati = []; cambiato = true; }
     if (cambiato) { senzaLapidi++; save(); senzaLapidi--; }
   }
+
+  /* UN DISPOSITIVO PULITO, che non dichiara niente: niente azzeramento,
+     niente lapidi, solo l'aspetto scelto e il benvenuto già fatto. È lo
+     stato da cui si riparte quando si esce da un account o si lascia
+     l'esempio per entrare in uno: quello che c'era prima va nei backup. */
+  function pulito(perche: string): void {
+    var prima = load();
+    backup(perche);
+    scordaPunti();
+    var nuovo = statoVuoto();
+    nuovo.onboarded = true;
+    nuovo.profilo.skin = prima.profilo.skin;
+    nuovo.profilo.modo = prima.profilo.modo;
+    nuovo.azzerato = 0;
+    state = nuovo;
+    senzaLapidi++; save(); senzaLapidi--;
+  }
+  /* entrando in un account: se qui c'è l'esempio, si mette da parte tutto */
+  function lasciaEsempio(): boolean {
+    var st = load();
+    if (!st.demo && !st.esempio) return false;
+    pulito('prima-di-entrare-nell-account');
+    return true;
+  }
+  function lasciaAccount(): void { pulito('uscita-dall-account'); }
 
   /* ==================================================================
      DUE FINESTRE DELLA STESSA APP, SULLO STESSO DISPOSITIVO
@@ -3740,7 +3773,7 @@ function creaLM() {
     METRICHE_ESPERIMENTO: METRICHE_ESPERIMENTO,
     XP_EVENTI: XP_EVENTI,
     load: load, save: save, reset: reset, seedDemo: seedDemo,
-    togliEsempio: togliEsempio, contaEsempio: contaEsempio, snapshotPerCloud: snapshotPerCloud, primaUnione: primaUnione, hydrate: hydrate, snapshot: snapshot,
+    togliEsempio: togliEsempio, contaEsempio: contaEsempio, snapshotPerCloud: snapshotPerCloud, primaUnione: primaUnione, lasciaEsempio: lasciaEsempio, lasciaAccount: lasciaAccount, hydrate: hydrate, snapshot: snapshot,
     unisci: unisci, recuperi: recuperi, COME_UNIRE: COME_UNIRE, statoVuoto: statoVuoto,
     backup: backup, listBackups: listBackups, restoreBackup: restoreBackup, ricchezza: ricchezza,
     exportJson: exportJson, importJson: importJson, ripristinaStato: ripristinaStato,

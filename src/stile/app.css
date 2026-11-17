@@ -4004,10 +4004,10 @@ body.sto-trascinando { cursor: grabbing; user-select: none; -webkit-user-select:
 :root { --premuto: color-mix(in srgb, var(--inchiostro-1) 8%, transparent); }
 
 /* le righe e le celle: si accende il fondo */
-.lista-apri:active, .lista-riga:active, .rit-riga:active, .rit-indietro:active, .giornata-strip:active,
+.lista-apri:active, .lista-riga:is(button, a, label, [role="button"], [tabindex]):active, .rit-riga:active, .rit-indietro:active, .giornata-strip:active,
 .gio-sonno-testa:active, .gio-so-corpo:active, .menu-voce:active, .lista-eti-btn:active,
 .btn-strumento-largo:active, .att-filtro:active, .riga-inbox:active, .att-chip:active,
-.exp-riga:active, .card-area:active, .aiuto-riga:active {
+.exp-riga:active, .card-area:is(button, a, [role="button"]):active, .aiuto-riga:active {
   background-color: var(--premuto);
 }
 
@@ -4631,8 +4631,9 @@ input[type="number"], textarea, select, .rit-ico, .casa-rito-ico { border-radius
 .prof-numero b { font-size: 20px; }
 .prof-numero span { font-size: 13px; color: var(--inchiostro-2); }
 
-/* niente sfocature a tutto schermo nemmeno dietro la cattura */
-.overlay { backdrop-filter: none; -webkit-backdrop-filter: none; background: rgba(10, 10, 20, .42); }
+/* dietro «Scrivi un pensiero» la pagina si sfoca: la cattura è un momento
+   a sé, e quello che c'è dietro non deve chiamare l'occhio */
+.overlay { backdrop-filter: blur(14px) saturate(.9); -webkit-backdrop-filter: blur(14px) saturate(.9); background: rgba(10, 10, 20, .32); }
 .rit-gruppo { margin-top: 8px; }
 
 /* --- sonno e pasti nella Giornata: righe basse, un pasto per riga --- */
@@ -5177,3 +5178,44 @@ button.gr-val:active, .gr .gr-val:active { opacity: .6; }
 /* i valori da toccare sono bersagli veri, non rettangolini */
 .gr input.gr-val, .gr select.gr-val, .gr-riga input.gr-val, .gr-riga select.gr-val { height: 40px; min-width: 6.5em; }
 .gr input[type="date"].gr-val { min-width: 8.5em; }
+
+/* la riga «nuova abitudine»: le scelte nello stesso riquadro della sua scheda */
+.agg-opz .agg-gr { width: 100%; margin-top: 4px; }
+.agg-gr .gr-riga { min-height: 52px; }
+.agg-gr .gr-giorni { min-height: 0; }
+.agg-gr .gr-giorni .giorni-chips { display: flex; width: 100%; justify-content: space-between; gap: 6px; }
+.agg-gr .gr-mai { font-weight: 500; color: var(--inchiostro-muto); }
+.agg-opz:has(.agg-gr) { padding: 10px 0 0; }
+
+/* la zona per togliere l'orario: c'è solo mentre trascini */
+.gio-so-drop { display: none; }
+body.sto-trascinando .gio-so-drop {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  position: fixed; left: 16px; right: 16px; z-index: 90;
+  bottom: calc(var(--tabbar-h, 76px) + env(safe-area-inset-bottom, 0px) + 16px);
+  height: 56px; border-radius: calc(18px * var(--sq));
+  background: var(--superficie-1); color: var(--inchiostro-2); font-weight: 600; font-size: 15px;
+  border: 2px dashed var(--bordo-forte); box-shadow: var(--e2, 0 8px 24px rgba(0,0,0,.12));
+}
+body.sto-trascinando .gio-so-drop.drop-attivo { border-style: solid; border-color: var(--accento); color: var(--accento-testo); background: var(--accento-tenue, var(--superficie-2)); }
+@media (min-width: 861px) { body.sto-trascinando .gio-so-drop { left: auto; right: 24px; bottom: 24px; width: 260px; } }
+
+/* LO SCURO È GRIGIO. Niente sfondi tinti di blu o di viola e niente
+   bagliori che sul chiaro non ci sono: le stesse superfici del chiaro,
+   solo in scala di grigi. L'accento resta l'unico colore. */
+:root[data-mode="dark"], :root[data-skin="arcade"][data-mode="dark"] {
+  --pagina: #0f0f0f;
+  --superficie-1: #1a1a1a;
+  --superficie-2: #232323;
+  --superficie-3: #2e2e2e;
+  --griglia: #262626;
+  --baseline: #383838;
+  --inchiostro-1: #f5f5f5;
+  --inchiostro-2: #b5b5b5;
+  --inchiostro-muto: #8e8e8e;
+  --bordo: rgba(255, 255, 255, 0.09);
+  --bordo-forte: rgba(255, 255, 255, 0.16);
+  --vetro: rgba(22, 22, 22, 0.78);
+  --aurora-opacita: 0;
+}
+:root[data-mode="dark"] .aurora { display: none; }

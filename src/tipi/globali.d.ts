@@ -65,7 +65,7 @@ declare global {
     'lm:remote': CustomEvent<void>;
     /* c'è un esempio qui e dei dati veri nell'account: chiedere prima di
        unire, e rispondere con `decidi` */
-    'lm:esempio-al-cloud': CustomEvent<DettaglioEsempio>;
+    'lm:esempio-nell-account': CustomEvent<number>;
     /* una riga nuova nel registro tecnico */
     'lm:log': CustomEvent<RigaRegistro>;
   }

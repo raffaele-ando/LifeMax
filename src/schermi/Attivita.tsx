@@ -20,8 +20,8 @@ import {
   attRigaHtml, opzDaFare, wireAggiunta, areaFiltro, passaFiltro, nomeFiltro,
   areeAttive, aggiornaNav, animaIngresso, toast, conAnnulla, apriFoglio,
   apriScheda, apriDettaglioAbitudine, feedbackSpunta,
-  chipsGiorni, riepilogoGiorni, selectAree, leggiGiorni, wireRigaAggiunta,
-  illoInbox, render, areaById
+  opzioniNuovaAbitudine, toccaGiornoNuovo, riepilogoGiorni, leggiGiorni, wireRigaAggiunta,
+  illoInbox, render, areaById, areaNuova
 } from '../app/app';
 import { html } from '../pezzi/grezzo';
 
@@ -136,7 +136,7 @@ function Smista({ st }: { st: Stato }) {
           onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur(); } }} />
         <div className="sm-meta">
           <select key={'a' + quella.id} id="sm-area" className="sm-area-sel" aria-label="Area"
-            ref={area} defaultValue={quella.areaSug || 'altro'}>
+            ref={area} defaultValue={quella.areaSug || areaNuova()}>
             {areeAttive().map((a) => <option key={a.id} value={a.id}>{a.nome}</option>)}
           </select>
           <span className="sm-quando">scritta {quando}</span>
@@ -221,7 +221,7 @@ function listaHtml(st: Stato, query: string): string {
    attacca ancora `wireAggiunta`. */
 function Aggiunta({ id, segnaposto, opzioni }: { id: string; segnaposto: string; opzioni?: string }) {
   return (
-    <form className="agg" id={id} autoComplete="off">
+    <form className="agg" id={id} autoComplete="off" noValidate>
       <div className="agg-riga">
         <input type="text" className="agg-testo" placeholder={segnaposto}
           aria-label={segnaposto} enterKeyHint="done" />
@@ -396,7 +396,7 @@ function Abitudini({ st }: { st: Stato }) {
     if (!corpo) return;
     const g = corpo.querySelector<HTMLElement>('#agg-ab-giorni');
     if (g) g.querySelectorAll<HTMLElement>('.giorno-chip').forEach((chip) => {
-      chip.onclick = () => chip.classList.toggle('sel');
+      chip.onclick = () => toccaGiornoNuovo(corpo, chip);
     });
     wireRigaAggiunta(corpo, 'agg-ab', (testo, opz) => {
       const giorni = leggiGiorni(presa(opz.querySelector<HTMLElement>('#agg-ab-giorni')));
@@ -432,12 +432,7 @@ function Abitudini({ st }: { st: Stato }) {
     return () => corpo.removeEventListener('click', tocca);
   }, []);
 
-  const opzioni = '<span class="agg-eti">In che giorni</span>' +
-    '<div id="agg-ab-giorni" class="agg-giorni">' + chipsGiorni([]) + '</div>' +
-    '<span class="agg-nota">nessuno selezionato = ogni giorno</span>' +
-    '<label class="agg-ora"><span class="agg-eti">alle</span>' +
-    '<input type="time" class="tl-time" id="agg-ab-ora" aria-label="A che ora (facoltativo)"></label>' +
-    '<label class="agg-area"><span class="agg-eti">in</span>' + selectAree('agg-ab-area', 'salute') + '</label>';
+  const opzioni = opzioniNuovaAbitudine();
 
   const ordinate = conOra.slice().sort((x, y) => String(LM.oraAbitudine(x, tk)) < String(LM.oraAbitudine(y, tk)) ? -1 : 1)
     .concat(senzaOra, fatteOggi);

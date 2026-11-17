@@ -119,7 +119,8 @@ export interface Abitudine {
   fatti: Record<string, boolean>;
   salti: Record<string, boolean>;
   /* l'orario di un giorno solo, quando la sposti nel calendario */
-  oreGiorno?: Record<string, Ora>;
+  /* l'ora di un giorno solo; '-' vuol dire «quel giorno senza orario» */
+  oreGiorno?: Record<string, Ora | '-'>;
   /* da quando vale, e fino a quando. Tutt'e due possono mancare: `da` lo
      riempie `normalizza` col giorno in cui l'abitudine è nata, ma uno stato
      vecchio può arrivare senza. */
@@ -283,6 +284,8 @@ export type Nav = 'tre' | 'tutte';
 export type Forma = 'scheda' | 'spina' | 'poi';
 
 export interface Profilo {
+  /* l'area con cui nasce una cosa nuova, ovunque la si crei */
+  areaNuova?: string;
   nome: string;
   visione: string;
   skin: Skin;
