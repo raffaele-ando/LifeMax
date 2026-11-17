@@ -5975,7 +5975,7 @@ function bloccoNotte(forzaAperto?: boolean): string {
     '<button class="q-chip' + (prec === 'preciso' ? ' on' : '') + '" data-prec="preciso">precisi</button>' +
     '</span></div>' +
     '</div>' +
-    '<div class="rit-azioni"><button class="btn btn-primario" id="notte-salva">Salva</button>' +
+    '<div class="rit-azioni"><button class="btn btn-tinta" id="notte-salva">Salva la notte</button>' +
     '<button class="sp-link" id="notte-boh">Non me lo ricordo</button></div>' +
     '</div>';
 }
