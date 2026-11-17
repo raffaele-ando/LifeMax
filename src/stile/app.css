@@ -5034,3 +5034,7 @@ button.gr-val { border: 0; color: var(--inchiostro-2) !important; }
 button.gr-val:active, .gr .gr-val:active { opacity: .6; }
 .gr-pericolo:active { background: var(--superficie-3); }
 .abd-catena .abd-g, .abd-catena .abd-vuoto { width: 44px; height: 44px; min-height: 44px; }
+/* i giorni dell'abitudine: cerchi veri (larghi quanto alti); l'area del
+   tocco resta di 44 grazie al bordo invisibile qui sotto */
+.gr-giorni .giorno-chip { position: relative; flex: 1 1 0; max-width: 44px; height: auto; min-height: 0; aspect-ratio: 1 / 1; }
+.gr-giorni .giorno-chip::after { content: ''; position: absolute; left: 0; right: 0; top: 50%; height: 44px; transform: translateY(-50%); }
