@@ -5038,3 +5038,68 @@ button.gr-val:active, .gr .gr-val:active { opacity: .6; }
    tocco resta di 44 grazie al bordo invisibile qui sotto */
 .gr-giorni .giorno-chip { position: relative; flex: 1 1 0; max-width: 44px; height: auto; min-height: 0; aspect-ratio: 1 / 1; }
 .gr-giorni .giorno-chip::after { content: ''; position: absolute; left: 0; right: 0; top: 50%; height: 44px; transform: translateY(-50%); }
+
+/* ============================================================
+   LA SETTIMANA SUL TELEFONO: i giorni fermi in alto, l'agenda sotto
+   ============================================================ */
+.se-striscia { position: sticky; top: 0; z-index: 5; margin: 0 -16px 8px; padding: 8px 16px 8px; background: color-mix(in srgb, var(--pagina) 92%, transparent); -webkit-backdrop-filter: saturate(1.4) blur(12px); backdrop-filter: saturate(1.4) blur(12px); }
+.se-somma { font-size: 13px; color: var(--inchiostro-2); margin: 0 4px 6px; }
+.se-somma b { color: var(--inchiostro-1); font-size: 15px; }
+.se-striscia .me-modo { margin-bottom: 8px; }
+.se-giorni { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); }
+.se-g { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 4px 0; border: 0; background: none; border-radius: calc(14px * var(--sq)); min-height: 60px; transition: background-color var(--t-veloce), transform var(--t-molla); }
+.se-g:active { transform: scale(.92); }
+.se-g small { font-size: 11px; font-weight: 700; color: var(--inchiostro-muto); }
+.se-g.bersaglio { background: color-mix(in srgb, var(--accento) 8%, transparent); }
+.se-g.drop-attivo { background: color-mix(in srgb, var(--accento) 22%, transparent) !important; }
+.se-agenda { display: flex; flex-direction: column; gap: 16px; }
+.se-testa { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 44px; padding: 0 4px; border: 0; background: none; text-align: left; }
+.se-testa b { font-size: 18px; font-weight: 800; letter-spacing: -0.02em; }
+.se-testa .ico { margin-left: auto; transform: rotate(-90deg); color: var(--inchiostro-muto); }
+.se-oggi { font-size: 12px; font-weight: 700; padding: 2px 8px; border-radius: 99px; background: var(--accento-pieno); color: var(--accento-ink); }
+.se-giorno.passato .se-testa b { color: var(--inchiostro-2); }
+.se-lista { background: var(--superficie-1); border-radius: calc(18px * var(--sq)); box-shadow: var(--e1); overflow: hidden; }
+.se-riga { display: flex; align-items: center; min-height: 52px; padding-right: 4px; }
+.se-riga + .se-riga { border-top: 1px solid var(--bordo); }
+.se-ora { flex: none; width: 56px; text-align: center; font-size: 13px; font-weight: 700; color: var(--inchiostro-2); font-variant-numeric: tabular-nums; }
+.se-apri { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; min-height: 52px; border: 0; background: none; text-align: left; padding: 0; }
+.se-segno { flex: none; width: 10px; height: 10px; border-radius: 50%; background: var(--c-area); }
+.se-riga.abit .se-segno { background: none; box-shadow: inset 0 0 0 2.5px var(--c-area); }
+.se-nome { flex: 1; min-width: 0; font-size: 15px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.se-nome .ico { color: var(--c-area); vertical-align: -1px; }
+.se-riga.fatta .se-nome { text-decoration: line-through; color: var(--inchiostro-muto); }
+.se-sposta { padding: 0 12px; }
+.se-vuoto { padding: 12px 4px; font-size: 14px; color: var(--inchiostro-muto); }
+.se-apri:active, .se-testa:active { opacity: .6; }
+@supports (corner-shape: squircle) { .se-segno { corner-shape: round; } }
+
+/* ============================================================
+   TUTTE LE ALTRE TENDINE E I PANNELLI APERTI NELLA PAGINA: lo stesso
+   abito delle righe raggruppate
+   ============================================================ */
+.sheet .lista, .rit-corpo .lista, .gio-sonno-corpo .lista {
+  background: var(--superficie-2); box-shadow: none; border: 0; border-radius: calc(18px * var(--sq)); overflow: hidden;
+}
+.sheet .lista .lista-riga, .rit-corpo .lista .lista-riga { background: none; box-shadow: none; border-radius: 0; min-height: 52px; }
+.sheet .lista > * + *, .rit-corpo .lista > * + * { border-top: 1px solid var(--bordo); }
+.sheet .lista-eti, .sheet .imp-eti, .sheet label.campo, .rit-corpo .lista-eti, .rit-corpo label.campo, .sheet .sc-sez, .sheet .etichetta {
+  font-size: 13px; font-weight: 700; color: var(--inchiostro-2); text-transform: none; letter-spacing: 0; margin: 24px 4px 8px;
+}
+.sheet .lista-eti > .ico, .sheet .imp-eti > .ico, .rit-corpo .lista-eti > .ico, .sheet label.campo > .ico { display: none; }
+.sheet .lista-eti:first-child, .sheet .imp-eti:first-child, .rit-corpo .lista-eti:first-child { margin-top: 4px; }
+.sheet .imp-sezione { padding: 0; border: 0; margin: 0; }
+.sheet .imp-nota, .sheet .lista-nota { font-size: 13px; color: var(--inchiostro-2); margin: 8px 4px 0; line-height: 1.4; }
+.sheet .q-chips, .rit-corpo .q-chips { gap: 8px; }
+.sheet .q-chip, .rit-corpo .q-chip { min-height: 40px; border: 0; background: var(--superficie-2); border-radius: 99px; padding: 0 16px; font-weight: 600; box-shadow: none; }
+.sheet .q-chip.on, .sheet .q-chip.attivo, .rit-corpo .q-chip.on, .rit-corpo .q-chip.attivo { background: var(--accento-pieno); color: var(--accento-ink); }
+.sheet .btn-mini:not(.btn-primario):not(.sp-link), .rit-corpo .btn-mini:not(.btn-primario) { border: 0; background: var(--superficie-2); box-shadow: none; }
+.sheet textarea, .sheet input[type="text"]:not(.nome-in-linea):not(.ritmo-nome):not(.area-nome-input), .sheet input[type="url"],
+.rit-corpo textarea, .rit-corpo input[type="text"] { background: var(--superficie-2); border-color: transparent; }
+.sheet textarea:focus, .sheet input:focus, .rit-corpo textarea:focus, .rit-corpo input:focus { background: var(--superficie-1); }
+.sheet .sc-pericolo, .sheet .imp-pericolo { color: var(--critico-testo, #d1242f); }
+.ig-ed .ig-fatto { width: 100%; margin-bottom: 4px; }
+.ig-azioni { margin-top: 24px; }
+.ig-azioni .gr-riga + .gr-riga { border-top: 1px solid var(--bordo); }
+.sheet textarea.sheet-titolo-inp { background: none !important; }
+.se-segno-ab { flex: none; width: 13px; display: inline-flex; color: var(--c-area); margin-left: -1px; }
+.sheet .lista .q-chip, .rit-corpo .lista .q-chip { background: var(--superficie-1); }

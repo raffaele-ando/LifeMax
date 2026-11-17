@@ -4220,27 +4220,30 @@ function apriItemGiornata(k: Giorno, id: string, tipo: 'azione' | 'abitudine', o
   void LM.coloreArea(areaById(e.areaId));
   const fatto = isAz ? e.done : e.fatto;
   const durOpt = DURATE.map(function (o) { return '<option value="' + o.v + '"' + ((e.dur || '') === o.v ? ' selected' : '') + '>' + o.t + '</option>'; }).join('');
+  const ar0 = areaById(e.areaId);
   const html = '<div class="ig-ed">' +
-    /* su un giorno futuro non si spunta: si sta pianificando, non facendo */
+    '<div class="abd-chi"><span class="abd-area" style="--c-area:' + LM.coloreArea(ar0) + '">' + ICO(ar0.icona, 13) + ' ' + esc(ar0.nome) + '</span>' +
+    '<span>' + (isAz ? 'Attività' : ICO('refresh', 11) + ' Abitudine') + ' · ' + esc(etichettaGiorno(k)) + '</span></div>' +
     (spuntabile
-      ? '<button class="btn ' + (fatto ? 'btn-ghost' : 'btn-primario') + ' ig-fatto"><span class="ig-fatto-ico">' + ICO(fatto ? 'annulla' : 'check', 15) + '</span>' + (fatto ? 'Fatta — togli la spunta' : 'Segna come fatta') + '</button>'
-      : '<div class="ig-nota-futuro">' + ICO('calendar', 13) + ' La spunterai quando arriva il giorno.</div>') +
-    '<div class="ig-griglia">' +
-    '<label class="campo" for="ig-ora">' + ICO('clock', 13) + ' Orario</label><input type="time" class="tl-time" id="ig-ora" value="' + (e.ora || '') + '">' +
-    '<label class="campo" for="ig-dur">Durata</label><select class="tl-dur" id="ig-dur">' + durOpt + '</select>' +
-    '<label class="campo" for="ig-area">Area</label>' + selectAree('ig-area', e.areaId) +
+      ? '<button class="btn btn-grande ' + (fatto ? 'btn-ghost' : 'btn-primario') + ' ig-fatto"><span class="ig-fatto-ico">' + ICO(fatto ? 'annulla' : 'check', 15) + '</span>' + (fatto ? 'Togli la spunta' : 'Fatta') + '</button>'
+      : '') +
+    '<div class="gr-titolo">Quando</div><div class="gr">' +
+    '<label class="gr-riga" for="ig-ora"><span class="gr-eti">Ora</span><span class="gr-valori">' +
+      '<input type="time" class="gr-val" id="ig-ora" value="' + (e.ora || '') + '">' +
+      (e.ora ? '<button class="gr-via ig-noora" aria-label="Togli l’orario">' + ICO('x', 13) + '</button>' : '') + '</span></label>' +
+    '<label class="gr-riga" for="ig-dur"><span class="gr-eti">Durata</span><select class="gr-val" id="ig-dur">' + durOpt + '</select></label>' +
     '</div>' +
-    '<div class="ig-fondo">' +
-    (e.ora ? '<button class="btn btn-mini btn-ghost ig-noora">' + ICO('clock', 13) + ' Togli l’orario</button>' : '') +
+    '<div class="gr-titolo">Dettagli</div><div class="gr">' +
+    '<label class="gr-riga" for="ig-area"><span class="gr-eti">Area</span>' + selectAree('ig-area', e.areaId, 'Area', 'gr-val') + '</label>' +
+    '</div>' +
+    '<div class="gr ig-azioni">' +
     (isAz
-      ? '<button class="btn btn-mini ig-indietro">' + ICO('lista', 13) + ' Togli dal giorno' + (e.passoDi ? '' : ' (torna in «Da fare»)') + '</button>' +
-        '<button class="btn btn-mini btn-ghost imp-pericolo ig-rimuovi">' + ICO('trash', 13) + ' Elimina</button>'
-      : /* un'abitudine si toglie da QUESTO giorno senza cancellarla né
-           toccare le altre; il resto si gestisce fra le Abitudini */
-        '<button class="btn btn-mini ig-salta">' + ICO('x', 13) + ' Togli solo da ' + esc(etichettaGiorno(k).toLowerCase()) + '</button>' +
-        '<button class="btn btn-mini ig-finequi">' + ICO('fineperiodo', 13) + ' Finisce qui (non più da domani)</button>' +
-        '<button class="btn btn-mini btn-ghost ig-vairituali">' + ICO('arrowRight', 13) + ' Gestiscila in Attività</button>') +
+      ? '<button class="gr-riga gr-agg ig-indietro">' + ICO('lista', 15) + ' Togli dal giorno' + (e.passoDi ? '' : ', torna in «Da fare»') + '</button>'
+      : '<button class="gr-riga gr-agg ig-salta">' + ICO('x', 15) + ' Togli solo da ' + esc(etichettaGiorno(k).toLowerCase()) + '</button>' +
+        '<button class="gr-riga gr-agg ig-finequi">' + ICO('fineperiodo', 15) + ' Finisce qui</button>' +
+        '<button class="gr-riga gr-agg ig-vairituali">' + ICO('arrowRight', 15) + ' Apri l’abitudine</button>') +
     '</div>' +
+    (isAz ? '<button class="gr-pericolo ig-rimuovi">Elimina l’attività</button>' : '') +
     '</div>';
   apriSheet(esc(e.testo), html, function (root) {
     /* il nome si cambia toccandolo: è il titolo del foglio */
@@ -4302,7 +4305,7 @@ function apriItemGiornata(k: Giorno, id: string, tipo: 'azione' | 'abitudine', o
       chiudiSheet(); ricarica();
     });
     const vai = root.querySelector<HTMLElement>('.ig-vairituali');
-    if (vai) vai.addEventListener('click', function () { chiudiSheet(); att.tab = 'abitudini'; location.hash = '#/inbox'; });
+    if (vai) vai.addEventListener('click', function () { apriDettaglioAbitudine(id, ricarica); });
   });
 }
 
@@ -4626,7 +4629,90 @@ function montaGiornata(container: HTMLElement, opzioni?: OpzGriglia): void {
 }
 
 /* --- Settimana: 7 colonne con blocchi (scroll orizzontale su mobile) --- */
+/* LA SETTIMANA, sul telefono: in alto i sette giorni (fermi mentre scorri,
+   e sono anche i posti dove lasciare una cosa trascinata), sotto le cose di
+   ogni giorno in fila, con l'ora davanti. Sette colonne larghe un dito
+   tagliavano ogni nome a tre lettere. Sullo schermo largo resta la griglia. */
+let settSposta: string | null = null;
 function montaSettimana(container: HTMLElement): void {
+  if (window.innerWidth >= 861) { montaSettimanaGriglia(container); return; }
+  const lunedi = LM.weekKey(schermo.giornataAncora);
+  const giorni: Giorno[] = []; for (let i = 0; i < 7; i++) giorni.push(LM.addDays(lunedi, i));
+  const oggi = LM.todayKey();
+  const NOMI = ['Domenica', 'Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato'];
+  const spostata = settSposta ? LM.snapshot().azioni.find(function (a) { return a.id === settSposta; }) : null;
+  let fatteSett = 0, totSett = 0;
+  const striscia = giorni.map(function (k) {
+    const d = nodiGiorno(k);
+    const voci = d.placed.concat(d.tray).filter(function (e) { return e.tipo !== 'pasto'; });
+    const fatte = voci.filter(function (e) { return e.tipo === 'azione' ? e.done : e.fatto; }).length;
+    fatteSett += fatte; totSett += voci.length;
+    const dt = new Date(k + 'T12:00:00');
+    return '<button class="se-g' + (k === oggi ? ' oggi' : '') + (spostata ? ' bersaglio' : '') + '" data-se-g="' + k + '" data-drop-giorno="' + k + '">' +
+      '<small>' + (NOMI[dt.getDay()] || '').charAt(0) + '</small>' +
+      anelloGiorno(k > oggi || !voci.length ? 0 : fatte / voci.length, dt.getDate(), k === oggi ? 'oggi' : (k > oggi ? 'futuro' : '')) +
+      '</button>';
+  }).join('');
+  const giorniHtml = giorni.map(function (k) {
+    const d = nodiGiorno(k);
+    const voci = d.placed.filter(function (e) { return e.tipo !== 'pasto'; }).concat(d.tray);
+    const dt = new Date(k + 'T12:00:00');
+    const righe = voci.map(function (e) {
+      const ar = areaById(e.areaId), fatto = e.tipo === 'azione' ? e.done : e.fatto;
+      const az = e.tipo === 'azione';
+      return '<div class="se-riga' + (fatto ? ' fatta' : '') + (az ? '' : ' abit') + '" style="--c-area:' + LM.coloreArea(ar) + '"' +
+        (az ? ' data-drag-az="' + e.id + '" data-dur="' + (e.dur || 30) + '"' : '') + '>' +
+        '<span class="se-ora">' + (e.ora ? esc(e.ora) : '') + '</span>' +
+        '<button class="se-apri" data-se-' + (az ? 'az' : 'ab') + '="' + e.id + '" data-se-k="' + k + '">' +
+        (az ? '<span class="se-segno"></span>' : '<span class="se-segno-ab">' + ICO('refresh', 13) + '</span>') + '<span class="se-nome">' + esc(e.testo) + '</span></button>' +
+        (az && !fatto ? '<button class="sp-link se-sposta" data-se-sposta="' + e.id + '">Sposta</button>' : '') +
+        '</div>';
+    }).join('');
+    return '<section class="se-giorno' + (k === oggi ? ' oggi' : '') + (k < oggi ? ' passato' : '') + '" id="se-' + k + '">' +
+      '<button class="se-testa" data-se-apri="' + k + '"><b>' + (NOMI[dt.getDay()] || '') + ' ' + dt.getDate() + '</b>' +
+      (k === oggi ? '<span class="se-oggi">Oggi</span>' : '') + ICO('chevronGiu', 13) + '</button>' +
+      (righe ? '<div class="se-lista">' + righe + '</div>' : '<div class="se-vuoto">Libero</div>') + '</section>';
+  }).join('');
+  container.innerHTML = orizzNav('settimana', presa(giorni[0]), presa(giorni[6])) +
+    '<div class="se-striscia">' +
+    (spostata
+      ? '<div class="me-modo">' + ICO('calendar', 15) + '<span>Tocca il giorno per <b>' + esc(spostata.testo) + '</b></span><button class="sp-link" id="se-annulla">Annulla</button></div>'
+      : '<div class="se-somma"><b>' + fatteSett + '</b> di ' + totSett + ' fatte questa settimana</div>') +
+    '<div class="se-giorni">' + striscia + '</div></div>' +
+    '<div class="se-agenda">' + giorniHtml + '</div>';
+  wireOrizzNav(container, 'settimana');
+  function ridisegna(): void { montaSettimana(container); aggiornaNav(); }
+  container.querySelectorAll<HTMLElement>('[data-se-g]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      const k = comeGiorno(b.getAttribute('data-se-g') || '');
+      if (settSposta) {
+        const id = settSposta; settSposta = null;
+        if (LM.spostaAzione(id, k)) { toast('Spostata a ' + etichettaGiorno(k).toLowerCase(), 0, 'calendar'); suona('leggero'); }
+        ridisegna(); return;
+      }
+      const sez = document.getElementById('se-' + k);
+      if (sez) window.scrollTo({ top: sez.getBoundingClientRect().top + window.scrollY - 200, behavior: 'smooth' });
+    });
+  });
+  container.querySelectorAll<HTMLElement>('[data-se-sposta]').forEach(function (b) {
+    b.addEventListener('click', function () { settSposta = b.getAttribute('data-se-sposta'); ridisegna(); });
+  });
+  const ann = container.querySelector<HTMLElement>('#se-annulla');
+  if (ann) ann.addEventListener('click', function () { settSposta = null; ridisegna(); });
+  container.querySelectorAll<HTMLElement>('[data-se-apri]').forEach(function (b) {
+    b.addEventListener('click', function () { setOrizzonte('giorno', comeGiorno(b.getAttribute('data-se-apri') || '')); });
+  });
+  container.querySelectorAll<HTMLElement>('[data-se-az], [data-se-ab]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      const k = comeGiorno(b.getAttribute('data-se-k') || '');
+      const az = b.getAttribute('data-se-az');
+      apriItemGiornata(k, az || b.getAttribute('data-se-ab') || '', az ? 'azione' : 'abitudine', ridisegna, k <= oggi);
+    });
+  });
+  abilitaTrascina(container, spostaSuGiorno);
+}
+
+function montaSettimanaGriglia(container: HTMLElement): void {
   var lunedi = LM.weekKey(schermo.giornataAncora);
   var giorni = []; for (var i = 0; i < 7; i++) giorni.push(LM.addDays(lunedi, i));
   var oggi = LM.todayKey();
