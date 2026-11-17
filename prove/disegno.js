@@ -109,8 +109,12 @@ function cercaScritteFuori(toll) {
   await new Promise(r => srv.listen(PORTA, r));
   const b = await require('./comune/lancia')();
 
-  async function apri(via, dopo) {
-    const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, hasTouch: true, isMobile: true });
+  /* `largo`: la settimana a griglia c'è solo sullo schermo largo; sul telefono
+     è un'agenda, e i blocchi da misurare non ci sono */
+  async function apri(via, dopo, largo) {
+    const ctx = await b.newContext(largo
+      ? { viewport: { width: 1280, height: 900 }, deviceScaleFactor: 1 }
+      : { viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, hasTouch: true, isMobile: true });
     const p = await ctx.newPage();
     await p.goto('http://localhost:' + PORTA + '/index.html?forma=motore'); await p.waitForTimeout(300);
     await p.evaluate((v) => { localStorage.clear(); LM.seedDemo(); location.hash = '#/' + v; }, via);
@@ -202,7 +206,7 @@ function cercaScritteFuori(toll) {
   console.log('   e quello che non ci sta deve sparire per righe intere, non a metà lettera)');
   let blocchiVisti = 0;
   for (const [nome, via, dopo] of SCENE.filter(s => s[1] === 'giornata')) {
-    const { ctx, p } = await apri(via, dopo);
+    const { ctx, p } = await apri(via, dopo, nome === 'La settimana');
     const r = await p.evaluate(cercaScritteFuori, TOLL);
     blocchiVisti += r.visti;
     ok(nome + ': i titoli stanno dentro il loro blocco (' + r.visti + ' guardati, il peggiore sborda di '
@@ -220,7 +224,7 @@ function cercaScritteFuori(toll) {
   {
     const settimana = () => { const x = document.querySelector('[data-orizz="settimana"]'); if (x) x.click(); };
     const conStile = async (css) => {
-      const { ctx, p } = await apri('giornata', settimana);
+      const { ctx, p } = await apri('giornata', settimana, true);
       await p.evaluate((c) => {
         const st = document.createElement('style'); st.textContent = c; document.head.appendChild(st);
       }, css);
