@@ -26,7 +26,7 @@ import type {
 } from '../tipi/stato';
 import { COME_UNIRE, giorno, ora } from '../tipi/stato';
 import type { ImprontaEsempio } from '../tipi/stato';
-import { TESTI_ESEMPIO, PROFILO_ESEMPIO } from './esempio';
+import { TESTI_ESEMPIO, PROFILO_ESEMPIO, DIARIO_ESEMPIO } from './esempio';
 import { presa } from '../tipi/presa';
 
 /* ---------------------------------------------------------------- ADESSO
@@ -377,6 +377,11 @@ function creaLM() {
      questo, ogni fusione raddoppierebbe il diario. */
   function chiaveRiga(r: unknown): string {
     if (!eMappa(r)) return 'v' + JSON.stringify(r);
+    /* UNA LAPIDE SI RICONOSCE DA COSA SEPPELLISCE, non dall'ora. Prima cadeva
+       nel caso «ts»: tutte le lapidi nate nello stesso gesto (togliere
+       l'esempio, svuotare un elenco) avevano la stessa chiave, alla prima
+       fusione ne restava UNA, e tutto il resto tornava in vita. */
+    if (typeof r['k'] === 'string' && r['chiave'] !== undefined) return 'L' + r['k'] + '|' + String(r['chiave']);
     if (r['id'] !== undefined && r['id'] !== null && r['id'] !== '') return 'i' + String(r['id']);
     if (r['ts'] !== undefined && r['ts'] !== null) {
       return 't' + String(r['ts']) + '|' + String(r['testo'] || r['cat'] || r['data'] || '');
@@ -490,6 +495,17 @@ function creaLM() {
     Object.keys(perCampo).forEach(function (k) {
       var lista = perChiave[k];
       var p = perCampo[k];
+      /* anche i giorni di una mappa (il diario, i voti): la chiave è il giorno */
+      if (p && eMappa(lista)) {
+        var m = lista as Record<string, unknown>, lp = p;
+        Object.keys(lp).forEach(function (g) {
+          if (!(g in m)) return;
+          var v = m[g];
+          var quando = eMappa(v) ? momentoRiga(v, 0) : 0;
+          if ((lp[g] as number) >= quando) delete m[g];
+        });
+        return;
+      }
       if (!Array.isArray(lista) || !p) return;
       var lapidi = p;
       perChiave[k] = lista.filter(function (r: unknown) {
@@ -3343,19 +3359,8 @@ function creaLM() {
       'Provare a studiare al parco invece che in camera',
       'Domanda: il progetto X vale ancora la mia energia?'
     ];
-    var vittorie = [
-      'Finita la sessione da 90 minuti senza telefono',
-      'Prima call utente andata benissimo',
-      'Allenamento fatto anche se non ne avevo voglia',
-      'Detto di no a una cosa che non era mia',
-      'Studiato prima di aprire i social'
-    ];
-    var blocchi = [
-      'Pomeriggio perso tra notifiche e tab aperte',
-      'Iniziato tardi: colazione infinita',
-      'Troppe cose in lista, paralisi da scelta',
-      'Riunione associazione sforata di un’ora'
-    ];
+    var vittorie = DIARIO_ESEMPIO.vittorie;
+    var blocchi = DIARIO_ESEMPIO.blocchi;
 
     function pick<T>(arr: readonly T[]): T { return arr[Math.floor(rnd() * arr.length)] as T; }
 
@@ -3435,7 +3440,7 @@ function creaLM() {
           s.xpPerGiorno[k] = (s.xpPerGiorno[k] || 0) + XP_EVENTI.reviewSera;
         }
         if (rnd() < 0.8) {
-          s.pianoMattina[k] = { compilato: true, intenzione: 'Alle 9:00, appena mi siedo alla scrivania, inizio dall’attività più importante senza aprire le chat.', ts: parseKey(k).getTime() + 8 * 3600000 };
+          s.pianoMattina[k] = { compilato: true, intenzione: DIARIO_ESEMPIO.intenzione, ts: parseKey(k).getTime() + 8 * 3600000 };
           s.xp += XP_EVENTI.pianoMattina;
           s.xpPerGiorno[k] = (s.xpPerGiorno[k] || 0) + XP_EVENTI.pianoMattina;
         }
@@ -3453,8 +3458,8 @@ function creaLM() {
         s.reviewSettimana[wk] = {
           vittorie: pick(vittorie),
           blocchi: pick(blocchi),
-          imparato: 'Quando studio fuori casa rendo di più: cambiare ambiente mi aiuta a concentrarmi.',
-          prossima: 'Dedicare la prima ora del mattino allo studio, almeno 5 giorni su 7.',
+          imparato: DIARIO_ESEMPIO.imparato,
+          prossima: DIARIO_ESEMPIO.prossima,
           ts: parseKey(wk).getTime()
         };
         s.xp += XP_EVENTI.reviewSettimana;
@@ -3534,7 +3539,7 @@ function creaLM() {
     /* esperimento demo: sport al mattino → focus */
     s.esperimenti.push({
       id: uid() + 'exp1',
-      nome: 'Fare sport al mattino aumenta il mio focus?',
+      nome: DIARIO_ESEMPIO.esperimenti[0],
       intervento: 'Allenamento o camminata veloce prima delle 10:00, poi sessione di lavoro.',
       metrica: 'focus',
       areaId: null,
@@ -3551,7 +3556,7 @@ function creaLM() {
     });
     s.esperimenti.push({
       id: uid() + 'exp2',
-      nome: 'Telefono fuori stanza mentre studio',
+      nome: DIARIO_ESEMPIO.esperimenti[1],
       intervento: 'Telefono in un’altra stanza durante le sessioni di studio del pomeriggio.',
       metrica: 'minuti',
       areaId: 'studio',
@@ -3665,6 +3670,7 @@ function creaLM() {
         });
       });
     }
+    if (ancheTesti) tolte += togliDiarioEsempio(st);
     if (imp || ancheTesti) {
       if (st.profilo.nome === PROFILO_ESEMPIO.nome) st.profilo.nome = '';
       if (st.profilo.visione === PROFILO_ESEMPIO.visione) st.profilo.visione = '';
@@ -3674,6 +3680,72 @@ function creaLM() {
     return tolte;
   }
   /* quante cose d'esempio ci sono (con l'impronta e coi testi) */
+  /* IL DIARIO DELL'ESEMPIO FINITO NELL'ACCOUNT. Le frasi sono sempre
+     quelle (mattina, sera, settimana): una voce che le ha TUTTE uguali
+     all'esempio non l'hai scritta tu. Con loro se ne vanno anche i numeri
+     inventati di quei giorni — i check-in alle 9, 13 e 17 in punto senza
+     contesto, i voti, i minuti e i punti — ma solo nei giorni in cui non
+     c'è niente di tuo. Ogni giorno tolto lascia la sua lapide, così un
+     altro dispositivo non lo rimette. */
+  function togliDiarioEsempio(st: Stato): number {
+    var D = DIARIO_ESEMPIO, tolte = 0, ora = Date.now();
+    var lapidi = st.cancellati || (st.cancellati = []);
+    var giorniEsempio: Record<string, 1> = {};
+    function via(campo: string, g: string) {
+      var m = (st as unknown as Record<string, unknown>)[campo];
+      if (!eMappa(m) || !(g in m)) return;
+      delete (m as Record<string, unknown>)[g];
+      lapidi.push({ k: campo, chiave: g, ts: ora });
+      giorniEsempio[g] = 1; tolte++;
+    }
+    var vit = D.vittorie as readonly string[], blo = D.blocchi as readonly string[];
+    Object.keys(st.pianoMattina || {}).forEach(function (g) {
+      var v = (st.pianoMattina as Record<string, { intenzione?: string }>)[g];
+      if (v && v.intenzione === D.intenzione) via('pianoMattina', g);
+    });
+    Object.keys(st.reviewSera || {}).forEach(function (g) {
+      var v = (st.reviewSera as Record<string, { vittoria?: string; blocco?: string }>)[g];
+      if (v && vit.indexOf(String(v.vittoria)) >= 0 && blo.indexOf(String(v.blocco)) >= 0) via('reviewSera', g);
+    });
+    Object.keys(st.reviewSettimana || {}).forEach(function (g) {
+      var v = (st.reviewSettimana as Record<string, { imparato?: string; prossima?: string }>)[g];
+      if (v && v.imparato === D.imparato && v.prossima === D.prossima) via('reviewSettimana', g);
+    });
+    /* le azioni dell'esempio scritte giorno per giorno: nate alle 8 in punto */
+    (st.azioni || []).forEach(function (a) {
+      if (a && a.data && (TESTI_ESEMPIO.azioni as readonly string[]).indexOf(a.testo) >= 0 &&
+          a.creata === parseKey(a.data).getTime() + 8 * 3600000) giorniEsempio[a.data] = 1;
+    });
+    var primaCk = (st.checkins || []).length;
+    st.checkins = (st.checkins || []).filter(function (c) {
+      if (!c || c.contesto || !c.data) return true;
+      var d = c.ts - parseKey(c.data).getTime();
+      var inventato = d === 9 * 3600000 || d === 13 * 3600000 || d === 17 * 3600000;
+      if (inventato) giorniEsempio[c.data] = 1;
+      return !inventato;
+    });
+    tolte += primaCk - st.checkins.length;
+    /* i giorni in cui c'è qualcosa di tuo restano come sono */
+    var tuoi: Record<string, 1> = {};
+    (st.azioni || []).forEach(function (a) {
+      if (a && a.data && (TESTI_ESEMPIO.azioni as readonly string[]).indexOf(a.testo) < 0) tuoi[a.data] = 1;
+    });
+    (st.checkins || []).forEach(function (c) { if (c && c.data) tuoi[c.data] = 1; });
+    ['pianoMattina', 'reviewSera'].forEach(function (campo) {
+      Object.keys((st as unknown as Record<string, Record<string, unknown>>)[campo] || {}).forEach(function (g) { tuoi[g] = 1; });
+    });
+    Object.keys(giorniEsempio).forEach(function (g) {
+      if (tuoi[g]) return;
+      var xp = (st.xpPerGiorno || {})[g];
+      if (typeof xp === 'number') st.xp = Math.max(0, (st.xp || 0) - xp);
+      ['valutazioni', 'minuti', 'xpPerGiorno'].forEach(function (campo) { via(campo, g); });
+    });
+    var primaEs = (st.esperimenti || []).length;
+    st.esperimenti = (st.esperimenti || []).filter(function (e) { return !(e && (D.esperimenti as readonly string[]).indexOf(e.nome) >= 0); });
+    tolte += primaEs - st.esperimenti.length;
+    if (st.profilo && st.profilo.visione === PROFILO_ESEMPIO.visione) { st.profilo.visione = ''; tolte++; }
+    return tolte;
+  }
   function contaEsempio(): number {
     var copia = JSON.parse(JSON.stringify(load())) as Stato;
     return togliEsempioDa(copia, true);

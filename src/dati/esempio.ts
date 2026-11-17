@@ -67,3 +67,24 @@ export const TESTI_ESEMPIO = {
   ]
 } as const;
 export const PROFILO_ESEMPIO = {"nome": "Raffaele", "visione": "Costruire cose che contano, imparare più veloce di chiunque, restare curioso e in salute."} as const;
+
+/* il diario dell'esempio: le stesse frasi, ripescate a caso ogni giorno */
+export const DIARIO_ESEMPIO = {
+  vittorie: [
+    'Finita la sessione da 90 minuti senza telefono',
+    'Prima call utente andata benissimo',
+    'Allenamento fatto anche se non ne avevo voglia',
+    'Detto di no a una cosa che non era mia',
+    'Studiato prima di aprire i social'
+  ],
+  blocchi: [
+    'Pomeriggio perso tra notifiche e tab aperte',
+    'Iniziato tardi: colazione infinita',
+    'Troppe cose in lista, paralisi da scelta',
+    'Riunione associazione sforata di un’ora'
+  ],
+  intenzione: 'Alle 9:00, appena mi siedo alla scrivania, inizio dall’attività più importante senza aprire le chat.',
+  imparato: 'Quando studio fuori casa rendo di più: cambiare ambiente mi aiuta a concentrarmi.',
+  prossima: 'Dedicare la prima ora del mattino allo studio, almeno 5 giorni su 7.',
+  esperimenti: ['Fare sport al mattino aumenta il mio focus?', 'Telefono fuori stanza mentre studio']
+} as const;

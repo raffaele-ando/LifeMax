@@ -535,6 +535,15 @@ export function onSnapshot(ref, suDati, suErrore) {
       sporco.updatedAt = Date.now();
       sporco.azioni = [{ id: 'mia-x', testo: 'LA MIA', data: LM.todayKey(), creata: Date.now() },
         { id: 'es-x', testo: 'Capitolo di Analisi II + 10 esercizi', data: LM.todayKey(), creata: Date.now() }];
+      /* il diario: uno vero, e i giorni inventati dall'esempio */
+      sporco.reviewSera = { '2026-08-28': { vittoria: 'Ho fatto 1 ora di ofa!', blocco: 'Sono stato sul divano', ts: 1 } };
+      sporco.pianoMattina = {};
+      for (let i = 1; i <= 12; i++) {
+        const g = '2026-10-' + String(i).padStart(2, '0');
+        sporco.reviewSera[g] = { vittoria: 'Prima call utente andata benissimo', blocco: 'Troppe cose in lista, paralisi da scelta', ts: 1 };
+        sporco.pianoMattina[g] = { compilato: true, intenzione: 'Alle 9:00, appena mi siedo alla scrivania, inizio dall’attività più importante senza aprire le chat.', ts: 1 };
+      }
+      window.__sporco = sporco;
       window.__fb.doc = { data: JSON.stringify(sporco), updatedAt: sporco.updatedAt };
       window.__fb.entra('uid-sporco');
       let chiesto = false;
@@ -544,11 +553,14 @@ export function onSnapshot(ref, suDati, suErrore) {
         if (t && /dati di esempio/i.test(t.textContent)) { chiesto = true; document.querySelector('.avviso-ovl .avv-si, .avviso-ovl .btn-primary, .avviso-ovl [data-avv-si]') ? document.querySelector('.avviso-ovl .avv-si, .avviso-ovl .btn-primary, .avviso-ovl [data-avv-si]').click() : null; break; }
       }
       await new Promise((r2) => setTimeout(r2, 800));
+      /* e poi un altro dispositivo rimanda la copia sporca */
+      window.__fb.consegna({ data: JSON.stringify(Object.assign({}, window.__sporco, { updatedAt: Date.now() + 5000 })), updatedAt: Date.now() + 5000 });
+      await new Promise((r2) => setTimeout(r2, 600));
       const qui = JSON.stringify(LM.snapshot());
-      return { chiesto: chiesto, mia: /LA MIA/.test(qui), esempio: /Capitolo di Analisi II/.test(qui) };
+      return { chiesto: chiesto, mia: /LA MIA/.test(qui) && /1 ora di ofa/.test(qui), esempio: /Capitolo di Analisi II|paralisi da scelta|appena mi siedo alla scrivania/.test(qui) };
     });
     ok('se nell’account c’è già l’esempio, all’accesso propone di toglierlo', v.chiesto);
-    ok('e toglie solo quello', v.mia && !v.esempio, JSON.stringify(v));
+    ok('toglie solo quello (anche il diario inventato), e un altro dispositivo non lo rimette', v.mia && !v.esempio, JSON.stringify(v));
   }
 
   /* ============================================================

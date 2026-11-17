@@ -7908,6 +7908,8 @@ window.addEventListener('lm:auth', function () {
 window.addEventListener('lm:esempio-nell-account', function (e) {
   var n = (e && e.detail) || 0;
   if (!n) return;
+  /* «Lascia stare» vale finché non cambia niente: non lo si richiede a ogni apertura */
+  try { if (localStorage.getItem('lm-esempio-lasciato') === String(n)) return; } catch (_e) { /* chiede */ }
   avviso({
     titolo: 'Nel tuo account ci sono dei dati di esempio',
     testo: 'Sono ' + n + ' cose inventate, entrate in un accesso di prima. Le tolgo? Quello che hai scritto tu resta.',
@@ -7916,6 +7918,8 @@ window.addEventListener('lm:esempio-nell-account', function (e) {
   }, function () {
     var tolte = LM.togliEsempio(); render();
     toast(tolte ? 'Tolti i dati di esempio.' : 'Niente da togliere.', 0, 'sparkles');
+  }, function () {
+    try { localStorage.setItem('lm-esempio-lasciato', String(n)); } catch (_e) { /* pazienza */ }
   });
 });
 
