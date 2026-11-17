@@ -4807,3 +4807,78 @@ input[type="time"]::-webkit-datetime-edit { padding: 0; color: var(--inchiostro-
 .tl-blk-abit .tl-blk-t .ico { color: var(--c-area); vertical-align: -1px; }
 .tl-blk-abit .manico { background: none; }
 .tl-blk-att.tl-blk-abit.fatta { box-shadow: inset 0 0 0 2px var(--bordo); }
+
+/* ============================================================
+   IL MESE: cerchi che si riempiono, e il giorno scelto sotto
+   ============================================================ */
+.me-somma { display: flex; gap: 16px; margin: 0 4px 12px; font-size: 14px; color: var(--inchiostro-2); }
+.me-somma b { font-size: 20px; font-weight: 800; color: var(--inchiostro-1); margin-right: 4px; font-variant-numeric: tabular-nums; }
+.me-modo {
+  display: flex; align-items: center; gap: 8px; margin: 0 0 12px; padding: 0 4px 0 16px; min-height: 52px;
+  background: var(--accento-pieno); color: var(--accento-ink); border-radius: calc(16px * var(--sq)); font-size: 14px;
+}
+.me-modo span { flex: 1; min-width: 0; }
+.me-modo .sp-link { color: var(--accento-ink); padding: 0 12px; }
+.me-carta { padding: 12px 8px; }
+.me-dow { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 0; margin-bottom: 4px; }
+.me-dow span { text-align: center; font-size: 12px; font-weight: 700; color: var(--inchiostro-muto); }
+.me-griglia { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); row-gap: 4px; }
+.me-g {
+  display: flex; flex-direction: column; align-items: center; gap: 2px; min-height: 56px; padding: 4px 0;
+  border: 0; background: none; border-radius: calc(14px * var(--sq)); transition: background-color var(--t-veloce), transform var(--t-molla);
+}
+.me-g:active { transform: scale(.92); }
+.me-g.sel { background: var(--superficie-2); }
+.me-g.fuori { opacity: .3; }
+.me-g.bersaglio:not(.fuori) { background: color-mix(in srgb, var(--accento) 8%, transparent); }
+.me-anello { width: 38px; height: 38px; display: block; }
+.me-anello-fondo { fill: none; stroke: var(--superficie-3); stroke-width: 3.2; }
+.me-anello-pieno { fill: none; stroke: var(--ok); stroke-width: 3.2; stroke-linecap: round; }
+.me-anello text { font-size: 13px; font-weight: 700; fill: var(--inchiostro-1); font-family: inherit; }
+.me-anello.futuro .me-anello-fondo { stroke: transparent; }
+.me-anello.oggi .me-anello-fondo { fill: var(--accento-pieno); }
+.me-anello.oggi text { fill: var(--accento-ink); }
+.me-punti { display: flex; gap: 3px; height: 6px; align-items: center; }
+.me-punti i { width: 6px; height: 6px; border-radius: 50%; }
+.me-punti b { width: 6px; height: 6px; border-radius: 1px; background: var(--critico, #e5484d); transform: rotate(45deg); }
+.me-giorno { margin-top: 16px; }
+.me-giorno-testa { display: flex; align-items: center; justify-content: space-between; margin: 0 4px 8px; }
+.me-giorno-testa h2 { margin: 0; font-size: 20px; font-weight: 800; letter-spacing: -0.02em; }
+.me-giorno-testa h2::first-letter { text-transform: uppercase; }
+#me-apri .ico { transform: rotate(-90deg); }
+.me-riga { display: flex; align-items: center; }
+.me-riga .lista-apri { flex: 1; min-width: 0; }
+.me-riga.fatta .lista-tit { text-decoration: line-through; color: var(--inchiostro-muto); }
+.me-pallino { flex: none; width: 12px; height: 12px; border-radius: 50%; background: var(--c-area); margin-right: 4px; }
+.me-pallino.abit { background: none; box-shadow: inset 0 0 0 2.5px var(--c-area); }
+.me-sposta { padding: 0 16px; flex: none; }
+.me-vuoto { padding: 16px 4px; color: var(--inchiostro-muto); font-size: 15px; }
+
+/* ============================================================
+   L'ANNO: dodici mesi piccoli
+   ============================================================ */
+.an-numeri { display: grid; grid-template-columns: repeat(3, 1fr); margin: 0 0 12px; padding: 16px 0; background: var(--superficie-1); border-radius: calc(22px * var(--sq)); box-shadow: var(--e1); }
+.an-numeri span { display: flex; flex-direction: column; align-items: center; font-size: 13px; color: var(--inchiostro-2); }
+.an-numeri span + span { border-left: 1px solid var(--bordo); }
+.an-numeri b { font-size: 24px; font-weight: 800; color: var(--inchiostro-1); letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.an-mesi { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+@media (min-width: 700px) { .an-mesi { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.an-mese {
+  display: flex; flex-direction: column; gap: 8px; padding: 12px 10px; border: 0; text-align: left;
+  background: var(--superficie-1); border-radius: calc(16px * var(--sq)); box-shadow: var(--e1); transition: transform var(--t-molla);
+}
+.an-mese:active { transform: scale(.96); }
+.an-mese.ora { box-shadow: inset 0 0 0 2px var(--accento); }
+.an-mese-testa { display: flex; align-items: baseline; justify-content: space-between; }
+.an-mese-testa b { font-size: 15px; font-weight: 800; }
+.an-mese.ora .an-mese-testa b { color: var(--accento-testo); }
+.an-mese-testa small { font-size: 11px; font-weight: 700; color: var(--ok-testo, var(--ok)); }
+.an-mese-griglia { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+.an-mese-griglia i { aspect-ratio: 1; border-radius: 2px; background: var(--superficie-3); }
+.an-mese-griglia i.vuota { background: none; }
+.an-mese-griglia i.poi { background: var(--superficie-2); }
+.an-mese-griglia i.l1 { background: color-mix(in srgb, var(--ok) 30%, var(--superficie-2)); }
+.an-mese-griglia i.l2 { background: color-mix(in srgb, var(--ok) 55%, var(--superficie-2)); }
+.an-mese-griglia i.l3 { background: color-mix(in srgb, var(--ok) 80%, var(--superficie-2)); }
+.an-mese-griglia i.l4 { background: var(--ok); }
+.an-mese-griglia i.oggi { outline: 1.5px solid var(--accento); outline-offset: 1px; }

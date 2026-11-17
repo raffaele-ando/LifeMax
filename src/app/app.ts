@@ -4738,105 +4738,159 @@ function spostaSuGiorno(id: string, bersaglio: HTMLElement, _x?: number, y?: num
 }
 
 /* --- Mese: calendario con indicatori di attività e scadenze --- */
+/* IL MESE: un cerchio per giorno che si riempie con quello che hai fatto,
+   e sotto le cose del giorno che tocchi. Per spostare una cosa si preme
+   «Sposta» e poi si tocca il giorno d'arrivo: niente da trascinare sotto il
+   dito, e si vede sempre cosa si sta spostando. */
+let meseSel: Giorno | null = null;
+let meseSposta: string | null = null;
+function anelloGiorno(quota: number, num: number, cls: string): string {
+  const r = 15, c = 2 * Math.PI * r, q = Math.max(0, Math.min(1, quota));
+  return '<svg class="me-anello ' + cls + '" viewBox="0 0 36 36" aria-hidden="true">' +
+    '<circle cx="18" cy="18" r="' + r + '" class="me-anello-fondo"/>' +
+    (q > 0 ? '<circle cx="18" cy="18" r="' + r + '" class="me-anello-pieno" stroke-dasharray="' + (c * q).toFixed(1) + ' ' + c.toFixed(1) + '" transform="rotate(-90 18 18)"/>' : '') +
+    '<text x="18" y="18" dy=".35em" text-anchor="middle">' + num + '</text></svg>';
+}
 function montaMese(container: HTMLElement): void {
   const p = schermo.giornataAncora.split('-');
   const anno = +(p[0] || 0), mese = +(p[1] || 1) - 1;
-  var primo = new Date(anno, mese, 1);
-  var inizio = new Date(anno, mese, 1 - ((primo.getDay() + 6) % 7));
-  var oggi = LM.todayKey();
-  var mesi = ['gennaio', 'febbraio', 'marzo', 'aprile', 'maggio', 'giugno', 'luglio', 'agosto', 'settembre', 'ottobre', 'novembre', 'dicembre'];
-  var s = LM.snapshot();
-  var meseXp = [];
-  for (var j = 0; j < 42; j++) { var dj = new Date(inizio.getFullYear(), inizio.getMonth(), inizio.getDate() + j); meseXp.push(s.xpPerGiorno[LM.dayKey(dj)] || 0); }
-  var maxXp = Math.max.apply(null, meseXp.concat([1]));
-  var celle = '';
-  for (var i = 0; i < 42; i++) {
-    var d = new Date(inizio.getFullYear(), inizio.getMonth(), inizio.getDate() + i);
-    var k = LM.dayKey(d);
-    var fuori = d.getMonth() !== mese;
-    var futuro = k > oggi;
-    /* mattoncini colorati per area = composizione della giornata (azioni
-       completate + abitudini fatte); lo sfondo "scalda" con l'intensità (XP) */
-    var fatti = LM.azioniDelGiorno(k).filter(function (a) { return a.done; }).map(function (a) { return a.areaId; })
-      .concat(s.abitudini.filter(function (h) { return h.fatti[k]; }).map(function (h) { return h.areaId; }));
-    var scadG = s.backlog.filter(function (b) { return b.scadenza === k; });
-    var xp = s.xpPerGiorno[k] || 0;
-    var heat = xp <= 0 ? 0 : Math.min(3, Math.ceil(xp / maxXp * 3));
-    var mattoni = fatti.slice(0, 10).map(function (aid) { return '<i style="background:' + LM.coloreArea(areaById(aid)) + '"></i>'; }).join('') +
-      (fatti.length > 10 ? '<span class="me-piu">+' + (fatti.length - 10) + '</span>' : '');
-    var scadBadge = scadG.length ? '<span class="me-scad" title="' + esc(scadG.map(function (b) { return b.testo; }).join(', ')) + '">' + ICO('scadenza', 11) + (scadG.length > 1 ? ' ' + scadG.length : '') + '</span>' : '';
-    /* le cose ancora da fare diventano pastiglie che si possono prendere e
-       portare su un altro giorno (ripianificare guardando tutto il mese) */
-    var daFare = LM.azioniDelGiorno(k).filter(function (a) { return !a.done; });
-    var pastiglie = daFare.slice(0, 3).map(function (a) {
-      /* la pastiglia è minuscola: è lei stessa il manico (niente manichino
-         dentro che ruberebbe spazio e sarebbe difficile da centrare) */
-      return '<span class="me-pill" data-drag-az="' + a.id + '" data-manico style="--c-area:' + LM.coloreArea(areaById(a.areaId)) + '" title="' + esc(a.testo) + '">' + esc(a.testo) + '</span>';
-    }).join('') + (daFare.length > 3 ? '<span class="me-pill-piu">+' + (daFare.length - 3) + '</span>' : '');
-    /* i giorni fuori dal mese restano neutri: colorarli renderebbe il numero
-       illeggibile e confonderebbe il colpo d'occhio sul mese vero */
-    celle += '<button class="me-cella ' + (fuori ? 'fuori' : 'heat-' + heat) + (k === oggi ? ' oggi' : '') + (futuro ? ' futuro' : '') + '" data-tl-giorno="' + k + '" aria-label="' + LM.weekdayShort(k) + ' ' + LM.fmtShort(k) + '">' +
-      '<span class="me-testa"><span class="me-num">' + d.getDate() + '</span>' + scadBadge + '</span>' +
-      (daFare.length ? '<span class="me-pills">' + pastiglie + '</span>' : '') +
-      (fatti.length ? '<span class="me-mattoni">' + mattoni + '</span>' : '') + '</button>';
+  const primo = new Date(anno, mese, 1);
+  const inizio = new Date(anno, mese, 1 - ((primo.getDay() + 6) % 7));
+  const oggi = LM.todayKey();
+  const MESI = ['gennaio', 'febbraio', 'marzo', 'aprile', 'maggio', 'giugno', 'luglio', 'agosto', 'settembre', 'ottobre', 'novembre', 'dicembre'];
+  const s = LM.snapshot();
+  const prefisso = anno + '-' + ('0' + (mese + 1)).slice(-2);
+  if (!meseSel || meseSel.slice(0, 7) !== prefisso) meseSel = oggi.slice(0, 7) === prefisso ? oggi : comeGiorno(prefisso + '-01');
+  const sel: Giorno = meseSel;
+  let attivi = 0, fatteMese = 0;
+  let celle = '';
+  for (let i = 0; i < 42; i++) {
+    const d = new Date(inizio.getFullYear(), inizio.getMonth(), inizio.getDate() + i);
+    if (i >= 35 && d.getMonth() !== mese) break;
+    const k = LM.dayKey(d);
+    const fuori = d.getMonth() !== mese;
+    const az = LM.azioniDelGiorno(k);
+    const ab = s.abitudini.filter(function (h) { return LM.abitudinePrevista(h, k); });
+    const tot = az.length + ab.length;
+    const fatte = az.filter(function (a) { return a.done; }).length + ab.filter(function (h) { return h.fatti[k]; }).length;
+    if (!fuori) { fatteMese += fatte; if (fatte) attivi++; }
+    const daFare = az.filter(function (a) { return !a.done; });
+    const punti = daFare.slice(0, 3).map(function (a) { return '<i style="background:' + LM.coloreArea(areaById(a.areaId)) + '"></i>'; }).join('');
+    const scad = s.backlog.some(function (b) { return b.scadenza === k; });
+    const cls = (k === oggi ? 'oggi' : '') + (k > oggi ? ' futuro' : '');
+    celle += '<button class="me-g' + (fuori ? ' fuori' : '') + (k === sel ? ' sel' : '') + (meseSposta ? ' bersaglio' : '') + '" data-me-g="' + k + '"' +
+      ' aria-label="' + LM.weekdayShort(k) + ' ' + LM.fmtShort(k) + (tot ? ', ' + fatte + ' di ' + tot + ' fatte' : '') + '">' +
+      anelloGiorno(k > oggi || !tot ? 0 : fatte / tot, d.getDate(), cls) +
+      '<span class="me-punti">' + punti + (scad ? '<b></b>' : '') + '</span></button>';
   }
-  var dowh = ['L', 'M', 'M', 'G', 'V', 'S', 'D'].map(function (x) { return '<span>' + x + '</span>'; }).join('');
-  container.innerHTML = orizzNav('mese', schermo.giornataAncora, null, (mesi[mese] || '') + ' ' + anno) +
-    /* SU UN TELEFONO LE SETTE COLONNE CI STANNO TUTTE: il foglio di stile,
-       sotto i 520px, toglie lo scorrimento laterale e trasforma le
-       pastiglie col titolo in pallini vuoti (vedi `.me-pill` in app.css,
-       dove sta scritto anche perché). Il contenitore che scorre resta per
-       gli schermi di mezzo, dove le celle hanno posto per un titolo ma la
-       tabella non entra intera.
-       Il giorno della settimana sta nella stessa tabella della griglia: se
-       scorresse solo una delle due le lettere finirebbero sopra la colonna
-       sbagliata. */
-    '<div class="card"><div class="me-scorri"><div class="me-tabella">' +
-    '<div class="me-dow">' + dowh + '</div><div class="me-grid">' + celle + '</div></div></div>' +
-    '</div>';
+  const dowh = ['L', 'M', 'M', 'G', 'V', 'S', 'D'].map(function (x) { return '<span>' + x + '</span>'; }).join('');
+
+  /* le cose del giorno scelto */
+  const azSel = LM.azioniDelGiorno(sel);
+  const abSel = s.abitudini.filter(function (h) { return LM.abitudinePrevista(h, sel); });
+  const spostata = meseSposta ? s.azioni.find(function (a) { return a.id === meseSposta; }) : null;
+  const righe = abSel.map(function (h) {
+    const ar = areaById(h.areaId), o = LM.oraAbitudine(h, sel);
+    return '<div class="lista-riga me-riga' + (h.fatti[sel] ? ' fatta' : '') + '">' +
+      '<button class="lista-apri" data-me-ab="' + h.id + '"><span class="me-pallino abit" style="--c-area:' + LM.coloreArea(ar) + '"></span>' +
+      '<span class="lista-corpo"><span class="lista-tit">' + esc(h.testo) + '</span><span class="lista-sub">' + ICO('refresh', 11) + ' Abitudine' + (o ? ' · ' + o : '') + '</span></span></button></div>';
+  }).concat(azSel.map(function (a) {
+    const ar = areaById(a.areaId);
+    return '<div class="lista-riga me-riga' + (a.done ? ' fatta' : '') + '">' +
+      '<button class="lista-apri" data-me-az="' + a.id + '"><span class="me-pallino" style="--c-area:' + LM.coloreArea(ar) + '"></span>' +
+      '<span class="lista-corpo"><span class="lista-tit">' + esc(a.testo) + '</span><span class="lista-sub">' + esc(ar.nome) + (a.ora ? ' · ' + a.ora : '') + '</span></span></button>' +
+      (a.done ? '' : '<button class="sp-link me-sposta" data-me-sposta="' + a.id + '">Sposta</button>') + '</div>';
+  })).join('');
+
+  container.innerHTML = orizzNav('mese', schermo.giornataAncora, null, (MESI[mese] || '') + ' ' + anno) +
+    (spostata
+      ? '<div class="me-modo">' + ICO('calendar', 15) + '<span>Tocca il giorno per <b>' + esc(spostata.testo) + '</b></span><button class="sp-link" id="me-annulla">Annulla</button></div>'
+      : '<div class="me-somma"><span><b>' + attivi + '</b> giorni attivi</span><span><b>' + fatteMese + '</b> cose fatte</span></div>') +
+    '<div class="card me-carta"><div class="me-dow">' + dowh + '</div><div class="me-griglia">' + celle + '</div></div>' +
+    '<div class="me-giorno"><div class="me-giorno-testa"><h2>' + esc(etichettaGiorno(sel)) + '</h2>' +
+    '<button class="sp-link" id="me-apri">Apri il giorno ' + ICO('chevronGiu', 13) + '</button></div>' +
+    (righe ? '<div class="lista">' + righe + '</div>' : '<div class="me-vuoto">Niente in programma.</div>') + '</div>';
   wireOrizzNav(container, 'mese');
-  celleGiorno(container);
-  /* nel mese si trascinano le cose ancora da fare (le pastiglie in fondo alla
-     cella) e si lasciano su un altro giorno: ripianificare a colpo d'occhio */
-  abilitaTrascina(container, spostaSuGiorno);
+  function ridisegna(): void { montaMese(container); aggiornaNav(); }
+  container.querySelectorAll<HTMLElement>('[data-me-g]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      const k = comeGiorno(b.getAttribute('data-me-g') || '');
+      if (meseSposta) {
+        const id = meseSposta; meseSposta = null;
+        if (LM.spostaAzione(id, k)) { toast('Spostata a ' + etichettaGiorno(k).toLowerCase(), 0, 'calendar'); suona('leggero'); }
+        meseSel = k; ridisegna(); return;
+      }
+      meseSel = k; ridisegna();
+    });
+  });
+  container.querySelectorAll<HTMLElement>('[data-me-sposta]').forEach(function (b) {
+    b.addEventListener('click', function () { meseSposta = b.getAttribute('data-me-sposta'); ridisegna(); window.scrollTo({ top: 0, behavior: 'smooth' }); });
+  });
+  const ann = container.querySelector<HTMLElement>('#me-annulla');
+  if (ann) ann.addEventListener('click', function () { meseSposta = null; ridisegna(); });
+  const apri = container.querySelector<HTMLElement>('#me-apri');
+  if (apri) apri.addEventListener('click', function () { setOrizzonte('giorno', sel); });
+  container.querySelectorAll<HTMLElement>('[data-me-az]').forEach(function (b) {
+    b.addEventListener('click', function () { apriItemGiornata(sel, b.getAttribute('data-me-az') || '', 'azione', ridisegna, sel <= oggi); });
+  });
+  container.querySelectorAll<HTMLElement>('[data-me-ab]').forEach(function (b) {
+    b.addEventListener('click', function () { apriItemGiornata(sel, b.getAttribute('data-me-ab') || '', 'abitudine', ridisegna, sel <= oggi); });
+  });
 }
 
-/* --- Anno: mappa dell'attività + scadenze dei prossimi mesi --- */
+/* L'ANNO: dodici mesi piccoli, come il calendario del telefono. Ogni giorno
+   è un quadratino che si accende con quanto hai fatto; toccando un mese
+   ci si entra. */
 function montaAnno(container: HTMLElement): void {
   const anno = +(schermo.giornataAncora.split('-')[0] || 0);
   const s = LM.snapshot();
-  const giorni: { data: Giorno; valore: number }[] = [];
-  let k = comeGiorno(anno + '-01-01');
-  while (+(k.split('-')[0] || 0) === anno) { giorni.push({ data: k, valore: s.xpPerGiorno[k] || 0 }); k = LM.addDays(k, 1); }
-  const attivi = giorni.filter(function (g) { return LM.giornoAttivo(g.data); }).length;
-  var azFatte = s.azioni.filter(function (a) { return a.done && a.data.slice(0, 4) === '' + anno; }).length;
-  var xpAnno = giorni.reduce(function (n, g) { return n + g.valore; }, 0);
+  const oggi = LM.todayKey();
+  const MESI = ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic'];
+  let attivi = 0, maxXp = 1, xpAnno = 0;
+  for (let k = comeGiorno(anno + '-01-01'); +(k.split('-')[0] || 0) === anno; k = LM.addDays(k, 1)) {
+    const v = s.xpPerGiorno[k] || 0; xpAnno += v; if (v > maxXp) maxXp = v; if (LM.giornoAttivo(k)) attivi++;
+  }
+  const azFatte = s.azioni.filter(function (a) { return a.done && a.data.slice(0, 4) === '' + anno; }).length;
+  let mesiHtml = '';
+  for (let m = 0; m < 12; m++) {
+    const primo = new Date(anno, m, 1), giorniMese = new Date(anno, m + 1, 0).getDate();
+    let celle = '';
+    for (let v = 0; v < (primo.getDay() + 6) % 7; v++) celle += '<i class="vuota"></i>';
+    let attiviMese = 0;
+    for (let g = 1; g <= giorniMese; g++) {
+      const k = comeGiorno(anno + '-' + ('0' + (m + 1)).slice(-2) + '-' + ('0' + g).slice(-2));
+      const xp = s.xpPerGiorno[k] || 0;
+      const liv = xp <= 0 ? 0 : Math.min(4, Math.ceil(xp / maxXp * 4));
+      if (xp > 0) attiviMese++;
+      celle += '<i class="l' + liv + (k === oggi ? ' oggi' : '') + (k > oggi ? ' poi' : '') + '"></i>';
+    }
+    const ora = oggi.slice(0, 7) === anno + '-' + ('0' + (m + 1)).slice(-2);
+    mesiHtml += '<button class="an-mese' + (ora ? ' ora' : '') + '" data-an-mese="' + m + '">' +
+      '<span class="an-mese-testa"><b>' + MESI[m] + '</b>' + (attiviMese ? '<small>' + attiviMese + '</small>' : '') + '</span>' +
+      '<span class="an-mese-griglia">' + celle + '</span></button>';
+  }
   const scad = s.backlog.filter(function (b) { return b.scadenza && b.scadenza.slice(0, 4) === '' + anno; })
     .sort(function (a, b) { return (a.scadenza || '') < (b.scadenza || '') ? -1 : 1; });
-  const scadHtml = scad.length ? scad.map(function (b) {
+  const scadHtml = scad.map(function (b) {
     const ar = areaById(b.areaId);
-    /* qui la scadenza c'è: il filtro qui sopra ha tenuto solo quelle che ce
-       l'hanno */
     const si = scadInfo(presa(b.scadenza));
     return '<div class="an-scad"><span class="scad-badge ' + si.cls + '">' + LM.fmtShort(presa(b.scadenza)) + '</span>' +
-      '<span class="scad-testo">' + esc(b.testo) + '</span>' +
-      segnoArea(ar, 13, 'tl-tag') + '</div>';
-  }).join('') : '<div class="sotto" style="margin:0">Nessuna scadenza registrata per il ' + anno + '.</div>';
+      '<span class="scad-testo">' + esc(b.testo) + '</span>' + segnoArea(ar, 13, 'tl-tag') + '</div>';
+  }).join('');
 
   container.innerHTML = orizzNav('anno', schermo.giornataAncora, null, '' + anno) +
-    '<div class="card"><div class="eroe-statistiche" style="justify-content:flex-start;margin-bottom:14px">' +
-    '<div class="stat"><span class="stat-val">' + attivi + '</span><span class="stat-eti">giorni attivi</span></div>' +
-    '<div class="stat"><span class="stat-val">' + azFatte + '</span><span class="stat-eti">azioni fatte</span></div>' +
-    '<div class="stat"><span class="stat-val">' + xpAnno + '</span><span class="stat-eti">XP</span></div></div>' +
-    '<h2 style="font-size:14px">' + ICO('trendUp', 15) + ' La tua attività, giorno per giorno</h2>' +
-    '<div class="an-heat-wrap"><div id="an-heat"></div></div></div>' +
-    '<div class="card mt"><h2>' + ICO('scadenza', 15) + ' Scadenze del ' + anno + '</h2><div class="an-scad-lista mt-s">' + scadHtml + '</div></div>';
-  /* il contenitore è dentro all'HTML che abbiamo appena scritto */
-  LMCharts.heatmap(presa(document.getElementById('an-heat')), giorni);
+    '<div class="an-numeri"><span><b>' + attivi + '</b>giorni attivi</span><span><b>' + azFatte + '</b>fatte</span><span><b>' + xpAnno + '</b>XP</span></div>' +
+    '<div class="an-mesi">' + mesiHtml + '</div>' +
+    (scad.length ? '<div class="card mt"><h2>' + ICO('scadenza', 15) + ' Scadenze</h2><div class="an-scad-lista mt-s">' + scadHtml + '</div></div>' : '');
   wireOrizzNav(container, 'anno');
+  container.querySelectorAll<HTMLElement>('[data-an-mese]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      const m = +(b.getAttribute('data-an-mese') || 0);
+      setOrizzonte('mese', comeGiorno(anno + '-' + ('0' + (m + 1)).slice(-2) + '-01'));
+    });
+  });
 }
 
-/* barra di navigazione comune agli orizzonti (‹ periodo › + Oggi) */
 function orizzNav(orizz: Orizzonte, k1: Giorno, k2?: Giorno | null, etichetta?: string): string {
   const testo = etichetta || (k2 ? LM.fmtShort(k1) + ' – ' + LM.fmtShort(k2) : etichettaGiorno(k1));
   /* Quanto siamo lontani da oggi: senza questo, spostandosi di un giorno
