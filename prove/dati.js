@@ -302,16 +302,18 @@ const ok = (n, c, d) => { if (!c) guai++; console.log('  ' + (c ? 'ok  ' : 'KO  
   /* ============ 7. azzerare funziona lo stesso ============ */
   console.log('\n«AZZERA TUTTO» FUNZIONA LO STESSO');
   {
+    /* l'azzeramento col conto collegato lascia una lapide per riga: quello
+       che c'era non torna dall'altro dispositivo, e quello scritto dopo resta */
     const r = await p.evaluate(() => {
       const pieno = LM.statoVuoto(); pieno.updatedAt = 1000;
       pieno.azioni = [{ id: 'x1', testo: 'vecchia', creata: 500 }];
       pieno.lezioni = [{ id: 'l1', testo: 'vecchia', creata: 500 }];
-      const azzerato = LM.statoVuoto();
-      azzerato.updatedAt = 2000; azzerato.azzerato = 1500;
+      LM.hydrate(JSON.parse(JSON.stringify(pieno)), true);
+      LM.reset(true);
+      const azzerato = LM.snapshot();
       const u = LM.unisci(azzerato, pieno);
-      /* e una cosa scritta DOPO l'azzeramento resta */
-      const nuovo = LM.statoVuoto(); nuovo.updatedAt = 3000;
-      nuovo.azioni = [{ id: 'x2', testo: 'nuova', creata: 2500 }];
+      const nuovo = LM.statoVuoto(); nuovo.updatedAt = Date.now() + 1000;
+      nuovo.azioni = [{ id: 'x2', testo: 'nuova', creata: Date.now() + 500 }];
       const u2 = LM.unisci(u, nuovo);
       return { dopoAzzeramento: u.azioni.length + u.lezioni.length, poi: u2.azioni.length };
     });

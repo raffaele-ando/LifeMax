@@ -393,6 +393,14 @@ export interface Lapide {
   k: string;
   chiave: string;
   ts: number;
+  /* RIPORTATA IN VITA: la riga è tornata (un ripristino, un annulla). Ha la
+     stessa chiave della lapide, e la fusione tiene la più recente — così il
+     ritorno arriva a tutti i dispositivi, invece di essere ri-sepolto dalla
+     lapide che gli altri hanno ancora. */
+  vivo?: boolean;
+  /* per i valori senza un'ora (un numero, i voti del giorno): si toglie solo
+     QUEL valore, non quello che ci scriverai dopo nello stesso giorno */
+  firma?: number;
 }
 
 /* COME SI TORNA INDIETRO DA QUESTA RIGA. Non tutte le righe del diario si

@@ -479,8 +479,8 @@ export function onSnapshot(ref, suDati, suErrore) {
       window.__fb.utente = null; if (window.__fb.avvisa) window.__fb.avvisa(null);
       await new Promise((r2) => setTimeout(r2, 300));
       localStorage.clear();
-      LM.seedDemo(); LM.reset();          /* «Azzera tutto» per togliere l'esempio */
-      const azzerato = LM.load().azzerato > 0;
+      LM.seedDemo(); LM.reset(false);     /* «Azzera tutto» da soli, per togliere l'esempio */
+      const azzerato = LM.load().cancellati.length === 0 && !LM.load().azzerato;
       const vero = LM.statoVuoto();
       vero.updatedAt = Date.now() - 86400000;
       vero.azioni = [{ id: 'tel-1', testo: 'DAL TELEFONO, DI IERI', data: LM.todayKey(), creata: Date.now() - 86400000 }];
@@ -490,7 +490,7 @@ export function onSnapshot(ref, suDati, suErrore) {
       await new Promise((r2) => setTimeout(r2, 1500));
       return { azzerato: azzerato, qui: /DAL TELEFONO, DI IERI/.test(JSON.stringify(LM.snapshot())), nube: /DAL TELEFONO, DI IERI/.test(String((window.__fb.doc || {}).data || '')) };
     });
-    ok('«Azzera tutto» fatto prima di collegarsi segna il suo taglio', z.azzerato);
+    ok('«Azzera tutto» fatto da soli non porta niente verso il cloud', z.azzerato);
     ok('ma collegandosi i dati del telefono arrivano qui', z.qui);
     ok('e restano nel cloud', z.nube);
 

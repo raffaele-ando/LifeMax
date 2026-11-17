@@ -424,7 +424,7 @@ async function primaSincronizzazione(uid: string): Promise<void> {
      su tutti i dispositivi. Adesso l'esempio si mette da parte in un backup
      e il dispositivo prende quello che c'è nell'account, e basta. Vale
      anche se questo dispositivo era già stato collegato prima. */
-  const eraEsempio = window.LM.lasciaEsempio();
+  const eraEsempio = window.LM.lasciaEsempio(giaUnito);
   if (eraEsempio) log('info', 'qui c’erano i dati di esempio', 'messi da parte: conta solo l’account');
   else if (!giaUnito) {
     window.LM.primaUnione();
@@ -492,7 +492,12 @@ async function daBackup(id: string, sostituisci: boolean): Promise<boolean> {
     const dati = d.data();
     if (!d.exists() || !dati) return false;
     window.LM.backup(sostituisci ? 'prima-di-sostituire-con-una-copia-dal-cloud' : 'prima-di-riprendere-una-copia-dal-cloud');
-    applicaRemoto(dati, false, sostituisci);
+    /* una copia ripresa deve tornare su TUTTI i dispositivi: passa dalla
+       strada che riporta in vita le righe sepolte dalle lapidi degli altri */
+    const obj = parseDoc(dati);
+    if (!obj) return false;
+    if (window.LM.scordaPunti) window.LM.scordaPunti();
+    if (sostituisci) window.LM.ripristinaStato(obj); else window.LM.riprendiCopia(obj);
     await push(currentUser.uid);
     return true;
   } catch (e) {

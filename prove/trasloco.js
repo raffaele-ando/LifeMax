@@ -89,29 +89,20 @@ const ok = (nome, cond, det) => { if (!cond) guai++; console.log('  ' + (cond ? 
     await p.evaluate(() => { localStorage.clear(); LM.seedDemo(); });
   }
 
-  console.log('\nDOPO UN «AZZERA TUTTO», IL FILE VECCHIO ENTRA SOLO IN PARTE — E LO DICE');
+  console.log('\nDOPO UN «AZZERA TUTTO», IL FILE VECCHIO RIENTRA TUTTO');
   {
-    /* QUESTO È IL CASO CHE L'APP RACCONTAVA MALE. L'azzeramento dichiarato
-       tiene fuori tutto quello che è più vecchio di lui, ed è giusto; ma il
-       messaggio diceva «Dati importati (322 elementi)» contando quelli del
-       FILE, mentre ne erano entrati 91. Adesso `importJson` conta le righe
-       che il taglio prenderà, e chi chiama lo dice a chi guarda. */
+    /* Prima l'azzeramento era un'ora dopo la quale passava solo il nuovo, e
+       un file vecchio importato dopo entrava a metà. Era lo stesso
+       meccanismo che, con due dispositivi, rimangiava i ripristini. Adesso
+       chi importa un file lo vuole dentro, e dentro va. */
     const esito = await p.evaluate((testo) => {
       const prima = LM.ricchezza(LM.snapshot());
-      LM.reset();
+      LM.reset(false);
       const r = LM.importJson(testo);
-      return { prima: prima, dopo: LM.ricchezza(LM.snapshot()), r: r,
-        diario: (LM.load().registro || []).filter((x) => /importati da file/.test(x.testo || '')).map((x) => x.testo) };
+      return { prima: prima, dopo: LM.ricchezza(LM.snapshot()), r: r };
     }, fuori);
-    ok('parecchia roba è rimasta fuori', esito.dopo < esito.prima / 2,
-      esito.dopo + ' contro ' + esito.prima);
-    ok('e l’import lo dice, con quante righe', esito.r && esito.r.tagliati > 0,
-      'tagliate ' + (esito.r && esito.r.tagliati));
-    ok('il numero tagliato è credibile, non tutto e non niente',
-      esito.r && esito.r.tagliati > 10 && esito.r.tagliati <= esito.prima,
-      String(esito.r && esito.r.tagliati) + ' su ' + esito.prima);
-    ok('e resta scritto anche nel diario', esito.diario.some((t) => /non sono rientrate/.test(t)),
-      esito.diario.slice(-1)[0] || 'niente');
+    ok('rientra tutto', esito.dopo >= esito.prima, esito.dopo + ' contro ' + esito.prima);
+    ok('e non dice di aver tagliato niente', esito.r && !esito.r.tagliati, String(esito.r && esito.r.tagliati));
     await p.evaluate(() => { localStorage.clear(); LM.seedDemo(); });
   }
 

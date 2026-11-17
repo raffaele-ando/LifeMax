@@ -22,7 +22,7 @@ import type {
   Stato, Area, Azione, Attivita, Abitudine, Lezione, Esperimento,
   Ritmo, Pasto, Timer, VoceRegistro, Slot, Disfa,
   Giorno, Ora, GiornoSettimana, Verso, ModoFusione, PassoDi, Mancata,
-  RegistroGiorno, Promemoria, VocePromemoria, Chiedi, PatchChiedi, Sessione
+  RegistroGiorno, Promemoria, VocePromemoria, Chiedi, PatchChiedi, Sessione, Lapide
 } from '../tipi/stato';
 import { COME_UNIRE, giorno, ora } from '../tipi/stato';
 import type { ImprontaEsempio } from '../tipi/stato';
@@ -485,13 +485,20 @@ function creaLM() {
     /* la stessa cosa vista per chiave: questo giro passa su campi che non
        sa quali sono, e li tratta tutti allo stesso modo */
     var perChiave = s as unknown as Record<string, unknown>;
+    var ultima: Record<string, { ts: number; vivo: boolean; firma: number | undefined }> = {};
     s.cancellati.forEach(function (t) {
       if (!t || !t.k || !t.chiave) return;
-      var p = perCampo[t.k] || (perCampo[t.k] = {});
-      /* letta una volta e messa in una variabile: scritta tre volte era
-         anche tre occasioni di sbagliarne una */
-      var pre = p[t.chiave];
-      if (pre === undefined || t.ts > pre) p[t.chiave] = t.ts;
+      var id = t.k + '\u0000' + t.chiave;
+      var pre = ultima[id];
+      if (!pre || t.ts >= pre.ts) ultima[id] = { ts: t.ts, vivo: !!t.vivo, firma: t.firma };
+    });
+    var firme: Record<string, Record<string, number>> = {};
+    Object.keys(ultima).forEach(function (id) {
+      var u = ultima[id]; if (!u || u.vivo) return;   /* tornata: niente da togliere */
+      var pz = id.split('\u0000'), k = pz[0] || '', chiave = pz.slice(1).join('\u0000');
+      var p = perCampo[k] || (perCampo[k] = {});
+      p[chiave] = u.ts;
+      if (u.firma !== undefined) (firme[k] || (firme[k] = {}))[chiave] = u.firma;
     });
     Object.keys(perCampo).forEach(function (k) {
       var lista = perChiave[k];
@@ -502,6 +509,8 @@ function creaLM() {
         Object.keys(lp).forEach(function (g) {
           if (!(g in m)) return;
           var v = m[g];
+          var fk = firme[k] && firme[k][g];
+          if (fk !== undefined) { if (firma(v) === fk) delete m[g]; return; }
           var quando = eMappa(v) ? momentoRiga(v, 0) : 0;
           if ((lp[g] as number) >= quando) delete m[g];
         });
@@ -575,7 +584,14 @@ function creaLM() {
        sincronizzazione: l'altro rimanderebbe indietro tutto. L'unica cosa che
        taglia è un azzeramento DICHIARATO, con la sua ora: tutto quello che è
        più vecchio di quell'istante se ne va, il resto no. */
-    var taglio = Number(out['azzerato']) || 0;
+    /* IL TAGLIO NON C'È PIÙ. Un «Azzera tutto» era un'ora dopo la quale
+       sopravviveva solo quello più nuovo — su tutti i dispositivi e per
+       sempre. Un ripristino da backup riportava righe più vecchie di
+       quell'ora, e l'altro dispositivo le tagliava di nuovo: ripristinavi qui
+       e là restava vuoto. Adesso l'azzeramento lascia una lapide per ogni
+       riga, come una cancellazione qualunque, e un ripristino le riporta in
+       vita una per una. */
+    var taglio = 0;
     if (taglio) {
       Object.keys(regole).forEach(function (k) {
         var lista = out[k];
@@ -622,10 +638,15 @@ function creaLM() {
       era.forEach(function (r: unknown) {
         var c = chiaveRiga(r);
         if (restano[c]) return;
-        nate.push({ k: k, chiave: c, ts: ora });
+        nate.push({ k: k, chiave: c, ts: ora, vivo: false });
       });
     });
-    if (nate.length > 3000) s.cancellati = nate.slice(-3000);
+    /* una sola voce per chiave: la più recente (una lapide nuova prende il
+       posto di un «tornata» di prima, e viceversa) */
+    var ultimaDi: Record<string, number> = {};
+    nate.forEach(function (t, i) { if (t) ultimaDi[t.k + '|' + t.chiave] = i; });
+    s.cancellati = nate.filter(function (t, i) { return !t || ultimaDi[t.k + '|' + t.chiave] === i; });
+    if (s.cancellati.length > 3000) s.cancellati = s.cancellati.slice(-3000);
   }
 
   var state: Stato | null = null;
@@ -720,7 +741,9 @@ function creaLM() {
     ['backlog', 'abitudini', 'lezioni', 'azioni', 'inbox', 'checkins', 'esperimenti',
      'registro', 'log', 'aree', 'areeAttive', 'cancellati', 'sessioni'].forEach(function (k) { salva(k, eLista); });
     if (!s.recuperati || typeof s.recuperati !== 'object') s.recuperati = {};
-    if (typeof s.azzerato !== 'number') s.azzerato = 0;
+    /* il vecchio taglio dell'azzeramento non vale più (vedi `unisci`): uno
+       rimasto in un documento salvato prima non deve poter riapparire */
+    s.azzerato = 0;
     if (typeof s.visto !== 'number') s.visto = 0;
     if (!Array.isArray(s.aree) || !s.aree.length) s.aree = JSON.parse(JSON.stringify(AREE_DEFAULT));
     /* profilo e ritmo della giornata (stati vecchi o dal cloud) */
@@ -968,10 +991,54 @@ function creaLM() {
         if (!cePrima[c] && eMappa(r)) { (r as Record<string, unknown>)['aggiornata'] = ora; tornate[k + '|' + c] = 1; }
       });
     });
-    if (Array.isArray(adesso.cancellati)) {
-      adesso.cancellati = adesso.cancellati.filter(function (t) { return !(t && tornate[t.k + '|' + t.chiave]); });
-    }
+    /* anche i giorni delle mappe (il diario, i voti) */
+    Object.keys(regoleU).forEach(function (k) {
+      if (regoleU[k] !== 'mappa') return;
+      var era = (primaObj as unknown as Record<string, unknown>)[k], ce = (adesso as unknown as Record<string, unknown>)[k];
+      if (!eMappa(ce)) return;
+      Object.keys(ce).forEach(function (g) { if (!eMappa(era) || !(g in era)) tornate[k + '|' + g] = 1; });
+    });
+    rivivi(adesso, tornate, ora);
     segnaLapidi(primaRaw, adesso);
+  }
+
+  /* le righe tornate prendono una lapide «viva» con la stessa chiave: la
+     fusione tiene la più recente, e su tutti i dispositivi vince il ritorno */
+  function rivivi(st: Stato, tornate: Record<string, 1>, ora: number): void {
+    if (!Array.isArray(st.cancellati)) st.cancellati = [];
+    var sepolte: Record<string, 1> = {};
+    st.cancellati.forEach(function (t) { if (t && !t.vivo) sepolte[t.k + '|' + t.chiave] = 1; });
+    var resta = st.cancellati.filter(function (t) { return !(t && tornate[t.k + '|' + t.chiave]); });
+    Object.keys(tornate).forEach(function (id) {
+      var i = id.indexOf('|');
+      resta.push({ k: id.slice(0, i), chiave: id.slice(i + 1), ts: ora, vivo: true });
+    });
+    void sepolte;
+    st.cancellati = resta;
+  }
+  /* PRENDERE DA UNA COPIA (un backup, il cloud) SENZA SOSTITUIRE: quello che
+     la copia ha e qui era stato cancellato torna, e torna per tutti */
+  function riprendiCopia(obj: unknown): boolean {
+    if (!eMappa(obj)) return false;
+    var copia = JSON.parse(JSON.stringify(obj)) as Record<string, unknown>;
+    var ora = Date.now(), tornate: Record<string, 1> = {};
+    var regoleU = COME_UNIRE as unknown as Record<string, ModoFusione | undefined>;
+    Object.keys(regoleU).forEach(function (k) {
+      var v = copia[k];
+      if (regoleU[k] === 'elenco' && Array.isArray(v) && k !== 'cancellati' && k !== 'registro' && k !== 'log') {
+        v.forEach(function (r: unknown) { if (eMappa(r)) { r['aggiornata'] = ora; tornate[k + '|' + chiaveRiga(r)] = 1; } });
+      } else if (regoleU[k] === 'mappa' && eMappa(v)) {
+        Object.keys(v).forEach(function (g) { tornate[k + '|' + g] = 1; });
+      }
+    });
+    copia['cancellati'] = [];
+    /* prima le lapidi «vive», poi la copia: al contrario la fusione la
+       ritaglierebbe con le lapidi vecchie prima che il ritorno conti */
+    var s = load();
+    rivivi(s, tornate, ora);
+    senzaLapidi++; save(); senzaLapidi--;
+    hydrate(copia, false);
+    return true;
   }
 
   function annullaRecord(tipo: string, chiaveGrezza: string) {
@@ -1111,17 +1178,40 @@ function creaLM() {
     return raw ? raw.replace(/"updatedAt":\s*\d+,?/, '') : raw;
   }
 
-  function reset() {
+  /* AZZERARE. Da soli si riparte da zero su questo dispositivo, e basta.
+     Collegati a un account si toglie anche dal cloud: ogni riga e ogni
+     giorno prende la sua lapide — come una cancellazione qualunque — così
+     un backup ripristinato dopo li riporta in vita, su tutti i dispositivi. */
+  function reset(perAccount?: boolean) {
     backup('prima-azzeramento');
-    /* i punti a cui tornare parlavano di dati che non ci sono più */
     scordaPunti();
-    state = statoVuoto();
-    /* L'AZZERAMENTO SI DICHIARA, con la sua ora. La fusione fra dispositivi
-       non toglie mai niente da sé — è il suo mestiere — quindi senza questo
-       segno «Azzera tutto» si disferebbe da solo appena l'altro dispositivo
-       rimanda indietro quello che ha. */
-    state.azzerato = Date.now();
-    registra('dati', 'Dati azzerati (ripartenza da zero)', true);
+    var prima = load();
+    var nuovo = statoVuoto();
+    nuovo.azzerato = 0;
+    if (perAccount) {
+      var ora = Date.now(), lapidi: Lapide[] = [];
+      var regoleU = COME_UNIRE as unknown as Record<string, ModoFusione | undefined>;
+      var grezzo = prima as unknown as Record<string, unknown>;
+      Object.keys(regoleU).forEach(function (k) {
+        var v = grezzo[k];
+        if (regoleU[k] === 'elenco' && Array.isArray(v) && k !== 'cancellati' && k !== 'registro' && k !== 'log' && k !== 'aree' && k !== 'areeAttive') {
+          v.forEach(function (r: unknown) { lapidi.push({ k: k, chiave: chiaveRiga(r), ts: ora, vivo: false }); });
+        } else if (regoleU[k] === 'mappa' && eMappa(v)) {
+          Object.keys(v).forEach(function (g) {
+            var val = (v as Record<string, unknown>)[g];
+            var l: Lapide = { k: k, chiave: g, ts: ora, vivo: false };
+            if (!eMappa(val) || !momentoRiga(val, 0)) l.firma = firma(val);
+            lapidi.push(l);
+          });
+        }
+      });
+      nuovo.cancellati = lapidi.slice(-3000);
+      nuovo.onboarded = true;
+    }
+    nuovo.profilo.skin = prima.profilo.skin;
+    nuovo.profilo.modo = prima.profilo.modo;
+    state = nuovo;
+    registra('dati', perAccount ? 'Dati azzerati, anche nell’account' : 'Dati azzerati su questo dispositivo', true);
     senzaLapidi++;
     save();
     senzaLapidi--;
@@ -1165,11 +1255,12 @@ function creaLM() {
        sicurezza sta dicendo «rivoglio esattamente com'era», non «aggiungi
        quella roba a questa». È l'unico posto dell'app dove si sostituisce. La
        copia di un istante fa l'abbiamo appena presa, due righe più su. */
-    hydrate(safeParse(b.data), true);
+    /* e chi torna, torna per tutti: senza `marcaRitorno` le righe del backup
+       restavano sotto le lapidi degli altri dispositivi, e il telefono
+       restava vuoto mentre il computer era a posto */
+    ripristinaStato(safeParse(b.data));
     registra('dati', 'Ripristinato un backup', true);
-    senzaLapidi++;
     save();
-    senzaLapidi--;
     return true;
   }
   function safeParse(t: string | null): Stato { try { return normalizza(JSON.parse(String(t))); } catch (e) { return statoVuoto(); } }
@@ -3721,7 +3812,6 @@ function creaLM() {
     }
     if (ancheTesti) tolte += togliDiarioEsempio(st);
     if (imp || ancheTesti) {
-      if (st.profilo.nome === PROFILO_ESEMPIO.nome) st.profilo.nome = '';
       if (st.profilo.visione === PROFILO_ESEMPIO.visione) st.profilo.visione = '';
     }
     st.demo = false;
@@ -3743,8 +3833,13 @@ function creaLM() {
     function via(campo: string, g: string) {
       var m = (st as unknown as Record<string, unknown>)[campo];
       if (!eMappa(m) || !(g in m)) return;
+      var val = (m as Record<string, unknown>)[g];
       delete (m as Record<string, unknown>)[g];
-      lapidi.push({ k: campo, chiave: g, ts: ora });
+      /* il diario ha la sua ora; i numeri (voti, minuti, punti) no: per quelli
+         si toglie solo quel valore, e uno nuovo dello stesso giorno resta */
+      var l: Lapide = { k: campo, chiave: g, ts: ora, vivo: false };
+      if (!eMappa(val) || !momentoRiga(val, 0)) l.firma = firma(val);
+      lapidi.push(l);
       giorniEsempio[g] = 1; tolte++;
     }
     var vit = D.vittorie as readonly string[], blo = D.blocchi as readonly string[];
@@ -3847,9 +3942,11 @@ function creaLM() {
     senzaLapidi++; save(); senzaLapidi--;
   }
   /* entrando in un account: se qui c'è l'esempio, si mette da parte tutto */
-  function lasciaEsempio(): boolean {
+  function lasciaEsempio(giaUnito?: boolean): boolean {
     var st = load();
-    if (!st.demo && !st.esempio) return false;
+    /* l'esempio caricato QUI (porta l'impronta), oppure — su un dispositivo
+       mai unito a quell'account — uno stato che dice di essere l'esempio */
+    if (!st.esempio && !(st.demo && !giaUnito)) return false;
     pulito('prima-di-entrare-nell-account');
     return true;
   }
@@ -3897,7 +3994,7 @@ function creaLM() {
     togliEsempio: togliEsempio, contaEsempio: contaEsempio, snapshotPerCloud: snapshotPerCloud, primaUnione: primaUnione, lasciaEsempio: lasciaEsempio, lasciaAccount: lasciaAccount, hydrate: hydrate, snapshot: snapshot,
     unisci: unisci, recuperi: recuperi, COME_UNIRE: COME_UNIRE, statoVuoto: statoVuoto,
     backup: backup, listBackups: listBackups, restoreBackup: restoreBackup, ricchezza: ricchezza,
-    exportJson: exportJson, importJson: importJson, ripristinaStato: ripristinaStato,
+    exportJson: exportJson, importJson: importJson, ripristinaStato: ripristinaStato, riprendiCopia: riprendiCopia,
     puntoDiRitorno: puntoDiRitorno, puntiDiRitorno: puntiDiRitorno,
     tornaAlPunto: tornaAlPunto, annullaRecord: annullaRecord, scordaPunti: scordaPunti,
     todayKey: todayKey, dayKey: dayKey, addDays: addDays, lastNDays: lastNDays,

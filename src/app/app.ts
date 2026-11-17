@@ -474,11 +474,11 @@ export function azzeraTutto(): void {
   avviso({
     titolo: 'Cancellare tutti i dati?',
     testo: window.LM_AUTH && window.LM_AUTH.user
-      ? 'Sei collegato: si cancellano anche dal cloud e da tutti i tuoi dispositivi. Se volevi togliere solo i dati di esempio, usa «Togli i dati di esempio».'
+      ? 'Sei collegato: si cancellano anche dall’account, su tutti i tuoi dispositivi. Prima ne resta una copia in «Backup e ripristino»: ripristinandola torna tutto, anche sugli altri dispositivi. Se volevi togliere solo i dati di esempio, usa «Togli i dati di esempio».'
       : 'Riparti da zero, su questo dispositivo. Se volevi togliere solo i dati di esempio, usa «Togli i dati di esempio».',
     azione: 'Cancella tutto', pericolo: true
   }, function () {
-    LM.reset(); chiudiSheet(); location.hash = '#/oggi'; render();
+    LM.reset(!!(window.LM_AUTH && window.LM_AUTH.user)); chiudiSheet(); location.hash = '#/oggi'; render();
   });
 }
 
