@@ -1,0 +1,21 @@
+# Cosa NON pubblicare: pubblico solo il sito (index.html, pacco/, icone/, promemoria/, sw.js, manifest, _headers).
+node_modules
+.git
+.github
+src
+prove
+postino
+segni
+pacco/*.map
+wrangler.jsonc
+.assetsignore
+package.json
+package-lock.json
+tsconfig.json
+vite.config.mts
+firestore.rules
+README.md
+COMPONENTI.md
+DESIGN.md
+.gitattributes
+.gitignore
