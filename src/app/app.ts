@@ -4182,11 +4182,12 @@ function htmlTimeGrid(d: NodiDelGiorno, opzioni?: OpzGriglia): string {
        Così col dito si prende subito, senza che il browser rubi il gesto
        per selezionare il testo. */
     /* si trascinano anche le abitudini: cambia l'ora di QUEL giorno */
+    clic += ' data-dur="' + (e.dur || 30) + '"';
     if (e.tipo === 'azione') clic += ' data-drag-az="' + e.id + '"' + (opts.mini ? ' data-manico' : '');
     else clic += ' data-drag-ab="' + e.id + '" data-drag-k="' + d.k + '"' + (opts.mini ? ' data-manico' : '');
-    return '<div class="tl-blk tl-blk-att' + (fatto ? ' fatta' : '') + (e.mancata ? ' mancata' : '') + (basso ? ' tl-blk-basso' : '') + (corto ? ' tl-blk-corto' : '') + (opts.interactive && !opts.mini ? ' tl-blk-clic' : '') + '"' + clic + ' style="' + pos + ';--c-area:' + col + '" title="' + esc(e.testo) + '">' +
+    return '<div class="tl-blk tl-blk-att' + (e.tipo === 'abitudine' ? ' tl-blk-abit' : '') + (fatto ? ' fatta' : '') + (e.mancata ? ' mancata' : '') + (basso ? ' tl-blk-basso' : '') + (corto ? ' tl-blk-corto' : '') + (opts.interactive && !opts.mini ? ' tl-blk-clic' : '') + '"' + clic + ' style="' + pos + ';--c-area:' + col + '" title="' + esc(e.testo) + '">' +
       check + (!opts.mini && opts.interactive ? '<span class="manico" data-manico aria-hidden="true">' + ICO('presa', 13) + '</span>' : '') +
-      (righe === 0 ? '' : '<span class="tl-blk-t">' + (e.mit ? ICO('star', 11) + ' ' : '') + esc(e.testo) + '</span>') +
+      (righe === 0 ? '' : '<span class="tl-blk-t">' + (e.mit ? ICO('star', 11) + ' ' : '') + (e.tipo === 'abitudine' && !opts.mini ? ICO('refresh', 12) + ' ' : '') + esc(e.testo) + '</span>') +
       (!corto && !opts.mini ? '<span class="tl-blk-ora">' + e.ora + '–' + fmtMin((e.min ?? 0) + dur) + '</span>' : '') + '</div>';
   }).join('');
   let now = '';
@@ -4365,9 +4366,9 @@ function montaGiornata(container: HTMLElement, opzioni?: OpzGriglia): void {
         var attr = e.tipo === 'azione' ? 'data-tl-az="' + e.id + '"' : 'data-tl-ab="' + e.id + '"';
         var bAttr = 'data-blk-' + (e.tipo === 'azione' ? 'az' : 'ab') + '="' + e.id + '"';
         return '<div class="gio-so-riga' + (fatto ? ' fatta' : '') + '" style="--c-area:' + col + '"' +
-          (e.tipo === 'azione' ? ' data-drag-az="' + e.id + '"' : '') + '>' +
+          (e.tipo === 'azione' ? ' data-drag-az="' + e.id + '"' : ' data-drag-ab="' + e.id + '" data-drag-k="' + k + '"') + ' data-dur="' + (e.dur || 30) + '">' +
           (spuntabile ? '<button class="tl-check" ' + attr + ' aria-label="Fatto">' + ICO('check', 13) + '</button>' : '') +
-          (e.tipo === 'azione' ? '<span class="manico" data-manico aria-hidden="true">' + ICO('presa', 13) + '</span>' : '') +
+          '<span class="manico" data-manico aria-hidden="true">' + ICO('presa', 13) + '</span>' +
           '<button class="gio-so-corpo" ' + bAttr + '>' +
           segnoArea(ar, 13, 'tl-tag') +
           '<span class="gio-so-testo">' + esc(e.testo) + (e.mit ? ' ' + ICO('star', 11) : '') + '</span>' +

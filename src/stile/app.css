@@ -4772,3 +4772,38 @@ input[type="time"]::-webkit-datetime-edit { padding: 0; color: var(--inchiostro-
 
 [data-drag-ab] { cursor: grab; -webkit-user-drag: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }
 .tl-grid-mini [data-drag-ab][data-manico] { touch-action: none; }
+
+/* ============================================================
+   IL TRASCINAMENTO: si vede dove finisce, e niente altro si accende
+   ============================================================ */
+.drop-attivo { background: none !important; box-shadow: none !important; }
+.wk-col.drop-attivo { background: color-mix(in srgb, var(--accento) 10%, transparent) !important; }
+.me-cella.drop-attivo { background: color-mix(in srgb, var(--accento) 16%, var(--superficie-1)) !important; }
+.sto-prendendo { opacity: .35 !important; transform: none !important; box-shadow: none !important; }
+.trasc-guida {
+  position: absolute; left: 4px; right: 4px; height: 30px; border: 0; z-index: 6; pointer-events: none;
+  background: color-mix(in srgb, var(--accento) 20%, transparent); border-radius: calc(10px * var(--sq));
+  display: flex; align-items: flex-start; padding: 4px 8px; transition: top .08s linear;
+}
+.trasc-guida span {
+  position: static; font-size: 12px; font-weight: 800; color: var(--accento-testo); background: none; padding: 0;
+  font-variant-numeric: tabular-nums;
+}
+.trasc-fantasma {
+  transform: none; padding: 10px 14px; border: 0; border-radius: calc(14px * var(--sq));
+  background: var(--accento-pieno); color: var(--accento-ink); box-shadow: 0 14px 34px rgba(30, 20, 90, .3);
+}
+.trasc-fantasma b { font-size: 14px; }
+.trasc-fantasma i, .trasc-fantasma.pronto i { color: var(--accento-ink); opacity: .85; font-size: 12px; }
+
+/* ============================================================
+   LE ABITUDINI NEL CALENDARIO: contorno del loro colore e fondo chiaro,
+   col segno del giro. Le attività restano piene.
+   ============================================================ */
+.tl-blk-att.tl-blk-abit {
+  background: var(--superficie-1);
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--c-area) 55%, transparent);
+}
+.tl-blk-abit .tl-blk-t .ico { color: var(--c-area); vertical-align: -1px; }
+.tl-blk-abit .manico { background: none; }
+.tl-blk-att.tl-blk-abit.fatta { box-shadow: inset 0 0 0 2px var(--bordo); }

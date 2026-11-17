@@ -66,7 +66,7 @@ function anteprima(bers: HTMLElement | null, y: number): Anteprima {
       const r = gr.getBoundingClientRect();
       if (!isNaN(gs) && pxh && y >= r.top && y <= r.bottom) {
         const min = Math.max(0, Math.round((gs + (y - r.top) / pxh * 60) / 15) * 15);
-        return { testo: etichettaGiorno(comeGiorno(quale)) + ', ' + fmtMin(min % 1440) };
+        return { testo: etichettaGiorno(comeGiorno(quale)) + ', ' + fmtMin(min % 1440), min: min, top: (min - gs) / 60 * pxh, host: gr };
       }
     }
     return { testo: etichettaGiorno(comeGiorno(quale)) };
@@ -80,18 +80,35 @@ function anteprima(bers: HTMLElement | null, y: number): Anteprima {
   }
   return { testo: '' };
 }
+/* dove finirà: uno spazio della sua durata, all'ora esatta, con l'orario */
+let durTrasc = 30;
 function guida(ap: Anteprima | null): void {
   const gia = document.getElementById('trasc-guida');
   if (!ap || ap.top == null || !ap.host) { if (gia) gia.remove(); return; }
   let g = gia;
-  if (!g || g.parentNode !== ap.host) {
+  if (!g || g.parentNode !== (ap.host.querySelector<HTMLElement>('.tl-blocks') || ap.host)) {
     if (g) g.remove();
     g = document.createElement('div'); g.id = 'trasc-guida'; g.className = 'trasc-guida';
     g.innerHTML = '<span></span>';
     (ap.host.querySelector<HTMLElement>('.tl-blocks') || ap.host).appendChild(g);
   }
+  const pxh = +(ap.host.getAttribute('data-pxh') || '60') || 60;
   g.style.top = ap.top + 'px';
-  presa(g.querySelector<HTMLElement>('span')).textContent = fmtMin((ap.min ?? 0) % 1440);
+  g.style.height = Math.max(14, durTrasc / 60 * pxh) + 'px';
+  const m = (ap.min ?? 0) % 1440;
+  presa(g.querySelector<HTMLElement>('span')).textContent = fmtMin(m) + '–' + fmtMin((m + durTrasc) % 1440);
+}
+/* LO SCORRIMENTO DA SOLO: col dito vicino al bordo alto o basso la pagina
+   scorre, così si porta una cosa dove non si vede ancora */
+let ultimoX = 0, ultimoY = 0, giroScorri = 0;
+function scorriAiBordi(): void {
+  if (!trasc) { giroScorri = 0; return; }
+  const alto = 120, basso = innerHeight - 150;
+  let v = 0;
+  if (ultimoY < alto) v = -Math.ceil((alto - ultimoY) / 6);
+  else if (ultimoY > basso) v = Math.ceil((ultimoY - basso) / 6);
+  if (v) { window.scrollBy(0, Math.max(-24, Math.min(24, v))); porta(ultimoX, ultimoY); }
+  giroScorri = requestAnimationFrame(scorriAiBordi);
 }
 function evidenzia(el: HTMLElement | null): void {
   if (trasc && trasc.bersaglio === el) return;
@@ -142,10 +159,13 @@ function prendi(el: HTMLElement, id: string, x: number, y: number): void {
   const f = document.createElement('div');
   f.className = 'trasc-fantasma';
   f.innerHTML = '<b></b><i></i>';
-  presa(f.querySelector<HTMLElement>('b')).textContent = (el.getAttribute('title') || el.textContent || '').trim().slice(0, 44);
-  f.style.width = Math.min(280, Math.max(150, r.width)) + 'px';
+  const nomeEl = el.querySelector<HTMLElement>('.tl-blk-t, .gio-so-testo, .lista-tit');
+  presa(f.querySelector<HTMLElement>('b')).textContent = (el.getAttribute('title') || (nomeEl && nomeEl.textContent) || el.textContent || '').trim().slice(0, 44);
+  f.style.width = Math.min(260, Math.max(160, r.width)) + 'px';
   document.body.appendChild(f);
+  durTrasc = +(el.getAttribute('data-dur') || '') || 30;
   trasc = { id: id, fantasma: f, bersaglio: null, el: el };
+  if (!giroScorri) giroScorri = requestAnimationFrame(scorriAiBordi);
   el.classList.add('sto-prendendo');
   document.body.classList.add('sto-trascinando');
   if (navigator.vibrate) navigator.vibrate(12);
@@ -153,8 +173,10 @@ function prendi(el: HTMLElement, id: string, x: number, y: number): void {
 }
 function porta(x: number, y: number): void {
   if (!trasc) return;
-  trasc.fantasma.style.left = x + 'px';
-  trasc.fantasma.style.top = y + 'px';
+  ultimoX = x; ultimoY = y;
+  const w = trasc.fantasma.offsetWidth || 200;
+  trasc.fantasma.style.left = Math.max(8, Math.min(innerWidth - w - 8, x - w / 2)) + 'px';
+  trasc.fantasma.style.top = Math.max(8, y - 84) + 'px';
   const b = bersaglioSotto(x, y);
   evidenzia(b);
   const ap = anteprima(b, y);
@@ -237,34 +259,11 @@ export function abilitaTrascina(scope: ParentNode, onRilascio: (id: string, bers
 
       /* col dito il browser vuole scorrere la pagina: dopo il "tieni premuto"
          blocchiamo lo scorrimento, altrimenti il gesto ci viene strappato. */
-      function bloccaTouch(e: TouchEvent) { if (trasc) e.preventDefault(); }
 
       function avvia() {
         if (morto || trasc) return;
-        const r = el.getBoundingClientRect();
-        const f = document.createElement('div');
-        f.className = 'trasc-fantasma';
-        f.innerHTML = '<b></b><i></i>';
-        presa(f.querySelector<HTMLElement>('b')).textContent = (el.getAttribute('title') || el.textContent || '').trim().slice(0, 44);
-        f.style.width = Math.min(280, Math.max(150, r.width)) + 'px';
-        document.body.appendChild(f);
-        trasc = { id: id, fantasma: f, bersaglio: null, el: el };
-        el.classList.add('sto-prendendo');
-        document.body.classList.add('sto-trascinando');
+        prendi(el, id, x0, y0);
         try { el.setPointerCapture(ev.pointerId); } catch { /* niente cattura: si va avanti */ }
-        document.addEventListener('touchmove', bloccaTouch, { passive: false });
-        muovi(x0, y0);
-      }
-      function muovi(x: number, y: number) {
-        if (!trasc) return;
-        trasc.fantasma.style.left = x + 'px';
-        trasc.fantasma.style.top = y + 'px';
-        const b = bersaglioSotto(x, y);
-        evidenzia(b);
-        const ap = anteprima(b, y);
-        presa(trasc.fantasma.querySelector<HTMLElement>('i')).textContent = ap.testo;
-        trasc.fantasma.classList.toggle('pronto', !!b);
-        guida(ap);
       }
       function onMove(e: PointerEvent) {
         const dx = e.clientX - x0, dy = e.clientY - y0;
@@ -280,7 +279,7 @@ export function abilitaTrascina(scope: ParentNode, onRilascio: (id: string, bers
         }
         spostato = true;
         e.preventDefault();
-        muovi(e.clientX, e.clientY);
+        porta(e.clientX, e.clientY);
       }
       function onUp(e: PointerEvent) {
         clearTimeout(attesa);
@@ -303,7 +302,6 @@ export function abilitaTrascina(scope: ParentNode, onRilascio: (id: string, bers
       function pulisci() {
         clearTimeout(attesa);
         fineTrascina();
-        document.removeEventListener('touchmove', bloccaTouch);
         el.removeEventListener('pointermove', onMove);
         el.removeEventListener('pointerup', onUp);
         window.removeEventListener('pointermove', onMove);
