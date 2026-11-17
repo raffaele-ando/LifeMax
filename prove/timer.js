@@ -184,7 +184,7 @@ const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  
   await vai(p);
   const areaPrima = await p.evaluate(() => {
     const s = LM.load(); const k = LM.todayKey();
-    return JSON.stringify(s.minuti[k] || {});
+    return JSON.stringify(LM.minutiDi(k));
   });
   await p.evaluate(() => document.getElementById('btn-timer').click());
   await p.waitForTimeout(500);
@@ -202,7 +202,7 @@ const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  
   ok('a scadenza il timer sparisce', await p.evaluate(() => !LM.timerVivo()));
   const areaDopo = await p.evaluate(() => {
     const s = LM.load(); const k = LM.todayKey();
-    return JSON.stringify(s.minuti[k] || {});
+    return JSON.stringify(LM.minutiDi(k));
   });
   ok('e i minuti finiscono nel conto dell’area', areaDopo !== areaPrima, areaPrima + ' → ' + areaDopo);
   ok('e la concentrazione si chiude da sé',
@@ -229,8 +229,8 @@ const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  
     /basta/i.test(await p.evaluate(() => { const e = document.getElementById('conc-ferma'); return e ? e.textContent : ''; })),
     await p.evaluate(() => { const e = document.getElementById('conc-ferma'); return e ? e.textContent.trim() : '(niente)'; }));
   ok('e i cinque minuti fatti sono già stati contati',
-    await p.evaluate(() => { const m = LM.load().minuti[LM.todayKey()] || {}; return Object.values(m).some((v) => v >= 5); }),
-    JSON.stringify(await p.evaluate(() => LM.load().minuti[LM.todayKey()] || {})));
+    await p.evaluate(() => { const m = LM.minutiDi(LM.todayKey()); return Object.values(m).some((v) => v >= 5); }),
+    JSON.stringify(await p.evaluate(() => LM.minutiDi(LM.todayKey()))));
 
   console.log('\nQUANTO NE HAI FATTO DAVVERO');
   await p.evaluate(() => { LM.fermaTimerDati(); });

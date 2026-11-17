@@ -134,7 +134,7 @@ const GANCI = [
   /* stanno accanto a `solo-lettori`, che è quella che li disegna */
   'fs-parola', 'fs-tipo-nome',
   /* nomi di blocco: il foglio disegna i loro pezzi, non loro */
-  'abd', 'diario', 'lez-riga', 'lista-parcheggio', 'sc-porta',
+  'abd', 'diario', 'lez-riga', 'lista-parcheggio',
   /* il Design lab ha il suo foglio e le sue demo */
   'a9-pieno-largo', 'p10-testa', 't6-corta'
 ];

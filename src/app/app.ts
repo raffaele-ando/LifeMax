@@ -1804,7 +1804,7 @@ export function htmlImpostazioni(pezzo?: 'profilo'): string {
       const pr = (s.profilo.timer || {}).predefinito;
       return pr ? TIPI_TIMER[pr].nome.toLowerCase() : 'chiede ogni volta';
     })()) +
-    rigaPorta('imp-musica', 'musica', 'Musica', (s.profilo.musica && (s.profilo.musica.predefinita || Object.keys(s.profilo.musica.aree || {}).length)) ? 'impostata' : 'nessuna') +
+    rigaPorta('imp-musica', 'cuffie', 'Musica', (s.profilo.musica && (s.profilo.musica.predefinita || Object.keys(s.profilo.musica.aree || {}).length)) ? 'impostata' : 'nessuna') +
     rigaPorta('imp-aspetto', 'palette', 'Aspetto', modo === 'auto' ? 'automatico' : modo === 'dark' ? 'scuro' : 'chiaro') +
     '</div>' +
 
@@ -3125,7 +3125,7 @@ function disegnaConcentrazione(): void {
     '<button class="btn btn-mini btn-ghost" id="conc-ferma">' + ICO('pause', 15) + ' ' +
     (t.daAvvio ? 'Basta così' : 'Ferma e registra i minuti') + '</button>' +
     '<div class="conc-altri">' +
-    (musica ? '<button class="btn btn-mini btn-ghost" id="conc-musica">' + ICO('musica', 15) + ' Musica</button>' : '') +
+    (musica ? '<button class="btn btn-mini btn-ghost" id="conc-musica">' + ICO('cuffie', 15) + ' Musica</button>' : '') +
     '<button class="btn btn-mini btn-ghost" id="conc-cambia">' + ICO('refresh', 15) + ' Cambia timer</button>' +
     '</div>' +
     '</div></div>';
