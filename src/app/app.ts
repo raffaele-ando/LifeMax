@@ -5761,10 +5761,8 @@ function bloccoNotte(forzaAperto?: boolean): string {
        ripeteva tutte e tre le cose andava letta prima di poter guardare i
        campi che dicevano lo stesso. Resta il permesso di non saperlo, che
        nessun campo può dare. */
-    '<p class="rituale-intro">Se non lo sai al minuto va bene comunque.</p>' +
-    '<button class="btn btn-tonale btn-grande btn-due-righe" id="notte-solito">' + ICO('bed', 15) +
-    ' Come sempre <small>a letto ' + esc(r.sonnoRoutine) + ', sveglio ' + esc(r.svegliaRoutine) + '</small></button>' +
-    '<div class="lista mt-s">' +
+    '<div class="rit-sez"><span>Stanotte</span><button class="sp-link" id="notte-solito">Come sempre · ' + esc(r.sonnoRoutine) + '–' + esc(r.svegliaRoutine) + '</button></div>' +
+    '<div class="lista">' +
     '<div class="lista-riga sc-riga"><span class="sc-eti">' + ICO('bed', 15) + ' A letto</span>' +
     '<span class="sc-val"><input type="time" id="notte-sonno" class="sc-inline" value="' + esc(r.sonno) + '" aria-label="A che ora sei andato a letto"></span></div>' +
     '<div class="lista-riga sc-riga"><span class="sc-eti">' + ICO('sun', 15) + ' Sveglio</span>' +
@@ -5775,8 +5773,8 @@ function bloccoNotte(forzaAperto?: boolean): string {
     '<button class="q-chip' + (prec === 'preciso' ? ' on' : '') + '" data-prec="preciso">precisi</button>' +
     '</span></div>' +
     '</div>' +
-    '<div class="riga-flex mt"><button class="btn btn-tonale" id="notte-salva">' + ICO('save', 15) + ' Salva</button>' +
-    '<button class="btn btn-ghost" id="notte-boh">Non me lo ricordo</button></div>' +
+    '<div class="rit-azioni"><button class="btn btn-primario" id="notte-salva">Salva</button>' +
+    '<button class="sp-link" id="notte-boh">Non me lo ricordo</button></div>' +
     '</div>';
 }
 
@@ -5908,7 +5906,8 @@ function bloccoRecupero(tutti?: boolean): string {
          Parte vuoto apposta: se ci trovasse dentro l’ora solita,
          riscegliere quella stessa ora non farebbe scattare nulla. */
       '<span class="rec-alt' + (altraOra ? ' on' : '') + '"><span class="rec-alt-eti">a un’altra ora</span>' +
-      '<input type="time" class="sc-inline rec-ora" data-poraval="1" value="" aria-label="' + esc(pa.nome) + ' a un’altra ora"></span>' +
+      '<input type="time" class="sc-inline rec-ora" data-poraval="1" value="" required aria-label="' + esc(pa.nome) + ' a un’altra ora">' +
+      '<span class="rec-ico" aria-hidden="true">' + ICO('clock', 15) + '</span></span>' +
       '</span></div>';
   }).join('');
 
@@ -5917,9 +5916,9 @@ function bloccoRecupero(tutti?: boolean): string {
        fatte»: la frase che le annunciava era un indice di due voci messo
        sopra due voci. */
     (righePasti
-      ? etichetta('I pasti di oggi', 'utensils') + '<div class="lista">' + righePasti + '</div>'
+      ? '<div class="rit-sez"><span>Pasti</span></div><div class="lista">' + righePasti + '</div>'
       : '') +
-    etichetta('Altre cose fatte', 'check', fatte.length || undefined) +
+    '<div class="rit-sez"><span>Altre cose fatte' + (fatte.length ? ' · ' + fatte.length : '') + '</span></div>' +
     /* la stessa riga d'aggiunta di tutto il resto dell'app: una cosa per
        volta, e l'area compare quando hai cominciato a scrivere */
     rigaAggiunta('agg-fatto', 'Una cosa che hai fatto…',
@@ -5940,7 +5939,7 @@ function bloccoRecupero(tutti?: boolean): string {
           '</div>';
       }).join('') + '</div>'
       : '') +
-    '<div class="riga-flex mt"><button class="btn btn-tonale" id="rec-fine">' + ICO('check', 15) + ' Ho finito</button></div>' +
+    '<div class="rit-azioni"><button class="btn btn-primario" id="rec-fine">Ho finito</button></div>' +
     '</div>';
 }
 
@@ -6020,7 +6019,11 @@ function ritualeRegistro(corpo: HTMLElement): void {
   var bn = corpo.querySelector<HTMLElement>('#blocco-notte');
   if (bn) wireNotte(bn, null);
   var br = corpo.querySelector<HTMLElement>('#blocco-recupero');
-  if (br) wireRecupero(br, null);
+  /* «Ho finito» chiude il rituale: il lavoro è fatto, la riga dice «fatto» */
+  if (br) wireRecupero(br, function () {
+    if (schermo.ritualiAperti) delete schermo.ritualiAperti['registro'];
+    render();
+  });
 }
 
 function popupGiornata(titolo: string, quale: string, html: string, wire: (root: HTMLElement) => void, riapri: () => void): void {

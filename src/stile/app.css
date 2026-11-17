@@ -5103,3 +5103,65 @@ button.gr-val:active, .gr .gr-val:active { opacity: .6; }
 .sheet textarea.sheet-titolo-inp { background: none !important; }
 .se-segno-ab { flex: none; width: 13px; display: inline-flex; color: var(--c-area); margin-left: -1px; }
 .sheet .lista .q-chip, .rit-corpo .lista .q-chip { background: var(--superficie-1); }
+
+/* ============================================================
+   DENTRO UN RITUALE APERTO: niente scatole nella scatola. Il rituale è già
+   la scheda bianca; quello che c'è dentro sono righe separate da una linea,
+   titoletti, campi grigi e una fila di azioni.
+   ============================================================ */
+.rit-corpo { padding: 0 16px 16px; }
+.rit-corpo .card, .rit-corpo > .card { background: none !important; box-shadow: none !important; border: 0 !important; padding: 0 !important; margin: 0 !important; }
+.rit-corpo .card + .card { margin-top: 8px !important; }
+.rit-corpo .lista, .rit-corpo .lista.mt-s { background: none !important; border-radius: 0 !important; margin: 0; }
+.rit-corpo .lista > * + * { border-top: 1px solid var(--bordo); }
+.rit-corpo .lista .lista-riga, .rit-corpo .lista .sc-riga { padding-left: 0; padding-right: 0; min-height: 52px; }
+.rit-sez { display: flex; align-items: center; justify-content: space-between; margin: 16px 0 4px; font-size: 13px; font-weight: 700; color: var(--inchiostro-2); min-height: 32px; }
+.rit-sez:first-child { margin-top: 4px; }
+.rit-sez .sp-link { min-height: 32px; font-size: 14px; }
+.rit-azioni { display: flex; align-items: center; gap: 16px; margin-top: 12px; }
+.rit-azioni .btn-primario { flex: 1; min-height: 48px; }
+.rit-azioni .sp-link { flex: none; }
+/* le cose scelte per oggi: righe, non schede */
+.rit-corpo .lista-azioni { gap: 0; }
+.rit-corpo .riga-azione { background: none; border: 0; box-shadow: none; border-radius: 0; padding: 12px 0; }
+.rit-corpo .riga-azione + .riga-azione { border-top: 1px solid var(--bordo); }
+.rit-corpo .riga-azione:hover { transform: none; box-shadow: none; }
+/* la riga per aggiungere: un campo grigio e il più, senza cornice intorno */
+.rit-corpo .agg-riga, .sheet .agg-riga { border: 0; background: var(--superficie-2); box-shadow: none; padding: 4px; }
+.rit-corpo .agg-riga:focus-within, .sheet .agg-riga:focus-within { box-shadow: 0 0 0 2px var(--accento); }
+.rit-corpo input.agg-testo, .sheet input.agg-testo { background: none !important; }
+.rit-corpo .agg-ok, .sheet .agg-ok { background: var(--superficie-1); }
+/* i voti della sera: righe senza cornici intorno ai numeri */
+.rit-corpo .voto-area + .voto-area { border-top: 1px solid var(--bordo); }
+.rit-corpo .voto-area { padding: 8px 0; }
+.rit-corpo .voto-area .stelline button { border: 0; background: var(--superficie-2); }
+.rit-corpo .voto-area .stelline button.sel { background: var(--accento-pieno); color: var(--accento-ink); }
+.rit-corpo label.campo { margin: 16px 0 8px; }
+.rit-corpo .btn-grande { width: 100%; max-width: none; }
+.rit-corpo .riga-flex.mt { margin-top: 16px; }
+
+/* --- i pasti del registro: nome e di solito, poi sì / no / l'ora --- */
+.sc-riga-alta[data-pasto] .sc-eti { display: flex; flex-direction: column; align-items: flex-start; gap: 0; }
+.sc-riga-alta[data-pasto] .sc-eti .ico { display: none; }
+.sc-riga-alta[data-pasto] .rec-solito { display: block !important; font-size: 12px; font-weight: 400; color: var(--inchiostro-2); }
+.sc-riga-alta[data-pasto] .q-chip { min-height: 36px; min-width: 48px; padding: 0 12px; border-radius: 99px; background: var(--superficie-2); }
+/* l'ora a parte: vuota, si vede come un orologio da toccare */
+.sc-riga-alta[data-pasto] .rec-ora {
+  width: 44px; height: 36px; min-height: 0; padding: 0; border: 0; border-radius: 99px; background: var(--superficie-2); color: var(--accento-testo); font-weight: 600; font-size: 14px; text-align: center;
+}
+.sc-riga-alta[data-pasto] .rec-ora:invalid { color: transparent; }
+.sc-riga-alta[data-pasto] .rec-ora:invalid::-webkit-datetime-edit { opacity: 0; }
+.sc-riga-alta[data-pasto] .rec-ora:valid { width: 76px; }
+.sc-riga-alta[data-pasto] .rec-alt.on .rec-ora { background: var(--accento-pieno); color: var(--accento-ink); }
+/* il sì e il no scelti si vedono */
+.sc-riga-alta[data-pasto] .q-chip.on { background: var(--accento-pieno); color: var(--accento-ink); }
+/* l'ora a parte, quando c'è: pillola piena con l'orologio bianco (il campo
+   riparte vuoto apposta, l'ora scelta è scritta sotto il nome) */
+.sc-riga-alta[data-pasto] .rec-ora { min-width: 0 !important; max-width: 76px; }
+.sc-riga-alta[data-pasto] .rec-ora:invalid { width: 64px; }
+.rit-corpo .icona-btn { border: 0; background: none; box-shadow: none; color: var(--inchiostro-muto); }
+
+.sc-riga-alta[data-pasto] .rec-alt { position: relative; }
+.rec-ico { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; color: var(--inchiostro-2); }
+.rec-alt.on .rec-ico { color: var(--accento-ink); }
+.rec-ora:valid + .rec-ico { display: none; }
