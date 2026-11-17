@@ -577,6 +577,20 @@ export interface OpzAvviso {
 /* `onNo` serve quando le due strade sono due SCELTE e non «fai» / «lascia
    stare»: chi chiude senza rispondere sta comunque dicendo qualcosa, e chi
    ha fatto la domanda deve poter andare avanti. */
+/* UN TOCCO APRE IL CALENDARIO O L'OROLOGIO. Un campo data o ora, toccato
+   fuori dalla sua iconcina (che qui non si vede), su un computer prendeva
+   solo il fuoco: bisognava toccare di nuovo, e un campo nascosto steso su una
+   riga (la scadenza) non si apriva proprio. Qui si chiede al browser di
+   aprire il selettore subito, ovunque nell'app. */
+document.addEventListener('click', function (e) {
+  const t = e.target;
+  if (!(t instanceof HTMLInputElement) || t.disabled || t.readOnly) return;
+  if (!/^(date|time|datetime-local|month|week)$/.test(t.type)) return;
+  const conPicker = t as HTMLInputElement & { showPicker?: () => void };
+  if (typeof conPicker.showPicker !== 'function') return;
+  try { conPicker.showPicker(); } catch (_e) { /* già aperto, o non permesso: ci pensa il browser */ }
+}, true);
+
 /* quando l'accesso con Google non riesce, lo si dice con le parole giuste */
 document.addEventListener('lm:accesso-fallito', function (e) {
   const d = (e as CustomEvent<{ titolo: string; testo: string }>).detail;
@@ -7624,6 +7638,8 @@ function sottoNav(v: string): void {
   var vecchia = $vista.querySelector<HTMLElement>('.testa-porta');
   if (vecchia) vecchia.remove();
   document.documentElement.style.setProperty('--sottonav-h', '0px');
+  /* il Diario è del Profilo: niente linguette dell'Andamento sopra */
+  if (v === 'plancia' && schermo.sezPlancia === 'diario') return;
   var g = gruppoDi(v);
   var lista = g.viste.slice();
   /* se sei in una schermata «di passaggio» (Scienza, Design lab) la
@@ -7795,6 +7811,9 @@ export function render() {
 
 window.addEventListener('hashchange', function () {
   if (vistaCorrente() !== 'rituali') schermo.sottoRituale = null;
+  /* il Diario si apre dal Profilo dentro la pagina dell'Andamento: uscendo,
+     l'Andamento torna al suo Riepilogo, se no al ritorno c'era ancora il Diario */
+  if (vistaCorrente() !== 'plancia') schermo.sezPlancia = 'riepilogo';
   chiudiSheet();
   render();
 });

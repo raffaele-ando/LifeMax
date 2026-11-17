@@ -62,8 +62,11 @@ export default function Panoramica() {
   return (<>
     <Testa titolo="Panoramica" piu="t-plancia" giaNellaNav />
     {quale !== 'riepilogo' ? (<>
-      <button className="rit-indietro" onClick={() => { schermo.sezPlancia = 'riepilogo'; render(); }}>
-        <Segno nome="chevronGiu" /> Andamento
+      <button className="rit-indietro" onClick={() => {
+        if (quale === 'diario') { schermo.sezPlancia = 'riepilogo'; location.hash = '#/profilo'; return; }
+        schermo.sezPlancia = 'riepilogo'; render();
+      }}>
+        <Segno nome="chevronGiu" /> {quale === 'diario' ? 'Profilo' : 'Andamento'}
       </button>
       <h1 className="rit-titolo">{quale === 'aree' ? 'Aree' : quale === 'diario' ? 'Diario' : 'Grafici'}</h1>
     </>) : null}

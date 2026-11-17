@@ -5167,3 +5167,13 @@ button.gr-val:active, .gr .gr-val:active { opacity: .6; }
 .rec-ora:valid + .rec-ico { display: none; }
 .banda-demo { align-items: center; }
 .banda-togli { margin-left: auto; min-height: 44px; padding: 0 12px; }
+
+/* una data vuota dice «Mai»: il campo resta lì sotto e si tocca come sempre */
+.gr-data { position: relative; display: inline-flex; }
+.gr-data input:invalid { color: transparent; }
+.gr-data input:invalid::-webkit-datetime-edit { opacity: 0; }
+.gr-mai { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; font-size: 15px; font-weight: 600; color: var(--inchiostro-2); }
+.gr-data input:valid + .gr-mai { display: none; }
+/* i valori da toccare sono bersagli veri, non rettangolini */
+.gr input.gr-val, .gr select.gr-val, .gr-riga input.gr-val, .gr-riga select.gr-val { height: 40px; min-width: 6.5em; }
+.gr input[type="date"].gr-val { min-width: 8.5em; }

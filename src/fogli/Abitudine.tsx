@@ -61,7 +61,6 @@ export default function Abitudine({ id, dopo }: PropAbitudine) {
   /* TUTTI I GANCI PRIMA DELL'USCITA ANTICIPATA: React li conta, e nello
      stesso ordine a ogni disegno. */
   const [, bump] = useState(0);
-  const [conFine, setConFine] = useState(false);
   const gg = useRef<HTMLDivElement>(null);
   const ora = useRef<HTMLInputElement>(null);
   const dur = useRef<HTMLSelectElement>(null);
@@ -194,11 +193,15 @@ export default function Abitudine({ id, dopo }: PropAbitudine) {
           <input key={'da' + (h.da || '')} type="date" className="gr-val" id="abd-da" ref={da} defaultValue={h.da || ''} /></label>
         <div className="gr-riga"><span className="gr-eti">Fine</span>
           <span className="gr-valori">
-            {h.a || conFine
-              ? <input key={'a' + (h.a || '')} type="date" className="gr-val" id="abd-a" ref={fin} defaultValue={h.a || ''} min={h.da || ''} autoFocus={!h.a} />
-              : <button className="gr-val" id="abd-a-mai" onClick={(e) => { e.preventDefault(); setConFine(true); }}>Mai</button>}
+            {/* il campo c'è sempre (era montato solo dopo un primo tocco, e così
+                il suo cambio non veniva mai ascoltato: la data non si salvava);
+                vuoto, mostra «Mai» */}
+            <span className="gr-data">
+              <input key={'a' + (h.a || '')} type="date" className="gr-val" id="abd-a" ref={fin} defaultValue={h.a || ''} min={h.da || ''} required />
+              <span className="gr-mai" aria-hidden="true">Mai</span>
+            </span>
             {h.a ? <button className="gr-via" id="abd-nofine" aria-label="Senza fine"
-              onClick={(e) => { e.preventDefault(); setConFine(false); LM.impostaPeriodoAbitudine(id, h.da || null, null); ridisegna(); }}><Segno nome="x" dim={13} /></button> : null}
+              onClick={(e) => { e.preventDefault(); LM.impostaPeriodoAbitudine(id, h.da || null, null); ridisegna(); }}><Segno nome="x" dim={13} /></button> : null}
           </span></div>
       </div>
 

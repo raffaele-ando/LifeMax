@@ -880,6 +880,16 @@ function creaLM() {
       if (q && ts > q.da && ts <= q.fino + 1500) { trovato = q; i = j; break; }
     }
     if (!trovato || i < 0) return false;
+    /* UN GESTO PUÒ FARE PIÙ SALVATAGGI. «Diventa un'abitudine» ne fa due —
+       crea l'abitudine, poi toglie l'attività — e ognuno lascia il suo punto.
+       La riga del diario cade sul secondo, e tornare lì toglieva l'attività
+       ma lasciava l'abitudine: metà annullamento. I punti nati nello stesso
+       istante (meno di 80 ms: lo stesso giro di codice) sono lo stesso gesto, e si torna al primo. */
+    while (i + 1 < arr.length) {
+      var piuVecchio = arr[i + 1], questo = arr[i];
+      if (!piuVecchio || !questo || questo.fino - piuVecchio.fino > 80) break;
+      i++; trovato = piuVecchio;
+    }
     var quello = trovato;
     var raw: string | null;
     try { raw = localStorage.getItem(PUNTO_PRE + quello.id); } catch (e) { raw = null; }
@@ -891,10 +901,20 @@ function creaLM() {
     scriviIndice(resto);
     var primo = resto[0];
     ultimoPuntoFino = primo ? primo.fino : 0;
+    var primaRaw: string | null = null;
+    try { primaRaw = localStorage.getItem(STORAGE_KEY); } catch (e) { primaRaw = null; }
     staTornandoIndietro = true;
     /* SOSTITUISCE. Vedi `ripristinaStato`: unire qui vorrebbe dire tenere sia
        il prima sia il dopo, cioè non annullare niente. */
     hydrate(vecchio, true);
+    /* E DEVE VALERE ANCHE PER GLI ALTRI DISPOSITIVI (e per il cloud). Prima
+       si rimetteva lo stato di allora e basta: quello che il ritorno toglieva
+       non lasciava lapidi, e quello che rimetteva aveva ancora la lapide di
+       quando era stato cancellato. Alla prima fusione tornava tutto: annullando
+       «diventa un'abitudine» ci si trovava sia l'attività sia l'abitudine.
+       Adesso ciò che il ritorno toglie prende la sua lapide, e ciò che rimette
+       diventa più recente della lapide che aveva. */
+    marcaRitorno(primaRaw, load());
     registra('dati', 'Annullato: «' + (etichetta || 'una cosa fatta') + '»', true);
     save();
     staTornandoIndietro = false;
@@ -914,6 +934,29 @@ function creaLM() {
   /* `chiave` arriva da `Object.keys` di un dizionario indicizzato per
      giorno: per il compilatore è una stringa qualunque, e `giorno()` è il
      punto in cui si dichiara che è un giorno. Una riga, non trenta. */
+  function marcaRitorno(primaRaw: string | null, adesso: Stato): void {
+    var primaObj = primaRaw ? safeParse(primaRaw) : null;
+    if (!primaObj || !eMappa(primaObj)) return;
+    var regoleU = COME_UNIRE as unknown as Record<string, ModoFusione | undefined>;
+    var ora = Date.now();
+    var tornate: Record<string, 1> = {};
+    Object.keys(regoleU).forEach(function (k) {
+      if (regoleU[k] !== 'elenco' || k === 'cancellati' || k === 'registro' || k === 'log') return;
+      var era = (primaObj as unknown as Record<string, unknown>)[k], ce = (adesso as unknown as Record<string, unknown>)[k];
+      if (!Array.isArray(ce)) return;
+      var cePrima: Record<string, 1> = {};
+      if (Array.isArray(era)) era.forEach(function (r: unknown) { cePrima[chiaveRiga(r)] = 1; });
+      ce.forEach(function (r: unknown) {
+        var c = chiaveRiga(r);
+        if (!cePrima[c] && eMappa(r)) { (r as Record<string, unknown>)['aggiornata'] = ora; tornate[k + '|' + c] = 1; }
+      });
+    });
+    if (Array.isArray(adesso.cancellati)) {
+      adesso.cancellati = adesso.cancellati.filter(function (t) { return !(t && tornate[t.k + '|' + t.chiave]); });
+    }
+    segnaLapidi(primaRaw, adesso);
+  }
+
   function annullaRecord(tipo: string, chiaveGrezza: string) {
     var chiave = giorno(chiaveGrezza);
     var s = load();
@@ -1149,8 +1192,15 @@ function creaLM() {
      storia non è mai successa». */
   function ripristinaStato(obj: unknown) {
     if (!obj || typeof obj !== 'object') return false;
+    var primaRaw: string | null = null;
+    try { primaRaw = localStorage.getItem(STORAGE_KEY); } catch (e) { primaRaw = null; }
     hydrate(obj, true);
+    /* come il ritorno a un punto: quello che torna vince sulla sua lapide,
+       quello che se ne va ne prende una (le segna `marcaRitorno`) */
+    marcaRitorno(primaRaw, load());
+    senzaLapidi++;
     save();
+    senzaLapidi--;
     return true;
   }
 

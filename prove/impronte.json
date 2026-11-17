@@ -2717,7 +2717,9 @@
   "2|div|gr-riga||||",
   "3|span|gr-eti|||Fine|",
   "3|span|gr-valori||||",
-  "4|button|gr-val|abd-a-mai||Mai|",
+  "4|span|gr-data||||",
+  "5|input|gr-val|abd-a|||",
+  "5|span|gr-mai|||Mai|",
   "1|button|gr-pericolo|abd-del||Elimina l’abitudine|"
  ],
  "foglio:abitudine [titolo]": [
