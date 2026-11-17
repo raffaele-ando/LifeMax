@@ -264,15 +264,37 @@ void (async function init() {
     window.LMCloud = {
       available: true,
       signIn: async function () {
+        const partito = Date.now();
         try {
           await authMod.signInWithPopup(autenticazione, prov);
         } catch (e) {
-          /* popup bloccato o chiuso: ripiega sul redirect */
-          const codice = (e as ErroreFirebase | null)?.code;
-          if (codice && /popup|cancelled|blocked/i.test(codice)) {
-            try { await authMod.signInWithRedirect(autenticazione, prov); } catch { /* ignora */ }
+          const codice = (e as ErroreFirebase | null)?.code || '';
+          log('avviso', 'accesso con Google non riuscito', codice + ' ' + messaggio(e));
+          /* QUANDO IL FOGLIO DI GOOGLE SI CHIUDE DA SOLO. Il caso più comune è
+             l'indirizzo: l'accesso con Google funziona solo dagli indirizzi
+             scritti fra i «domini autorizzati» del progetto Firebase, e un
+             indirizzo nuovo (per esempio quello di Cloudflare) non c'è finché
+             qualcuno non ce lo aggiunge. Prima l'errore finiva nella console e
+             a chi tocca il tasto non arrivava niente. */
+          const dire = function (titolo: string, testo: string): void {
+            document.dispatchEvent(new CustomEvent('lm:accesso-fallito', { detail: { titolo: titolo, testo: testo } }));
+          };
+          if (/unauthorized-domain/.test(codice)) {
+            dire('Questo indirizzo non è autorizzato',
+              'Google accetta l’accesso solo dagli indirizzi autorizzati. Aggiungi «' + location.hostname + '» in Firebase: Authentication → Impostazioni → Domini autorizzati. Poi riprova.');
+          } else if (/operation-not-allowed/.test(codice)) {
+            dire('Accesso con Google spento', 'Nel progetto Firebase l’accesso con Google è disattivato: Authentication → Metodo di accesso → Google.');
+          } else if (/popup-blocked|cancelled-popup-request|popup-closed-by-user/.test(codice) && Date.now() - partito > 2500) {
+            /* chiuso da te dopo averlo visto: non è un errore */
+          } else if (/popup/.test(codice)) {
+            /* bloccato, o chiuso dal browser appena aperto: si va con il redirect */
+            try { await authMod.signInWithRedirect(autenticazione, prov); } catch (e2) {
+              dire('Accesso non riuscito', 'Il browser ha chiuso la finestra di Google. Se succede ancora, prova da un’altra scheda o apri l’app nel browser invece che dalla schermata Home. (' + ((e2 as ErroreFirebase | null)?.code || 'errore') + ')');
+            }
+          } else if (/network/.test(codice)) {
+            dire('Niente rete', 'Per accedere serve la connessione.');
           } else {
-            console.warn('LifeMax: accesso non riuscito.', messaggio(e));
+            dire('Accesso non riuscito', 'Google ha risposto: ' + (codice || messaggio(e)) + '.');
           }
         }
       },

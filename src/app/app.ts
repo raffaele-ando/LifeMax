@@ -569,6 +569,11 @@ export interface OpzAvviso {
 /* `onNo` serve quando le due strade sono due SCELTE e non «fai» / «lascia
    stare»: chi chiude senza rispondere sta comunque dicendo qualcosa, e chi
    ha fatto la domanda deve poter andare avanti. */
+/* quando l'accesso con Google non riesce, lo si dice con le parole giuste */
+document.addEventListener('lm:accesso-fallito', function (e) {
+  const d = (e as CustomEvent<{ titolo: string; testo: string }>).detail;
+  if (d) avviso({ titolo: d.titolo, testo: d.testo, azione: 'Ho capito' });
+});
 export function avviso(opz: OpzAvviso, onSi?: () => void, onNo?: () => void): void {
   if (avvisoAperto) { if (onNo) onNo(); return; }
   const ovl = document.createElement('div');
