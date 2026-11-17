@@ -5030,3 +5030,6 @@ textarea.prof-visione.nome-in-linea { font-size: 14px; font-weight: 400; line-he
 }
 .ab-spunta, .gr-giorni .giorno-chip, .abd-catena .abd-g { border-radius: 50% !important; }
 button.gr-val { border: 0; color: var(--inchiostro-2) !important; }
+.ab-apri:active { opacity: .6; }
+button.gr-val:active, .gr .gr-val:active { opacity: .6; }
+.gr-pericolo:active { background: var(--superficie-3); }
