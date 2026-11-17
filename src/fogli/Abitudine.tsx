@@ -8,7 +8,7 @@
 
    Quella riga è chiusa ogni volta che si apre la scheda: aprirla è una
    decisione, non una preferenza da ricordare. */
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Segno } from '../pezzi/pezzi';
 import { usaCambioNativo } from '../pezzi/nativo';
 import { LM } from '../dati/dati';
@@ -18,7 +18,7 @@ import { presa } from '../tipi/presa';
 import {
   GIORNI_ORD, GIORNI_LAB, DURATE, chipsGiorni, riepilogoGiorni, leggiGiorni,
   statoAbitudineOggi, giorniAbitudine, areeAttive, feedbackSpunta,
-  conAnnulla, chiudiSheet, toast
+  conAnnulla, chiudiSheet, toast, titoloSheetModificabile
 } from '../app/app';
 import type { CasellaCatena } from '../app/app';
 import { html } from '../pezzi/grezzo';
@@ -110,7 +110,6 @@ export default function Abitudine({ id, dopo }: PropAbitudine) {
      stesso ordine a ogni disegno. */
   const [, bump] = useState(0);
   const [aperta, setAperta] = useState(false);
-  const nome = useRef<HTMLInputElement>(null);
   const gg = useRef<HTMLDivElement>(null);
   const ora = useRef<HTMLInputElement>(null);
   const dur = useRef<HTMLSelectElement>(null);
@@ -123,15 +122,11 @@ export default function Abitudine({ id, dopo }: PropAbitudine) {
 
   /* i campi che salvano nei dati tengono il `change` vero del browser: la
      ragione sta in `pezzi/nativo.ts` */
-  usaCambioNativo(nome, (i) => {
-    const v2 = (i as HTMLInputElement).value.trim();
-    const adesso = LM.load().abitudini.find((x) => x.id === id);
-    if (!v2) { if (adesso) (i as HTMLInputElement).value = adesso.testo; return; }
-    LM.modificaAbitudine(id, { testo: v2 });
-    const tit = document.getElementById('sheet-titolo');
-    if (tit) tit.textContent = v2;
-    if (dopo) dopo();
-  }, [id, trovata ? trovata.testo : '']);
+  /* il nome si cambia toccandolo, nel titolo del foglio */
+  useEffect(() => {
+    const h0 = LM.load().abitudini.find((x) => x.id === id);
+    if (h0) titoloSheetModificabile(h0.testo, (v) => { LM.modificaAbitudine(id, { testo: v }); if (dopo) dopo(); });
+  }, [id]);
   usaCambioNativo(ora, (i) => {
     const v = (i as HTMLInputElement).value;
     LM.modificaAbitudine(id, { ora: v ? comeOra(v) : null }); ridisegna();
@@ -220,8 +215,6 @@ export default function Abitudine({ id, dopo }: PropAbitudine) {
         <span className={'lista-chev' + (aperta ? ' aperta' : '')}><Segno nome="chevronGiu" /></span>
       </button>
       <div id="abd-config" hidden={!aperta}>
-        <label className="campo" htmlFor="abd-nome">Nome</label>
-        <input key={h.testo} type="text" id="abd-nome" ref={nome} defaultValue={h.testo} />
         <label className="campo">Quando ripeterla</label>
         <div id="abd-giorni" ref={gg} onClick={toccaGiorno} {...html(chipsGiorni(h.giorni))} />
         <div className="abd-nota-giorni">{riepilogoGiorni(h.giorni)}</div>

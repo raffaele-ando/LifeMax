@@ -4187,7 +4187,7 @@ function htmlTimeGrid(d: NodiDelGiorno, opzioni?: OpzGriglia): string {
     else clic += ' data-drag-ab="' + e.id + '" data-drag-k="' + d.k + '"' + (opts.mini ? ' data-manico' : '');
     return '<div class="tl-blk tl-blk-att' + (e.tipo === 'abitudine' ? ' tl-blk-abit' : '') + (fatto ? ' fatta' : '') + (e.mancata ? ' mancata' : '') + (basso ? ' tl-blk-basso' : '') + (corto ? ' tl-blk-corto' : '') + (opts.interactive && !opts.mini ? ' tl-blk-clic' : '') + '"' + clic + ' style="' + pos + ';--c-area:' + col + '" title="' + esc(e.testo) + '">' +
       check + (!opts.mini && opts.interactive ? '<span class="manico" data-manico aria-hidden="true">' + ICO('presa', 13) + '</span>' : '') +
-      (righe === 0 ? '' : '<span class="tl-blk-t">' + (e.mit ? ICO('star', 11) + ' ' : '') + (e.tipo === 'abitudine' && !opts.mini ? ICO('refresh', 12) + ' ' : '') + esc(e.testo) + '</span>') +
+      (righe === 0 ? '' : '<span class="tl-blk-t">' + (e.mit ? ICO('star', 11) + ' ' : '') + (e.tipo === 'abitudine' && !opts.mini ? ICO('refresh', 11) + ' ' : '') + esc(e.testo) + '</span>') +
       (!corto && !opts.mini ? '<span class="tl-blk-ora">' + e.ora + '–' + fmtMin((e.min ?? 0) + dur) + '</span>' : '') + '</div>';
   }).join('');
   let now = '';
@@ -4246,7 +4246,6 @@ function apriItemGiornata(k: Giorno, id: string, tipo: 'azione' | 'abitudine', o
   const fatto = isAz ? e.done : e.fatto;
   const durOpt = DURATE.map(function (o) { return '<option value="' + o.v + '"' + ((e.dur || '') === o.v ? ' selected' : '') + '>' + o.t + '</option>'; }).join('');
   const html = '<div class="ig-ed">' +
-    '<input type="text" class="ig-nome" id="ig-nome" value="' + esc(e.testo) + '" aria-label="Testo" placeholder="Cosa devi fare">' +
     /* su un giorno futuro non si spunta: si sta pianificando, non facendo */
     (spuntabile
       ? '<button class="btn ' + (fatto ? 'btn-ghost' : 'btn-primario') + ' ig-fatto"><span class="ig-fatto-ico">' + ICO(fatto ? 'annulla' : 'check', 15) + '</span>' + (fatto ? 'Fatta — togli la spunta' : 'Segna come fatta') + '</button>'
@@ -4269,13 +4268,10 @@ function apriItemGiornata(k: Giorno, id: string, tipo: 'azione' | 'abitudine', o
     '</div>' +
     '</div>';
   apriSheet(esc(e.testo), html, function (root) {
-    const nome = campo(root, '#ig-nome');
-    nome.addEventListener('change', function () {
-      const v = nome.value.trim();
-      if (!v) { nome.value = e.testo || ''; return; }
+    /* il nome si cambia toccandolo: è il titolo del foglio */
+    titoloSheetModificabile(e.testo || '', function (v) {
       if (isAz) LM.modificaAzione(id, v); else LM.modificaAbitudine(id, { testo: v });
       e.testo = v;
-      const tit = perId('sheet-titolo'); if (tit) tit.textContent = v;
       ricarica();
     });
     const bFatto = root.querySelector<HTMLElement>('.ig-fatto');

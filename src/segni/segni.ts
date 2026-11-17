@@ -91,7 +91,6 @@ const PATHS: Record<string, string> = {
   /* azioni e stato */
   plus: '<path d="M12 5v14M5 12h14"/>',
   check: '<path d="M4.5 12.8 9.6 18 19.5 6.5"/>',
-  matita: '<path d="M4 20l1-4.5L16.5 4a2.1 2.1 0 0 1 3 3L8 18.5 4 20z"/><path d="M14.5 6l3.5 3.5"/>',
   x: '<path d="M6 6l12 12M18 6 6 18"/>',
   arrowRight: '<path d="M4.5 12h15M13.5 6l6 6-6 6"/>',
   flame: '<path d="M12 3q1 4 4 6.5t3 5.5a1 1 0 0 1-14 0 5 5 0 0 1 1-3 1 1 0 0 0 5 0c0-2-1.5-3-1.5-5q0-2 2.5-4"/>',  /* lucide:flame — la serie di giorni: quella disegnata a mano si leggeva come una goccia */
@@ -291,7 +290,6 @@ const SENSO: Record<string, string> = {
   /* le azioni */
   plus: 'creare',
   check: 'fatto',
-  matita: 'modifica',
   scelto: 'questo è quello scelto, fra tanti',
   x: 'chiudere, togliere',
   trash: 'eliminare',

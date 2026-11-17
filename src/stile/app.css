@@ -4882,3 +4882,21 @@ input[type="time"]::-webkit-datetime-edit { padding: 0; color: var(--inchiostro-
 .an-mese-griglia i.l3 { background: color-mix(in srgb, var(--ok) 80%, var(--superficie-2)); }
 .an-mese-griglia i.l4 { background: var(--ok); }
 .an-mese-griglia i.oggi { outline: 1.5px solid var(--accento); outline-offset: 1px; }
+
+/* il numero accanto all'etichetta di un gruppo */
+.lista-eti-n { display: inline-grid; place-items: center; min-width: 20px; height: 20px; padding: 0 6px; margin-left: 4px; border-radius: 99px; background: var(--superficie-3); font-size: 12px; font-weight: 700; color: var(--inchiostro-2); }
+
+/* ============================================================
+   UN NOME SI CAMBIA DOVE SI LEGGE: sembra testo, al tocco diventa un campo
+   ============================================================ */
+input.nome-in-linea, textarea.nome-in-linea, input.area-nome-input, input.ritmo-nome, .sp-riga input.sp-nome {
+  border: 0; background: none; box-shadow: none; padding: 4px 0; min-height: 0; width: 100%;
+  color: var(--inchiostro-1); font: inherit; font-weight: 600; border-radius: 0; resize: none;
+  border-bottom: 1.5px solid transparent;
+}
+input.nome-in-linea:focus, textarea.nome-in-linea:focus, input.area-nome-input:focus, input.ritmo-nome:focus, .sp-riga input.sp-nome:focus {
+  box-shadow: none; border-color: transparent; border-bottom-color: var(--accento); outline: 0;
+}
+input.prof-nome.nome-in-linea { font-size: 22px; font-weight: 800; letter-spacing: -0.02em; padding: 0; }
+textarea.prof-visione.nome-in-linea { font-size: 14px; font-weight: 400; line-height: 1.35; color: var(--inchiostro-2); field-sizing: content; min-height: 0; padding: 2px 0; }
+.prof-chi { display: flex; flex-direction: column; gap: 2px; }

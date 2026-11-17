@@ -353,7 +353,17 @@ function Abitudini({ st }: { st: Stato }) {
   });
   const idOggi: Record<string, true> = {};
   oggi.forEach((h) => { idOggi[h.id] = true; });
-  const altre = st.abitudini.filter((h) => !idOggi[h.id]);
+  const tk = LM.todayKey();
+  const finite = st.abitudini.filter((h) => !idOggi[h.id] && !!h.a && h.a < tk);
+  const altre = st.abitudini.filter((h) => !idOggi[h.id] && !(h.a && h.a < tk));
+  const daFare = oggi.filter((h) => !h.fatti[tk]);
+  const conOra = daFare.filter((h) => !!LM.oraAbitudine(h, tk));
+  const senzaOra = daFare.filter((h) => !LM.oraAbitudine(h, tk));
+  const fatteOggi = oggi.filter((h) => !!h.fatti[tk]);
+  const gruppo = (eti: string, lista: Abitudine[], diOggi: boolean) => lista.length ? <>
+    <div className="lista-eti">{eti} <span className="lista-eti-n">{lista.length}</span></div>
+    <div className="lista" {...html(lista.map((h) => rigaAbitudine(h, diOggi)).join(''))} />
+  </> : null;
   const fatte = oggi.filter((h) => !!h.fatti[LM.todayKey()]).length;
   const tutte = oggi.length > 0 && fatte === oggi.length;
 
@@ -418,17 +428,15 @@ function Abitudini({ st }: { st: Stato }) {
     <div className="ab-nuova">
       <Aggiunta id="agg-ab" segnaposto="Nuova abitudine…" opzioni={opzioni} />
     </div>
-    {oggi.length ? <>
-      <div className="lista-eti">Oggi</div>
-      <div className="lista" {...html(oggi.map((h) => rigaAbitudine(h, true)).join(''))} />
-    </> : (st.abitudini.length
-      ? <div className="vuoto" style={{ padding: '20px 8px' }}>Per oggi non è prevista nessuna abitudine.</div>
+    {gruppo('Oggi, a un’ora', conOra, true)}
+    {gruppo('Oggi, quando vuoi', senzaOra, true)}
+    {gruppo('Fatte oggi', fatteOggi, true)}
+    {!oggi.length ? (st.abitudini.length
+      ? <div className="vuoto" style={{ padding: '20px 8px' }}>Oggi niente.</div>
       : <div className="vuoto" style={{ padding: '20px 8px' }}
-          {...html(illoInbox() + '<b>Nessuna abitudine.</b><br>Le azioni che vuoi ripetere: ogni volta che le fai, la serie cresce. Scrivine una qui sopra — «leggere 20 minuti», «camminare».')} />)}
-    {altre.length ? <>
-      <div className="lista-eti">Le altre</div>
-      <div className="lista" {...html(altre.map((h) => rigaAbitudine(h, false)).join(''))} />
-    </> : null}
+          {...html(illoInbox() + '<b>Nessuna abitudine.</b>')} />) : null}
+    {gruppo('Altri giorni', altre, false)}
+    {gruppo('Finite', finite, false)}
   </>);
 }
 
