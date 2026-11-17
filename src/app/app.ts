@@ -5400,15 +5400,13 @@ function sezRiepilogo(c: HTMLElement): void {
         (perse.length > 8 ? '<p class="lista-nota">e altre ' + (perse.length - 8) + '.</p>' : '');
     })() +
     '</div>' +
-    '<div class="card" style="--i:3"><h2>' + ICO('archivio', 15) + ' Le review di prima</h2>' +
-    '' +
-    '<div class="lista mt-s">' +
-    rigaPorta('riep-review', 'archivio', 'Aprile tutte',
-      (function () { var q = LM.quanteReview(); return q ? q + (q === 1 ? ' scritta' : ' scritte') : 'nessuna ancora'; })()) +
-    '</div></div>' +
     '</div>';
 
+  /* le porte in fondo, in un riquadro solo: prima «Le review di prima» era
+     un riquadro con dentro un altro riquadro con dentro una riga */
   c.insertAdjacentHTML('beforeend', '<div class="lista mt">' +
+    rigaPorta('riep-review', 'archivio', 'Le review di prima',
+      (function () { var q = LM.quanteReview(); return q ? q + (q === 1 ? ' scritta' : ' scritte') : 'nessuna ancora'; })()) +
     rigaPorta('riep-aree', 'aree', 'Aree') + rigaPorta('riep-grafici', 'trendUp', 'Grafici') + '</div>');
   [['riep-aree', 'aree'], ['riep-grafici', 'andamento']].forEach(function (x) {
     const b = document.getElementById(x[0] || '');
@@ -7056,8 +7054,8 @@ function rigaLezioneHtml(l: Lezione): string {
     ICO(v.ico, 15) + '</button>' +
     '<button class="lista-apri" data-lezapri="' + l.id + '" aria-label="Apri «' + esc(l.testo) + '»">' +
     '<span class="lista-corpo">' +
-    '<span class="lista-tit">' + (ar ? segnoArea(ar, 13, 'tit-area') : '') + esc(l.testo) + '</span>' +
-    '<span class="lista-sub">' + sotto.join(' · ') + '</span>' +
+    '<span class="lista-tit">' + esc(l.testo) + '</span>' +
+    '<span class="lista-sub">' + (ar ? segnoArea(ar, 13) + ' ' + esc(ar.nome) + ' · ' : '') + sotto.join(' · ') + '</span>' +
     '</span><span class="lista-chev">' + ICO('chevronGiu', 15) + '</span></button>' +
     '</div>';
 }

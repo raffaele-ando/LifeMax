@@ -5219,3 +5219,13 @@ body.sto-trascinando .gio-so-drop.drop-attivo { border-style: solid; border-colo
   --aurora-opacita: 0;
 }
 :root[data-mode="dark"] .aurora { display: none; }
+
+/* i tre numeri del profilo: il numero sopra, la parola sotto, così non
+   toccano il bordo nemmeno sul telefono più stretto */
+.prof-numero { flex-direction: column; align-items: center; gap: 2px; padding: 0 6px; text-align: center; }
+.prof-numero b { line-height: 1.1; }
+.prof-numero span { line-height: 1.2; }
+
+/* Scoperte: il registro non sta dentro un riquadro — i suoi elenchi sono già
+   riquadri, e due bordi uno dentro l'altro rubavano metà della riga */
+.lez-card { background: none; box-shadow: none; border: 0; padding: 0; }
