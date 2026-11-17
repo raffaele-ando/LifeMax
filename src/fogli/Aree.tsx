@@ -43,35 +43,25 @@ function Nome({ area }: { area: Area }) {
 }
 
 function Riga({ area, attiva }: { area: Area; attiva: boolean }) {
-  /* riaprire il pannello è quello che faceva il codice di prima: cambiare
-     un'area cambia anche la schermata sotto, e `render()` la rifà */
   const rifai = () => { render(); apriAree(); };
   return (
-    <div className={'area-riga' + (attiva ? '' : ' spenta')} style={{ '--c-area': LM.coloreArea(area) } as StileArea}>
-      <span className="icona-area"><Segno nome={area.icona} /></span>
+    <div className={'gr-riga area-riga' + (attiva ? '' : ' spenta')} style={{ '--c-area': LM.coloreArea(area) } as StileArea}>
+      <span className="icona-area"><Segno nome={area.icona} dim={15} /></span>
       <Nome area={area} />
-      {/* il title non basta: col dito non esiste, e con la voce l'icona è
-          aria-hidden — senza aria-label questi tasti non avevano nome, e
-          nemmeno dicevano di quale area erano */}
-      <button className={'icona-btn area-on' + (attiva ? ' on' : '')} data-toggle-area={area.id}
-        aria-pressed={attiva ? 'true' : 'false'}
-        aria-label={area.nome + ': ' + (attiva ? 'attiva, tocca per disattivarla' : 'disattivata, tocca per attivarla')}
-        title={attiva ? 'Attiva (tocca per disattivare)' : 'Disattivata (tocca per attivare)'}
-        onClick={() => { LM.toggleArea(area.id, !attiva); rifai(); }}>
-        <Segno nome={attiva ? 'check' : 'x'} />
-      </button>
-      <button className="icona-btn" data-del-area={area.id} title="Rimuovi" onClick={() => {
+      <button className="gr-via" data-del-area={area.id} aria-label={'Rimuovi ' + area.nome} onClick={() => {
         avviso({
-          titolo: 'Rimuovere questa area?',
-          testo: 'Le attività che ci stavano dentro passano ad «Altro»: non si perde niente.',
+          titolo: 'Rimuovere «' + area.nome + '»?',
+          testo: 'Le sue attività passano ad «Altro».',
           azione: 'Rimuovi', pericolo: true
         }, () => { LM.rimuoviArea(area.id); rifai(); });
-      }}><Segno nome="trash" /></button>
+      }}><Segno nome="trash" dim={13} /></button>
+      <button className={'interr area-on' + (attiva ? ' on' : '')} data-toggle-area={area.id} role="switch"
+        aria-checked={attiva ? 'true' : 'false'} aria-label={area.nome}
+        onClick={() => { LM.toggleArea(area.id, !attiva); rifai(); }}><i /></button>
     </div>
   );
 }
 
-/* il primo dei quattordici segni: c'è, ma il tipo non lo sa */
 const PRIMO = ICONE_AREA[0] || 'book';
 
 export default function Aree() {
@@ -96,26 +86,25 @@ export default function Aree() {
   };
 
   return (<>
-    <div className="aree-lista">
+    <div className="gr aree-lista">
       {s.aree.map((x) => <Riga key={x.id} area={x} attiva={s.areeAttive.indexOf(x.id) >= 0} />)}
     </div>
-    {/* «Aggiungi» sta al tono intermedio: questa è la schermata dove si
-        sistemano le aree che HAI, non dove se ne fanno di nuove, e l'unico
-        tasto pieno diceva il contrario. */}
-    <div className="imp-sezione">
-      <div className="imp-eti">Nuova area</div>
-      <form className="riga-flex" id="area-nuova" onSubmit={crea}>
-        <input type="text" id="area-nuova-nome" placeholder="Nome della nuova area…"
-          style={{ flex: 1, minWidth: '150px' }}
+    <div className="gr-titolo">Nuova area</div>
+    <form className="gr" id="area-nuova" onSubmit={crea}>
+      <div className="gr-riga">
+        <span className="icona-area"><Segno nome={ico} dim={15} /></span>
+        <input type="text" id="area-nuova-nome" className="ritmo-nome" placeholder="Nome"
           value={nome} onChange={(e) => setNome(e.target.value)} />
-        <button className="btn btn-mini btn-tinta" type="submit"><Segno nome="plus" dim={13} /> Aggiungi</button>
-      </form>
-      <div className="ico-picker mt-s" id="ico-picker" hidden={!nome.trim()}>
-        {ICONE_AREA.map((x) => (
-          <button key={x} className={'ico-pick' + (x === ico ? ' sel' : '')} data-ico={x} aria-label={x}
-            onClick={() => { segno.current = x; setIco(x); }}><Segno nome={x} /></button>
-        ))}
+        <button className="sp-link" type="submit" disabled={!nome.trim()}>Aggiungi</button>
       </div>
-    </div>
+      {nome.trim() ? (
+        <div className="ico-picker gr-icone" id="ico-picker">
+          {ICONE_AREA.map((x) => (
+            <button key={x} type="button" className={'ico-pick' + (x === ico ? ' sel' : '')} data-ico={x} aria-label={x}
+              onClick={() => { segno.current = x; setIco(x); }}><Segno nome={x} /></button>
+          ))}
+        </div>
+      ) : null}
+    </form>
   </>);
 }

@@ -23,53 +23,6 @@ import {
 import type { CasellaCatena } from '../app/app';
 import { html } from '../pezzi/grezzo';
 
-/* TRE NUMERI IN FILA NON SONO UN'INFORMAZIONE.
-   Qui c'era «3 giorni di fila · record 5 · 8 volte in tutto»: tre fatti della
-   stessa dimensione, uno accanto all'altro, e il conto che conta davvero —
-   quanto manca al record — lo doveva fare chi legge. La fila è diventata una
-   scala: dove sei adesso, che cosa manca al passo dopo, e in fondo, piano,
-   quanto hai fatto in tutto.
-   La scala è larga quanto il record, e quanto ne è pieno è la serie di adesso.
-   Il traguardo è il record e non un numero tondo scelto da noi: una meta già
-   raggiunta una volta tira più di una medaglia lontana, ed è l'unica che l'app
-   sa per certo che questa persona può fare. Quando il record è battuto la
-   scala è piena e il traguardo si sposta sulla serie stessa: non si può stare
-   fuori dal proprio grafico.
-   E una fiamma accanto a uno zero è solo un rimprovero: se la serie non c'è si
-   dice com'è, senza medaglia spenta. */
-function Scala({ serie, record, volte }: { serie: number; record: number; volte: number }) {
-  const meta = Math.max(record, serie, 1);
-  const quota = Math.max(0, Math.min(1, serie / meta));
-  const battuto = serie > 0 && serie >= record;
-  const manca = record - serie;
-  const detto = serie + (serie === 1 ? ' giorno di fila' : ' giorni di fila') +
-    ', il tuo record è ' + Math.max(record, serie) +
-    (volte > 0 ? ', ' + volte + (volte === 1 ? ' volta' : ' volte') + ' in tutto' : '');
-  return (<>
-    <div className={'abd-scala' + (battuto ? ' record' : '') + (serie ? '' : ' spenta')} role="img" aria-label={detto}>
-      <span className="abd-scala-lato">
-        <b className="abd-scala-num"><Segno nome="flame" dim={18} piu={serie > 0 ? 'fiamma' : ''} />{serie}</b>
-        <small>{serie === 1 ? 'giorno di fila' : 'giorni di fila'}</small>
-      </span>
-      {/* la barra è un disegno: chi legge con un lettore di schermo riceve la
-          frase intera dall'aria-label qui sopra, e qui dentro non c'è niente
-          da annunciare */}
-      <span className="abd-scala-barra" aria-hidden="true"><i style={{ width: (quota * 100).toFixed(1) + '%' }} /></span>
-      <span className="abd-scala-lato abd-scala-meta">
-        <b className="abd-scala-num"><Segno nome={battuto ? 'star' : 'mirino'} />{Math.max(record, serie)}</b>
-        <small>{battuto ? 'record tuo' : 'il tuo record'}</small>
-      </span>
-    </div>
-    {/* quello che manca al passo dopo si dice una volta sola, piano, e solo
-        quando c'è davvero un passo dopo */}
-    {manca > 0 && serie > 0
-      ? <p className="abd-scala-nota">{manca === 1 ? 'Ancora un giorno' : 'Ancora ' + manca + ' giorni'} e sei al tuo record.</p>
-      : serie === 0
-        ? <p className="abd-scala-nota">{record > 1 ? 'La serie riparte dal primo giorno che la segni.' : 'La serie comincia il primo giorno che la segni.'}</p>
-        : null}
-    {volte > 0 ? <p className="abd-scala-tot">{volte}{volte === 1 ? ' volta' : ' volte'} in tutto</p> : null}
-  </>);
-}
 
 /* LA GRIGLIA DICE QUAL È, E I GIORNI CHE NON SONO ARRIVATI NON CI SONO.
    Sette colonne con L M M G V S D sopra e i numeri dei giorni dentro sono un
@@ -82,7 +35,6 @@ function Scala({ serie, record, volte }: { serie: number; record: number; volte:
    sopra. */
 function Catena({ giorni, onGiorno }: { giorni: CasellaCatena[]; onGiorno: (k: Giorno) => void }) {
   return (<>
-    <div className="lista-eti"><Segno nome="unaSettimana" dim={11} />Ultime 4 settimane</div>
     <div className="abd-testa">{GIORNI_ORD.map((d) => <span key={d}>{GIORNI_LAB[d]}</span>)}</div>
     <div className="abd-catena" role="group" aria-label="Le ultime quattro settimane">
       {giorni.map((g, i) => {
@@ -109,7 +61,7 @@ export default function Abitudine({ id, dopo }: PropAbitudine) {
   /* TUTTI I GANCI PRIMA DELL'USCITA ANTICIPATA: React li conta, e nello
      stesso ordine a ogni disegno. */
   const [, bump] = useState(0);
-  const [aperta, setAperta] = useState(false);
+  const [conFine, setConFine] = useState(false);
   const gg = useRef<HTMLDivElement>(null);
   const ora = useRef<HTMLInputElement>(null);
   const dur = useRef<HTMLSelectElement>(null);
@@ -172,100 +124,91 @@ export default function Abitudine({ id, dopo }: PropAbitudine) {
     ridisegna();
   };
 
+  const ar = areeAttive().find((x) => x.id === h.areaId);
   return (
     <div className="abd">
+      <div className="abd-chi">
+        {ar ? <span className="abd-area" style={{ '--c-area': LM.coloreArea(ar) } as React.CSSProperties}><Segno nome={ar.icona} dim={13} /> {ar.nome}</span> : null}
+        <span>{riepilogoGiorni(h.giorni)}{h.ora ? ' · ' + h.ora : ''}</span>
+      </div>
+
       <div className="abd-oggi">
-        {st.saltata ? <>
+        {st.saltata ? (
           <button className="btn btn-grande" id="abd-rimetti"
             onClick={() => { LM.saltaGiornoAbitudine(id); ridisegna(); }}>
             <Segno nome="annulla" /> Rimetti oggi
           </button>
-          <p className="abd-nota">Oggi è saltata: non conta come mancata e la serie non si rompe.</p>
-        </> : <>
+        ) : <>
           <button className={'btn btn-grande ' + (st.fatta ? 'btn-ok' : 'btn-primario')} id="abd-fatta"
             onClick={(ev) => {
-              feedbackSpunta(ev, LM.completaAbitudine(id), 'Fatta. Continua così', 'flame');
+              feedbackSpunta(ev, LM.completaAbitudine(id), 'Fatta', 'flame');
               ridisegna();
             }}>
-            <Segno nome="check" />{st.fatta ? ' Fatta oggi' : ' Segna come fatta'}
+            <Segno nome="check" />{st.fatta ? ' Fatta oggi' : ' Fatta'}
           </button>
-          {prevista ? (
-            <button className="btn btn-mini btn-ghost" id="abd-salta" onClick={() => {
+          {prevista && !st.fatta ? (
+            <button className="sp-link" id="abd-salta" onClick={() => {
               LM.saltaGiornoAbitudine(id);
               toast('Saltata per oggi. La serie regge.', 0, 'moon');
               ridisegna();
-            }}><Segno nome="salta" /> Salta oggi</button>
+            }}>Salta oggi</button>
           ) : null}
         </>}
       </div>
 
-      <Scala serie={serie} record={record} volte={volte} />
+      <div className="abd-numeri" role="img" aria-label={serie + ' giorni di fila, record ' + Math.max(record, serie) + ', ' + volte + ' volte in tutto'}>
+        <span><b><Segno nome="flame" dim={18} piu={serie > 0 ? 'fiamma' : ''} />{serie}</b>di fila</span>
+        <span><b>{Math.max(record, serie)}</b>record</span>
+        <span><b>{volte}</b>in tutto</span>
+      </div>
+
       <Catena giorni={giorni} onGiorno={(k) => {
         if (k > LM.todayKey()) return;
         LM.completaAbitudine(id, k);
         ridisegna();
       }} />
 
-      {/* «Modifica», non «Come è impostata»: quello è il modo in cui si
-          descrive una cosa a voce, non il modo in cui la si chiama. Un comando
-          porta il nome di quello che fa. */}
-      <button className="lista-eti lista-eti-btn" id="abd-piu" aria-expanded={aperta ? 'true' : 'false'}
-        aria-controls="abd-config" onClick={() => setAperta((v) => !v)}>
-        <Segno nome="ingranaggio" dim={13} />Modifica
-        <span className={'lista-chev' + (aperta ? ' aperta' : '')}><Segno nome="chevronGiu" /></span>
-      </button>
-      <div id="abd-config" hidden={!aperta}>
-        <label className="campo">Quando ripeterla</label>
-        <div id="abd-giorni" ref={gg} onClick={toccaGiorno} {...html(chipsGiorni(h.giorni))} />
-        <div className="abd-nota-giorni">{riepilogoGiorni(h.giorni)}</div>
-        {/* Un'abitudine attaccata a un'ora precisa si fa molto più spesso di
-            una lasciata a «quando capita»: è la parte «quando e dove» delle
-            intenzioni di attuazione, l'unica cosa che nella ricerca sposta
-            davvero la percentuale di volte in cui una cosa viene fatta. E con
-            un'ora l'abitudine compare anche nella giornata, al suo posto,
-            invece di restare una riga fuori dal tempo. */}
-        <label className="campo" htmlFor="abd-ora">A che ora</label>
-        <div className="abd-orario">
-          <input key={h.ora || 'niente'} type="time" className="tl-time" id="abd-ora" ref={ora} defaultValue={h.ora || ''} />
-          <select key={'d' + (h.durata || '')} className="tl-dur" id="abd-dur" ref={dur} aria-label="Quanto dura"
+      <div className="gr-titolo">Quando</div>
+      <div className="gr">
+        <div className="gr-riga gr-giorni" id="abd-giorni" ref={gg} onClick={toccaGiorno} {...html(chipsGiorni(h.giorni))} />
+        <label className="gr-riga" htmlFor="abd-ora"><span className="gr-eti">Ora</span>
+          <span className="gr-valori">
+            <input key={h.ora || 'niente'} type="time" className="gr-val" id="abd-ora" ref={ora} defaultValue={h.ora || ''} />
+            {h.ora ? <button className="gr-via" id="abd-noora" aria-label="Togli l’orario"
+              onClick={(e) => { e.preventDefault(); LM.modificaAbitudine(id, { ora: null }); ridisegna(); }}><Segno nome="x" dim={13} /></button> : null}
+          </span></label>
+        <label className="gr-riga" htmlFor="abd-dur"><span className="gr-eti">Durata</span>
+          <select key={'d' + (h.durata || '')} className="gr-val" id="abd-dur" ref={dur}
             defaultValue={String(h.durata == null ? '' : h.durata)}>
             {DURATE.map((o) => <option key={String(o.v)} value={String(o.v)}>{o.t}</option>)}
-          </select>
-          {h.ora
-            ? <button className="btn btn-mini btn-ghost" id="abd-noora"
-                onClick={() => { LM.modificaAbitudine(id, { ora: null }); ridisegna(); }}>
-                <Segno nome="clock" dim={13} /> Togli l’orario
-              </button>
-            : <span className="ap-nota">senza orario: la fai quando capita</span>}
-        </div>
-        <label className="campo" htmlFor="abd-area">Area</label>
-        {/* qui il <select> non può stare dentro a niente — è figlio diretto di
-            #abd-config — quindi `selectAree` non si può infilare col suo
-            involucro, e le stesse righe si scrivono in JSX. Dove un involucro
-            c'è già (la riga «Area» della scheda di un'attività) si usa quella
-            di `app.ts`. */}
-        <select key={'ar' + (h.areaId || '')} id="abd-area" ref={area} aria-label="Area" defaultValue={h.areaId}>
-          {areeAttive().map((x) => <option key={x.id} value={x.id}>{x.nome}</option>)}
-        </select>
-        <label className="campo">Per quanto vale</label>
-        <div className="abd-periodo">
-          <label className="ap-campo">dal <input key={'da' + (h.da || '')} type="date" id="abd-da" ref={da} defaultValue={h.da || ''} /></label>
-          <label className="ap-campo">al <input key={'a' + (h.a || '')} type="date" id="abd-a" ref={fin} defaultValue={h.a || ''} min={h.da || ''} /></label>
-          {h.a
-            ? <button className="btn btn-mini btn-ghost" id="abd-nofine"
-                onClick={() => { LM.impostaPeriodoAbitudine(id, h.da || null, null); ridisegna(); }}>Senza fine</button>
-            : <span className="ap-nota">vuoto = senza fine</span>}
-        </div>
-        <div className="abd-fondo">
-          <button className="btn btn-mini btn-ghost imp-pericolo" id="abd-del" onClick={() => {
-            conAnnulla('Abitudine eliminata.', 'trash', () => {
-              LM.rimuoviAbitudine(id);
-              chiudiSheet();
-              if (dopo) dopo();
-            });
-          }}><Segno nome="trash" /> Elimina l’abitudine</button>
-        </div>
+          </select></label>
       </div>
+
+      <div className="gr-titolo">Dettagli</div>
+      <div className="gr">
+        <label className="gr-riga" htmlFor="abd-area"><span className="gr-eti">Area</span>
+          <select key={'ar' + (h.areaId || '')} className="gr-val" id="abd-area" ref={area} defaultValue={h.areaId}>
+            {areeAttive().map((x) => <option key={x.id} value={x.id}>{x.nome}</option>)}
+          </select></label>
+        <label className="gr-riga" htmlFor="abd-da"><span className="gr-eti">Inizio</span>
+          <input key={'da' + (h.da || '')} type="date" className="gr-val" id="abd-da" ref={da} defaultValue={h.da || ''} /></label>
+        <div className="gr-riga"><span className="gr-eti">Fine</span>
+          <span className="gr-valori">
+            {h.a || conFine
+              ? <input key={'a' + (h.a || '')} type="date" className="gr-val" id="abd-a" ref={fin} defaultValue={h.a || ''} min={h.da || ''} autoFocus={!h.a} />
+              : <button className="gr-val" id="abd-a-mai" onClick={(e) => { e.preventDefault(); setConFine(true); }}>Mai</button>}
+            {h.a ? <button className="gr-via" id="abd-nofine" aria-label="Senza fine"
+              onClick={(e) => { e.preventDefault(); setConFine(false); LM.impostaPeriodoAbitudine(id, h.da || null, null); ridisegna(); }}><Segno nome="x" dim={13} /></button> : null}
+          </span></div>
+      </div>
+
+      <button className="gr-pericolo" id="abd-del" onClick={() => {
+        conAnnulla('Abitudine eliminata.', 'trash', () => {
+          LM.rimuoviAbitudine(id);
+          chiudiSheet();
+          if (dopo) dopo();
+        });
+      }}>Elimina l’abitudine</button>
     </div>
   );
 }

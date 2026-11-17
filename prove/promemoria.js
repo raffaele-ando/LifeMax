@@ -191,28 +191,26 @@ const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  
   /* Nelle impostazioni rifatte i promemoria sono una RIGA dentro «Le tue
      cose» — con lo stato scritto a destra — più la nota e il tasto sotto al
      gruppo. Si guarda quel pezzo: la riga, la nota, il tasto. */
-  const pannello = () => p.evaluate(() => {
-    const corpo = document.querySelector('.prof-righe');
-    if (!corpo) return null;
-    const riga = [...corpo.querySelectorAll('.lista-riga')]
-      .find(e => /Promemoria/.test(e.textContent || ''));
+  /* la riga sta nel Profilo e apre il foglio: lì in cima c'è com'è e il tasto */
+  const pannello = async () => {
+    const riga = await p.evaluate(() => {
+      const r = document.getElementById('imp-prom-come');
+      if (!r) return null;
+      const ico = !!r.querySelector('svg.ico');
+      r.click();
+      return { ico };
+    });
     if (!riga) return null;
-    const gruppo = riga.closest('.lista');
-    /* la nota e il tasto stanno subito dopo il gruppo */
-    let testo = riga.textContent.replace(/\s+/g, ' ').trim();
-    let n = gruppo ? gruppo.nextElementSibling : null;
-    for (let i = 0; i < 3 && n; i++) {
-      if (n.classList.contains('lista-nota') || n.classList.contains('imp-azioni')) {
-        testo += ' ' + n.textContent.replace(/\s+/g, ' ').trim();
-      }
-      n = n.nextElementSibling;
-    }
-    return {
-      testo: testo,
-      on: !!corpo.querySelector('#imp-prom-on'), off: !!corpo.querySelector('#imp-prom-off'),
-      icona: !!riga.querySelector('svg.ico')
-    };
-  });
+    await p.waitForTimeout(500);
+    const dentro = await p.evaluate(() => {
+      const st = document.getElementById('prom-stato');
+      if (!st) return null;
+      return { testo: st.textContent.replace(/\s+/g, ' ').trim(), on: !!st.querySelector('#imp-prom-on'), off: !!st.querySelector('#imp-prom-off') };
+    });
+    await p.evaluate(() => { const c = document.getElementById('sheet-chiudi'); if (c) c.click(); });
+    await p.waitForTimeout(300);
+    return dentro ? { testo: dentro.testo, on: dentro.on, off: dentro.off, icona: riga.ico } : null;
+  };
   await p.evaluate(() => { location.hash = '#/oggi'; }); await p.waitForTimeout(600);
   await p.evaluate(() => { location.hash = '#/profilo'; });
   await p.waitForTimeout(300);

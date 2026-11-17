@@ -19,9 +19,9 @@ import {
   schermo, MURO,
   attRigaHtml, opzDaFare, wireAggiunta, areaFiltro, passaFiltro, nomeFiltro,
   areeAttive, aggiornaNav, animaIngresso, toast, conAnnulla, apriFoglio,
-  apriScheda, apriDettaglioAbitudine, feedbackSpunta, rigaAbitudine,
+  apriScheda, apriDettaglioAbitudine, feedbackSpunta,
   chipsGiorni, riepilogoGiorni, selectAree, leggiGiorni, wireRigaAggiunta,
-  illoInbox, render
+  illoInbox, render, areaById
 } from '../app/app';
 import { html } from '../pezzi/grezzo';
 
@@ -338,6 +338,33 @@ function DaFare({ st }: { st: Stato }) {
   </>);
 }
 
+/* UNA ABITUDINE DI OGGI: l'ora a sinistra come in un'agenda, il nome con la
+   serie, e il cerchio da spuntare a destra. */
+const LETTERE = ['D', 'L', 'M', 'M', 'G', 'V', 'S'];
+const ORDINE_SETT = [1, 2, 3, 4, 5, 6, 0];
+function cartaOggi(h: Abitudine, tk: string): string {
+  const ar = areaById(h.areaId), o = LM.oraAbitudine(h, tk as never), fatta = !!h.fatti[tk];
+  const serie = LM.streakAbitudine(h);
+  return '<div class="ab-carta' + (fatta ? ' fatta' : '') + '" style="--c-area:' + LM.coloreArea(ar) + '">' +
+    '<span class="ab-ora">' + (o ? esc(o) : '') + '</span>' +
+    '<button class="ab-apri" data-abdett="' + h.id + '"><span class="ab-nome">' + esc(h.testo) + '</span>' +
+    '<span class="ab-sub">' + ICO(ar.icona, 11) + esc(ar.nome) +
+    (serie > 0 ? '<span class="ab-serie">' + ICO('flame', 11, 'fiamma') + serie + '</span>' : '') + '</span></button>' +
+    '<button class="ab-spunta" data-toggle-ab="' + h.id + '" aria-pressed="' + fatta + '" aria-label="' + (fatta ? 'Togli la spunta a ' : 'Fatta: ') + esc(h.testo) + '">' + ICO('check', 15) + '</button>' +
+    '</div>';
+}
+/* un'abitudine di altri giorni: il nome e la settimana a lettere */
+function rigaAltra(h: Abitudine, finita: boolean): string {
+  const ar = areaById(h.areaId);
+  const gg = h.giorni && h.giorni.length ? h.giorni : [0, 1, 2, 3, 4, 5, 6];
+  return '<button class="ab-altra' + (finita ? ' finita' : '') + '" data-abdett="' + h.id + '" style="--c-area:' + LM.coloreArea(ar) + '">' +
+    '<span class="ab-pallino"></span><span class="ab-nome">' + esc(h.testo) + '</span>' +
+    (finita ? '<span class="ab-fine">finita</span>'
+      : '<span class="ab-sett" aria-label="' + esc(riepilogoGiorni(h.giorni)) + '">' + ORDINE_SETT.map((d) =>
+        '<i' + (gg.indexOf(d as never) >= 0 ? ' class="si"' : '') + '>' + LETTERE[d] + '</i>').join('') + '</span>') +
+    '</button>';
+}
+
 /* ------------------------------------------------------------------- ABITUDINI
    Con un orario la lista prende la forma della giornata: prima quelle che
    hanno un'ora, in ordine, poi quelle che si fanno quando capita.
@@ -360,10 +387,6 @@ function Abitudini({ st }: { st: Stato }) {
   const conOra = daFare.filter((h) => !!LM.oraAbitudine(h, tk));
   const senzaOra = daFare.filter((h) => !LM.oraAbitudine(h, tk));
   const fatteOggi = oggi.filter((h) => !!h.fatti[tk]);
-  const gruppo = (eti: string, lista: Abitudine[], diOggi: boolean) => lista.length ? <>
-    <div className="lista-eti">{eti} <span className="lista-eti-n">{lista.length}</span></div>
-    <div className="lista" {...html(lista.map((h) => rigaAbitudine(h, diOggi)).join(''))} />
-  </> : null;
   const fatte = oggi.filter((h) => !!h.fatti[LM.todayKey()]).length;
   const tutte = oggi.length > 0 && fatte === oggi.length;
 
@@ -416,27 +439,40 @@ function Abitudini({ st }: { st: Stato }) {
     '<input type="time" class="tl-time" id="agg-ab-ora" aria-label="A che ora (facoltativo)"></label>' +
     '<label class="agg-area"><span class="agg-eti">in</span>' + selectAree('agg-ab-area', 'salute') + '</label>';
 
+  const ordinate = conOra.slice().sort((x, y) => String(LM.oraAbitudine(x, tk)) < String(LM.oraAbitudine(y, tk)) ? -1 : 1)
+    .concat(senzaOra, fatteOggi);
+  const quota = oggi.length ? fatte / oggi.length : 0;
+  const C = 2 * Math.PI * 26;
   return (<>
     {oggi.length ? (
-      <div className={'ab-prog' + (tutte ? ' piena' : '')}>
-        <div className="ab-prog-testo" {...html(tutte
-          ? ICO('check', 15) + ' <b>Fatte tutte</b>, per oggi ci sei.'
-          : '<b>' + fatte + '</b> di ' + oggi.length + ' per oggi')} />
-        <div className="ab-prog-barra"><span style={{ width: Math.round(fatte / oggi.length * 100) + '%' }} /></div>
+      <div className={'ab-testa' + (tutte ? ' piena' : '')}>
+        <svg className="ab-anello" viewBox="0 0 64 64" aria-hidden="true">
+          <circle cx="32" cy="32" r="26" className="ab-anello-fondo" />
+          {quota > 0 ? <circle cx="32" cy="32" r="26" className="ab-anello-pieno" strokeDasharray={(C * quota).toFixed(1) + ' ' + C.toFixed(1)} transform="rotate(-90 32 32)" /> : null}
+        </svg>
+        <div className="ab-testa-testo">
+          <b>{tutte ? 'Fatte tutte' : fatte + ' di ' + oggi.length}</b>
+          <span>{tutte ? 'per oggi ci sei' : 'oggi'}</span>
+        </div>
       </div>
     ) : null}
+    {oggi.length ? <div className="ab-oggi" {...html(ordinate.map((h) => cartaOggi(h, tk)).join(''))} /> : (st.abitudini.length
+      ? <div className="vuoto" style={{ padding: '20px 8px' }}>Oggi niente.</div>
+      : <div className="vuoto" style={{ padding: '20px 8px' }}
+          {...html(illoInbox() + '<b>Nessuna abitudine.</b>')} />)}
     <div className="ab-nuova">
       <Aggiunta id="agg-ab" segnaposto="Nuova abitudine…" opzioni={opzioni} />
     </div>
-    {gruppo('Oggi, a un’ora', conOra, true)}
-    {gruppo('Oggi, quando vuoi', senzaOra, true)}
-    {gruppo('Fatte oggi', fatteOggi, true)}
-    {!oggi.length ? (st.abitudini.length
-      ? <div className="vuoto" style={{ padding: '20px 8px' }}>Oggi niente.</div>
-      : <div className="vuoto" style={{ padding: '20px 8px' }}
-          {...html(illoInbox() + '<b>Nessuna abitudine.</b>')} />) : null}
-    {gruppo('Altri giorni', altre, false)}
-    {gruppo('Finite', finite, false)}
+    {altre.length ? <>
+      <div className="gr-titolo">Altri giorni</div>
+      <div className="gr" {...html(altre.map((h) => rigaAltra(h, false)).join(''))} />
+    </> : null}
+    {finite.length ? (
+      <details className="ab-finite">
+        <summary className="gr-titolo">Finite <span className="lista-eti-n">{finite.length}</span></summary>
+        <div className="gr" {...html(finite.map((h) => rigaAltra(h, true)).join(''))} />
+      </details>
+    ) : null}
   </>);
 }
 

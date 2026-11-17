@@ -1751,13 +1751,8 @@ export function htmlImpostazioni(pezzo?: 'profilo'): string {
       '<div class="lista">' +
       rigaPorta('imp-aree', 'aree', 'Aree', nAree + ' attive') +
       rigaPorta('imp-ritmo', 'ritmo', 'Sonno e pasti', valRitmo) +
-      (pr.porta
-        ? rigaPorta('imp-prom-come', 'campana', 'Promemoria', pr.val)
-        : '<div class="lista-riga sc-riga"><span class="sc-eti">' + ICO('campana', 15) + ' Promemoria</span>' +
-          '<span class="sc-val">' + pr.val + '</span></div>') +
+      rigaPorta('imp-prom-come', 'campana', 'Promemoria', pr.val) +
       '</div>' +
-      (pr.nota ? nota(pr.nota) : '') +
-      (pr.azione ? '<div class="imp-azioni">' + pr.azione + '</div>' : '') +
       '<div class="lista mt-s">' +
       rigaPorta('imp-diario', 'quaderno', 'Diario') +
       rigaPorta('imp-tutte', 'ingranaggio', 'Impostazioni') +
@@ -1811,81 +1806,66 @@ export function apriPromemoria() {
   var c = LM.promemoria();
   var conf = P.configurato();
 
-  function riga(id: VoceProm, nome: string, spiega: string) {
+  function riga(id: VoceProm, nome: string, _spiega: string) {
     var v = c.voci[id] || {};
-    return '<div class="prom-riga' + (v.on ? '' : ' spenta') + '" data-voce="' + id + '">' +
-      '<button class="prom-int" data-int="' + id + '" role="switch" aria-checked="' + !!v.on + '" ' +
-        'aria-label="' + esc(nome) + (v.on ? ', acceso' : ', spento') + '">' +
-        ICO(v.on ? 'check' : 'x', 13) + '</button>' +
-      '<div class="prom-testo"><b>' + esc(nome) + '</b><span>' + spiega + '</span></div>' +
-      (v.ora != null
-        ? '<input type="time" class="prom-ora" data-ora="' + id + '" value="' + esc(v.ora) + '" ' +
-          'aria-label="A che ora, ' + esc(nome) + '"' + (v.on ? '' : ' disabled') + '>'
-        : '<span class="prom-ora-no">l’ora di ognuna</span>') +
+    return '<div class="gr-riga prom-riga' + (v.on ? '' : ' spenta') + '" data-voce="' + id + '">' +
+      '<span class="gr-eti">' + esc(nome) + '</span>' +
+      (v.ora != null && v.on
+        ? '<input type="time" class="gr-val prom-ora" data-ora="' + id + '" value="' + esc(v.ora) + '" aria-label="A che ora, ' + esc(nome) + '">'
+        : '') +
+      '<button class="interr' + (v.on ? ' on' : '') + '" data-int="' + id + '" role="switch" aria-checked="' + !!v.on + '" aria-label="' + esc(nome) + '"><i></i></button>' +
       '</div>';
   }
 
+
+  const pr = statoPromemoria();
+  const acceso = P.stato() === 'granted';
   apriSheet('Promemoria',
-    /* IL POSTINO — prima cosa, perché senza questo il resto non parte */
-    '<div class="imp-sezione" style="padding-top:0"><div class="imp-eti">Il postino</div>' +
-      '<div class="imp-nota" style="margin-top:0">' +
-        (conf ? 'Collegato. Da qui si cambia, se serve.'
-              : 'Le notifiche a orario hanno bisogno di un piccolo servizio che stia sveglio: una pagina chiusa non si sveglia da sé. Si fa una volta, è gratis, e le istruzioni sono nel file <code>postino/LEGGIMI.md</code>.') +
-      '</div>' +
-      '<label class="campo mt-s" for="prom-server">Indirizzo</label>' +
+    /* in cima: come stanno, e il tasto per cambiarlo */
+    '<div class="prom-stato' + (acceso ? ' on' : '') + '" id="prom-stato">' +
+      '<span class="prom-stato-ico">' + ICO(acceso ? 'campana' : 'campanaOff', 26) + '</span>' +
+      '<div class="prom-stato-testo"><b>' + (acceso ? 'Accesi' : pr.val.charAt(0).toUpperCase() + pr.val.slice(1)) + '</b>' +
+      (pr.nota ? '<span>' + pr.nota + '</span>' : '') + '</div>' +
+      (pr.azione || '') +
+    '</div>' +
+
+    '<div class="gr-titolo">Cosa ti arriva</div><div class="gr">' +
+      riga('mattina', 'Piano del mattino', '') +
+      riga('checkin', 'Check-in', '') +
+      riga('mit', 'La priorità', '') +
+      riga('sera', 'Chiusura della giornata', '') +
+      riga('abitudini', 'Abitudini con un’ora', '') +
+    '</div>' +
+
+    '<div class="gr-titolo">Non disturbare</div><div class="gr">' +
+      '<div class="gr-riga"><span class="gr-eti">Silenzio</span>' +
+        '<button class="interr' + (c.silenzio.on ? ' on' : '') + '" id="prom-sil-int" role="switch" aria-checked="' + !!c.silenzio.on + '" aria-label="Silenzio"><i></i></button></div>' +
+      (c.silenzio.on
+        ? '<div class="gr-riga gr-sotto"><span class="gr-eti">Fra le</span><span class="gr-valori">' +
+          '<input type="time" class="gr-val prom-t" id="prom-sil-da" value="' + esc(c.silenzio.da) + '" aria-label="Silenzio dalle">' +
+          '<span class="gr-tratto">–</span>' +
+          '<input type="time" class="gr-val prom-t" id="prom-sil-a" value="' + esc(c.silenzio.a) + '" aria-label="Silenzio fino alle"></span></div>'
+        : '') +
+    '</div>' +
+
+    htmlNotaFissa() +
+
+    /* il server: si imposta una volta, quindi sta chiuso in fondo */
+    '<details class="gr gr-dettagli"' + (conf ? '' : ' open') + '><summary class="gr-riga"><span class="gr-eti">' + ICO('cloudCheck', 15) + ' Server</span>' +
+      '<span class="gr-fisso">' + (conf ? 'collegato' : 'da collegare') + '</span></summary>' +
+      '<div class="gr-dentro">' +
+      '<label class="campo" for="prom-server">Indirizzo</label>' +
       '<input type="url" id="prom-server" inputmode="url" autocapitalize="off" spellcheck="false" ' +
-        'placeholder="https://lifemax-promemoria.tuonome.workers.dev" value="' + esc(c.server) + '">' +
+        'placeholder="https://….workers.dev" value="' + esc(c.server) + '">' +
       '<label class="campo mt-s" for="prom-chiave">Chiave pubblica</label>' +
-      '<input type="text" id="prom-chiave" autocapitalize="off" spellcheck="false" ' +
-        'placeholder="B…" value="' + esc(c.chiave) + '">' +
-      /* La pagina che fa le chiavi sta nel sito, non sul computer: un file
-         dentro il progetto non si apre se non hai il progetto, e senza le
-         chiavi non si va avanti. Da qui è a un tocco. Si apre a parte
-         perché la sua unica regola è non mandare niente da nessuna parte:
-         dentro l'app perderebbe quella garanzia. */
+      '<input type="text" id="prom-chiave" autocapitalize="off" spellcheck="false" placeholder="B…" value="' + esc(c.chiave) + '">' +
       '<div class="imp-azioni mt-s">' +
-        '<a class="btn btn-mini" id="prom-fai-chiavi" href="promemoria/chiavi.html" target="_blank" rel="noopener">' +
-        ICO('chiavi', 15) + ' Non le hai? Fattele qui' + ICO('share', 13) + '</a></div>' +
-      '<div class="imp-azioni mt-s">' +
-        '<button class="btn btn-mini btn-tinta" id="prom-collega">' + ICO('cloudCheck', 15) + ' Collega</button>' +
-        (conf ? '<button class="btn btn-mini" id="prom-prova">' + ICO('campana', 15) + ' Mandamene una adesso</button>' : '') +
+        '<button class="btn btn-mini btn-primario" id="prom-collega">Collega</button>' +
+        (conf ? '<button class="btn btn-mini" id="prom-prova">Prova</button>' : '') +
+        '<a class="sp-link" id="prom-fai-chiavi" href="promemoria/chiavi.html" target="_blank" rel="noopener">Crea le chiavi</a>' +
       '</div>' +
       '<div class="imp-nota" id="prom-esito"></div>' +
-      '<div class="imp-nota">La chiave <b>privata</b> non va qui e non va da nessuna parte: resta sul server. Se un campo te la chiede, è il campo sbagliato.</div>' +
-      /* La domanda che viene naturale: «e sull\'altro telefono?». Meglio
-         risponderla qui che farla nascere. */
-      '<div class="imp-nota">È <b>una coppia sola per tutti i dispositivi</b>: le chiavi dicono chi manda, non a chi. ' +
-      'Su un telefono nuovo basta accendere i promemoria — l’iscrizione la fa il browser da sé' +
-      (window.LMCloud && window.LMCloud.available ? ', e con l’accesso Google queste due righe ti arrivano già scritte' : '') + '.</div>' +
-    '</div>' +
-
-    /* COSA TI ARRIVA */
-    '<div class="imp-sezione"><div class="imp-eti">Cosa ti arriva</div>' +
-      riga('mattina', 'Il piano del mattino', 'Solo se non l’hai già fatto.') +
-      riga('checkin', 'Il check-in', 'Solo se non ne hai ancora fatto uno.') +
-      riga('mit', 'La priorità del giorno', 'Un colpetto, se è ancora lì intatta.') +
-      riga('sera', 'La chiusura della giornata', 'Solo se non hai ancora chiuso.') +
-      riga('abitudini', 'Le abitudini con un’ora', 'Quelle senza orario non suonano mai.') +
-    '</div>' +
-
-    /* SILENZIO */
-    '<div class="imp-sezione"><div class="imp-eti">Silenzio</div>' +
-      '<div class="prom-riga' + (c.silenzio.on ? '' : ' spenta') + '">' +
-        '<button class="prom-int" id="prom-sil-int" role="switch" aria-checked="' + !!c.silenzio.on + '" ' +
-          'aria-label="Fascia di silenzio, ' + (c.silenzio.on ? 'accesa' : 'spenta') + '">' +
-          ICO(c.silenzio.on ? 'check' : 'x', 13) + '</button>' +
-        '<div class="prom-testo"><b>Non disturbarmi</b><span>Dentro questa fascia non arriva niente.</span></div>' +
-      '</div>' +
-      '<div class="prom-fascia mt-s">' +
-        '<label class="campo" for="prom-sil-da">Da</label>' +
-        '<input type="time" class="prom-t" id="prom-sil-da" value="' + esc(c.silenzio.da) + '"' + (c.silenzio.on ? '' : ' disabled') + '>' +
-        '<label class="campo" for="prom-sil-a">A</label>' +
-        '<input type="time" class="prom-t" id="prom-sil-a" value="' + esc(c.silenzio.a) + '"' + (c.silenzio.on ? '' : ' disabled') + '>' +
-      '</div>' +
-    '</div>' +
-
-    /* LA NOTA FISSA */
-    htmlNotaFissa(),
+      '</div></details>',
     wirePromemoria, false, { nome: 'Promemoria', apri: apriPromemoria });
 }
 
@@ -1901,22 +1881,37 @@ function htmlNotaFissa() {
   if (P.stato() !== 'granted') return '';
   var accesa = P.fissaAccesa();
   var t = P.testoFissa();
-  return '<div class="imp-sezione"><div class="imp-eti">La nota che resta</div>' +
-    '<div class="prom-riga' + (accesa ? '' : ' spenta') + '">' +
-      '<button class="prom-int" id="imp-prom-fissa" role="switch" aria-checked="' + accesa + '" ' +
-        'aria-label="Nota fissa, ' + (accesa ? 'accesa' : 'spenta') + '">' +
-        ICO(accesa ? 'check' : 'x', 13) + '</button>' +
-      '<div class="prom-testo"><b>' + ICO('notaFissa', 13) + ' Tienimi una nota fissa</b>' +
-      '<span>Una notifica sola, sempre la stessa, con quello che ti resta oggi. ' +
-      'Si riscrive in silenzio e resta lì finché non la scarti tu. ' +
-      'Sull’icona compare il numero delle cose aperte.</span></div>' +
-    '</div>' +
-    (accesa ? '<div class="imp-anteprima">' + ICO('campana', 13) +
-      '<span><b>' + esc(t.titolo) + '</b><br>' + esc(t.corpo) + '</span></div>' : '') +
-    '<div class="imp-nota">Una notifica che non si può scartare — come quella di un ' +
-    'navigatore — sul web non esiste: la può avere solo un’app scaricata dallo store. ' +
-    'Questa si scarta, ma torna da sé il giorno dopo.</div>' +
+  return '<div class="gr-titolo">Nota fissa</div><div class="gr">' +
+    '<div class="gr-riga"><span class="gr-eti">' + ICO('notaFissa', 15) + ' Quello che ti resta oggi</span>' +
+      '<button class="interr' + (accesa ? ' on' : '') + '" id="imp-prom-fissa" role="switch" aria-checked="' + accesa + '" aria-label="Nota fissa"><i></i></button></div>' +
+    (accesa ? '<div class="imp-anteprima">' + ICO('campana', 13) + '<span><b>' + esc(t.titolo) + '</b><br>' + esc(t.corpo) + '</span></div>' : '') +
     '</div>';
+}
+
+/* accendere e spegnere i promemoria: lo stesso tasto nel Profilo e nel foglio */
+function wireAccendiSpegni(root: HTMLElement, riscriviImpostazioni: () => void): void {
+  const pon = root.querySelector<HTMLButtonElement>('#imp-prom-on');
+  if (pon) pon.addEventListener('click', function () {
+    pon.disabled = true;
+    void P.accendi().then(function (esito) {
+      if (esito === 'negato') toast('Il permesso è stato negato: senza quello non arrivano notifiche.', 0, 'avviso');
+      else if (esito === 'chiave') toast('La chiave pubblica non va bene: guarda in «Promemoria».', 0, 'avviso');
+      else if (esito === 'server') toast('Il permesso c’è, ma il server non risponde: guarda in «Promemoria».', 0, 'avviso');
+      else if (!P.configurato()) toast('Acceso. Per ora arriva solo la fine del timer.', 0, 'campana');
+      else toast('Promemoria accesi.', 0, 'campana');
+      riscriviImpostazioni();
+    });
+  });
+  const poff = root.querySelector<HTMLButtonElement>('#imp-prom-off');
+  if (poff) poff.addEventListener('click', function () {
+    poff.disabled = true;
+    void P.spegni().then(function () {
+      /* il permesso del browser non si può togliere da qui: si toglie
+         l'iscrizione, e il pannello lo dice senza far finta d'altro */
+      toast('Promemoria spenti.', 0, 'campanaOff');
+      riscriviImpostazioni();
+    });
+  });
 }
 
 export function wirePromemoria(root: HTMLElement): void {
@@ -1924,6 +1919,7 @@ export function wirePromemoria(root: HTMLElement): void {
   /* dopo ogni cambiamento il piano va rimandato subito: aspettare il
      prossimo salvataggio vorrebbe dire che l'orario nuovo vale da domani */
   function salva(patch: Parameters<typeof LM.impostaPromemoria>[0]) { LM.impostaPromemoria(patch); void P.mandaPiano(true); }
+  wireAccendiSpegni(root, function () { ridisegna(); render(); });
 
   /* gli interruttori delle voci */
   root.querySelectorAll<HTMLElement>('[data-int]').forEach(function (b) {
@@ -2218,30 +2214,9 @@ export function wireAspettoDati(root: HTMLElement): void {
      da sé — se il permesso è appena cambiato, la riga sopra deve cambiare
      con lui, altrimenti resta a dire «spenti» con le notifiche accese. */
   function riscriviImpostazioni() { render(); }
-  const pon = root.querySelector<HTMLButtonElement>('#imp-prom-on');
-  if (pon) pon.addEventListener('click', function () {
-    pon.disabled = true;
-    void P.accendi().then(function (esito) {
-      if (esito === 'negato') toast('Il permesso è stato negato: senza quello non arrivano notifiche.', 0, 'avviso');
-      else if (esito === 'chiave') toast('La chiave pubblica non va bene: guarda in «Promemoria».', 0, 'avviso');
-      else if (esito === 'server') toast('Il permesso c’è, ma il server non risponde: guarda in «Promemoria».', 0, 'avviso');
-      else if (!P.configurato()) toast('Acceso. Per ora arriva solo la fine del timer.', 0, 'campana');
-      else toast('Promemoria accesi.', 0, 'campana');
-      riscriviImpostazioni();
-    });
-  });
   const pc = root.querySelector<HTMLElement>('#imp-prom-come');
   if (pc) pc.addEventListener('click', apriPromemoria);
-  const poff = root.querySelector<HTMLButtonElement>('#imp-prom-off');
-  if (poff) poff.addEventListener('click', function () {
-    poff.disabled = true;
-    void P.spegni().then(function () {
-      /* il permesso del browser non si può togliere da qui: si toglie
-         l'iscrizione, e il pannello lo dice senza far finta d'altro */
-      toast('Promemoria spenti.', 0, 'campanaOff');
-      riscriviImpostazioni();
-    });
-  });
+  wireAccendiSpegni(root, riscriviImpostazioni);
   root.querySelectorAll<HTMLElement>('[data-diag]').forEach(function (b) { b.addEventListener('click', apriDiagnostica); });
   const imp = root.querySelector<HTMLElement>('#imp-importa');
   const file = root.querySelector<HTMLInputElement>('#imp-file');

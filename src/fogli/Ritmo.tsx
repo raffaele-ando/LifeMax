@@ -30,43 +30,32 @@ type QualeChiedi = 'notte' | 'giorno';
 /* la stessa riga dei promemoria: interruttore, nome, ora. Spenta, la domanda
    non arriva più e il posto dove rispondere resta comunque — il «Registro di
    oggi» dei Rituali. */
-function RigaChiedi({ quale, nome, spiega, v, onCambia }: {
-  quale: QualeChiedi; nome: string; spiega: string;
+function RigaChiedi({ quale, nome, v, onCambia }: {
+  quale: QualeChiedi; nome: string; spiega?: string;
   v: { on: boolean; da: Ora; a?: Ora };
   onCambia: (quale: QualeChiedi, campo: 'on' | 'da' | 'a', valore: boolean | string) => void;
 }) {
   const acceso = !!v.on;
-  /* la `key` porta dentro il valore: `defaultValue` vale solo al montaggio, e
-     questa riga si ridisegna ogni volta che tocchi l'interruttore. Senza, il
-     campo mostrerebbe l'ora di prima anche dopo che i dati sono cambiati —
-     è la stessa trappola che in «Da sistemare» ribattezzava le note. */
   const ora = (campo: 'da' | 'a', eti: string, val?: Ora): ReactNode => (
-    <input key={campo + ':' + (val || '')} type="time" className="prom-ora" data-chora={quale} data-chcampo={campo}
-      defaultValue={val} aria-label={nome + ', ' + eti} disabled={!acceso}
+    <input key={campo + ':' + (val || '')} type="time" className="gr-val" data-chora={quale} data-chcampo={campo}
+      defaultValue={val} aria-label={nome + ', ' + eti}
       onChange={(e) => { if (e.target.value) onCambia(quale, campo, e.target.value); }} />
   );
-  return (
-    <div className={'prom-riga' + (acceso ? '' : ' spenta')}>
-      <button className="prom-int" data-chint={quale} role="switch" aria-checked={acceso ? 'true' : 'false'}
-        aria-label={nome + (acceso ? ', acceso' : ', spento')}
-        onClick={() => onCambia(quale, 'on', !acceso)}>
-        <Segno nome={acceso ? 'check' : 'x'} dim={13} />
-      </button>
-      <div className="prom-testo"><b>{nome}</b><span>{spiega}</span></div>
-      <span className="chiedi-ore">
-        {ora('da', 'non prima delle', v.da)}
-        {v.a != null ? <>
-          <span className="chiedi-tratto" aria-hidden="true">→</span>
-          {ora('a', 'non dopo le', v.a)}
-        </> : null}
-      </span>
+  return (<>
+    <div className="gr-riga">
+      <span className="gr-eti">{nome}</span>
+      <button className={'interr' + (acceso ? ' on' : '')} data-chint={quale} role="switch" aria-checked={acceso ? 'true' : 'false'}
+        aria-label={nome} onClick={() => onCambia(quale, 'on', !acceso)}><i /></button>
     </div>
-  );
+    {acceso ? (
+      <div className="gr-riga gr-sotto">
+        <span className="gr-eti">{v.a != null ? 'Fra le' : 'Alle'}</span>
+        <span className="gr-valori">{ora('da', 'non prima delle', v.da)}{v.a != null ? <><span className="gr-tratto">–</span>{ora('a', 'non dopo le', v.a)}</> : null}</span>
+      </div>
+    ) : null}
+  </>);
 }
 
-/* un pasto mentre lo si sta scrivendo: `ora` e `durata` sono stringhe perché
-   vengono da un campo e da una tendina, e diventano ora e minuti soltanto
-   quando si preme Salva */
 interface PastoInCorso { nome: string; ora: string; durata: string }
 
 /* «Pasti (nome · ora · durata)» erano le intestazioni di una tabella scritte
@@ -77,17 +66,17 @@ function PastoRiga({ p, i, onCambia, onTogli }: {
   onTogli: (i: number) => void;
 }) {
   return (
-    <div className="ritmo-pasto" data-pi={i}>
+    <div className="gr-riga ritmo-pasto" data-pi={i}>
       <input type="text" className="ritmo-nome" value={p.nome} aria-label="Nome del pasto"
         onChange={(e) => onCambia(i, { nome: e.target.value })} />
-      <input type="time" className="ritmo-ora" value={p.ora} aria-label="Orario"
+      <input type="time" className="ritmo-ora gr-val" value={p.ora} aria-label="Orario"
         onChange={(e) => onCambia(i, { ora: e.target.value })} />
-      <select className="ritmo-dur tl-dur" aria-label="Durata" value={p.durata}
+      <select className="ritmo-dur gr-val" aria-label="Durata" value={p.durata}
         onChange={(e) => onCambia(i, { durata: e.target.value })}>
         {DURATE.map((o) => <option key={String(o.v)} value={String(o.v)}>{o.t}</option>)}
       </select>
-      <button className="icona-btn" data-pdel={i} title="Rimuovi" aria-label="Rimuovi"
-        onClick={() => onTogli(i)}><Segno nome="trash" dim={13} /></button>
+      <button className="gr-via" data-pdel={i} aria-label={'Togli ' + p.nome}
+        onClick={() => onTogli(i)}><Segno nome="x" dim={13} /></button>
     </div>
   );
 }
@@ -143,36 +132,28 @@ export default function Ritmo() {
   };
 
   return (<>
-    <div className="ritmo-riga2">
-      <label className="campo" htmlFor="ritmo-sonno">A letto</label>
-      <input type="time" id="ritmo-sonno" value={sonno} onChange={(e) => setSonno(e.target.value)} />
-      <label className="campo" htmlFor="ritmo-sveglia">Sveglia</label>
-      <input type="time" id="ritmo-sveglia" value={sveglia} onChange={(e) => setSveglia(e.target.value)} />
+    <div className="gr-titolo">Notte</div>
+    <div className="gr">
+      <label className="gr-riga" htmlFor="ritmo-sonno"><span className="gr-eti"><Segno nome="bed" dim={15} /> A letto</span>
+        <input type="time" id="ritmo-sonno" className="gr-val" value={sonno} onChange={(e) => setSonno(e.target.value)} /></label>
+      <label className="gr-riga" htmlFor="ritmo-sveglia"><span className="gr-eti"><Segno nome="sun" dim={15} /> Sveglia</span>
+        <input type="time" id="ritmo-sveglia" className="gr-val" value={sveglia} onChange={(e) => setSveglia(e.target.value)} /></label>
+      <div className="gr-riga"><span className="gr-eti gr-muto">Dormi</span>
+        <b className="gr-fisso" id="ritmo-dorm">{fmtOre(durSonno(sonno || '23:30', sveglia || '07:30'))}</b></div>
     </div>
-    <div className="sp-dorm" style={{ margin: '2px 0 4px' }}>
-      <Segno nome="durata" dim={13} /> dormi <b id="ritmo-dorm">{fmtOre(durSonno(sonno || '23:30', sveglia || '07:30'))}</b>
-    </div>
-    <div className="imp-sezione">
-      <div className="imp-eti">Pasti</div>
-      <div id="ritmo-pasti">
-        {pasti.map((p, i) => <PastoRiga key={i} p={p} i={i} onCambia={cambiaPasto} onTogli={togliPasto} />)}
-      </div>
-      <button className="btn btn-mini mt-s" id="ritmo-add"
+    <div className="gr-titolo">Pasti</div>
+    <div className="gr" id="ritmo-pasti">
+      {pasti.map((p, i) => <PastoRiga key={i} p={p} i={i} onCambia={cambiaPasto} onTogli={togliPasto} />)}
+      <button className="gr-riga gr-agg" id="ritmo-add"
         onClick={() => setPasti((v) => v.concat([{ nome: 'Pasto', ora: '', durata: '30' }]))}>
-        <Segno nome="plus" dim={13} /> Aggiungi un pasto
+        <Segno nome="plus" dim={15} /> Aggiungi un pasto
       </button>
     </div>
-    <div className="imp-sezione">
-      <div className="imp-eti">Quando chiedere</div>
-      <RigaChiedi quale="notte" nome="Il sonno di stanotte"
-        spiega="La mattina, se sono passate almeno tre ore dall’ultima volta." v={q.notte} onCambia={cambiaChiedi} />
-      <RigaChiedi quale="giorno" nome="Pasti e cose fatte"
-        spiega="A fine giornata, una volta sola." v={q.giorno} onCambia={cambiaChiedi} />
+    <div className="gr-titolo">Te lo chiedo io</div>
+    <div className="gr">
+      <RigaChiedi quale="notte" nome="Com’è andata la notte" v={q.notte} onCambia={cambiaChiedi} />
+      <RigaChiedi quale="giorno" nome="Pasti e cose fatte" v={q.giorno} onCambia={cambiaChiedi} />
     </div>
-    <div className="riga-flex mt">
-      <button className="btn btn-tonale btn-grande" id="ritmo-salva" onClick={salva}>
-        <Segno nome="save" /> Salva
-      </button>
-    </div>
+    <button className="btn btn-primario btn-grande gr-salva" id="ritmo-salva" onClick={salva}>Salva</button>
   </>);
 }

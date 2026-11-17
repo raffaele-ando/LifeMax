@@ -177,7 +177,6 @@ const PATHS: Record<string, string> = {
   /* ---------- presi dal pacco ---------- */
   nonFunziona: '<path d="M9 18.12 10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H20a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2.76a2 2 0 0 0-1.79 1.11L12 22a3.13 3.13 0 0 1-3-3.88Z"/><path d="M17 14V2"/>',  /* lucide:thumbs-down — una cosa che non ti funziona */
   funziona: '<path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2a3.13 3.13 0 0 1 3 3.88Z"/><path d="M7 10v12"/>',  /* lucide:thumbs-up — una cosa che ti funziona (verdetto tuo su di te) */
-  chiavi: '<path d="m15.5 7.5 2.3 2.3a1 1 0 0 0 1.4 0l2.1-2.1a1 1 0 0 0 0-1.4L19 4"/><path d="m21 2-9.6 9.6"/><circle cx="7.5" cy="15.5" r="5.5"/>',  /* lucide:key — le due chiavi dei promemoria */
   notaFissa: '<path d="M21 9a2.4 2.4 0 0 0-.706-1.706l-3.588-3.588A2.4 2.4 0 0 0 15 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2z"/><path d="M15 3v5a1 1 0 0 0 1 1h5"/>',  /* lucide:sticky-note — la nota che resta fra le notifiche */
   altreOpzioni: '<circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/>',  /* lucide:ellipsis-vertical — le altre cose che puoi fare su questa riga */
   schermoPiccolo: '<rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/>',  /* lucide:smartphone — la larghezza di un telefono */
@@ -323,7 +322,6 @@ const SENSO: Record<string, string> = {
   /* i promemoria */
   campana: 'i promemoria',
   campanaOff: 'spegnere i promemoria',
-  chiavi: 'le due chiavi dei promemoria',
 
   /* i segni delle aree: nominano un pezzo di vita, e solo quello */
   book: 'area: studio',
