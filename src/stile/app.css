@@ -5033,3 +5033,4 @@ button.gr-val { border: 0; color: var(--inchiostro-2) !important; }
 .ab-apri:active { opacity: .6; }
 button.gr-val:active, .gr .gr-val:active { opacity: .6; }
 .gr-pericolo:active { background: var(--superficie-3); }
+.abd-catena .abd-g, .abd-catena .abd-vuoto { width: 44px; height: 44px; min-height: 44px; }
