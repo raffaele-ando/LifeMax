@@ -22,7 +22,7 @@ import type {
   Stato, Area, Azione, Attivita, Abitudine, Lezione, Esperimento,
   Ritmo, Pasto, Timer, VoceRegistro, Slot, Disfa,
   Giorno, Ora, GiornoSettimana, Verso, ModoFusione, PassoDi, Mancata,
-  RegistroGiorno, Promemoria, VocePromemoria, Chiedi, PatchChiedi
+  RegistroGiorno, Promemoria, VocePromemoria, Chiedi, PatchChiedi, Sessione
 } from '../tipi/stato';
 import { COME_UNIRE, giorno, ora } from '../tipi/stato';
 import type { ImprontaEsempio } from '../tipi/stato';
@@ -311,6 +311,7 @@ function creaLM() {
       /* {azioneId, areaId, tipo, testo, inizio, fine, durata, ciclo, inPausa,
           fermatoA} — null quando non c'è nessun timer in giro */
       timer: null,
+      sessioni: [],
       /* quello che è arrivato storto e che invece di buttare si è messo da
          parte: {campo: {quando, valore}} */
       recuperati: {},
@@ -717,7 +718,7 @@ function creaLM() {
     };
     var eLista = function (v: unknown) { return Array.isArray(v); };
     ['backlog', 'abitudini', 'lezioni', 'azioni', 'inbox', 'checkins', 'esperimenti',
-     'registro', 'log', 'aree', 'areeAttive', 'cancellati'].forEach(function (k) { salva(k, eLista); });
+     'registro', 'log', 'aree', 'areeAttive', 'cancellati', 'sessioni'].forEach(function (k) { salva(k, eLista); });
     if (!s.recuperati || typeof s.recuperati !== 'object') s.recuperati = {};
     if (typeof s.azzerato !== 'number') s.azzerato = 0;
     if (typeof s.visto !== 'number') s.visto = 0;
@@ -2665,6 +2666,56 @@ function creaLM() {
     }).sort(function (a, b) { return b.n - a.n; });
   }
 
+  /* I MINUTI DI UN GIORNO: quelli di prima (scritti nella mappa) più le
+     sessioni del timer, che sono righe e si sommano qui */
+  function minutiDi(k: Giorno): Record<string, number> {
+    var s = load();
+    var out: Record<string, number> = {};
+    var vecchi = s.minuti[k] || {};
+    Object.keys(vecchi).forEach(function (a) { out[a] = (out[a] || 0) + (vecchi[a] || 0); });
+    (s.sessioni || []).forEach(function (x) {
+      if (x.giorno !== k || !x.areaId) return;
+      out[x.areaId] = (out[x.areaId] || 0) + (x.minuti || 0);
+    });
+    return out;
+  }
+  /* registra un pezzo di tempo del timer. Torna false se c'era già: due
+     dispositivi che chiudono lo stesso blocco scrivono una riga sola */
+  function registraSessione(d: { id: string; areaId: string | null; azioneId: string | null; testo: string; tipo: Sessione['tipo']; inizio: number; minuti: number }): boolean {
+    var s = load();
+    if (!s.sessioni) s.sessioni = [];
+    if (d.minuti < 1) return false;
+    if (s.sessioni.some(function (x) { return x.id === d.id; })) return false;
+    var ora = Date.now();
+    s.sessioni.push({ id: d.id, giorno: dayKey(new Date(d.inizio)), areaId: d.areaId, azioneId: d.azioneId,
+      testo: d.testo, tipo: d.tipo, inizio: d.inizio, minuti: Math.round(d.minuti), creata: ora, aggiornata: ora });
+    var ar = d.areaId ? s.aree.find(function (x) { return x.id === d.areaId; }) : null;
+    registra('focus', 'Timer: ' + Math.round(d.minuti) + ' min' + (ar ? ' su ' + ar.nome : ''), true);
+    save();
+    return true;
+  }
+  /* correggere dopo: i minuti giusti, o l'area giusta */
+  function modificaSessione(id: string, patch: { minuti?: number; areaId?: string | null }) {
+    var s = load();
+    var x = (s.sessioni || []).find(function (q) { return q.id === id; });
+    if (!x) return null;
+    if (patch.minuti != null) x.minuti = Math.max(0, Math.round(patch.minuti));
+    if (patch.areaId !== undefined) x.areaId = patch.areaId;
+    x.aggiornata = Date.now();
+    registra('focus', 'Corretta una sessione: ' + x.minuti + ' min', false);
+    save();
+    return x;
+  }
+  function togliSessione(id: string) {
+    var s = load();
+    var prima = (s.sessioni || []).length;
+    s.sessioni = (s.sessioni || []).filter(function (q) { return q.id !== id; });
+    if (s.sessioni.length !== prima) { registra('focus', 'Tolta una sessione', false); save(); }
+  }
+  function sessioniDi(k: Giorno): Sessione[] {
+    return (load().sessioni || []).filter(function (x) { return x.giorno === k; })
+      .sort(function (a, b) { return a.inizio - b.inizio; });
+  }
   function registraMinuti(areaId: string, minuti: number, quando?: Giorno) {
     var s = load();
     var k = quando || todayKey();
@@ -2831,9 +2882,8 @@ function creaLM() {
   }
 
   function serieMinuti(areaId: string, giorni: number) {
-    var s = load();
     return lastNDays(giorni).map(function (k) {
-      return { data: k, valore: (s.minuti[k] && s.minuti[k][areaId]) || 0 };
+      return { data: k, valore: minutiDi(k)[areaId] || 0 };
     });
   }
 
@@ -2866,7 +2916,7 @@ function creaLM() {
     var giorni = lastNDays(7);
     return s.aree.filter(function (a) { return s.areeAttive.indexOf(a.id) >= 0; }).map(function (a) {
       var tot = 0;
-      giorni.forEach(function (k) { tot += (s.minuti[k] && s.minuti[k][a.id]) || 0; });
+      giorni.forEach(function (k) { tot += minutiDi(k)[a.id] || 0; });
       return { area: a, minuti: tot };
     });
   }
@@ -3267,8 +3317,7 @@ function creaLM() {
     }
     if (m.fonte === 'minuti') {
       if (!e.areaId) return null;
-      var min = s.minuti[k];
-      return (min && min[e.areaId]) || null;
+      return minutiDi(k)[e.areaId] || null;
     }
     if (m.fonte === 'xp') {
       return s.xpPerGiorno[k] || null;
@@ -3881,7 +3930,7 @@ function creaLM() {
     rinominaArea: rinominaArea, toggleArea: toggleArea,
     aggiungiArea: aggiungiArea, rimuoviArea: rimuoviArea, baselineCheckin: baselineCheckin,
     registraCheckin: registraCheckin, salvaPianoMattina: salvaPianoMattina,
-    valutaArea: valutaArea, registraMinuti: registraMinuti,
+    valutaArea: valutaArea, registraMinuti: registraMinuti, minutiDi: minutiDi, registraSessione: registraSessione, modificaSessione: modificaSessione, togliSessione: togliSessione, sessioniDi: sessioniDi,
     tutteLeReview: tutteLeReview, quanteReview: quanteReview,
     bilancio: bilancio, quanteFatte: quanteFatte, motiviMancate: motiviMancate,
     serieRiuscita: serieRiuscita,

@@ -45,6 +45,9 @@ import Filtri from '../fogli/Filtri';
 import Menu from '../fogli/Menu';
 import Aree from '../fogli/Aree';
 import Ritmo from '../fogli/Ritmo';
+import Sessioni from '../fogli/Sessioni';
+import ImpTimer from '../fogli/ImpTimer';
+import Musica from '../fogli/Musica';
 import Scheda from '../fogli/Scheda';
 import Abitudine from '../fogli/Abitudine';
 import Guida from '../fogli/Guida';
@@ -114,7 +117,8 @@ const FOGLI: Pannelli = {
   scheda: Scheda, abitudine: Abitudine, guida: Guida,
   'quando-passo': QuandoPasso, 'da-abitudine': DaAbitudine,
   mancata: Mancata, timer: Timer, review: Review,
-  lezione: Lezione, diagnostica: Diagnostica, backup: Backup
+  lezione: Lezione, diagnostica: Diagnostica, backup: Backup,
+  sessioni: Sessioni, 'imp-timer': ImpTimer, musica: Musica
 };
 
 /* una radice per contenitore: React vuole tenersela fra un disegno e

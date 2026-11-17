@@ -9,7 +9,7 @@
    Il minutaggio del blocco lo porta la cosa stessa — la durata che le hai dato
    trascinandola nella Giornata; dove non c'è, venticinque. */
 import { Segno } from '../pezzi/pezzi';
-import { TIPI_TIMER, avviaTimer, chiudiSheet } from '../app/app';
+import { tipiTimer, avviaTimer, chiudiSheet } from '../app/app';
 import type { NomeTimer } from '../app/app';
 
 const QUALI: NomeTimer[] = ['avvio', 'blocco', 'pomodoro', 'libero'];
@@ -26,7 +26,7 @@ export default function Timer({ azioneId, areaId, testo, minBlocco }: PropTimer)
     <div className="sc">
       <div className="lista">
         {QUALI.map((k) => {
-          const T = TIPI_TIMER[k];
+          const T = tipiTimer()[k];
           const min = k === 'blocco' ? (minBlocco || T.min) : T.min;
           const quanto = k === 'libero' ? 'senza fine' : (k === 'pomodoro' ? min + ' + ' + T.pausa + ' min' : min + ' min');
           return (

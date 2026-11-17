@@ -286,6 +286,10 @@ export type Forma = 'scheda' | 'spina' | 'poi';
 export interface Profilo {
   /* l'area con cui nasce una cosa nuova, ovunque la si crei */
   areaNuova?: string;
+  /* come parte il timer e quanto dura ogni tipo */
+  timer?: ImpostazioniTimer;
+  /* la musica da mettere sotto: una per tutto e una per area */
+  musica?: Musica;
   nome: string;
   visione: string;
   skin: Skin;
@@ -312,6 +316,40 @@ export interface Profilo {
 }
 
 /* ------------------------------------------------------------- il timer */
+export type NomeTimerDati = 'avvio' | 'blocco' | 'pomodoro' | 'libero';
+export interface ImpostazioniTimer {
+  /* '' o assente: si chiede ogni volta */
+  predefinito?: NomeTimerDati | '';
+  avvio?: number;      /* i minuti per partire */
+  poi?: number;        /* quanto va avanti da solo dopo */
+  blocco?: number;
+  pomodoro?: number;
+  pausa?: number;
+  pausaLunga?: number; /* ogni quattro blocchi */
+}
+export interface Musica {
+  predefinita?: string;
+  aree?: Record<string, string>;
+  /* si apre da sola quando parte il timer */
+  conTimer?: boolean;
+}
+/* UN PEZZO DI TEMPO FATTO COL TIMER. È la riga, non il totale: i minuti del
+   giorno si contano da qui, così due dispositivi non si rubano i minuti
+   l'uno con l'altro (ognuno aggiunge la sua riga, la fusione le tiene
+   tutte) e una sessione si può correggere dopo. L'id è fatto dall'inizio
+   del blocco: se due dispositivi registrano lo stesso blocco, è una riga sola. */
+export interface Sessione {
+  id: string;
+  giorno: Giorno;
+  areaId: string | null;
+  azioneId: string | null;
+  testo: string;
+  tipo: NomeTimerDati;
+  inizio: number;
+  minuti: number;
+  creata: number;
+  aggiornata: number;
+}
 export interface Timer {
   azioneId: string | null;
   areaId: string | null;
@@ -339,6 +377,12 @@ export interface Timer {
      schermata da cui si era usciti apposta. Terzo campo che `app.ts` scriveva
      e che il tipo non conosceva. */
   concentrato?: boolean;
+  /* chi lo fa andare: registra i minuti solo lui, se no due telefoni
+     aperti li registrerebbero due volte */
+  dispositivo?: string;
+  /* quando è cominciata la pausa: se poi dici «ho continuato», quel tempo
+     torna lavoro */
+  pausaDa?: number;
 }
 
 /* LE LAPIDI. Per ogni riga tolta davvero: serve alla fusione fra dispositivi,
@@ -400,6 +444,7 @@ export interface Stato {
   registro: VoceRegistro[];
   cancellati: Lapide[];
   timer: Timer | null;
+  sessioni: Sessione[];
   /* quello che è arrivato storto e che invece di buttare si è messo da parte */
   recuperati: Record<string, unknown>;
   /* l'ora di un «Azzera tutto» dichiarato: è l'unica cosa che dà alla fusione
@@ -461,5 +506,6 @@ export const COME_UNIRE: { readonly [K in keyof Stato]-?: ModoFusione } = {
   registro: 'elenco',
   cancellati: 'elenco',
   log: 'elenco',
-  timer: 'recente'
+  timer: 'recente',
+  sessioni: 'elenco'
 } as const;

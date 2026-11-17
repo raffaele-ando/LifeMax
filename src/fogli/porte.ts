@@ -45,6 +45,9 @@ export interface PropDiFoglio {
   'quando-passo': PropQuandoPasso;
   mancata: PropMancata;
   timer: PropTimer;
+  sessioni: Niente;
+  'imp-timer': Niente;
+  musica: Niente;
 }
 
 export type NomeFoglio = keyof PropDiFoglio;

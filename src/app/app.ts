@@ -63,7 +63,7 @@ import { esc as escapa, riga as pzRiga } from '../pezzi/stringhe';
 import type {
   Giorno, Ora, GiornoSettimana, Stato, Area, Azione, Attivita, Abitudine,
   Lezione, Verso, Esperimento, Passo, Pasto, Timer as TimerVivo,
-  Mancata, PassoDi
+  Mancata, PassoDi, ImpostazioniTimer
 } from '../tipi/stato';
 import { giorno as comeGiorno, ora as comeOra } from '../tipi/stato';
 /* solo tipi, cancellati alla compilazione: `app.ts` non importa niente da
@@ -1800,6 +1800,11 @@ export function htmlImpostazioni(pezzo?: 'profilo'): string {
     '<option value="-"' + (s.profilo.areaNuova === '-' ? ' selected' : '') + '>Nessuna</option>' +
     areeAttive().map(function (a) { return '<option value="' + a.id + '"' + (a.id === s.profilo.areaNuova ? ' selected' : '') + '>' + esc(a.nome) + '</option>'; }).join('') +
     '</select></span></label>' +
+    rigaPorta('imp-timer', 'durata', 'Timer', (function () {
+      const pr = (s.profilo.timer || {}).predefinito;
+      return pr ? TIPI_TIMER[pr].nome.toLowerCase() : 'chiede ogni volta';
+    })()) +
+    rigaPorta('imp-musica', 'musica', 'Musica', (s.profilo.musica && (s.profilo.musica.predefinita || Object.keys(s.profilo.musica.aree || {}).length)) ? 'impostata' : 'nessuna') +
     rigaPorta('imp-aspetto', 'palette', 'Aspetto', modo === 'auto' ? 'automatico' : modo === 'dark' ? 'scuro' : 'chiaro') +
     '</div>' +
 
@@ -2259,6 +2264,8 @@ export function wireAspettoDati(root: HTMLElement): void {
   var b2 = root.querySelector<HTMLElement>('#imp-backup'); if (b2) b2.addEventListener('click', apriBackups);
   var ar = root.querySelector<HTMLElement>('#imp-aree'); if (ar) ar.addEventListener('click', apriAree);
   var asp = root.querySelector<HTMLElement>('#imp-aspetto'); if (asp) asp.addEventListener('click', apriAspetto);
+  var itm = root.querySelector<HTMLElement>('#imp-timer'); if (itm) itm.addEventListener('click', function () { apriFoglio('Timer', 'imp-timer', {}); });
+  var imu = root.querySelector<HTMLElement>('#imp-musica'); if (imu) imu.addEventListener('click', function () { apriFoglio('Musica', 'musica', {}); });
   var gu = root.querySelector<HTMLElement>('#imp-guida'); if (gu) gu.addEventListener('click', apriGuida);
   var sc = root.querySelector<HTMLElement>('#imp-scienza');
   if (sc) sc.addEventListener('click', function () { chiudiSheet(); location.hash = '#/scienza'; });
@@ -2755,6 +2762,42 @@ export const TIPI_TIMER: Record<NomeTimer, TipoTimer> = {
 
 let battitoTimer2: ReturnType<typeof setInterval> | null = null;
 
+/* I TIPI COME LI HAI REGOLATI TU. `TIPI_TIMER` sono i valori di partenza;
+   le durate vere stanno nelle impostazioni (Impostazioni → Timer). */
+export function tipiTimer(): Record<NomeTimer, TipoTimer> {
+  const r = (LM.load().profilo.timer || {}) as ImpostazioniTimer;
+  const n = function (v: number | undefined, d: number): number { return typeof v === 'number' && v > 0 ? v : d; };
+  const avvio = n(r.avvio, 5), poi = n(r.poi, 25), blocco = n(r.blocco, 25), pom = n(r.pomodoro, 25), pausa = n(r.pausa, 5);
+  return {
+    avvio: Object.assign({}, TIPI_TIMER.avvio, { min: avvio, poi: poi, eti: avvio + ' min',
+      dice: avvio + ' minuti, poi va avanti da solo di ' + poi + '.' }),
+    blocco: Object.assign({}, TIPI_TIMER.blocco, { min: blocco, eti: blocco + ' min' }),
+    pomodoro: Object.assign({}, TIPI_TIMER.pomodoro, { min: pom, pausa: pausa,
+      dice: pom + ' minuti, poi ' + pausa + ' di pausa. E si ricomincia.' }),
+    libero: TIPI_TIMER.libero
+  };
+}
+/* la pausa dopo il blocco numero `ciclo`: ogni quattro, quella lunga */
+function pausaDopo(ciclo: number): number {
+  const r = (LM.load().profilo.timer || {}) as ImpostazioniTimer;
+  const corta = r.pausa && r.pausa > 0 ? r.pausa : 5;
+  const lunga = r.pausaLunga && r.pausaLunga > 0 ? r.pausaLunga : 0;
+  return lunga && ciclo % 4 === 0 ? lunga : corta;
+}
+
+/* QUESTO DISPOSITIVO. Il timer sa chi lo fa andare: con due telefoni aperti
+   sullo stesso account tutti e due vedono lo stesso timer, ma i minuti li
+   scrive uno solo. Se quello sparisce (chiuso, spento) un altro, passati due
+   minuti dalla scadenza, prende il suo posto. */
+const QUESTO: string = (function () {
+  try {
+    let v = localStorage.getItem('lm-dispositivo');
+    if (!v) { v = 'd' + Math.random().toString(36).slice(2, 10); localStorage.setItem('lm-dispositivo', v); }
+    return v;
+  } catch (_e) { return 'd-senza-memoria'; }
+})();
+function mioTimer(t: TimerVivo): boolean { return !t.dispositivo || t.dispositivo === QUESTO; }
+
 function timerOra(): TimerVivo | null { return LM.timerVivo(); }
 function timerDiQuesta(id: string): TimerVivo | null { const t = timerOra(); return t && t.azioneId === id ? t : null; }
 
@@ -2772,64 +2815,110 @@ function fmtCrono(ms: number): string {
   return Math.floor(m / 60) + ':' + ('0' + (m % 60)).slice(-2) + ':' + ss;
 }
 
-export function avviaTimer(azioneId: string | null, minuti: number | null, areaId?: string | null, tipo?: NomeTimer, testo?: string): void {
+/* la musica di quell'area, o quella di sempre */
+export function musicaPer(areaId: string | null | undefined): string {
+  const m = LM.load().profilo.musica || {};
+  return (areaId && m.aree && m.aree[areaId]) || m.predefinita || '';
+}
+export function apriMusica(url: string): void {
+  if (!url) return;
+  /* si apre nell'app di Spotify o di YouTube Music: è lei che continua a
+     suonare a schermo spento. Il timer va avanti per conto suo, perché
+     conta dall'orologio e non dai secondi passati sulla pagina. */
+  try { window.open(url, '_blank', 'noopener'); } catch (_e) { location.href = url; }
+}
+
+export function avviaTimer(azioneId: string | null, minuti: number | null, areaId?: string | null, tipo?: NomeTimer, testo?: string, giaChiesto?: boolean): void {
+  /* UN TIMER STA GIÀ ANDANDO SU UN ALTRO DISPOSITIVO: non lo si butta via
+     senza dirlo. Lo si guarda qui, oppure lo si sostituisce. */
+  const altro = timerOra();
+  if (altro && !mioTimer(altro) && !giaChiesto) {
+    const az0 = LM.load().azioni.find(function (x) { return x.id === altro.azioneId; });
+    avviso({
+      titolo: 'Un timer sta già andando',
+      testo: 'Sull’altro dispositivo: «' + ((az0 && az0.testo) || altro.testo || 'concentrazione') + '», ' +
+        (altro.tipo === 'libero' ? 'da ' : 'restano ') + fmtCrono(timerResta(altro)) + '. I suoi minuti restano registrati.',
+      azione: 'Sostituiscilo', annulla: 'Guardalo qui'
+    }, function () {
+      fermaTimer(true);
+      avviaTimer(azioneId, minuti, areaId, tipo, testo, true);
+    }, function () { battitoTimerAvvia(); apriConcentrazione(); });
+    return;
+  }
+  if (altro && mioTimer(altro)) fermaTimer(true);
   const quale: NomeTimer = tipo || 'blocco';
-  const T = TIPI_TIMER[quale];
+  const T = tipiTimer()[quale];
   const min = minuti != null ? minuti : T.min;
   const ora = Date.now();
+  const az = azioneId ? LM.load().azioni.find(function (x) { return x.id === azioneId; }) : null;
   LM.avviaTimerDati({
     azioneId: azioneId, areaId: areaId || null, tipo: quale,
     testo: testo || '', inizio: ora, durata: min,
     fine: min > 0 ? ora + min * 60000 : 0,
     ciclo: 1, inPausa: false, pausaFine: 0,
-    /* `fermatoA` è quando è stato messo in pausa a mano, e qui è zero perché
-       il timer sta appena partendo. Mancava, e il tipo l'ha detto: la forma
-       del timer nei dati aveva un campo che nessuno scriveva all'avvio. */
     fermatoA: 0,
-    /* SE ERI DENTRO, CI TORNI. Riaprire lo schermo pieno a ogni
-       ricaricamento sarebbe prepotente; non riaprirlo mai vuol dire che
-       chiudere il telefono mentre stai lavorando ti riporta indietro alla
-       schermata da cui eri uscito apposta. Si segna dov'eri, e si torna lì. */
-    concentrato: true
+    /* SE ERI DENTRO, CI TORNI: si segna dov'eri, e si torna lì */
+    concentrato: true,
+    dispositivo: QUESTO
   });
   battitoTimerAvvia();
   apriConcentrazione();
   render();
+  const mus = LM.load().profilo.musica;
+  if (mus && mus.conTimer) apriMusica(musicaPer(areaId || (az ? az.areaId : null)));
 }
 
 /* i minuti che il timer ha davvero macinato, per il conto delle aree */
 function minutiFatti(t: TimerVivo | null): number {
   if (!t) return 0;
+  if (t.inPausa) return 0;
   if (t.tipo === 'libero') return Math.round((Date.now() - t.inizio) / 60000);
   return Math.round((t.durata * 60000 - Math.max(0, t.fine - Date.now())) / 60000);
 }
-
-function fermaTimer(registra?: boolean): void {
-  const t = timerOra();
-  if (battitoTimer2) { clearInterval(battitoTimer2); battitoTimer2 = null; }
-  if (t && registra) {
-    const fatti = minutiFatti(t);
-    if (fatti >= 1) {
-      const a = LM.load().azioni.find(function (x) { return x.id === t.azioneId; });
-      const areaMin = t.areaId || (a ? a.areaId : null);
-      if (areaMin) LM.registraMinuti(areaMin, fatti);
-    }
-  }
-  LM.fermaTimerDati();
-  chiudiConcentrazione();
+/* il blocco che si chiude diventa una riga: l'id è il suo inizio, così due
+   dispositivi che lo chiudono insieme ne scrivono uno solo */
+function chiudiBlocco(t: TimerVivo, minuti: number): string | null {
+  if (minuti < 1) return null;
+  const a = LM.load().azioni.find(function (x) { return x.id === t.azioneId; });
+  const area = t.areaId || (a ? a.areaId : null);
+  const id = 'ses-' + t.inizio;
+  LM.registraSessione({ id: id, areaId: area, azioneId: t.azioneId, testo: (a && a.testo) || t.testo || '',
+    tipo: t.tipo, inizio: t.inizio, minuti: minuti });
+  return id;
 }
 
-/* IL BATTITO. Non ridisegna la pagina: scrive due numeri dove servono. Un
-   `render()` ogni secondo sarebbe la pagina rifatta sessanta volte al
-   minuto per far cambiare due cifre. */
+function fermaTimer(registra?: boolean): string | null {
+  const t = timerOra();
+  if (battitoTimer2) { clearInterval(battitoTimer2); battitoTimer2 = null; }
+  let id: string | null = null;
+  if (t && registra) id = chiudiBlocco(t, minutiFatti(t));
+  LM.fermaTimerDati();
+  chiudiConcentrazione();
+  return id;
+}
+/* dopo aver fermato: i minuti scritti, e la strada per correggerli */
+function dopoFermato(id: string | null, testo: string, icona: string, xp?: number): void {
+  toast(testo, xp || 0, icona, id ? { eti: 'Correggi', fai: function () { apriSessioni(); } } : undefined);
+}
+export function apriSessioni(): void { apriFoglio('Tempo col timer', 'sessioni', {}); }
+
+/* IL BATTITO. Non ridisegna la pagina: scrive due numeri dove servono. */
 function battitoTimerAvvia(): void {
   if (battitoTimer2) return;
   battitoTimer2 = setInterval(passoTimer, 250);
 }
-/* la pausa del pomodoro: è dichiarata là e vale cinque minuti. Si legge una
-   volta invece di scrivere `TIPI_TIMER.pomodoro.pausa` in tre punti, dove il
-   campo è facoltativo (ce l'ha solo il pomodoro) e va comunque difeso. */
-const PAUSA_POMODORO = TIPI_TIMER.pomodoro.pausa || 5;
+
+/* «HO CONTINUATO A LAVORARE». La pausa non l'hai fatta: il tempo da quando
+   è finito il blocco torna lavoro, e il blocco nuovo parte da lì. */
+function pausaSaltata(): void {
+  const t = timerOra();
+  if (!t || !t.inPausa) return;
+  const da = t.pausaDa || Date.now();
+  LM.aggiornaTimerDati({ inPausa: false, pausaFine: 0, pausaDa: 0, inizio: da,
+    fine: da + t.durata * 60000, ciclo: (t.ciclo || 1) + 1, dispositivo: QUESTO });
+  toast('Bene: la pausa conta come lavoro.', 0, 'play');
+  disegnaConcentrazione(); render();
+}
 
 function passoTimer(): void {
   const t = timerOra();
@@ -2837,63 +2926,59 @@ function passoTimer(): void {
   const resta = timerResta(t);
   const quota = t.tipo === 'libero' ? 0
     : (t.inPausa
-      ? 1 - resta / Math.max(1, PAUSA_POMODORO * 60000)
+      ? 1 - resta / Math.max(1, (t.pausaFine || 0) - (t.pausaDa || (t.pausaFine || 0) - 300000))
       : Math.min(1, 1 - resta / Math.max(1, t.durata * 60000)));
   document.querySelectorAll<HTMLElement>('[data-timer-cifre]').forEach(function (e) { e.textContent = fmtCrono(resta); });
   document.querySelectorAll<HTMLElement>('[data-timer-anello]').forEach(function (e) { e.style.setProperty('--p', quota.toFixed(4)); });
   if (t.tipo === 'libero') return;
   if (resta > 0) return;
-  /* IL TEMPO È FINITO */
+  /* IL TEMPO È FINITO. Se lo fa andare un altro dispositivo, è lui che
+     scrive; qui si aspetta. Se dopo due minuti non l'ha fatto (spento,
+     chiuso), lo si prende qui. */
+  const scaduto = t.inPausa ? (t.pausaFine || 0) : t.fine;
+  if (!mioTimer(t) && Date.now() - scaduto < 120000) return;
+  const io = { dispositivo: QUESTO };
   if (t.inPausa) {
-    /* la pausa è finita: riparte un blocco */
     const ora = Date.now();
-    LM.aggiornaTimerDati({ inPausa: false, pausaFine: 0, inizio: ora,
-      fine: ora + t.durata * 60000, ciclo: (t.ciclo || 1) + 1 });
+    LM.aggiornaTimerDati(Object.assign({ inPausa: false, pausaFine: 0, pausaDa: 0, inizio: ora,
+      fine: ora + t.durata * 60000, ciclo: (t.ciclo || 1) + 1 }, io));
     festeggia('leggero');
     toast('Si ricomincia. Blocco ' + ((t.ciclo || 1) + 1) + '.', 0, 'refresh');
     avvisoFuori('Pausa finita', 'Si ricomincia.');
-    render();
+    disegnaConcentrazione(); render();
     return;
   }
   if (t.tipo === 'pomodoro') {
-    const q = LM.load().azioni.find(function (x) { return x.id === t.azioneId; });
-    const fatti = minutiFatti(t);
-    const areaP = t.areaId || (q ? q.areaId : null);
-    if (fatti >= 1 && areaP) LM.registraMinuti(areaP, fatti);
-    LM.aggiornaTimerDati({ inPausa: true, pausaFine: Date.now() + PAUSA_POMODORO * 60000 });
+    chiudiBlocco(t, t.durata);
+    const p = pausaDopo(t.ciclo || 1);
+    LM.aggiornaTimerDati(Object.assign({ inPausa: true, pausaDa: t.fine, pausaFine: t.fine + p * 60000 }, io));
     festeggia('leggero');
-    toast('Blocco finito. Cinque minuti di pausa.', 0, 'durata');
-    avvisoFuori('Blocco finito', 'Cinque minuti di pausa.');
-    render();
+    toast('Blocco finito. ' + p + ' minuti di pausa.', 0, 'durata');
+    avvisoFuori('Blocco finito', p + ' minuti di pausa.');
+    disegnaConcentrazione(); render();
     return;
   }
-  /* I CINQUE MINUTI CHE NON SI FERMANO.
-     «Solo per partire» esiste per superare l'avvio, e quando ci riesce il
-     problema è finito: a quel punto fermarsi allo scadere è la cosa
-     peggiore che possa succedere, perché per continuare bisogna tirare
-     fuori il telefono — e tirare fuori il telefono, mentre stai finalmente
-     lavorando, è il modo più affidabile di smettere. Quindi non si ferma:
-     registra i cinque minuti fatti e riparte da solo con un blocco intero,
-     dicendolo. Chi voleva davvero smettere ha «Basta così» sotto le cifre,
-     e chi non guarda continua a lavorare. */
-  if (t.tipo === 'avvio' && TIPI_TIMER.avvio.poi) {
-    const qA = LM.load().azioni.find(function (x) { return x.id === t.azioneId; });
-    const fattiA = minutiFatti(t);
-    const areaA = t.areaId || (qA ? qA.areaId : null);
-    if (fattiA >= 1 && areaA) LM.registraMinuti(areaA, fattiA);
-    const oraA = Date.now(), pezzo = TIPI_TIMER.avvio.poi;
-    LM.aggiornaTimerDati({ tipo: 'blocco', inizio: oraA, durata: pezzo,
-      fine: oraA + pezzo * 60000, ciclo: (t.ciclo || 1) + 1, daAvvio: true });
+  /* I MINUTI PER PARTIRE NON SI FERMANO: registra quelli fatti e riparte da
+     solo con un blocco intero. Chi voleva smettere ha «Basta così». */
+  const tipi = tipiTimer();
+  if (t.tipo === 'avvio' && tipi.avvio.poi) {
+    chiudiBlocco(t, t.durata);
+    const pezzo = tipi.avvio.poi;
+    LM.aggiornaTimerDati(Object.assign({ tipo: 'blocco' as NomeTimer, inizio: t.fine, durata: pezzo,
+      fine: t.fine + pezzo * 60000, ciclo: (t.ciclo || 1) + 1, daAvvio: true }, io));
     festeggia('leggero');
-    toast('Cinque minuti fatti. Vado avanti di ' + pezzo + ' — fermami quando vuoi.', 0, 'play');
+    toast('Sei partito. Vado avanti di ' + pezzo + ' — fermami quando vuoi.', 0, 'play');
     avvisoFuori('Sei partito', 'Vado avanti di ' + pezzo + ' minuti. Fermami quando vuoi.');
-    render();
+    disegnaConcentrazione(); render();
     return;
   }
   const cosa = LM.load().azioni.find(function (x) { return x.id === t.azioneId; });
-  fermaTimer(true);
+  const idS = chiudiBlocco(t, t.durata);
+  LM.fermaTimerDati();
+  if (battitoTimer2) { clearInterval(battitoTimer2); battitoTimer2 = null; }
+  chiudiConcentrazione();
   festeggia('pieno');
-  toast('Timer finito. Minuti registrati.', 0, 'durata');
+  dopoFermato(idS, 'Timer finito. ' + t.durata + ' minuti registrati.', 'durata');
   avvisoFuori('Tempo scaduto', cosa ? cosa.testo : 'Il timer è finito.');
   render();
 }
@@ -2959,7 +3044,15 @@ export function chiediMancata(id: string, testo: string, dopo?: () => void): voi
    Il minutaggio del blocco lo porta la cosa stessa (la durata che le hai
    dato trascinandola nella Giornata); dove non c'è, venticinque.
    ============================================================ */
-export function scegliTimer(azioneId: string | null, areaId?: string | null, testo?: string, minBlocco?: number): void {
+export function scegliTimer(azioneId: string | null, areaId?: string | null, testo?: string, minBlocco?: number, chiedi?: boolean): void {
+  /* IL TIMER DI SEMPRE PARTE SUBITO: se in Impostazioni ne hai scelto uno,
+     il tocco su «Timer» lo avvia senza domande. Per cambiarlo c'è «Cambia»
+     nello schermo della concentrazione. */
+  const pred = (LM.load().profilo.timer || {}).predefinito;
+  if (pred && !chiedi) {
+    avviaTimer(azioneId, pred === 'blocco' && minBlocco ? minBlocco : null, areaId, pred, testo || '');
+    return;
+  }
   apriFoglio('Quanto ci stai', 'timer', { azioneId: azioneId, areaId: areaId, testo: testo, minBlocco: minBlocco });
 }
 
@@ -3011,8 +3104,9 @@ function disegnaConcentrazione(): void {
   const t = timerOra();
   const c = $conc;
   if (!c || !t) return;
-  const T = TIPI_TIMER[t.tipo];
+  const T = tipiTimer()[t.tipo];
   const az = LM.load().azioni.find(function (x) { return x.id === t.azioneId; });
+  const musica = musicaPer(t.areaId || (az ? az.areaId : null));
   const titolo = (az && az.testo) || t.testo || 'Concentrazione';
   c.innerHTML =
     '<button class="conc-esci" id="conc-esci" aria-label="Torna all’app">' + ICO('x', 18) + '</button>' +
@@ -3026,13 +3120,29 @@ function disegnaConcentrazione(): void {
     '<div class="conc-eti">' + (t.tipo === 'libero' ? 'da quando hai cominciato' : (t.inPausa ? 'di pausa' : 'restano')) + '</div>' +
     '</div>' +
     '<div class="conc-tasti">' +
+    (t.inPausa ? '<button class="btn btn-grande btn-tinta" id="conc-continuato">' + ICO('play', 18) + ' Ho continuato a lavorare</button>' : '') +
     '<button class="btn btn-ok btn-grande" id="conc-fatto">' + ICO('check', 18) + ' Fatto</button>' +
     '<button class="btn btn-mini btn-ghost" id="conc-ferma">' + ICO('pause', 15) + ' ' +
     (t.daAvvio ? 'Basta così' : 'Ferma e registra i minuti') + '</button>' +
+    '<div class="conc-altri">' +
+    (musica ? '<button class="btn btn-mini btn-ghost" id="conc-musica">' + ICO('musica', 15) + ' Musica</button>' : '') +
+    '<button class="btn btn-mini btn-ghost" id="conc-cambia">' + ICO('refresh', 15) + ' Cambia timer</button>' +
+    '</div>' +
     '</div></div>';
   presa(c.querySelector<HTMLElement>('#conc-esci')).addEventListener('click', chiudiConcentrazione);
   presa(c.querySelector<HTMLElement>('#conc-ferma')).addEventListener('click', function () {
-    fermaTimer(true); toast('Minuti registrati.', 0, 'durata'); render();
+    const m = minutiFatti(t);
+    const id = fermaTimer(true);
+    dopoFermato(id, id ? m + (m === 1 ? ' minuto registrato.' : ' minuti registrati.') : 'Fermato. Meno di un minuto: niente da registrare.', 'durata');
+    render();
+  });
+  const cont = c.querySelector<HTMLElement>('#conc-continuato');
+  if (cont) cont.addEventListener('click', pausaSaltata);
+  const mu = c.querySelector<HTMLElement>('#conc-musica');
+  if (mu) mu.addEventListener('click', function () { apriMusica(musica); });
+  presa(c.querySelector<HTMLElement>('#conc-cambia')).addEventListener('click', function () {
+    /* il nuovo prende il posto di questo: i minuti fatti restano */
+    scegliTimer(t.azioneId, t.areaId, t.testo, undefined, true);
   });
   presa(c.querySelector<HTMLElement>('#conc-fatto')).addEventListener('click', function () {
     /* UN TIMER LIBERO PUÒ NON ESSERE ATTACCATO A NIENTE: `azioneId` è
@@ -5407,6 +5517,10 @@ function sezRiepilogo(c: HTMLElement): void {
   c.insertAdjacentHTML('beforeend', '<div class="lista mt">' +
     rigaPorta('riep-review', 'archivio', 'Le review di prima',
       (function () { var q = LM.quanteReview(); return q ? q + (q === 1 ? ' scritta' : ' scritte') : 'nessuna ancora'; })()) +
+    rigaPorta('riep-tempo', 'durata', 'Tempo col timer', (function () {
+      var m = LM.sessioniDi(LM.todayKey()).reduce(function (n, x) { return n + (x.minuti || 0); }, 0);
+      return m ? fmtOre(m) + ' oggi' : '';
+    })()) +
     rigaPorta('riep-aree', 'aree', 'Aree') + rigaPorta('riep-grafici', 'trendUp', 'Grafici') + '</div>');
   [['riep-aree', 'aree'], ['riep-grafici', 'andamento']].forEach(function (x) {
     const b = document.getElementById(x[0] || '');
@@ -5415,6 +5529,8 @@ function sezRiepilogo(c: HTMLElement): void {
   /* i due contenitori li ha scritti l'HTML qui sopra */
   LMCharts.heatmap(presa(document.getElementById('heatmap')), LM.heatmapConsistenza(12));
 
+  const bTempo = document.getElementById('riep-tempo');
+  if (bTempo) bTempo.addEventListener('click', apriSessioni);
   const bRev = document.getElementById('riep-review');
   if (bRev) bRev.addEventListener('click', apriArchivioReview);
 }
@@ -8050,7 +8166,7 @@ riprendiTimer();
 /* un timer arrivato da un altro dispositivo si vede subito, senza
    ricaricare: `lm:remote` è l'evento che la nuvola manda quando cambia
    qualcosa di là */
-document.addEventListener('lm:remote', function () { riprendiTimer(); if (concentrazioneAperta()) disegnaConcentrazione(); });
+window.addEventListener('lm:remote', function () { riprendiTimer(); if (concentrazioneAperta()) disegnaConcentrazione(); });
 
 function qualcosaSopra() {
   if (!$sheet.hidden) return true;

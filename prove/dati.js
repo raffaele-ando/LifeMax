@@ -364,6 +364,8 @@ const ok = (n, c, d) => { if (!c) guai++; console.log('  ' + (c ? 'ok  ' : 'KO  
       fai: () => LM.salvaReviewSera({ vittoria: 'PROVA sera', blocco: '', shutdown: true }) },
     { nome: 'il sonno di stanotte', dove: 'rituali', campo: 'ritmoGiorno',
       fai: () => LM.registraNotte(LM.todayKey(), { sonno: '23:10', sveglia: '07:20', prec: 'preciso' }) },
+    { nome: 'una sessione del timer', dove: 'oggi', campo: 'sessioni',
+      fai: () => LM.registraSessione({ id: 'ses-prova', areaId: 'studio', azioneId: null, testo: 'PROVA timer', tipo: 'blocco', inizio: Date.now(), minuti: 12 }) },
     { nome: 'un esperimento', dove: 'scoperte', campo: 'esperimenti',
       fai: () => LM.creaEsperimento({ nome: 'PROVA esperimento', metrica: 'energia',
         inizioBaseline: LM.todayKey(), inizioIntervento: LM.addDays(LM.todayKey(), 7), fine: LM.addDays(LM.todayKey(), 14) }) }
@@ -389,7 +391,7 @@ const ok = (n, c, d) => { if (!c) guai++; console.log('  ' + (c ? 'ok  ' : 'KO  
       const s = LM.snapshot();
       const mancano = [];
       const testo = JSON.stringify(s);
-      ['PROVA cattura', 'PROVA azione', 'PROVA backlog', 'PROVA abitudine', 'PROVA scoperta',
+      ['PROVA timer', 'PROVA cattura', 'PROVA azione', 'PROVA backlog', 'PROVA abitudine', 'PROVA scoperta',
        'PROVA sera', 'PROVA esperimento'].forEach((t) => { if (testo.indexOf(t) < 0) mancano.push(t); });
       if (!(s.checkins || []).some((c) => c.contesto === 'PROVA')) mancano.push('il check-in');
       const rg = s.ritmoGiorno[LM.todayKey()] || {};
