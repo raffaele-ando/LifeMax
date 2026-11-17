@@ -2138,6 +2138,19 @@ function creaLM() {
   }
   /* toglie (o rimette) l'abitudine in UN solo giorno, senza toccare le altre
      né l'abitudine stessa */
+  /* l'orario di un'abitudine in un giorno: quello spostato per quel giorno,
+     se c'è, se no il suo di sempre */
+  function oraAbitudine(h: Abitudine, k: Giorno): Ora | null {
+    return (h.oreGiorno && h.oreGiorno[k]) || h.ora;
+  }
+  function spostaAbitudineIlGiorno(id: string, k: Giorno, o: Ora | null) {
+    const h = load().abitudini.find(function (x) { return x.id === id; });
+    if (!h) return false;
+    h.oreGiorno = h.oreGiorno || {};
+    if (o) h.oreGiorno[k] = o; else delete h.oreGiorno[k];
+    save();
+    return true;
+  }
   function saltaGiornoAbitudine(id: string, k?: Giorno) {
     var s = load();
     var h = s.abitudini.find(function (x) { return x.id === id; });
@@ -2642,7 +2655,7 @@ function creaLM() {
        ci disegna sopra la settimana dell'abitudine: quali giorni si ripete e
        a che punto è la serie. Senza, la scheda dovrebbe ripescare l'abitudine
        intera dallo stato per disegnare sette pallini. */
-    return { tipo: 'abitudine', id: h.id, testo: h.testo, areaId: h.areaId, ora: h.ora,
+    return { tipo: 'abitudine', id: h.id, testo: h.testo, areaId: h.areaId, ora: oraAbitudine(h, todayKey()),
       durata: h.durata, mit: false, ifThen: '', serie: streakAbitudine(h),
       giorni: (h.giorni || []).slice(), record: recordAbitudine(h) };
   }
@@ -2674,7 +2687,7 @@ function creaLM() {
     /* i confini servono a sapere dove finisce un blocco senza durata: sono
        tutte le ore piantate nella giornata, anche quelle già fatte */
     var confini = azioniDiOggi().filter(function (a) { return a.ora; }).map(function (a) { return mm(a.ora); })
-      .concat(load().abitudini.filter(function (h) { return h.ora && abitudinePrevista(h, k0); }).map(function (h) { return mm(h.ora); }))
+      .concat(load().abitudini.filter(function (h) { return oraAbitudine(h, k0) && abitudinePrevista(h, k0); }).map(function (h) { return mm(oraAbitudine(h, k0)); }))
       .sort(function (x, y) { return x - y; });
     var timed = oggi.filter(function (a) { return a.ora; }).map(function (a) { return { a: a, min: mm(a.ora) }; }).sort(function (x, y) { return x.min - y.min; });
     function fineSlot(min: number, durata: number | null) {
@@ -3594,6 +3607,7 @@ function creaLM() {
     aggiungiAbitudine: aggiungiAbitudine, modificaAbitudine: modificaAbitudine, rimuoviAbitudine: rimuoviAbitudine,
     abitudinePrevista: abitudinePrevista, abitudiniDiOggi: abitudiniDiOggi, completaAbitudine: completaAbitudine, streakAbitudine: streakAbitudine,
     impostaPeriodoAbitudine: impostaPeriodoAbitudine, saltaGiornoAbitudine: saltaGiornoAbitudine,
+    oraAbitudine: oraAbitudine, spostaAbitudineIlGiorno: spostaAbitudineIlGiorno,
     recordAbitudine: recordAbitudine, prossimaAbitudine: prossimaAbitudine,
     rinominaArea: rinominaArea, toggleArea: toggleArea,
     aggiungiArea: aggiungiArea, rimuoviArea: rimuoviArea, baselineCheckin: baselineCheckin,

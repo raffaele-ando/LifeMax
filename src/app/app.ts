@@ -4035,7 +4035,8 @@ function nodiGiorno(k: Giorno): NodiDelGiorno {
   });
   s.abitudini.forEach(function (h) {
     if (!LM.abitudinePrevista(h, k)) return;
-    const e: Nodo = { tipo: 'abitudine', min: minOf(h.ora), ora: h.ora, dur: h.durata || null, id: h.id, testo: h.testo, areaId: h.areaId, fatto: !!h.fatti[k], streak: isToday ? LM.streakAbitudine(h) : 0 };
+    const oraH = LM.oraAbitudine(h, k);
+    const e: Nodo = { tipo: 'abitudine', min: minOf(oraH), ora: oraH, dur: h.durata || null, id: h.id, testo: h.testo, areaId: h.areaId, fatto: !!h.fatti[k], streak: isToday ? LM.streakAbitudine(h) : 0 };
     (e.min == null ? tray : placed).push(e);
   });
   LM.azioniDelGiorno(k).forEach(function (a) {
@@ -4180,9 +4181,11 @@ function htmlTimeGrid(d: NodiDelGiorno, opzioni?: OpzGriglia): string {
        separato, quindi il blocco stesso fa da manico (data-manico su di sé).
        Così col dito si prende subito, senza che il browser rubi il gesto
        per selezionare il testo. */
+    /* si trascinano anche le abitudini: cambia l'ora di QUEL giorno */
     if (e.tipo === 'azione') clic += ' data-drag-az="' + e.id + '"' + (opts.mini ? ' data-manico' : '');
+    else clic += ' data-drag-ab="' + e.id + '" data-drag-k="' + d.k + '"' + (opts.mini ? ' data-manico' : '');
     return '<div class="tl-blk tl-blk-att' + (fatto ? ' fatta' : '') + (e.mancata ? ' mancata' : '') + (basso ? ' tl-blk-basso' : '') + (corto ? ' tl-blk-corto' : '') + (opts.interactive && !opts.mini ? ' tl-blk-clic' : '') + '"' + clic + ' style="' + pos + ';--c-area:' + col + '" title="' + esc(e.testo) + '">' +
-      check + (e.tipo === 'azione' && !opts.mini && opts.interactive ? '<span class="manico" data-manico aria-hidden="true">' + ICO('presa', 13) + '</span>' : '') +
+      check + (!opts.mini && opts.interactive ? '<span class="manico" data-manico aria-hidden="true">' + ICO('presa', 13) + '</span>' : '') +
       (righe === 0 ? '' : '<span class="tl-blk-t">' + (e.mit ? ICO('star', 11) + ' ' : '') + esc(e.testo) + '</span>') +
       (!corto && !opts.mini ? '<span class="tl-blk-ora">' + e.ora + '–' + fmtMin((e.min ?? 0) + dur) + '</span>' : '') + '</div>';
   }).join('');
@@ -4564,6 +4567,18 @@ function montaGiornata(container: HTMLElement, opzioni?: OpzGriglia): void {
     var zonaSo = container.querySelector<HTMLElement>('.gio-so');
     if (zonaSo) zonaSo.setAttribute('data-drop-senzaora', '1');
     abilitaTrascina(container, function (id, bersaglio, _x, y) {
+      if (id.indexOf('ab:') === 0) {
+        const hid = id.split(':')[1] || '';
+        if (!bersaglio.hasAttribute('data-drop-ora')) { toast('Un’abitudine resta nel suo giorno, con un orario.', 0, 'clock'); return; }
+        const gs = +(bersaglio.getAttribute('data-gs') || ''), pxh = +(bersaglio.getAttribute('data-pxh') || '');
+        if (isNaN(gs) || !pxh) return;
+        const r = bersaglio.getBoundingClientRect();
+        const min = Math.max(0, Math.round((gs + (y - r.top) / pxh * 60) / 15) * 15) % 1440;
+        LM.spostaAbitudineIlGiorno(hid, k, comeOra(fmtMin(min)));
+        toast('Oggi alle ' + fmtMin(min), 0, 'clock');
+        montaGiornata(container, opts); aggiornaNav();
+        return;
+      }
       if (bersaglio.hasAttribute('data-drop-senzaora')) {
         LM.setOraAzione(id, null);
         toast('Tolto l’orario: resta tra le cose senza orario.', 0, 'clock');
@@ -4690,6 +4705,19 @@ function celleGiorno(container: HTMLElement): void {
 function spostaSuGiorno(id: string, bersaglio: HTMLElement, _x?: number, y?: number): void {
   const quale = bersaglio.getAttribute('data-drop-giorno');
   if (!quale) return;
+  if (id.indexOf('ab:') === 0) {
+    const parti = id.split(':'), hid = parti[1] || '', da = parti[2] || '';
+    const gr = bersaglio.querySelector<HTMLElement>('[data-pxh]') || bersaglio.closest<HTMLElement>('[data-pxh]');
+    if (quale !== da || !gr || y == null) { toast('Un’abitudine resta nel suo giorno: cambiale solo l’ora.', 0, 'calendar'); return; }
+    const gs0 = +(gr.getAttribute('data-gs') || ''), px0 = +(gr.getAttribute('data-pxh') || '');
+    const rr = gr.getBoundingClientRect();
+    if (isNaN(gs0) || !px0) return;
+    const m0 = Math.max(0, Math.round((gs0 + (y - rr.top) / px0 * 60) / 15) * 15) % 1440;
+    LM.spostaAbitudineIlGiorno(hid, comeGiorno(quale), comeOra(fmtMin(m0)));
+    toast(etichettaGiorno(comeGiorno(quale)) + ', ' + fmtMin(m0), 0, 'clock');
+    disegnaOrizzonte(); aggiornaNav();
+    return;
+  }
   const g = comeGiorno(quale);
   /* nella settimana il giorno ha la sua griglia delle ore: lasciando la
      cosa a un'altezza le si dà anche l'orario, come nel giorno */

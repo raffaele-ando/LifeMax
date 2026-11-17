@@ -118,14 +118,23 @@ function fineTrascina(): void {
    non scorre. */
 document.addEventListener('contextmenu', function (e) {
   const t = e.target as HTMLElement | null;
-  if (trasc || (t && t.closest && t.closest('[data-drag-az]'))) e.preventDefault();
+  if (trasc || (t && t.closest && t.closest('[data-drag-az], [data-drag-ab]'))) e.preventDefault();
 });
 /* il trascinamento NATIVO del browser (l'anteprima grigia che segue il dito
    dopo una pressione lunga) si porta via il gesto: qui non serve mai */
 document.addEventListener('dragstart', function (e) {
   const t = e.target as HTMLElement | null;
-  if (t && t.closest && t.closest('[data-drag-az]')) e.preventDefault();
+  if (t && t.closest && t.closest('[data-drag-az], [data-drag-ab]')) e.preventDefault();
 });
+
+/* chi si trascina: un'attività ha il suo id; un'abitudine porta anche il
+   giorno da cui parte, perché si sposta solo in quel giorno */
+function idDi(el: HTMLElement): string {
+  const az = el.getAttribute('data-drag-az');
+  if (az) return az;
+  const ab = el.getAttribute('data-drag-ab');
+  return ab ? 'ab:' + ab + ':' + (el.getAttribute('data-drag-k') || '') : '';
+}
 
 function prendi(el: HTMLElement, id: string, x: number, y: number): void {
   if (trasc) return;
@@ -162,7 +171,7 @@ function colDito(el: HTMLElement, onRilascio: (id: string, bersaglio: HTMLElemen
     if (!bers) return;
     const btn = bers.closest('button');
     if (btn && btn !== el && el.contains(btn)) return;
-    const id = el.getAttribute('data-drag-az') || '';
+    const id = idDi(el);
     if (!id) return;
     const t = presa(ev.touches[0]);
     x0 = t.clientX; y0 = t.clientY; mio = false;
@@ -203,7 +212,7 @@ function colDito(el: HTMLElement, onRilascio: (id: string, bersaglio: HTMLElemen
 }
 
 export function abilitaTrascina(scope: ParentNode, onRilascio: (id: string, bersaglio: HTMLElement, x: number, y: number) => void): void {
-  scope.querySelectorAll<HTMLElement>('[data-drag-az]').forEach(function (el) {
+  scope.querySelectorAll<HTMLElement>('[data-drag-az], [data-drag-ab]').forEach(function (el) {
     colDito(el, onRilascio);
     el.addEventListener('pointerdown', function (ev) {
       if (ev.button > 0 || ev.pointerType === 'touch') return;
@@ -211,7 +220,7 @@ export function abilitaTrascina(scope: ParentNode, onRilascio: (id: string, bers
       if (!bersaglio) return;
       const btnDentro = bersaglio.closest('button');
       if (btnDentro && btnDentro !== el && el.contains(btnDentro)) return;  /* i pulsanti interni restano cliccabili */
-      const id: string = el.getAttribute('data-drag-az') || '';
+      const id: string = idDi(el);
       if (!id) return;
       const x0 = ev.clientX, y0 = ev.clientY;
       const tocco = ev.pointerType === 'touch';

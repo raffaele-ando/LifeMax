@@ -4769,3 +4769,6 @@ input[type="time"]::-webkit-datetime-edit { padding: 0; color: var(--inchiostro-
 #notte-solito small { display: none; }
 .tl-blk .manico { color: var(--inchiostro-1); background: color-mix(in srgb, var(--c-area, var(--accento)) 30%, transparent); border-radius: 0; }
 .tl-blk .manico .ico { width: 15px; height: 15px; }
+
+[data-drag-ab] { cursor: grab; -webkit-user-drag: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }
+.tl-grid-mini [data-drag-ab][data-manico] { touch-action: none; }
