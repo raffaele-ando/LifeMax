@@ -5229,3 +5229,25 @@ body.sto-trascinando .gio-so-drop.drop-attivo { border-style: solid; border-colo
 /* Scoperte: il registro non sta dentro un riquadro — i suoi elenchi sono già
    riquadri, e due bordi uno dentro l'altro rubavano metà della riga */
 .lez-card { background: none; box-shadow: none; border: 0; padding: 0; }
+
+/* NEL FOGLIO NIENTE SI STRINGE. Il corpo del foglio è una colonna flessibile
+   che scorre: senza questo, quando il contenuto era più alto dello schermo i
+   riquadri si schiacciavano invece di far scorrere, e il loro `overflow:
+   hidden` tagliava l'ultima riga (la cena, l'ultimo promemoria, l'ultimo
+   interruttore) — visibile a metà e impossibile da toccare. */
+.sheet-corpo > *, .sheet-corpo > form > * { flex-shrink: 0; }
+
+/* la carta di un'abitudine: stessi margini a destra e a sinistra, l'ora va
+   nella riga sotto il nome (una colonna vuota spostava i nomi senza ora) */
+.ab-carta { padding: 8px 12px 8px 16px; gap: 12px; }
+.ab-sub .ab-ora { display: inline; width: auto; font-size: 12px; font-weight: 700; color: var(--inchiostro-1); border: 0; box-shadow: none; }
+.ab-punto { margin: 0 2px; color: var(--inchiostro-muto); }
+
+/* «Mettila in un giorno»: le pastiglie vanno a capo dentro i margini del
+   foglio, invece di uscire tagliate dal bordo destro */
+.sc-quando { flex-wrap: wrap; overflow: visible; margin-inline: 0; padding-inline: 0; gap: 8px; }
+/* i passi: i comandi in fondo alla riga sono segni, non riquadri bianchi
+   incollati al bordo, e la riga ha lo stesso margine dai due lati */
+.sc-passo { padding-right: 8px; gap: 8px; }
+.sc-passo .icona-btn { background: none; border: 0; box-shadow: none; width: 40px; height: 40px; color: var(--inchiostro-muto); }
+.sc-passo .icona-btn:active { background: var(--premuto); }

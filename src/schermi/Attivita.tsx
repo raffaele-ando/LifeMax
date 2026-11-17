@@ -346,9 +346,8 @@ function cartaOggi(h: Abitudine, tk: string): string {
   const ar = areaById(h.areaId), o = LM.oraAbitudine(h, tk as never), fatta = !!h.fatti[tk];
   const serie = LM.streakAbitudine(h);
   return '<div class="ab-carta' + (fatta ? ' fatta' : '') + '" style="--c-area:' + LM.coloreArea(ar) + '">' +
-    '<span class="ab-ora">' + (o ? esc(o) : '') + '</span>' +
     '<button class="ab-apri" data-abdett="' + h.id + '"><span class="ab-nome">' + esc(h.testo) + '</span>' +
-    '<span class="ab-sub">' + ICO(ar.icona, 11) + esc(ar.nome) +
+    '<span class="ab-sub">' + (o ? '<b class="ab-ora">' + esc(o) + '</b><span class="ab-punto">·</span>' : '') + ICO(ar.icona, 11) + esc(ar.nome) +
     (serie > 0 ? '<span class="ab-serie">' + ICO('flame', 11, 'fiamma') + serie + '</span>' : '') + '</span></button>' +
     '<button class="ab-spunta" data-toggle-ab="' + h.id + '" aria-pressed="' + fatta + '" aria-label="' + (fatta ? 'Togli la spunta a ' : 'Fatta: ') + esc(h.testo) + '">' + ICO('check', 15) + '</button>' +
     '</div>';
