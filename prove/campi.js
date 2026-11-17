@@ -207,9 +207,11 @@ const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  
     const vivo = require('./comune/dove').codiceVivo();
     /* col mouse sì, e in un posto solo: un clic sulla data senza iconcina
        non apriva niente, e serviva ricliccare. Col dito mai. */
+    /* due posti, e non di più: il clic del mouse sul campo stesso, e
+       `apriCampo` per le righe che portano un campo velato */
     const chiamate = (vivo.match(/\.showPicker\(\)/g) || []).length;
-    ok('l’orologio a mano lo si chiede in un posto solo, e solo col mouse',
-      chiamate === 1 && /pointer: fine/.test(vivo), chiamate + ' chiamate');
+    ok('l’orologio a mano lo si chiede in due posti soli, e sul campo stesso solo col mouse',
+      chiamate === 2 && /pointer: fine/.test(vivo) && /function apriCampo/.test(vivo), chiamate + ' chiamate');
   }
 
   console.log('LA SCADENZA DI UN’ATTIVITÀ');
@@ -227,11 +229,25 @@ const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  
     await p.evaluate(() => { const i = document.querySelector('#sc-scad'); if (i) i.closest('.lista-riga').scrollIntoView({ block: 'center' }); });
     await p.waitForTimeout(400);
     console.log('  — ' + (conScadenza ? 'con una scadenza già messa' : 'senza scadenza') + ' —');
-    const c = await chiRiceve(p, '#sc-scad');
-    ok('il campo data copre la riga e riceve il tocco', !!c && c.suo && c.largo > 100, JSON.stringify(c));
+    /* LA RIGA INTERA APRE IL CALENDARIO, UNA VOLTA. Prima il campo era steso
+       sopra la riga e non la copriva tutta: toccando «nessuna», a destra, non
+       succedeva niente. Adesso il campo è velato e lo apre la riga: si tocca
+       a sinistra, in mezzo e a destra, e ogni volta il calendario si chiede
+       una volta sola. */
+    await p.evaluate(() => { window.__aperti = []; HTMLInputElement.prototype.showPicker = function () { window.__aperti.push(this.id); }; });
+    const punti = [];
+    /* l'etichetta, il valore («nessuna» o la data) e la freccetta */
+    for (const sel of ['.sc-eti', '.sc-val', '.lista-chev']) {
+      const pt = await p.evaluate((sel) => { const r = document.querySelector('[data-apri-scad] ' + sel); if (!r) return null; const b = r.getBoundingClientRect(); return { x: b.left + b.width / 2, y: b.top + b.height / 2 }; }, sel);
+      if (!pt) continue;
+      await p.evaluate(() => { window.__aperti = []; });
+      await p.touchscreen.tap(pt.x, pt.y); await p.waitForTimeout(150);
+      punti.push(sel + ':' + await p.evaluate(() => window.__aperti.join(',')));
+    }
+    ok('toccando la riga in qualunque punto si apre il calendario, una volta', punti.length >= 2 && punti.every((x) => /:sc-scad$/.test(x)), JSON.stringify(punti));
     if (conScadenza) {
       const x = await chiRiceve(p, '#sc-scad-x');
-      ok('la ✕ che toglie la scadenza resta sopra al campo', !!x && x.suo, JSON.stringify(x));
+      ok('la ✕ che toglie la scadenza si tocca', !!x && x.suo, JSON.stringify(x));
       const quale = await p.evaluate(() => document.querySelector('#sheet-corpo [data-bid], #sheet-corpo').getAttribute('data-bid'));
       const prima = await p.evaluate(() => document.querySelector('#sc-scad').value);
       await p.locator('#sc-scad-x').click(); await p.waitForTimeout(500);

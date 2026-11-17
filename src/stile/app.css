@@ -4631,9 +4631,17 @@ input[type="number"], textarea, select, .rit-ico, .casa-rito-ico { border-radius
 .prof-numero b { font-size: 20px; }
 .prof-numero span { font-size: 13px; color: var(--inchiostro-2); }
 
-/* dietro «Scrivi un pensiero» la pagina si sfoca: la cattura è un momento
-   a sé, e quello che c'è dietro non deve chiamare l'occhio */
-.overlay { backdrop-filter: blur(14px) saturate(.9); -webkit-backdrop-filter: blur(14px) saturate(.9); background: rgba(10, 10, 20, .32); }
+/* DIETRO «SCRIVI UN PENSIERO» LA PAGINA SI SFOCA — e si sfoca la pagina,
+   non il vetro davanti. Il vetro sfocato (`backdrop-filter`) sfoca quello
+   che c'è dietro al rettangolo del velo, e sul telefono quel rettangolo
+   cambia sotto le dita: si apre la tastiera, la barra del browser sale e
+   scende, e il velo restava sfocato a metà. Sfocare direttamente l'app (la
+   pagina, la barra in basso, la banda) copre sempre tutto, qualunque cosa
+   faccia la tastiera. */
+.overlay { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; background: rgba(10, 10, 20, .28); }
+body > .app, body > #nav-tab, body > #banda-demo { transition: filter .18s var(--ease-out, ease-out); }
+body.cattura-su > .app, body.cattura-su > #nav-tab, body.cattura-su > #banda-demo { filter: blur(12px) saturate(.9); }
+:root[data-effetti="minimi"] body.cattura-su > .app, :root[data-effetti="minimi"] body.cattura-su > #nav-tab { filter: none; }
 .rit-gruppo { margin-top: 8px; }
 
 /* --- sonno e pasti nella Giornata: righe basse, un pasto per riga --- */
@@ -5266,3 +5274,16 @@ body.sto-trascinando .gio-so-drop.drop-attivo { border-style: solid; border-colo
 .ses-cosa { flex: 1 1 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; }
 .gr .ses-area { min-width: 0; max-width: 8.5em; font-size: 14px; }
 .gr .ses-min { width: 4.2em; min-width: 0; text-align: center; }
+
+/* IL CAMPO VELATO: c'è (il calendario del sistema si apre da lui e gli si
+   appoggia vicino) ma non si vede e non prende tocchi. Lo apre la riga che
+   lo porta, tutta, con `data-apri-campo`. */
+input.campo-velato, .q-chip-data input.campo-velato, input.sc-nascosta.campo-velato {
+  position: absolute; left: 0; bottom: 0; top: auto; right: auto; inset: auto auto 0 0;
+  width: 1px; height: 1px; min-height: 0; padding: 0; border: 0; margin: 0;
+  opacity: 0; pointer-events: none; box-shadow: none;
+}
+[data-apri-campo] { cursor: pointer; }
+
+/* i comandi che tolgono: un riquadro a sé, staccato come gli altri */
+.ig-togli { margin-top: 12px; }

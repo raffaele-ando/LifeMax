@@ -582,18 +582,50 @@ export interface OpzAvviso {
    solo il fuoco: bisognava toccare di nuovo, e un campo nascosto steso su una
    riga (la scadenza) non si apriva proprio. Qui si chiede al browser di
    aprire il selettore subito, ovunque nell'app. */
+/* APRIRE IL CALENDARIO O L'OROLOGIO, OVUNQUE, CON UN TOCCO SOLO.
+   Tre casi, e un'unica richiesta per tocco (due — il tocco nativo più una
+   nostra — sul telefono si annullano: la ruota si apriva e si richiudeva).
+   1. Il dito sul campo stesso: sul telefono ci pensa il sistema; col mouse
+      un clic sul testo della data non apre niente, quindi lo apriamo noi.
+   2. Il dito su una riga che porta un campo nascosto (`data-apri-campo`:
+      la scadenza, «un altro giorno»): il campo non sta più steso sopra la
+      riga — non la copriva tutta, e toccando «nessuna» non succedeva
+      niente — e lo apriamo noi.
+   3. Il dito sull'etichetta di un campo data/ora (le righe delle schede):
+      si ferma l'attivazione dell'etichetta e lo apriamo noi, una volta. */
+const CAMPO_DATA = 'input[type="date"], input[type="time"], input[type="datetime-local"], input[type="month"], input[type="week"]';
+export function apriCampo(inp: HTMLInputElement): void {
+  if (inp.disabled || inp.readOnly) return;
+  const conPicker = inp as HTMLInputElement & { showPicker?: () => void };
+  try {
+    if (typeof conPicker.showPicker === 'function') { conPicker.showPicker(); return; }
+  } catch (_e) { /* il browser non vuole: si prova a mano */ }
+  try { inp.focus(); inp.click(); } catch (_e) { /* niente */ }
+}
 document.addEventListener('click', function (e) {
   const t = e.target;
-  if (!(t instanceof HTMLInputElement) || t.disabled || t.readOnly) return;
-  if (!/^(date|time|datetime-local|month|week)$/.test(t.type)) return;
-  /* SOLO COL PUNTATORE FINE. Sul telefono il tocco apre già la ruota da sé,
-     e una seconda richiesta la richiuderebbe (è successo due volte): qui
-     serve solo col mouse, dove un clic sulla data non apre niente finché
-     non si centra l'iconcina, che nei nostri campi non c'è. */
-  if (!window.matchMedia || !window.matchMedia('(pointer: fine)').matches) return;
-  const conPicker = t as HTMLInputElement & { showPicker?: () => void };
-  if (typeof conPicker.showPicker !== 'function') return;
-  try { conPicker.showPicker(); } catch (_e) { /* già aperto, o non permesso: ci pensa il browser */ }
+  if (!(t instanceof Element)) return;
+  if (t instanceof HTMLInputElement) {
+    if (!t.matches(CAMPO_DATA) || t.disabled || t.readOnly) return;
+    /* solo col puntatore fine: sul telefono il tocco l'ha già aperto */
+    if (!window.matchMedia || !window.matchMedia('(pointer: fine)').matches) return;
+    if (!e.isTrusted) return;
+    const conPicker = t as HTMLInputElement & { showPicker?: () => void };
+    try { if (typeof conPicker.showPicker === 'function') conPicker.showPicker(); } catch (_e) { /* già aperto */ }
+    return;
+  }
+  /* un comando dentro la riga (la «x» che toglie) fa il suo mestiere */
+  if (t.closest('button, a, select, textarea, input')) return;
+  const host = t.closest<HTMLElement>('[data-apri-campo], label');
+  if (!host) return;
+  let inp: HTMLInputElement | null = host.querySelector<HTMLInputElement>(CAMPO_DATA);
+  if (!inp && host instanceof HTMLLabelElement && host.htmlFor) {
+    const x = document.getElementById(host.htmlFor);
+    if (x instanceof HTMLInputElement && x.matches(CAMPO_DATA)) inp = x;
+  }
+  if (!inp) return;
+  e.preventDefault();
+  apriCampo(inp);
 }, true);
 
 /* quando l'accesso con Google non riesce, lo si dice con le parole giuste */
@@ -728,12 +760,13 @@ function apriCattura(): void {
      con dentro un livello che non se ne va più */
   var giaAperto = !$ovl.hidden;
   $ovl.hidden = false;
+  document.body.classList.add('cattura-su');
   bloccaSfondo(true);
   $inp.value = '';
   if (giaAperto) $inp.focus();
   else entraFuoco(presa($ovl.querySelector<HTMLElement>('.pannello-cattura')), true);
 }
-function chiudiCattura(): void { $ovl.hidden = true; bloccaSfondo(false); esceFuoco(); verificaModalita(); }
+function chiudiCattura(): void { $ovl.hidden = true; document.body.classList.remove('cattura-su'); bloccaSfondo(false); esceFuoco(); verificaModalita(); }
 
 const $sideCatt = perId('side-cattura');
 presa($sideCatt.querySelector<HTMLElement>('.cattura-cta-testo')).innerHTML = ICO('bolt', 15) + ' Aggiungi una nota';
@@ -4411,10 +4444,15 @@ function apriItemGiornata(k: Giorno, id: string, tipo: 'azione' | 'abitudine', o
       : '') +
     '<div class="gr-titolo">Quando</div><div class="gr">' +
     '<label class="gr-riga" for="ig-ora"><span class="gr-eti">Ora</span><span class="gr-valori">' +
-      '<input type="time" class="gr-val" id="ig-ora" value="' + (e.ora || '') + '">' +
-      (e.ora ? '<button class="gr-via ig-noora" aria-label="Togli l’orario">' + ICO('x', 13) + '</button>' : '') + '</span></label>' +
+      '<input type="time" class="gr-val" id="ig-ora" value="' + (e.ora || '') + '"></span></label>' +
     '<label class="gr-riga" for="ig-dur"><span class="gr-eti">Durata</span><select class="gr-val" id="ig-dur">' + durOpt + '</select></label>' +
     '</div>' +
+    /* TOGLIERE QUELLO CHE C'ERA, a parole e non con una crocetta da
+       indovinare: l'orario (torna fra le cose senza orario) e la durata */
+    ((e.ora || e.dur) ? '<div class="gr ig-togli">' +
+      (e.ora ? '<button class="gr-riga gr-agg ig-noora">' + ICO('clock', 15) + ' Togli l’orario</button>' : '') +
+      (e.dur ? '<button class="gr-riga gr-agg ig-nodur">' + ICO('durata', 15) + ' Togli la durata</button>' : '') +
+      '</div>' : '') +
     '<div class="gr-titolo">Dettagli</div><div class="gr">' +
     '<label class="gr-riga" for="ig-area"><span class="gr-eti">Area</span>' + selectAree('ig-area', e.areaId, 'Area', 'gr-val') + '</label>' +
     '</div>' +
@@ -4459,8 +4497,23 @@ function apriItemGiornata(k: Giorno, id: string, tipo: 'azione' | 'abitudine', o
     });
     const noora = root.querySelector<HTMLElement>('.ig-noora');
     if (noora) noora.addEventListener('click', function () {
-      if (isAz) LM.setOraAzione(id, null); else LM.modificaAbitudine(id, { ora: null });
+      const prima = e.ora;
+      if (isAz) LM.setOraAzione(id, null); else LM.spostaAbitudineIlGiorno(id, k, '-');
       chiudiSheet(); ricarica();
+      toast(isAz ? 'Tolto l’orario.' : 'Oggi senza orario.', 0, 'clock', { eti: 'Annulla', fai: function () {
+        if (isAz) LM.setOraAzione(id, prima || null); else LM.spostaAbitudineIlGiorno(id, k, null);
+        ricarica();
+      } });
+    });
+    const nodur = root.querySelector<HTMLElement>('.ig-nodur');
+    if (nodur) nodur.addEventListener('click', function () {
+      const prima = e.dur;
+      if (isAz) LM.setDurataAzione(id, null); else LM.modificaAbitudine(id, { durata: null });
+      chiudiSheet(); ricarica();
+      toast('Tolta la durata.', 0, 'durata', { eti: 'Annulla', fai: function () {
+        if (isAz) LM.setDurataAzione(id, prima || null); else LM.modificaAbitudine(id, { durata: prima || null });
+        ricarica();
+      } });
     });
     const ind = root.querySelector<HTMLElement>('.ig-indietro');
     if (ind) ind.addEventListener('click', function () {

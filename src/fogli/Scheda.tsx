@@ -55,7 +55,8 @@ function Passo({ b, st, onRidisegna }: { b: Attivita; st: UnPasso; onRidisegna: 
         }}><Segno nome="check" dim={13} /></button>
       <span className="lista-corpo">
         <span className="lista-tit">{st.testo}</span>
-        {inAg ? <span className="lista-sub">in agenda {etichettaGiorno(inAg.data).toLowerCase()}</span> : null}
+        {inAg ? <span className="lista-sub">in agenda {etichettaGiorno(inAg.data).toLowerCase()}
+          {' · '}<button className="sp-link sc-togli-ag" onClick={() => { LM.azioneInBacklog(inAg.id); toast('Tolto dal giorno.', 0, 'lista'); onRidisegna(); }}>togli</button></span> : null}
       </span>
       {st.done ? null : (
         <button className="icona-btn" data-stepquando={st.id} title="Mettilo in un giorno"
@@ -159,7 +160,7 @@ export default function Scheda({ id }: { id: string }) {
      rinascere, che è esattamente quello che succedeva prima.
      `prove/campi.js` l'ha visto. */
   const campoScad = (
-    <input key={b.scadenza || 'niente'} type="date" className="sc-nascosta" id="sc-scad" ref={scad}
+    <input key={b.scadenza || 'niente'} type="date" className="sc-nascosta campo-velato" id="sc-scad" ref={scad}
       defaultValue={b.scadenza || undefined} aria-label="Scadenza" />
   );
 
@@ -179,9 +180,9 @@ export default function Scheda({ id }: { id: string }) {
         {gChip(LM.addDays(oggi, 1), 'Domani')}
         {gChip(fraDue, nomeFraDue)}
         {gChip(LM.addDays(oggi, 7), 'Tra una settimana')}
-        <label className="q-chip q-chip-data">
+        <label className="q-chip q-chip-data" data-apri-campo="1">
           <Segno nome="calendar" dim={13} /> <span>Un altro giorno</span>
-          <input type="date" id="sc-quando" aria-label="Un altro giorno"
+          <input type="date" id="sc-quando" className="campo-velato" aria-label="Un altro giorno"
             onChange={(e) => pianifica(e.target.value ? comeGiorno(e.target.value) : '')} />
         </label>
       </div>
@@ -218,14 +219,14 @@ export default function Scheda({ id }: { id: string }) {
             un «mm/gg/aaaa» vuoto in una riga di valori è l'unica cosa che si
             legge, e non dice niente */}
         {b.scadenza ? (
-          <RigaSc eti="Scadenza" cls="sc-tocca" attrib={{ 'data-apri-scad': '1' }}>
+          <RigaSc eti="Scadenza" cls="sc-tocca" attrib={{ 'data-apri-scad': '1', 'data-apri-campo': '1' }}>
             <span className="sc-val">{LM.fmtShort(b.scadenza)} · {scadInfo(b.scadenza).testo}</span>
             <button className="icona-btn" id="sc-scad-x" title="Togli la scadenza" aria-label="Togli la scadenza"
               onClick={() => { LM.impostaScadenzaBacklog(b.id, null); ridisegna(); }}><Segno nome="x" dim={13} /></button>
             {campoScad}
           </RigaSc>
         ) : (
-          <RigaSc eti="Scadenza" cls="sc-tocca" attrib={{ 'data-apri-scad': '1' }}>
+          <RigaSc eti="Scadenza" cls="sc-tocca" attrib={{ 'data-apri-scad': '1', 'data-apri-campo': '1' }}>
             <span className="sc-val">nessuna</span>
             <span className="lista-chev"><Segno nome="chevronGiu" /></span>
             {campoScad}
