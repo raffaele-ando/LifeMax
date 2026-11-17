@@ -5165,3 +5165,5 @@ button.gr-val:active, .gr .gr-val:active { opacity: .6; }
 .rec-ico { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; color: var(--inchiostro-2); }
 .rec-alt.on .rec-ico { color: var(--accento-ink); }
 .rec-ora:valid + .rec-ico { display: none; }
+.banda-demo { align-items: center; }
+.banda-togli { margin-left: auto; min-height: 44px; padding: 0 12px; }

@@ -403,6 +403,14 @@ export interface Stato {
      il permesso di TOGLIERE. Senza, azzerare un dispositivo si annullerebbe
      da sé alla prima sincronizzazione con l'altro. */
   azzerato: number;
+  /* L'IMPRONTA DEI DATI DI ESEMPIO: che cosa ha scritto `seedDemo`, per
+     poterlo togliere e per non mandarlo mai nel cloud. `null` quando non ce
+     n'è. Resta su questo dispositivo. */
+  esempio?: ImprontaEsempio | null;
+}
+export interface ImprontaEsempio {
+  ids: Record<string, string[]>;
+  giorni: Record<string, Record<string, number>>;
 }
 
 /* ====================================================== COME SI FONDONO
@@ -423,6 +431,7 @@ export const COME_UNIRE: { readonly [K in keyof Stato]-?: ModoFusione } = {
   versione: 'massimo',
   updatedAt: 'massimo',
   azzerato: 'massimo',
+  esempio: 'recente',
   visto: 'massimo',
   xp: 'massimo',
   onboarded: 'oppure',

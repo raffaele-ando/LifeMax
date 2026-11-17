@@ -404,7 +404,16 @@ async function primaSincronizzazione(uid: string): Promise<void> {
     console.warn('LifeMax: lettura cloud non riuscita.', messaggio(e));
     return;
   }
-  const locale = window.LM.snapshot();
+  /* la prima volta che QUESTO dispositivo si unisce a QUESTO account:
+     l'esempio resta fuori, e un «Azzera tutto» fatto qui prima non taglia
+     i dati veri che stanno nel cloud */
+  let giaUnito = false;
+  try { giaUnito = localStorage.getItem('lm-account-unito') === uid; } catch { /* senza memoria: come la prima volta */ }
+  if (!giaUnito) {
+    window.LM.primaUnione();
+    log('info', 'prima unione da questo dispositivo', 'esempio tenuto fuori, azzeramento locale non applicato al cloud');
+  }
+  const locale = window.LM.snapshotPerCloud();
   const localAt = locale.updatedAt || 0;
   const localR = window.LM.ricchezza(locale);
   const dati = snap.data();
@@ -448,11 +457,13 @@ async function primaSincronizzazione(uid: string): Promise<void> {
     log('info', sostituendo ? 'tenuti quelli del cloud' : 'uniti', 'adesso ' + dopo + ' elementi (erano ' + localR + ' qui e ' + remoteR + ' nel cloud)');
     opCede('lettura iniziale', 'scrittura');
     await push(uid);
+    try { localStorage.setItem('lm-account-unito', uid); } catch { /* pazienza */ }
   } else {
     /* Nessun documento cloud: carica ciò che c'è in locale. */
     log('info', 'primo salvataggio per questo account');
     opCede('lettura iniziale', 'scrittura');
     await push(uid);
+    try { localStorage.setItem('lm-account-unito', uid); } catch { /* pazienza */ }
   }
 }
 
@@ -594,7 +605,8 @@ async function push(uid: string): Promise<void> {
   if (!FSM || !db) return;
   if (pushInCorso) { pushPendente = true; log('info', 'scrittura già in volo: accodo le nuove modifiche'); return; }
   pushInCorso = true;
-  const s = window.LM.snapshot();
+  /* nel cloud va tutto tranne l'esempio contrassegnato */
+  const s = window.LM.snapshotPerCloud();
   const at = s.updatedAt || Date.now();
   const payload = JSON.stringify(s);
   ricorda(at);

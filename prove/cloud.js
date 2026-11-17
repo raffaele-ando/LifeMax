@@ -415,119 +415,88 @@ export function onSnapshot(ref, suDati, suErrore) {
        · prima di unire, il documento vero viene messo da parte nel cloud;
        · e da quella copia si può tornare SOSTITUENDO, non unendo.
      ============================================================ */
-  console.log('\nL’ESEMPIO ENTRATO NELL’ACCOUNT SI PUÒ TOGLIERE');
+  console.log('\nL’ESEMPIO NON ENTRA NELL’ACCOUNT, E «AZZERA TUTTO» NON CANCELLA IL CLOUD');
+  /* Due guai veri, successi in fila. L'esempio entrava nell'account alla
+     prima sincronizzazione e da lì su tutti i dispositivi; e per toglierlo si
+     usava «Azzera tutto», il cui taglio — alla prima unione con l'account —
+     cancellava anche tutti i dati veri del telefono. Adesso l'esempio porta la
+     sua impronta e resta su questo dispositivo, e un azzeramento fatto PRIMA
+     di collegarsi non taglia niente nel cloud. */
   {
     const r = await p.evaluate(async () => {
-      /* si riparte da zero: esce l'account, si mette l'esempio, e nel cloud
-         c'è un documento vero che l'esempio non ha mai visto */
       window.__fb.utente = null; if (window.__fb.avvisa) window.__fb.avvisa(null);
       await new Promise((r2) => setTimeout(r2, 300));
       localStorage.clear();
       LM.seedDemo();
-      const demo = LM.snapshot();
-
+      const conImpronta = !!LM.load().esempio && LM.load().demo;
+      LM.aggiungiAzione('SCRITTA DA ME SUL COMPUTER', 'altro', {});
       const vero = LM.statoVuoto();
       vero.updatedAt = Date.now() - 60000;
       vero.lezioni = [{ id: 'vera-1', testo: 'UNA COSA MIA DAVVERO', verso: 'si', forza: 'noto', creata: Date.now() - 90000 }];
       vero.azioni = [{ id: 'vera-2', testo: 'AZIONE MIA DAVVERO', data: LM.todayKey(), creata: Date.now() - 90000 }];
       window.__fb.copie = {};
       window.__fb.doc = { data: JSON.stringify(vero), updatedAt: vero.updatedAt };
-
-      /* si risponde «Uniscili lo stesso»: è la strada che porta al guaio, ed
-         è quella che deve restare recuperabile. Chi risponde così ha scelto,
-         e la via del ritorno serve a lui. */
+      let domanda = false;
       window.__fb.entra('uid-esempio');
-      for (let i = 0; i < 60; i++) {
+      for (let i = 0; i < 30; i++) {
         await new Promise((r2) => setTimeout(r2, 100));
         const t = document.querySelector('.avviso-ovl #avv-tit');
-        if (t && /dati di esempio/i.test(t.textContent)) { document.querySelector('.avviso-ovl .avv-no').click(); break; }
+        if (t && /dati di esempio/i.test(t.textContent)) { domanda = true; document.querySelector('.avviso-ovl .avv-no').click(); break; }
       }
       await new Promise((r2) => setTimeout(r2, 1200));
-
-      const unito = JSON.stringify(LM.snapshot());
+      const qui = JSON.stringify(LM.snapshot());
+      const nube = String((window.__fb.doc || {}).data || '');
       const vie = Object.keys(window.__fb.copie);
-      const laCopia = vie[0] && JSON.parse(window.__fb.copie[vie[0]].data);
-
       return {
-        demoEra: !!demo.demo,
-        /* dopo l'accesso: l'esempio è entrato (è il difetto), e la roba vera c'è */
-        esempioDentro: /Capitolo di Analisi II/.test(unito),
-        veroDentro: /UNA COSA MIA DAVVERO/.test(unito),
-        /* e la copia di sicurezza è stata presa PRIMA di unire */
-        copie: vie.length,
-        copiaSenzaEsempio: !!laCopia && !/Capitolo di Analisi II/.test(JSON.stringify(laCopia)),
-        copiaColVero: !!laCopia && /UNA COSA MIA DAVVERO/.test(JSON.stringify(laCopia)),
-        id: vie[0] && vie[0].split('/').pop()
+        conImpronta: conImpronta, domanda: domanda,
+        esempioQui: /Capitolo di Analisi II/.test(qui), esempioNube: /Capitolo di Analisi II/.test(nube),
+        veroQui: /UNA COSA MIA DAVVERO/.test(qui) && /AZIONE MIA DAVVERO/.test(qui),
+        mioNube: /SCRITTA DA ME SUL COMPUTER/.test(nube) && /UNA COSA MIA DAVVERO/.test(nube),
+        copie: vie.length
       };
     });
-    ok('lo stato di esempio si riconosce da sé', r.demoEra);
-    ok('scegliendo «uniscili», l’esempio entra nell’account', r.esempioDentro, 'è la strada che porta al guaio');
-    ok('e i dati veri dell’account restano', r.veroDentro);
-    ok('prima di unire, il documento vero è messo da parte nel cloud', r.copie === 1, r.copie + ' copie');
-    ok('e quella copia ha i dati veri e NON l’esempio', r.copiaColVero && r.copiaSenzaEsempio,
-      'vero: ' + r.copiaColVero + ' · senza esempio: ' + r.copiaSenzaEsempio);
+    ok('i dati di esempio portano la loro impronta', r.conImpronta);
+    ok('collegandosi non serve chiedere niente', !r.domanda);
+    ok('l’esempio non va nel cloud', !r.esempioNube);
+    ok('e qui sparisce, al posto dei dati veri dell’account', !r.esempioQui && r.veroQui);
+    ok('quello scritto a mano sopra l’esempio resta, e va nel cloud', r.mioNube);
+    ok('prima di unire, il documento del cloud è messo da parte', r.copie === 1, r.copie + ' copie');
 
-    const q = await p.evaluate(async (id) => {
-      const fatto = await window.LMCloud.sostituisciConBackup(id);
-      await new Promise((r2) => setTimeout(r2, 500));
-      const ora = JSON.stringify(LM.snapshot());
-      return {
-        fatto: fatto,
-        esempioAncora: /Capitolo di Analisi II/.test(ora),
-        veroAncora: /UNA COSA MIA DAVVERO/.test(ora),
-        /* e quello che c'era è recuperabile: sostituire è la sola cosa che
-           toglie, e deve lasciare una strada per tornare */
-        scappatoia: LM.listBackups().some((x) => x.motivo === 'prima-di-sostituire-con-una-copia-dal-cloud'),
-        suCloud: !/Capitolo di Analisi II/.test(String((window.__fb.doc || {}).data || ''))
-      };
-    }, r.id);
-    ok('sostituendo con quella copia, l’esempio sparisce', q.fatto && !q.esempioAncora,
-      q.fatto ? (q.esempioAncora ? 'c’è ancora' : 'via') : 'la sostituzione non è partita');
-    ok('e i dati veri ci sono tutti', q.veroAncora);
-    ok('anche il cloud non ha più l’esempio', q.suCloud);
-    ok('e quello che c’era prima resta in un backup su questo dispositivo', q.scappatoia);
-
-    /* E LA VOLTA DOPO NON DEVE SUCCEDERE PIÙ: adesso l'app chiede, invece di
-       unire e basta. Qui si risponde «tieni solo i miei» e l'esempio non
-       entra proprio — la copia di sicurezza resta comunque, perché quella
-       risposta TOGLIE e chi toglie deve lasciare una strada per tornare. */
-    const chiesto = await p.evaluate(async () => {
+    const z = await p.evaluate(async () => {
       window.__fb.utente = null; if (window.__fb.avvisa) window.__fb.avvisa(null);
       await new Promise((r2) => setTimeout(r2, 300));
       localStorage.clear();
-      LM.seedDemo();
+      LM.seedDemo(); LM.reset();          /* «Azzera tutto» per togliere l'esempio */
+      const azzerato = LM.load().azzerato > 0;
       const vero = LM.statoVuoto();
-      vero.updatedAt = Date.now() - 60000;
-      vero.lezioni = [{ id: 'v2', testo: 'ROBA MIA SECONDA VOLTA', verso: 'si', forza: 'noto', creata: Date.now() - 90000 }];
+      vero.updatedAt = Date.now() - 86400000;
+      vero.azioni = [{ id: 'tel-1', testo: 'DAL TELEFONO, DI IERI', data: LM.todayKey(), creata: Date.now() - 86400000 }];
       window.__fb.copie = {};
       window.__fb.doc = { data: JSON.stringify(vero), updatedAt: vero.updatedAt };
-
-      /* si guarda che la domanda compaia, e si risponde come farebbe un dito */
-      let vista = false;
-      window.__fb.entra('uid-chiede');
-      for (let i = 0; i < 60; i++) {
-        await new Promise((r2) => setTimeout(r2, 100));
-        const t = document.querySelector('.avviso-ovl #avv-tit');
-        if (t && /dati di esempio/i.test(t.textContent)) {
-          vista = true;
-          document.querySelector('.avviso-ovl .avv-si').click();
-          break;
-        }
-      }
-      await new Promise((r2) => setTimeout(r2, 900));
-      const ora = JSON.stringify(LM.snapshot());
-      return {
-        vista: vista,
-        esempio: /Capitolo di Analisi II/.test(ora),
-        vero: /ROBA MIA SECONDA VOLTA/.test(ora),
-        scappatoia: LM.listBackups().some((x) => x.motivo === 'prima-di-togliere-i-dati-di-esempio')
-      };
+      window.__fb.entra('uid-azzera');
+      await new Promise((r2) => setTimeout(r2, 1500));
+      return { azzerato: azzerato, qui: /DAL TELEFONO, DI IERI/.test(JSON.stringify(LM.snapshot())), nube: /DAL TELEFONO, DI IERI/.test(String((window.__fb.doc || {}).data || '')) };
     });
-    ok('accedendo con l’esempio, l’app CHIEDE invece di unire e basta', chiesto.vista);
-    ok('e rispondendo «tieni solo i miei» l’esempio non entra', chiesto.vista && !chiesto.esempio);
-    ok('mentre i dati dell’account ci sono', chiesto.vero);
-    ok('e l’esempio resta in un backup, per chi ci aveva lavorato sopra', chiesto.scappatoia);
+    ok('«Azzera tutto» fatto prima di collegarsi segna il suo taglio', z.azzerato);
+    ok('ma collegandosi i dati del telefono arrivano qui', z.qui);
+    ok('e restano nel cloud', z.nube);
 
+    const t = await p.evaluate(async () => {
+      window.__fb.utente = null; if (window.__fb.avvisa) window.__fb.avvisa(null);
+      await new Promise((r2) => setTimeout(r2, 300));
+      localStorage.clear();
+      LM.seedDemo(); LM.aggiungiAzione('MIA', 'altro', {});
+      const n = LM.togliEsempio();
+      const ora = JSON.stringify(LM.snapshot());
+      /* si lascia l'account collegato: la prova dopo ha bisogno dell'ascolto */
+      window.__fb.doc = { data: JSON.stringify(LM.snapshot()), updatedAt: Date.now() };
+      window.__fb.entra('uid-dopo');
+      await new Promise((r2) => setTimeout(r2, 1200));
+      return { n: n, mia: /"MIA"/.test(ora), esempio: /Capitolo di Analisi II/.test(ora), backup: LM.listBackups().some((x) => x.motivo === 'prima-di-togliere-i-dati-di-esempio') };
+    });
+    ok('«Togli i dati di esempio» toglie l’esempio', t.n > 0 && !t.esempio, t.n + ' tolti');
+    ok('e lascia quello che hai scritto tu', t.mia);
+    ok('dopo un backup', t.backup);
   }
 
   /* ============================================================

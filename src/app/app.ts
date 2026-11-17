@@ -455,6 +455,12 @@ function setScorri(v: Stato['profilo']['scorri']): void {
   LM.save(); render();
 }
 export function caricaDemo(): void {
+  /* con l'account collegato l'esempio prenderebbe il posto dei dati veri
+     anche nel cloud: si carica solo staccati */
+  if (window.LM_AUTH && window.LM_AUTH.user) {
+    avviso({ titolo: 'Prima esci dall’account', testo: 'I dati di esempio si caricano solo su un dispositivo non collegato, così non toccano i tuoi dati veri.', azione: 'Ho capito' });
+    return;
+  }
   avviso({
     titolo: 'Sostituire i dati con quelli di esempio?',
     testo: 'Al posto dei tuoi dati vengono caricate otto settimane di esempio. Quelli di adesso restano in un backup, che trovi nelle impostazioni.',
@@ -467,7 +473,9 @@ export function caricaDemo(): void {
 export function azzeraTutto(): void {
   avviso({
     titolo: 'Cancellare tutti i dati?',
-    testo: 'Riparti da zero. I dati stanno soltanto su questo browser: una volta cancellati non tornano indietro.',
+    testo: window.LM_AUTH && window.LM_AUTH.user
+      ? 'Sei collegato: si cancellano anche dal cloud e da tutti i tuoi dispositivi. Se volevi togliere solo i dati di esempio, usa «Togli i dati di esempio».'
+      : 'Riparti da zero, su questo dispositivo. Se volevi togliere solo i dati di esempio, usa «Togli i dati di esempio».',
     azione: 'Cancella tutto', pericolo: true
   }, function () {
     LM.reset(); chiudiSheet(); location.hash = '#/oggi'; render();
@@ -1792,7 +1800,7 @@ export function htmlImpostazioni(pezzo?: 'profilo'): string {
            stare in fila con quello che salva. --- */
     etichetta('Ripartire da zero', 'riprova') +
     '<div class="lista">' +
-    rigaFa('imp-demo', 'sparkles', 'Carica dati di esempio') +
+    (LM.contaEsempio() ? rigaFa('imp-togli-esempio', 'sparkles', 'Togli i dati di esempio') : rigaFa('imp-demo', 'sparkles', 'Carica dati di esempio')) +
     rigaFa('imp-azzera', 'trash', 'Azzera tutto', 'sc-pericolo') +
     '</div>' +
     '</div>';
@@ -2203,6 +2211,15 @@ export function wireAspettoDati(root: HTMLElement): void {
     chiudiSheet(); toast('Hai effettuato la disconnessione.', 0, 'logout');
   });
   var d = root.querySelector<HTMLElement>('#imp-demo'); if (d) d.addEventListener('click', caricaDemo);
+  var te = root.querySelector<HTMLElement>('#imp-togli-esempio');
+  if (te) te.addEventListener('click', function () {
+    const n = LM.contaEsempio();
+    avviso({ titolo: 'Togliere i dati di esempio?', testo: 'Tolgo ' + n + ' cose d’esempio. Quello che hai scritto tu resta. Prima faccio un backup.', azione: 'Togli' }, function () {
+      const tolte = LM.togliEsempio();
+      chiudiSheet(); render();
+      toast('Tolti ' + tolte + ' dati di esempio', 0, 'sparkles');
+    });
+  });
   var z = root.querySelector<HTMLElement>('#imp-azzera'); if (z) z.addEventListener('click', azzeraTutto);
   var e = root.querySelector<HTMLElement>('#imp-esporta'); if (e) e.addEventListener('click', esportaDati);
   var b2 = root.querySelector<HTMLElement>('#imp-backup'); if (b2) b2.addEventListener('click', apriBackups);
@@ -2617,12 +2634,17 @@ function bandaDemo(): void {
   if (!s.demo || s.demoChiusa) { if (scriviSe(banda, '')) misura(); return; }
   /* sul telefono il testo lungo occupava due righe e mangiava mezzo schermo */
   const htmlBanda = '<div class="banda-demo"><span>' + ICO('sparkles', 13) +
-    ' <b>Dati di esempio</b><span class="banda-piu">· modifica pure, tutto resta salvato</span></span>' +
+    ' <b>Dati di esempio</b></span>' +
+    '<button class="sp-link banda-togli" id="banda-togli">Toglili</button>' +
     '<button class="banda-x" id="banda-x" aria-label="Nascondi">' + ICO('x', 15) + '</button></div>';
   /* la banda non cambia mai finché è aperta: la si riscriveva a ogni spunta */
   if (!scriviSe(banda, htmlBanda)) return;
   misura();
   /* il tasto è dentro all'HTML che abbiamo appena scritto due righe sopra */
+  presa(document.getElementById('banda-togli')).addEventListener('click', function () {
+    const tolte = LM.togliEsempio(); scriviSe(banda, ''); misura(); render();
+    toast('Tolti ' + tolte + ' dati di esempio', 0, 'sparkles');
+  });
   presa(document.getElementById('banda-x')).addEventListener('click', function () {
     LM.load().demoChiusa = true; LM.save(); scriviSe(banda, ''); misura();
   });

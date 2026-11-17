@@ -25,6 +25,8 @@ import type {
   RegistroGiorno, Promemoria, VocePromemoria, Chiedi, PatchChiedi
 } from '../tipi/stato';
 import { COME_UNIRE, giorno, ora } from '../tipi/stato';
+import type { ImprontaEsempio } from '../tipi/stato';
+import { TESTI_ESEMPIO, PROFILO_ESEMPIO } from './esempio';
 import { presa } from '../tipi/presa';
 
 /* ---------------------------------------------------------------- ADESSO
@@ -315,7 +317,8 @@ function creaLM() {
       /* l'ora di un «Azzera tutto» dichiarato. È l'unica cosa che dà alla
          fusione il permesso di togliere: senza, azzerare un dispositivo si
          annullerebbe da sé alla prima sincronizzazione con l'altro. */
-      azzerato: 0
+      azzerato: 0,
+      esempio: null
     };
   }
 
@@ -3535,7 +3538,117 @@ function creaLM() {
     oggiRitmo.chiestoGiorno = true;
 
     s.registro = []; // la demo parte con un diario-registro pulito
+    s.esempio = improntaEsempio(s);
     save();
+  }
+
+  /* ==================================================================
+     I DATI DI ESEMPIO NON SONO LA TUA VITA
+     ==================================================================
+     Si caricano per provare l'app, e prima o poi si collega l'account vero.
+     Erano due guai: l'esempio finiva nel cloud mescolato ai dati veri (e da
+     lì su tutti i dispositivi), e per toglierlo si usava «Azzera tutto», il
+     cui taglio, alla prima sincronizzazione, cancellava anche i dati veri del
+     telefono. Adesso l'esempio porta un'impronta: cosa ha scritto e com'era.
+     Con quella si toglie preciso, solo quello, e non esce mai di qui. */
+  const MAPPE_ESEMPIO = ['valutazioni', 'minuti', 'xpPerGiorno', 'pianoMattina', 'reviewSera', 'reviewSettimana', 'ritmoGiorno'] as const;
+  const ELENCHI_ESEMPIO = ['azioni', 'inbox', 'backlog', 'abitudini', 'checkins', 'esperimenti', 'lezioni'] as const;
+  function firma(v: unknown): number {
+    var t = JSON.stringify(v) || '', h = 5381;
+    for (var i = 0; i < t.length; i++) h = ((h * 33) ^ t.charCodeAt(i)) >>> 0;
+    return h;
+  }
+  function idDi(r: unknown): string {
+    var m = r as { id?: string; ts?: number };
+    return m && (m.id || (m.ts != null ? 'ts' + m.ts : '')) || '';
+  }
+  function improntaEsempio(st: Stato): ImprontaEsempio {
+    var imp: ImprontaEsempio = { ids: {}, giorni: {} };
+    var grezzo = st as unknown as Record<string, unknown>;
+    ELENCHI_ESEMPIO.forEach(function (k) {
+      var l = grezzo[k];
+      imp.ids[k] = Array.isArray(l) ? l.map(idDi).filter(Boolean) : [];
+    });
+    MAPPE_ESEMPIO.forEach(function (k) {
+      var m = grezzo[k], f: Record<string, number> = {};
+      if (eMappa(m)) Object.keys(m).forEach(function (g) { f[g] = firma((m as Record<string, unknown>)[g]); });
+      imp.giorni[k] = f;
+    });
+    return imp;
+  }
+  /* toglie da `st` quello che è d'esempio. Con l'impronta, solo quello che
+     l'esempio ha scritto e nessuno ha più toccato; con `ancheTesti` anche le
+     righe che hanno esattamente i testi dell'esempio (per l'esempio finito
+     nel cloud prima che ci fosse l'impronta). Torna quante cose ha tolto. */
+  function togliEsempioDa(st: Stato, ancheTesti?: boolean): number {
+    var tolte = 0;
+    var grezzo = st as unknown as Record<string, unknown>;
+    var imp = st.esempio || null;
+    var testi = TESTI_ESEMPIO as unknown as Record<string, readonly string[]>;
+    ELENCHI_ESEMPIO.forEach(function (k) {
+      var l = grezzo[k];
+      if (!Array.isArray(l)) return;
+      var ids: Record<string, 1> = {};
+      ((imp && imp.ids[k]) || []).forEach(function (i) { ids[i] = 1; });
+      var t = ancheTesti ? (testi[k] || []) : [];
+      var resta = l.filter(function (r: unknown) {
+        var via = !!ids[idDi(r)] || (t.length > 0 && t.indexOf(String((r as { testo?: string }).testo || '')) >= 0);
+        if (via) tolte++;
+        return !via;
+      });
+      grezzo[k] = resta;
+    });
+    if (imp) {
+      var giorniImp = imp.giorni;
+      MAPPE_ESEMPIO.forEach(function (k) {
+        var m = grezzo[k], f = giorniImp[k] || {};
+        if (!eMappa(m)) return;
+        Object.keys(f).forEach(function (g) {
+          if (g in (m as Record<string, unknown>) && firma((m as Record<string, unknown>)[g]) === f[g]) {
+            delete (m as Record<string, unknown>)[g]; tolte++;
+          }
+        });
+      });
+    }
+    if (imp || ancheTesti) {
+      if (st.profilo.nome === PROFILO_ESEMPIO.nome) st.profilo.nome = '';
+      if (st.profilo.visione === PROFILO_ESEMPIO.visione) st.profilo.visione = '';
+    }
+    st.demo = false;
+    st.esempio = null;
+    return tolte;
+  }
+  /* quante cose d'esempio ci sono (con l'impronta e coi testi) */
+  function contaEsempio(): number {
+    var copia = JSON.parse(JSON.stringify(load())) as Stato;
+    return togliEsempioDa(copia, true);
+  }
+  /* il tasto «Togli i dati di esempio» */
+  function togliEsempio(): number {
+    backup('prima-di-togliere-i-dati-di-esempio');
+    var n = togliEsempioDa(load(), true);
+    registra('dati', 'Tolti i dati di esempio (' + n + ')', true);
+    save();
+    return n;
+  }
+  /* quello che va nel cloud: tutto, tranne l'esempio contrassegnato */
+  function snapshotPerCloud(): Stato {
+    var copia = JSON.parse(JSON.stringify(load())) as Stato;
+    if (copia.esempio) togliEsempioDa(copia, false);
+    return copia;
+  }
+  /* PRIMA DI UNIRSI A UN ACCOUNT per la prima volta, da questo dispositivo:
+     · l'esempio contrassegnato resta fuori;
+     · un «Azzera tutto» fatto QUI prima di collegarsi non taglia il cloud.
+       Quel taglio voleva dire «via quello che avevo qui», e qui non c'era
+       niente dell'account: applicato alla fusione, cancellava tutti i dati
+       veri dell'altro dispositivo (ed è quello che succedeva). */
+  function primaUnione(): void {
+    var st = load();
+    var cambiato = false;
+    if (st.esempio) { togliEsempioDa(st, false); cambiato = true; }
+    if (st.azzerato) { st.azzerato = 0; cambiato = true; }
+    if (cambiato) { senzaLapidi++; save(); senzaLapidi--; }
   }
 
   /* ==================================================================
@@ -3576,7 +3689,8 @@ function creaLM() {
     SLOT_COLORI: SLOT_COLORI,
     METRICHE_ESPERIMENTO: METRICHE_ESPERIMENTO,
     XP_EVENTI: XP_EVENTI,
-    load: load, save: save, reset: reset, seedDemo: seedDemo, hydrate: hydrate, snapshot: snapshot,
+    load: load, save: save, reset: reset, seedDemo: seedDemo,
+    togliEsempio: togliEsempio, contaEsempio: contaEsempio, snapshotPerCloud: snapshotPerCloud, primaUnione: primaUnione, hydrate: hydrate, snapshot: snapshot,
     unisci: unisci, recuperi: recuperi, COME_UNIRE: COME_UNIRE, statoVuoto: statoVuoto,
     backup: backup, listBackups: listBackups, restoreBackup: restoreBackup, ricchezza: ricchezza,
     exportJson: exportJson, importJson: importJson, ripristinaStato: ripristinaStato,
