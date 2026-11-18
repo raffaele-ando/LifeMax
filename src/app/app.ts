@@ -4444,7 +4444,7 @@ function apriItemGiornata(k: Giorno, id: string, tipo: 'azione' | 'abitudine', o
     (spuntabile
       ? '<button class="btn btn-grande ' + (fatto ? 'btn-ghost' : 'btn-primario') + ' ig-fatto"><span class="ig-fatto-ico">' + ICO(fatto ? 'annulla' : 'check', 15) + '</span>' + (fatto ? 'Togli la spunta' : 'Fatta') + '</button>'
       : '') +
-    '<div class="gr ig-campi">' +
+    '<div class="gr">' +
     '<label class="gr-riga" for="ig-ora"><span class="gr-eti">Ora</span><span class="gr-valori">' +
       /* la «x» sta DENTRO la pillola del valore, come il tasto che svuota
          un campo di ricerca: c'è solo quando c'è qualcosa da togliere */
