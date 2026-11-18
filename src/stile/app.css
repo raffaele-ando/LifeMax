@@ -5344,7 +5344,7 @@ input.campo-velato, .q-chip-data input.campo-velato, input.sc-nascosta.campo-vel
 .giornata .gio-so-corpo { border: 0; background: none; padding: 8px 0; min-height: 44px; }
 .giornata .gio-so-corpo:hover { background: none; }
 .giornata .gio-so-testo { white-space: normal; overflow: visible; font-size: 15px; font-weight: 500; }
-.gio-so-ora { flex: none; width: 44px; height: 44px; border: 0; background: none; border-radius: 50%; display: grid; place-items: center; color: var(--accento-testo); }
+.gio-so-ora { position: relative; flex: none; width: 44px; height: 44px; border: 0; background: none; border-radius: 50%; display: grid; place-items: center; color: var(--accento-testo); cursor: pointer; }
 .gio-so-ora:active { background: var(--premuto); }
 .giornata .gio-so-riga .manico { display: none; }
 /* l'aggiunta e il piede */

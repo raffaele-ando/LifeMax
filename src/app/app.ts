@@ -4581,7 +4581,10 @@ function montaGiornata(container: HTMLElement, opzioni?: OpzGriglia): void {
           '<button class="gio-so-corpo" ' + bAttr + '>' +
           segnoArea(ar, 13, 'tl-tag') +
           '<span class="gio-so-testo">' + esc(e.testo) + (e.mit ? ' ' + ICO('star', 11) : '') + '</span>' +
-          '</button><button class="gio-so-ora" ' + bAttr + ' aria-label="Aggiungi orario a ' + esc(e.testo) + '">' + ICO('clock', 15) + '</button></div>';
+          /* l'orologio apre DIRETTAMENTE la ruota dell'ora: toccare la riga apre
+           la scheda, toccare l'orologio mette l'orario e basta */
+        '</button><label class="gio-so-ora" data-apri-campo="1" aria-label="Aggiungi orario a ' + esc(e.testo) + '">' + ICO('clock', 15) +
+        '<input type="time" class="campo-velato gio-so-ora-campo" data-so-ora="' + e.id + '" data-so-tipo="' + e.tipo + '" aria-label="Orario di ' + esc(e.testo) + '"></label></div>';
       }).join('') + '</div>';
   }
   /* Aggiunta rapida: solo il testo e l'area. L'orario si dà dopo, toccando
@@ -4786,6 +4789,16 @@ function montaGiornata(container: HTMLElement, opzioni?: OpzGriglia): void {
       zona.innerHTML = ICO('clock', 15) + '<span>Togli l’orario</span>';
       container.appendChild(zona);
     }
+    container.querySelectorAll<HTMLInputElement>('.gio-so-ora-campo').forEach(function (inp) {
+      inp.addEventListener('change', function () {
+        if (!inp.value) return;
+        const id = inp.getAttribute('data-so-ora') || '', o = comeOra(inp.value);
+        if (inp.getAttribute('data-so-tipo') === 'abitudine') LM.spostaAbitudineIlGiorno(id, k, o);
+        else { LM.setOraAzione(id, o); LM.spostaAzione(id, k); }
+        toast('Alle ' + o + '.', 0, 'clock');
+        montaGiornata(container, opts); aggiornaNav();
+      });
+    });
     abilitaTrascina(container, function (id, bersaglio, _x, y) {
       if (id.indexOf('ab:') === 0) {
         const hid = id.split(':')[1] || '';
