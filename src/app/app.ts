@@ -4438,14 +4438,13 @@ function apriItemGiornata(k: Giorno, id: string, tipo: 'azione' | 'abitudine', o
   void LM.coloreArea(areaById(e.areaId));
   const fatto = isAz ? e.done : e.fatto;
   const durOpt = DURATE.map(function (o) { return '<option value="' + o.v + '"' + ((e.dur || '') === o.v ? ' selected' : '') + '>' + o.t + '</option>'; }).join('');
-  const ar0 = areaById(e.areaId);
+
   const html = '<div class="ig-ed">' +
-    '<div class="abd-chi"><span class="abd-area" style="--c-area:' + LM.coloreArea(ar0) + '">' + ICO(ar0.icona, 13) + ' ' + esc(ar0.nome) + '</span>' +
-    '<span>' + (isAz ? 'Attività' : ICO('refresh', 11) + ' Abitudine') + ' · ' + esc(etichettaGiorno(k)) + '</span></div>' +
+    '<div class="abd-chi"><span>' + (isAz ? 'Attività' : ICO('refresh', 11) + ' Abitudine') + ' · ' + esc(etichettaGiorno(k)) + '</span></div>' +
     (spuntabile
       ? '<button class="btn btn-grande ' + (fatto ? 'btn-ghost' : 'btn-primario') + ' ig-fatto"><span class="ig-fatto-ico">' + ICO(fatto ? 'annulla' : 'check', 15) + '</span>' + (fatto ? 'Togli la spunta' : 'Fatta') + '</button>'
       : '') +
-    '<div class="gr-titolo">Quando</div><div class="gr">' +
+    '<div class="gr ig-campi">' +
     '<label class="gr-riga" for="ig-ora"><span class="gr-eti">Ora</span><span class="gr-valori">' +
       /* la «x» sta DENTRO la pillola del valore, come il tasto che svuota
          un campo di ricerca: c'è solo quando c'è qualcosa da togliere */
@@ -4454,18 +4453,17 @@ function apriItemGiornata(k: Giorno, id: string, tipo: 'azione' | 'abitudine', o
     '<label class="gr-riga" for="ig-dur"><span class="gr-eti">Durata</span>' +
       '<span class="gr-pillola' + (e.dur ? ' piena' : '') + '"><select class="gr-val" id="ig-dur">' + durOpt + '</select>' +
       (e.dur ? '<button class="gr-svuota ig-nodur" aria-label="Togli la durata">' + ICO('x', 11) + '</button>' : '') + '</span></label>' +
-    '</div>' +
-    '<div class="gr-titolo">Dettagli</div><div class="gr">' +
     '<label class="gr-riga" for="ig-area"><span class="gr-eti">Area</span>' + selectAree('ig-area', e.areaId, 'Area', 'gr-val') + '</label>' +
     '</div>' +
     '<div class="gr ig-azioni">' +
     (isAz
-      ? '<button class="gr-riga gr-agg ig-indietro">' + ICO('lista', 15) + (e.passoDi ? ' Togli dal giorno' : ' Sposta in Da fare') + '</button>'
+      ? '<button class="gr-riga gr-agg ig-indietro">' + ICO('lista', 15) + (e.passoDi ? ' Togli dal giorno' : ' Sposta in Da fare') + '</button>' +
+        '<button class="gr-riga gr-agg gr-rosso ig-rimuovi">' + ICO('trash', 15) + ' Elimina</button>'
       : '<button class="gr-riga gr-agg ig-salta">' + ICO('x', 15) + ' Togli solo da ' + esc(etichettaGiorno(k).toLowerCase()) + '</button>' +
         '<button class="gr-riga gr-agg ig-finequi">' + ICO('fineperiodo', 15) + ' Finisce qui</button>' +
         '<button class="gr-riga gr-agg ig-vairituali">' + ICO('arrowRight', 15) + ' Apri l’abitudine</button>') +
     '</div>' +
-    (isAz ? '<button class="gr-pericolo ig-rimuovi">Elimina</button>' : '') +
+
     '</div>';
   apriSheet(esc(e.testo), html, function (root) {
     /* il nome si cambia toccandolo: è il titolo del foglio */
@@ -4583,7 +4581,7 @@ function montaGiornata(container: HTMLElement, opzioni?: OpzGriglia): void {
           '<button class="gio-so-corpo" ' + bAttr + '>' +
           segnoArea(ar, 13, 'tl-tag') +
           '<span class="gio-so-testo">' + esc(e.testo) + (e.mit ? ' ' + ICO('star', 11) : '') + '</span>' +
-          '<span class="gio-so-cta">' + ICO('clock', 13) + ' Aggiungi orario</span></button></div>';
+          '</button><button class="gio-so-ora" ' + bAttr + ' aria-label="Aggiungi orario a ' + esc(e.testo) + '">' + ICO('clock', 15) + '</button></div>';
       }).join('') + '</div>';
   }
   /* Aggiunta rapida: solo il testo e l'area. L'orario si dà dopo, toccando
@@ -4631,7 +4629,7 @@ function montaGiornata(container: HTMLElement, opzioni?: OpzGriglia): void {
         '<button class="icona-btn" data-sp-del="' + i + '" title="Rimuovi" aria-label="Rimuovi">' + ICO('trash', 13) + '</button></div>';
     }).join('');
     sonnoTop = '<div class="gio-sonno">' +
-      '<button class="gio-sonno-testa" id="gio-sonno-toggle" aria-expanded="' + aperto + '"><span class="gs-riass">' + riass + (d.dalRegistro ? ' <span class="tl-ed-badge">registrato</span>' : '') + '</span>' +
+      '<button class="gio-sonno-testa" id="gio-sonno-toggle" aria-expanded="' + aperto + '"><span class="gs-riass">' + riass + '</span>' +
       '<span class="bk-chevron' + (aperto ? ' aperta' : '') + '">' + ICO('chevronGiu', 15) + '</span></button>' +
       /* il corpo c'è sempre (nascosto se chiuso): aprirlo non ricostruisce
          la pagina, così il grafico sopra non si muove */

@@ -5299,15 +5299,53 @@ input.campo-velato, .q-chip-data input.campo-velato, input.sc-nascosta.campo-vel
 .gr-svuota:active { transform: translateY(-50%) scale(.9); }
 .gr-svuota { border-radius: 50% !important; corner-shape: round; }
 
-/* NIENTE PULSANTI A TUTTA LARGHEZZA PER LE COSE RARE. «Togli dal giorno» e
-   «Elimina» sono due comandi che si usano di rado: stanno in fondo, piccoli,
-   uno accanto all'altro, come i link in fondo alle schede di iOS. */
-.ig-ed .ig-azioni, .ig-ed > .gr-pericolo { display: inline-flex; width: auto; margin-top: 20px; background: none; box-shadow: none; overflow: visible; }
-.ig-ed .ig-azioni { flex-wrap: wrap; gap: 4px 16px; }
-.ig-ed .ig-azioni .gr-riga { min-height: 44px; padding: 0 4px; border: 0; background: none; font-size: 15px; width: auto; }
-.ig-ed .ig-azioni .gr-riga .ico { display: none; }
-.ig-ed > .gr-pericolo { min-height: 44px; padding: 0 4px; margin-left: 20px; font-size: 15px; }
-.ig-ed .ig-azioni + .gr-pericolo, .ig-ed .ig-azioni .gr-riga + .gr-riga { border-top: 0; }
+/* LA SCHEDA DI UN BLOCCO DELLA GIORNATA: tre riquadri e basta, vicini.
+   I valori (ora, durata, area) in uno; i comandi (sposta, elimina) in un
+   altro, con le loro icone; niente titoletti di sezione a fare spazio. */
+.ig-ed { gap: 0; }
+.ig-ed .abd-chi { margin: 0 0 12px; }
+.ig-ed .ig-fatto { margin: 0 0 12px; min-height: 48px; }
+.ig-ed .gr + .gr { margin-top: 12px; }
+.ig-ed .ig-azioni { margin-top: 12px; }
+.ig-ed .ig-azioni .gr-riga { min-height: 48px; }
+.gr-rosso, .gr-agg.gr-rosso { color: var(--critico-testo, #d1242f); }
 
 .sc-togli-ag { margin-left: 2px; font-size: inherit; }
 .gr-svuota { z-index: 1; }
+
+/* ============================================================
+   LA GIORNATA, RIVISTA. Niente riquadro attorno a tutto: la giornata sta
+   sulla pagina come un calendario, e i suoi pezzi (il sonno, le cose senza
+   orario) sono righe pulite invece di scatole dentro una scatola.
+   ============================================================ */
+.giornata:not(.giornata-pop) { background: none; box-shadow: none; border: 0; padding: 0; }
+.giornata:not(.giornata-pop) > .orizz-barra { margin: 0 0 8px; padding: 0; border: 0; }
+.giornata:not(.giornata-pop) > .orizz-barra .orizz-eti { font-size: 20px; justify-content: center; text-align: center; }
+.giornata .orizz-barra .icona-btn { width: 40px; height: 40px; border: 0; background: var(--superficie-1); box-shadow: var(--e1); border-radius: 50%; corner-shape: round; }
+.giornata .orizz-barra.via-da-oggi { margin: 0 0 8px; padding: 0; background: none; }
+/* il sonno: una riga sola, piccola, che si apre */
+.giornata .gio-sonno { margin: 0 0 12px; border: 0; background: var(--superficie-1); box-shadow: var(--e1); border-radius: calc(14px * var(--sq)); }
+.giornata .gio-sonno-testa { min-height: 44px; padding: 8px 14px; }
+/* la griglia su un fondo suo */
+.giornata:not(.giornata-pop) #tl-grid-host { background: var(--superficie-1); border-radius: calc(18px * var(--sq)); box-shadow: var(--e1); padding: 12px 12px 12px 4px; }
+/* SENZA ORARIO: righe di un elenco, non scatole. Spunta, nome intero,
+   e a destra l'orologio per dargli un'ora. */
+.giornata .gio-so { margin-top: 20px; border-top: 0; padding-top: 0; }
+.giornata .gio-so > .lista-eti { margin: 0 4px 8px; }
+.giornata .gio-so-riga { background: var(--superficie-1); padding: 4px 4px 4px 14px; gap: 10px; min-height: 52px; box-shadow: var(--e1); }
+.giornata .gio-so-riga:first-of-type { border-radius: calc(16px * var(--sq)) calc(16px * var(--sq)) 0 0; }
+.giornata .gio-so-riga:last-child { border-radius: 0 0 calc(16px * var(--sq)) calc(16px * var(--sq)); }
+.giornata .gio-so-riga:first-of-type:last-child { border-radius: calc(16px * var(--sq)); }
+.giornata .gio-so-riga + .gio-so-riga { border-top: 1px solid var(--bordo); }
+.giornata .gio-so-riga .tl-check { width: 24px; height: 24px; min-width: 24px; min-height: 24px; border-radius: 50%; corner-shape: round; }
+.giornata .gio-so-riga .tl-check::after { content: ''; position: absolute; inset: -10px; }
+.giornata .gio-so-corpo { border: 0; background: none; padding: 8px 0; min-height: 44px; }
+.giornata .gio-so-corpo:hover { background: none; }
+.giornata .gio-so-testo { white-space: normal; overflow: visible; font-size: 15px; font-weight: 500; }
+.gio-so-ora { flex: none; width: 44px; height: 44px; border: 0; background: none; border-radius: 50%; display: grid; place-items: center; color: var(--accento-testo); }
+.gio-so-ora:active { background: var(--premuto); }
+.giornata .gio-so-riga .manico { display: none; }
+/* l'aggiunta e il piede */
+.giornata .tl-add { margin-top: 16px; padding-top: 0; border-top: 0; }
+.giornata:not(.giornata-pop) .tl-piede { border-top: 0; margin-top: 8px; padding-top: 0; align-items: center; }
+.giornata:not(.giornata-pop) .tl-piede .btn { width: auto; background: none; border: 0; box-shadow: none; color: var(--accento-testo); font-weight: 600; min-height: 44px; }
