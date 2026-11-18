@@ -5351,3 +5351,4 @@ input.campo-velato, .q-chip-data input.campo-velato, input.sc-nascosta.campo-vel
 .giornata .tl-add { margin-top: 16px; padding-top: 0; border-top: 0; }
 .giornata:not(.giornata-pop) .tl-piede { border-top: 0; margin-top: 8px; padding-top: 0; align-items: center; }
 .giornata:not(.giornata-pop) .tl-piede .btn { width: auto; background: none; border: 0; box-shadow: none; color: var(--accento-testo); font-weight: 600; min-height: 44px; }
+.gio-so-ora-campo { color-scheme: inherit; }
