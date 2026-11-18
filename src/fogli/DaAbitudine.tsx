@@ -25,7 +25,7 @@ export default function DaAbitudine({ id }: { id: string }) {
     const o = scritta ? comeOra(scritta) : null;
     const d = dur.current ? dur.current.value : '';
     LM.backlogInAbitudine(quella.id, giorni, { ora: o, durata: d ? +d : null });
-    toast('Diventata un’abitudine: la trovi fra le Abitudini.', 0, 'refresh');
+    toast('Trasformata in abitudine.', 0, 'refresh');
     chiudiSheet(); aggiornaNav(); render();
   };
 

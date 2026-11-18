@@ -5285,5 +5285,29 @@ input.campo-velato, .q-chip-data input.campo-velato, input.sc-nascosta.campo-vel
 }
 [data-apri-campo] { cursor: pointer; }
 
-/* i comandi che tolgono: un riquadro a sé, staccato come gli altri */
-.ig-togli { margin-top: 12px; }
+/* LA «X» DENTRO LA PILLOLA: un cerchietto grigio a destra del valore, che
+   c'è solo quando il valore c'è. Il bersaglio vero è più grande del segno. */
+.gr-pillola { position: relative; display: inline-flex; align-items: center; }
+.gr-pillola.piena .gr-val { padding-right: 34px; }
+.gr-svuota {
+  position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+  width: 22px; height: 22px; border-radius: 50%; border: 0; padding: 0;
+  display: grid; place-items: center;
+  background: color-mix(in srgb, var(--inchiostro-1) 22%, transparent); color: var(--superficie-1);
+}
+.gr-svuota::after { content: ''; position: absolute; inset: -11px; }
+.gr-svuota:active { transform: translateY(-50%) scale(.9); }
+.gr-svuota { border-radius: 50% !important; corner-shape: round; }
+
+/* NIENTE PULSANTI A TUTTA LARGHEZZA PER LE COSE RARE. «Togli dal giorno» e
+   «Elimina» sono due comandi che si usano di rado: stanno in fondo, piccoli,
+   uno accanto all'altro, come i link in fondo alle schede di iOS. */
+.ig-ed .ig-azioni, .ig-ed > .gr-pericolo { display: inline-flex; width: auto; margin-top: 20px; background: none; box-shadow: none; overflow: visible; }
+.ig-ed .ig-azioni { flex-wrap: wrap; gap: 4px 16px; }
+.ig-ed .ig-azioni .gr-riga { min-height: 44px; padding: 0 4px; border: 0; background: none; font-size: 15px; width: auto; }
+.ig-ed .ig-azioni .gr-riga .ico { display: none; }
+.ig-ed > .gr-pericolo { min-height: 44px; padding: 0 4px; margin-left: 20px; font-size: 15px; }
+.ig-ed .ig-azioni + .gr-pericolo, .ig-ed .ig-azioni .gr-riga + .gr-riga { border-top: 0; }
+
+.sc-togli-ag { margin-left: 2px; font-size: inherit; }
+.gr-svuota { z-index: 1; }

@@ -154,7 +154,7 @@ const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  
   await p.waitForTimeout(400);
   ok('uscendo, il timer continua', await p.evaluate(() => !!LM.timerVivo()));
   ok('e la scheda offre di tornarci',
-    await p.evaluate(() => { const x = document.getElementById('btn-concentra'); return !!x && /timer/i.test(x.textContent); }));
+    await p.evaluate(() => { const x = document.getElementById('btn-concentra'); return !!x && /timer/i.test(x.textContent + ' ' + (x.getAttribute('aria-label') || '')); }));
   await p.reload(); await p.waitForTimeout(1300);
   ok('e uscito resta uscito anche dopo un ricaricamento',
     await p.evaluate(() => !document.body.classList.contains('in-concentrazione')));
@@ -184,7 +184,8 @@ const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  
   await vai(p);
   const areaPrima = await p.evaluate(() => {
     const s = LM.load(); const k = LM.todayKey();
-    return JSON.stringify(LM.minutiDi(k));
+    /* oggi e ieri: dopo mezzanotte una sessione partita venti minuti fa è di ieri */
+    return JSON.stringify([LM.minutiDi(k), LM.minutiDi(LM.addDays(k, -1))]);
   });
   await p.evaluate(() => document.getElementById('btn-timer').click());
   await p.waitForTimeout(500);
@@ -202,7 +203,7 @@ const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  
   ok('a scadenza il timer sparisce', await p.evaluate(() => !LM.timerVivo()));
   const areaDopo = await p.evaluate(() => {
     const s = LM.load(); const k = LM.todayKey();
-    return JSON.stringify(LM.minutiDi(k));
+    return JSON.stringify([LM.minutiDi(k), LM.minutiDi(LM.addDays(k, -1))]);
   });
   ok('e i minuti finiscono nel conto dell’area', areaDopo !== areaPrima, areaPrima + ' → ' + areaDopo);
   ok('e la concentrazione si chiude da sé',
@@ -222,11 +223,11 @@ const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  
   const dopo5 = await p.evaluate(() => { const t = LM.timerVivo(); return t && { tipo: t.tipo, durata: t.durata, daAvvio: !!t.daAvvio }; });
   ok('allo scadere NON si ferma', !!dopo5, dopo5 ? JSON.stringify(dopo5) : 'fermato');
   ok('riparte da solo con un blocco intero', !!dopo5 && dopo5.tipo === 'blocco' && dopo5.durata >= 20, JSON.stringify(dopo5));
-  ok('e lo schermo dice che sta andando avanti',
-    /vado avanti/i.test(await p.evaluate(() => { const e = document.querySelector('.conc-tipo'); return e ? e.textContent : ''; })),
+  ok('e lo schermo dice che è una sessione',
+    /sessione/i.test(await p.evaluate(() => { const e = document.querySelector('.conc-tipo'); return e ? e.textContent : ''; })),
     await p.evaluate(() => { const e = document.querySelector('.conc-tipo'); return e ? e.textContent.trim() : '(chiuso)'; }));
-  ok('e il comando per smettere dice «basta così»',
-    /basta/i.test(await p.evaluate(() => { const e = document.getElementById('conc-ferma'); return e ? e.textContent : ''; })),
+  ok('e il comando per smettere dice «Termina»',
+    /termina/i.test(await p.evaluate(() => { const e = document.getElementById('conc-ferma'); return e ? e.textContent : ''; })),
     await p.evaluate(() => { const e = document.getElementById('conc-ferma'); return e ? e.textContent.trim() : '(niente)'; }));
   ok('e i cinque minuti fatti sono già stati contati',
     await p.evaluate(() => { const m = LM.minutiDi(LM.todayKey()); return Object.values(m).some((v) => v >= 5); }),

@@ -83,7 +83,7 @@ export default function Diagnostica() {
       a2.value = t;
       a2.focus();
       a2.select();
-      toast('Testo selezionato: tienilo premuto e scegli «Copia».', 0, 'copy');
+      toast('Testo selezionato: tieni premuto e scegli Copia.', 0, 'copy');
     };
     if (navigator.clipboard && navigator.clipboard.writeText) {
       void navigator.clipboard.writeText(t).then(() => toast('Registro copiato.', 0, 'copy'), aMano);
@@ -112,7 +112,7 @@ export default function Diagnostica() {
       <button className="btn btn-mini" id="diag-riprova" onClick={() => {
         LM.save();   /* forza un giro di salvataggio: rilancia anche il push sul cloud */
         if (window.LMLog) window.LMLog.info('registro', 'Salvataggio richiesto a mano dall’utente');
-        toast('Salvataggio richiesto: l’esito è nelle righe qui sotto.', 0, 'riprova');
+        toast('Salvataggio in corso…', 0, 'riprova');
       }}><Segno nome="riprova" /> Riprova ora</button>
       <button className="btn btn-mini btn-ghost" id="diag-svuota" onClick={() => {
         if (window.LMLog) window.LMLog.svuota();

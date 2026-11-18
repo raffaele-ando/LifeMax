@@ -28,7 +28,7 @@ export default function Timer({ azioneId, areaId, testo, minBlocco }: PropTimer)
         {QUALI.map((k) => {
           const T = tipiTimer()[k];
           const min = k === 'blocco' ? (minBlocco || T.min) : T.min;
-          const quanto = k === 'libero' ? 'senza fine' : (k === 'pomodoro' ? min + ' + ' + T.pausa + ' min' : min + ' min');
+          const quanto = k === 'libero' ? 'nessun limite' : (k === 'pomodoro' ? min + ' + ' + T.pausa + ' min' : min + ' min');
           return (
             <button key={k} className="lista-riga sc-porta timer-scelta" data-timer-tipo={k} data-min={min}
               onClick={() => { chiudiSheet(); avviaTimer(azioneId || null, min, areaId, k, testo || ''); }}>

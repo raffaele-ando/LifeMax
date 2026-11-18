@@ -15,7 +15,7 @@ import type { CopiaNelCloud } from '../nuvola/nuvola';
 import { avviso, chiudiSheet, applicaTema, render, toast } from '../app/app';
 
 const MOTIVI: Record<string, string> = {
-  'prima-azzeramento': 'prima di azzerare',
+  'prima-azzeramento': 'prima della cancellazione',
   'prima-import': 'prima di un import',
   'prima-del-ripristino': 'prima di un ripristino',
   'prima-di-adottare-cloud': 'prima di caricare dal cloud',
@@ -82,7 +82,7 @@ function Cloud() {
           <Tasto testo="Riprendi" misura="mini" dati={{ 'data-cloudbk': String(b.id) }} onClick={() => {
             avviso({
               titolo: 'Riprendere questa copia?',
-              testo: 'Quello che le manca viene aggiunto a quello che hai adesso. Niente viene tolto.',
+              testo: 'Quello che manca verrà aggiunto ai dati attuali. Non verrà tolto niente.',
               azione: 'Riprendi'
             }, () => {
               void puo.riprendi(b.id).then((fatto) => {
@@ -93,8 +93,8 @@ function Cloud() {
           }} />
           <Tasto testo="Sostituisci" misura="mini" piu="btn-ghost" dati={{ 'data-cloudsost': String(b.id) }} onClick={() => {
             avviso({
-              titolo: 'Mettere questa copia al posto di tutto?',
-              testo: 'Quello che c’è adesso viene salvato in un backup su questo dispositivo, e al suo posto va questa copia. Le cose che nella copia non ci sono spariscono: è la sola via per togliere roba che non è tua.',
+              titolo: 'Sostituire con questa copia?',
+              testo: 'I dati attuali verranno salvati in un backup e sostituiti da questa copia.',
               azione: 'Sostituisci', pericolo: true
             }, () => {
               void puo.sostituisci(b.id).then((fatto) => {
@@ -122,7 +122,7 @@ export default function Backup() {
             <Tasto testo="Ripristina" misura="mini" dati={{ 'data-ts': String(b.ts) }} onClick={() => {
               avviso({
                 titolo: 'Ripristinare questo backup?',
-                testo: 'I dati di adesso non vanno persi: prima di ripristinare vengono salvati come nuovo backup.',
+                testo: 'I dati attuali verranno salvati in un nuovo backup.',
                 azione: 'Ripristina'
               }, () => {
                 LM.restoreBackup(b.ts); chiudiSheet(); applicaTema(); render();

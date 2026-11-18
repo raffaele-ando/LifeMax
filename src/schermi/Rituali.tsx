@@ -26,7 +26,7 @@ function Riga({ r, adesso, aperto, onApri }: {
         <span className="rit-ico"><Segno nome={r.ico} /></span>
         <span className="rit-nome">
           {r.nome}
-          {r.id === adesso ? <span className="solo-lettori"> — è il rituale di adesso</span> : null}
+          {r.id === adesso ? <span className="solo-lettori"> · adesso</span> : null}
         </span>
         <span className={'rit-stato' + (st.fatto ? ' fatto' : '')}>
           <span className="rs-che">{st.fatto ? <><Segno nome="check" dim={13} />{' '}</> : null}{st.testo}</span>

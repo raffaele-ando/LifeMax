@@ -148,7 +148,7 @@ export default function Abitudine({ id, dopo }: PropAbitudine) {
           {prevista && !st.fatta ? (
             <button className="sp-link" id="abd-salta" onClick={() => {
               LM.saltaGiornoAbitudine(id);
-              toast('Saltata per oggi. La serie regge.', 0, 'moon');
+              toast('Saltata per oggi.', 0, 'moon');
               ridisegna();
             }}>Salta oggi</button>
           ) : null}
@@ -211,7 +211,7 @@ export default function Abitudine({ id, dopo }: PropAbitudine) {
           chiudiSheet();
           if (dopo) dopo();
         });
-      }}>Elimina l’abitudine</button>
+      }}>Elimina</button>
     </div>
   );
 }

@@ -1664,7 +1664,7 @@ function creaLM() {
     var motivo = a.mancata ? a.mancata.perche : 'altro';
     var q = (PERCHE_MANCATA.find(function (x) { return x.id === motivo; }) || { eti: '' }).eti || '';
     registra('azione',
-      (G.quota > 0 ? G.eti.toLowerCase() + ' di «' + a.testo + '»' : 'Non ci sono riuscito: «' + a.testo + '»') +
+      (G.quota > 0 ? G.eti.toLowerCase() + ' di «' + a.testo + '»' : 'Non completata: «' + a.testo + '»') +
       (q ? ' — ' + q.toLowerCase() : '') + (punti ? ' (+' + punti + ' XP)' : ''), false);
     save();
     return punti;

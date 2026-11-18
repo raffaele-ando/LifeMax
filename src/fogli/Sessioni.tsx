@@ -19,7 +19,7 @@ export default function Sessioni() {
   for (let i = 0; i < 14; i++) giorni.push(LM.addDays(oggi, -i));
   const conQualcosa = giorni.filter((g) => LM.sessioniDi(g).length > 0);
   if (!conQualcosa.length) {
-    return <div className="sc"><div className="vuoto" style={{ padding: '24px 8px' }}>Ancora niente: i minuti arrivano qui quando fermi un timer.</div></div>;
+    return <div className="sc"><div className="vuoto" style={{ padding: '24px 8px' }}>Nessuna sessione.</div></div>;
   }
   return (
     <div className="sc">

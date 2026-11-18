@@ -458,12 +458,12 @@ export function caricaDemo(): void {
   /* con l'account collegato l'esempio prenderebbe il posto dei dati veri
      anche nel cloud: si carica solo staccati */
   if (window.LM_AUTH && window.LM_AUTH.user) {
-    avviso({ titolo: 'Prima esci dall’account', testo: 'I dati di esempio si caricano solo su un dispositivo non collegato, così non toccano i tuoi dati veri.', azione: 'Ho capito' });
+    avviso({ titolo: 'Sei connesso', testo: 'Esci dall’account per caricare i dati di esempio.', azione: 'OK' });
     return;
   }
   avviso({
     titolo: 'Sostituire i dati con quelli di esempio?',
-    testo: 'Al posto dei tuoi dati vengono caricate otto settimane di esempio. Quelli di adesso restano in un backup, che trovi nelle impostazioni.',
+    testo: 'I dati attuali verranno sostituiti da otto settimane di esempio. Ne resta una copia in Backup e ripristino.',
     azione: 'Carica l’esempio'
   }, function () {
     LM.seedDemo(); applicaTema(); chiudiSheet(); render();
@@ -631,7 +631,7 @@ document.addEventListener('click', function (e) {
 /* quando l'accesso con Google non riesce, lo si dice con le parole giuste */
 document.addEventListener('lm:accesso-fallito', function (e) {
   const d = (e as CustomEvent<{ titolo: string; testo: string }>).detail;
-  if (d) avviso({ titolo: d.titolo, testo: d.testo, azione: 'Ho capito' });
+  if (d) avviso({ titolo: d.titolo, testo: d.testo, azione: 'OK' });
 });
 export function avviso(opz: OpzAvviso, onSi?: () => void, onNo?: () => void): void {
   if (avvisoAperto) { if (onNo) onNo(); return; }
@@ -726,7 +726,7 @@ export function conAnnulla(testo: string, icona: string, fai: () => void): void 
   toast(testo, 0, icona, { eti: 'Annulla', fai: function () {
     LM.ripristinaStato(prima);
     render();
-    toast('Rimesso a posto.', 0, 'annulla');
+    toast('Ripristinato.', 0, 'annulla');
   } });
 }
 
@@ -1827,15 +1827,15 @@ export function htmlImpostazioni(pezzo?: 'profilo'): string {
     etichetta('Account', 'user') +
     htmlAccount() +
     '<div class="lista mt-s">' +
-    '<label class="lista-riga sc-riga" for="imp-area-nuova"><span class="sc-eti">' + ICO('aree', 15) + ' Area delle cose nuove</span>' +
+    '<label class="lista-riga sc-riga" for="imp-area-nuova"><span class="sc-eti">' + ICO('aree', 15) + ' Area predefinita</span>' +
     '<span class="sc-val"><select id="imp-area-nuova" class="sc-inline">' +
-    '<option value=""' + (s.profilo.areaNuova ? '' : ' selected') + '>Secondo cosa</option>' +
+    '<option value=""' + (s.profilo.areaNuova ? '' : ' selected') + '>Automatica</option>' +
     '<option value="-"' + (s.profilo.areaNuova === '-' ? ' selected' : '') + '>Nessuna</option>' +
     areeAttive().map(function (a) { return '<option value="' + a.id + '"' + (a.id === s.profilo.areaNuova ? ' selected' : '') + '>' + esc(a.nome) + '</option>'; }).join('') +
     '</select></span></label>' +
     rigaPorta('imp-timer', 'durata', 'Timer', (function () {
       const pr = (s.profilo.timer || {}).predefinito;
-      return pr ? TIPI_TIMER[pr].nome.toLowerCase() : 'chiede ogni volta';
+      return pr ? TIPI_TIMER[pr].nome.toLowerCase() : 'chiedi sempre';
     })()) +
     rigaPorta('imp-musica', 'cuffie', 'Musica', (s.profilo.musica && (s.profilo.musica.predefinita || Object.keys(s.profilo.musica.aree || {}).length)) ? 'impostata' : 'nessuna') +
     rigaPorta('imp-aspetto', 'palette', 'Aspetto', modo === 'auto' ? 'automatico' : modo === 'dark' ? 'scuro' : 'chiaro') +
@@ -1844,8 +1844,8 @@ export function htmlImpostazioni(pezzo?: 'profilo'): string {
     /* --- I TUOI DATI: due cose che si fanno e una porta --- */
     etichetta('I tuoi dati', 'dati') +
     '<div class="lista">' +
-    rigaFa('imp-esporta', 'download', 'Esporta tutto in un file (.json)') +
-    rigaFa('imp-importa', 'upload', 'Importa da un file') +
+    rigaFa('imp-esporta', 'download', 'Esporta dati') +
+    rigaFa('imp-importa', 'upload', 'Importa dati') +
     rigaPorta('imp-backup', 'archivio', 'Backup e ripristino', nBackup ? String(nBackup) : 'nessuno') +
     '</div>' +
     '<input type="file" id="imp-file" accept="application/json,.json" hidden>' +
@@ -1861,10 +1861,10 @@ export function htmlImpostazioni(pezzo?: 'profilo'): string {
 
     /* --- RIPARTIRE: staccato, e in fondo. Quello che cancella non può
            stare in fila con quello che salva. --- */
-    etichetta('Ripartire da zero', 'riprova') +
+    etichetta('Reimposta', 'riprova') +
     '<div class="lista">' +
-    (LM.contaEsempio() ? rigaFa('imp-togli-esempio', 'sparkles', 'Togli i dati di esempio') : rigaFa('imp-demo', 'sparkles', 'Carica dati di esempio')) +
-    rigaFa('imp-azzera', 'trash', 'Azzera tutto', 'sc-pericolo') +
+    (LM.contaEsempio() ? rigaFa('imp-togli-esempio', 'sparkles', 'Rimuovi dati di esempio') : rigaFa('imp-demo', 'sparkles', 'Carica dati di esempio')) +
+    rigaFa('imp-azzera', 'trash', 'Cancella tutti i dati', 'sc-pericolo') +
     '</div>' +
     '</div>';
 }
@@ -1905,19 +1905,19 @@ export function apriPromemoria() {
       (pr.azione || '') +
     '</div>' +
 
-    '<div class="gr-titolo">Cosa ti arriva</div><div class="gr">' +
+    '<div class="gr-titolo">Notifiche</div><div class="gr">' +
       riga('mattina', 'Piano del mattino', '') +
       riga('checkin', 'Check-in', '') +
-      riga('mit', 'La priorità', '') +
+      riga('mit', 'Priorità del giorno', '') +
       riga('sera', 'Chiusura della giornata', '') +
-      riga('abitudini', 'Abitudini con un’ora', '') +
+      riga('abitudini', 'Abitudini con orario', '') +
     '</div>' +
 
     '<div class="gr-titolo">Non disturbare</div><div class="gr">' +
-      '<div class="gr-riga"><span class="gr-eti">Silenzio</span>' +
+      '<div class="gr-riga"><span class="gr-eti">Attivo</span>' +
         '<button class="interr' + (c.silenzio.on ? ' on' : '') + '" id="prom-sil-int" role="switch" aria-checked="' + !!c.silenzio.on + '" aria-label="Silenzio"><i></i></button></div>' +
       (c.silenzio.on
-        ? '<div class="gr-riga gr-sotto"><span class="gr-eti">Fra le</span><span class="gr-valori">' +
+        ? '<div class="gr-riga gr-sotto"><span class="gr-eti">Tra le</span><span class="gr-valori">' +
           '<input type="time" class="gr-val prom-t" id="prom-sil-da" value="' + esc(c.silenzio.da) + '" aria-label="Silenzio dalle">' +
           '<span class="gr-tratto">–</span>' +
           '<input type="time" class="gr-val prom-t" id="prom-sil-a" value="' + esc(c.silenzio.a) + '" aria-label="Silenzio fino alle"></span></div>'
@@ -1970,10 +1970,10 @@ function wireAccendiSpegni(root: HTMLElement, riscriviImpostazioni: () => void):
   if (pon) pon.addEventListener('click', function () {
     pon.disabled = true;
     void P.accendi().then(function (esito) {
-      if (esito === 'negato') toast('Il permesso è stato negato: senza quello non arrivano notifiche.', 0, 'avviso');
-      else if (esito === 'chiave') toast('La chiave pubblica non va bene: guarda in «Promemoria».', 0, 'avviso');
-      else if (esito === 'server') toast('Il permesso c’è, ma il server non risponde: guarda in «Promemoria».', 0, 'avviso');
-      else if (!P.configurato()) toast('Acceso. Per ora arriva solo la fine del timer.', 0, 'campana');
+      if (esito === 'negato') toast('Notifiche non consentite.', 0, 'avviso');
+      else if (esito === 'chiave') toast('Chiave pubblica non valida.', 0, 'avviso');
+      else if (esito === 'server') toast('Il server delle notifiche non risponde.', 0, 'avviso');
+      else if (!P.configurato()) toast('Notifiche attive.', 0, 'campana');
       else toast('Promemoria accesi.', 0, 'campana');
       riscriviImpostazioni();
     });
@@ -2034,7 +2034,7 @@ export function wirePromemoria(root: HTMLElement): void {
         /* un campo ora svuotato rimette quello di prima invece di lasciare
            una voce senza orario, che non partirebbe mai */
         i.value = LM.promemoria().voci[id].ora || '';
-        toast('L’ora deve essere scritta per intero.', 0, 'avviso');
+        toast('Orario non valido.', 0, 'avviso');
         return;
       }
       salva({ voci: { [id]: { on: LM.promemoria().voci[id].on, ora: comeOra(i.value) } } });
@@ -2094,7 +2094,7 @@ export function wirePromemoria(root: HTMLElement): void {
       return;
     }
     tasto.disabled = true;
-    dillo('Sto provando a parlargli…');
+    dillo('Connessione…');
     /* prima si chiede al server se è vivo: così l'errore è «il server non
        risponde» invece di «le notifiche non arrivano», che è la stessa cosa
        detta in un modo che non aiuta */
@@ -2169,7 +2169,7 @@ export function wirePromemoria(root: HTMLElement): void {
   if (pv) pv.addEventListener('click', function () {
     const prova = pv;
     prova.disabled = true;
-    dillo('Sto mandando…');
+    dillo('Invio…');
     /* mandare il piano prima serve: se l'iscrizione è nuova, sul server non
        c'è ancora niente a cui mandare la prova */
     void P.mandaPiano(true).then(function () {
@@ -2187,7 +2187,7 @@ export function wirePromemoria(root: HTMLElement): void {
       else dillo(spiegaProva(x.j, x.r.status), 'sync-errore');
     }).catch(function () {
       prova.disabled = false;
-      dillo('Non ci sono riuscito: il server non risponde.', 'sync-errore');
+      dillo('Non completata: il server non risponde.', 'sync-errore');
     });
   });
 }
@@ -2273,7 +2273,7 @@ export function wireAspettoDati(root: HTMLElement): void {
     chiudiSheet();
     Promise.resolve(window.LMCloud ? window.LMCloud.signOut() : undefined).then(function () {
       location.hash = '#/oggi'; render();
-      toast('Sei uscito. I tuoi dati restano nel tuo account.', 0, 'logout');
+      toast('Disconnesso. I dati restano nel tuo account.', 0, 'logout');
     });
   });
   var d = root.querySelector<HTMLElement>('#imp-demo'); if (d) d.addEventListener('click', caricaDemo);
@@ -2281,12 +2281,12 @@ export function wireAspettoDati(root: HTMLElement): void {
   if (an) an.addEventListener('change', function () {
     const v = an ? an.value : '';
     const st = LM.load(); if (v) st.profilo.areaNuova = v; else delete st.profilo.areaNuova; LM.save();
-    toast(v === '-' ? 'Le cose nuove nasceranno senza area' : v ? 'Le cose nuove nasceranno in «' + areaById(v).nome + '»' : 'Ogni cosa nuova prende l’area che le si addice', 0, 'aree');
+    toast(v === '-' ? 'Area predefinita: nessuna' : v ? 'Area predefinita: ' + areaById(v).nome : 'Area predefinita: automatica', 0, 'aree');
   });
   var te = root.querySelector<HTMLElement>('#imp-togli-esempio');
   if (te) te.addEventListener('click', function () {
     const n = LM.contaEsempio();
-    avviso({ titolo: 'Togliere i dati di esempio?', testo: 'Tolgo ' + n + ' cose d’esempio. Quello che hai scritto tu resta. Prima faccio un backup.', azione: 'Togli' }, function () {
+    avviso({ titolo: 'Togliere i dati di esempio?', testo: 'Tolgo ' + n + ' cose d’esempio. Quello che hai scritto tu resta. Prima faccio un backup.', azione: 'Rimuovi' }, function () {
       const tolte = LM.togliEsempio();
       chiudiSheet(); render();
       toast('Tolti ' + tolte + ' dati di esempio', 0, 'sparkles');
@@ -2334,9 +2334,9 @@ export function wireAspettoDati(root: HTMLElement): void {
              d'uscita, che c'è: la copia presa un istante fa. */
           if (r.tagliati) {
             avviso({
-              titolo: 'Importato, ma in parte',
+              titolo: 'Importazione parziale',
               testo: r.tagliati + ' righe del file sono più vecchie dell’ultimo «Azzera tutto», e l’azzeramento le tiene fuori: è quello che impedisce al cloud di rimettere indietro quello che hai cancellato.<br><br>Se volevi davvero riavere quel file com’era, in «Backup e ripristino» c’è la copia presa un istante fa, prima di questa importazione.',
-              azione: 'Ho capito'
+              azione: 'OK'
             });
           } else {
             toast('Dati importati (' + r.ricchezza + ' elementi).', 0, 'upload');
@@ -2474,7 +2474,7 @@ function htmlAccount() {
       nota('I dati stanno su questo dispositivo. Accedi per ritrovarli su tutti.');
   }
   return '<div class="lista"><div class="lista-riga sc-riga">' +
-    '<span class="sc-eti">' + ICO('soloQui', 15) + ' Dove stanno i dati</span>' +
+    '<span class="sc-eti">' + ICO('soloQui', 15) + ' Sincronizzazione</span>' +
     '<span class="sc-val">su questo dispositivo</span></div></div>';
 }
 
@@ -2719,7 +2719,7 @@ function bandaDemo(): void {
   /* sul telefono il testo lungo occupava due righe e mangiava mezzo schermo */
   const htmlBanda = '<div class="banda-demo"><span>' + ICO('sparkles', 13) +
     ' <b>Dati di esempio</b></span>' +
-    '<button class="sp-link banda-togli" id="banda-togli">Toglili</button>' +
+    '<button class="sp-link banda-togli" id="banda-togli">Rimuovi</button>' +
     '<button class="banda-x" id="banda-x" aria-label="Nascondi">' + ICO('x', 15) + '</button></div>';
   /* la banda non cambia mai finché è aperta: la si riscriveva a ogni spunta */
   if (!scriviSe(banda, htmlBanda)) return;
@@ -2783,13 +2783,13 @@ export interface TipoTimer {
 export type NomeTimer = 'avvio' | 'blocco' | 'pomodoro' | 'libero';
 
 export const TIPI_TIMER: Record<NomeTimer, TipoTimer> = {
-  avvio:    { nome: 'Solo per partire', min: 5,  eti: '5 min',  ico: 'play', poi: 25,
+  avvio:    { nome: 'Avvio rapido', min: 5,  eti: '5 min',  ico: 'play', poi: 25,
               dice: 'Cinque minuti, poi va avanti da solo di 25.' },
-  blocco:   { nome: 'Un blocco',        min: 25, eti: '25 min', ico: 'clock',
+  blocco:   { nome: 'Sessione',        min: 25, eti: '25 min', ico: 'clock',
               dice: 'Un pezzo di tempo con una fine.' },
   pomodoro: { nome: 'Pomodoro',         min: 25, pausa: 5, ico: 'refresh',
               dice: '25 minuti, poi 5 di pausa. E si ricomincia.' },
-  libero:   { nome: 'Senza fine',       min: 0,  ico: 'durata',
+  libero:   { nome: 'Cronometro',       min: 0,  ico: 'durata',
               dice: 'Conta in avanti. Fermi tu quando vuoi.' }
 };
 
@@ -2868,10 +2868,10 @@ export function avviaTimer(azioneId: string | null, minuti: number | null, areaI
   if (altro && !mioTimer(altro) && !giaChiesto) {
     const az0 = LM.load().azioni.find(function (x) { return x.id === altro.azioneId; });
     avviso({
-      titolo: 'Un timer sta già andando',
-      testo: 'Sull’altro dispositivo: «' + ((az0 && az0.testo) || altro.testo || 'concentrazione') + '», ' +
-        (altro.tipo === 'libero' ? 'da ' : 'restano ') + fmtCrono(timerResta(altro)) + '. I suoi minuti restano registrati.',
-      azione: 'Sostituiscilo', annulla: 'Guardalo qui'
+      titolo: 'Timer già attivo',
+      testo: '«' + ((az0 && az0.testo) || altro.testo || 'Concentrazione') + '» su un altro dispositivo, ' +
+        (altro.tipo === 'libero' ? 'da ' : 'mancano ') + fmtCrono(timerResta(altro)) + '.',
+      azione: 'Sostituisci', annulla: 'Mostralo'
     }, function () {
       fermaTimer(true);
       avviaTimer(azioneId, minuti, areaId, tipo, testo, true);
@@ -2912,10 +2912,13 @@ function minutiFatti(t: TimerVivo | null): number {
    dispositivi che lo chiudono insieme ne scrivono uno solo */
 function chiudiBlocco(t: TimerVivo, minuti: number): string | null {
   if (minuti < 1) return null;
-  const a = LM.load().azioni.find(function (x) { return x.id === t.azioneId; });
-  const area = t.areaId || (a ? a.areaId : null);
+  const st = LM.load();
+  const a = st.azioni.find(function (x) { return x.id === t.azioneId; });
+  /* il timer può essere su un'abitudine: l'area è la sua */
+  const h = a ? null : st.abitudini.find(function (x) { return x.id === t.azioneId; });
+  const area = t.areaId || (a ? a.areaId : (h ? h.areaId : null));
   const id = 'ses-' + t.inizio;
-  LM.registraSessione({ id: id, areaId: area, azioneId: t.azioneId, testo: (a && a.testo) || t.testo || '',
+  LM.registraSessione({ id: id, areaId: area, azioneId: t.azioneId, testo: (a && a.testo) || (h && h.testo) || t.testo || '',
     tipo: t.tipo, inizio: t.inizio, minuti: minuti });
   return id;
 }
@@ -2933,7 +2936,7 @@ function fermaTimer(registra?: boolean): string | null {
 function dopoFermato(id: string | null, testo: string, icona: string, xp?: number): void {
   toast(testo, xp || 0, icona, id ? { eti: 'Correggi', fai: function () { apriSessioni(); } } : undefined);
 }
-export function apriSessioni(): void { apriFoglio('Tempo col timer', 'sessioni', {}); }
+export function apriSessioni(): void { apriFoglio('Sessioni del timer', 'sessioni', {}); }
 
 /* IL BATTITO. Non ridisegna la pagina: scrive due numeri dove servono. */
 function battitoTimerAvvia(): void {
@@ -2949,7 +2952,7 @@ function pausaSaltata(): void {
   const da = t.pausaDa || Date.now();
   LM.aggiornaTimerDati({ inPausa: false, pausaFine: 0, pausaDa: 0, inizio: da,
     fine: da + t.durata * 60000, ciclo: (t.ciclo || 1) + 1, dispositivo: QUESTO });
-  toast('Bene: la pausa conta come lavoro.', 0, 'play');
+  toast('Pausa saltata: il tempo conta come lavoro.', 0, 'play');
   disegnaConcentrazione(); render();
 }
 
@@ -2976,8 +2979,8 @@ function passoTimer(): void {
     LM.aggiornaTimerDati(Object.assign({ inPausa: false, pausaFine: 0, pausaDa: 0, inizio: ora,
       fine: ora + t.durata * 60000, ciclo: (t.ciclo || 1) + 1 }, io));
     festeggia('leggero');
-    toast('Si ricomincia. Blocco ' + ((t.ciclo || 1) + 1) + '.', 0, 'refresh');
-    avvisoFuori('Pausa finita', 'Si ricomincia.');
+    toast('Si riparte. Sessione ' + ((t.ciclo || 1) + 1) + '.', 0, 'refresh');
+    avvisoFuori('Pausa finita', 'Si riparte.');
     disegnaConcentrazione(); render();
     return;
   }
@@ -2986,8 +2989,8 @@ function passoTimer(): void {
     const p = pausaDopo(t.ciclo || 1);
     LM.aggiornaTimerDati(Object.assign({ inPausa: true, pausaDa: t.fine, pausaFine: t.fine + p * 60000 }, io));
     festeggia('leggero');
-    toast('Blocco finito. ' + p + ' minuti di pausa.', 0, 'durata');
-    avvisoFuori('Blocco finito', p + ' minuti di pausa.');
+    toast('Sessione finita. ' + p + ' minuti di pausa.', 0, 'durata');
+    avvisoFuori('Sessione finita', p + ' minuti di pausa.');
     disegnaConcentrazione(); render();
     return;
   }
@@ -3000,8 +3003,8 @@ function passoTimer(): void {
     LM.aggiornaTimerDati(Object.assign({ tipo: 'blocco' as NomeTimer, inizio: t.fine, durata: pezzo,
       fine: t.fine + pezzo * 60000, ciclo: (t.ciclo || 1) + 1, daAvvio: true }, io));
     festeggia('leggero');
-    toast('Sei partito. Vado avanti di ' + pezzo + ' — fermami quando vuoi.', 0, 'play');
-    avvisoFuori('Sei partito', 'Vado avanti di ' + pezzo + ' minuti. Fermami quando vuoi.');
+    toast('Avvio completato. Continuo per ' + pezzo + '.', 0, 'play');
+    avvisoFuori('Avvio completato', 'Continuo per ' + pezzo + ' minuti.');
     disegnaConcentrazione(); render();
     return;
   }
@@ -3035,7 +3038,7 @@ function avvisoFuori(titolo: string, testo: string): void {
    guardare meno roba.
    ============================================================ */
 export function apriArchivioReview() {
-  apriFoglio('Le review di prima', 'review', {});
+  apriFoglio('Archivio review', 'review', {});
 }
 
 /* ============================================================
@@ -3086,7 +3089,7 @@ export function scegliTimer(azioneId: string | null, areaId?: string | null, tes
     avviaTimer(azioneId, pred === 'blocco' && minBlocco ? minBlocco : null, areaId, pred, testo || '');
     return;
   }
-  apriFoglio('Quanto ci stai', 'timer', { azioneId: azioneId, areaId: areaId, testo: testo, minBlocco: minBlocco });
+  apriFoglio('Timer', 'timer', { azioneId: azioneId, areaId: areaId, testo: testo, minBlocco: minBlocco });
 }
 
 /* ============================================================
@@ -3145,18 +3148,18 @@ function disegnaConcentrazione(): void {
     '<button class="conc-esci" id="conc-esci" aria-label="Torna all’app">' + ICO('x', 18) + '</button>' +
     '<div class="conc-dentro">' +
     '<div class="conc-tipo">' + ICO(T.ico, 13) + ' ' +
-    (t.inPausa ? 'Pausa' : (t.daAvvio ? 'Sei partito, vado avanti' : T.nome)) +
+    (t.inPausa ? 'Pausa' : (t.daAvvio ? T.nome : T.nome)) +
     (t.tipo === 'pomodoro' && !t.inPausa ? ' · blocco ' + (t.ciclo || 1) : '') + '</div>' +
     '<h2 class="conc-cosa">' + esc(titolo) + '</h2>' +
     '<div class="conc-anello' + (t.inPausa ? ' in-pausa' : '') + '" data-timer-anello style="--p:0">' +
     '<div class="conc-cifre" data-timer-cifre>' + fmtCrono(timerResta(t)) + '</div>' +
-    '<div class="conc-eti">' + (t.tipo === 'libero' ? 'da quando hai cominciato' : (t.inPausa ? 'di pausa' : 'restano')) + '</div>' +
+    '<div class="conc-eti">' + (t.tipo === 'libero' ? 'trascorsi' : (t.inPausa ? 'di pausa' : 'restano')) + '</div>' +
     '</div>' +
     '<div class="conc-tasti">' +
-    (t.inPausa ? '<button class="btn btn-grande btn-tinta" id="conc-continuato">' + ICO('play', 18) + ' Ho continuato a lavorare</button>' : '') +
+    (t.inPausa ? '<button class="btn btn-grande btn-tinta" id="conc-continuato">' + ICO('play', 18) + ' Salta la pausa</button>' : '') +
     '<button class="btn btn-ok btn-grande" id="conc-fatto">' + ICO('check', 18) + ' Fatto</button>' +
     '<button class="btn btn-mini btn-ghost" id="conc-ferma">' + ICO('pause', 15) + ' ' +
-    (t.daAvvio ? 'Basta così' : 'Ferma e registra i minuti') + '</button>' +
+    (t.daAvvio ? 'Termina' : 'Termina') + '</button>' +
     '<div class="conc-altri">' +
     (musica ? '<button class="btn btn-mini btn-ghost" id="conc-musica">' + ICO('cuffie', 15) + ' Musica</button>' : '') +
     '<button class="btn btn-mini btn-ghost" id="conc-cambia">' + ICO('refresh', 15) + ' Cambia timer</button>' +
@@ -3604,7 +3607,7 @@ export function vistaFocus(): Scena {
         : '<button class="btn btn-primario btn-grande" data-vai="rituali" data-sub="mattina">' + ICO('sun', 18) + ' Scegli le azioni di oggi</button>' +
           '<button class="btn btn-mini btn-ghost" data-vai="inbox">' + ICO('inbox', 15) + ' Prendi dalle attività</button>') +
       '</div>' +
-      '<div class="focus-agg">' + rigaAggiunta('agg-rapida', 'Scrivi una cosa da fare…') + '</div>' +
+      '<div class="focus-agg">' + rigaAggiunta('agg-rapida', 'Nuova attività…') + '</div>' +
       '';
     return scena;
   }
@@ -3712,7 +3715,7 @@ export function vistaFocus(): Scena {
       cls: 'ora', barra: 'corso', ico: 'target',
       quota: Math.max(0.02, Math.min(1, (oraAdesso - daMin) / durata)) };
   } else if (adesso.stato === 'ritardo') {
-    stato = { parola: 'In ritardo', dett: 'era alle ' + fmtMin(daMin) + daQuanto(aMin),
+    stato = { parola: 'In ritardo', dett: 'prevista alle ' + fmtMin(daMin) + daQuanto(aMin),
       cls: 'ritardo', barra: 'ritardo', quota: 1, ico: 'avviso' };
   } else if (adesso.stato === 'programmata') {
     /* con una durata è un BLOCCO e la barra è un binario; senza durata è un
@@ -3894,7 +3897,7 @@ export function vistaFocus(): Scena {
       /* nella casa nuova solo dove vuol dire qualcosa: su una cosa che
          aveva un tempo. Altrove era un quarto bersaglio sempre acceso. */
       (prossima.tipo === 'abitudine' ? ''
-        : '<button class="btn btn-mini btn-ghost btn-mancata" id="btn-mancata">Non del tutto…</button>') +
+        : '<button class="btn btn-mini btn-ghost btn-mancata" id="btn-mancata">Non completata…</button>') +
       '</div>') +
     /* Quante ne restano lo dice già il contatore in cima e il tasto delle
        altre. Qui resta solo la cosa che nessuno dei due dice: che dopo
@@ -3915,7 +3918,7 @@ export function vistaFocus(): Scena {
      puoi fare quando vuoi non significa niente, e nella scheda di oggi
      compare invece in tutte e sei le situazioni. */
   const mancata = (prossima.tipo !== 'abitudine' && (adesso.stato === 'corso' || adesso.stato === 'ritardo'))
-    ? '<div class="fuoco-mancata"><button class="btn-mancata" id="btn-mancata">Non del tutto…</button></div>'
+    ? '<div class="fuoco-mancata"><button class="btn-mancata" id="btn-mancata">Non completata…</button></div>'
     : '';
 
   /* ------------------------------------------------------------------
@@ -4152,7 +4155,7 @@ lega(bSalta, function () {
   fermaTimer(false);
   if (fuocoScelto === q.id) fuocoScelto = null;
   LM.saltaGiornoAbitudine(q.id);
-  toast('Saltata per oggi: la serie non si azzera.', 0, 'salta');
+  toast('Saltata per oggi.', 0, 'salta');
   render();
 });
 const bm = document.getElementById('btn-mancata');
@@ -4197,7 +4200,7 @@ function minDi(o: Ora): number { return minOf(o) ?? 0; }
 
 /* scaletta di durate ampia: dai 5 minuti (una micro-azione per partire) alle
    8 ore (una giornata di lavoro), così nessuno deve arrotondare per forza */
-export const DURATE: { v: number | ''; t: string }[] = [{ v: '', t: 'durata —' },
+export const DURATE: { v: number | ''; t: string }[] = [{ v: '', t: 'Nessuna' },
   { v: 5, t: '5 min' }, { v: 10, t: '10 min' }, { v: 15, t: '15 min' }, { v: 20, t: '20 min' },
   { v: 25, t: '25 min' }, { v: 30, t: '30 min' }, { v: 45, t: '45 min' }, { v: 60, t: '1 h' },
   { v: 90, t: '1 h 30' }, { v: 120, t: '2 h' }, { v: 150, t: '2 h 30' }, { v: 180, t: '3 h' },
@@ -4444,26 +4447,25 @@ function apriItemGiornata(k: Giorno, id: string, tipo: 'azione' | 'abitudine', o
       : '') +
     '<div class="gr-titolo">Quando</div><div class="gr">' +
     '<label class="gr-riga" for="ig-ora"><span class="gr-eti">Ora</span><span class="gr-valori">' +
-      '<input type="time" class="gr-val" id="ig-ora" value="' + (e.ora || '') + '"></span></label>' +
-    '<label class="gr-riga" for="ig-dur"><span class="gr-eti">Durata</span><select class="gr-val" id="ig-dur">' + durOpt + '</select></label>' +
+      /* la «x» sta DENTRO la pillola del valore, come il tasto che svuota
+         un campo di ricerca: c'è solo quando c'è qualcosa da togliere */
+      '<span class="gr-pillola' + (e.ora ? ' piena' : '') + '"><input type="time" class="gr-val" id="ig-ora" value="' + (e.ora || '') + '">' +
+      (e.ora ? '<button class="gr-svuota ig-noora" aria-label="Togli l’orario">' + ICO('x', 11) + '</button>' : '') + '</span></span></label>' +
+    '<label class="gr-riga" for="ig-dur"><span class="gr-eti">Durata</span>' +
+      '<span class="gr-pillola' + (e.dur ? ' piena' : '') + '"><select class="gr-val" id="ig-dur">' + durOpt + '</select>' +
+      (e.dur ? '<button class="gr-svuota ig-nodur" aria-label="Togli la durata">' + ICO('x', 11) + '</button>' : '') + '</span></label>' +
     '</div>' +
-    /* TOGLIERE QUELLO CHE C'ERA, a parole e non con una crocetta da
-       indovinare: l'orario (torna fra le cose senza orario) e la durata */
-    ((e.ora || e.dur) ? '<div class="gr ig-togli">' +
-      (e.ora ? '<button class="gr-riga gr-agg ig-noora">' + ICO('clock', 15) + ' Togli l’orario</button>' : '') +
-      (e.dur ? '<button class="gr-riga gr-agg ig-nodur">' + ICO('durata', 15) + ' Togli la durata</button>' : '') +
-      '</div>' : '') +
     '<div class="gr-titolo">Dettagli</div><div class="gr">' +
     '<label class="gr-riga" for="ig-area"><span class="gr-eti">Area</span>' + selectAree('ig-area', e.areaId, 'Area', 'gr-val') + '</label>' +
     '</div>' +
     '<div class="gr ig-azioni">' +
     (isAz
-      ? '<button class="gr-riga gr-agg ig-indietro">' + ICO('lista', 15) + ' Togli dal giorno' + (e.passoDi ? '' : ', torna in «Da fare»') + '</button>'
+      ? '<button class="gr-riga gr-agg ig-indietro">' + ICO('lista', 15) + (e.passoDi ? ' Togli dal giorno' : ' Sposta in Da fare') + '</button>'
       : '<button class="gr-riga gr-agg ig-salta">' + ICO('x', 15) + ' Togli solo da ' + esc(etichettaGiorno(k).toLowerCase()) + '</button>' +
         '<button class="gr-riga gr-agg ig-finequi">' + ICO('fineperiodo', 15) + ' Finisce qui</button>' +
         '<button class="gr-riga gr-agg ig-vairituali">' + ICO('arrowRight', 15) + ' Apri l’abitudine</button>') +
     '</div>' +
-    (isAz ? '<button class="gr-pericolo ig-rimuovi">Elimina l’attività</button>' : '') +
+    (isAz ? '<button class="gr-pericolo ig-rimuovi">Elimina</button>' : '') +
     '</div>';
   apriSheet(esc(e.testo), html, function (root) {
     /* il nome si cambia toccandolo: è il titolo del foglio */
@@ -4500,7 +4502,7 @@ function apriItemGiornata(k: Giorno, id: string, tipo: 'azione' | 'abitudine', o
       const prima = e.ora;
       if (isAz) LM.setOraAzione(id, null); else LM.spostaAbitudineIlGiorno(id, k, '-');
       chiudiSheet(); ricarica();
-      toast(isAz ? 'Tolto l’orario.' : 'Oggi senza orario.', 0, 'clock', { eti: 'Annulla', fai: function () {
+      toast(isAz ? 'Orario rimosso.' : 'Oggi senza orario.', 0, 'clock', { eti: 'Annulla', fai: function () {
         if (isAz) LM.setOraAzione(id, prima || null); else LM.spostaAbitudineIlGiorno(id, k, null);
         ricarica();
       } });
@@ -4510,7 +4512,7 @@ function apriItemGiornata(k: Giorno, id: string, tipo: 'azione' | 'abitudine', o
       const prima = e.dur;
       if (isAz) LM.setDurataAzione(id, null); else LM.modificaAbitudine(id, { durata: null });
       chiudiSheet(); ricarica();
-      toast('Tolta la durata.', 0, 'durata', { eti: 'Annulla', fai: function () {
+      toast('Durata rimossa.', 0, 'durata', { eti: 'Annulla', fai: function () {
         if (isAz) LM.setDurataAzione(id, prima || null); else LM.modificaAbitudine(id, { durata: prima || null });
         ricarica();
       } });
@@ -4529,14 +4531,14 @@ function apriItemGiornata(k: Giorno, id: string, tipo: 'azione' | 'abitudine', o
     const salta = root.querySelector<HTMLElement>('.ig-salta');
     if (salta) salta.addEventListener('click', function () {
       LM.saltaGiornoAbitudine(id, k);
-      toast('Tolta solo da questo giorno: le altre e i prossimi giorni non cambiano.', 0, 'x');
+      toast('Tolta da questo giorno.', 0, 'x');
       chiudiSheet(); ricarica();
     });
     const fq = root.querySelector<HTMLElement>('.ig-finequi');
     if (fq) fq.addEventListener('click', function () {
       const hh = LM.load().abitudini.find(function (x) { return x.id === id; });
       LM.impostaPeriodoAbitudine(id, hh ? hh.da : null, k);
-      toast('Da domani non comparirà più. Lo storico resta.', 0, 'fineperiodo');
+      toast('Abitudine terminata. Lo storico resta.', 0, 'fineperiodo');
       chiudiSheet(); ricarica();
     });
     const vai = root.querySelector<HTMLElement>('.ig-vairituali');
@@ -4581,7 +4583,7 @@ function montaGiornata(container: HTMLElement, opzioni?: OpzGriglia): void {
           '<button class="gio-so-corpo" ' + bAttr + '>' +
           segnoArea(ar, 13, 'tl-tag') +
           '<span class="gio-so-testo">' + esc(e.testo) + (e.mit ? ' ' + ICO('star', 11) : '') + '</span>' +
-          '<span class="gio-so-cta">' + ICO('clock', 13) + ' dai un orario</span></button></div>';
+          '<span class="gio-so-cta">' + ICO('clock', 13) + ' Aggiungi orario</span></button></div>';
       }).join('') + '</div>';
   }
   /* Aggiunta rapida: solo il testo e l'area. L'orario si dà dopo, toccando
@@ -4592,12 +4594,12 @@ function montaGiornata(container: HTMLElement, opzioni?: OpzGriglia): void {
        accanto c'è il tasto «Aggiungi», che su un telefono lascia al campo
        centosessanta pixel. Il verbo lo dice già il tasto; al campo resta da
        dire PER QUANDO, che è l'unica cosa che cambia da un giorno all'altro. */
-    var doveAdd = d.isToday ? 'oggi' : etichettaGiorno(k).toLowerCase();
+    // (il giorno lo dice già l'intestazione)
     /* l'ultima riga d'aggiunta rimasta col vecchio schema: campo, tendina
        dell'area sempre aperta e tasto pieno, tutti in fila. Adesso è quella
        di tutte le altre — cinque schermate, una riga sola. */
     quickAdd = '<div class="tl-add">' +
-      rigaAggiunta('agg-gio', 'Per ' + doveAdd + '…',
+      rigaAggiunta('agg-gio', 'Nuova attività…',
         '<label class="agg-area"><span class="agg-eti">in</span>' + selectAree('agg-gio-area') + '</label>') +
       '</div>';
   }
@@ -4665,7 +4667,7 @@ function montaGiornata(container: HTMLElement, opzioni?: OpzGriglia): void {
       /* la rassicurazione sta DENTRO il tasto, come «+10 XP» sta dentro
          «Fatto»: era una riga a sé sotto un tasto, due elementi per una cosa */
       footer = '<div class="tl-piede"><button class="btn btn-mini" id="tl-rimanda">' + ICO('rimanda', 15) +
-        ' Sposta le ' + nonFatte.length + ' non fatte a ' + doveVa + ' <small>senza penalità</small></button></div>';
+        (nonFatte.length === 1 ? ' Sposta 1 non fatta a ' : ' Sposta ' + nonFatte.length + ' non fatte a ') + doveVa + '</button></div>';
     }
   }
   if (compact && opts.controls !== false) {
@@ -4708,7 +4710,7 @@ function montaGiornata(container: HTMLElement, opzioni?: OpzGriglia): void {
     (compact ? '' : '') +
     '<div class="sotto">' + sottoHead + '</div></div></div>';
   var gridHtml = vuota
-    ? '<div class="vuoto" style="padding:18px 8px"><b>Niente in agenda per questo giorno.</b>' + (isFuturo ? '<br>Puoi già prepararlo: aggiungi qui sotto le cose che vuoi fare.' : interactive ? '<br>Aggiungi una cosa qui sotto, o dai un orario a un’abitudine.' : '') + '</div>'
+    ? '<div class="vuoto" style="padding:18px 8px"><b>Nessuna attività in questo giorno.</b></div>'
     : htmlTimeGrid(d, { interactive: interactive, spuntabile: spuntabile, nowMin: nowMin, pxh: pxh,
         senzaEtichettaSonno: !compact && interactive });
 
@@ -4795,7 +4797,7 @@ function montaGiornata(container: HTMLElement, opzioni?: OpzGriglia): void {
           montaGiornata(container, opts); aggiornaNav();
           return;
         }
-        if (!bersaglio.hasAttribute('data-drop-ora')) { toast('Un’abitudine resta nel suo giorno.', 0, 'clock'); return; }
+        if (!bersaglio.hasAttribute('data-drop-ora')) { toast('Le abitudini non si spostano di giorno.', 0, 'clock'); return; }
         const gs = +(bersaglio.getAttribute('data-gs') || ''), pxh = +(bersaglio.getAttribute('data-pxh') || '');
         if (isNaN(gs) || !pxh) return;
         const r = bersaglio.getBoundingClientRect();
@@ -4807,7 +4809,7 @@ function montaGiornata(container: HTMLElement, opzioni?: OpzGriglia): void {
       }
       if (bersaglio.hasAttribute('data-drop-senzaora')) {
         LM.setOraAzione(id, null);
-        toast('Tolto l’orario: resta tra le cose senza orario.', 0, 'clock');
+        toast('Orario rimosso.', 0, 'clock');
       } else if (bersaglio.hasAttribute('data-drop-ora')) {
         const gs = +(bersaglio.getAttribute('data-gs') || ''), pxh = +(bersaglio.getAttribute('data-pxh') || '');
         if (isNaN(gs) || !pxh) return;
@@ -4856,7 +4858,7 @@ function montaGiornata(container: HTMLElement, opzioni?: OpzGriglia): void {
     const spAdd = container.querySelector<HTMLElement>('#sp-add');
     if (spAdd) spAdd.addEventListener('click', function () { const arr = leggiPasti(); arr.push({ id: 'p' + Date.now().toString(36), nome: 'Pasto', ora: comeOra(''), durata: 30 }); LM.setRitmoGiorno(k, { pasti: arr }); montaGiornata(container, opts); });
     const spReset = container.querySelector<HTMLElement>('#sp-reset');
-    if (spReset) spReset.addEventListener('click', function () { LM.azzeraRitmoGiorno(k); toast('Ripristinato il ritmo di base.', 0, 'annulla'); montaGiornata(container, opts); });
+    if (spReset) spReset.addEventListener('click', function () { LM.azzeraRitmoGiorno(k); toast('Orari ripristinati.', 0, 'annulla'); montaGiornata(container, opts); });
     const spBase = container.querySelector<HTMLElement>('#sp-base');
     if (spBase) spBase.addEventListener('click', apriRitmo);
     const gsT = container.querySelector<HTMLElement>('#gio-sonno-toggle');
@@ -5017,7 +5019,7 @@ function spostaSuGiorno(id: string, bersaglio: HTMLElement, _x?: number, y?: num
   if (id.indexOf('ab:') === 0) {
     const parti = id.split(':'), hid = parti[1] || '', da = parti[2] || '';
     const gr = bersaglio.querySelector<HTMLElement>('[data-pxh]') || bersaglio.closest<HTMLElement>('[data-pxh]');
-    if (quale !== da || !gr || y == null) { toast('Un’abitudine resta nel suo giorno: cambiale solo l’ora.', 0, 'calendar'); return; }
+    if (quale !== da || !gr || y == null) { toast('Le abitudini non si spostano di giorno: cambia solo l’ora.', 0, 'calendar'); return; }
     const gs0 = +(gr.getAttribute('data-gs') || ''), px0 = +(gr.getAttribute('data-pxh') || '');
     const rr = gr.getBoundingClientRect();
     if (isNaN(gs0) || !px0) return;
@@ -5379,10 +5381,10 @@ var diarioTutto = false;
 export interface Scadenza { d: number; testo: string; cls: string }
 export function scadInfo(scad: Giorno): Scadenza {
   const d = LM.daysBetween(LM.todayKey(), scad);
-  if (d < 0) return { d: d, testo: d === -1 ? 'ieri' : (-d) + 'g fa', cls: 'scad-ritardo' };
+  if (d < 0) return { d: d, testo: d === -1 ? 'ieri' : (-d) + ' giorni fa', cls: 'scad-ritardo' };
   if (d === 0) return { d: 0, testo: 'oggi', cls: 'scad-oggi' };
   if (d === 1) return { d: 1, testo: 'domani', cls: 'scad-vicina' };
-  return { d: d, testo: 'tra ' + d + 'g', cls: d <= 3 ? 'scad-vicina' : 'scad-lontana' };
+  return { d: d, testo: 'tra ' + d + ' giorni', cls: d <= 3 ? 'scad-vicina' : 'scad-lontana' };
 }
 
 /* una riga della timeline del Diario */
@@ -5532,7 +5534,7 @@ function sezRiepilogo(c: HTMLElement): void {
        per rispondere a «cosa non funziona per me» — la stessa domanda di
        Scoperte e degli Esperimenti.
        ============================================================ */
-    '<div class="card" style="--i:2"><h2>' + ICO('aree', 15) + ' Dove ti riesce e dove no</h2>' +
+    '<div class="card" style="--i:2"><h2>' + ICO('aree', 15) + ' Per area</h2>' +
     '' +
     (bil.aree.length
       ? '<div class="bil-aree">' + bil.aree.map(function (a) {
@@ -5548,7 +5550,7 @@ function sezRiepilogo(c: HTMLElement): void {
       const perse = LM.mancate(90), motivi = LM.motiviMancate(90);
       if (!perse.length) return '';
       const primo = motivi[0], secondo = motivi[1];
-      return '<div class="lista-eti mt">Non ci sono riuscito <span>' + perse.length + '</span></div>' +
+      return '<div class="lista-eti mt">Non completata <span>' + perse.length + '</span></div>' +
         (primo ? '<p class="lista-nota bil-motivo">Più spesso: <b>' + esc(primo.eti.toLowerCase()) + '</b>' +
           (secondo ? ', poi ' + esc(secondo.eti.toLowerCase()) : '') + '.</p>' : '') +
         '<div class="lista">' + perse.slice(0, 8).map(function (a) {
@@ -5568,9 +5570,9 @@ function sezRiepilogo(c: HTMLElement): void {
   /* le porte in fondo, in un riquadro solo: prima «Le review di prima» era
      un riquadro con dentro un altro riquadro con dentro una riga */
   c.insertAdjacentHTML('beforeend', '<div class="lista mt">' +
-    rigaPorta('riep-review', 'archivio', 'Le review di prima',
-      (function () { var q = LM.quanteReview(); return q ? q + (q === 1 ? ' scritta' : ' scritte') : 'nessuna ancora'; })()) +
-    rigaPorta('riep-tempo', 'durata', 'Tempo col timer', (function () {
+    rigaPorta('riep-review', 'archivio', 'Archivio review',
+      (function () { var q = LM.quanteReview(); return q ? String(q) : ''; })()) +
+    rigaPorta('riep-tempo', 'durata', 'Sessioni del timer', (function () {
       var m = LM.sessioniDi(LM.todayKey()).reduce(function (n, x) { return n + (x.minuti || 0); }, 0);
       return m ? fmtOre(m) + ' oggi' : '';
     })()) +
@@ -5645,7 +5647,7 @@ function sezDiario(c: HTMLElement): void {
   let html: string;
   if (!giorni.length) {
     html = '<div class="card diario"><div class="card-testa">' + filtro + '</div>' +
-      '<div class="vuoto" style="padding:20px 8px">' + ICO('quaderno', 26) + '<br><b>Ancora niente da mostrare.</b><br>Appena fai qualcosa comparirà qui, giorno per giorno.</div></div>';
+      '<div class="vuoto" style="padding:20px 8px">' + ICO('quaderno', 26) + '<br><b>Ancora niente.</b></div></div>';
   } else {
     /* la riga sotto il filtro dice SOLO quello che il filtro non dice da
        sé: cosa resta fuori. Prima ci stava anche «la storia di tutto ciò
@@ -5787,12 +5789,12 @@ function annullaDalDiario(ts: number, etichetta: string, tipo?: string, chiave?:
      `LM.tornaAlPunto` rispondono così, e il messaggio qui sotto ci conta */
   function conRimetti(fai: () => boolean) {
     var prima = JSON.parse(JSON.stringify(LM.load()));
-    if (!fai()) { toast('Questa non si può più annullare.', 0, 'aiuto'); return; }
+    if (!fai()) { toast('Non si può più annullare.', 0, 'aiuto'); return; }
     render();
     toast('Annullato.', 0, 'annulla', { eti: 'Rimetti', fai: function () {
       LM.ripristinaStato(prima);
       render();
-      toast('Rimesso com’era.', 0, 'check');
+      toast('Ripristinato.', 0, 'check');
     } });
   }
 
@@ -5801,16 +5803,16 @@ function annullaDalDiario(ts: number, etichetta: string, tipo?: string, chiave?:
     return;
   }
   var punto = LM.puntoDiRitorno(ts);
-  if (!punto) { toast('Questa è troppo indietro: non si può più annullare.', 0, 'aiuto'); return; }
+  if (!punto) { toast('Non si può più annullare.', 0, 'aiuto'); return; }
   function fallo() { conRimetti(function () { return LM.tornaAlPunto(ts, etichetta); }); }
   /* l'ultima cosa fatta si annulla senza chiedere: annullarla non tocca
      nient'altro, e c'è il «Rimetti» nel messaggio */
   if (!punto.dopo) { fallo(); return; }
   avviso({
-    titolo: 'Torniamo indietro fin qui?',
+    titolo: 'Annullare fin qui?',
     testo: 'Annullare questa riporta indietro anche quello che hai fatto dopo: ' +
       punto.dopo + (punto.dopo === 1 ? ' cosa.' : ' cose.') + ' Si può rimettere subito dopo.',
-    azione: 'Torna indietro', annulla: 'Lascia stare'
+    azione: 'Annulla fin qui', annulla: 'Non ora'
   }, fallo);
 }
 
@@ -5854,8 +5856,8 @@ export const GRUPPI_RIT: GruppoRit[] = [
 /* un rituale: il segno, il nome, e se è una cosa del giorno o di ogni tanto */
 export interface Rituale { id: string; ico: string; nome: string; quando: 'giorno' | 'ogni tanto' }
 export const RITUALI: Rituale[] = [
-  { id: 'mattina',   ico: 'sun',      nome: 'Le azioni di oggi',      quando: 'giorno' },
-  { id: 'registro',  ico: 'ritmo',    nome: 'Sonno, pasti e cose fatte', quando: 'giorno' },
+  { id: 'mattina',   ico: 'sun',      nome: 'Piano del giorno',      quando: 'giorno' },
+  { id: 'registro',  ico: 'ritmo',    nome: 'Sonno e pasti', quando: 'giorno' },
   { id: 'checkin',   ico: 'polso',    nome: 'Check-in',               quando: 'giorno' },
   { id: 'sera',      ico: 'moon',     nome: 'Review della sera',      quando: 'giorno' },
   { id: 'settimana', ico: 'calendar', nome: 'Review della settimana', quando: 'ogni tanto' }
@@ -5873,7 +5875,7 @@ export const RITUALI: Rituale[] = [
    allo `<span class="rs-dett">` che questa funzione aveva appena buttato via,
    e al ridisegno dopo provava a toglierlo da un padre che non ce l'aveva più
    — `NotFoundError: removeChild`, e da lì in poi la schermata non si
-   aggiornava più. Si vedeva premendo «Salva e parti» nel rituale del
+   aggiornava più. Si vedeva premendo «Salva» nel rituale del
    mattino, che è il tasto con cui quella schermata comincia: l'ha trovato
    `prove/doppioni.js`.
    È la stessa lezione del Design lab e della lista di «Da fare»: un nodo ha
@@ -5911,7 +5913,7 @@ export function statoRituale(id: string): StatoRit {
     var risposti = pasti.filter(function (pa) { return pa.fatto === true || pa.fatto === false; }).length;
     var quante = (nottePronta ? 1 : 0) + risposti;
     var tutte = 1 + pasti.length;
-    return { fatto: quante >= tutte, testo: quante >= tutte ? 'fatto' : 'da segnare',
+    return { fatto: quante >= tutte, testo: quante >= tutte ? 'fatto' : 'da compilare',
       dett: quante >= tutte ? '' : quante + ' di ' + tutte };
   }
   if (id === 'checkin') {
@@ -6004,7 +6006,7 @@ function bloccoNotte(forzaAperto?: boolean): string {
     return '<div id="blocco-notte">' +
       '<div class="lista"><div class="lista-riga">' +
       '<span class="diario-ico" aria-hidden="true">' + ICO('bed', 15) + '</span>' +
-      '<span class="lista-corpo"><span class="lista-tit">Stanotte</span>' +
+      '<span class="lista-corpo"><span class="lista-tit">Sonno</span>' +
       '<span class="lista-sub">' + (prec === 'circa' ? 'verso le ' : '') + esc(r.sonno) + ' → ' + esc(r.sveglia) +
       ' · ' + fmtOre(LM.minutiSonno(t)) + '</span></span>' +
       '<button class="btn btn-mini" id="notte-cambia">Cambia</button></div></div>' +
@@ -6016,11 +6018,11 @@ function bloccoNotte(forzaAperto?: boolean): string {
        ripeteva tutte e tre le cose andava letta prima di poter guardare i
        campi che dicevano lo stesso. Resta il permesso di non saperlo, che
        nessun campo può dare. */
-    '<div class="rit-sez"><span>Stanotte</span><button class="sp-link" id="notte-solito">Come sempre · ' + esc(r.sonnoRoutine) + '–' + esc(r.svegliaRoutine) + '</button></div>' +
+    '<div class="rit-sez"><span>Sonno</span><button class="sp-link" id="notte-solito">Come sempre · ' + esc(r.sonnoRoutine) + '–' + esc(r.svegliaRoutine) + '</button></div>' +
     '<div class="lista">' +
     '<div class="lista-riga sc-riga"><span class="sc-eti">' + ICO('bed', 15) + ' A letto</span>' +
     '<span class="sc-val"><input type="time" id="notte-sonno" class="sc-inline" value="' + esc(r.sonno) + '" aria-label="A che ora sei andato a letto"></span></div>' +
-    '<div class="lista-riga sc-riga"><span class="sc-eti">' + ICO('sun', 15) + ' Sveglio</span>' +
+    '<div class="lista-riga sc-riga"><span class="sc-eti">' + ICO('sun', 15) + ' Sveglia</span>' +
     '<span class="sc-val"><input type="time" id="notte-sveglia" class="sc-inline" value="' + esc(r.sveglia) + '" aria-label="A che ora ti sei svegliato"></span></div>' +
     '<div class="lista-riga sc-riga sc-riga-alta"><span class="sc-eti">Precisione</span>' +
     '<span class="sc-val q-chips" id="notte-prec">' +
@@ -6028,8 +6030,8 @@ function bloccoNotte(forzaAperto?: boolean): string {
     '<button class="q-chip' + (prec === 'preciso' ? ' on' : '') + '" data-prec="preciso">precisi</button>' +
     '</span></div>' +
     '</div>' +
-    '<div class="rit-azioni"><button class="btn btn-tinta" id="notte-salva">Salva la notte</button>' +
-    '<button class="sp-link" id="notte-boh">Non me lo ricordo</button></div>' +
+    '<div class="rit-azioni"><button class="btn btn-tinta" id="notte-salva">Salva</button>' +
+    '<button class="sp-link" id="notte-boh">Non ricordo</button></div>' +
     '</div>';
 }
 
@@ -6102,7 +6104,7 @@ function wireNotte(scope: HTMLElement, dopo?: (() => void) | null): void {
     /* nessun orario: il giorno resta sul ritmo di base, e non si richiede.
        Meglio un dato che non c'è di un numero inventato. */
     LM.segnaChiesto(t, 'notte');
-    toast('Niente orari per stanotte. La domanda non torna oggi.', 0, 'check');
+    toast('Ok, niente orari per stanotte.', 0, 'check');
     if (dopo) dopo();
     render();
   });
@@ -6194,7 +6196,7 @@ function bloccoRecupero(tutti?: boolean): string {
           '</div>';
       }).join('') + '</div>'
       : '') +
-    '<div class="rit-azioni"><button class="btn btn-primario" id="rec-fine">Ho finito</button></div>' +
+    '<div class="rit-azioni"><button class="btn btn-primario" id="rec-fine">Fatto</button></div>' +
     '</div>';
 }
 
@@ -6236,7 +6238,7 @@ function wireRecupero(scope: HTMLElement, dopo?: (() => void) | null): void {
     const sel = opz.querySelector<HTMLSelectElement>('#agg-fatto-area');
     const oraEl = opz.querySelector<HTMLInputElement>('#agg-fatto-ora');
     LM.registraFatta(testo, sel ? sel.value : null, { ora: oraEl && oraEl.value ? comeOra(oraEl.value) : null });
-    toast('Segnata fra le cose di oggi.', LM.XP_EVENTI.azione, 'check');
+    toast('Aggiunta a Oggi.', LM.XP_EVENTI.azione, 'check');
     rifai();
     var inp = document.querySelector<HTMLElement>('#agg-fatto .agg-testo');
     if (inp) inp.focus();
@@ -6424,7 +6426,7 @@ function ritualeMattina(corpo: HTMLElement): void {
        Prima qui c'erano campo, tendina e tasto tutti in fila, che sul
        telefono andavano a capo su tre righe per aggiungere una cosa. */
     '<div class="mt-s">' +
-    rigaAggiunta('agg-piano', oggi.length === 0 ? 'La cosa più importante di oggi…' : 'Un’altra, se vuoi…',
+    rigaAggiunta('agg-piano', oggi.length === 0 ? 'Priorità di oggi…' : 'Aggiungi un’altra…',
       '<label class="agg-area"><span class="agg-eti">in</span>' + selectAree('agg-piano-area') + '</label>') +
     '</div>' +
     /* Tre è il consiglio, e lo diciamo in una riga sola: «Hai 5 azioni per
@@ -6432,18 +6434,18 @@ function ritualeMattina(corpo: HTMLElement): void {
        spostare a domani da La giornata» erano due frasi per dire un numero
        e un posto dove andare. */
     (oggi.length >= 3 ? '<div class="sotto" style="margin:8px 0 0">' + oggi.length + ' azioni per oggi: oltre tre è difficile chiuderle tutte. Da <i>La giornata</i> puoi spostarne a domani.</div>' : '') +
-    '<label class="campo" for="piano-ifthen">Quando e dove inizi la prima</label>' +
+    '<label class="campo" for="piano-ifthen">Quando inizi?</label>' +
     '<input type="text" id="piano-ifthen" placeholder="Es. alle 9:00, alla scrivania" value="' + (piano ? esc(piano.intenzione) : '') + '">' +
-    /* Un pulsante, non due. C'erano «Salva e parti» (pieno, con la freccia,
+    /* Un pulsante, non due. C'erano «Salva» (pieno, con la freccia,
        +5 XP) e «Inizia ora» accanto: il primo salvava e NON si muoveva,
        nonostante la freccia e la parola «parti»; il secondo andava a Oggi
        senza salvare, quindi l'intenzione appena scritta qui sopra veniva
        buttata. Due tasti per un gesto, divisi a metà così che nessuno dei
-       due lo facesse per intero. Ora «Salva e parti» salva e parte davvero;
+       due lo facesse per intero. Ora «Salva» salva e parte davvero;
        quando il piano c'è già diventa «Aggiorna» e resta qui, perché stai
        correggendo, non partendo — e per andare a Oggi c'è la linguetta
        «Adesso», due centimetri sopra. */
-    '<div class="riga-flex mt"><button class="btn btn-primario btn-grande" id="btn-salva-piano">' + ICO('save', 15) + (piano ? ' Aggiorna' : ' Salva e parti') + ' <small>+' + LM.XP_EVENTI.pianoMattina + ' XP</small></button></div>' +
+    '<div class="riga-flex mt"><button class="btn btn-primario btn-grande" id="btn-salva-piano">' + ICO('save', 15) + (piano ? ' Aggiorna' : ' Salva') + ' <small>+' + LM.XP_EVENTI.pianoMattina + ' XP</small></button></div>' +
     '</div>';
 
   var lista = perId('piano-lista');
@@ -6454,7 +6456,7 @@ function ritualeMattina(corpo: HTMLElement): void {
           (a.mit ? '<span class="tag-mit">' + ICO('star', 11) + 'Priorità</span>' : '') +
           segnoArea(ar, 15, 'tag-area') + '</div>';
       }).join('')
-    : '<div class="vuoto" style="padding:14px">Niente scelto. La prima che scrivi diventa la più importante.</div>';
+    : '<div class="vuoto" style="padding:14px">Nessuna priorità. La prima diventa la più importante.</div>';
 
   wireRigaAggiunta(corpo, 'agg-piano', function (testo, opz) {
     var sel = opz ? opz.querySelector<HTMLSelectElement>('select') : null;
@@ -6493,7 +6495,7 @@ export function opzioniNuovaAbitudine(): string {
     '<div class="gr-riga"><span class="gr-eti">Giorni</span><span class="gr-fisso" id="agg-ab-quando">Ogni giorno</span></div>' +
     '<div class="gr-riga gr-giorni" id="agg-ab-giorni">' + chipsGiorni([]) + '</div>' +
     '<label class="gr-riga" for="agg-ab-ora"><span class="gr-eti">Ora</span>' +
-    '<span class="gr-data"><input type="time" class="gr-val" id="agg-ab-ora" required aria-label="A che ora (facoltativo)"><span class="gr-mai" aria-hidden="true">Quando vuoi</span></span></label>' +
+    '<span class="gr-data"><input type="time" class="gr-val" id="agg-ab-ora" required aria-label="A che ora (facoltativo)"><span class="gr-mai" aria-hidden="true">Nessuno</span></span></label>' +
     '<label class="gr-riga" for="agg-ab-area"><span class="gr-eti">Area</span>' + selectAree('agg-ab-area', areaNuova('salute'), 'Area', 'gr-val') + '</label>' +
     '</div>';
 }
@@ -6683,7 +6685,7 @@ export function sezioneAbitudini(corpo: HTMLElement): void {
         oggi.map(function (h) { return rigaAbitudine(h, true); }).join('') + '</div>'
       : (s.abitudini.length
         ? '<div class="vuoto" style="padding:20px 8px">Per oggi non è prevista nessuna abitudine.</div>'
-        : '<div class="vuoto" style="padding:20px 8px">' + illoInbox() + '<b>Nessuna abitudine.</b><br>Le azioni che vuoi ripetere: ogni volta che le fai, la serie cresce. Scrivine una qui sopra — «leggere 20 minuti», «camminare».</div>')) +
+        : '<div class="vuoto" style="padding:20px 8px">' + illoInbox() + '<b>Nessuna abitudine.</b></div>')) +
     (altre.length
       ? '<div class="lista-eti">Le altre</div><div class="lista">' +
         altre.map(function (h) { return rigaAbitudine(h, false); }).join('') + '</div>'
@@ -6746,7 +6748,7 @@ function ritualeCheckin(corpo: HTMLElement, rifai?: boolean): void {
       return '<span class="ck-fatto-v"><i>' + (FACCE[v - 1] || '') + '</i>' + eti + '</span>';
     };
     corpo.innerHTML = '<div class="ck-fatto">' + voce('Energia', diOggi.energia) + voce('Concentrazione', diOggi.focus) +
-      voce('Umore', diOggi.umore) + '<button class="btn btn-mini btn-ghost" id="ck-rifai">Rifai</button></div>';
+      voce('Umore', diOggi.umore) + '<button class="btn btn-mini btn-ghost" id="ck-rifai">Modifica</button></div>';
     perId('ck-rifai').addEventListener('click', function () { ritualeCheckin(corpo, true); });
     return;
   }
@@ -6874,17 +6876,17 @@ function ritualeSera(corpo: HTMLElement): void {
           return '<button data-v="' + v + '"' + (votiOggi[a.id] === v ? ' class="sel"' : '') + '>' + v + '</button>';
         }).join('') + '</span></div>';
     }).join('') + '</div>' +
-    '<label class="campo" for="sera-vittoria">Una cosa andata bene oggi, anche piccola</label>' +
+    '<label class="campo" for="sera-vittoria">Cosa è andato bene oggi?</label>' +
     '<input type="text" id="sera-vittoria" value="' + (rev ? esc(rev.vittoria || '') : '') + '" placeholder="Es. ho studiato 90 minuti senza guardare il telefono">' +
     /* QUI L'INSEGNAMENTO È FRESCO E GIÀ SCRITTO. Queste due righe finivano
        in un campo di testo che nessuno riapre: il tasto le porta fra le cose
        che hai capito su di te, dove restano e si contano. La forza è
        «notato una volta», perché è quello che è: un giorno, un'osservazione. */
     '<button class="btn btn-mini" id="sera-vitt-lez" hidden>' + ICO('funziona', 15) + ' Salvala fra le Scoperte</button>' +
-    '<label class="campo" for="sera-blocco">Un ostacolo che hai incontrato</label>' +
+    '<label class="campo" for="sera-blocco">Cosa ti ha bloccato?</label>' +
     '<input type="text" id="sera-blocco" value="' + (rev ? esc(rev.blocco || '') : '') + '" placeholder="Es. ho iniziato tardi, mi hanno distratto le notifiche">' +
     '<button class="btn btn-mini" id="sera-blocco-lez" hidden>' + ICO('nonFunziona', 15) + ' Salvalo fra le Scoperte</button>' +
-    '<div class="riga-flex mt"><button class="btn btn-primario btn-grande" id="btn-salva-sera">' + (rev ? ICO('save', 15) + ' Aggiorna' : ICO('moon', 15) + ' Concludi la giornata') + ' <small>+' + LM.XP_EVENTI.reviewSera + ' XP</small></button></div>' +
+    '<div class="riga-flex mt"><button class="btn btn-primario btn-grande" id="btn-salva-sera">' + (rev ? ICO('save', 15) + ' Aggiorna' : ICO('moon', 15) + ' Salva') + ' <small>+' + LM.XP_EVENTI.reviewSera + ' XP</small></button></div>' +
     '</div>';
 
   /* il tasto compare solo quando c'è qualcosa da tenere, e sparisce quando
@@ -6934,11 +6936,11 @@ function ritualeSettimana(corpo: HTMLElement): void {
     /* La review della settimana parla di quello che si è RIPETUTO: la riga
        che ne nasce lo dice, e vale più di un'osservazione di un giorno. */
     '<button class="btn btn-mini" id="w-vitt-lez" hidden>' + ICO('funziona', 15) + ' Salvala fra le Scoperte</button>' +
-    '<label class="campo" for="w-blocchi">Gli ostacoli che si sono ripetuti</label><textarea id="w-blocchi">' + (rev ? esc(rev.blocchi || '') : '') + '</textarea>' +
+    '<label class="campo" for="w-blocchi">Cosa ti ha bloccato</label><textarea id="w-blocchi">' + (rev ? esc(rev.blocchi || '') : '') + '</textarea>' +
     '<button class="btn btn-mini" id="w-blocchi-lez" hidden>' + ICO('nonFunziona', 15) + ' Salvali fra le Scoperte</button>' +
-    '<label class="campo" for="w-imparato">Cosa hai imparato sul tuo metodo</label><textarea id="w-imparato">' + (rev ? esc(rev.imparato || '') : '') + '</textarea>' +
-    '<label class="campo" for="w-prossima">Una cosa da cambiare la settimana prossima</label><textarea id="w-prossima">' + (rev ? esc(rev.prossima || '') : '') + '</textarea>' +
-    '<div class="riga-flex mt"><button class="btn btn-primario btn-grande" id="btn-salva-sett">' + ICO('save', 15) + (rev ? ' Aggiorna' : ' Salva la review') + ' <small>+' + LM.XP_EVENTI.reviewSettimana + ' XP</small></button>' +
+    '<label class="campo" for="w-imparato">Cosa hai imparato</label><textarea id="w-imparato">' + (rev ? esc(rev.imparato || '') : '') + '</textarea>' +
+    '<label class="campo" for="w-prossima">Cosa cambierai la prossima settimana</label><textarea id="w-prossima">' + (rev ? esc(rev.prossima || '') : '') + '</textarea>' +
+    '<div class="riga-flex mt"><button class="btn btn-primario btn-grande" id="btn-salva-sett">' + ICO('save', 15) + (rev ? ' Aggiorna' : ' Salva') + ' <small>+' + LM.XP_EVENTI.reviewSettimana + ' XP</small></button>' +
     '<button class="btn btn-ghost" data-vai="esperimenti">' + ICO('flask', 15) + ' Apri le Scoperte</button></div>' +
     '</div>';
 
@@ -7081,7 +7083,7 @@ export function attRigaHtml(b: Attivita, opts?: OpzRigaAtt): string {
   var sotto = [];
   if (b.scadenza) {
     var si = scadInfo(b.scadenza);
-    sotto.push('<span class="sub-scad ' + si.cls + '">' + (si.d < 0 ? 'scaduta ' + si.testo : 'entro ' + si.testo) + '</span>');
+    sotto.push('<span class="sub-scad ' + si.cls + '">' + (si.d < 0 ? 'scaduta ' + si.testo : 'scade ' + si.testo) + '</span>');
   }
   if (inAgenda.length) {
     sotto.push('<span class="sub-agenda">' + (isProg && inAgenda.length > 1
@@ -7125,7 +7127,7 @@ export function wireLista(scope: ParentNode): void {
         toast(passo ? 'Prossimo passo portato in Oggi.' : 'Nessun passo da fare: sono tutti in agenda o completati.', 0, passo ? 'arrowRight' : 'check');
       } else {
         LM.backlogInOggi(id);
-        toast('Portata tra le cose di oggi.', 0, 'arrowRight');
+        toast('Aggiunta a Oggi.', 0, 'arrowRight');
       }
       aggiornaNav(); render();
     });
@@ -7241,7 +7243,7 @@ function bloccoLezioniHtml() {
      sono vuoti — là non c'è niente da guardare, e serve capire che tipo di
      frase ci va. */
   return '<div class="card lez-card">' +
-    rigaAggiunta('agg-lez', 'Cosa hai capito…',
+    rigaAggiunta('agg-lez', 'Aggiungi una scoperta…',
       '<div class="q-chips lez-scelta-verso">' +
       '<button type="button" class="q-chip on" data-verso="si">' + ICO('funziona', 13) + ' Funziona</button>' +
       '<button type="button" class="q-chip" data-verso="no">' + ICO('nonFunziona', 13) + ' Non funziona</button>' +
@@ -7480,7 +7482,7 @@ export function disegnaScoperte() {
     if (!pre.nome && !daLezione) primo.focus();
     dentro('exp-crea').addEventListener('click', function () {
       var nome = dentro('exp-nome').value.trim();
-      if (!nome) { toast('Scrivi cosa vuoi scoprire con l’esperimento.', 0, 'flask'); return; }
+      if (!nome) { toast('Scrivi il nome dell’esperimento.', 0, 'flask'); return; }
       /* «14-14»: giorni di base e giorni di test */
       const dur = dentro('exp-durata').value.split('-');
       var t = LM.todayKey();
@@ -7522,7 +7524,7 @@ function salvaEsitoInLezione(e: Esperimento, ris: EsitoProva): void {
   var l = lezDi(e);
   if (l) {
     LM.modificaLezione(l.id, { verso: verso, forza: 'misurato', espId: e.id });
-    toast('Riga aggiornata: adesso c’è scritto che l’hai misurata.', 0, verso === 'si' ? 'funziona' : 'nonFunziona');
+    toast('Scoperta aggiornata.', 0, verso === 'si' ? 'funziona' : 'nonFunziona');
   } else {
     var nuova = LM.aggiungiLezione(testo, verso, { forza: 'misurato', areaId: e.areaId, espId: e.id });
     if (nuova) LM.creaLegameEsperimento(e.id, nuova.id);
@@ -8078,10 +8080,10 @@ window.addEventListener('lm:esempio-nell-account', function (e) {
   /* «Lascia stare» vale finché non cambia niente: non lo si richiede a ogni apertura */
   try { if (localStorage.getItem('lm-esempio-lasciato') === String(n)) return; } catch (_e) { /* chiede */ }
   avviso({
-    titolo: 'Nel tuo account ci sono dei dati di esempio',
-    testo: 'Sono ' + n + ' cose inventate, entrate in un accesso di prima. Le tolgo? Quello che hai scritto tu resta.',
-    azione: 'Toglile',
-    annulla: 'Lascia stare'
+    titolo: 'Dati di esempio nell’account',
+    testo: 'Trovati ' + n + ' elementi di esempio. Vuoi rimuoverli? I tuoi dati restano.',
+    azione: 'Rimuovi',
+    annulla: 'Non ora'
   }, function () {
     var tolte = LM.togliEsempio(); render();
     toast(tolte ? 'Tolti i dati di esempio.' : 'Niente da togliere.', 0, 'sparkles');
@@ -8138,7 +8140,7 @@ window.addEventListener('lm:sync', function (e) {
   }
   if (y.state === 'attesa' && ultimoErroreSync !== 'attesa') {
     ultimoErroreSync = 'attesa';
-    toast('Nessuna rete: i dati restano salvati qui e vanno nel cloud appena torna.', 0, 'cloud');
+    toast('Sei offline: sincronizzo appena torna la rete.', 0, 'cloud');
   }
   if (y.state === 'saved') ultimoErroreSync = '';
 });
@@ -8151,7 +8153,7 @@ document.addEventListener('keydown', function (e) {
 /* il salvataggio locale non funziona: meglio dirlo subito e chiaramente,
    così puoi esportare i dati prima di perderli */
 document.addEventListener('lm:errore-salvataggio', function () {
-  toast('Non riesco a salvare su questo dispositivo (spazio esaurito o navigazione privata). Esporta i dati da Impostazioni per non perderli.', 0, 'cloud');
+  toast('Impossibile salvare su questo dispositivo. Esporta i dati da Impostazioni.', 0, 'cloud');
 });
 
 /* chrome statico */

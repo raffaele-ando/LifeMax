@@ -3,12 +3,12 @@
    È il più fitto dell'app, e ogni pezzo ha una ragione:
 
    · UNA sola azione piena in cima. La pastiglia «Oggi» non la ripete più.
-   · «Mettila in un giorno», non «Rimanda a»: da quando si può scegliere anche
+   · «Pianifica», non «Rimanda a»: da quando si può scegliere anche
      un giorno passato, «rimandare» dice la cosa sbagliata per metà dei giorni
      che si possono toccare. Il giorno passato serve a registrare una cosa
      fatta e mai messa in agenda — se il calendario non la accogliesse dopo, il
      registro sarebbe solo delle cose che ti sei ricordato di annunciare prima.
-   · «Non ci sono riuscito» sta SOPRA «elimina», e non è rosso. Sono due cose
+   · «Non completata» sta SOPRA «elimina», e non è rosso. Sono due cose
      diverse e devono sembrarlo: eliminare fa sparire la riga dal registro di
      quello che è successo, l'altra la chiude dicendo com'è andata. Alla pari,
      chi vuole solo togliersela davanti sceglie la prima che vede — e per un
@@ -120,7 +120,7 @@ export default function Scheda({ id }: { id: string }) {
   const pianifica = (k: Giorno | '') => {
     if (!k) return;
     const fatto = isProg ? LM.prossimoPassoInOggi(b.id, k) : LM.backlogInOggi(b.id, k);
-    if (!fatto) { toast('Nessun passo da pianificare: sono tutti in agenda o completati.', 0, 'check'); return; }
+    if (!fatto) { toast('Nessun passo da pianificare.', 0, 'check'); return; }
     toast(k === oggi ? 'Messa tra le cose di oggi.' : 'Pianificata per ' + etichettaGiorno(k).toLowerCase() + '.', 0, 'calendar');
     chiudiSheet(); aggiornaNav(); render();
   };
@@ -171,10 +171,10 @@ export default function Scheda({ id }: { id: string }) {
   return (
     <div className="sc">
       <button className="btn btn-primario btn-grande sc-primaria" id="sc-oggi" onClick={() => pianifica(oggi)}>
-        <Segno nome="target" /> {isProg ? 'Prossimo passo in Oggi' : 'Portala in Oggi'}
+        <Segno nome="target" /> {isProg ? 'Prossimo passo in Oggi' : 'Aggiungi a Oggi'}
       </button>
 
-      <div className="lista-eti"><Segno nome="calendar" dim={11} />Mettila in un giorno</div>
+      <div className="lista-eti"><Segno nome="calendar" dim={11} />Pianifica</div>
       <div className="q-chips sc-quando">
         {gChip(LM.addDays(oggi, -1), 'Ieri')}
         {gChip(LM.addDays(oggi, 1), 'Domani')}
@@ -193,17 +193,17 @@ export default function Scheda({ id }: { id: string }) {
         <form className="lista-riga sc-agg" id="sc-passo-add" onSubmit={aggiungiPasso}>
           <span className="lista-vuoto"><Segno nome="plus" /></span>
           <input type="text" ref={nuovoPasso} aria-label="Aggiungi un passo"
-            placeholder={isProg ? 'Aggiungi un passo…' : 'Dividila in passi: scrivi il primo…'} />
+            placeholder={isProg ? 'Aggiungi un passo…' : 'Aggiungi un passo…'} />
           {/* il «più» sta già in testa alla riga, dove si allinea alle spunte
               dei passi sopra: qui la parola basta. Due segni «più» nella stessa
               riga per la stessa azione erano uno di troppo. */}
           <button className="btn btn-mini btn-tinta" type="submit">Aggiungi</button>
         </form>
         {isProg && aperti > 1 ? (
-          <RigaSc eti="Spalma i passi aperti" cls="sc-riga-alta">
+          <RigaSc eti="Distribuisci i passi" cls="sc-riga-alta">
             <span className="sc-val q-chips">
               <button className="q-chip" data-distrib="1" onClick={() => distribuisci(1)}>ogni giorno</button>
-              <button className="q-chip" data-distrib="2" onClick={() => distribuisci(2)}>ogni 2</button>
+              <button className="q-chip" data-distrib="2" onClick={() => distribuisci(2)}>ogni 2 giorni</button>
               <button className="q-chip" data-distrib="7" onClick={() => distribuisci(7)}>ogni settimana</button>
             </span>
           </RigaSc>
@@ -234,7 +234,7 @@ export default function Scheda({ id }: { id: string }) {
         )}
         <button className="lista-riga sc-riga sc-tocca" id="sc-pin"
           onClick={() => { LM.appuntaBacklog(b.id); ridisegna(); }}>
-          <span className="sc-eti">Tieni in cima</span>
+          <span className="sc-eti">Fissa in alto</span>
           <span className="sc-val">{b.pin ? <><Segno nome="pin" piu="sc-si" /> sì</> : 'no'}</span>
         </button>
       </div>
@@ -245,13 +245,13 @@ export default function Scheda({ id }: { id: string }) {
             const fresca = LM.load().backlog.find((x) => x.id === b.id);
             if (fresca) apriDaAbitudine(fresca);
           }}>
-          <span className="sc-eti"><Segno nome="refresh" /> Diventa un’abitudine</span>
+          <span className="sc-eti"><Segno nome="refresh" /> Trasforma in abitudine</span>
           <span className="lista-chev"><Segno nome="chevronGiu" /></span>
         </button>
         {b.mancata ? (
           <button className="lista-riga sc-riga sc-tocca" id="sc-rimetti" onClick={() => {
             LM.togliMancata(b.id);
-            toast('Rimessa fra le cose da fare.', 0, 'riprova');
+            toast('Spostata in Da fare.', 0, 'riprova');
             ridisegna();
           }}>
             <span className="sc-eti"><Segno nome="riprova" /> Rimettila fra le cose da fare</span>
@@ -263,7 +263,7 @@ export default function Scheda({ id }: { id: string }) {
               const fresca = LM.load().backlog.find((x) => x.id === b.id);
               chiediMancata(b.id, fresca ? fresca.testo : b.testo, render);
             }}>
-            <span className="sc-eti"><Segno nome="annulla" /> Non ci sono riuscito</span>
+            <span className="sc-eti"><Segno nome="annulla" /> Non completata</span>
             <span className="lista-chev"><Segno nome="chevronGiu" /></span>
           </button>
         )}
@@ -271,7 +271,7 @@ export default function Scheda({ id }: { id: string }) {
           onClick={() => conAnnulla('Attività eliminata.', 'trash', () => {
             LM.rimuoviBacklog(b.id); chiudiSheet(); render();
           })}>
-          <span className="sc-eti"><Segno nome="trash" /> Elimina l’attività</span>
+          <span className="sc-eti"><Segno nome="trash" /> Elimina</span>
         </button>
       </div>
     </div>

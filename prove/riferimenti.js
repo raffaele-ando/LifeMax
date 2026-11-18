@@ -130,7 +130,7 @@ for (const cartella of ['segni', 'postino', 'prove']) {
 const GANCI = [
   /* i comandi dentro agli avvisi e ai pannelli della giornata: si cercano
      per classe, e l'aspetto lo prendono da `btn` */
-  'avv-no', 'ig-finequi', 'ig-indietro', 'ig-noora', 'ig-rimuovi', 'ig-salta', 'ig-vairituali',
+  'avv-no', 'ig-finequi', 'ig-indietro', 'ig-noora', 'ig-nodur', 'ig-rimuovi', 'ig-salta', 'ig-vairituali',
   /* stanno accanto a `solo-lettori`, che è quella che li disegna */
   'fs-parola', 'fs-tipo-nome',
   /* nomi di blocco: il foglio disegna i loro pezzi, non loro */

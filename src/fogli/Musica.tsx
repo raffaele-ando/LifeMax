@@ -19,7 +19,7 @@ function Campo({ id, eti, val, onSalva }: { id: string; eti: string; val: string
           placeholder="Incolla il link" autoComplete="off"
           onBlur={(e) => {
             const t = e.target.value.trim();
-            if (t && !buono(t)) { toast('Non sembra un link: deve cominciare con https://', 0, 'x'); return; }
+            if (t && !buono(t)) { toast('Link non valido.', 0, 'x'); return; }
             if (t !== val) onSalva(t);
           }} />
         {val ? <button className="gr-via" aria-label={'Ascolta: ' + eti} onClick={() => apriMusica(val)}><Segno nome="play" dim={13} /></button> : null}
@@ -45,11 +45,11 @@ export default function Musica() {
   return (
     <div className="sc">
       <div className="gr">
-        <Campo id="mus-pred" eti="Per tutto" val={m.predefinita || ''} onSalva={(v) => cambia({ predefinita: v })} />
+        <Campo id="mus-pred" eti="Predefinita" val={m.predefinita || ''} onSalva={(v) => cambia({ predefinita: v })} />
         <div className="gr-riga">
-          <span className="gr-eti">Aprila quando parte il timer</span>
+          <span className="gr-eti">Apri all’avvio del timer</span>
           <button className={'interr' + (m.conTimer ? ' on' : '')} id="mus-contimer" role="switch"
-            aria-checked={m.conTimer ? 'true' : 'false'} aria-label="Aprila quando parte il timer"
+            aria-checked={m.conTimer ? 'true' : 'false'} aria-label="Apri all’avvio del timer"
             onClick={() => cambia({ conTimer: !m.conTimer })}><i /></button>
         </div>
       </div>

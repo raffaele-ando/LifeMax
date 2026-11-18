@@ -75,8 +75,8 @@ export default function Mancata({ id, testo, dopo }: PropMancata) {
             scelte.current.quanto || 'niente');
           chiudiSheet();
           scordaFuoco(id);
-          if (xp > 0) { festeggia('leggero'); toast('Segnato quello che hai fatto.', xp, 'check'); }
-          else toast('Segnata. Non toglie niente.', 0, 'annulla');
+          if (xp > 0) { festeggia('leggero'); toast('Salvato.', xp, 'check'); }
+          else toast('Segnata.', 0, 'annulla');
           if (dopo) dopo();
           render();
         }}>Segna e vai avanti</button>

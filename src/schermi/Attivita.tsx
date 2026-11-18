@@ -97,7 +97,7 @@ function Smista({ st }: { st: Stato }) {
       if (!LM.load().inbox.length) {
         schermo.att.tab = 'dafare';
         render();
-        toast('Coda svuotata: non c’è più niente da sistemare.', 0, 'check');
+        toast('Tutto sistemato.', 0, 'check');
         return;
       }
       render();
@@ -139,7 +139,7 @@ function Smista({ st }: { st: Stato }) {
             ref={area} defaultValue={quella.areaSug || areaNuova()}>
             {areeAttive().map((a) => <option key={a.id} value={a.id}>{a.nome}</option>)}
           </select>
-          <span className="sm-quando">scritta {quando}</span>
+          <span className="sm-quando">aggiunta {quando}</span>
         </div>
       </div>
 
@@ -154,7 +154,7 @@ function Smista({ st }: { st: Stato }) {
       </div>
 
       {resto.length ? <>
-        <div className="lista-eti">Dopo questa <span>{resto.length}</span></div>
+        <div className="lista-eti">In coda <span>{resto.length}</span></div>
         <div className="sm-coda">
           {resto.slice(0, MOSTRA).map((x) => <p key={x.id}>{x.testo}</p>)}
           {resto.length > MOSTRA &&
@@ -258,7 +258,7 @@ function DaFare({ st }: { st: Stato }) {
 
   if (!totale) {
     return (<>
-      <Aggiunta id="agg-bk" segnaposto="Aggiungi una cosa da fare…" opzioni={opzDaFare()} />
+      <Aggiunta id="agg-bk" segnaposto="Nuova attività…" opzioni={opzDaFare()} />
       <div className="vuoto" style={{ padding: '22px 8px 6px' }}
         {...html(illoInbox() + '<b>Nessuna attività.</b><br>Aggiungine una qui sopra' +
           (st.inbox.length ? ', o sistema le note in «Da sistemare».' : '.'))} />
@@ -283,7 +283,7 @@ function DaFare({ st }: { st: Stato }) {
           : 'Nessun passo da fare: sono tutti in agenda o completati.', 0, passo ? 'arrowRight' : 'check');
       } else {
         LM.backlogInOggi(id);
-        toast('Portata tra le cose di oggi.', 0, 'arrowRight');
+        toast('Aggiunta a Oggi.', 0, 'arrowRight');
       }
       aggiornaNav();
       return;
@@ -317,7 +317,7 @@ function DaFare({ st }: { st: Stato }) {
   };
 
   return (<>
-      <Aggiunta id="agg-bk" segnaposto="Aggiungi una cosa da fare…" opzioni={opzDaFare()} />
+      <Aggiunta id="agg-bk" segnaposto="Nuova attività…" opzioni={opzDaFare()} />
       <div className="att-barra">
         {cerca ? (
           <label className="att-cerca">
@@ -451,7 +451,7 @@ function Abitudini({ st }: { st: Stato }) {
       </div>
     ) : null}
     {oggi.length ? <div className="ab-oggi" {...html(ordinate.map((h) => cartaOggi(h, tk)).join(''))} /> : (st.abitudini.length
-      ? <div className="vuoto" style={{ padding: '20px 8px' }}>Oggi niente.</div>
+      ? <div className="vuoto" style={{ padding: '20px 8px' }}>Nessuna abitudine oggi.</div>
       : <div className="vuoto" style={{ padding: '20px 8px' }}
           {...html(illoInbox() + '<b>Nessuna abitudine.</b>')} />)}
     <div className="ab-nuova">

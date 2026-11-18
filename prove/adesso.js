@@ -142,7 +142,7 @@ const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  
     const s = await scheda(p);
     ok('quella con l’ora passata dice IN RITARDO',
       s.stato === 'ritardo' && /in ritardo/i.test(s.parola || ''), s.parola);
-    ok('e dice quando era', /era alle 15:00/.test(s.dett || ''), s.dett);
+    ok('e dice quando era prevista', /prevista alle 15:00/.test(s.dett || ''), s.dett);
     ok('con il colore dell’avviso, non quello del pericolo', /st-ritardo/.test(s.classe || ''), s.classe);
     await ctx.close();
   }

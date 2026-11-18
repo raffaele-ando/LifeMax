@@ -49,7 +49,7 @@ function RigaChiedi({ quale, nome, v, onCambia }: {
     </div>
     {acceso ? (
       <div className="gr-riga gr-sotto">
-        <span className="gr-eti">{v.a != null ? 'Fra le' : 'Alle'}</span>
+        <span className="gr-eti">{v.a != null ? 'Tra le' : 'Alle'}</span>
         <span className="gr-valori">{ora('da', 'non prima delle', v.da)}{v.a != null ? <><span className="gr-tratto">–</span>{ora('a', 'non dopo le', v.a)}</> : null}</span>
       </div>
     ) : null}
@@ -128,17 +128,17 @@ export default function Ritmo() {
       pasti: fuori
     });
     chiudiSheet(); render();
-    toast('Ritmo di base aggiornato.', 0, 'check');
+    toast('Orari aggiornati.', 0, 'check');
   };
 
   return (<>
-    <div className="gr-titolo">Notte</div>
+    <div className="gr-titolo">Sonno</div>
     <div className="gr">
       <label className="gr-riga" htmlFor="ritmo-sonno"><span className="gr-eti"><Segno nome="bed" dim={15} /> A letto</span>
         <input type="time" id="ritmo-sonno" className="gr-val" value={sonno} onChange={(e) => setSonno(e.target.value)} /></label>
       <label className="gr-riga" htmlFor="ritmo-sveglia"><span className="gr-eti"><Segno nome="sun" dim={15} /> Sveglia</span>
         <input type="time" id="ritmo-sveglia" className="gr-val" value={sveglia} onChange={(e) => setSveglia(e.target.value)} /></label>
-      <div className="gr-riga"><span className="gr-eti gr-muto">Dormi</span>
+      <div className="gr-riga"><span className="gr-eti gr-muto">Durata</span>
         <b className="gr-fisso" id="ritmo-dorm">{fmtOre(durSonno(sonno || '23:30', sveglia || '07:30'))}</b></div>
     </div>
     <div className="gr-titolo">Pasti</div>
@@ -149,10 +149,10 @@ export default function Ritmo() {
         <Segno nome="plus" dim={15} /> Aggiungi un pasto
       </button>
     </div>
-    <div className="gr-titolo">Te lo chiedo io</div>
+    <div className="gr-titolo">Promemoria nell’app</div>
     <div className="gr">
-      <RigaChiedi quale="notte" nome="Com’è andata la notte" v={q.notte} onCambia={cambiaChiedi} />
-      <RigaChiedi quale="giorno" nome="Pasti e cose fatte" v={q.giorno} onCambia={cambiaChiedi} />
+      <RigaChiedi quale="notte" nome={'Sonno'} v={q.notte} onCambia={cambiaChiedi} />
+      <RigaChiedi quale="giorno" nome={'Pasti'} v={q.giorno} onCambia={cambiaChiedi} />
     </div>
     <button className="btn btn-primario btn-grande gr-salva" id="ritmo-salva" onClick={salva}>Salva</button>
   </>);
