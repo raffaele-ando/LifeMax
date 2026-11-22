@@ -205,14 +205,16 @@ function creaLM() {
      slot → [light, dark]. Il colore non porta mai il significato da solo:
      ogni uso è accompagnato da icona + etichetta. */
   var SLOT_COLORI: Record<Slot, readonly [string, string]> = {
-    1: ['#2a78d6', '#3987e5'],
-    2: ['#008300', '#008300'],
-    3: ['#e87ba4', '#d55181'],
-    4: ['#eda100', '#c98500'],
-    5: ['#1baf7a', '#199e70'],
-    6: ['#eb6834', '#d95926'],
+    /* nello scuro i colori si schiariscono: scuriti diventavano marrone e
+       oliva e il verde spariva sul fondo */
+    1: ['#2a78d6', '#5aa2f0'],
+    2: ['#008300', '#3fb950'],
+    3: ['#e87ba4', '#ee8db2'],
+    4: ['#eda100', '#f2b53b'],
+    5: ['#1baf7a', '#33c792'],
+    6: ['#eb6834', '#f2804f'],
     7: ['#4a3aa7', '#9085e9'],
-    8: ['#e34948', '#e66767']
+    8: ['#e34948', '#ee7a79']
   };
 
   function coloreArea(area: Area): string {

@@ -138,7 +138,7 @@ export default function Abitudine({ id, dopo }: PropAbitudine) {
             <Segno nome="annulla" /> Rimetti oggi
           </button>
         ) : <>
-          <button className={'btn btn-grande ' + (st.fatta ? 'btn-ok' : 'btn-primario')} id="abd-fatta"
+          <button className="btn btn-grande btn-ok" id="abd-fatta"
             onClick={(ev) => {
               feedbackSpunta(ev, LM.completaAbitudine(id), 'Fatta', 'flame');
               ridisegna();

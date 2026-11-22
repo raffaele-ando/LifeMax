@@ -3515,10 +3515,10 @@ export function testaCasa(): string {
   return '<header class="casa-testa">' +
     '<div class="casa-chi"><h1 class="casa-data">' + data + '</h1>' +
     (tot ? '<div class="casa-passo" role="img" aria-label="' + fatte + ' di ' + tot + ' fatte oggi">' +
-      '<div class="casa-barra"><i style="width:' + Math.round(p * 100) + '%"></i></div><b>' + fatte + '/' + tot + '</b></div>' : '') +
+      '<div class="casa-barra"><i style="width:' + Math.round(p * 100) + '%"></i></div><b>' + fatte + ' di ' + tot + '</b></div>' : '') +
     '</div>' +
     '<div class="casa-destra">' +
-    (serie > 0 ? '<span class="casa-serie" role="img" aria-label="' + serie + ' giorni di fila">' + ICO('flame', 15, 'fiamma') + '<b>' + serie + '</b></span>' : '') +
+    (serie > 0 ? '<span class="casa-serie" role="img" aria-label="' + serie + ' giorni di fila" title="Giorni di fila">' + ICO('flame', 15, 'fiamma') + '<b>' + serie + '</b><small>giorni</small></span>' : '') +
     '</div></header>' +
     porta;
 }
@@ -4453,7 +4453,7 @@ function apriItemGiornata(k: Giorno, id: string, tipo: 'azione' | 'abitudine', o
   const html = '<div class="ig-ed">' +
     '<div class="abd-chi"><span>' + (isAz ? 'Attività' : ICO('refresh', 11) + ' Abitudine') + ' · ' + esc(etichettaGiorno(k)) + '</span></div>' +
     (spuntabile
-      ? '<button class="btn btn-grande ' + (fatto ? 'btn-ghost' : 'btn-primario') + ' ig-fatto"><span class="ig-fatto-ico">' + ICO(fatto ? 'annulla' : 'check', 15) + '</span>' + (fatto ? 'Segna come da fare' : 'Fatta') + '</button>'
+      ? '<button class="btn btn-grande ' + (fatto ? 'btn-ghost' : 'btn-ok') + ' ig-fatto"><span class="ig-fatto-ico">' + ICO(fatto ? 'annulla' : 'check', 15) + '</span>' + (fatto ? 'Segna come da fare' : 'Fatta') + '</button>'
       : '') +
     '<div class="gr">' +
     '<label class="gr-riga" for="ig-ora"><span class="gr-eti">Ora</span><span class="gr-valori">' +

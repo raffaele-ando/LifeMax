@@ -5462,3 +5462,8 @@ input.campo-velato, .q-chip-data input.campo-velato, input.sc-nascosta.campo-vel
 .bil-num { grid-column: 2; grid-row: 1; }
 .sm-porta-si, .sm-porta-si:hover { background: var(--accento-pieno); }
 :root[data-mode="dark"] { --inchiostro-muto: #adadb0; }
+
+/* LA SPUNTA È TONDA OVUNQUE: azioni, passi, cose senza orario e abitudini
+   erano quadrati, cerchi e quadratini. Un'unica forma per «segna fatto». */
+.spunta, .lista-azione.spunta, .tl-check { border-radius: 50% !important; corner-shape: round; }
+.casa-serie small { font-size: 11px; font-weight: 600; margin-left: 3px; opacity: .8; }
