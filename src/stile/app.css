@@ -5380,7 +5380,7 @@ input.campo-velato, .q-chip-data input.campo-velato, input.sc-nascosta.campo-vel
 /* scuro: la scelta attiva di un selettore è PIÙ chiara della barra, come nel chiaro */
 :root[data-mode="dark"] .segmenti button.attivo, :root[data-mode="dark"] .segmenti > a.attivo { background: var(--superficie-3); color: var(--inchiostro-1); }
 /* scuro: i pulsanti pieni non sono lastre lilla abbaglianti */
-:root[data-mode="dark"] { --accento-pieno: #6c63f0; --accento-ink: #ffffff; }
+:root[data-mode="dark"] { --accento-pieno: #5f55e6; --accento-ink: #ffffff; }
 
 .gr-spento { opacity: .45; pointer-events: none; }
 .gr-spento .interr.on { background: var(--baseline); }
@@ -5460,3 +5460,5 @@ input.campo-velato, .q-chip-data input.campo-velato, input.sc-nascosta.campo-vel
 .bil-nome { grid-column: 1; grid-row: 1; }
 .bil-barra { grid-column: 1 / -1; grid-row: 2; }
 .bil-num { grid-column: 2; grid-row: 1; }
+.sm-porta-si, .sm-porta-si:hover { background: var(--accento-pieno); }
+:root[data-mode="dark"] { --inchiostro-muto: #adadb0; }
