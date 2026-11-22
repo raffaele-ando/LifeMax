@@ -23,6 +23,11 @@ import {
 import type { CasellaCatena } from '../app/app';
 import { html } from '../pezzi/grezzo';
 
+/* «29 lug 2026», come il resto dell'app, invece del formato del sistema */
+function dataLeggibile(g: string): string {
+  return new Date(g + 'T12:00:00').toLocaleDateString('it-IT', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
 
 /* LA GRIGLIA DICE QUAL È, E I GIORNI CHE NON SONO ARRIVATI NON CI SONO.
    Sette colonne con L M M G V S D sopra e i numeri dei giorni dentro sono un
@@ -143,7 +148,7 @@ export default function Abitudine({ id, dopo }: PropAbitudine) {
               feedbackSpunta(ev, LM.completaAbitudine(id), 'Fatta', 'flame');
               ridisegna();
             }}>
-            <Segno nome="check" />{st.fatta ? ' Fatta oggi' : ' Fatta'}
+            <Segno nome="check" />{st.fatta ? ' Fatto oggi' : ' Fatto'}
           </button>
           {prevista && !st.fatta ? (
             <button className="sp-link" id="abd-salta" onClick={() => {
@@ -189,17 +194,18 @@ export default function Abitudine({ id, dopo }: PropAbitudine) {
           <select key={'ar' + (h.areaId || '')} className="gr-val" id="abd-area" ref={area} defaultValue={h.areaId}>
             {areeAttive().map((x) => <option key={x.id} value={x.id}>{x.nome}</option>)}
           </select></label>
-        <label className="gr-riga" htmlFor="abd-da"><span className="gr-eti">Inizio</span>
-          <input key={'da' + (h.da || '')} type="date" className="gr-val" id="abd-da" ref={da} defaultValue={h.da || ''} /></label>
+        <label className="gr-riga" htmlFor="abd-da" data-apri-campo="1"><span className="gr-eti">Inizio</span>
+          <span className="gr-val gr-val-testo">{h.da ? dataLeggibile(h.da) : 'Oggi'}</span>
+          <input key={'da' + (h.da || '')} type="date" className="campo-velato" id="abd-da" ref={da} defaultValue={h.da || ''} aria-label="Inizio" /></label>
         <div className="gr-riga"><span className="gr-eti">Fine</span>
           <span className="gr-valori">
             {/* il campo c'è sempre (era montato solo dopo un primo tocco, e così
                 il suo cambio non veniva mai ascoltato: la data non si salvava);
                 vuoto, mostra «Mai» */}
-            <span className="gr-data">
-              <input key={'a' + (h.a || '')} type="date" className="gr-val" id="abd-a" ref={fin} defaultValue={h.a || ''} min={h.da || ''} required />
-              <span className="gr-mai" aria-hidden="true">Mai</span>
-            </span>
+            <label className="gr-data" htmlFor="abd-a" data-apri-campo="1">
+              <span className={'gr-val gr-val-testo' + (h.a ? '' : ' gr-val-vuoto')}>{h.a ? dataLeggibile(h.a) : 'Mai'}</span>
+              <input key={'a' + (h.a || '')} type="date" className="campo-velato" id="abd-a" ref={fin} defaultValue={h.a || ''} min={h.da || ''} aria-label="Fine" />
+            </label>
             {h.a ? <button className="gr-via" id="abd-nofine" aria-label="Senza fine"
               onClick={(e) => { e.preventDefault(); LM.impostaPeriodoAbitudine(id, h.da || null, null); ridisegna(); }}><Segno nome="x" dim={13} /></button> : null}
           </span></div>

@@ -47,7 +47,7 @@ export default function ImpTimer() {
       <div className="gr-titolo">Avvio rapido</div>
       <div className="gr">
         <Durata id="it-avvio" eti="Durata" val={v(r.avvio, 5)} valori={MINUTI} onCambia={(x) => cambia({ avvio: x })} />
-        <Durata id="it-poi" eti="Poi continua per" val={v(r.poi, 25)} valori={MINUTI} onCambia={(x) => cambia({ poi: x })} />
+        <Durata id="it-poi" eti="Se prosegui, altri" val={v(r.poi, 25)} valori={MINUTI} onCambia={(x) => cambia({ poi: x })} />
       </div>
 
       <div className="gr-titolo">Sessione</div>
@@ -59,7 +59,7 @@ export default function ImpTimer() {
       <div className="gr">
         <Durata id="it-pom" eti="Concentrazione" val={v(r.pomodoro, 25)} valori={MINUTI} onCambia={(x) => cambia({ pomodoro: x })} />
         <Durata id="it-pausa" eti="Pausa breve" val={v(r.pausa, 5)} valori={MINUTI} onCambia={(x) => cambia({ pausa: x })} />
-        <Durata id="it-lunga" eti="Pausa lunga ogni 4" val={v(r.pausaLunga, 0)} valori={MINUTI} zero="Mai"
+        <Durata id="it-lunga" eti="Pausa lunga dopo 4 blocchi" val={v(r.pausaLunga, 0)} valori={MINUTI} zero="Nessuna"
           onCambia={(x) => cambia({ pausaLunga: x })} />
       </div>
     </div>

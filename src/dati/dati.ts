@@ -2543,6 +2543,7 @@ function creaLM() {
     }
     /* un timer finito da più di sei ore è roba di ieri che nessuno ha chiuso:
        non deve riapparire addosso a chi apre l'app la mattina dopo */
+    if (t.fermoDa) return Date.now() - t.fermoDa > SENZA_FINE_MAX ? null : t;
     if (!t.inPausa && Date.now() - t.fine > 6 * 3600000) return null;
     return t;
   }

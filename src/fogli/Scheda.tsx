@@ -262,7 +262,7 @@ export default function Scheda({ id }: { id: string }) {
               const fresca = LM.load().backlog.find((x) => x.id === b.id);
               chiediMancata(b.id, fresca ? fresca.testo : b.testo, render);
             }}>
-            <span className="sc-eti"><Segno nome="annulla" /> Non completata</span>
+            <span className="sc-eti"><Segno nome="annulla" /> Non ce l’ho fatta</span>
             <span className="lista-chev"><Segno nome="chevronGiu" /></span>
           </button>
         )}

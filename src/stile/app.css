@@ -49,7 +49,7 @@
      minuti, le percentuali — non deve ballare di larghezza a ogni cifra: un
      movimento nel campo visivo chiama l'occhio, ed è esattamente quello che
      una testa che corre non deve ricevere mentre lavora. */
-  --font-cifre: "New York", "Iowan Old Style", Cambria, Georgia, "Noto Serif", serif;
+  --font-cifre: var(--font);
 
   --brand-a: #17323f;
   --brand-b: #17323f;
@@ -5384,7 +5384,7 @@ input.campo-velato, .q-chip-data input.campo-velato, input.sc-nascosta.campo-vel
 
 .gr-spento { opacity: .45; pointer-events: none; }
 .gr-spento .interr.on { background: var(--baseline); }
-.prom-stato.avviso { background: color-mix(in srgb, var(--avviso, #e8a317) 14%, var(--superficie-1)); }
+.prom-stato.prom-bloccato { background: color-mix(in srgb, var(--avviso, #e8a317) 14%, var(--superficie-1)); }
 
 .att-riga { padding-right: 12px; }
 .va-oggi {
@@ -5469,3 +5469,22 @@ input.campo-velato, .q-chip-data input.campo-velato, input.sc-nascosta.campo-vel
 
 /* il titolo della scheda usa tutta la larghezza: andava a capo a metà */
 .sheet-testa-sx > * { align-self: stretch; max-width: 100%; }
+
+/* giro 3: interruttori nel colore dell'app; chip scelto sempre pieno (leggibile anche al buio) */
+.interr.on { background: var(--accento-pieno); }
+.q-chip.on { background: var(--accento-pieno); color: var(--accento-ink); border-color: transparent; }
+/* timer: lo schermo in pausa a mano */
+.conc-anello.in-pausa { opacity: .85; }
+/* il velo copre tutta la finestra, anche sotto la barra in basso e oltre il
+   bordo della vista ridotta: niente striscia chiara in fondo */
+.sheet-velo { position: fixed; inset: -2px 0 -160px 0; }
+:root[data-mode="dark"] .sheet-velo { background: rgba(0, 0, 0, .66); }
+:root[data-mode="dark"] .overlay { background: rgba(0, 0, 0, .55); }
+/* giro 3: il voto scelto si colora e basta, non salta né si allarga */
+.scala button.sel, .scala button:hover, .voto-area .stelline button.sel { transform: none; }
+.scala-legenda span { white-space: normal; }
+:root[data-mode="dark"] .segmenti button.attivo, :root[data-mode="dark"] .segmenti > a.attivo { background: #636366; color: #fff; }
+.timer-scelta { padding-right: 14px; }
+.timer-scelta .sc-val { margin-right: 2px; }
+.gr-val-testo { color: var(--inchiostro-1); font-size: 15px; }
+.gr-val-vuoto { color: var(--inchiostro-muto); }

@@ -1418,7 +1418,7 @@ const VISTE: Vista[] = [
      segno è il verdetto, e la beuta resta il segno degli esperimenti là
      dentro. */
   { id: 'esperimenti', nome: 'Scoperte', icona: 'funziona', gruppo: 'secondaria', livello: 'extra' },
-  { id: 'scienza',     nome: 'Scienza',      icona: 'atom',      gruppo: 'secondaria', livello: 'extra' },
+  { id: 'scienza',     nome: 'Su cosa si basa',      icona: 'atom',      gruppo: 'secondaria', livello: 'extra' },
   /* stanza a parte: dieci vestiti per gli stessi elementi, da confrontare
      per scegliere la base grafica di tutto il sito */
   { id: 'lab',         nome: 'Design lab',  breve: 'Lab', icona: 'palette',  gruppo: 'secondaria', livello: 'extra' }
@@ -1861,7 +1861,7 @@ export function htmlImpostazioni(pezzo?: 'profilo'): string {
     etichetta('Guida', 'aiuto') +
     '<div class="lista">' +
     rigaPorta('imp-guida', 'aiuto', 'Primi passi') +
-    rigaPorta('imp-scienza', 'atom', 'Scienza') +
+    rigaPorta('imp-scienza', 'atom', 'Su cosa si basa') +
     rigaPorta('imp-diag', 'terminale', 'Registro tecnico') +
     '</div>' +
 
@@ -1907,9 +1907,9 @@ export function apriPromemoria() {
   const acceso = P.stato() === 'granted';
   apriSheet('Promemoria',
     /* in cima: come stanno, e il tasto per cambiarlo */
-    '<div class="prom-stato' + (acceso ? ' on' : (pr.val === 'bloccati' ? ' avviso' : '')) + '" id="prom-stato">' +
+    '<div class="prom-stato' + (acceso ? ' on' : (pr.val === 'bloccati' ? ' prom-bloccato' : '')) + '" id="prom-stato">' +
       '<span class="prom-stato-ico">' + ICO(acceso ? 'campana' : 'campanaOff', 26) + '</span>' +
-      '<div class="prom-stato-testo"><b>' + (acceso ? 'Accesi' : pr.val.charAt(0).toUpperCase() + pr.val.slice(1)) + '</b>' +
+      '<div class="prom-stato-testo"><b>' + (acceso ? 'Accesi' : (pr.val === 'bloccati' ? 'Notifiche bloccate' : pr.val.charAt(0).toUpperCase() + pr.val.slice(1))) + '</b>' +
       (pr.nota ? '<span>' + pr.nota + '</span>' : '') + '</div>' +
       (pr.azione || '') +
     '</div>' +
@@ -1928,9 +1928,9 @@ export function apriPromemoria() {
       '<div class="gr-riga"><span class="gr-eti">Attivo</span>' +
         '<button class="interr' + (c.silenzio.on ? ' on' : '') + '" id="prom-sil-int" role="switch" aria-checked="' + !!c.silenzio.on + '" aria-label="Silenzio"><i></i></button></div>' +
       (c.silenzio.on
-        ? '<div class="gr-riga gr-sotto"><span class="gr-eti">Tra le</span><span class="gr-valori">' +
+        ? '<div class="gr-riga gr-sotto"><span class="gr-eti">Dalle</span><span class="gr-valori">' +
           '<input type="time" class="gr-val prom-t" id="prom-sil-da" value="' + esc(c.silenzio.da) + '" aria-label="Silenzio dalle">' +
-          '<span class="gr-tratto">–</span>' +
+          '<span class="gr-tratto">alle</span>' +
           '<input type="time" class="gr-val prom-t" id="prom-sil-a" value="' + esc(c.silenzio.a) + '" aria-label="Silenzio fino alle"></span></div>'
         : '') +
     '</div>' +
@@ -2849,8 +2849,26 @@ function timerDiQuesta(id: string): TimerVivo | null { const t = timerOra(); ret
 function timerResta(t: TimerVivo | null): number {
   if (!t) return 0;
   if (t.inPausa) return Math.max(0, (t.pausaFine || 0) - Date.now());
-  if (t.tipo === 'libero') return Date.now() - t.inizio;
-  return Math.max(0, t.fine - Date.now());
+  const ora = t.fermoDa || Date.now();
+  if (t.tipo === 'libero') return ora - t.inizio;
+  return Math.max(0, t.fine - ora);
+}
+/* PAUSA A MANO: il tempo si ferma; alla ripresa inizio e fine slittano di
+   quanto è durata la pausa, così i minuti registrati restano solo quelli veri */
+function sospendiTimer(): void {
+  const t = timerOra();
+  if (!t || t.inPausa || t.fermoDa) return;
+  LM.aggiornaTimerDati({ fermoDa: Date.now() });
+  if (concentrazioneAperta()) disegnaConcentrazione();
+  passoTimer();
+}
+function riprendiDaPausa(): void {
+  const t = timerOra();
+  if (!t || !t.fermoDa) return;
+  const d = Date.now() - t.fermoDa;
+  LM.aggiornaTimerDati({ fermoDa: 0, inizio: t.inizio + d, fine: t.fine ? t.fine + d : t.fine });
+  if (concentrazioneAperta()) disegnaConcentrazione();
+  passoTimer();
 }
 function fmtCrono(ms: number): string {
   const sec = Math.max(0, Math.round(ms / 1000));
@@ -2916,8 +2934,9 @@ export function avviaTimer(azioneId: string | null, minuti: number | null, areaI
 function minutiFatti(t: TimerVivo | null): number {
   if (!t) return 0;
   if (t.inPausa) return 0;
-  if (t.tipo === 'libero') return Math.round((Date.now() - t.inizio) / 60000);
-  return Math.round((t.durata * 60000 - Math.max(0, t.fine - Date.now())) / 60000);
+  const ora = t.fermoDa || Date.now();
+  if (t.tipo === 'libero') return Math.round((ora - t.inizio) / 60000);
+  return Math.round((t.durata * 60000 - Math.max(0, t.fine - ora)) / 60000);
 }
 /* il blocco che si chiude diventa una riga: l'id è il suo inizio, così due
    dispositivi che lo chiudono insieme ne scrivono uno solo */
@@ -2977,7 +2996,7 @@ function passoTimer(): void {
       : Math.min(1, 1 - resta / Math.max(1, t.durata * 60000)));
   document.querySelectorAll<HTMLElement>('[data-timer-cifre]').forEach(function (e) { e.textContent = fmtCrono(resta); });
   document.querySelectorAll<HTMLElement>('[data-timer-anello]').forEach(function (e) { e.style.setProperty('--p', quota.toFixed(4)); });
-  if (t.tipo === 'libero') return;
+  if (t.tipo === 'libero' || t.fermoDa) return;
   if (resta > 0) return;
   /* IL TEMPO È FINITO. Se lo fa andare un altro dispositivo, è lui che
      scrive; qui si aspetta. Se dopo due minuti non l'ha fatto (spento,
@@ -3159,15 +3178,16 @@ function disegnaConcentrazione(): void {
     '<button class="conc-esci" id="conc-esci" aria-label="Torna all’app">' + ICO('x', 18) + '</button>' +
     '<div class="conc-dentro">' +
     '<div class="conc-tipo">' + ICO(T.ico, 13) + ' ' +
-    (t.inPausa ? 'Pausa' : (t.daAvvio ? T.nome : T.nome)) +
+    (t.inPausa ? 'Pausa' : (t.fermoDa ? 'In pausa' : T.nome)) +
     (t.tipo === 'pomodoro' && !t.inPausa ? ' · blocco ' + (t.ciclo || 1) : '') + '</div>' +
     '<h2 class="conc-cosa">' + esc(titolo) + '</h2>' +
-    '<div class="conc-anello' + (t.inPausa ? ' in-pausa' : '') + '" data-timer-anello style="--p:0">' +
+    '<div class="conc-anello' + (t.inPausa || t.fermoDa ? ' in-pausa' : '') + '" data-timer-anello style="--p:0">' +
     '<div class="conc-cifre" data-timer-cifre>' + fmtCrono(timerResta(t)) + '</div>' +
     '<div class="conc-eti">' + (t.tipo === 'libero' ? 'trascorsi' : (t.inPausa ? 'di pausa' : 'restano')) + '</div>' +
     '</div>' +
     '<div class="conc-tasti">' +
     (t.inPausa ? '<button class="btn btn-grande btn-tinta" id="conc-continuato">' + ICO('play', 18) + ' Salta la pausa</button>' : '') +
+    (!t.inPausa ? '<button class="btn btn-grande btn-tinta" id="conc-sospendi">' + (t.fermoDa ? ICO('play', 18) + ' Riprendi' : ICO('pause', 18) + ' Pausa') + '</button>' : '') +
     '<button class="btn btn-ok btn-grande" id="conc-fatto">' + ICO('check', 18) + ' Fatto</button>' +
     '<button class="btn btn-mini btn-ghost" id="conc-ferma">' + ICO('fineperiodo', 15) + ' ' +
     'Termina sessione</button>' +
@@ -3183,6 +3203,8 @@ function disegnaConcentrazione(): void {
     dopoFermato(id, id ? m + (m === 1 ? ' minuto registrato.' : ' minuti registrati.') : 'Fermato. Meno di un minuto: niente da registrare.', 'durata');
     render();
   });
+  const sosp = c.querySelector<HTMLElement>('#conc-sospendi');
+  if (sosp) sosp.addEventListener('click', function () { if (timerOra()?.fermoDa) riprendiDaPausa(); else sospendiTimer(); });
   const cont = c.querySelector<HTMLElement>('#conc-continuato');
   if (cont) cont.addEventListener('click', pausaSaltata);
   const mu = c.querySelector<HTMLElement>('#conc-musica');
@@ -3908,7 +3930,7 @@ export function vistaFocus(): Scena {
       /* nella casa nuova solo dove vuol dire qualcosa: su una cosa che
          aveva un tempo. Altrove era un quarto bersaglio sempre acceso. */
       (prossima.tipo === 'abitudine' ? ''
-        : '<button class="btn btn-mini btn-ghost btn-mancata" id="btn-mancata">Non completata…</button>') +
+        : '<button class="btn btn-mini btn-ghost btn-mancata" id="btn-mancata">Non ce l’ho fatta…</button>') +
       '</div>') +
     /* Quante ne restano lo dice già il contatore in cima e il tasto delle
        altre. Qui resta solo la cosa che nessuno dei due dice: che dopo
@@ -3929,7 +3951,7 @@ export function vistaFocus(): Scena {
      puoi fare quando vuoi non significa niente, e nella scheda di oggi
      compare invece in tutte e sei le situazioni. */
   const mancata = (prossima.tipo !== 'abitudine' && (adesso.stato === 'corso' || adesso.stato === 'ritardo'))
-    ? '<div class="fuoco-mancata"><button class="btn-mancata" id="btn-mancata">Non completata…</button></div>'
+    ? '<div class="fuoco-mancata"><button class="btn-mancata" id="btn-mancata">Non ce l’ho fatta…</button></div>'
     : '';
 
   /* ------------------------------------------------------------------
@@ -4453,7 +4475,7 @@ function apriItemGiornata(k: Giorno, id: string, tipo: 'azione' | 'abitudine', o
   const html = '<div class="ig-ed">' +
     '<div class="abd-chi"><span>' + (isAz ? 'Attività' : ICO('refresh', 11) + ' Abitudine') + ' · ' + esc(etichettaGiorno(k)) + '</span></div>' +
     (spuntabile
-      ? '<button class="btn btn-grande ' + (fatto ? 'btn-ghost' : 'btn-ok') + ' ig-fatto"><span class="ig-fatto-ico">' + ICO(fatto ? 'annulla' : 'check', 15) + '</span>' + (fatto ? 'Segna come da fare' : 'Fatta') + '</button>'
+      ? '<button class="btn btn-grande ' + (fatto ? 'btn-ghost' : 'btn-ok') + ' ig-fatto"><span class="ig-fatto-ico">' + ICO(fatto ? 'annulla' : 'check', 15) + '</span>' + (fatto ? 'Segna come non fatta' : 'Fatto') + '</button>'
       : '') +
     '<div class="gr">' +
     '<label class="gr-riga" for="ig-ora"><span class="gr-eti">Ora</span><span class="gr-valori">' +
@@ -4655,8 +4677,8 @@ function montaGiornata(container: HTMLElement, opzioni?: OpzGriglia): void {
         '</div>' +
         '<div class="sp-pasti" id="sp-pasti">' + pastiRows + '</div>' +
         '<div class="sp-piede"><button class="sp-link" id="sp-add">' + ICO('plus', 13) + ' Pasto</button>' +
-        (d.dalRegistro ? '<button class="sp-link" id="sp-reset">Ripristina</button>' : '') +
-        '<button class="sp-link" id="sp-base">Ritmo di base</button></div>' +
+        (d.dalRegistro ? '<button class="sp-link" id="sp-reset">Annulla le modifiche</button>' : '') +
+        '<button class="sp-link" id="sp-base">Orari abituali</button></div>' +
         '</div>') + '</div>';
   }
 
@@ -6457,7 +6479,7 @@ function ritualeMattina(corpo: HTMLElement): void {
        Prima qui c'erano campo, tendina e tasto tutti in fila, che sul
        telefono andavano a capo su tre righe per aggiungere una cosa. */
     '<div class="mt-s">' +
-    rigaAggiunta('agg-piano', oggi.length === 0 ? 'Priorità di oggi…' : 'Aggiungi un’altra…',
+    rigaAggiunta('agg-piano', oggi.length === 0 ? 'Priorità di oggi…' : 'Aggiungi un’altra priorità…',
       '<label class="agg-area"><span class="agg-eti">in</span>' + selectAree('agg-piano-area') + '</label>') +
     '</div>' +
     /* Tre è il consiglio, e lo diciamo in una riga sola: «Hai 5 azioni per
@@ -7425,7 +7447,7 @@ export function disegnaScoperte() {
       var forza = dEff === null ? '' : (Math.abs(dEff) < 0.2 ? 'trascurabile' : Math.abs(dEff) < 0.5 ? 'piccola' : Math.abs(dEff) < 0.8 ? 'media' : 'grande');
       verdetto = '<div class="exp-verdetto">' + ICO('confronto', 15) +
         '<span>Nella fase iniziale la media era <b>' + LMCharts.fmtNum(ris.baseline.media) + '</b> (su ' + ris.baseline.n + ' giorni); dopo la modifica è <b>' + LMCharts.fmtNum(ris.intervento.media) + '</b> (su ' + ris.intervento.n + ' giorni), con una differenza di <b>' + (diff > 0 ? '+' : '') + LMCharts.fmtNum(diff) + '</b>' +
-        (dEff !== null ? '. L’entità del cambiamento è <b>' + forza + '</b> (d≈' + LMCharts.fmtNum(dEff) + ')' : '') + '.' +
+        (dEff !== null ? '. L’entità del cambiamento è <b>' + forza + '</b>' : '') + '.' +
         '<br><small>È un indizio utile, non una prova definitiva: se il risultato ti interessa, ripeti l’esperimento per confermarlo.</small></span></div>' +
         /* IL RISULTATO DIVENTA UNA RIGA. Un esperimento che finisce e resta
            un grafico non serve a niente il mese dopo: quello che uno vuole

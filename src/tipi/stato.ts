@@ -371,6 +371,8 @@ export interface Timer {
      perché fondeva le chiavi una per una senza guardare quali. */
   pausaFine?: number;
   daAvvio?: boolean;
+  /* messo in pausa a mano: da quando. Alla ripresa inizio e fine si spostano avanti */
+  fermoDa?: number;
   /* SE ERI DENTRO, CI TORNI. Lo schermo della concentrazione è aperto o no, e
      la risposta sta nei dati: chiudendo il telefono mentre stai lavorando, al
      ritorno lo si ritrova aperto invece di essere riportati indietro alla

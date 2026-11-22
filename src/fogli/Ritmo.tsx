@@ -49,8 +49,8 @@ function RigaChiedi({ quale, nome, v, onCambia }: {
     </div>
     {acceso ? (
       <div className="gr-riga gr-sotto">
-        <span className="gr-eti">{v.a != null ? 'Tra le' : 'Alle'}</span>
-        <span className="gr-valori">{ora('da', 'non prima delle', v.da)}{v.a != null ? <><span className="gr-tratto">–</span>{ora('a', 'non dopo le', v.a)}</> : null}</span>
+        <span className="gr-eti">{v.a != null ? 'Dalle' : 'Alle'}</span>
+        <span className="gr-valori">{ora('da', 'non prima delle', v.da)}{v.a != null ? <><span className="gr-tratto">alle</span>{ora('a', 'non dopo le', v.a)}</> : null}</span>
       </div>
     ) : null}
   </>);
