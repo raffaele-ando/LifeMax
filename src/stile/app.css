@@ -5420,3 +5420,16 @@ input.campo-velato, .q-chip-data input.campo-velato, input.sc-nascosta.campo-vel
   #vista > .casa, #vista > .prof-testa, #vista > .prof-numeri, #vista > .prof-righe { max-width: 760px; margin-left: auto; margin-right: auto; }
   #vista .testa-porta { max-width: 760px; margin-left: auto; margin-right: auto; }
 }
+.solo-lettori { left: 0; top: 0; }
+
+/* le schede finiscono con aria sotto l'ultimo comando */
+.sheet-corpo { padding-bottom: calc(28px + env(safe-area-inset-bottom, 0px)); }
+/* i link della musica si vedono come campi */
+.mus-link { background: var(--superficie-1); border: 1px solid var(--bordo-forte); }
+:root[data-mode="dark"] .mus-link { background: var(--superficie-3); }
+/* nel Diario «Annulla» è un segno discreto a fine riga, non una scritta
+   ripetuta quindici volte */
+.diario-annulla .da-eti { display: none; }
+.diario-annulla { color: var(--inchiostro-muto); background: none; border: 0; width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; }
+.diario-annulla::after { content: ''; position: absolute; inset: -4px; }
+.diario-annulla { position: relative; }

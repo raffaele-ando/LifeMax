@@ -1242,6 +1242,7 @@
   "2|button|lista-riga.sc-riga.sc-tocca|imp-togli-esempio|||",
   "3|span|sc-eti|||Rimuovi dati di esempio|",
   "4|svg|ico||||",
+  "1|div|lista.mt||||",
   "2|button|lista-riga.sc-pericolo.sc-riga.sc-tocca|imp-azzera|||",
   "3|span|sc-eti|||Cancella tutti i dati|",
   "4|svg|ico||||"

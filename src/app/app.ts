@@ -1870,6 +1870,9 @@ export function htmlImpostazioni(pezzo?: 'profilo'): string {
     etichetta('Reimposta', 'riprova') +
     '<div class="lista">' +
     (LM.contaEsempio() ? rigaFa('imp-togli-esempio', 'sparkles', 'Rimuovi dati di esempio') : rigaFa('imp-demo', 'sparkles', 'Carica dati di esempio')) +
+    '</div>' +
+    /* cancellare tutto sta da solo: mai in fila con un comando innocuo */
+    '<div class="lista mt">' +
     rigaFa('imp-azzera', 'trash', 'Cancella tutti i dati', 'sc-pericolo') +
     '</div>' +
     '</div>';
@@ -3166,7 +3169,7 @@ function disegnaConcentrazione(): void {
     '<div class="conc-tasti">' +
     (t.inPausa ? '<button class="btn btn-grande btn-tinta" id="conc-continuato">' + ICO('play', 18) + ' Salta la pausa</button>' : '') +
     '<button class="btn btn-ok btn-grande" id="conc-fatto">' + ICO('check', 18) + ' Fatto</button>' +
-    '<button class="btn btn-mini btn-ghost" id="conc-ferma">' + ICO('pause', 15) + ' ' +
+    '<button class="btn btn-mini btn-ghost" id="conc-ferma">' + ICO('fineperiodo', 15) + ' ' +
     (t.daAvvio ? 'Termina' : 'Termina') + '</button>' +
     '<div class="conc-altri">' +
     (musica ? '<button class="btn btn-mini btn-ghost" id="conc-musica">' + ICO('cuffie', 15) + ' Musica</button>' : '') +
