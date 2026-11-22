@@ -542,3 +542,71 @@
 - [alta] promemoria__pc-dark.png — orari 12 ore AM/PM — come nel chiaro.
 - [media] promemoria__pc-dark.png — avviso «Bloccati» — riquadro grigio neutro con icona grigia, nessun colore d'avviso: in scuro passa inosservato, mentre gli interruttori verdi brillanti sotto dicono il contrario — riquadro con tinta d'avviso (ambra) e interruttori attenuati.
 - [bassa] promemoria__pc-dark.png — nomi promemoria diversi dai nomi dei rituali — come nel chiaro.
+
+## diario__pc-dark.png
+- [bassa] diario__pc-dark.png — righe «Completata» — la prima e la terza hanno «Priorità [select]», la seconda (ieri 13:00) ha solo l'icona area + select senza etichetta: stessa riga con due composizioni (vale anche per il chiaro) — un unico formato.
+- [bassa] diario__pc-dark.png — segmento «Cose importanti / Tutto» — opzione attiva più scura della barra (inversione) — schiarirla.
+- [media] diario__pc-dark.png — stessi difetti del chiaro (voce laterale «Andamento» attiva aprendo dal Profilo, «Annulla» ripetuto, ora in coda, select nativi nel registro, nome «Diario»).
+
+## timer-scelta__pc-dark.png
+- [media] timer-scelta__pc-dark.png — valori a destra attaccati al bordo della card (4 px) — come nel chiaro.
+- [bassa] timer-scelta__pc-dark.png — divisori fra le opzioni invisibili in scuro — token divisore.
+- [bassa] timer-scelta__pc-dark.png — velo dietro la finestra debole: la card verde «Fatto» resta ben visibile accanto alla finestra e distrae — oscurare di più.
+
+## timer-concentrazione__pc-dark.png
+- [media] timer-concentrazione__pc-dark.png — identico al chiaro: «⏸ Termina» ambiguo, nessun pulsante Pausa, «Fatto» primario durante la sessione, anello quadrato grigio su nero invisibile a 25:00.
+- [bassa] timer-concentrazione__pc-dark.png — pulsante × in alto a destra (grigio scuro su nero) poco visibile e lontano da tutto il resto — accettabile in modalità concentrazione, ma dare un tooltip «Esci (Esc)».
+
+## cattura__pc-dark.png
+- [alta] cattura__pc-dark.png — solo «Chiudi», nessun «Salva» né suggerimento Invio — come nel chiaro.
+- [bassa] cattura__pc-dark.png — finestra grigio scuro su sfondo sfocato quasi dello stesso tono: bordi poco definiti — bordo più chiaro o ombra marcata.
+- [bassa] cattura__pc-dark.png — divisore rientrato in modo irregolare (x 325–955) — come nel chiaro.
+
+## menu-oggi-avatar__pc-dark.png
+- [media] menu-oggi-avatar__pc-dark.png — come nel chiaro: l'avatar porta al Profilo (doppione della voce laterale) e nessuna voce laterale risulta attiva; card in alto senza bordo e liste con bordo.
+
+## Riassunto
+
+### 1. Bug evidenti (da correggere subito)
+- **Orari in formato americano 12 h (AM/PM) e date mese/giorno** in tutti i campi modificabili: schede del calendario, scheda abitudine, Sonno e pasti (Profilo, rituale, pannello della Giornata), Promemoria; «Inizio 07/29/2026». Nella stessa schermata convivono «23:30–07:30» e «11:30 PM». → Formato 24 h e date it-IT ovunque.
+- **Stato selezionato invisibile** in «Esito» della scheda Scoperta (bianco su bianco nel chiaro, blu scuro su grigio nello scuro).
+- **«Pianifica: Ieri»** nella scheda attività: propone una data passata.
+- **«Ogni giorno» con i 7 cerchi dei giorni tutti vuoti** nella creazione di un'abitudine; «Ora: Nessuno» (errore di genere).
+- **Select durata tagliato** («15 mi⌄») nel pannello sonno/pasti della Giornata.
+- **Barra laterale che si accorcia** durante il trascinamento (fondo a y 741, fascia vuota sotto); la zona «Togli l'orario» esce dalla colonna e copre il calendario; il fantasma trascinato sta un'ora sopra l'anteprima.
+- **Viste Settimana/Mese/Anno aperte già scorse** (nel chiaro): non si vedono le intestazioni dei giorni o del mese; il pannello Sonno e pasti aperto finisce fuori dallo schermo.
+- **Finestra «Aree» sfocata** (in entrambi i temi), probabilmente un'animazione di scala che non finisce a un valore intero.
+- **Check-in «fatto» senza i valori registrati**: il modulo sembra vuoto.
+- **Numeri incoerenti**: 65% = «81 di 124» (Andamento) e «109 fatte» (Profilo); l'Anno dice «82 fatte»; agosto ha 17 giorni attivi nell'Anno e 18 nel Mese.
+
+### 2. Layout su schermo largo (pensato per il telefono)
+- Ogni pagina ha una larghezza diversa: Adesso è una colonna centrata di 560 px, la Giornata e Da fare vanno a tutta larghezza, Da sistemare è a sinistra in 620 px, il Profilo è centrato in 640 px. Serve una griglia unica.
+- Tanto spazio vuoto: metà schermo vuota in Adesso, Rituali e Abitudini; la card «Costanza» è vuota al 60%. Mancano layout a due colonne: lista + dettaglio per Rituali e Attività, «Da pianificare» accanto al calendario, Funziona/Non funziona affiancati.
+- Su computer si usano finestre stile telefono (460 px, con scorrimento interno) per le schede, le Impostazioni e le sottopagine. Altezza e posizione cambiano a ogni pagina e il contenuto viene tagliato.
+- Pulsanti e controlli enormi a tutta larghezza: «Salva +5 XP» e «Fatto» a 924 px; scala del Check-in con pulsanti 178×50. Nella creazione abitudine i cerchi dei giorni sono distanti 150 px; le frecce della data sono a 900 px l'una dall'altra.
+- Nessuna intestazione fissa (sticky) nel calendario e tre livelli di navigazione impilati, ciascuno con uno stile diverso.
+
+### 3. Incoerenze fra componenti
+- Ci sono tre modi diversi di segnare come fatto: caselle quadrate, cerchi a destra e il pulsante «Fatto/Fatta», a volte verde, a volte viola, a volte lilla. In «Da fare» l'icona ◎ occupa il posto della casella ma non completa l'attività.
+- La scala 1–5 ha due aspetti diversi (Check-in e Review); il selettore dei giorni anche (creazione e scheda abitudine).
+- I campi di testo hanno quattro stili: bianco con bordo, grigio pieno, select nativo, input nativo. I valori nelle pillole usano colori a caso (nero, viola, grigio) e la × è a volte dentro, a volte fuori.
+- Per confermare si usano verbi diversi: Salva, Registra, Fatto. In Sonno e pasti ci sono due conferme.
+- La stessa attività ha due schede diverse (dal calendario e da Attività). «Elimina» ha tre aspetti diversi.
+- Le statistiche usano tre componenti diversi, uno con numeri in serif nella Review settimanale.
+- Il calendario Anno usa il verde, la mappa «Costanza» il blu.
+- In Profilo nessuna voce della barra laterale è evidenziata; nel Diario risulta attiva «Andamento».
+
+### 4. Tema scuro
+- Le schede e i segmenti attivi sono più scuri della barra che li contiene (logica opposta al chiaro), quindi quasi invisibili. Anche la voce selezionata nella barra laterale si distingue appena.
+- Velo dietro le finestre troppo debole e superfici con poca elevazione. I divisori spariscono (Scoperta, Impostazioni, Timer).
+- Basso contrasto su caselle, campi senza bordo, pulsanti sì/no, testi barrati (~2:1), etichette da 11 px, colori area scuri (verde e blu) e cerchi delle abitudini.
+- I pulsanti primari lilla chiaro sono lastre abbaglianti (Salva, Fatta). Gli interruttori sono verdi invece del colore d'accento. L'avviso «Bloccati» è neutro mentre gli interruttori sotto sono accesi.
+
+### 5. Testi e UX
+- Inglese mescolato all'italiano: «Review», «Check-in», «Founder», «Design lab», «XP».
+- Termini criptici o innaturali: «Finisce qui», «Togli solo da oggi», «Togli questa riga», «Evidenza» (falso amico), «Scritta 20 lug», «concentratissimo», «riuscita», «Diario» (che in realtà è una cronologia), «Registro», «d≈3,1».
+- La nota veloce ha tre nomi diversi: «Aggiungi una nota», «Scrivi un pensiero», «Da sistemare». Il popup non ha un pulsante Salva.
+- Numeri senza etichetta: 🔥38, 1/2, 1 di 3, +4/+1, 7/25/17, «Backup 1», badge «1» sui Rituali. Separatori all'inglese («4.3», «1874»).
+- I nomi dei promemoria non corrispondono a quelli dei rituali. Gli interruttori delle notifiche sono attivi anche con le notifiche bloccate.
+- Elementi che sembrano cliccabili ma non lo sono: chip «concluso», riquadri 👍/👎, quadratini colore nel Mese. Al contrario, «Come sempre · 23:30–07:30» è un pulsante ma sembra un testo.
+- Gli strumenti per sviluppatori (Registro tecnico, Design lab) sono visibili all'utente. «Rimuovi dati di esempio» è nascosto in fondo alle Impostazioni.
