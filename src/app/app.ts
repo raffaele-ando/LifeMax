@@ -5159,7 +5159,7 @@ function montaMese(container: HTMLElement): void {
   container.innerHTML = orizzNav('mese', schermo.giornataAncora, null, (MESI[mese] || '') + ' ' + anno) +
     (spostata
       ? '<div class="me-modo">' + ICO('calendar', 15) + '<span>Tocca il giorno per <b>' + esc(spostata.testo) + '</b></span><button class="sp-link" id="me-annulla">Annulla</button></div>'
-      : '<div class="me-somma"><span><b>' + attivi + '</b> giorni attivi</span><span><b>' + fatteMese + '</b> cose fatte</span></div>') +
+      : '<div class="me-somma"><span><b>' + attivi + '</b> giorni attivi</span><span><b>' + fatteMese + '</b> attività fatte</span></div>') +
     '<div class="card me-carta"><div class="me-dow">' + dowh + '</div><div class="me-griglia">' + celle + '</div></div>' +
     '<div class="me-giorno"><div class="me-giorno-testa"><h2>' + esc(etichettaGiorno(sel)) + '</h2>' +
     '<button class="sp-link" id="me-apri">Apri il giorno ' + ICO('chevronGiu', 13) + '</button></div>' +
@@ -5215,7 +5215,7 @@ function montaAnno(container: HTMLElement): void {
       const k = comeGiorno(anno + '-' + ('0' + (m + 1)).slice(-2) + '-' + ('0' + g).slice(-2));
       const xp = s.xpPerGiorno[k] || 0;
       const liv = xp <= 0 ? 0 : Math.min(4, Math.ceil(xp / maxXp * 4));
-      if (xp > 0) attiviMese++;
+      if (LM.giornoAttivo(k)) attiviMese++;
       celle += '<i class="l' + liv + (k === oggi ? ' oggi' : '') + (k > oggi ? ' poi' : '') + '"></i>';
     }
     const ora = oggi.slice(0, 7) === anno + '-' + ('0' + (m + 1)).slice(-2);
@@ -5233,7 +5233,7 @@ function montaAnno(container: HTMLElement): void {
   }).join('');
 
   container.innerHTML = orizzNav('anno', schermo.giornataAncora, null, '' + anno) +
-    '<div class="an-numeri"><span><b>' + attivi + '</b>giorni attivi</span><span><b>' + azFatte + '</b>fatte</span><span><b>' + xpAnno + '</b>XP</span></div>' +
+    '<div class="an-numeri"><span><b>' + attivi + '</b>giorni attivi</span><span><b>' + azFatte + '</b>attività fatte</span><span><b>' + xpAnno + '</b>XP</span></div>' +
     '<div class="an-mesi">' + mesiHtml + '</div>' +
     (scad.length ? '<div class="card mt"><h2>' + ICO('scadenza', 15) + ' Scadenze</h2><div class="an-scad-lista mt-s">' + scadHtml + '</div></div>' : '');
   wireOrizzNav(container, 'anno');
@@ -6984,7 +6984,7 @@ function ritualeSettimana(corpo: HTMLElement): void {
     testaRituale('unaSettimana', 'Bilancio della settimana', 'Dieci minuti.') +
     '<div class="eroe-statistiche" style="justify-content:center;margin-bottom:16px">' +
     '<div class="stat"><span class="stat-val">' + xpSett + '</span><span class="stat-eti">XP guadagnati</span></div>' +
-    '<div class="stat"><span class="stat-val">' + azioniSett + '</span><span class="stat-eti">azioni completate</span></div>' +
+    '<div class="stat"><span class="stat-val">' + azioniSett + '</span><span class="stat-eti">attività fatte</span></div>' +
     '<div class="stat"><span class="stat-val">' + attivi + '/7</span><span class="stat-eti">giorni attivi</span></div>' +
     '</div>' +
     '<label class="campo" for="w-vittorie">Cosa ha funzionato questa settimana</label><textarea id="w-vittorie">' + (rev ? esc(rev.vittorie || '') : '') + '</textarea>' +

@@ -21,9 +21,9 @@ export default function Profilo() {
 
   const bil = LM.bilancio(30);
   const numeri: [string, string, string][] = [
-    ['flame', String(LM.streak().corrente), 'giorni'],
-    ['check', String(LM.quanteFatte()), 'fatte'],
-    ['trendUp', bil.messe ? Math.round(bil.tasso * 100) + '%' : '—', 'completate']
+    ['flame', String(LM.streak().corrente), 'giorni di fila'],
+    ['check', String(LM.quanteFatte()), 'attività fatte in tutto'],
+    ['trendUp', bil.messe ? Math.round(bil.tasso * 100) + '%' : '—', 'fatte negli ultimi 30 giorni']
   ];
 
   return (<>
