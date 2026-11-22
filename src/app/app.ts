@@ -44,7 +44,7 @@ import { countUp, burst, flyXp, pioggiaCoriandoli } from './moto';
 import { abilitaTrascina } from './trascina';
 import { fmtMin, fmtOre, etichettaGiorno, oraDi } from './tempo';
 import { avviaScorrimento } from './scorri';
-import { illoInbox, illoFlask, illoOrbita, mascotte } from './illustrazioni';
+import { illoInbox, illoFlask, mascotte } from './illustrazioni';
 export { illoInbox } from './illustrazioni';
 export { fmtOre, etichettaGiorno } from './tempo';
 import type { OpzFesta } from './moto';
@@ -2701,6 +2701,7 @@ export function topbar(titolo: string, sottotitolo?: string, destra?: string, cl
 }
 
 function refreshObAccount() {
+  if (ridisegnaBenvenuto) { ridisegnaBenvenuto(); return; }
   var el = document.getElementById('ob-account');
   if (!el) return;
   var a = window.LM_AUTH || { available: false, user: null };
@@ -7810,126 +7811,256 @@ export function caricaLab(): Promise<Lab> {
    ONBOARDING
    ============================================================ */
 
+/* IL BENVENUTO, RIFATTO.
+   Due parti. La PORTA, per chi arriva: cosa fa l'app in una frase, e due
+   strade — «Inizia» per chi è nuovo, «Ho già un account» per chi torna.
+   Poi il PERCORSO: una domanda per schermata, risposte grandi da toccare,
+   la barra che avanza, «Continua» sempre nello stesso posto sotto il
+   pollice. Ogni risposta cambia davvero qualcosa nell'app (le aree, la
+   schermata di partenza, il timer): una domanda che non serve a niente è
+   solo un passo in più prima di cominciare. In fondo, il riepilogo di
+   quello che si è scelto e — solo lì, quando c'è già qualcosa da perdere —
+   l'invito a salvarlo in un account. */
+type Difficolta = 'cominciare' | 'concentrazione' | 'costanza' | 'ricordare' | 'capire';
+const DIFFICOLTA: { id: Difficolta; ico: string; nome: string; desc: string; parti: string; consiglio: string }[] = [
+  { id: 'cominciare', ico: 'play', nome: 'Cominciare', desc: 'So cosa fare, ma non parto.', parti: 'oggi',
+    consiglio: 'Quando non riesci a partire, tocca «Timer»: sono cinque minuti, poi decidi se andare avanti.' },
+  { id: 'concentrazione', ico: 'mirino', nome: 'Restare concentrato', desc: 'Inizio e mi distraggo a metà.', parti: 'oggi',
+    consiglio: 'Il timer è impostato a blocchi con pausa: lavori 25 minuti, poi ti fermi 5.' },
+  { id: 'costanza', ico: 'flame', nome: 'Essere costante', desc: 'Parto bene, poi mollo dopo qualche giorno.', parti: 'rituali',
+    consiglio: 'Parti dai rituali: un minuto al mattino e due la sera, ogni giorno uguali.' },
+  { id: 'ricordare', ico: 'bolt', nome: 'Ricordarmi le cose', desc: 'Idee e impegni mi sfuggono.', parti: 'inbox',
+    consiglio: 'Quando ti viene in mente qualcosa, tocca «+»: la annoti in un secondo e la sistemi dopo.' },
+  { id: 'capire', ico: 'flask', nome: 'Capire cosa funziona', desc: 'Non so cosa mi aiuta davvero.', parti: 'plancia',
+    consiglio: 'In Andamento vedi come vanno le tue aree. Dopo qualche giorno puoi provare un esperimento.' }
+];
+const NOME_PARTENZA: Record<string, string> = { oggi: 'Oggi', rituali: 'Rituali', inbox: 'Attività', plancia: 'Andamento' };
+
+/* chi rifà il benvenuto quando cambia l'accesso (vedi `refreshObAccount`) */
+let ridisegnaBenvenuto: (() => void) | null = null;
+
 function onboarding() {
   var root = perId('onboarding-root');
-  var passo = 0;
-  /* `modo` è la schermata su cui si apre l'app la prima volta: il valore
-     è l'id di una vista, e i tasti che lo scrivono lo portano dentro */
-  const scelte: { nome: string; visione: string; aree: string[]; modo: string } =
-    { nome: '', visione: '', aree: LM.AREE_DEFAULT.map(function (a) { return a.id; }), modo: 'oggi' };
+  /* -1 è la porta; poi le domande */
+  var passo = -1;
+  var verso = 1;
+  const PASSI = ['nome', 'aree', 'difficolta', 'obiettivo', 'pronto'] as const;
+  const scelte: { nome: string; visione: string; aree: string[]; difficolta: Difficolta | '' } =
+    { nome: '', visione: '', aree: [], difficolta: '' };
 
-  function disegna() {
-    var step = '';
-    if (passo === 0) {
-      step = '<div class="card"><h2>Come ti chiami?</h2>' +
-        '<p class="ob-sotto">Serve solo per salutarti. Resta su questo dispositivo, o nel tuo account se accedi.</p>' +
-        '<label class="campo" for="ob-nome">Nome</label><input type="text" id="ob-nome" value="' + esc(scelte.nome) + '" placeholder="Il tuo nome" autocomplete="given-name" enterkeyhint="next">' +
-        '<label class="campo" for="ob-visione">Cosa vuoi ottenere? <span class="campo-nota">facoltativo</span></label>' +
-        '<textarea id="ob-visione" rows="2" placeholder="Es. restare in salute e finire gli studi">' + esc(scelte.visione) + '</textarea>' +
-        '<div class="riga-flex mt"><button class="btn btn-primario btn-grande" id="ob-avanti">Avanti ' + ICO('arrowRight', 15) + '</button></div>' +
-        '<p class="ob-esempio">Vuoi prima dare un’occhiata? <button class="sp-link" id="ob-demo">Prova con dati di esempio</button></p></div>';
-    } else if (passo === 1) {
-      step = '<div class="card"><h2>Le aree della tua vita</h2>' +
-        '<p class="ob-sotto">Tocca per togliere quelle che non ti servono. Potrai rinominarle o aggiungerne altre in qualsiasi momento.</p>' +
-        '<div class="selettore-aree">' + LM.AREE_DEFAULT.map(function (a) {
-          var sel = scelte.aree.indexOf(a.id) >= 0;
-          return '<button data-area="' + a.id + '" class="' + (sel ? 'sel' : '') + '" style="--c-area:' + LM.SLOT_COLORI[a.slot][0] + '">' +
-            ICO(a.icona, 18) + esc(a.nome) + '<span class="segno">' + ICO('scelto', 15) + '</span></button>';
-        }).join('') + '</div>' +
-        '<div class="riga-flex mt"><button class="btn btn-primario btn-grande" id="ob-avanti">Avanti ' + ICO('arrowRight', 15) + '</button>' +
-        '<button class="btn btn-ghost" id="ob-indietro">Indietro</button></div></div>';
-    } else {
-      step = '<div class="card"><h2>Da dove vuoi partire?</h2>' +
-        '<p class="ob-sotto">È la schermata che vedrai aprendo l’app. Le altre restano a un tocco.</p>' +
-        '<div class="selettore-modi">' +
-        modo('oggi', 'target', 'Oggi', 'Una cosa alla volta: la prossima da fare, e il resto dopo.') +
-        modo('plancia', 'dashboard', 'Andamento', 'Numeri e grafici: come stanno andando le tue aree.') +
-        modo('rituali', 'rituali', 'Rituali', 'Brevi routine al mattino e alla sera che danno una struttura fissa.') +
+  function auth() { return window.LM_AUTH || { available: false, user: null }; }
+  function cloudOk() { return !!(window.LMCloud && window.LMCloud.available) || !!auth().available; }
+  function accedi() { if (window.LMCloud && window.LMCloud.available) window.LMCloud.signIn(); }
+
+  /* ---------- la porta ---------- */
+  function porta(): string {
+    const chi = auth().user;
+    return '<div class="bv bv-porta">' +
+      '<header class="bv-alto"><span class="bv-logo">' + LOGO(28) + ' LifeMax</span>' +
+      (cloudOk() && !chi ? '<button class="bv-link-alto" data-bv="accedi">Accedi</button>' : '') + '</header>' +
+      '<main class="bv-eroe">' +
+        '<div class="bv-scena" aria-hidden="true">' +
+          '<div class="bv-alone"></div>' + mascotte() +
+          '<span class="bv-bolla b1">' + ICO('check', 13) + ' Ripasso fatto</span>' +
+          '<span class="bv-bolla b2">' + ICO('durata', 13) + ' 25:00</span>' +
+          '<span class="bv-bolla b3">' + ICO('flame', 13) + ' 7 giorni di fila</span>' +
         '</div>' +
-        /* INIZIARE È L'AZIONE PRINCIPALE, l'esempio no: chi ha appena scritto
-           il suo nome e scelto le sue aree non deve ritrovarsi con attività
-           inventate addosso perché ha premuto il tasto più grande */
-        '<div class="riga-flex mt">' +
-        '<button class="btn btn-primario btn-grande" id="ob-fine-vuoto">Inizia ' + ICO('arrowRight', 15) + '</button>' +
-        '<button class="btn btn-ghost" id="ob-indietro">Indietro</button></div>' +
-        '<p class="ob-esempio">Preferisci vedere com’è piena? <button class="sp-link" id="ob-fine-demo">Inizia con dati di esempio</button></p></div>';
-    }
-
-    /* `ob-p0`, `ob-p1`, `ob-p2`: il passo sta scritto sul contenitore perché
-       su un telefono la presentazione si accorcia dopo il primo — vedi il
-       blocco «il primo avvio su un telefono» in app.css. */
-    root.innerHTML = '<div class="onboarding ob-p' + passo + '"><div class="ob-grid">' +
-      '<aside class="ob-brand">' +
-      '<div class="logo">' + LOGO(34) + ' LifeMax</div>' +
-      '<div class="ob-titolo">Misura. Ingegnerizza.<br><em>Massimizza.</em></div>' +
-      '<p>Uno spazio unico per organizzare, misurare e migliorare le diverse aree della tua vita. È pensato per chi fatica a mantenere costanza e concentrazione: poca fatica per usarlo, riscontro immediato.</p>' +
-      '<div class="ob-punti">' +
-      '<div class="ob-punto">' + ICO('bolt', 15) + '<span><b>Annota subito.</b> Un tasto per salvare qualsiasi pensiero; deciderai dopo cosa farne.</span></div>' +
-      '<div class="ob-punto">' + ICO('target', 15) + '<span><b>Una cosa alla volta.</b> Ti proponiamo la prossima azione, così eviti la paralisi da troppe scelte.</span></div>' +
-      '<div class="ob-punto">' + ICO('flask', 15) + '<span><b>Scienza applicata a te.</b> Esperimenti sui tuoi dati per capire cosa funziona davvero, non sulle medie di altri.</span></div>' +
-      '</div>' +
-      '<div id="ob-account" class="ob-account"></div>' +
-      illoOrbita() + '</aside>' +
-      '<section class="ob-step"><div class="passi-punti" aria-label="Passo ' + (passo + 1) + ' di 3">' +
-      [0, 1, 2].map(function (i) { return '<span class="' + (i <= passo ? 'attivo' : '') + '"></span>'; }).join('') +
-      '<small>' + (passo + 1) + ' di 3</small></div>' + step + '</section>' +
-      '</div></div>';
-
-    function modo(id: string, icona: string, nome: string, desc: string): string {
-      return '<button data-modo="' + id + '" class="' + (scelte.modo === id ? 'sel' : '') + '">' +
-        '<span class="icona-modo">' + ICO(icona, 18) + '</span>' +
-        '<span><span class="titolo-modo">' + nome + '</span><div class="desc-modo">' + desc + '</div></span></button>';
-    }
-
-    refreshObAccount();
-
-    var demo = document.getElementById('ob-demo');
-    if (demo) demo.addEventListener('click', function () { fine(true); });
-    /* Invio nel nome porta avanti, come in ogni modulo */
-    var nomeIn = document.getElementById('ob-nome');
-    if (nomeIn) nomeIn.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); presa(document.getElementById('ob-avanti')).click(); } });
-    if (nomeIn && passo === 0 && window.matchMedia('(pointer: fine)').matches) nomeIn.focus();
-    var avanti = document.getElementById('ob-avanti');
-    if (avanti) avanti.addEventListener('click', function () {
-      if (passo === 0) {
-        scelte.nome = presa(campoId('ob-nome')).value.trim();
-        scelte.visione = presa(campoId('ob-visione')).value.trim();
-      }
-      passo++; disegna();
-    });
-    var indietro = document.getElementById('ob-indietro');
-    if (indietro) indietro.addEventListener('click', function () { passo--; disegna(); });
-    root.querySelectorAll<HTMLElement>('[data-area]').forEach(function (b) {
-      b.addEventListener('click', function () {
-        const id = b.getAttribute('data-area') || '';
-        var i = scelte.aree.indexOf(id);
-        if (i >= 0) { if (scelte.aree.length > 1) scelte.aree.splice(i, 1); }
-        else scelte.aree.push(id);
-        disegna();
-      });
-    });
-    root.querySelectorAll<HTMLElement>('[data-modo]').forEach(function (b) {
-      b.addEventListener('click', function () { scelte.modo = b.getAttribute('data-modo') || 'oggi'; disegna(); });
-    });
-    var fineDemo = document.getElementById('ob-fine-demo');
-    if (fineDemo) fineDemo.addEventListener('click', function () { fine(true); });
-    var fineVuoto = document.getElementById('ob-fine-vuoto');
-    if (fineVuoto) fineVuoto.addEventListener('click', function () { fine(false); });
+        '<div class="bv-testo">' +
+          '<p class="bv-occhiello">Misura. Ingegnerizza. Massimizza.</p>' +
+          '<h1>La tua giornata, <em>una cosa alla volta.</em></h1>' +
+          '<p class="bv-sotto">LifeMax ti dice cosa fare adesso, tiene il resto per dopo e ti mostra cosa funziona per te. Pensato per chi fatica con costanza e concentrazione.</p>' +
+          '<div class="bv-azioni">' +
+            '<button class="bv-cta" data-bv="inizia">' + (chi ? 'Continua' : 'Inizia') + '</button>' +
+            (chi
+              ? '<p class="bv-dentro">' + ICO('cloudCheck', 15) + ' Accesso eseguito come <b>' + esc(chi.name || chi.email) + '</b></p>'
+              : (cloudOk() ? '<button class="bv-secondario" data-bv="accedi">Ho già un account</button>' : '')) +
+          '</div>' +
+          '<p class="bv-piccolo">Gratis. Niente email per cominciare: l’account lo colleghi quando vuoi.</p>' +
+        '</div>' +
+      '</main>' +
+      '<section class="bv-perche" aria-label="Cosa fa">' +
+        perche('bolt', 'Annoti in un secondo', 'Un tocco e il pensiero è salvo. Decidi dopo cosa farne.') +
+        perche('target', 'Una cosa alla volta', 'Ti mostra la prossima da fare, non una lista infinita.') +
+        perche('flask', 'Scopri cosa ti aiuta', 'Piccoli esperimenti sui tuoi dati, non sulle medie degli altri.') +
+      '</section>' +
+    '</div>';
+  }
+  function perche(ico: string, tit: string, testo: string): string {
+    return '<div class="bv-perche-voce"><span class="bv-perche-ico">' + ICO(ico, 18) + '</span><div><b>' + tit + '</b><p>' + testo + '</p></div></div>';
   }
 
-  function fine(conDemo?: boolean): void {
+  /* ---------- il percorso ---------- */
+  function valido(): boolean {
+    const q = PASSI[passo];
+    if (q === 'aree') return scelte.aree.length > 0;
+    if (q === 'difficolta') return !!scelte.difficolta;
+    return true;
+  }
+  function domanda(): string {
+    const q = PASSI[passo];
+    const nome = scelte.nome;
+    let titolo = '', sotto = '', corpo = '', salta = false, cta = 'Continua';
+    if (q === 'nome') {
+      titolo = 'Come ti chiami?';
+      sotto = 'Lo uso solo per salutarti.';
+      corpo = '<input class="bv-campo" id="bv-nome" type="text" autocomplete="given-name" enterkeyhint="next" maxlength="40" placeholder="Il tuo nome" value="' + esc(nome) + '">';
+      salta = true;
+    } else if (q === 'aree') {
+      titolo = (nome ? 'Piacere, ' + esc(nome) + '! ' : '') + 'Su cosa vuoi lavorare?';
+      sotto = 'Scegline quante vuoi. Potrai rinominarle o aggiungerne altre dopo.';
+      corpo = '<div class="bv-griglia">' + LM.AREE_DEFAULT.map(function (a) {
+        const on = scelte.aree.indexOf(a.id) >= 0;
+        return '<button class="bv-tessera' + (on ? ' on' : '') + '" data-area="' + a.id + '" aria-pressed="' + on + '" style="--c-area:' + LM.SLOT_COLORI[a.slot][0] + '">' +
+          '<span class="bv-tessera-ico">' + ICO(a.icona, 22) + '</span><span class="bv-tessera-nome">' + esc(a.nome) + '</span>' +
+          '<span class="bv-spunta">' + ICO('check', 13) + '</span></button>';
+      }).join('') + '</div>';
+    } else if (q === 'difficolta') {
+      titolo = 'Cosa ti mette più in difficoltà?';
+      sotto = 'Scegli la più vera. In base a questa preparo l’app.';
+      corpo = '<div class="bv-scelte">' + DIFFICOLTA.map(function (d) {
+        const on = scelte.difficolta === d.id;
+        return '<button class="bv-scelta' + (on ? ' on' : '') + '" data-diff="' + d.id + '" role="radio" aria-checked="' + on + '">' +
+          '<span class="bv-scelta-ico">' + ICO(d.ico, 20) + '</span>' +
+          '<span class="bv-scelta-testo"><b>' + d.nome + '</b><small>' + d.desc + '</small></span>' +
+          '<span class="bv-radio"></span></button>';
+      }).join('') + '</div>';
+    } else if (q === 'obiettivo') {
+      titolo = 'In una frase: cosa vuoi ottenere?';
+      sotto = 'Lo rivedrai nel profilo, per ricordarti il perché.';
+      corpo = '<textarea class="bv-campo bv-area" id="bv-obiettivo" rows="3" maxlength="140" placeholder="Es. finire gli esami entro giugno">' + esc(scelte.visione) + '</textarea>' +
+        '<div class="bv-idee">' + ['Finire gli studi', 'Stare meglio con me stesso', 'Lanciare il mio progetto', 'Essere più presente con gli altri']
+          .map(function (t) { return '<button class="bv-idea" data-idea="' + esc(t) + '">' + esc(t) + '</button>'; }).join('') + '</div>';
+      salta = true;
+    } else {
+      const d = presa(DIFFICOLTA.find(function (x) { return x.id === scelte.difficolta; }) || DIFFICOLTA[0]);
+      const chi = auth().user;
+      titolo = 'Tutto pronto' + (nome ? ', ' + esc(nome) : '') + '!';
+      sotto = 'Ecco come ho preparato LifeMax per te.';
+      corpo = '<div class="bv-festa" aria-hidden="true">' + mascotte('festa') + '</div>' +
+        '<ul class="bv-riepilogo">' +
+          '<li>' + ICO(d.ico, 18) + '<span>Parti da <b>' + NOME_PARTENZA[d.parti] + '</b>. ' + d.consiglio + '</span></li>' +
+          '<li>' + ICO('aree', 18) + '<span>' + scelte.aree.length + (scelte.aree.length === 1 ? ' area: ' : ' aree: ') +
+            scelte.aree.map(function (id) { const a = LM.AREE_DEFAULT.find(function (x) { return x.id === id; }); return a ? esc(a.nome) : ''; }).join(', ') + '.</span></li>' +
+          (scelte.visione ? '<li>' + ICO('star', 18) + '<span>' + esc(scelte.visione) + '</span></li>' : '') +
+        '</ul>' +
+        (chi
+          ? '<p class="bv-salvato">' + ICO('cloudCheck', 15) + ' Salvato nel tuo account: lo ritrovi su tutti i dispositivi.</p>'
+          : (cloudOk()
+            ? '<div class="bv-conto"><b>Non perdere i progressi</b><p>Collega un account Google: ritrovi tutto se cambi telefono o apri LifeMax dal computer.</p>' +
+              '<button class="bv-google" data-bv="accedi">' + GOOGLE_G(18) + ' Continua con Google</button></div>'
+            : ''));
+      cta = 'Inizia';
+    }
+    const quota = (passo + 1) / PASSI.length;
+    return '<div class="bv bv-percorso">' +
+      '<header class="bv-barra">' +
+        '<button class="bv-indietro" data-bv="indietro" aria-label="Indietro">' + ICO('arrowRight', 20) + '</button>' +
+        '<div class="bv-avanzamento" role="progressbar" aria-valuemin="1" aria-valuemax="' + PASSI.length + '" aria-valuenow="' + (passo + 1) + '" aria-label="Passo ' + (passo + 1) + ' di ' + PASSI.length + '"><i style="width:' + Math.round(quota * 100) + '%"></i></div>' +
+        (salta ? '<button class="bv-salta" data-bv="salta">Salta</button>' : '<span class="bv-salta-posto"></span>') +
+      '</header>' +
+      '<main class="bv-domanda ' + (verso > 0 ? 'da-destra' : 'da-sinistra') + '">' +
+        '<h1>' + titolo + '</h1><p class="bv-sotto">' + sotto + '</p>' + corpo +
+      '</main>' +
+      '<footer class="bv-piede">' +
+        '<button class="bv-cta" data-bv="avanti"' + (valido() ? '' : ' disabled') + '>' + cta + '</button>' +
+        (q === 'pronto' ? '<button class="bv-link" data-bv="esempio">Prima voglio vedere un esempio</button>' : '') +
+      '</footer>' +
+    '</div>';
+  }
+
+  function disegna() {
+    root.innerHTML = passo < 0 ? porta() : domanda();
+    const campo = root.querySelector<HTMLInputElement | HTMLTextAreaElement>('#bv-nome, #bv-obiettivo');
+    if (campo) {
+      /* sul telefono la tastiera non si apre da sola: coprirebbe la domanda */
+      if (window.matchMedia('(pointer: fine)').matches) campo.focus();
+      campo.addEventListener('input', function () {
+        if (campo.id === 'bv-nome') scelte.nome = campo.value.trim(); else scelte.visione = campo.value.trim();
+      });
+      if (campo.id === 'bv-nome') campo.addEventListener('keydown', function (e) {
+        if ((e as KeyboardEvent).key === 'Enter') { e.preventDefault(); vai(1); }
+      });
+    }
+    if (PASSI[passo] === 'pronto') festeggia('pieno');
+  }
+
+  function vai(d: number) {
+    if (d > 0 && passo >= 0 && !valido()) return;
+    if (d > 0 && PASSI[passo] === 'pronto') { fine(false); return; }
+    verso = d; passo = Math.max(-1, Math.min(PASSI.length - 1, passo + d));
+    disegna();
+    window.scrollTo(0, 0);
+  }
+
+  /* un ascoltatore solo, sul contenitore: i bottoni nascono e muoiono a
+     ogni passo, il contenitore resta */
+  root.onclick = function (e) {
+    const t = e.target as Element | null;
+    if (!t || !t.closest) return;
+    const az = t.closest('[data-bv]');
+    const area = t.closest('[data-area]');
+    const diff = t.closest('[data-diff]');
+    const idea = t.closest('[data-idea]');
+    if (area) {
+      const id = area.getAttribute('data-area') || '';
+      const i = scelte.aree.indexOf(id);
+      if (i >= 0) scelte.aree.splice(i, 1); else scelte.aree.push(id);
+      area.classList.toggle('on', i < 0); area.setAttribute('aria-pressed', String(i < 0));
+      const c = root.querySelector<HTMLButtonElement>('[data-bv="avanti"]'); if (c) c.disabled = !valido();
+      return;
+    }
+    if (diff) {
+      scelte.difficolta = (diff.getAttribute('data-diff') || '') as Difficolta;
+      root.querySelectorAll('[data-diff]').forEach(function (b) { const on = b === diff; b.classList.toggle('on', on); b.setAttribute('aria-checked', String(on)); });
+      const c = root.querySelector<HTMLButtonElement>('[data-bv="avanti"]'); if (c) c.disabled = false;
+      /* una scelta singola porta avanti da sola, dopo un attimo per vederla accesa */
+      setTimeout(function () { if (PASSI[passo] === 'difficolta') vai(1); }, 280);
+      return;
+    }
+    if (idea) {
+      scelte.visione = idea.getAttribute('data-idea') || '';
+      const ta = root.querySelector<HTMLTextAreaElement>('#bv-obiettivo'); if (ta) ta.value = scelte.visione;
+      return;
+    }
+    if (!az) return;
+    const che = az.getAttribute('data-bv');
+    if (che === 'inizia') { verso = 1; passo = 0; disegna(); }
+    else if (che === 'accedi') accedi();
+    else if (che === 'avanti') vai(1);
+    else if (che === 'indietro') vai(-1);
+    else if (che === 'salta') {
+      if (PASSI[passo] === 'nome') scelte.nome = '';
+      if (PASSI[passo] === 'obiettivo') scelte.visione = '';
+      verso = 1; passo++; disegna();
+    }
+    else if (che === 'esempio') fine(true);
+  };
+
+  ridisegnaBenvenuto = function () { if (root.innerHTML) disegna(); };
+
+  function fine(conDemo: boolean): void {
     if (conDemo) LM.seedDemo();
     var s = LM.load();
     s.onboarded = true;
     if (scelte.nome) s.profilo.nome = scelte.nome;
     if (scelte.visione) s.profilo.visione = scelte.visione;
-    s.areeAttive = scelte.aree;
+    if (scelte.aree.length) s.areeAttive = scelte.aree.slice();
+    const d = DIFFICOLTA.find(function (x) { return x.id === scelte.difficolta; });
+    if (d) {
+      s.profilo.difficolta = d.id;
+      if (d.id === 'cominciare' || d.id === 'concentrazione') {
+        s.profilo.timer = Object.assign({}, s.profilo.timer || {}, { predefinito: d.id === 'cominciare' ? 'avvio' : 'pomodoro' });
+      }
+    }
     LM.save();
+    ridisegnaBenvenuto = null;
+    root.onclick = null;
     root.innerHTML = '';
-    location.hash = '#/' + scelte.modo;
+    location.hash = '#/' + (d ? d.parti : 'oggi');
     applicaTema();
     render();
-    toast(conDemo ? 'Questi sono dati di esempio: li togli quando vuoi dalla striscia in alto.' : (scelte.nome ? 'Ciao ' + scelte.nome + ', tutto pronto.' : 'Tutto pronto.') + ' Comincia dal piano del giorno.', 0, 'sparkles');
+    toast(conDemo ? 'Questi sono dati di esempio: li togli quando vuoi dalla striscia in alto.'
+      : (scelte.nome ? 'Benvenuto, ' + scelte.nome + '.' : 'Benvenuto.'), 0, 'sparkles');
   }
 
   disegna();
@@ -8171,6 +8302,8 @@ window.addEventListener('lm:auth', function () {
   if (inOnboarding && !chi) { refreshObAccount(); return; }
   if (staDigitando() && !chi) return;
   render();
+  /* entrato con un account nuovo, il benvenuto resta: dice con chi sei dentro */
+  if (inOnboarding && perId('onboarding-root').innerHTML) refreshObAccount();
 });
 
 /* L'ESEMPIO NON ENTRA NELL'ACCOUNT SENZA CHIEDERE.

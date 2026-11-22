@@ -286,6 +286,8 @@ export type Forma = 'scheda' | 'spina' | 'poi';
 export interface Profilo {
   /* l'area con cui nasce una cosa nuova, ovunque la si crei */
   areaNuova?: string;
+  /* la difficoltà scelta al primo avvio: decide da dove si parte e il timer */
+  difficolta?: 'cominciare' | 'concentrazione' | 'costanza' | 'ricordare' | 'capire';
   /* come parte il timer e quanto dura ogni tipo */
   timer?: ImpostazioniTimer;
   /* la musica da mettere sotto: una per tutto e una per area */
