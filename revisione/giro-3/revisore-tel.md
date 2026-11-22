@@ -327,3 +327,270 @@
 - [bassa] trascinamento-in-corso__tel-light.png — zona «Togli l'orario» — tratteggiata sopra il calendario, copre il blocco delle 15:00 e sta a ridosso della tab bar; poco contrasto — fondo pieno tenue con icona e più distanza dalla tab bar; evidenziarla quando il blocco ci passa sopra.
 - [bassa] trascinamento-in-corso__tel-light.png — attività trascinata già completata — trascinare un'attività fatta è un caso strano; il blocco originale resta come fantasma barrato — ok, ma valutare se le completate debbano essere trascinabili.
 
+## oggi-adesso__tel-dark.png
+- (valgono tutti i difetti di impaginazione di oggi-adesso__tel-light.png; qui solo quelli del tema scuro)
+- [media] oggi-adesso__tel-dark.png — segmentato in alto — il segmento selezionato «Adesso» è un grigio appena più chiaro del contenitore (#2a vs #1f circa): lo stato attivo si legge a fatica — fondo selezionato più chiaro o bordo/accento viola, testo non selezionato più spento.
+- [media] oggi-adesso__tel-dark.png — badge «1» su Rituali — numero chiaro su lilla-grigio scuro, contrasto basso; diverso dal badge «6» viola pieno della tab bar — badge viola pieno con testo bianco come in tab bar.
+- [bassa] oggi-adesso__tel-dark.png — pillola serie «🔥 38 giorni» — «giorni» grigio su marrone scuro, contrasto insufficiente — testo arancio chiaro o bianco attenuato ≥4.5:1.
+- [bassa] oggi-adesso__tel-dark.png — avatar «R» — lettera viola su cerchio grigio-viola scuro, poco leggibile — lettera bianca o fondo viola pieno.
+- [bassa] oggi-adesso__tel-dark.png — card «Pianifica la giornata» — icona sole gialla su quadrato marrone ok, ma la card ha un bordo appena visibile mentre la card principale non ne ha — bordi coerenti fra card in tema scuro.
+
+## giornata-giorno__tel-dark.png
+- (valgono i difetti di layout della versione chiara)
+- [media] giornata-giorno__tel-dark.png — sotto-tab «Giorno» selezionato — in scuro diventa grigio neutro, mentre in chiaro era lilla con testo viola: l'accento sparisce e lo stato selezionato si confonde col segmentato sopra — tinta viola scura + testo viola chiaro.
+- [media] giornata-giorno__tel-dark.png — blocco «Confrontare piani telefonici» — giallo trasformato in un oliva/marrone fangoso, poco leggibile e sgradevole — ricalcolare i colori area per il tema scuro (stessa tinta, luminosità ~25–30%, testo chiaro).
+- [media] giornata-giorno__tel-dark.png — blocchi «Colazione», «Pranzo» — grigio scuro quasi uguale al fondo del calendario: si distinguono a fatica — fondo un gradino più chiaro o bordo 1px.
+- [bassa] giornata-giorno__tel-dark.png — linee delle ore — quasi invisibili (#222 su #1a) — alzare il contrasto delle linee guida.
+- [bassa] giornata-giorno__tel-dark.png — testo barrato dell'attività completata — grigio medio su grigio scuro, sotto 3:1 — grigio più chiaro.
+
+## giornata-giorno-fondo__tel-dark.png
+- (valgono i difetti di layout della versione chiara: card «Senza orario» col bordo superiore piatto, casella quadrata, abitudini con stile diverso)
+- [media] giornata-giorno-fondo__tel-dark.png — card «Senza orario» — fondo quasi identico allo sfondo pagina, i bordi si perdono: la card sembra «aperta» in alto — fondo superficie distinguibile (+1 livello) e angoli tutti arrotondati.
+- [bassa] giornata-giorno-fondo__tel-dark.png — casella vuota di «Ripasso flashcard» — bordo grigio scuro su grigio scuro, quasi invisibile — bordo più chiaro (≥3:1).
+- [bassa] giornata-giorno-fondo__tel-dark.png — «Aggiungi» — lilla scuro su grigio, sembra disabilitato anche in scuro — come in chiaro: stato attivo/disabilitato esplicito.
+
+## giornata-settimana__tel-dark.png
+- (valgono i difetti di layout della versione chiara)
+- [bassa] giornata-settimana__tel-dark.png — pulsanti ‹ › — in scuro hanno un bordo chiaro visibile che in chiaro non c'è (lì solo ombra) — stesso trattamento (bordo sottile in entrambi o in nessuno).
+- [bassa] giornata-settimana__tel-dark.png — «Lunedì 17» in grigio chiaro attenuato — in scuro sembra disabilitato più che in chiaro — testo pieno.
+- [bassa] giornata-settimana__tel-dark.png — anello del 18 — viola pieno con anello verde attorno a sfondo scuro: due colori saturi che vibrano — anello progresso più sottile o colore unico.
+
+## giornata-mese__tel-dark.png
+- (valgono i difetti della versione chiara: pallini senza legenda, triplo indicatore su oggi, «cose fatte»)
+- [media] giornata-mese__tel-dark.png — giorni di luglio (27–31) — numeri e anelli attenuati su fondo scuro: i pallini colorati sotto quasi spariscono (marrone/blu scuro) — mantenere i pallini a piena saturazione anche nei giorni fuori mese o toglierli.
+- [bassa] giornata-mese__tel-dark.png — anelli verdi saturi su nero — 18 anelli verde acceso affiancati creano un effetto «vibrante» pesante — verde meno saturo per il tema scuro.
+- [bassa] giornata-mese__tel-dark.png — riquadro grigio di selezione attorno al 18 — in scuro è un quadrato grigio che sembra un tasto premuto — usare solo il cerchio.
+
+## giornata-anno__tel-dark.png
+- (valgono i difetti della versione chiara: 17 vs 18 giorni attivi in agosto, «1874» senza separatore, griglie non centrate)
+- [bassa] giornata-anno__tel-dark.png — conteggi «7», «25», «17» in verde scuro su card scura — contrasto basso — verde più chiaro.
+- [bassa] giornata-anno__tel-dark.png — card «Ago» selezionata — bordo lilla chiaro, unico elemento lilla della griglia; titolo «Ago» viola su scuro poco leggibile — titolo bianco, solo bordo come indicatore.
+
+## giornata-sonno-aperto__tel-dark.png
+- (valgono i difetti della versione chiara: sotto-tab tagliati in alto, select native, griglia disallineata, link ambigui)
+- [media] giornata-sonno-aperto__tel-dark.png — campi orario e select — in scuro hanno fondo nero e bordo grigio, più scuri della card che li contiene (campi «incassati») mentre nelle altre schermate scure i campi sono più chiari della card — fondo campo un livello più chiaro della card, coerente in tutta l'app.
+- [bassa] giornata-sonno-aperto__tel-dark.png — frecce delle select native — chiare di sistema, con allineamento diverso dalle icone cestino — vedi componente custom.
+
+## giornata-scheda-blocco__tel-dark.png
+- (valgono i difetti della versione chiara: «Segna come da fare» vs «Sposta in Da fare», titolo che va a capo presto, nessuna chiusura)
+- [media] giornata-scheda-blocco__tel-dark.png — velo dietro il foglio — in scuro scurisce pochissimo uno sfondo già nero: foglio e pagina sotto si separano solo grazie al bordo sottile — foglio su superficie più chiara (elevazione) e velo più marcato.
+- [bassa] giornata-scheda-blocco__tel-dark.png — valori «09:30» (bianco) e «1 h 30» (viola) — stesso tipo di pillola con due colori di testo — un colore unico (vale anche in chiaro).
+- [bassa] giornata-scheda-blocco__tel-dark.png — ✕ grigie dentro le pillole lilla scure — contrasto molto basso — vedi chiaro.
+
+## giornata-scheda-abitudine__tel-dark.png
+- (valgono i difetti della versione chiara: Fatta/Fatto, ordine delle azioni con la distruttiva in mezzo)
+- [bassa] giornata-scheda-abitudine__tel-dark.png — pulsante «Fatta» verde saturo su superficie scura — molto più acceso di qualunque altro elemento; in Adesso scuro lo stesso verde è leggermente diverso — tonalità unica, un filo desaturata per il tema scuro.
+- [bassa] giornata-scheda-abitudine__tel-dark.png — «Termina l'abitudine» salmone e «Salta oggi»/«Apri l'abitudine» lilla — contrasto ok, ma tre righe senza descrizione delle conseguenze — sottotitolo per «Termina» («lo storico resta»).
+
+## rituali__tel-dark.png
+- (valgono i difetti della versione chiara: badge incoerente, icona piena solo sul primo, stato frastagliato, nessun orario)
+- [bassa] rituali__tel-dark.png — icone dei rituali non selezionati — glifo lilla su quadrato grigio-viola molto scuro, contrasto basso — quadrato un tono più chiaro.
+- [bassa] rituali__tel-dark.png — «✓ fatto» in verde scuro — leggibile ma più spento del resto — verde chiaro coerente col «Fatto».
+
+## rituale-piano__tel-dark.png
+- (valgono i difetti della versione chiara)
+- [bassa] rituale-piano__tel-dark.png — chip «☆ Priorità» — lilla su viola scuro con testo lilla: poco contrasto per un elemento chiave — testo bianco su viola.
+- [bassa] rituale-piano__tel-dark.png — campi «Aggiungi un'altra…», «Es. alle 9:00…» — grigio su grigio leggermente più chiaro, bordi assenti: segnaposto a contrasto basso — vedi regola campi.
+
+## rituale-sonno-pasti__tel-dark.png
+- (valgono i difetti della versione chiara: doppio salvataggio, pulsante finale sotto la tab bar, sì/no/⏱ ambigui)
+- [media] rituale-sonno-pasti__tel-dark.png — tab bar sopra il pulsante viola — la tab bar semitrasparente lascia trasparire il viola del pulsante sottostante, che diventa un alone viola dietro «Oggi/Attività»: sembra uno stato attivo della barra — fondo tab bar opaco in scuro o padding inferiore sufficiente.
+- [bassa] rituale-sonno-pasti__tel-dark.png — bottoni «sì / no / ⏱» grigio scuro su card scura — differenza di luminanza minima, senza bordo — bordo 1px o fondo più chiaro.
+
+## rituale-checkin__tel-dark.png
+- (valgono i difetti della versione chiara: selezionato più grande, etichette non centrate, «Registra» su check-in già fatto)
+- [media] rituale-checkin__tel-dark.png — pulsante «Registra +3 XP» — viola scurissimo con testo lilla e bordo: sembra disabilitato — se è attivo usare il viola pieno come gli altri primari; se è disabilitato perché già fatto, dirlo.
+- [bassa] rituale-checkin__tel-dark.png — etichette «1 · esausto», «Media recente» — grigio medio su nero, contrasto al limite — grigio più chiaro.
+
+## rituale-sera__tel-dark.png
+- (valgono i difetti della versione chiara: legenda spezzata «5 / = benissimo», scala diversa dal check-in, scale allineate a destra)
+- [bassa] rituale-sera__tel-dark.png — quadrati 1–5 — grigio scuro su card scura senza bordo, si distinguono appena — bordo o fondo più chiaro.
+- [bassa] rituale-sera__tel-dark.png — contenuto che passa sotto la tab bar («Progetti Founder» visibile sotto) — in scuro la tab bar non ha separazione dal contenuto — sfumatura o bordo superiore.
+
+## rituale-settimana__tel-dark.png
+- (valgono i difetti della versione chiara: numeri serif, margini sfalsati, maniglie di resize, domande senza «?», «6/7» di quale settimana)
+- [bassa] rituale-settimana__tel-dark.png — campi di testo — grigio scuro senza bordo con maniglia di resize chiara ben visibile — più evidente in scuro che in chiaro — nascondere la maniglia, bordo sottile.
+
+## attivita-sistemare__tel-dark.png
+- (valgono i difetti della versione chiara: select nativa, pulsanti fuori dalla card, coda grigia non toccabile, «e un'altra»)
+- [media] attivita-sistemare__tel-dark.png — badge «6 / 9 / 3» sul segmentato — numeri chiari su quadratini grigio-viola scuri, poco contrastati e diversi dal badge viola della tab bar — badge unico.
+- [bassa] attivita-sistemare__tel-dark.png — lista «In coda» — testo grigio chiaro su nero senza card, mentre il resto della pagina usa card: in scuro galleggia senza struttura — racchiudere in card o lista con divisori.
+
+## attivita-dafare__tel-dark.png
+- (valgono i difetti della versione chiara: nessuna spunta, primo «+ Oggi» pieno e gli altri tenui, titoli che vanno a capo presto)
+- [bassa] attivita-dafare__tel-dark.png — pulsanti «+ Oggi» secondari — viola scurissimo con testo lilla: in scuro sembrano disabilitati — tinta più chiara o bordo.
+- [bassa] attivita-dafare__tel-dark.png — card lista con bordo chiaro + fondo appena più chiaro del nero — bordi visibili qui ma non su altre card scure (es. Rituali) — un solo trattamento per le card in scuro.
+
+## attivita-dafare-aggiunta__tel-dark.png
+- (valgono i difetti della versione chiara: opzioni disallineate, select nativa, opzioni confuse col filtro)
+- [alta] attivita-dafare-aggiunta__tel-dark.png — chip selezionato «Senza data» — testo bianco su lilla chiaro (#a99cf5 circa): contrasto ~2:1, illeggibile — in scuro usare viola pieno (#5b4bf0) con testo bianco, come il bottone «Aggiungi».
+- [bassa] attivita-dafare-aggiunta__tel-dark.png — campo attivo con alone/bordo viola — corretto, ma l'alone esterno (glow) è sfocato e sborda sulle opzioni sotto — anello netto 2px.
+
+## attivita-abitudini__tel-dark.png
+- (valgono i difetti della versione chiara: spunta a destra, card separate, anello 0 vuoto)
+- [bassa] attivita-abitudini__tel-dark.png — anello «0 di 3» — binario grigio scuro su nero, quasi invisibile; sembra un buco — binario più chiaro.
+- [bassa] attivita-abitudini__tel-dark.png — cerchi spunta verdi/blu scuri — bordo sottile a basso contrasto — bordo 2px più chiaro.
+
+## attivita-abitudini-nuova__tel-dark.png
+- (valgono i difetti della versione chiara: «Aggiungi» sopra le opzioni, fila giorni pesante, «Nessuna» disabilitato)
+- [bassa] attivita-abitudini-nuova__tel-dark.png — pillola «Ora: Nessuna» — grigio scuro con testo grigio: indistinguibile da un controllo disabilitato — stile azione («Aggiungi ora» in lilla).
+- [bassa] attivita-abitudini-nuova__tel-dark.png — pannello opzioni — card scura staccata dal campo sopra senza legame visivo (8px di distanza, bordo diverso) — unire campo e opzioni nella stessa card.
+
+## scheda-attivita__tel-dark.png
+- (valgono i difetti della versione chiara: chip in due stili, «Distribuisci i passi» oscuro, tre target per riga)
+- [media] scheda-attivita__tel-dark.png — cerchi spunta dei passi non fatti — riempiti di nero pieno (più scuri della card) con bordo appena visibile: sembrano bottoni neri, non caselle vuote — cerchio vuoto con bordo chiaro, fondo trasparente.
+- [media] scheda-attivita__tel-dark.png — chip «ogni giorno / ogni 2 giorni / ogni settimana» — neri su card grigia (incavati), mentre i chip «Pianifica» sono grigi su fondo nero (in rilievo): profondità invertite nello stesso foglio — un solo livello per i chip.
+
+## scheda-attivita-fondo__tel-dark.png
+- (valgono i difetti della versione chiara: intestazione fissa senza divisore, «Non completata ›», «Fissa in alto: no»)
+- [bassa] scheda-attivita-fondo__tel-dark.png — sotto il titolo fisso si vede il cerchio nero del passo precedente tagliato — in scuro il taglio è ancora più brusco perché manca anche il cambio di fondo — divisore + sfumatura.
+- [bassa] scheda-attivita-fondo__tel-dark.png — valori «nessuna», «no» grigio medio su card scura — contrasto basso.
+
+## scheda-abitudine__tel-dark.png
+- (valgono i difetti della versione chiara: niente mese nel calendario, × fuori dalla pillola, chip area verde vs pillole lilla)
+- [media] scheda-abitudine__tel-dark.png — calendario — giorni previsti non fatti (cerchi grigio scuro) e giorni futuri/weekend (numeri senza cerchio) quasi indistinguibili in scuro — legenda e marcatura diversa per «mancato».
+- [bassa] scheda-abitudine__tel-dark.png — giorni S/D nella riga «Quando» — cerchi neri con bordo sottile, più scuri della card: sembrano buchi — fondo trasparente con bordo chiaro.
+- [bassa] scheda-abitudine__tel-dark.png — pillola «18:00» grigia con testo bianco e «45 min» lilla con testo viola — due stili affiancati nella stessa card — unificare.
+
+## scheda-abitudine-fondo__tel-dark.png
+- (valgono i difetti della versione chiara: pillole di larghezze diverse, «Elimina» diverso dalle altre schede, data numerica, «Mai» grigio)
+- [bassa] scheda-abitudine-fondo__tel-dark.png — «Elimina» salmone centrato in card scura — poco riconoscibile come pulsante — stesso pattern riga-con-icona delle altre schede.
+
+## andamento__tel-dark.png
+- (valgono i difetti della versione chiara: serie 38 con venerdì mancato, numeri senza etichetta, giorni senza date, mappa blu vs verde dell'Anno)
+- [bassa] andamento__tel-dark.png — mappa «Costanza» in scuro — la scala si inverte (più chiaro = più attività) ed è giusto, ma i livelli intermedi blu scuro si confondono con le celle vuote — aumentare lo scarto fra «vuoto» e primo livello.
+- [bassa] andamento__tel-dark.png — giorno «V» vuoto — quadrato grigio scuro quasi invisibile su card scura: la mancanza si nota poco — bordo tratteggiato o ✕ tenue.
+
+## andamento-fondo__tel-dark.png
+- (valgono i difetti della versione chiara: rosso per «Altro», voci duplicate «Aree»/«Grafici»)
+- [bassa] andamento-fondo__tel-dark.png — in scuro il rosso di «Altro / Esplorazione» diventa salmone, il giallo di Finanze resta saturo: i colori area non sono ricalibrati in modo uniforme per il tema scuro — palette scura con luminosità omogenea.
+- [bassa] andamento-fondo__tel-dark.png — frazioni «4/8», «23/44» grigio scuro piccole — contrasto basso.
+
+## scoperte__tel-dark.png
+- (valgono i difetti della versione chiara: titoli a capo presto, icona tab uguale a «Funziona», riquadri icona pesanti)
+- [bassa] scoperte__tel-dark.png — riquadri 👍/👎 — verde/rosso scurissimi con bordo grigio: icone piccole poco leggibili — togliere il riquadro.
+- [bassa] scoperte__tel-dark.png — sotto-tab «Registro» selezionato — grigio come gli altri segmentati scuri: l'accento viola si perde (solo il contatore è viola) — tinta d'accento per lo stato attivo.
+
+## scoperte-esperimenti__tel-dark.png
+- (valgono i difetti della versione chiara: etichette «media» coperte dai punti, «d≈3,1», «focus»)
+- [media] scoperte-esperimenti__tel-dark.png — grafico — etichette «media 3,1»/«media 4,3» bianche sovrapposte ai punti blu, ancora meno leggibili in scuro; area «dopo» blu notte quasi uguale al fondo — etichette con sfondo, area evidenziata più chiara.
+- [bassa] scoperte-esperimenti__tel-dark.png — linee della griglia del grafico — quasi invisibili — contrasto maggiore.
+
+## scheda-scoperta__tel-dark.png
+- (valgono i difetti della versione chiara)
+- [media] scheda-scoperta__tel-dark.png — card «Dettagli» — in scuro spariscono i divisori fra «Esito», «Area», «Aggiunta» (in chiaro ci sono): le righe galleggiano — divisori visibili anche in scuro.
+- [bassa] scheda-scoperta__tel-dark.png — chip «non funziona» — nero su card grigia (incavato) mentre i chip «notato una volta» sono grigi in rilievo — un livello unico.
+- [bassa] scheda-scoperta__tel-dark.png — riga «Elimina» senza divisore da «Provalo con un esperimento» — stessa nota.
+
+## profilo__tel-dark.png
+- (valgono i difetti della versione chiara: nessuna navigazione/indietro, nessuna tab attiva, «bloccati», stat senza periodo)
+- [bassa] profilo__tel-dark.png — card con bordo chiaro + fondo quasi nero — in chiaro le card non hanno bordo: trattamento delle superfici non speculare — in scuro usare l'elevazione (fondo più chiaro) invece del bordo.
+
+## impostazioni__tel-dark.png
+- (valgono i difetti della versione chiara: gruppo senza titolo, Sincronizzazione ambigua, maiuscole/chevron incoerenti, «1» misterioso)
+- [media] impostazioni__tel-dark.png — divisori fra le righe — in scuro scompaiono (in chiaro ci sono): le righe dei gruppi si fondono — divisori visibili (#2e2e2e circa).
+
+## impostazioni-fondo__tel-dark.png
+- (valgono i difetti della versione chiara: «Registro tecnico» in Guida, azioni di reset senza spiegazione, safe area)
+- [bassa] impostazioni-fondo__tel-dark.png — divisori quasi assenti nei gruppi — vedi impostazioni scuro.
+
+## imp-timer__tel-dark.png
+- (valgono i difetti della versione chiara: «Pausa lunga ogni 4 · Mai», tipi di timer non spiegati, altezza foglio diversa, «‹ Impostazioni» piccolo)
+- [bassa] imp-timer__tel-dark.png — qui i divisori fra righe ci sono, nella pagina Impostazioni scura no — stesso componente lista con divisori ovunque.
+
+## imp-musica__tel-dark.png
+- (valgono i difetti della versione chiara: «Incolla il link» senza contesto, muro di campi)
+- [bassa] imp-musica__tel-dark.png — in scuro i campi sono più leggibili che in chiaro (fondo più chiaro della card) — conferma che in chiaro il contrasto dei campi va alzato; qui ok.
+- [bassa] imp-musica__tel-dark.png — interruttore spento — pallino grigio su binario grigio scuro, poco evidente — binario spento con bordo.
+
+## imp-aspetto__tel-dark.png
+- (valgono i difetti della versione chiara: altezza del foglio, Suoni/Vibrazione sotto Aspetto, switch verdi)
+- [bassa] imp-aspetto__tel-dark.png — segmento selezionato «Auto» — grigio appena più chiaro: stato attivo debole — accento viola.
+
+## aree__tel-dark.png
+- (valgono i difetti della versione chiara: cestino accanto all'interruttore, aree non modificabili, «Nuova area» povera)
+- [bassa] aree__tel-dark.png — riquadri icona area — colori molto spenti (marrone, verde bottiglia): le aree si riconoscono meno che in chiaro — tinte area ricalibrate per lo scuro.
+- [bassa] aree__tel-dark.png — cestini grigi piccoli su scuro — poco visibili (il che per un'azione distruttiva va bene) ma area di tocco minuscola — vedi chiaro.
+
+## sonno-pasti__tel-dark.png
+- (valgono i difetti della versione chiara: tre UI diverse per lo stesso dato, pillole a doppio stile, promemoria «tra le 05:00–14:00» poco chiaro)
+- [bassa] sonno-pasti__tel-dark.png — pillole orario grigio-viola con testo bianco e pillole durata con testo viola — in scuro la differenza è ancora più marcata — un solo stile.
+
+## promemoria__tel-dark.png
+- (valgono i difetti della versione chiara: banner ibrido e testo innaturale, switch disabilitati ambigui, «Priorità del giorno»)
+- [media] promemoria__tel-dark.png — banner «Bloccati» — fondo marrone-oliva con testo grigio chiaro: colore di avviso che in scuro diventa fangoso e il testo piccolo è al limite del contrasto — giallo/ambra scuro più saturo o superficie neutra con icona ambra.
+- [bassa] promemoria__tel-dark.png — interruttori disabilitati in scuro — pallino grigio a destra su binario grigio: ancora più ambiguo che in chiaro.
+
+## diario__tel-dark.png
+- (valgono i difetti della versione chiara: select nativa dentro la voce, colonna stretta, ↺ su ogni riga, tab «Andamento» evidenziata arrivando dal Profilo)
+- [bassa] diario__tel-dark.png — segmentato «Cose importanti | Tutto» — selezionato grigio su grigio, debole — accento.
+- [bassa] diario__tel-dark.png — orari e ↺ grigio scuro — contrasto basso.
+
+## timer-scelta__tel-dark.png
+- (valgono i difetti della versione chiara)
+- [media] timer-scelta__tel-dark.png (vale anche per timer-scelta__tel-light.png) — valori a destra («5 min», «25 min», «nessun limite») — attaccati al bordo destro della card (~4px) mentre a sinistra il margine è 12px — padding destro 16px come le altre liste.
+- [bassa] timer-scelta__tel-dark.png — velo sullo sfondo — in scuro l'interfaccia dietro resta molto leggibile («Ripasso flashcard», «Fatto» verde): il foglio non si stacca — velo più opaco.
+
+## timer-concentrazione__tel-dark.png
+- (identica alla versione chiara: stessi difetti — nessuna pausa, «Fatto» primario, «Termina» ambiguo, anello senza progresso, «restano» a basso contrasto)
+- [bassa] timer-concentrazione__tel-dark.png — pulsante ✕ in alto a destra — quadrato grigio scuro quasi invisibile sul nero — contrasto maggiore e area 44px.
+
+## cattura__tel-dark.png
+- (valgono i difetti della versione chiara: riga «Chiudi» sprecata, «Salva» attivo a campo vuoto, nessuna destinazione)
+- [bassa] cattura__tel-dark.png — popup grigio scuro su sfondo sfocato scuro — separazione affidata al solo bordo sottile — superficie più chiara/ombra.
+
+## menu-oggi-avatar__tel-dark.png
+- (identica a profilo__tel-dark.png: stessi difetti — nessuna navigazione di ritorno, nessuna tab attiva)
+
+## Riassunto
+
+### 1. Incoerenza dei componenti (il problema più diffuso)
+- **Spunta/casella**: almeno 5 varianti (cerchio grande a sinistra in Adesso, quadrato grigio in «Senza orario», quadratino verde in Mese, cerchio colorato a DESTRA in Abitudini, cerchio nero pieno nei passi in scuro) e nessuna spunta nella lista Da fare. Serve un unico componente, sempre a sinistra.
+- **Sonno e pasti**: tre interfacce diverse per lo stesso dato (pannello della Giornata con select native e cestino; rituale con righe + sì/no/⏱; Profilo con pillole + ×).
+- **Scale 1–5**: grandi bottoni bordati nel Check-in, quadratini grigi allineati a destra in Fine giornata.
+- **Valori nelle schede**: pillola lilla con × dentro (schede del calendario), × fuori (scheda abitudine), testo grigio + chevron (scheda attività, Impostazioni), pillole di larghezze diverse e bordo destro non allineato; colori del testo misti (bianco/nero vs viola).
+- **Chip**: almeno 4 stili (grigi, bianchi con ombra, viola scuro selezionato, lilla chiaro in scuro) e maiuscole incoerenti («Domani» vs «ogni giorno», «concluso», «misurato»).
+- **Badge**: tre stili (quadratino lilla sui segmentati, cerchio viola in tab bar, contatore inline nelle sotto-tab); badge Rituali «1» che non corrisponde ai 4 rituali da fare.
+- **Indicatore di «oggi»** nei calendari: cerchio pieno + riquadro + anello (Mese), quadratino bordato (Anno), anello viola (scheda abitudine).
+- **Fogli**: senza pulsante chiudi/Fine; tre altezze diverse nello stack Impostazioni (il foglio sobbalza); divisore sotto l'intestazione fissa presente in alcuni fogli e assente in altri; «Elimina» in tre forme diverse.
+- **Navigazione del Profilo**: pagina piena senza «indietro» e senza tab attiva; Diario è pagina push, le altre voci sono fogli.
+- **Colori**: stessa metrica «costanza» in verde (Anno) e in blu (Andamento); switch verdi in un'app con accento viola; area in pillola lilla o in chip verde a seconda della scheda.
+
+### 2. Errori di testo e di logica (alta priorità)
+- «Segna come da fare» e «Sposta in Da fare» nella stessa scheda: due significati di «da fare».
+- «Non completata ›» su un'attività ancora da fare.
+- «Fatto» (Adesso) vs «Fatta» (scheda) per la stessa azione.
+- Serie di 38 giorni con venerdì vuoto (Andamento); agosto con 17 giorni attivi in Anno e 18 in Mese; «109 fatte» (Profilo) vs «82 fatte» (Anno), senza periodo.
+- Stessa metrica con tre nomi: «fatte», «cose fatte», «azioni completate».
+- Nomi dei rituali diversi fra lista, rituale aperto e promemoria («Priorità del giorno» non esiste come rituale).
+- «Pausa lunga ogni 4 · Mai», legenda «1 = male · 5 / = benissimo» spezzata a capo, «d≈3,1», «blocco 1», «Ripristina»/«Ritmo di base» oscuri, «Incolla il link» senza contesto, «&» nei nomi delle aree, inglesismi («focus», «Founder», «task»).
+
+### 3. Controlli non rifiniti o rotti
+- Select native del browser (freccia di sistema) nel pannello sonno, in Da sistemare, nella nuova attività e dentro una voce del Diario.
+- Campi di testo con la maniglia di ridimensionamento nativa visibile (Bilancio della settimana, scheda scoperta).
+- Grafico degli esperimenti: le etichette «media» sono coperte dai punti.
+- Check-in: il valore selezionato è più grande e fa «saltare» la riga; etichette della scala non centrate.
+- Timer di concentrazione senza pausa: l'unico pulsante grande è «Fatto».
+- Due pulsanti di salvataggio nel rituale Sonno e pasti, e quello finale finisce sotto la tab bar.
+- Il drag sul calendario: il fumetto è staccato dall'anteprima, la sovrapposizione col pranzo non viene segnalata, l'intestazione è tagliata a metà.
+
+### 4. Gerarchia e spazio
+- La Giornata ha 4 livelli di intestazione (segmentato, sotto-tab, «‹ Oggi ›», riga sonno) prima del calendario.
+- I titoli vanno a capo troppo presto (schede, Da fare, Scoperte) e lasciano 90–150px vuoti a destra.
+- Riquadri dentro riquadri (rituali a fisarmonica, Diario, riquadri delle icone nel timer e nelle Scoperte, 12 card dei mesi).
+- Le schermate corte (Adesso, Rituali, Abitudini, Profilo, Da sistemare) lasciano oltre metà dello schermo vuota senza un messaggio di fondo.
+- Allineamenti sfalsati: opzioni della nuova attività rientrate, numeri del Bilancio fuori margine, valori del foglio timer attaccati al bordo destro, cestini a filo del bordo, griglie dei mesi non centrate, intestazioni di settimana e giorno impaginate diversamente.
+
+### 5. Tema scuro
+- Gli stati selezionati diventano grigio su grigio e l'accento viola sparisce (segmentati, sotto-tab, Auto, Registro).
+- Il chip «Senza data» selezionato ha testo bianco su lilla chiaro, contrasto circa 2:1.
+- I colori delle aree non sono ricalibrati: giallo diventa oliva fangoso, rosso diventa salmone, i riquadri delle icone sono spenti. Il banner di avviso è marrone.
+- In alcune card scure i divisori spariscono (Impostazioni, scheda scoperta), in altre restano (Timer). Bordi e elevazione non sono coerenti.
+- Elementi «incavati» (cerchi neri dei passi, giorni S/D, chip neri) e elementi in rilievo si mescolano nello stesso foglio.
+- La tab bar semitrasparente lascia vedere il viola del pulsante sotto. I veli dietro i fogli sono troppo leggeri.
+- Testo secondario sotto 4.5:1: «giorni», «restano», frazioni, orari, «Media recente».
+
+### 6. Safe area e bordi
+- Contenuti a 20px dal bordo alto senza safe area (Profilo).
+- Intestazioni tagliate a metà quando la pagina scorre (Giornata con pannello aperto, trascinamento).
+- Fondo dei fogli senza padding per la home bar.

@@ -356,3 +356,271 @@
 - [bassa] cattura__pc-light.png — «Chiudi» link viola 12px in basso a destra in una fascia alta 48px quasi vuota — footer sproporzionato.
 - [bassa] cattura__pc-light.png — sfocatura molto forte dello sfondo (tutto illeggibile), diversa dal velo semplice delle altre modali — uniformare il trattamento dello sfondo.
 
+## menu-oggi-avatar__pc-light.png
+- [media] menu-oggi-avatar__pc-light.png — clic sull'avatar «R» porta direttamente alla pagina Profilo (identica a profilo__pc-light.png) — su desktop l'avatar in alto a destra duplica «Profilo e impostazioni» della sidebar: doppio accesso alla stessa pagina; nella pagina Profilo poi l'avatar in alto sparisce e nessuna voce della sidebar è attiva — togliere l'avatar su desktop (c'è la sidebar) o farne un menu a tendina (Profilo / Impostazioni / Tema).
+- [bassa] menu-oggi-avatar__pc-light.png — nessun titolo di pagina «Profilo» né breadcrumb, mentre Diario ha «‹ Profilo / Diario» — aggiungere titolo.
+- (gli altri difetti sono quelli di profilo__pc-light.png)
+
+## trascinamento-in-corso__pc-light.png
+- [alta] trascinamento-in-corso__pc-light.png — sidebar — termina a y≈740: sotto c'è una fascia di sfondo lilla senza sidebar (la sidebar non è alta quanto la finestra durante lo scorrimento/trascinamento) — sidebar position:sticky/fixed con height:100vh.
+- [media] trascinamento-in-corso__pc-light.png — area di rilascio «⏱ Togli l'orario» in basso a destra — esce dalla colonna del contenuto (x 996–1256, oltre il bordo del calendario a 1143) e si sovrappone al calendario e all'eventuale blocco sottostante — posizionarla allineata alla colonna (es. barra a tutta larghezza in fondo alla colonna, o in testa al calendario).
+- [media] trascinamento-in-corso__pc-light.png — anteprima di rilascio 12:45–14:15 sovrapposta a «Pranzo» senza alcun avviso di conflitto; l'etichetta «12:45–14:15» è attaccata al bordo superiore e sovrapposta alla griglia — evidenziare il conflitto (bordo arancio, «si sovrappone al pranzo») e dare padding all'etichetta.
+- [media] trascinamento-in-corso__pc-light.png — fantasma del trascinamento (pill viola «Organizzare cena con il gruppo / alle 12:45») — fluttua a ~11:30, 80px sopra l'anteprima che indica 12:45: due indicatori in posti diversi confondono — il fantasma deve coincidere con l'anteprima o seguire il cursore senza ripetere l'orario.
+- [bassa] trascinamento-in-corso__pc-light.png — blocco originale rimane al suo posto in trasparenza con la linea «adesso» sopra: ok, ma la spunta verde resta piena — attenuare anche quella.
+- [bassa] trascinamento-in-corso__pc-light.png — la pagina è scorsa e le schede in alto sono tagliate a metà (vedi intestazione non sticky).
+
+## oggi-adesso__pc-dark.png
+- [media] oggi-adesso__pc-dark.png — sidebar, voce attiva «Oggi» — sfondo viola scurissimo quasi uguale al grigio delle voci inattive: lo stato attivo si legge solo dal testo viola — aumentare il contrasto del fondo attivo (es. viola al 20%) e togliere il fondo alle inattive.
+- [media] oggi-adesso__pc-dark.png — scheda attiva «Adesso» nel segmented — pill grigio #333 su barra #222: differenza minima, si fatica a capire quale scheda è attiva — fondo più chiaro o testo/icone inattive più spente.
+- [bassa] oggi-adesso__pc-dark.png — card «Ripasso flashcard» blu-ardesia (#222a35) su sfondo grigio neutro: unica superficie con tinta blu, le altre card sono grigie — tinta coerente (colore d'area attenuato o neutro).
+- [bassa] oggi-adesso__pc-dark.png — badge «🔥 38 giorni» — «giorni» grigio su marrone scuro, contrasto ~3:1 — testo più chiaro.
+- [bassa] oggi-adesso__pc-dark.png — pulsante «Fatto» verde saturo e luminoso a tutta larghezza: in tema scuro abbaglia rispetto al resto — verde leggermente desaturato per il dark.
+- [bassa] oggi-adesso__pc-dark.png — card «Poi» con bordo grigio visibile, card «Pianifica la giornata» senza bordo — incoerenza fra card vicine.
+- (valgono anche i difetti di layout di oggi-adesso__pc-light.png)
+
+## giornata-giorno__pc-dark.png
+- [media] giornata-giorno__pc-dark.png — sottoscheda attiva «Giorno» — in chiaro è viola, in scuro diventa grigio neutro: l'accento sparisce e lo stato attivo è meno leggibile — mantenere l'accento viola (attenuato) anche in dark.
+- [media] giornata-giorno__pc-dark.png — casella del blocco «Confrontare piani telefonici» — quadrato scuro pieno su fondo ocra: sembra un buco, non una casella da spuntare — bordo chiaro 1.5px, interno trasparente.
+- [bassa] giornata-giorno__pc-dark.png — fascia sonno a righe diagonali — in scuro ha contrasto più forte che in chiaro e diventa l'elemento più vistoso del calendario — righe più tenui.
+- [bassa] giornata-giorno__pc-dark.png — linea «adesso» viola e pill «10:30» blu (anche in chiaro): due colori per lo stesso indicatore — un solo colore.
+- [bassa] giornata-giorno__pc-dark.png — titolo barrato «Organizzare cena con il gruppo» grigio su grigio — contrasto ~3:1.
+- [bassa] giornata-giorno__pc-dark.png — fascia colorata dei blocchi: rosa smorto (#6b4552) e ocra (#4a3c20) molto spenti — l'area si riconosce a fatica; usare un bordo sinistro più saturo.
+
+## giornata-settimana__pc-dark.png
+- [media] giornata-settimana__pc-dark.png — colonna di oggi (Mar) — evidenziata con un grigio-blu appena più chiaro: in scuro quasi non si vede — tinta accento al 10–12% e numero del giorno cerchiato.
+- [media] giornata-settimana__pc-dark.png — blocco «Organizzare cena con il gruppo» barrato — grigio su grigio, illeggibile, e il pill «10:30» blu lo copre in parte (come in chiaro).
+- [bassa] giornata-settimana__pc-dark.png — calendario a bordi molto arrotondati con bordo grigio visibile, mentre la stessa card in Giorno-scuro non ha bordo — uniformare.
+- [bassa] giornata-settimana__pc-dark.png — sottoscheda attiva «Settimana» grigia (accento perso), «+4/+1» bianchi in grassetto attaccati alle date — stessi rilievi del tema chiaro.
+- (valgono i difetti di larghezza/allineamento di giornata-settimana__pc-light.png)
+
+## giornata-mese__pc-dark.png
+- [bassa] giornata-mese__pc-dark.png — giorni di luglio 27–31 — anelli verde scurissimo e numeri grigio scuro: quasi invisibili (contrasto <2:1) e i pallini sotto spariscono — attenuarli meno o rimuoverli.
+- [bassa] giornata-mese__pc-dark.png — pallini colorati sotto i giorni (rosa, verde, blu) — 4px, in scuro diventano punti indistinguibili — aumentarli o sostituirli con legenda.
+- [bassa] giornata-mese__pc-dark.png — selezione del giorno 18 — rettangolo grigio #2a2a2a poco visibile; cerchio viola pieno + anello verde sovrapposti come in chiaro.
+- (valgono i difetti di giornata-mese__pc-light.png: niente legenda, riga finale con il solo 31, quadratini area simili a caselle)
+
+## giornata-anno__pc-dark.png
+- [media] giornata-anno__pc-dark.png — quadrati vuoti (giorni passati senza attività) grigio #3a3a3a, più chiari dei verdi di bassa intensità (#25664a) e dei giorni futuri (#2a2a2a): in scuro la scala di luminosità è incoerente, i giorni vuoti «pesano» più di quelli con poca attività — vuoti più scuri del verde minimo, futuri con solo contorno.
+- [bassa] giornata-anno__pc-dark.png — mesi Gen–Mag interamente grigio medio: grande massa grigia che domina la vista — attenuare.
+- [bassa] giornata-anno__pc-dark.png — numeri verdi «7/25/17» piccoli in alto a destra; selezione del 18 con bordo grigio sottile quasi invisibile.
+- (valgono i difetti di giornata-anno__pc-light.png: 17 vs 18 giorni, XP non spiegati, nessuna legenda)
+
+## giornata-sonno-aperto__pc-dark.png
+- [bassa] giornata-sonno-aperto__pc-dark.png — campi orario e select — fondo identico al pannello (#1e1e1e) con solo bordo grigio: in scuro i campi si distinguono poco; select nativi con freccia di sistema nera/bianca — fondo campo leggermente più chiaro o più scuro del pannello.
+- [bassa] giornata-sonno-aperto__pc-dark.png — icone cestino grigie 12px su scuro — quasi invisibili.
+- (valgono tutti i difetti di giornata-sonno-aperto__pc-light.png: schede tagliate in alto, campi di larghezza diversa, controlli spinti a destra, Ripristina vs Ritmo di base)
+
+## giornata-scheda-blocco__pc-dark.png
+- [media] giornata-scheda-blocco__pc-dark.png — modale scura (#1e1e1e) su contenuto scuro poco oscurato: il distacco è affidato a un bordo grigio sottile, la modale si confonde col calendario sotto — superficie della modale più chiara (elevazione, es. #26262a) e velo più denso.
+- [bassa] giornata-scheda-blocco__pc-dark.png — «Elimina» rosa salmone e «Sposta in Da fare» lilla — entrambi pastello, il rosso perde il senso di pericolo — rosso più deciso (#f87171).
+- (valgono i difetti di giornata-scheda-blocco__pc-light.png)
+
+## giornata-scheda-abitudine__pc-dark.png
+- [bassa] giornata-scheda-abitudine__pc-dark.png — chip «Ora 18:00» testo bianco, «Durata 45 min» e «Area» testo lilla su fondi grigio-violacei diversi — tre trattamenti nello stesso gruppo, più evidenti in scuro.
+- [bassa] giornata-scheda-abitudine__pc-dark.png — X dentro i chip: cerchio grigio chiaro con × scura, il punto più luminoso della riga dopo il valore — attenuare.
+- [bassa] giornata-scheda-abitudine__pc-dark.png — «Termina l'abitudine» salmone tra due voci lilla (come in chiaro, azione distruttiva in mezzo).
+- (valgono i difetti di giornata-scheda-abitudine__pc-light.png)
+
+## rituali__pc-dark.png
+- [bassa] rituali__pc-dark.png — icone dei rituali non attivi su riquadri #2a2a35 quasi uguali al fondo della card: le icone viola tenue si leggono a fatica — riquadro più chiaro o icona più luminosa.
+- [bassa] rituali__pc-dark.png — «✓ fatto» verde scuro su grigio scuro — contrasto basso (~3.5:1) — verde più chiaro in dark.
+- (valgono i difetti di rituali__pc-light.png: badge «1» che sparisce, stati con vocaboli diversi, pagina vuota per metà)
+
+## rituale-piano__pc-dark.png
+- [bassa] rituale-piano__pc-dark.png — chip «★ Priorità» viola scuro con testo lilla — contrasto ~3:1; icona persone rosa e cartella gialla 12px su scuro quasi invisibili.
+- [bassa] rituale-piano__pc-dark.png — testo barrato grigio scuro su grigio — contrasto basso, come in chiaro.
+- [bassa] rituale-piano__pc-dark.png — campi «Aggiungi un'altra…» e «Es. alle 9:00…» con fondo #2a2a2a senza bordo, quasi uguali al fondo della card — bordo sottile.
+- (valgono i difetti di rituale-piano__pc-light.png)
+
+## rituale-sonno-pasti__pc-dark.png
+- [bassa] rituale-sonno-pasti__pc-dark.png — pulsante «Salva» viola scurissimo con testo lilla — sembra disattivato — fondo più luminoso o stile secondario chiaro.
+- [bassa] rituale-sonno-pasti__pc-dark.png — pulsanti «sì/no/🕐» grigio #2a2a2a su #1e1e1e — poco distinguibili dal fondo.
+- (valgono i difetti di rituale-sonno-pasti__pc-light.png: doppio salvataggio Salva/Fatto, «Altre cose fatte» fuori tema)
+
+## rituale-checkin__pc-dark.png
+- [bassa] rituale-checkin__pc-dark.png — pulsante «Registra +3 XP» viola scuro con bordo, aspetto da disattivato — se è attivo deve sembrarlo.
+- [bassa] rituale-checkin__pc-dark.png — etichette scala «1 · esausto…» grigio scuro 11px su nero — contrasto basso.
+- (valgono i difetti di rituale-checkin__pc-light.png: pulsante selezionato rialzato, scale enormi, verbi incoerenti)
+
+## rituale-sera__pc-dark.png
+- [bassa] rituale-sera__pc-dark.png — pulsanti 1–5 grigio #2c2c2c con cifre grigie su card #1e1e1e — poco contrasto, sembrano disabilitati.
+- (valgono i difetti di rituale-sera__pc-light.png: nome area e scala su due righe, scala diversa dal check-in)
+
+## rituale-settimana__pc-dark.png
+- [bassa] rituale-settimana__pc-dark.png — textarea #2a2a2a senza bordo né placeholder su card #1e1e1e — quasi non si vedono; maniglie di ridimensionamento chiare in angolo sono l'elemento più visibile.
+- (valgono i difetti di rituale-settimana__pc-light.png: numeri in serif, 6/7 incoerente, vocabolario)
+
+## attivita-sistemare__pc-dark.png
+- [bassa] attivita-sistemare__pc-dark.png — select nativo «Altro / Esplorazione» — in scuro resta un controllo di sistema grigio con freccia nera: stona — select stilizzato.
+- [bassa] attivita-sistemare__pc-dark.png — «e un'altra» corsivo grigio scuro — contrasto basso.
+- (valgono i difetti di attivita-sistemare__pc-light.png)
+
+## attivita-dafare__pc-dark.png
+- [bassa] attivita-dafare__pc-dark.png — pulsanti «+ Oggi» viola scurissimo con testo lilla — poco leggibili, mentre il primo è viola pieno brillante: il contrasto fra i due stati è esagerato in scuro.
+- [bassa] attivita-dafare__pc-dark.png — card con bordo grigio chiaro (#3a3a3a) — più marcato che in altre schermate scure (es. rituali senza bordo) — uniformare i bordi delle card in dark.
+- (valgono i difetti di attivita-dafare__pc-light.png)
+
+## attivita-dafare-aggiunta__pc-dark.png
+- [media] attivita-dafare-aggiunta__pc-dark.png — chip selezionato «Senza data» — fondo lilla chiaro (#b5a3ff) con testo bianco: contrasto ~2:1, illeggibile — testo scuro sul lilla o fondo viola più scuro.
+- [bassa] attivita-dafare-aggiunta__pc-dark.png — select nativo «Altro / Esplorazione» con freccia di sistema, più alto dei chip — come in chiaro.
+- (valgono i difetti di attivita-dafare-aggiunta__pc-light.png)
+
+## attivita-abitudini__pc-dark.png
+- [bassa] attivita-abitudini__pc-dark.png — anello «0 di 3» grigio #333 spesso su nero: sembra un cerchio decorativo vuoto, non un indicatore — anello traccia più sottile e tenue.
+- [bassa] attivita-abitudini__pc-dark.png — scheda attiva «Abitudini» lascia sotto di sé un'ombra/alone scuro visibile sopra «0 di 3» (sfumatura che sborda) — rimuovere l'ombra in dark.
+- (valgono i difetti di attivita-abitudini__pc-light.png)
+
+## attivita-abitudini-nuova__pc-dark.png
+- [bassa] attivita-abitudini-nuova__pc-dark.png — chip «Nessuna» e «Salute & Sport» su fondo #2a2a35 quasi uguale alla card — non sembrano controlli.
+- (valgono i difetti di attivita-abitudini-nuova__pc-light.png: giorni sparpagliati, opzioni staccate dal campo, pagina che salta di 14px)
+
+## scheda-attivita__pc-dark.png
+- [alta] scheda-attivita__pc-dark.png — velo della modale — anche in scuro l'ultima riga («Confrontare iPhone 15 Pro e GH5», y>752) è visibilmente più chiara: il velo non copre tutta la finestra.
+- [bassa] scheda-attivita__pc-dark.png — cerchi dei passi da fare — pieni scuri (#1a1a1a) su riga grigia: sembrano fori — solo contorno chiaro.
+- [bassa] scheda-attivita__pc-dark.png — chip «ogni giorno / ogni 2 giorni / ogni settimana» quasi neri su riquadro grigio, chip «Domani/Giovedì» grigi su fondo modale: in scuro la differenza di stile fra i due gruppi di chip è ancora più evidente.
+- (valgono i difetti di scheda-attivita__pc-light.png)
+
+## scheda-abitudine__pc-dark.png
+- [bassa] scheda-abitudine__pc-dark.png — calendario: giorni mancati (cerchi grigio #333) e giorni non previsti (solo numero grigio) quasi indistinguibili in scuro — senza legenda è impossibile capirli.
+- [bassa] scheda-abitudine__pc-dark.png — giorni S e D non selezionati: cerchi neri con bordo grigio sottile su riquadro grigio — sembrano buchi; numero «18» (oggi) grigio scuro dentro anello viola, contrasto basso.
+- (valgono i difetti di scheda-abitudine__pc-light.png)
+
+## andamento__pc-dark.png
+- [bassa] andamento__pc-dark.png — heatmap «Costanza» — in scuro la scala si inverte (più attività = azzurro chiaro), in chiaro più attività = blu scuro: accettabile per il dark, ma i livelli intermedi (#1d4e8f vs #2563c9) sono quasi uguali — scala con passi di luminosità più distanziati.
+- [bassa] andamento__pc-dark.png — quadrato vuoto del venerdì (V) nella riga settimanale — grigio #2a2a2a senza bordo, quasi invisibile: sembra mancare un elemento — contorno.
+- [bassa] andamento__pc-dark.png — card con bordo grigio chiaro marcato (qui sì, in Rituali-scuro no) — uniformare.
+- (valgono i difetti di andamento__pc-light.png: card Costanza mezza vuota, numeri senza etichetta)
+
+## scoperte__pc-dark.png
+- [bassa] scoperte__pc-dark.png — icone pollice in riquadri con bordo grigio su card scura con bordo: doppio bordo, più rumoroso che in chiaro.
+- [bassa] scoperte__pc-dark.png — sottoscheda attiva «Registro» grigia (accento perso come in Giornata-scuro).
+- (valgono i difetti di scoperte__pc-light.png)
+
+## scoperte-esperimenti__pc-dark.png
+- [bassa] scoperte-esperimenti__pc-dark.png — punti grigi della fase «Prima» su sfondo scuro — piccoli e a basso contrasto; etichette «media» sovrapposte ai punti come in chiaro.
+- [bassa] scoperte-esperimenti__pc-dark.png — area «Dopo la modifica» blu-notte che si legge appena — ok, ma il confine con «Prima» non ha una linea verticale di separazione — aggiungerla con etichetta data.
+- (valgono i difetti di scoperte-esperimenti__pc-light.png)
+
+## scheda-scoperta__pc-dark.png
+- [alta] scheda-scoperta__pc-dark.png — velo — la riga «Studiare dopo cena» in fondo resta più chiara del resto (stesso difetto del tema chiaro).
+- [bassa] scheda-scoperta__pc-dark.png — chip «non funziona» nero su riquadro grigio vs chip «notato una volta» grigio su modale: due stili di chip non selezionato.
+- (valgono i difetti di scheda-scoperta__pc-light.png)
+
+## profilo__pc-dark.png
+- [bassa] profilo__pc-dark.png — card profilo e statistiche senza bordo, card elenchi (Aree…, Diario…) con bordo grigio: nella stessa pagina due stili di card in scuro — uniformare.
+- (valgono i difetti di profilo__pc-light.png: nessuna voce sidebar attiva, statistiche incoerenti, «bloccati»)
+
+## impostazioni__pc-dark.png
+- [media] impostazioni__pc-dark.png — velo debole: dietro la modale il Profilo resta leggibile («65% completate», «bloccati») e compete con il contenuto — velo più opaco in dark (60–70%).
+- [bassa] impostazioni__pc-dark.png — separatori fra le righe dei gruppi quasi invisibili (#2e2e2e su #2a2a2a) — le righe si fondono.
+- (valgono i difetti di impostazioni__pc-light.png)
+
+## imp-timer__pc-dark.png
+- [bassa] imp-timer__pc-dark.png — titolo «Raffaele» del Profilo sottostante ancora ben leggibile accanto al titolo «Timer» (velo debole) — velo più opaco.
+- (valgono i difetti di imp-timer__pc-light.png: «Pausa lunga ogni 4 — Mai», sezioni senza spiegazione)
+
+## imp-musica__pc-dark.png
+- [bassa] imp-musica__pc-dark.png — in scuro i campi link sono più visibili che in chiaro (fondo più chiaro del gruppo): la resa dei campi è incoerente fra i due temi — uniformare il token «campo».
+- [bassa] imp-musica__pc-dark.png — interruttore spento: levetta grigia su binario grigio, contrasto basso.
+- (valgono i difetti di imp-musica__pc-light.png: padding etichette, nessuna spiegazione del link)
+
+## imp-aspetto__pc-dark.png
+- [bassa] imp-aspetto__pc-dark.png — tema «Auto» selezionato con pill grigio poco distinto — l'opzione attiva si legge a fatica; usare l'accento.
+- [bassa] imp-aspetto__pc-dark.png — velo debole: profilo dietro ben leggibile (Raffaele, 38/109/65%).
+- (valgono i difetti di imp-aspetto__pc-light.png)
+
+## aree__pc-dark.png
+- [bassa] aree__pc-dark.png — otto interruttori verdi brillanti in colonna: l'elemento più luminoso della schermata è un controllo il cui significato non è spiegato — verde attenuato in dark, spiegazione.
+- (valgono i difetti di aree__pc-light.png)
+
+## sonno-pasti__pc-dark.png
+- [bassa] sonno-pasti__pc-dark.png — etichette dei pasti (Colazione/Pranzo/Cena) allineate in alto rispetto ai chip (Colazione a y=394, chip centrati a 396; la riga è alta 60 e l'etichetta non è centrata) — leggero sfasamento verticale, centrare.
+- (valgono i difetti di sonno-pasti__pc-light.png: terza UI diversa per sonno/pasti, × vs cestino, «Tra le … –»)
+
+## promemoria__pc-dark.png
+- [alta] promemoria__pc-dark.png — avviso «Bloccati» — marrone con ombra, largo 340px su 418: stesso difetto di larghezza/allineamento del tema chiaro; in scuro sembra ancora più un elemento estraneo.
+- [bassa] promemoria__pc-dark.png — interruttori disabilitati: levetta grigia a destra su binario grigio — impossibile capire acceso/spento.
+- (valgono i difetti di promemoria__pc-light.png)
+
+## diario__pc-dark.png
+- [bassa] diario__pc-dark.png — select «Relazioni & Sociale ⌄» nero con bordo dentro la riga di diario — in scuro ancora più evidente come controllo fuori posto.
+- [bassa] diario__pc-dark.png — icone ↺ e orari grigio scuro 12px — contrasto basso.
+- (valgono i difetti di diario__pc-light.png: sidebar su «Andamento» con back «Profilo», back disallineato)
+
+## timer-scelta__pc-dark.png
+- [alta] timer-scelta__pc-dark.png — valori «5 min / 25 min / 25 + 5 min / nessun limite» attaccati al bordo destro del gruppo (padding ~3px) — stesso difetto del tema chiaro.
+- [bassa] timer-scelta__pc-dark.png — dietro la modale il pulsante verde «Fatto» resta acceso e molto visibile (velo debole) e distrae.
+- (valgono i difetti di timer-scelta__pc-light.png)
+
+## timer-concentrazione__pc-dark.png
+- [media] timer-concentrazione__pc-dark.png — identico al tema chiaro (lo schermo di concentrazione è sempre scuro): valgono tutti i difetti di timer-concentrazione__pc-light.png (manca Pausa, «Termina» ambiguo con icona di «Termina l'abitudine», X duplicata, anello quasi invisibile).
+- [bassa] timer-concentrazione__pc-dark.png — X in alto a destra a 16px dal bordo della finestra, isolata a 600px dal contenuto — su desktop avvicinarla o usare «Esc per uscire».
+
+## cattura__pc-dark.png
+- [bassa] cattura__pc-dark.png — la sfocatura dello sfondo crea aloni scuri ai bordi della colonna centrale (rettangolo sfumato visibile da x≈360 a 1170) — effetto sporco; preferire un velo uniforme.
+- [bassa] cattura__pc-dark.png — popup scuro #1e1e1e su sfondo sfocato quasi dello stesso tono: si stacca solo grazie al bordo sottile.
+- (valgono i difetti di cattura__pc-light.png: manca il pulsante per salvare, solo «Chiudi»)
+
+## menu-oggi-avatar__pc-dark.png
+- [media] menu-oggi-avatar__pc-dark.png — identico a profilo__pc-dark.png: il tocco sull'avatar apre direttamente la pagina Profilo, duplicando la voce della sidebar; nessuna voce sidebar attiva (stessi difetti di menu-oggi-avatar__pc-light.png).
+
+## Riassunto
+
+### 1. Layout desktop pensato per telefono (gravità alta/media)
+- Colonna di contenuto fissa a ~760px centrata, con metà schermo vuota in quasi ogni pagina (Adesso, Rituali, Abitudini, Profilo, Da sistemare). Mancano schemi da desktop: elenco + dettaglio, due colonne (Funziona/Non funziona, Adesso/Poi), pannello laterale invece delle modali.
+- Le larghezze cambiano tra le viste: Settimana/Mese/Anno si allargano a ~955px mentre la barra delle schede resta a 760px. Il bordo sinistro passa da 385 a 287px, la barra in alto non è più allineata e il layout «salta».
+- Le modali (scheda attività, abitudine, impostazioni, aree, sonno) sono larghe 460px, alte quanto lo schermo e scorrono all'interno. Il contenuto finisce tagliato senza sfumatura e l'intestazione fissa non ha separatore. Il titolo va a capo anche quando c'è spazio.
+- Le intestazioni (schede, «‹ Oggi ›») non restano fisse: scorrendo, aprendo il pannello del sonno o trascinando, le schede finiscono tagliate a metà sul bordo superiore.
+- Card «Costanza» in Andamento: la heatmap è minuscola e oltre metà della card resta vuota. Card Anno alte 235px: per vedere tutto l'anno bisogna scorrere.
+
+### 2. Bug visivi evidenti (alta)
+- Il velo dietro le modali non copre tutta la finestra: l'ultima riga in basso resta chiara (scheda-attivita, scheda-scoperta, sia chiaro che scuro).
+- La sidebar si interrompe a y≈740 durante il trascinamento (trascinamento-in-corso).
+- L'area di rilascio «Togli l'orario» esce dalla colonna e copre il calendario. Il fantasma trascinato e l'anteprima indicano orari in posti diversi. Nessun avviso quando l'attività si sovrappone al Pranzo.
+- Selettore del timer: i valori a destra toccano il bordo (padding ~3px contro 12px a sinistra).
+- L'avviso «Bloccati» nei Promemoria è largo solo 340px su 418, ha testo centrato e un'ombra da toast: sembra fuori posto.
+- I numeri del Bilancio della settimana sono in un font serif che non c'è da nessun'altra parte (probabile font di riserva).
+- Nella linea «adesso» del calendario, il pill «10:30» copre il testo del blocco. In più la linea è viola e il pill è blu.
+- Nel Check-in il pulsante selezionato si alza e si allarga, rompendo l'allineamento della riga.
+
+### 3. Dati e numeri incoerenti (alta)
+- «Giorni attivi» di agosto: 18 nella vista Mese, 17 nella vista Anno.
+- Attività completate: 58 «cose fatte» (Mese), 82 «fatte» (Anno), «81 di 124» (Andamento), 109 «fatte» (Profilo). Nessuna indica il periodo di riferimento.
+- Bilancio della settimana con «6/7 giorni attivi» di martedì.
+- Il badge «1» su Rituali non corrisponde ai 4 rituali da fare e sparisce quando si è nella scheda. Il badge «Attività 6» conta solo «Da sistemare».
+- Numeri senza unità: 🔥38, 65%, «+4» nelle intestazioni della settimana, «1 di 3», «Backup 1», «record 4», XP mai spiegati.
+
+### 4. Lo stesso componente con aspetti diversi (media)
+- Spunta: cerchio a sinistra (Adesso), quadrato (calendario, Senza orario), cerchio grande colorato a destra (Abitudini), nessuna spunta (Da fare).
+- Sonno e pasti si modificano in tre interfacce diverse (pannello della Giornata con select nativi e cestino, rituale con sì/no/orologio, Profilo con chip e ×).
+- Scala 1–5: grandi pulsanti bordati nel Check-in, quadratini grigi su una seconda riga nella Fine giornata.
+- Chiusura dei rituali: «Salva +5 XP», «Registra +3 XP», «Fatto», più un secondo «Salva» nello stesso pannello del sonno.
+- «Fatto» / «Fatta» / «Segna come da fare», in forme diverse (pulsante verde pieno, link grigio).
+- Chip valore: almeno 4 varianti (testo nero o viola, × dentro o fuori, «Mai» grigio). Chip con maiuscola o minuscola a caso.
+- Le schede dell'abitudine aperte dal calendario e dalla lista sono diverse (azioni, layout, «Termina l'abitudine» contro «Fine: Mai»).
+- Azione distruttiva «Elimina»: a sinistra con icona in un gruppo, oppure centrata senza icona. «Termina l'abitudine» sta in mezzo alle azioni sicure.
+- Modali delle sottopagine ancorate in alto o centrate, con altezze diverse: saltano durante la navigazione.
+- Diario è una pagina intera, le altre voci del Profilo sono modali. La sidebar evidenzia «Andamento» mentre il link indietro dice «‹ Profilo».
+- Heatmap verde nella vista Anno, blu in Andamento.
+- Select nativi del sistema (area, durata) in mezzo a controlli personalizzati.
+
+### 5. Testi e vocaboli (media)
+- Più nomi per la stessa cosa: Aggiungi una nota / Scrivi un pensiero / Annotato / Da sistemare; Fissa in alto / Importanti / Priorità; Diario / Riflessioni passate; Aree / Le tue aree; fatte / cose fatte / azioni completate / completate; focus/umore contro «concentrarti»/«come ti senti».
+- Frasi poco naturali o oscure: «Sposta 1 non fatta a domani», «Pausa lunga ogni 4 — Mai», «Poi continua per», «Tra le 05:00 – 14:00», «Si riattivano… alla voce di questo indirizzo», «Bloccati», «Non completata ›», «e un'altra», «Un minuto», «Ritmo di base» contro «Ripristina», «Registro», «Scienza», «d≈3,1».
+- Domande senza punto interrogativo, formato data numerico «29/07/2026» in un'app che altrove scrive «18 ago».
+
+### 6. UX e affordance (media/alta)
+- Il popup della nota rapida ha solo «Chiudi»: non c'è un pulsante Salva e nessun suggerimento «Invio».
+- Lo schermo del timer non ha Pausa. «Termina» usa l'icona di «Termina l'abitudine» e duplica la X.
+- I booleani sono mostrati come testo («Fissa in alto: no»). Le icone senza etichetta (↺ nel Diario, 🕐, ×, cestini da 12px) sono sempre visibili.
+- Gli interruttori di Aree e Promemoria non spiegano cosa fanno. Quelli disattivati sembrano accesi.
+- I campi per aggiungere stanno in posizioni opposte (in cima in Da fare, in fondo in Abitudini e nel Giorno). Le opzioni della nuova attività si confondono con il filtro.
+- Vista Mese senza legenda di anelli e pallini. Vista Anno senza legenda né date. La riga finale contiene solo «31».
+- L'avatar in alto duplica «Profilo e impostazioni» della sidebar. In Profilo nessuna voce della sidebar è attiva.
+
+### 7. Tema scuro (media/bassa)
+- L'accento viola sparisce negli stati attivi (sottoschede Giorno/Settimana, Registro, tema Auto, voce della sidebar): restano grigi poco distinguibili.
+- Velo delle modali troppo leggero: lo sfondo resta leggibile e la superficie delle modali è quasi uguale alla pagina.
+- Caselle e cerchi vuoti resi come «buchi» scuri pieni. Chip selezionato «Senza data» con testo bianco su lilla chiaro (contrasto ~2:1).
+- Heatmap di Anno: i giorni vuoti sono più chiari dei verdi di bassa intensità, quindi la scala di luminosità è sbagliata. I giorni di luglio nella vista Mese e le etichette da 11px quasi non si vedono.
+- Bordi delle card presenti in alcune pagine e assenti in altre. Interruttori verde brillante contro l'accento viola.
