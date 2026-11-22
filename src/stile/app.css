@@ -5488,3 +5488,10 @@ input.campo-velato, .q-chip-data input.campo-velato, input.sc-nascosta.campo-vel
 .timer-scelta .sc-val { margin-right: 2px; }
 .gr-val-testo { color: var(--inchiostro-1); font-size: 15px; }
 .gr-val-vuoto { color: var(--inchiostro-muto); }
+/* giro 3: la x c'è sempre, anche col dito — un cerchietto grigio come nei
+   fogli di sistema. Chi non conosce il gesto deve poter uscire. */
+.sheet-chiudi { display: inline-flex !important; width: 30px; height: 30px; border-radius: 50%; background: var(--superficie-2); color: var(--inchiostro-2); flex: none; position: relative; }
+.sheet-chiudi .ico { width: 15px; height: 15px; }
+.sheet-chiudi::after { content: ''; position: absolute; inset: -7px; }
+/* il rituale dell'ora non è un conteggio: un punto, non un «1» */
+.att-badge.att-badge-punto { width: 8px; height: 8px; min-width: 0; padding: 0; font-size: 0; background: var(--accento); vertical-align: 6px; }

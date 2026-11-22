@@ -7964,7 +7964,7 @@ function sottoNav(v: string): void {
        («Check-in — adesso →»), che portava esattamente dove porta questa
        linguetta: un bersaglio in più e l'ultimo doppione rimasto. Il numero
        sta dove sta la destinazione, come per «Attività». */
-    var bollo = (x.id === 'rituali' && x.id !== v && rituliDaFare()) ? '<span class="att-badge">1</span>' : '';
+    var bollo = (x.id === 'rituali' && x.id !== v && rituliDaFare()) ? '<span class="att-badge att-badge-punto" aria-label="Un rituale da fare adesso"></span>' : '';
     return '<a class="' + (x.id === v ? 'attivo' : '') + '" href="#/' + x.id + '"' +
       (x.id === v ? ' aria-current="page"' : '') + '>' +
       '<span class="seg-ico">' + ((vi && vi.icona) ? ICO(vi.icona, 15) : '') + bollo + '</span>' +
