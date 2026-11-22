@@ -4453,7 +4453,7 @@ function apriItemGiornata(k: Giorno, id: string, tipo: 'azione' | 'abitudine', o
   const html = '<div class="ig-ed">' +
     '<div class="abd-chi"><span>' + (isAz ? 'Attività' : ICO('refresh', 11) + ' Abitudine') + ' · ' + esc(etichettaGiorno(k)) + '</span></div>' +
     (spuntabile
-      ? '<button class="btn btn-grande ' + (fatto ? 'btn-ghost' : 'btn-primario') + ' ig-fatto"><span class="ig-fatto-ico">' + ICO(fatto ? 'annulla' : 'check', 15) + '</span>' + (fatto ? 'Togli la spunta' : 'Fatta') + '</button>'
+      ? '<button class="btn btn-grande ' + (fatto ? 'btn-ghost' : 'btn-primario') + ' ig-fatto"><span class="ig-fatto-ico">' + ICO(fatto ? 'annulla' : 'check', 15) + '</span>' + (fatto ? 'Segna come da fare' : 'Fatta') + '</button>'
       : '') +
     '<div class="gr">' +
     '<label class="gr-riga" for="ig-ora"><span class="gr-eti">Ora</span><span class="gr-valori">' +
@@ -4471,7 +4471,7 @@ function apriItemGiornata(k: Giorno, id: string, tipo: 'azione' | 'abitudine', o
       ? '<button class="gr-riga gr-agg ig-indietro">' + ICO('lista', 15) + (e.passoDi ? ' Togli dal giorno' : ' Sposta in Da fare') + '</button>' +
         '<button class="gr-riga gr-agg gr-rosso ig-rimuovi">' + ICO('trash', 15) + ' Elimina</button>'
       : '<button class="gr-riga gr-agg ig-salta">' + ICO('x', 15) + ' Salta ' + esc(etichettaGiorno(k).toLowerCase()) + '</button>' +
-        '<button class="gr-riga gr-agg ig-finequi">' + ICO('fineperiodo', 15) + ' Termina l’abitudine</button>' +
+        '<button class="gr-riga gr-agg gr-rosso ig-finequi">' + ICO('fineperiodo', 15) + ' Termina l’abitudine</button>' +
         '<button class="gr-riga gr-agg ig-vairituali">' + ICO('arrowRight', 15) + ' Apri l’abitudine</button>') +
     '</div>' +
 
@@ -5224,7 +5224,13 @@ function montaAnno(container: HTMLElement): void {
 }
 
 function orizzNav(orizz: Orizzonte, k1: Giorno, k2?: Giorno | null, etichetta?: string): string {
-  const testo = etichetta || (k2 ? LM.fmtShort(k1) + ' – ' + LM.fmtShort(k2) : etichettaGiorno(k1));
+  /* «17–23 ago», non «17 Ago – 23 Ago»: il mese una volta sola, in minuscolo */
+  const intervallo = function (a: Giorno, b: Giorno): string {
+    const fa = LM.fmtShort(a).split(' '), fb = LM.fmtShort(b).split(' ');
+    return fa[1] === fb[1] ? fa[0] + '–' + fb[0] + ' ' + (fb[1] || '') : LM.fmtShort(a) + ' – ' + LM.fmtShort(b);
+  };
+  const grezzo = etichetta || (k2 ? intervallo(k1, k2) : etichettaGiorno(k1));
+  const testo = /^\d/.test(grezzo) ? grezzo : grezzo.charAt(0).toUpperCase() + grezzo.slice(1);
   /* Quanto siamo lontani da oggi: senza questo, spostandosi di un giorno
      cambiava solo una scritta piccola e sembrava che le frecce non
      facessero niente (i pasti e le abitudini sono uguali ogni giorno). */
@@ -6520,7 +6526,7 @@ export function opzioniNuovaAbitudine(): string {
     '<div class="gr-riga"><span class="gr-eti">Giorni</span><span class="gr-fisso" id="agg-ab-quando">Ogni giorno</span></div>' +
     '<div class="gr-riga gr-giorni" id="agg-ab-giorni">' + chipsGiorni([1, 2, 3, 4, 5, 6, 0]) + '</div>' +
     '<label class="gr-riga" for="agg-ab-ora"><span class="gr-eti">Ora</span>' +
-    '<span class="gr-data"><input type="time" class="gr-val" id="agg-ab-ora" required aria-label="A che ora (facoltativo)"><span class="gr-mai" aria-hidden="true">Nessuno</span></span></label>' +
+    '<span class="gr-data"><input type="time" class="gr-val" id="agg-ab-ora" required aria-label="A che ora (facoltativo)"><span class="gr-mai" aria-hidden="true">Nessuna</span></span></label>' +
     '<label class="gr-riga" for="agg-ab-area"><span class="gr-eti">Area</span>' + selectAree('agg-ab-area', areaNuova('salute'), 'Area', 'gr-val') + '</label>' +
     '</div>';
 }
@@ -6761,7 +6767,7 @@ export function apriDettaglioAbitudine(id: string, dopo?: () => void): void {
 type Voto = 'energia' | 'focus' | 'umore';
 const ANCORE: Record<Voto, [string, string, string, string, string]> = {
   energia: ['esausto', 'fiacco', 'normale', 'carico', 'pieno'],
-  focus: ['disperso', 'a fatica', 'normale', 'lucido', 'concentratissimo'],
+  focus: ['disperso', 'a fatica', 'normale', 'lucido', 'molto concentrato'],
   umore: ['giù', 'così così', 'normale', 'bene', 'alla grande']
 };
 
@@ -6895,6 +6901,7 @@ function ritualeSera(corpo: HTMLElement): void {
        una cosa andata bene e un ostacolo») era l'indice di una pagina lunga
        mezzo schermo. Resta il tempo che ci vuole, che nessun campo dice. */
     testaRituale('moon', 'Fine giornata', 'Due minuti.') +
+    '<label class="campo">Com’è andata, area per area? <span class="campo-nota">1 = male · 5 = benissimo</span></label>' +
     '<div id="voti-aree">' + ordinate.map(function (a) {
       return '<div class="voto-area" data-area="' + a.id + '" style="--c-area:' + LM.coloreArea(a) + '">' +
         '<span class="nome">' + ICO(a.icona, 15) + ' ' + esc(a.nome) + '</span>' +

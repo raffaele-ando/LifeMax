@@ -59,7 +59,7 @@ export default function ImpTimer() {
       <div className="gr">
         <Durata id="it-pom" eti="Concentrazione" val={v(r.pomodoro, 25)} valori={MINUTI} onCambia={(x) => cambia({ pomodoro: x })} />
         <Durata id="it-pausa" eti="Pausa breve" val={v(r.pausa, 5)} valori={MINUTI} onCambia={(x) => cambia({ pausa: x })} />
-        <Durata id="it-lunga" eti="Pausa lunga ogni 4" val={v(r.pausaLunga, 0)} valori={MINUTI} zero="No"
+        <Durata id="it-lunga" eti="Pausa lunga ogni 4" val={v(r.pausaLunga, 0)} valori={MINUTI} zero="Mai"
           onCambia={(x) => cambia({ pausaLunga: x })} />
       </div>
     </div>

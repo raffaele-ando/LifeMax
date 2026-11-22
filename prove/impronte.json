@@ -2447,7 +2447,7 @@
  ],
  "foglio:scheda (divisa in passi)": [
   "0|div|sc||||",
-  "1|button|btn.btn-grande.btn-primario.sc-primaria|sc-oggi||Prossimo passo in Oggi|",
+  "1|button|btn.btn-grande.btn-primario.sc-primaria|sc-oggi||Aggiungi il prossimo passo a Oggi|",
   "2|svg|ico||||",
   "1|div|lista-eti|||Pianifica|",
   "2|svg|ico||||",

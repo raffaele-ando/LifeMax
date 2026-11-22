@@ -4756,7 +4756,7 @@ input[type="time"]::-webkit-datetime-edit { padding: 0; color: var(--inchiostro-
 .sheet-overlay { background: none; }
 .sheet-velo { position: absolute; inset: 0; z-index: 0; background: rgba(10, 10, 20, .5); pointer-events: none; will-change: opacity; }
 /* il foglio sta su un suo strato: salire e seguire il dito costa solo uno spostamento */
-.sheet { will-change: transform; contain: layout paint; box-shadow: none; }
+.sheet { contain: layout paint; box-shadow: none; }
 .sheet-entra { animation: sheetSu .28s var(--ease-out) both; }
 .sheet-molla { transition: transform .28s var(--ease-out); }
 .sheet-via { transition: transform .22s var(--ease-in-out); }
@@ -5433,3 +5433,30 @@ input.campo-velato, .q-chip-data input.campo-velato, input.sc-nascosta.campo-vel
 .diario-annulla { color: var(--inchiostro-muto); background: none; border: 0; width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; }
 .diario-annulla::after { content: ''; position: absolute; inset: -4px; }
 .diario-annulla { position: relative; }
+
+/* i voti della sera: il nome dell'area intero sopra, la scala sotto */
+#voti-aree .voto-area { display: grid; grid-template-columns: 1fr; gap: 6px; padding: 10px 0; }
+#voti-aree .voto-area .nome { white-space: normal; overflow: visible; text-overflow: clip; max-width: none; }
+#voti-aree .stelline { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+.campo-nota { font-weight: 500; color: var(--inchiostro-muto); font-size: 12px; margin-left: 6px; }
+/* «Aggiungi» si accende quando c'è qualcosa da aggiungere */
+.agg:has(.agg-testo:not(:placeholder-shown)) .agg-ok { background: var(--accento-pieno); color: var(--accento-ink); }
+/* sotto la barra in basso resta spazio: l'ultima riga si scorre fuori */
+@media (max-width: 860px) { .main { padding-bottom: calc(112px + env(safe-area-inset-bottom, 0px)); } }
+/* scuro: l'interruttore spento non sembra acceso */
+:root[data-mode="dark"] .interr:not(.on) i { background: #9a9a9a; }
+/* la durata dei pasti nel pannello del sonno non si tronca */
+.sp-pasti select, .sp-pasti .tl-time { min-width: 6.5em; }
+
+.orizz-eti { text-transform: none; }
+
+/* scuro: superfici distinguibili, come nel tema scuro di iOS */
+:root[data-mode="dark"], :root[data-skin="arcade"][data-mode="dark"] { --pagina: #0e0e0f; --superficie-1: #1c1c1e; --superficie-2: #2c2c2e; --superficie-3: #3a3a3c; }
+/* Andamento › Per area: i nomi interi */
+.bil-riga .nome, .bil-nome, .area-nome { white-space: normal; overflow: visible; text-overflow: clip; }
+/* Per area: sempre su due righe (nome e numero sopra, barra sotto), così il
+   nome non si tronca mai, a nessuna larghezza */
+.bil-riga { grid-template-columns: minmax(0, 1fr) auto; row-gap: 5px; }
+.bil-nome { grid-column: 1; grid-row: 1; }
+.bil-barra { grid-column: 1 / -1; grid-row: 2; }
+.bil-num { grid-column: 2; grid-row: 1; }

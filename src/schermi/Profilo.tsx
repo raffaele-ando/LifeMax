@@ -23,7 +23,7 @@ export default function Profilo() {
   const numeri: [string, string, string][] = [
     ['flame', String(LM.streak().corrente), 'giorni'],
     ['check', String(LM.quanteFatte()), 'fatte'],
-    ['trendUp', bil.messe ? Math.round(bil.tasso * 100) + '%' : '—', 'riuscita']
+    ['trendUp', bil.messe ? Math.round(bil.tasso * 100) + '%' : '—', 'completate']
   ];
 
   return (<>

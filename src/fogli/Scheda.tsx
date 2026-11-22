@@ -171,7 +171,7 @@ export default function Scheda({ id }: { id: string }) {
   return (
     <div className="sc">
       <button className="btn btn-primario btn-grande sc-primaria" id="sc-oggi" onClick={() => pianifica(oggi)}>
-        <Segno nome="target" /> {isProg ? 'Prossimo passo in Oggi' : 'Aggiungi a Oggi'}
+        <Segno nome="target" /> {isProg ? 'Aggiungi il prossimo passo a Oggi' : 'Aggiungi a Oggi'}
       </button>
 
       <div className="lista-eti"><Segno nome="calendar" dim={11} />Pianifica</div>
