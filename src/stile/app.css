@@ -5753,3 +5753,54 @@ textarea { resize: none; field-sizing: content; max-height: 40vh; }
   .bv-piede { position: static; background: none; padding-top: 16px; }
   .bv-percorso .bv-cta { max-width: 640px; }
 }
+/* --- l'anteprima dell'app al posto del personaggio --- */
+.bv-scena { width: 300px; height: 270px; }
+.bv-alone { inset: 10px 0 0; }
+.bv-anteprima {
+  position: absolute; left: 50%; top: 18px; width: 240px; transform: translateX(-50%) rotate(-3deg);
+  padding: 14px; border-radius: 22px; text-align: left;
+  background: var(--superficie-1); box-shadow: 0 18px 40px rgba(20, 16, 60, .16), 0 0 0 1px var(--bordo);
+  display: flex; flex-direction: column; gap: 10px;
+  animation: bv-galleggia 6s ease-in-out infinite;
+}
+.bv-ant-testa { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 4px 8px; }
+.bv-ant-testa b { grid-column: 1 / -1; font-size: 13.5px; letter-spacing: -0.01em; }
+.bv-ant-passo { height: 6px; border-radius: 99px; background: var(--superficie-3, var(--griglia)); overflow: hidden; }
+.bv-ant-passo i { display: block; height: 100%; background: var(--ok); border-radius: 99px; }
+.bv-ant-testa small { font-size: 11px; font-weight: 700; color: var(--inchiostro-2); }
+.bv-ant-carta { padding: 12px; border-radius: 16px; background: color-mix(in srgb, var(--accento) 9%, var(--superficie-1)); box-shadow: 0 0 0 1px color-mix(in srgb, var(--accento) 25%, transparent); display: flex; flex-direction: column; gap: 6px; }
+.bv-ant-eti { font-size: 11px; font-weight: 700; color: #3b82f6; display: inline-flex; gap: 4px; align-items: center; }
+.bv-ant-tit { font-size: 15px; letter-spacing: -0.01em; }
+.bv-ant-tasti { display: flex; gap: 6px; margin-top: 2px; }
+.bv-ant-ok, .bv-ant-timer { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 700; padding: 6px 10px; border-radius: 10px; }
+.bv-ant-ok { background: var(--ok-pieno, #0a7a42); color: #fff; }
+.bv-ant-timer { background: var(--superficie-1); color: var(--inchiostro-1); box-shadow: 0 0 0 1px var(--bordo-forte); }
+.bv-ant-riga { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--inchiostro-1); padding: 0 2px; }
+.bv-ant-riga.fatta { color: var(--inchiostro-muto); text-decoration: line-through; }
+.bv-ant-spunta { width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--bordo-forte); display: grid; place-items: center; flex: none; }
+.bv-ant-riga.fatta .bv-ant-spunta { background: var(--ok); border-color: var(--ok); color: #fff; }
+.bv-bolla.b2 { right: -10px; top: 128px; }
+.bv-bolla.b3 { left: -10px; bottom: 4px; top: auto; }
+@media (min-width: 900px) {
+  .bv-scena { width: 380px; height: 340px; transform: none; }
+  .bv-anteprima { width: 300px; top: 20px; padding: 18px; gap: 12px; }
+  .bv-ant-tit { font-size: 17px; }
+}
+/* il riepilogo finale: una spunta grande che si disegna, niente personaggi */
+.bv-festa-cerchio {
+  width: 96px; height: 96px; border-radius: 50%; display: grid; place-items: center; color: #fff;
+  background: var(--ok-pieno, #0a7a42); box-shadow: 0 0 0 10px color-mix(in srgb, var(--ok) 16%, transparent), 0 12px 30px color-mix(in srgb, var(--ok) 30%, transparent);
+  animation: bv-pop .5s cubic-bezier(.3, 1.6, .5, 1) both;
+}
+@keyframes bv-pop { from { transform: scale(.4); opacity: 0; } }
+@supports (corner-shape: squircle) { .bv-festa-cerchio, .bv-ant-spunta, .bv-ant-passo, .bv-ant-passo i { corner-shape: round; } }
+@media (prefers-reduced-motion: reduce) { .bv-anteprima, .bv-festa-cerchio { animation: none; } }
+.bv-festa-cerchio .ico { width: 46px; height: 46px; stroke-width: 2.6; }
+.bv-anteprima { left: 50%; margin-left: -120px; transform: none; animation: bv-ant-galleggia 6s ease-in-out infinite; }
+@keyframes bv-ant-galleggia { 0%, 100% { transform: rotate(-3deg) translateY(0); } 50% { transform: rotate(-3deg) translateY(-6px); } }
+.bv-anteprima .bv-bolla.b3 { left: -22px; right: auto; top: auto; bottom: -20px; animation: none; transform: rotate(3deg); }
+.bv-scena { height: 250px; }
+@media (min-width: 900px) {
+  .bv-anteprima { margin-left: -150px; top: 30px; }
+}
+@media (max-width: 899px) { .bv-scena { height: 290px; } .bv-eroe { gap: 4px; } }

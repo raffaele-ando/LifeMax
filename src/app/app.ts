@@ -7859,11 +7859,21 @@ function onboarding() {
       '<header class="bv-alto"><span class="bv-logo">' + LOGO(28) + ' LifeMax</span>' +
       (cloudOk() && !chi ? '<button class="bv-link-alto" data-bv="accedi">Accedi</button>' : '') + '</header>' +
       '<main class="bv-eroe">' +
+        /* un pezzo dell'app vera, non un personaggio: si vede subito cosa
+           si sta per usare */
         '<div class="bv-scena" aria-hidden="true">' +
-          '<div class="bv-alone"></div>' + mascotte() +
-          '<span class="bv-bolla b1">' + ICO('check', 13) + ' Ripasso fatto</span>' +
-          '<span class="bv-bolla b2">' + ICO('durata', 13) + ' 25:00</span>' +
-          '<span class="bv-bolla b3">' + ICO('flame', 13) + ' 7 giorni di fila</span>' +
+          '<div class="bv-alone"></div>' +
+          '<div class="bv-anteprima">' +
+            '<div class="bv-ant-testa"><b>martedì 18 agosto</b><span class="bv-ant-passo"><i style="width:66%"></i></span><small>2 di 3</small></div>' +
+            '<div class="bv-ant-carta">' +
+              '<span class="bv-ant-eti">' + ICO('book', 11) + ' Studio · adesso</span>' +
+              '<b class="bv-ant-tit">Ripasso capitolo 4</b>' +
+              '<span class="bv-ant-tasti"><span class="bv-ant-ok">' + ICO('check', 13) + ' Fatto</span><span class="bv-ant-timer">' + ICO('durata', 13) + ' Timer</span></span>' +
+            '</div>' +
+            '<div class="bv-ant-riga fatta"><span class="bv-ant-spunta">' + ICO('check', 11) + '</span>Camminata 20 minuti</div>' +
+            '<div class="bv-ant-riga"><span class="bv-ant-spunta"></span>Chiamare la nonna</div>' +
+            '<span class="bv-bolla b3">' + ICO('flame', 13) + ' 7 giorni di fila</span>' +
+          '</div>' +
         '</div>' +
         '<div class="bv-testo">' +
           '<p class="bv-occhiello">Misura. Ingegnerizza. Massimizza.</p>' +
@@ -7911,7 +7921,7 @@ function onboarding() {
       corpo = '<div class="bv-griglia">' + LM.AREE_DEFAULT.map(function (a) {
         const on = scelte.aree.indexOf(a.id) >= 0;
         return '<button class="bv-tessera' + (on ? ' on' : '') + '" data-area="' + a.id + '" aria-pressed="' + on + '" style="--c-area:' + LM.SLOT_COLORI[a.slot][0] + '">' +
-          '<span class="bv-tessera-ico">' + ICO(a.icona, 22) + '</span><span class="bv-tessera-nome">' + esc(a.nome) + '</span>' +
+          '<span class="bv-tessera-ico">' + ICO(a.icona, 26) + '</span><span class="bv-tessera-nome">' + esc(a.nome) + '</span>' +
           '<span class="bv-spunta">' + ICO('check', 13) + '</span></button>';
       }).join('') + '</div>';
     } else if (q === 'difficolta') {
@@ -7920,7 +7930,7 @@ function onboarding() {
       corpo = '<div class="bv-scelte">' + DIFFICOLTA.map(function (d) {
         const on = scelte.difficolta === d.id;
         return '<button class="bv-scelta' + (on ? ' on' : '') + '" data-diff="' + d.id + '" role="radio" aria-checked="' + on + '">' +
-          '<span class="bv-scelta-ico">' + ICO(d.ico, 20) + '</span>' +
+          '<span class="bv-scelta-ico">' + ICO(d.ico, 18) + '</span>' +
           '<span class="bv-scelta-testo"><b>' + d.nome + '</b><small>' + d.desc + '</small></span>' +
           '<span class="bv-radio"></span></button>';
       }).join('') + '</div>';
@@ -7936,7 +7946,7 @@ function onboarding() {
       const chi = auth().user;
       titolo = 'Tutto pronto' + (nome ? ', ' + esc(nome) : '') + '!';
       sotto = 'Ecco come ho preparato LifeMax per te.';
-      corpo = '<div class="bv-festa" aria-hidden="true">' + mascotte('festa') + '</div>' +
+      corpo = '<div class="bv-festa" aria-hidden="true"><span class="bv-festa-cerchio">' + ICO('check', 26) + '</span></div>' +
         '<ul class="bv-riepilogo">' +
           '<li>' + ICO(d.ico, 18) + '<span>Parti da <b>' + NOME_PARTENZA[d.parti] + '</b>. ' + d.consiglio + '</span></li>' +
           '<li>' + ICO('aree', 18) + '<span>' + scelte.aree.length + (scelte.aree.length === 1 ? ' area: ' : ' aree: ') +
@@ -7954,7 +7964,7 @@ function onboarding() {
     const quota = (passo + 1) / PASSI.length;
     return '<div class="bv bv-percorso">' +
       '<header class="bv-barra">' +
-        '<button class="bv-indietro" data-bv="indietro" aria-label="Indietro">' + ICO('arrowRight', 20) + '</button>' +
+        '<button class="bv-indietro" data-bv="indietro" aria-label="Indietro">' + ICO('arrowRight', 18) + '</button>' +
         '<div class="bv-avanzamento" role="progressbar" aria-valuemin="1" aria-valuemax="' + PASSI.length + '" aria-valuenow="' + (passo + 1) + '" aria-label="Passo ' + (passo + 1) + ' di ' + PASSI.length + '"><i style="width:' + Math.round(quota * 100) + '%"></i></div>' +
         (salta ? '<button class="bv-salta" data-bv="salta">Salta</button>' : '<span class="bv-salta-posto"></span>') +
       '</header>' +
