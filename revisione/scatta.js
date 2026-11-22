@@ -1,3 +1,4 @@
+/* LANG=it_IT.UTF-8 PROVE_ARGS=--lang=it-IT node revisione/scatta.js <cartella>: con la lingua di sistema italiana gli orari dei campi sono a 24 ore come sul telefono di un utente italiano */
 /* node scatta.js <cartella-uscita>  — foto di tutta l'app */
 'use strict';
 const http=require('http'),fs=require('fs'),path=require('path');
