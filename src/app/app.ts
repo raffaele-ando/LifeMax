@@ -4474,7 +4474,7 @@ function apriItemGiornata(k: Giorno, id: string, tipo: 'azione' | 'abitudine', o
 
   const html = '<div class="ig-ed">' +
     '<div class="abd-chi"><span>' + (isAz ? 'Attività' : ICO('refresh', 11) + ' Abitudine') + ' · ' + esc(etichettaGiorno(k)) + '</span>' +
-      (fatto ? '<span class="abd-fatta">' + ICO('check', 12) + ' Fatta</span>' : '') + '</div>' +
+      (fatto ? '<span class="abd-fatta">' + ICO('check', 13) + ' Fatta</span>' : '') + '</div>' +
     (spuntabile
       ? '<button class="btn btn-grande ' + (fatto ? 'btn-ghost' : 'btn-ok') + ' ig-fatto"><span class="ig-fatto-ico">' + ICO(fatto ? 'annulla' : 'check', 15) + '</span>' + (fatto ? 'Segna come non fatta' : 'Fatto') + '</button>'
       : '') +

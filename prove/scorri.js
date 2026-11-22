@@ -74,6 +74,14 @@ const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  
     for (let y = 300; y <= 760; y += 20) {
       const t = document.elementFromPoint(195, y);
       if (!t || !t.closest('#vista') || t.closest(vietato)) continue;
+      /* il dito non è un punto: il browser aggancia il tocco al comando più
+         vicino entro una dozzina di pixel. Un punto buono ha intorno solo
+         pagina, non pulsanti */
+      const vicini = [[0, -16], [0, 16], [-16, 0], [16, 0]].some(([dx, dy]) => {
+        const v = document.elementFromPoint(195 + dx, y + dy);
+        return !!(v && v.closest('a[href], button'));
+      });
+      if (vicini) continue;
       let n = t, lato = false;
       while (n && n !== document.body) {
         if (n.nodeType === 1 && n.scrollWidth > n.clientWidth + 2) {
