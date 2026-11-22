@@ -231,11 +231,11 @@ export default function Scheda({ id }: { id: string }) {
             {campoScad}
           </RigaSc>
         )}
-        <button className="lista-riga sc-riga sc-tocca" id="sc-pin"
-          onClick={() => { LM.appuntaBacklog(b.id); ridisegna(); }}>
+        <div className="lista-riga sc-riga">
           <span className="sc-eti">Fissa in alto</span>
-          <span className="sc-val">{b.pin ? <><Segno nome="pin" piu="sc-si" /> sì</> : 'no'}</span>
-        </button>
+          <button className={'interr' + (b.pin ? ' on' : '')} id="sc-pin" role="switch" aria-checked={b.pin ? 'true' : 'false'}
+            aria-label="Fissa in alto" onClick={() => { LM.appuntaBacklog(b.id); ridisegna(); }}><i /></button>
+        </div>
       </div>
 
       <div className="lista mt">

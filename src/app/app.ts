@@ -3170,7 +3170,7 @@ function disegnaConcentrazione(): void {
     (t.inPausa ? '<button class="btn btn-grande btn-tinta" id="conc-continuato">' + ICO('play', 18) + ' Salta la pausa</button>' : '') +
     '<button class="btn btn-ok btn-grande" id="conc-fatto">' + ICO('check', 18) + ' Fatto</button>' +
     '<button class="btn btn-mini btn-ghost" id="conc-ferma">' + ICO('fineperiodo', 15) + ' ' +
-    (t.daAvvio ? 'Termina' : 'Termina') + '</button>' +
+    'Termina sessione</button>' +
     '<div class="conc-altri">' +
     (musica ? '<button class="btn btn-mini btn-ghost" id="conc-musica">' + ICO('cuffie', 15) + ' Musica</button>' : '') +
     '<button class="btn btn-mini btn-ghost" id="conc-cambia">' + ICO('refresh', 15) + ' Cambia timer</button>' +
@@ -4679,7 +4679,7 @@ function montaGiornata(container: HTMLElement, opzioni?: OpzGriglia): void {
       /* la rassicurazione sta DENTRO il tasto, come «+10 XP» sta dentro
          «Fatto»: era una riga a sé sotto un tasto, due elementi per una cosa */
       footer = '<div class="tl-piede"><button class="btn btn-mini" id="tl-rimanda">' + ICO('rimanda', 15) +
-        (nonFatte.length === 1 ? ' Sposta 1 non fatta a ' : ' Sposta ' + nonFatte.length + ' non fatte a ') + doveVa + '</button></div>';
+        (nonFatte.length === 1 ? ' Sposta a ' + doveVa + ' quella non fatta' : ' Sposta a ' + doveVa + ' le ' + nonFatte.length + ' non fatte') + '</button></div>';
     }
   }
   if (compact && opts.controls !== false) {
@@ -5933,7 +5933,7 @@ export function statoRituale(id: string): StatoRit {
        quando ce ne sono già tre in lista è una bugia che chiede una cosa
        già fatta — il conto lo dice la riga sotto */
     var n = LM.azioniDiOggi().length;
-    return { fatto: false, testo: 'da fare', dett: n ? n + ' di 3 scelte' : '' };
+    return { fatto: false, testo: 'da fare', dett: n ? n + ' di 3' : '' };
   }
   if (id === 'registro') {
     /* la riga dice a che punto è il registro, non se «è fatto»: le cose da

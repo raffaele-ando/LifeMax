@@ -4886,10 +4886,10 @@ input[type="time"]::-webkit-datetime-edit { padding: 0; color: var(--inchiostro-
 .an-mese-griglia i { aspect-ratio: 1; border-radius: 2px; background: var(--superficie-3); }
 .an-mese-griglia i.vuota { background: none; }
 .an-mese-griglia i.poi { background: var(--superficie-2); }
-.an-mese-griglia i.l1 { background: color-mix(in srgb, var(--ok) 30%, var(--superficie-2)); }
-.an-mese-griglia i.l2 { background: color-mix(in srgb, var(--ok) 55%, var(--superficie-2)); }
-.an-mese-griglia i.l3 { background: color-mix(in srgb, var(--ok) 80%, var(--superficie-2)); }
-.an-mese-griglia i.l4 { background: var(--ok); }
+.an-mese-griglia i.l1 { background: color-mix(in srgb, var(--serie-1) 30%, var(--superficie-2)); }
+.an-mese-griglia i.l2 { background: color-mix(in srgb, var(--serie-1) 55%, var(--superficie-2)); }
+.an-mese-griglia i.l3 { background: color-mix(in srgb, var(--serie-1) 80%, var(--superficie-2)); }
+.an-mese-griglia i.l4 { background: var(--serie-1); }
 .an-mese-griglia i.oggi { outline: 1.5px solid var(--accento); outline-offset: 1px; }
 
 /* il numero accanto all'etichetta di un gruppo */
@@ -5410,15 +5410,14 @@ input.campo-velato, .q-chip-data input.campo-velato, input.sc-nascosta.campo-vel
    Giornata e Da fare a tutta larghezza. Le viste del calendario larghe
    (settimana, mese, anno) restano larghe: lì lo spazio serve. */
 @media (min-width: 700px) {
-  #vista > *, #vista .vista-oggi, #vista .att-corpo, #vista #att-corpo { max-width: 760px; margin-left: auto; margin-right: auto; width: 100%; }
+  #vista > *, #vista .vista-oggi, #vista .att-corpo, #vista #att-corpo { max-width: 680px; margin-left: auto; margin-right: auto; width: 100%; }
   #vista .vista-oggi > * { max-width: none; }
-  #vista:has(.wk-cols, .me-griglia, .an-mesi) > * { max-width: 1100px; }
 }
 @media (min-width: 700px) {
   /* dentro la colonna unica nessuno ha una larghezza sua: tutti la riempiono */
   #vista .sm-uno, #vista .focus-altre, #vista .spina, #vista .fuoco-poi, #vista .casa-sez, #vista .focus-scena > * { max-width: none; }
-  #vista > .casa, #vista > .prof-testa, #vista > .prof-numeri, #vista > .prof-righe { max-width: 760px; margin-left: auto; margin-right: auto; }
-  #vista .testa-porta { max-width: 760px; margin-left: auto; margin-right: auto; }
+  #vista > .casa, #vista > .prof-testa, #vista > .prof-numeri, #vista > .prof-righe { max-width: 680px; margin-left: auto; margin-right: auto; }
+  #vista .testa-porta { max-width: 680px; margin-left: auto; margin-right: auto; }
 }
 .solo-lettori { left: 0; top: 0; }
 
@@ -5467,3 +5466,6 @@ input.campo-velato, .q-chip-data input.campo-velato, input.sc-nascosta.campo-vel
    erano quadrati, cerchi e quadratini. Un'unica forma per «segna fatto». */
 .spunta, .lista-azione.spunta, .tl-check { border-radius: 50% !important; corner-shape: round; }
 .casa-serie small { font-size: 11px; font-weight: 600; margin-left: 3px; opacity: .8; }
+
+/* il titolo della scheda usa tutta la larghezza: andava a capo a metà */
+.sheet-testa-sx > * { align-self: stretch; max-width: 100%; }
