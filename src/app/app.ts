@@ -7821,14 +7821,16 @@ function onboarding() {
   function disegna() {
     var step = '';
     if (passo === 0) {
-      step = '<div class="card"><h2>Come ti chiami</h2>' +
-        '<label class="campo" for="ob-nome">Nome</label><input type="text" id="ob-nome" value="' + esc(scelte.nome) + '" placeholder="Il tuo nome">' +
-        '<label class="campo" for="ob-visione">In una frase, cosa vuoi ottenere</label>' +
-        '<textarea id="ob-visione" placeholder="Es. restare in salute e finire gli studi">' + esc(scelte.visione) + '</textarea>' +
-        '<div class="riga-flex mt"><button class="btn btn-primario btn-grande" id="ob-avanti">Avanti ' + ICO('arrowRight', 15) + '</button>' +
-        '<button class="btn btn-ghost" id="ob-demo">Salta e guarda un esempio</button></div></div>';
+      step = '<div class="card"><h2>Come ti chiami?</h2>' +
+        '<p class="ob-sotto">Serve solo per salutarti. Resta su questo dispositivo, o nel tuo account se accedi.</p>' +
+        '<label class="campo" for="ob-nome">Nome</label><input type="text" id="ob-nome" value="' + esc(scelte.nome) + '" placeholder="Il tuo nome" autocomplete="given-name" enterkeyhint="next">' +
+        '<label class="campo" for="ob-visione">Cosa vuoi ottenere? <span class="campo-nota">facoltativo</span></label>' +
+        '<textarea id="ob-visione" rows="2" placeholder="Es. restare in salute e finire gli studi">' + esc(scelte.visione) + '</textarea>' +
+        '<div class="riga-flex mt"><button class="btn btn-primario btn-grande" id="ob-avanti">Avanti ' + ICO('arrowRight', 15) + '</button></div>' +
+        '<p class="ob-esempio">Vuoi prima dare un’occhiata? <button class="sp-link" id="ob-demo">Prova con dati di esempio</button></p></div>';
     } else if (passo === 1) {
       step = '<div class="card"><h2>Le aree della tua vita</h2>' +
+        '<p class="ob-sotto">Tocca per togliere quelle che non ti servono. Potrai rinominarle o aggiungerne altre in qualsiasi momento.</p>' +
         '<div class="selettore-aree">' + LM.AREE_DEFAULT.map(function (a) {
           var sel = scelte.aree.indexOf(a.id) >= 0;
           return '<button data-area="' + a.id + '" class="' + (sel ? 'sel' : '') + '" style="--c-area:' + LM.SLOT_COLORI[a.slot][0] + '">' +
@@ -7838,15 +7840,19 @@ function onboarding() {
         '<button class="btn btn-ghost" id="ob-indietro">Indietro</button></div></div>';
     } else {
       step = '<div class="card"><h2>Da dove vuoi partire?</h2>' +
+        '<p class="ob-sotto">È la schermata che vedrai aprendo l’app. Le altre restano a un tocco.</p>' +
         '<div class="selettore-modi">' +
-        modo('oggi', 'target', 'Oggi', 'Una sola azione alla volta, per quando hai già tante cose in mente.') +
-        modo('plancia', 'dashboard', 'Panoramica', 'Una schermata da tenere aperta, con numeri e grafici sempre a portata.') +
-        modo('rituali', 'rituali', 'Rituali', 'Brevi routine al mattino e alla sera che ti danno una struttura fissa.') +
+        modo('oggi', 'target', 'Oggi', 'Una cosa alla volta: la prossima da fare, e il resto dopo.') +
+        modo('plancia', 'dashboard', 'Andamento', 'Numeri e grafici: come stanno andando le tue aree.') +
+        modo('rituali', 'rituali', 'Rituali', 'Brevi routine al mattino e alla sera che danno una struttura fissa.') +
         '</div>' +
+        /* INIZIARE È L'AZIONE PRINCIPALE, l'esempio no: chi ha appena scritto
+           il suo nome e scelto le sue aree non deve ritrovarsi con attività
+           inventate addosso perché ha premuto il tasto più grande */
         '<div class="riga-flex mt">' +
-        '<button class="btn btn-primario btn-grande" id="ob-fine-demo">' + ICO('sparkles', 15) + ' Parti con i dati di esempio</button>' +
-        '<button class="btn" id="ob-fine-vuoto">Parti da zero</button>' +
-        '<button class="btn btn-ghost" id="ob-indietro">Indietro</button></div></div>';
+        '<button class="btn btn-primario btn-grande" id="ob-fine-vuoto">Inizia ' + ICO('arrowRight', 15) + '</button>' +
+        '<button class="btn btn-ghost" id="ob-indietro">Indietro</button></div>' +
+        '<p class="ob-esempio">Preferisci vedere com’è piena? <button class="sp-link" id="ob-fine-demo">Inizia con dati di esempio</button></p></div>';
     }
 
     /* `ob-p0`, `ob-p1`, `ob-p2`: il passo sta scritto sul contenitore perché
@@ -7864,9 +7870,9 @@ function onboarding() {
       '</div>' +
       '<div id="ob-account" class="ob-account"></div>' +
       illoOrbita() + '</aside>' +
-      '<section class="ob-step"><div class="passi-punti">' +
-      [0, 1, 2].map(function (i) { return '<span class="' + (i === passo ? 'attivo' : '') + '"></span>'; }).join('') +
-      '</div>' + step + '</section>' +
+      '<section class="ob-step"><div class="passi-punti" aria-label="Passo ' + (passo + 1) + ' di 3">' +
+      [0, 1, 2].map(function (i) { return '<span class="' + (i <= passo ? 'attivo' : '') + '"></span>'; }).join('') +
+      '<small>' + (passo + 1) + ' di 3</small></div>' + step + '</section>' +
       '</div></div>';
 
     function modo(id: string, icona: string, nome: string, desc: string): string {
@@ -7879,6 +7885,10 @@ function onboarding() {
 
     var demo = document.getElementById('ob-demo');
     if (demo) demo.addEventListener('click', function () { fine(true); });
+    /* Invio nel nome porta avanti, come in ogni modulo */
+    var nomeIn = document.getElementById('ob-nome');
+    if (nomeIn) nomeIn.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); presa(document.getElementById('ob-avanti')).click(); } });
+    if (nomeIn && passo === 0 && window.matchMedia('(pointer: fine)').matches) nomeIn.focus();
     var avanti = document.getElementById('ob-avanti');
     if (avanti) avanti.addEventListener('click', function () {
       if (passo === 0) {
@@ -7919,7 +7929,7 @@ function onboarding() {
     location.hash = '#/' + scelte.modo;
     applicaTema();
     render();
-    toast(conDemo ? 'Tutto pronto. Esplora pure: i dati sono reali e puoi modificarli.' : 'Tutto pronto. Ti consiglio di iniziare dal piano del mattino.', 0, 'sparkles');
+    toast(conDemo ? 'Questi sono dati di esempio: li togli quando vuoi dalla striscia in alto.' : (scelte.nome ? 'Ciao ' + scelte.nome + ', tutto pronto.' : 'Tutto pronto.') + ' Comincia dal piano del giorno.', 0, 'sparkles');
   }
 
   disegna();
