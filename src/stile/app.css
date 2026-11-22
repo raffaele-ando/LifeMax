@@ -5525,3 +5525,7 @@ textarea { resize: none; field-sizing: content; max-height: 40vh; }
 }
 .wk-col-head { height: auto; min-height: 44px; }
 .wk-untimed { display: block; font-weight: 500; }
+/* l'interruttore premuto risponde al dito: il pomello si allarga un poco */
+.interr:active { filter: brightness(.94); }
+.interr:active i { transform: scale(1.08); }
+.interr.on:active i { transform: translateX(20px) scale(1.08); }
