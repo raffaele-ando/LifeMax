@@ -1513,7 +1513,10 @@ export function aggiornaNav(): void {
      (principio di prossimità), e una scritta in più è una cosa in più da
      leggere in una barra che serve a non leggere niente */
   const tre = navTre();
-  const gCorr = gruppoDi(corrente);
+  /* il Diario si apre dal Profilo e vive dentro Andamento: nella barra deve
+     restare acceso il Profilo, da dove si è arrivati e dove si torna */
+  const inProfilo = corrente === 'profilo' || (corrente === 'plancia' && schermo.sezPlancia === 'diario');
+  const gCorr = inProfilo ? gruppoDi('profilo') : gruppoDi(corrente);
   function voceGruppo(g: Porta, dim: number) {
     return '<a class="nav-item nav-ancora' + (g.id === gCorr.id ? ' attivo' : '') + '" href="#/' + presa(g.viste[0]).id + '">' +
       ICO(g.icona, dim) + '<span>' + g.nome + '</span>' + badgeInbox(g.id, s) + '</a>';
@@ -1525,6 +1528,8 @@ export function aggiornaNav(): void {
 
   /* footer sidebar: account + impostazioni */
   if (scriviSe(perId('sidebar-fondo'), footerSidebar())) wireFooterSidebar();
+  const fi = document.getElementById('fondo-impostazioni');
+  if (fi) { fi.classList.toggle('attivo', inProfilo); if (inProfilo) fi.setAttribute('aria-current', 'page'); else fi.removeAttribute('aria-current'); }
 
   /* tab bar mobile. Con le tre porte i pulsanti sono TRE, e sono tre
      destinazioni: qui sta solo quello che si tocca ogni giorno. «Altro» era

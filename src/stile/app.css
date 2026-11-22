@@ -5529,3 +5529,7 @@ textarea { resize: none; field-sizing: content; max-height: 40vh; }
 .interr:active { filter: brightness(.94); }
 .interr:active i { transform: scale(1.08); }
 .interr.on:active i { transform: translateX(20px) scale(1.08); }
+.btn-strumento-largo.attivo { background: color-mix(in srgb, var(--accento) 12%, transparent); color: var(--accento-testo); }
+/* al buio la voce attiva resta viola, non un grigio fra i grigi */
+:root[data-mode="dark"] .nav-item.attivo, :root[data-mode="dark"] .btn-strumento-largo.attivo { background: color-mix(in srgb, var(--accento) 26%, transparent); color: #fff; }
+:root[data-mode="dark"] .nav-item.attivo .ico { color: #c9c3ff; }
