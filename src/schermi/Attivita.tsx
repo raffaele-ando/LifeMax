@@ -272,6 +272,16 @@ function DaFare({ st }: { st: Stato }) {
   const tocca = (e: React.MouseEvent<HTMLDivElement>) => {
     const t = e.target;
     if (!(t instanceof Element)) return;
+    const fatta = t.closest('[data-bkfatta]');
+    if (fatta) {
+      const id = fatta.getAttribute('data-bkfatta') || '';
+      conAnnulla('Fatta.', 'check', () => {
+        const a = LM.backlogInOggi(id);
+        if (a) LM.completaAzione(a.id);
+      });
+      aggiornaNav();
+      return;
+    }
     const oggi = t.closest('[data-bkoggi]');
     if (oggi) {
       const id = oggi.getAttribute('data-bkoggi') || '';

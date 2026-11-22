@@ -4473,7 +4473,8 @@ function apriItemGiornata(k: Giorno, id: string, tipo: 'azione' | 'abitudine', o
   const durOpt = DURATE.map(function (o) { return '<option value="' + o.v + '"' + ((e.dur || '') === o.v ? ' selected' : '') + '>' + o.t + '</option>'; }).join('');
 
   const html = '<div class="ig-ed">' +
-    '<div class="abd-chi"><span>' + (isAz ? 'Attività' : ICO('refresh', 11) + ' Abitudine') + ' · ' + esc(etichettaGiorno(k)) + '</span></div>' +
+    '<div class="abd-chi"><span>' + (isAz ? 'Attività' : ICO('refresh', 11) + ' Abitudine') + ' · ' + esc(etichettaGiorno(k)) + '</span>' +
+      (fatto ? '<span class="abd-fatta">' + ICO('check', 12) + ' Fatta</span>' : '') + '</div>' +
     (spuntabile
       ? '<button class="btn btn-grande ' + (fatto ? 'btn-ghost' : 'btn-ok') + ' ig-fatto"><span class="ig-fatto-ico">' + ICO(fatto ? 'annulla' : 'check', 15) + '</span>' + (fatto ? 'Segna come non fatta' : 'Fatto') + '</button>'
       : '') +
@@ -5127,7 +5128,7 @@ function montaMese(container: HTMLElement): void {
     const ab = s.abitudini.filter(function (h) { return LM.abitudinePrevista(h, k); });
     const tot = az.length + ab.length;
     const fatte = az.filter(function (a) { return a.done; }).length + ab.filter(function (h) { return h.fatti[k]; }).length;
-    if (!fuori) { fatteMese += fatte; if (fatte) attivi++; }
+    if (!fuori) { fatteMese += az.filter(function (a) { return a.done; }).length; if (LM.giornoAttivo(k)) attivi++; }
     const daFare = az.filter(function (a) { return !a.done; });
     const punti = daFare.slice(0, 3).map(function (a) { return '<i style="background:' + LM.coloreArea(areaById(a.areaId)) + '"></i>'; }).join('');
     const scad = s.backlog.some(function (b) { return b.scadenza === k; });
@@ -7177,7 +7178,8 @@ export function attRigaHtml(b: Attivita, opts?: OpzRigaAtt): string {
     sotto.push('<span>' + esc(opts.motivo) + '</span>');
   }
 
-  var pieno = !!(opts && opts.primo);
+  /* la prima non si colora più: un «+ Oggi» pieno sembrava già premuto */
+  var pieno = false;
   /* «PORTA IN OGGI» NON È UNA SPUNTA. Stava a sinistra, quadrato, dove
      in ogni app c'è la casella per segnare fatto, e tutti lo prendevano per
      quella. Adesso è una pastiglia con scritto «Oggi», a destra, prima della
@@ -7185,7 +7187,10 @@ export function attRigaHtml(b: Attivita, opts?: OpzRigaAtt): string {
   var vaOggi = '<button class="va-oggi' + (pieno ? ' piena' : '') + '" data-bkoggi="' + b.id + '"' +
     ' aria-label="' + (isProg ? 'Porta in Oggi il prossimo passo di ' : 'Porta in Oggi ') + esc(b.testo) + '">' +
     ICO('plus', 13) + '<span>Oggi</span></button>';
-  return '<div class="lista-riga att-riga' + (b.mancata ? ' mancata-riga' : '') + '" data-bid="' + b.id + '">' +
+  /* la spunta per chi l'ha già fatta: un'attività di questa lista si può
+     chiudere anche senza passare da Oggi (i progetti si chiudono passo per passo) */
+  var spunta = isProg ? '' : '<button class="spunta-tonda" data-bkfatta="' + b.id + '" aria-label="Segna fatta ' + esc(b.testo) + '"></button>';
+  return '<div class="lista-riga att-riga' + (b.mancata ? ' mancata-riga' : '') + '" data-bid="' + b.id + '">' + spunta +
     '<button class="lista-apri" data-bkapri="' + b.id + '" aria-label="Apri ' + esc(b.testo) + '">' +
     '<span class="lista-corpo">' +
     '<span class="lista-tit">' +
@@ -7201,6 +7206,17 @@ export function attRigaHtml(b: Attivita, opts?: OpzRigaAtt): string {
 }
 
 export function wireLista(scope: ParentNode): void {
+  scope.querySelectorAll<HTMLElement>('[data-bkfatta]').forEach(function (t) {
+    t.addEventListener('click', function (ev) {
+      ev.stopPropagation();
+      const id = t.getAttribute('data-bkfatta') || '';
+      conAnnulla('Fatta.', 'check', function () {
+        const a = LM.backlogInOggi(id);
+        if (a) LM.completaAzione(a.id);
+      });
+      render();
+    });
+  });
   scope.querySelectorAll<HTMLElement>('[data-bkoggi]').forEach(function (t) {
     t.addEventListener('click', function () {
       const id = t.getAttribute('data-bkoggi') || '';

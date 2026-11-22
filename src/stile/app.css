@@ -5509,7 +5509,8 @@ textarea { resize: none; field-sizing: content; max-height: 40vh; }
 .som-fiamma small { font-size: 12.5px; color: var(--inchiostro-2); max-width: 5.5em; line-height: 1.2; }
 .nowrap { white-space: nowrap; }
 /* i campi del link si vedono come campi anche sul bianco */
-.mus-link { background: var(--superficie-2); border: 1px solid var(--bordo); border-radius: 10px; padding: 6px 10px; min-width: 0; }
+.mus-link { background: var(--superficie-1); border: 1px solid var(--bordo-forte); border-radius: 10px; padding: 6px 10px; min-width: 0; }
+:root[data-mode="dark"] .mus-link { background: var(--superficie-3); }
 /* con le notifiche bloccate gli interruttori stanno tutti a sinistra: spenti */
 .gr-spento .interr.on i { transform: none; }
 /* SU COMPUTER LA COLONNA È PIÙ LARGA, ma la stessa per tutte le pagine: la
@@ -5543,3 +5544,16 @@ textarea { resize: none; field-sizing: content; max-height: 40vh; }
   #voti-aree .voto-area { grid-template-columns: minmax(0, 1fr) auto; align-items: center; }
   #voti-aree .stelline { grid-template-columns: repeat(5, 44px); }
 }
+/* LA SPUNTA TONDA, la stessa di «Senza orario»: 44 di bersaglio, 24 di cerchio */
+.spunta-tonda { flex: none; width: 44px; height: 44px; margin: 0 -6px 0 -4px; border: 0; background: none; position: relative; cursor: pointer; border-radius: 50%; }
+.spunta-tonda::before { content: ''; position: absolute; left: 10px; top: 10px; width: 24px; height: 24px; box-sizing: border-box; border-radius: 50%; border: 2px solid var(--baseline); transition: border-color var(--t-veloce), background var(--t-veloce); }
+.spunta-tonda:hover::before { border-color: var(--ok); }
+.spunta-tonda:active::before { background: color-mix(in srgb, var(--ok) 25%, transparent); border-color: var(--ok); }
+.att-riga { align-items: center; }
+@supports (corner-shape: squircle) {
+  .spunta-tonda, .spunta-tonda::before, .gio-so-riga .tl-check, .gio-so-riga .tl-check::before { corner-shape: round; }
+}
+.abd-fatta { margin-left: 8px; color: var(--ok); font-weight: 600; display: inline-flex; align-items: center; gap: 3px; }
+/* sullo schermo scuro del timer il tasto secondario è un vetro chiaro, non un lilla che abbaglia */
+.concentra .btn-tinta { background: rgba(255, 255, 255, .12); color: #fff; border: 1px solid rgba(255, 255, 255, .18); }
+.concentra .btn-tinta .ico { color: #fff; }
