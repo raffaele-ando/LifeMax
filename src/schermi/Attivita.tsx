@@ -203,7 +203,7 @@ function listaHtml(st: Stato, query: string): string {
   }
 
   const apertoParcheggio = schermo.att.parcheggioAperto;
-  return gruppo('Importanti', ora, 'ora') +
+  return gruppo('In evidenza', ora, 'ora') +
     gruppo('Altre', poi, 'poi', { taglia: true }) +
     (parch.length
       ? '<button class="lista-eti lista-eti-btn" data-parcheggio="1" aria-expanded="' + apertoParcheggio + '">' +

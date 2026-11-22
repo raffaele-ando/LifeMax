@@ -2673,15 +2673,6 @@ export function selectAree(id: string, selezionata?: string | null, etichetta?: 
   }).join('') + '</select>';
 }
 
-/* selettore compatto per (ri)assegnare l'area di un'azione, anche a
-   distanza di tempo. Gestito da un listener delegato unico. */
-function selectAreaAzione(id: string, areaId?: string | null, cls?: string): string {
-  return '<select class="sel-area-azione ' + (cls || '') + '" data-azione-area="' + id + '" title="Cambia area" aria-label="Cambia area">' +
-    areeAttive().map(function (a) {
-      return '<option value="' + a.id + '"' + (a.id === areaId ? ' selected' : '') + '>' + esc(a.nome) + '</option>';
-    }).join('') + '</select>';
-}
-
 /* LA TESTA DI UNA SCHERMATA
    «Cosa servono i titoli se c'è già scritto nei pulsanti i nomi?» Misurato:
    su sei schermate, quattro scrivevano lo stesso nome due volte già sul
@@ -5154,16 +5145,17 @@ function montaMese(container: HTMLElement): void {
   const spostata = meseSposta ? s.azioni.find(function (a) { return a.id === meseSposta; }) : null;
   const righe = abSel.map(function (h) {
     const ar = areaById(h.areaId), o = LM.oraAbitudine(h, sel);
-    return '<div class="lista-riga me-riga' + (h.fatti[sel] ? ' fatta' : '') + '">' +
+    return { ora: o || '', html: '<div class="lista-riga me-riga' + (h.fatti[sel] ? ' fatta' : '') + '">' +
       '<button class="lista-apri" data-me-ab="' + h.id + '"><span class="me-pallino abit" style="--c-area:' + LM.coloreArea(ar) + '"></span>' +
-      '<span class="lista-corpo"><span class="lista-tit">' + esc(h.testo) + '</span><span class="lista-sub">' + ICO('refresh', 11) + ' Abitudine' + (o ? ' · ' + o : '') + '</span></span></button></div>';
+      '<span class="lista-corpo"><span class="lista-tit">' + esc(h.testo) + '</span><span class="lista-sub">' + ICO('refresh', 11) + ' Abitudine' + (o ? ' · ' + o : '') + '</span></span></button></div>' };
   }).concat(azSel.map(function (a) {
     const ar = areaById(a.areaId);
-    return '<div class="lista-riga me-riga' + (a.done ? ' fatta' : '') + '">' +
+    return { ora: a.ora || '', html: '<div class="lista-riga me-riga' + (a.done ? ' fatta' : '') + '">' +
       '<button class="lista-apri" data-me-az="' + a.id + '"><span class="me-pallino" style="--c-area:' + LM.coloreArea(ar) + '"></span>' +
       '<span class="lista-corpo"><span class="lista-tit">' + esc(a.testo) + '</span><span class="lista-sub">' + esc(ar.nome) + (a.ora ? ' · ' + a.ora : '') + '</span></span></button>' +
-      (a.done ? '' : '<button class="sp-link me-sposta" data-me-sposta="' + a.id + '">Sposta</button>') + '</div>';
-  })).join('');
+      (a.done ? '' : '<button class="sp-link me-sposta" data-me-sposta="' + a.id + '">Sposta</button>') + '</div>' };
+  })).sort(function (x, y) { return (x.ora || '99') < (y.ora || '99') ? -1 : (x.ora || '99') > (y.ora || '99') ? 1 : 0; })
+    .map(function (x) { return x.html; }).join('');
 
   container.innerHTML = orizzNav('mese', schermo.giornataAncora, null, (MESI[mese] || '') + ' ' + anno) +
     (spostata
@@ -5513,8 +5505,10 @@ function eventoDiarioHtml(ev: VoceDiario): string {
     testo = 'Annotato · <b>' + esc(ev.testo) + '</b>';
   }
   /* per le azioni si può riassegnare l'area anche a distanza di giorni */
-  if (ev.tipo === 'azione' && ev.id) {
-    testo += ' <span class="diario-cambia">' + selectAreaAzione(ev.id, ev.areaId, 'mini') + '</span>';
+  /* il diario racconta, non si modifica da qui: l'area si legge e basta
+     (era un menu a tendina in ogni riga, letto come «Priorità: <area>») */
+  if (ev.tipo === 'azione' && ev.id && ev.areaId) {
+    testo += ' <span class="diario-area">· ' + esc(areaById(ev.areaId).nome) + '</span>';
   }
   /* Qui si annulla. Il diario è la lista di quello che hai fatto, quindi è
      il posto dove disfarlo: prima si poteva solo nei sette secondi del
@@ -5830,9 +5824,13 @@ export function eroePlancia() {
       '</div>' +
       '<div class="som-sett">' + sett.map(function (g) {
         const d = new Date(g.data + 'T12:00:00');
-        return '<span class="som-g' + (g.valore > 0 ? ' fatto' : '') + (g.data === oggiK ? ' oggi' : '') + '">' +
-          '<i>' + (g.valore > 0 ? ICO('check', 15) : '') + '</i><small>' + (INIZ[d.getDay()] || '') + '</small></span>';
-      }).join('') + '</div>';
+        return '<span class="som-g' + (LM.giornoAttivo(g.data) ? ' fatto' : '') + (g.data === oggiK ? ' oggi' : '') + '">' +
+          '<i>' + (LM.giornoAttivo(g.data) ? ICO('check', 15) : '') + '</i><small>' + (INIZ[d.getDay()] || '') + '</small></span>';
+      }).join('') + '</div>' +
+      /* la serie regge un giorno vuoto: se nella striscia c'è un buco, si dice
+         perché il numero non si è azzerato */
+      (st.corrente > 1 && sett.some(function (g) { return g.data !== oggiK && !LM.giornoAttivo(g.data); })
+        ? '<div class="som-nota">Un giorno vuoto non interrompe la serie: due di fila sì.</div>' : '');
   }
   return { classi: classi, dentro: html };
 }
@@ -7008,6 +7006,7 @@ function ritualeSettimana(corpo: HTMLElement): void {
 
   corpo.innerHTML = '<div class="card">' +
     testaRituale('unaSettimana', 'Bilancio della settimana', 'Dieci minuti.') +
+    '<div class="stat-periodo">Ultimi 7 giorni</div>' +
     '<div class="eroe-statistiche" style="justify-content:center;margin-bottom:16px">' +
     '<div class="stat"><span class="stat-val">' + xpSett + '</span><span class="stat-eti">XP guadagnati</span></div>' +
     '<div class="stat"><span class="stat-val">' + azioniSett + '</span><span class="stat-eti">attività fatte</span></div>' +

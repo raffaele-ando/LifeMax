@@ -5533,3 +5533,13 @@ textarea { resize: none; field-sizing: content; max-height: 40vh; }
 /* al buio la voce attiva resta viola, non un grigio fra i grigi */
 :root[data-mode="dark"] .nav-item.attivo, :root[data-mode="dark"] .btn-strumento-largo.attivo { background: color-mix(in srgb, var(--accento) 26%, transparent); color: #fff; }
 :root[data-mode="dark"] .nav-item.attivo .ico { color: #c9c3ff; }
+.som-nota { margin-top: 8px; font-size: 12.5px; color: var(--inchiostro-2); text-align: center; }
+.stat-periodo { text-align: center; font-size: 12.5px; color: var(--inchiostro-2); margin: 4px 0 6px; }
+.diario-area { color: var(--inchiostro-2); font-size: 12.5px; white-space: nowrap; }
+/* voto per area: sul telefono il nome sopra e i cinque tasti a tutta riga;
+   da tablet in su nome e tasti sulla stessa riga */
+#voti-aree .stelline button { width: auto; height: 40px; }
+@media (min-width: 560px) {
+  #voti-aree .voto-area { grid-template-columns: minmax(0, 1fr) auto; align-items: center; }
+  #voti-aree .stelline { grid-template-columns: repeat(5, 44px); }
+}
