@@ -462,13 +462,23 @@ async function primaSincronizzazione(uid: string): Promise<void> {
        Non si decide al posto suo: chi ha caricato l'esempio può averci
        lavorato sopra per settimane, e l'app non ha modo di saperlo. */
     const sostituendo = eraEsempio;
-    await backupRemoto(uid, dati);
     window.LM.backup(sostituendo ? 'prima-di-togliere-i-dati-di-esempio' : 'prima-di-unire-col-cloud');
     applicaRemoto(dati, false, sostituendo);
     const dopo = window.LM.ricchezza(window.LM.snapshot());
     log('info', sostituendo ? 'tenuti quelli del cloud' : 'uniti', 'adesso ' + dopo + ' elementi (erano ' + localR + ' qui e ' + remoteR + ' nel cloud)');
-    opCede('lettura iniziale', 'scrittura');
-    await push(uid);
+    /* SE L'UNIONE NON HA CAMBIATO NIENTE, NON SI RISCRIVE. Prima a ogni
+       apertura partivano due scritture da 115 KB (la copia di sicurezza del
+       documento e il documento stesso) anche con i due lati identici: il
+       registro di un telefono le mostrava a ogni avvio. Si confrontano i
+       contenuti senza l'ora di modifica, con le chiavi in ordine. */
+    if (!sostituendo && uguali(window.LM.snapshotPerCloud(), remObj)) {
+      opFine('lettura iniziale', 'saved');
+      log('info', 'il cloud ha già tutto: niente da scrivere');
+    } else {
+      await backupRemoto(uid, dati);
+      opCede('lettura iniziale', 'scrittura');
+      await push(uid);
+    }
     try { localStorage.setItem('lm-account-unito', uid); } catch { /* pazienza */ }
     /* l'esempio entrato nell'account con le versioni di prima: si offre di toglierlo */
     const restoEsempio = window.LM.contaEsempio();
@@ -528,6 +538,20 @@ async function backupRemoto(uid: string, docData: DatiDocumento): Promise<void> 
       data: docData.data, updatedAt: docData.updatedAt || 0, salvato: Date.now()
     });
   } catch (e) { console.warn('LifeMax: backup cloud non riuscito.', messaggio(e)); }
+}
+
+/* due stati uguali a meno dell'ora dell'ultima modifica */
+function canonico(v: unknown): unknown {
+  if (Array.isArray(v)) return v.map(canonico);
+  if (v && typeof v === 'object') {
+    const o = v as Record<string, unknown>, fuori: Record<string, unknown> = {};
+    Object.keys(o).sort().forEach(function (k) { if (k !== 'updatedAt' && o[k] !== undefined) fuori[k] = canonico(o[k]); });
+    return fuori;
+  }
+  return v;
+}
+function uguali(a: unknown, b: unknown): boolean {
+  try { return JSON.stringify(canonico(a)) === JSON.stringify(canonico(b)); } catch { return false; }
 }
 
 function parseDoc(d: DatiDocumento): unknown {

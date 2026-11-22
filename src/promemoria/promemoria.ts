@@ -172,11 +172,23 @@ function daBase64Url(s: string): Uint8Array {
    schermo non cambiava niente. Il browser però il registro ce l'ha, e lo
    dà a chi lo chiede. Chiederlo costa un giro di promessa e rimette a
    posto `reg` per la volta dopo. */
+/* UNA REGISTRAZIONE SENZA WORKER ATTIVO NON SA MOSTRARE NOTIFICHE.
+   All'avvio, quando è appena uscita una versione nuova, il worker vecchio è
+   stato sostituito e il nuovo si sta ancora installando: `showNotification`
+   lì rifiuta con «No active registration» (visto nel registro di un
+   telefono). Si aspetta che sia pronto — al massimo qualche secondo. */
+function attivo(r: ServiceWorkerRegistration | null): Promise<ServiceWorkerRegistration | null> {
+  if (!r || r.active) return Promise.resolve(r);
+  return Promise.race([
+    navigator.serviceWorker.ready.then(function (p) { reg = p; return p; }),
+    new Promise<null>(function (ok) { setTimeout(function () { ok(null); }, 8000); })
+  ]).catch(function () { return null; });
+}
 function registro(): Promise<ServiceWorkerRegistration | null> {
-  if (reg) return Promise.resolve(reg);
+  if (reg) return attivo(reg);
   if (!('serviceWorker' in navigator)) return Promise.resolve(null);
   return navigator.serviceWorker.getRegistration()
-    .then(function (r) { if (r) reg = r; return r || null; })
+    .then(function (r) { if (r) reg = r; return attivo(r || null); })
     .catch(function () { return null; });
 }
 
@@ -394,7 +406,7 @@ function scriviFissa(): boolean {
       lang: 'it', tag: 'lifemax-stato', renotify: false, silent: true, requireInteraction: true,
       data: { vai: '#/oggi', tipo: 'stato' }
     } as NotificationOptions & { renotify: boolean; requireInteraction: boolean });
-  });
+  }).catch(function () { /* senza worker la nota fissa aspetta il prossimo giro */ });
   return true;
 }
 function togliFissa(): void {
@@ -532,7 +544,10 @@ function locale(titolo: string, corpo?: string, vai?: string): boolean {
     body: corpo || '', icon: 'icone/icona-192.png', badge: 'icone/badge-96.png', lang: 'it',
     tag: 'lifemax-locale', data: { vai: vai || '#/oggi' }
   };
-  if (reg && reg.showNotification) { void reg.showNotification(titolo, opz); return true; }
+  if (reg && reg.active && reg.showNotification) {
+    reg.showNotification(titolo, opz).catch(function () { senzaWorker(titolo, corpo); });
+    return true;
+  }
   /* vedi `registro()`: il browser ce l'ha anche quando noi non ce l'abbiamo */
   /* IL SERVICE WORKER C'È ANCHE QUANDO NON CE L'ABBIAMO IN MANO.
      `reg` lo riempie una promessa che parte all'avvio, e finché quella non

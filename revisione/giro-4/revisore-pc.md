@@ -413,3 +413,141 @@
 ## sonno-pasti__pc-dark.png
 - [media] sonno-pasti__pc-dark.png — stessi problemi del chiaro (terzo componente diverso per i pasti, finestra promemoria non spiegata, orari allineati a destra).
 
+## promemoria__pc-light.png
+- [media] promemoria__pc-light.png — interruttori disabilitati con pallino a destra ma binario grigio: non si capisce se sono accesi o spenti (resteranno così quando le notifiche verranno sbloccate?) — mostrare lo stato reale in versione attenuata (viola chiaro se acceso).
+- [media] promemoria__pc-light.png — nomi dei promemoria non allineati ai rituali: qui «Priorità del giorno» (16:30), che non esiste nell'elenco Rituali; mancano «Sonno e pasti» e «Bilancio della settimana» — usare gli stessi nomi e lo stesso elenco.
+- [bassa] promemoria__pc-light.png — riga «Dalle 23:00 alle 07:00»: «Dalle» rientrato di 16 px in più delle altre etichette — allineare o usare un rientro chiaro con linea guida.
+- [bassa] promemoria__pc-light.png — il riquadro «Notifiche bloccate» spiega bene il problema ma non offre un'azione — aggiungere «Come riattivarle» con istruzioni per il browser in uso.
+
+## promemoria__pc-dark.png
+- [bassa] promemoria__pc-dark.png — riquadro d'avviso marrone scuro con icona grigia: in scuro non comunica «attenzione» — bordo/icona ambra.
+- [media] promemoria__pc-dark.png — stessi problemi del chiaro (stato degli interruttori disabilitati illeggibile, nomi diversi dai rituali).
+
+## diario__pc-light.png
+- [alta] diario__pc-light.png — barra laterale: è evidenziato «Andamento» mentre il collegamento indietro dice «‹ Profilo» — l'utente non sa dove si trova; evidenziare la sezione corretta (Profilo) o rendere il Diario parte di Andamento in modo coerente.
+- [media] diario__pc-light.png — «‹ Profilo» è a x≈293, fuori dalla colonna del contenuto (che parte a 424) — allinearlo al bordo sinistro della colonna, sopra il titolo.
+- [media] diario__pc-light.png — incoerenza di navigazione: Diario è una pagina intera, mentre Aree, Sonno e pasti, Promemoria e Impostazioni (dallo stesso elenco del Profilo) si aprono in finestre — scegliere un modello unico.
+- [media] diario__pc-light.png — icona «annulla» (↶) su ogni riga senza etichetta né tooltip: non si capisce se annulla l'azione, la elimina o la ripristina — tooltip «Annulla questa azione» e conferma.
+- [media] diario__pc-light.png — select «Relazioni & Sociale ⌄» con bordo dentro le righe del diario: controllo di modifica che compare in un registro di sola lettura, con stile diverso da tutte le altre pillole area — mostrarlo come etichetta, modificabile al passaggio del mouse.
+- [bassa] diario__pc-light.png — «⭐Priorità» attaccato al titolo senza spazio e con stella in testo — usare la pillola «Priorità» del rituale.
+- [bassa] diario__pc-light.png — testi: «Annotato» (maschile) e «Completata» (femminile) mescolati; «focus» inglese accanto a «energia» e «umore» — «Annotata/Completata» o forme neutre; «concentrazione».
+- [bassa] diario__pc-light.png — orari e icona ↶ allineati più in basso della prima riga di testo (~8 px) — allineamento alla prima riga.
+
+## diario__pc-dark.png
+- [alta] diario__pc-dark.png — stessi problemi del chiaro: «Andamento» evidenziato con «‹ Profilo» come ritorno, collegamento indietro fuori colonna, icone ↶ senza etichetta, select area nel registro.
+- [bassa] diario__pc-dark.png — la riga «Regalo per il compleanno di mamma (tra 3 settimane!)» va a capo a ~930 px lasciando ~70 px vuoti prima delle icone, mentre altre righe arrivano a ~995 — larghezza massima del testo incoerente tra le righe.
+
+## timer-scelta__pc-light.png
+- [media] timer-scelta__pc-light.png — la finestra «Timer» non dice per quale attività parte (Ripasso flashcard) — sottotitolo con il nome dell'attività.
+- [media] timer-scelta__pc-light.png — «Avvio rapido» e «Sessione» non sono spiegati: la differenza (5 min estendibili vs 25 min fissi) si capisce solo dalle impostazioni — una riga di descrizione sotto ogni voce.
+- [bassa] timer-scelta__pc-light.png — nessuna opzione «ricorda la scelta» malgrado l'impostazione «Timer predefinito · Chiedi sempre» esista — collegamento rapido «Usa sempre questo».
+- [bassa] timer-scelta__pc-light.png — «nessun limite» minuscolo, gli altri valori sono numeri — «Senza limite».
+
+## timer-scelta__pc-dark.png
+- [bassa] timer-scelta__pc-dark.png — separatori tra le voci invisibili e il velo lascia molto leggibile la pagina dietro: la finestra si stacca poco — separatori più chiari, velo più scuro.
+- [media] timer-scelta__pc-dark.png — stessi problemi del chiaro (attività non indicata, voci non spiegate).
+
+## timer-concentrazione__pc-light.png
+- [media] timer-concentrazione__pc-light.png — in tema chiaro lo schermo di concentrazione è nero (scelta voluta), ma il pulsante «Pausa» usa il lilla chiarissimo del tema chiaro: su nero è un blocco abbagliante che domina più del timer — usare i colori del tema scuro in questa schermata (pulsante scuro con bordo).
+- [media] timer-concentrazione__pc-light.png — tre modi di uscire senza differenze chiare: × in alto a destra, «Termina sessione», «Fatto» — spiegare (× = riduci? Termina = interrompi senza segnare?) o ridurre a due azioni.
+- [bassa] timer-concentrazione__pc-light.png — «Pomodoro · blocco 1» senza totale — «blocco 1 di 4».
+- [bassa] timer-concentrazione__pc-light.png — icona di «Termina sessione» è un calendario con ×, la stessa di «Termina l'abitudine»: metafora sbagliata — icona stop (■).
+- [bassa] timer-concentrazione__pc-light.png — su computer mancano le scorciatoie da tastiera (Spazio = pausa, Invio = fatto, Esc = chiudi) — mostrarle in piccolo.
+
+## timer-concentrazione__pc-dark.png
+- [bassa] timer-concentrazione__pc-dark.png — anello di avanzamento (quadrato arrotondato) grigio scurissimo su nero: a 25:00 sembra solo una cornice decorativa — traccia leggermente più chiara e avanzamento in accento ben visibile.
+- [media] timer-concentrazione__pc-dark.png — stessi problemi del chiaro (tre uscite ambigue, «blocco 1» senza totale, icona «Termina sessione»). In scuro il pulsante «Pausa» è corretto: conferma che nel tema chiaro va riusato questo stile.
+
+## cattura__pc-light.png
+- [alta] cattura__pc-light.png — finestra «Scrivi un pensiero» senza pulsante per salvare: c'è solo «Chiudi», che fa temere di perdere il testo; non c'è indicazione che si salva con Invio — pulsante «Salva» (o suggerimento «Invio per salvare · Esc per chiudere») e chiarire cosa fa «Chiudi».
+- [media] cattura__pc-light.png — nomi diversi per la stessa funzione: «Aggiungi una nota» (barra laterale), «Scrivi un pensiero…» (qui), e il risultato finisce in «Da sistemare» come «Annotato» — un solo nome («Nota veloce») e dire dove finisce («Finisce in Da sistemare»).
+- [bassa] cattura__pc-light.png — la linea divisoria non arriva ai bordi (rientrata di ~5 px a sinistra e destra) — a tutta larghezza o allineata al padding del testo.
+- [bassa] cattura__pc-light.png — fondo sfocato qui, mentre le altre finestre usano un velo scuro senza sfocatura — stesso trattamento per tutte le finestre.
+- [bassa] cattura__pc-light.png — il campo vuoto non mostra un cursore/focus evidente — anello di focus o cursore visibile per confermare che si può scrivere subito.
+
+## cattura__pc-dark.png
+- [alta] cattura__pc-dark.png — come nel chiaro: nessun pulsante di salvataggio, solo «Chiudi».
+- [bassa] cattura__pc-dark.png — la sfocatura del fondo lascia un alone rettangolare visibile attorno alla colonna centrale (bordi netti a x≈400 e x≈1130) — sfocatura uniforme su tutta la pagina.
+
+## menu-oggi-avatar__pc-light.png
+- [media] menu-oggi-avatar__pc-light.png — il clic sull'avatar «R» porta direttamente alla pagina Profilo, identica a «Profilo e impostazioni» della barra laterale: due ingressi per la stessa destinazione e nessun menu — su computer togliere l'avatar o farne un menu rapido (tema, impostazioni, profilo).
+- [media] menu-oggi-avatar__pc-light.png — dopo il clic nessuna voce della barra laterale è evidenziata (né «Oggi» da cui si arriva, né «Profilo e impostazioni») — evidenziare «Profilo e impostazioni».
+
+## menu-oggi-avatar__pc-dark.png
+- [media] menu-oggi-avatar__pc-dark.png — stessi problemi del chiaro: l'avatar apre la stessa pagina della voce laterale e nessuna voce laterale risulta attiva.
+
+## Riassunto
+
+Revisionati 82 screenshot (computer 1280×800, chiaro e scuro). Ci sono difetti reali. Qui sotto sono raggruppati per tema e in ordine di gravità.
+
+### ALTA
+1. **Numeri senza etichetta o in contraddizione tra loro**
+   - Andamento: «🔥 38» e «65% · 81 di 124» non dicono cosa sono, né su quale periodo. Il Profilo ha già le etichette giuste da riusare: «giorni di fila» e «fatte negli ultimi 30 giorni».
+   - Andamento: la serie dice «38 giorni di fila», ma nella riga degli ultimi 7 giorni il venerdì è vuoto.
+   - Settimana: «17 ago +4», «+1» senza spiegazione. Anno: «7 / 25 / 17» in verde senza etichetta.
+   - Agosto ha 17 giorni attivi nella vista Anno e 18 nella vista Mese. Le attività fatte sono 109 nel Profilo e 82 nella vista Anno 2026.
+2. **La vista Settimana è rotta su desktop**: il titolo dice «17–23 ago» ma le colonne sono solo Lun–Ven. Le colonne stanno nei 680 px centrali, quindi i titoli vengono troncati («Camminata /...») mentre ai lati restano ~180 px vuoti.
+3. **«Scrivi un pensiero» (aggiunta di una nota)**: non c'è un pulsante per salvare, solo «Chiudi», e non c'è nessuna indicazione su Invio o Esc.
+4. **Navigazione laterale sbagliata o assente**: nel Diario è evidenziato «Andamento» mentre il ritorno dice «‹ Profilo». In Profilo e nelle pagine aperte dall'avatar nessuna voce è evidenziata. L'avatar «R» e «Profilo e impostazioni» portano alla stessa pagina.
+5. **Barra laterale non a tutta altezza durante il trascinamento** (trascinamento-in-corso): sotto y≈740 si vede il fondo della pagina e le voci in basso salgono. Nello stesso stato la zona «Togli l'orario» sborda oltre la colonna del contenuto.
+
+### MEDIA
+6. **Lo stesso componente cambia forma da una schermata all'altra**
+   - Casella «segna fatto»: cerchio a sinistra (Adesso), quadrato (Senza orario), quadratino colorato (Mese), cerchio grande a destra (Abitudini). Nell'elenco Da fare non c'è proprio.
+   - Area: pillola viola, pillola verde, testo con ⌄, select nativo, select con bordo nel Diario.
+   - Sonno e pasti si compilano in tre modi diversi: campi più select nativi (Giornata), sì/no (Rituale), pillole con × (Profilo).
+   - Scala 1–5: grandi riquadri nel check-in, quadratini grigi in Fine giornata.
+   - Campi di testo: bianchi con bordo oppure grigi senza bordo.
+   - Pillole non selezionate: grigie oppure bianche, anche dentro la stessa finestra.
+   - Elimina: riga rossa con icona oppure pulsante centrato.
+   - Chiusura di un rituale: «Salva», «Salva» + «Fatto», «Registra».
+7. **Controlli nativi non stilizzati**: i `<select>` in Da sistemare, Nuova attività (più alto delle pillole accanto) e nel pannello sonno della Giornata, e la maniglia di ridimensionamento nelle aree di testo (Bilancio della settimana, Scheda scoperta).
+8. **Lo spazio del desktop non è usato**: tutto sta in una colonna da ~680 px.
+   - Le finestre di dettaglio sono larghe 460 px: i titoli vanno a capo e serve scorrere molto.
+   - Le impostazioni sono finestre annidate e cambiano posizione a ogni sotto-pagina.
+   - In Fine giornata nome dell'area e scala 1–5 stanno su due righe.
+   - I cerchi dei giorni della nuova abitudine sono sparsi su tutta la larghezza.
+   - La scheda «Costanza» è vuota per metà.
+   - Rituali e Abitudini lasciano vuoti due terzi dello schermo.
+9. **Mancano legende e assi**: anelli e pallini del Mese, intensità della mappa Anno, stati dei giorni nel calendario dell'abitudine (che non dice nemmeno il mese), grafico dell'esperimento senza date e con le etichette delle medie sopra i punti, «1 di 3» / «1 di 4» negli elenchi, «🔥3» sulle abitudini, «1 di 2» in Adesso, «Backup e ripristino · 1».
+10. **Testi italiani ambigui o poco naturali**:
+    - «Sposta a domani quella non fatta», «Se prosegui, altri», «Pausa lunga dopo 4 blocchi · Nessuna», «Non ce l'ho fatta», «Orari abituali», «Come sempre · 23:30–07:30» (sembra un valore ma è un'azione), «Promemoria · bloccati», «Salvala in «Funziona»», «Un minuto», «4 record».
+    - Livelli di prova incoerenti tra loro: «misurato / lo noto ogni volta / notato una volta».
+    - «Annotato» accanto a «Completata».
+    - Parole inglesi: «focus», «XP».
+    - Maiuscole incoerenti in pillole e valori: «ogni giorno» contro «Domani», «Automatica» contro «automatico».
+11. **Nomi incoerenti per lo stesso concetto**: «Pianifica la giornata» / «Piano del giorno»; «Priorità del giorno» nei promemoria non esiste tra i rituali; «Fissa in alto» / «Importanti» / «Priorità»; «Aggiungi una nota» / «Scrivi un pensiero».
+12. **Stati e azioni poco chiari**:
+    - Scheda di un'attività fatta: lo stato non viene dichiarato.
+    - Check-in già «fatto» ma con ancora «Registra +3 XP».
+    - Rituale «da fare» con «2 di 3».
+    - Il badge «1» su Rituali non si spiega.
+    - Il primo «+ Oggi» è sempre pieno, gli altri no.
+    - Le icone ↶ del Diario e gli interruttori delle Aree non hanno etichetta.
+    - Gli interruttori disabilitati dei Promemoria non mostrano se sono accesi o spenti.
+    - Tre uscite ambigue dal timer: ×, «Termina sessione», «Fatto».
+13. **Azioni distruttive mal collocate**: «Termina l'abitudine» sta tra due azioni innocue, «Scarta» ha lo stesso peso di «Da fare», cestini piccoli sono accanto a interruttori e calendari, «Rimuovi dati di esempio» ha l'icona «scintille».
+14. **Raggruppamenti nelle Impostazioni**: le preferenze stanno sotto «Account», Suoni e Vibrazione sotto «Aspetto» (e Vibrazione su desktop non serve), «Registro tecnico» sotto «Guida». In Musica i campi sono quasi invisibili e le etichette schiacciate contro il bordo.
+
+### BASSA
+15. **Tema scuro**:
+    - Gli stati selezionati (voce laterale, schede segmentate, «Auto») sono grigi e sembrano disabilitati. In chiaro le stesse sottoschede sono viola.
+    - Alcune schede hanno il bordo e altre no.
+    - Contrasto basso per: caselle di spunta nei blocchi colorati, giorni di luglio e numeri non previsti, icone delle aree, cella di oggi nella vista Anno, separatori, interruttori spenti, pulsanti «Salva» e «Registra» tenui.
+    - Le finestre si staccano poco dal velo.
+16. **Tema chiaro**:
+    - Velo delle finestre troppo leggero.
+    - La pillola «Priorità» ha testo bianco su lilla chiaro.
+    - Nello schermo nero del timer il pulsante «Pausa» usa il lilla chiaro e abbaglia.
+    - Interruttori spenti quasi invisibili.
+17. **Dettagli di allineamento e spaziatura**:
+    - Etichetta «10:30» sopra i blocchi.
+    - Riga opzioni di Nuova attività rientrata di 12 px.
+    - Statistiche del Bilancio non allineate.
+    - «‹ Profilo» fuori dalla colonna.
+    - Intestazioni fisse delle finestre senza ombra, con il contenuto tagliato sotto.
+    - «Dalle» rientrato.
+    - Orari allineati a destra dentro le pillole.
+    - Formato delle durate incoerente: «8h», «1 h 30», «45 min».
+    - Frecce di navigazione diverse tra Giorno e Settimana.
+    - Su desktop mancano le scorciatoie da tastiera (smistamento, timer).

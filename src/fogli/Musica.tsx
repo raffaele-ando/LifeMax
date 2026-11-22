@@ -16,7 +16,7 @@ function Campo({ id, eti, val, onSalva }: { id: string; eti: string; val: string
       <label className="gr-eti" htmlFor={id}>{eti}</label>
       <span className="gr-valori mus-valori">
         <input key={val} id={id} type="url" inputMode="url" className="mus-link" defaultValue={val}
-          placeholder="Incolla il link" autoComplete="off"
+          placeholder="Link della playlist" autoComplete="off"
           onBlur={(e) => {
             const t = e.target.value.trim();
             if (t && !buono(t)) { toast('Link non valido.', 0, 'x'); return; }

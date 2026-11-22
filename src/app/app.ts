@@ -4705,7 +4705,7 @@ function montaGiornata(container: HTMLElement, opzioni?: OpzGriglia): void {
       /* la rassicurazione sta DENTRO il tasto, come «+10 XP» sta dentro
          «Fatto»: era una riga a sé sotto un tasto, due elementi per una cosa */
       footer = '<div class="tl-piede"><button class="btn btn-mini" id="tl-rimanda">' + ICO('rimanda', 15) +
-        (nonFatte.length === 1 ? ' Sposta a ' + doveVa + ' quella non fatta' : ' Sposta a ' + doveVa + ' le ' + nonFatte.length + ' non fatte') + '</button></div>';
+        (nonFatte.length === 1 ? ' Rimanda a ' + doveVa + ' l’attività rimasta' : ' Rimanda a ' + doveVa + ' le ' + nonFatte.length + ' attività rimaste') + '</button></div>';
     }
   }
   if (compact && opts.controls !== false) {
@@ -6333,6 +6333,21 @@ function ritualeRegistro(corpo: HTMLElement): void {
   var bn = corpo.querySelector<HTMLElement>('#blocco-notte');
   if (bn) wireNotte(bn, null);
   var br = corpo.querySelector<HTMLElement>('#blocco-recupero');
+  /* UN SOLO «FATTO». Il blocco del sonno qui non ha il suo «Salva»: gli orari
+     scritti si registrano col tasto in fondo, insieme ai pasti */
+  var salvaNotte = corpo.querySelector<HTMLElement>('#notte-salva');
+  var fine = corpo.querySelector<HTMLElement>('#rec-fine');
+  if (salvaNotte && fine && bn) {
+    salvaNotte.hidden = true;
+    fine.addEventListener('click', function () {
+      var so = bn.querySelector<HTMLInputElement>('#notte-sonno'), sv = bn.querySelector<HTMLInputElement>('#notte-sveglia');
+      var on = bn.querySelector<HTMLElement>('#notte-prec .q-chip.on');
+      if (so && sv && (so.value || sv.value)) {
+        LM.registraNotte(LM.todayKey(), { sonno: so.value ? comeOra(so.value) : null, sveglia: sv.value ? comeOra(sv.value) : null,
+          prec: on && on.getAttribute('data-prec') === 'preciso' ? 'preciso' : 'circa' });
+      }
+    }, true);
+  }
   /* «Ho finito» chiude il rituale: il lavoro è fatto, la riga dice «fatto» */
   if (br) wireRecupero(br, function () {
     if (schermo.ritualiAperti) delete schermo.ritualiAperti['registro'];
@@ -6927,7 +6942,7 @@ function ritualeSera(corpo: HTMLElement): void {
        una cosa andata bene e un ostacolo») era l'indice di una pagina lunga
        mezzo schermo. Resta il tempo che ci vuole, che nessun campo dice. */
     testaRituale('moon', 'Fine giornata', 'Due minuti.') +
-    '<label class="campo">Com’è andata, area per area? <span class="campo-nota">1 = male · 5 = benissimo</span></label>' +
+    '<label class="campo">Com’è andata, area per area? <span class="campo-nota"><span class="nowrap">1 = male</span> · <span class="nowrap">5 = benissimo</span></span></label>' +
     '<div id="voti-aree">' + ordinate.map(function (a) {
       return '<div class="voto-area" data-area="' + a.id + '" style="--c-area:' + LM.coloreArea(a) + '">' +
         '<span class="nome">' + ICO(a.icona, 15) + ' ' + esc(a.nome) + '</span>' +
