@@ -393,3 +393,152 @@
 - [bassa] giornata-anno__pc-dark.png — «1874» — manca il separatore delle migliaia italiano — «1.874».
 - [bassa] giornata-anno__pc-dark.png — celle vuote passate e future — stesso grigio (#2a2a2a) anche in scuro; in agosto le future sono appena più scure — differenziarle chiaramente.
 - [bassa] giornata-anno__pc-dark.png — numeri verdi 7/25/17 in alto a destra — verde scuro 11 px su grigio: contrasto basso e senza etichetta.
+
+## giornata-sonno-aperto__pc-dark.png
+- [alta] giornata-sonno-aperto__pc-dark.png — select durata dei pasti — testo tagliato «15 mi⌄», «45 mi⌄»: il select nativo è troppo stretto per il valore — allargare (min 84 px) o usare il componente pillola dell'app.
+- [alta] giornata-sonno-aperto__pc-dark.png — campi «11:30 PM», «07:30 AM», «08:00 AM», «01:00 PM», «08:00 PM» — formato 12 ore, mentre la riga sopra dice «23:30 → 07:30» — 24 h.
+- [media] giornata-sonno-aperto__pc-dark.png — campi «A letto» e «Sveglia» larghi 390 px ciascuno per 5 caratteri, mentre gli orari dei pasti sono 95 px allineati a destra: due misure per lo stesso tipo di campo nello stesso pannello — campi ora di larghezza fissa (~100 px) allineati in colonna.
+- [media] giornata-sonno-aperto__pc-dark.png — terza interfaccia diversa per gli stessi dati (qui input nativi + cestini; nel Profilo pillole + ×; nel rituale sì/no/orologio) — un solo componente «sonno e pasti» riusato.
+- [media] giornata-sonno-aperto__pc-dark.png — «Ripristina» e «Ritmo di base» — link affiancati senza spiegazione: non si capisce la differenza né cosa ripristinano — «Torna agli orari abituali» e «Modifica orari abituali…».
+- [bassa] giornata-sonno-aperto__pc-dark.png — controlli nativi in scuro (input con bordo grigio, frecce select di sistema) — stile diverso dal resto dell'interfaccia.
+
+## giornata-scheda-blocco__pc-dark.png
+- [media] giornata-scheda-blocco__pc-dark.png — finestra in scuro — superficie quasi dello stesso grigio della pagina e velo di sfondo debolissimo: la finestra si stacca solo per un bordo sottile, la pagina dietro resta leggibilissima e distrae — velo più scuro (60–70% nero) e superficie della finestra più chiara (elevazione) in scuro.
+- [media] giornata-scheda-blocco__pc-dark.png — «09:30 AM» — formato 12 ore (come nel chiaro).
+- [bassa] giornata-scheda-blocco__pc-dark.png — pulsanti × grigi dentro le pillole — grigio chiaro su grigio medio, icona nera piccola: si leggono male — × più grande con contrasto 3:1.
+- [bassa] giornata-scheda-blocco__pc-dark.png — stessi difetti di struttura del chiaro (titolo che va a capo, «Togli la spunta» centrato, valori con stili diversi).
+
+## giornata-scheda-abitudine__pc-dark.png
+- [media] giornata-scheda-abitudine__pc-dark.png — «06:00 PM» — formato 12 ore.
+- [bassa] giornata-scheda-abitudine__pc-dark.png — pulsante «✓ Fatta» lilla chiaro con testo scuro: è il blocco più luminoso dello schermo e in scuro abbaglia; in chiaro era viola con testo bianco, in Adesso verde — uniformare (verde scuro con testo bianco per «fatto», in entrambi i temi).
+- [bassa] giornata-scheda-abitudine__pc-dark.png — velo dello sfondo debole come nella scheda attività — oscurare di più.
+- [bassa] giornata-scheda-abitudine__pc-dark.png — «Finisce qui», «Togli solo da oggi» — testi come nel chiaro, da riscrivere.
+
+## rituali__pc-dark.png
+- [media] rituali__pc-dark.png — scheda attiva «Rituali» — in scuro è PIÙ SCURA della barra (#151515 su #222): logica invertita rispetto al chiaro (attiva = più chiara) e poco visibile — scheda attiva più chiara della barra o con bordo/testo d'accento.
+- [bassa] rituali__pc-dark.png — icone dei rituali — riquadri viola scurissimo con icona lilla tenue: in scuro si vedono appena, tranne «Piano del giorno» lilla brillante — riequilibrare (fondo 15% accento).
+- [bassa] rituali__pc-dark.png — testi di stato «da fare»/«2 di 3 scelte» grigio 11 px su grigio scuro: al limite della leggibilità — 12–13 px, contrasto 4.5:1.
+- [bassa] rituali__pc-dark.png — layout e testi come nel chiaro (elenco a tutta larghezza, inglese «Review», «Check-in»).
+
+## rituale-piano__pc-dark.png
+- [media] rituale-piano__pc-dark.png — pulsante «Salva +5 XP» — barra lilla chiaro 924×52 px: in scuro è una lastra luminosissima che domina la pagina — pulsante compatto e tono d'accento meno luminoso in scuro.
+- [bassa] rituale-piano__pc-dark.png — riga barrata «Organizzare cena…» — grigio scuro su grigio (contrasto ~2:1) — alzare il contrasto.
+- [bassa] rituale-piano__pc-dark.png — campi grigi senza bordo su card grigia — in scuro i campi si distinguono appena (Δ luminosità minima) — bordo 1 px o fondo più scuro.
+- [bassa] rituale-piano__pc-dark.png — chip «★ Priorità» viola scuro con testo lilla — ok, ma resta acceso su riga completata — come nel chiaro.
+
+## rituale-sonno-pasti__pc-dark.png
+- [media] rituale-sonno-pasti__pc-dark.png — pulsanti «sì / no / ⏰» — grigio scurissimo su card grigio scuro: quasi invisibili come pulsanti (Δ luminosità ~4%) — bordo o fondo più chiaro, stato selezionato colorato.
+- [media] rituale-sonno-pasti__pc-dark.png — pulsante «Salva» (viola scuro, testo lilla) vs «Fatto» (lilla chiaro, testo nero) — due pesi diversi per due conferme: confusione accentuata in scuro — un solo pulsante di conferma.
+- [alta] rituale-sonno-pasti__pc-dark.png — «11:30 PM / 07:30 AM» accanto a «23:30–07:30» — formato 12 ore.
+- [bassa] rituale-sonno-pasti__pc-dark.png — campo «Una cosa che hai fatto…» — grigio su grigio senza bordo, poco riconoscibile.
+
+## rituale-checkin__pc-dark.png
+- [media] rituale-checkin__pc-dark.png — pulsanti 1–5 — fondo nero, bordo grigio scuro: nessun valore selezionato pur essendo «fatto» (come nel chiaro), e in scuro lo stato selezionato, se ci fosse, va reso molto evidente — evidenziare il valore registrato.
+- [media] rituale-checkin__pc-dark.png — «Registra +3 XP» viola scurissimo con bordo — sembra disabilitato, mentre in «Piano del giorno» il primario è lilla brillante — stesso stile primario.
+- [bassa] rituale-checkin__pc-dark.png — legenda «1 · esausto / 3 · normale / 5 · pieno» grigio 11 px su nero — contrasto basso; «4.3» con punto decimale.
+- [bassa] rituale-checkin__pc-dark.png — titolo «Andamento degli ultimi 14 giorni» tagliato in fondo — come nel chiaro.
+
+## rituale-sera__pc-dark.png
+- [bassa] rituale-sera__pc-dark.png — quadratini 1–5 — grigio scuro su grigio scuro con numeri grigi: bassa visibilità come controlli — fondo più chiaro o bordo.
+- [bassa] rituale-sera__pc-dark.png — icone area colorate (verde scuro di Salute, blu di Studio) poco visibili su fondo scuro — tinte area più luminose in tema scuro.
+- [media] rituale-sera__pc-dark.png — stessi difetti del chiaro: nessuna domanda/legenda per la scala, componente scala diverso dal Check-in, inglese «Review»/«Founder».
+
+## rituale-settimana__pc-dark.png
+- [bassa] rituale-settimana__pc-dark.png — aree di testo grigio scuro su card grigio scuro senza bordo — si distinguono appena (Δ ~3%) — bordo 1 px o fondo più scuro della card.
+- [media] rituale-settimana__pc-dark.png — stessi difetti del chiaro: numeri in serif, riga statistiche centrata, domande senza «?», 4 aree di testo a tutta larghezza.
+
+## attivita-sistemare__pc-dark.png
+- [bassa] attivita-sistemare__pc-dark.png — scheda attiva «Da sistemare» più scura della barra (stessa inversione vista in Rituali scuro) — schiarirla.
+- [bassa] attivita-sistemare__pc-dark.png — select nativo «Altro / Esplorazione» con freccia di sistema in scuro — ancora più fuori stile — componente personalizzato.
+- [bassa] attivita-sistemare__pc-dark.png — «Oggi» lilla chiaro con testo nero accanto a due pulsanti neri: forte contrasto di peso, ok per la gerarchia ma in scuro è abbagliante — tono d'accento meno luminoso.
+- [media] attivita-sistemare__pc-dark.png — stessi difetti di layout/testi del chiaro (colonna a sinistra, «e un'altra», titolo ripetuto).
+
+## attivita-dafare__pc-dark.png
+- [bassa] attivita-dafare__pc-dark.png — icone area verde scuro (Salute) e blu (Studio) da 12 px su grigio scuro — poco visibili — tinte più luminose in scuro.
+- [bassa] attivita-dafare__pc-dark.png — «Aggiungi» viola scuro dentro il campo, poco distinguibile come pulsante — più contrasto.
+- [alta] attivita-dafare__pc-dark.png — stessi difetti del chiaro: icona ◎ al posto della casella di completamento, «1 di 3» senza etichetta, larghezza diversa da «Da sistemare».
+
+## attivita-dafare-aggiunta__pc-dark.png
+- [bassa] attivita-dafare-aggiunta__pc-dark.png — select nativo «Altro / Esplorazione» con freccia di sistema bianca e altezza 42 px accanto a chip da 34 px — come nel chiaro, più evidente in scuro.
+- [bassa] attivita-dafare-aggiunta__pc-dark.png — chip «Senza data» lilla chiaro con testo nero: in scuro compete con il pulsante «Aggiungi» (viola scuro) — lo stato selezionato è più forte del pulsante d'azione: invertire la gerarchia.
+- [media] attivita-dafare-aggiunta__pc-dark.png — stessi difetti del chiaro (riga opzioni rientrata, nessuna etichetta Quando/Area).
+
+## attivita-abitudini__pc-dark.png
+- [media] attivita-abitudini__pc-dark.png — cerchi di completamento verde scuro e blu scuro su fondo scuro — bordo a basso contrasto (~2.5:1), sembrano disattivati — tinte più luminose o spessore maggiore.
+- [bassa] attivita-abitudini__pc-dark.png — anello «0 di 3» grigio scuro su nero — si legge come un buco — traccia più chiara.
+- [bassa] attivita-abitudini__pc-dark.png — scheda attiva «Abitudini» più scura della barra — inversione già segnalata.
+- [media] attivita-abitudini__pc-dark.png — stessi difetti del chiaro (campo nuova abitudine in fondo, manca la frequenza, tre controlli diversi per «fatto»).
+
+## attivita-abitudini-nuova__pc-dark.png
+- [alta] attivita-abitudini-nuova__pc-dark.png — «Ogni giorno» con 7 cerchi vuoti — contraddizione come nel chiaro; in scuro i cerchi grigi su nero sono ancora meno leggibili.
+- [media] attivita-abitudini-nuova__pc-dark.png — «Ora: Nessuno» — errore di genere («Nessuna»).
+- [bassa] attivita-abitudini-nuova__pc-dark.png — pillola «Nessuno» grigio scuro con testo grigio: sembra disabilitata, non cliccabile — stile valore modificabile coerente.
+- [bassa] attivita-abitudini-nuova__pc-dark.png — salto dello scorrimento di ~14 px all'apertura (barra schede a y 37) — come nel chiaro.
+
+## scheda-attivita__pc-dark.png
+- [alta] scheda-attivita__pc-dark.png — «Pianifica: Ieri» — come nel chiaro, opzione nel passato.
+- [bassa] scheda-attivita__pc-dark.png — chip «ogni giorno / ogni 2 giorni / ogni settimana» quasi neri su grigio e caselle dei passi nere con bordo grigio scuro — bassa visibilità — bordi 3:1.
+- [bassa] scheda-attivita__pc-dark.png — finestra con bordo sottile su pagina scura poco velata — elevazione debole (vedi schede del calendario).
+- [bassa] scheda-attivita__pc-dark.png — passo completato barrato grigio scuro — contrasto ~2:1.
+
+## scheda-abitudine__pc-dark.png
+- [alta] scheda-abitudine__pc-dark.png — «06:00 PM» — formato 12 ore.
+- [bassa] scheda-abitudine__pc-dark.png — chip «Salute & Sport» verde scurissimo con testo chiaro — leggibile ma l'icona verde scuro sparisce; giorni fuori mese (27–31, 1–2) e mancati (3–5, 12) con lo stesso cerchio grigio scuro — differenziarli.
+- [bassa] scheda-abitudine__pc-dark.png — cerchi «S», «D» non selezionati quasi neri — poco visibili.
+
+## andamento__pc-dark.png
+- [alta] andamento__pc-dark.png — «Per area» — nomi troncati senza ellissi («Relazioni & Soci», «Progetti Found») e barre disallineate, come nel chiaro.
+- [media] andamento__pc-dark.png — mappa «Costanza» — in scuro la scala è invertita (più chiaro = più attività) ma le celle vuote grigio scuro e i primi livelli blu scuro si confondono — verificare che i 5 livelli siano distinguibili; usare la stessa tinta (verde) della vista Anno.
+- [bassa] andamento__pc-dark.png — barra «Salute & Sport» verde scuro (#0a7d0a) su traccia grigio scuro: contrasto basso rispetto alle altre barre più luminose — tinta area schiarita in scuro.
+- [bassa] andamento__pc-dark.png — giorno «V» vuoto — quadrato grigio scuro quasi invisibile — contorno tratteggiato per «saltato».
+
+## scoperte__pc-dark.png
+- [bassa] scoperte__pc-dark.png — sottotitoli grigio scuro 12 px («lo noto ogni volta») su grigio — contrasto al limite (~3.5:1) — schiarire.
+- [bassa] scoperte__pc-dark.png — riquadri 👍/👎 con bordo su fondo scuro — sembrano ancora di più pulsanti/caselle — togliere il riquadro.
+- [media] scoperte__pc-dark.png — stessi difetti di testo del chiaro (livelli di certezza incoerenti, «Registro»).
+
+## scoperte-esperimenti__pc-dark.png
+- [bassa] scoperte-esperimenti__pc-dark.png — punti grigi della fase «Prima» su fondo scuro e linee guida dell'asse quasi invisibili — punti grigio chiaro, griglia al 10% di bianco.
+- [bassa] scoperte-esperimenti__pc-dark.png — etichette «media 3,1/4,3» sovrapposte ai punti, chip con bordo che sembrano pulsanti, «d≈3,1» — come nel chiaro.
+
+## scheda-scoperta__pc-dark.png
+- [alta] scheda-scoperta__pc-dark.png — «Esito: 👍 funziona» (opzione selezionata) — testo e icona blu scurissimo su grigio scuro: invisibile (contrasto ~1.3:1); conferma il bug visto nel chiaro (lì bianco su bianco) — lo stato selezionato usa un colore di testo sbagliato: fondo accento + testo a contrasto.
+- [media] scheda-scoperta__pc-dark.png — divisori fra le righe «Esito / Area / Scritta» e fra «Provalo… / Togli questa riga» — nel chiaro ci sono, qui spariscono: le righe si fondono — token del divisore anche per il tema scuro.
+- [bassa] scheda-scoperta__pc-dark.png — stessi testi da correggere: «Evidenza», «Togli questa riga», «Scritta».
+
+## profilo__pc-dark.png
+- [bassa] profilo__pc-dark.png — card — le due card in alto (profilo, statistiche) non hanno bordo, le due liste sotto sì: in scuro la differenza si nota — stesso trattamento (bordo 1 px su tutte o su nessuna).
+- [media] profilo__pc-dark.png — stessi difetti del chiaro: nessuna voce laterale attiva, «bloccati», numeri incoerenti con Andamento, «riuscita».
+
+## impostazioni__pc-dark.png
+- [bassa] impostazioni__pc-dark.png — divisori fra le righe dei gruppi — quasi invisibili in scuro (nel chiaro si vedono) — token divisore più chiaro.
+- [bassa] impostazioni__pc-dark.png — velo dietro la finestra debole: il Profilo dietro resta leggibile — oscurare di più.
+- [media] impostazioni__pc-dark.png — stessi difetti del chiaro (finestra stretta da telefono, «Account» vuoto, gruppo senza titolo, «1» senza significato).
+
+## imp-timer__pc-dark.png
+- [media] imp-timer__pc-dark.png — stessi difetti del chiaro («Pausa lunga ogni 4 · No», sezioni senza spiegazione, finestra che cambia posizione rispetto alle Impostazioni). In scuro nessun difetto di contrasto aggiuntivo rilevante.
+
+## imp-musica__pc-dark.png
+- [media] imp-musica__pc-dark.png — campi «Incolla il link» — grigio scuro su grigio scuro senza bordo, con una leggera ombra in basso che li fa sembrare pulsanti: quasi invisibili come campi — bordo 1 px chiaro.
+- [bassa] imp-musica__pc-dark.png — interruttore spento: pomello bianco su binario grigio scuro — ok in scuro, ma diverso dal chiaro dove è invisibile; uniformare i token.
+- [media] imp-musica__pc-dark.png — stessi difetti di contenuto del chiaro (cosa incollare non è spiegato, padding sopra/sotto diversi, 16 righe da scorrere).
+
+## imp-aspetto__pc-dark.png
+- [media] imp-aspetto__pc-dark.png — segmento «Auto / Chiaro / Scuro» — l'opzione selezionata «Auto» ha un fondo PIÙ SCURO del controllo (stessa inversione delle schede): si capisce solo dal testo bianco — selezionato più chiaro o con colore d'accento.
+- [bassa] imp-aspetto__pc-dark.png — interruttori verde brillante — l'elemento più saturo della finestra, colore non d'accento — interruttori in viola d'accento.
+- [bassa] imp-aspetto__pc-dark.png — stessi difetti del chiaro (Suoni/Vibrazione sotto «Aspetto», finestra che cambia posizione).
+
+## aree__pc-dark.png
+- [media] aree__pc-dark.png — testo sfocato — come nel chiaro, la finestra Aree è resa sfocata (scala/transform non intero): difetto sistematico di questa finestra.
+- [bassa] aree__pc-dark.png — icone area in riquadri a tinta scurissima (Salute verde su verde scuro, Studio blu su blu scuro) — icone poco leggibili in scuro.
+- [media] aree__pc-dark.png — stessi difetti del chiaro (interruttori non spiegati, cestino vicino all'interruttore, niente rinomina/colore/ordine).
+
+## sonno-pasti__pc-dark.png
+- [alta] sonno-pasti__pc-dark.png — tutti gli orari in formato 12 ore (11:30 PM, 01:00 PM, 05:00 AM – 02:00 PM…) — come nel chiaro.
+- [bassa] sonno-pasti__pc-dark.png — «Colazione» non centrato verticalmente rispetto ai controlli (testo a y 394, pillole centrate a 396 ma la riga ha padding superiore minore) — allineamento verticale al centro.
+- [bassa] sonno-pasti__pc-dark.png — × dei pasti grigio piccolo, nessuna conferma — come nel chiaro.
+
+## promemoria__pc-dark.png
+- [alta] promemoria__pc-dark.png — orari 12 ore AM/PM — come nel chiaro.
+- [media] promemoria__pc-dark.png — avviso «Bloccati» — riquadro grigio neutro con icona grigia, nessun colore d'avviso: in scuro passa inosservato, mentre gli interruttori verdi brillanti sotto dicono il contrario — riquadro con tinta d'avviso (ambra) e interruttori attenuati.
+- [bassa] promemoria__pc-dark.png — nomi promemoria diversi dai nomi dei rituali — come nel chiaro.

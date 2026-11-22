@@ -3729,7 +3729,7 @@ body.sto-trascinando { cursor: grabbing; user-select: none; -webkit-user-select:
    browser secondo la SUA lingua, non quella della pagina: con un browser
    inglese diventa «08:00 AM» e a 104px l'ultima lettera veniva tagliata. */
 .ritmo-pasto {
-  display: grid; grid-template-columns: minmax(0, 1fr) 150px 136px auto;
+  display: grid; grid-template-columns: minmax(0, 1fr) auto auto auto;
   align-items: center; gap: 8px; margin-bottom: 8px;
 }
 .ritmo-pasto input.ritmo-nome, .ritmo-pasto input.ritmo-ora, .ritmo-pasto select.ritmo-dur { min-width: 0; width: auto; }
@@ -5279,10 +5279,13 @@ body.sto-trascinando .gio-so-drop.drop-attivo { border-style: solid; border-colo
    appoggia vicino) ma non si vede e non prende tocchi. Lo apre la riga che
    lo porta, tutta, con `data-apri-campo`. */
 input.campo-velato, .q-chip-data input.campo-velato, input.sc-nascosta.campo-velato {
-  position: absolute; left: 0; bottom: 0; top: auto; right: auto; inset: auto auto 0 0;
-  width: 1px; height: 1px; min-height: 0; padding: 0; border: 0; margin: 0;
-  opacity: 0; pointer-events: none; box-shadow: none;
+  position: absolute !important; left: 0 !important; bottom: 0 !important; top: auto !important; right: auto !important;
+  width: 1px !important; height: 1px !important; min-width: 0 !important; max-width: 1px !important; min-height: 0 !important;
+  padding: 0 !important; border: 0 !important; margin: 0 !important;
+  opacity: 0; pointer-events: none; box-shadow: none; overflow: hidden; clip-path: inset(50%);
 }
+/* chi porta un campo velato lo tiene dentro di sé */
+[data-apri-campo] { position: relative; }
 [data-apri-campo] { cursor: pointer; }
 
 /* LA «X» DENTRO LA PILLOLA: un cerchietto grigio a destra del valore, che
@@ -5352,3 +5355,18 @@ input.campo-velato, .q-chip-data input.campo-velato, input.sc-nascosta.campo-vel
 .giornata:not(.giornata-pop) .tl-piede { border-top: 0; margin-top: 8px; padding-top: 0; align-items: center; }
 .giornata:not(.giornata-pop) .tl-piede .btn { width: auto; background: none; border: 0; box-shadow: none; color: var(--accento-testo); font-weight: 600; min-height: 44px; }
 .gio-so-ora-campo { color-scheme: inherit; }
+
+/* la pastiglia scelta resta piena anche dentro una riga di valori */
+.sc-val .q-chip.on, .lista .q-chip.on, .q-chips .q-chip.on { background: var(--accento-pieno); color: var(--accento-ink); border-color: transparent; }
+.q-chip.on .ico { color: currentColor; }
+
+.ritmo-pasto .gr-val { min-width: 7.5em; }
+
+/* SUL TABLET LE SCHEDE NON SONO LARGHE QUANTO LO SCHERMO: salgono dal basso
+   come sul telefono, ma in una colonna leggibile al centro */
+@media (min-width: 640px) and (max-width: 860px) {
+  .sheet-overlay .sheet { max-width: 640px; margin-left: auto; margin-right: auto; }
+}
+/* quando il contenuto scorre sotto il titolo, una linea li separa */
+.sheet.scorso .sheet-testa { box-shadow: 0 1px 0 var(--bordo); }
+.sheet-testa-sx { flex: 1; } .sheet-testa h2 { max-width: none; }

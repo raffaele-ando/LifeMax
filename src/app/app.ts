@@ -582,6 +582,13 @@ export interface OpzAvviso {
    solo il fuoco: bisognava toccare di nuovo, e un campo nascosto steso su una
    riga (la scadenza) non si apriva proprio. Qui si chiede al browser di
    aprire il selettore subito, ovunque nell'app. */
+/* il titolo della scheda si separa dal contenuto appena questo scorre */
+document.addEventListener('scroll', function (e) {
+  const c = e.target;
+  if (!(c instanceof HTMLElement) || !c.classList.contains('sheet-corpo')) return;
+  const sh = c.closest('.sheet');
+  if (sh) sh.classList.toggle('scorso', c.scrollTop > 2);
+}, true);
 /* APRIRE IL CALENDARIO O L'OROLOGIO, OVUNQUE, CON UN TOCCO SOLO.
    Tre casi, e un'unica richiesta per tocco (due — il tocco nativo più una
    nostra — sul telefono si annullano: la ruota si apriva e si richiudeva).
@@ -6504,7 +6511,7 @@ export const GIORNI_LAB: Record<GiornoSettimana, string> = { 1: 'L', 2: 'M', 3: 
 export function opzioniNuovaAbitudine(): string {
   return '<div class="gr agg-gr">' +
     '<div class="gr-riga"><span class="gr-eti">Giorni</span><span class="gr-fisso" id="agg-ab-quando">Ogni giorno</span></div>' +
-    '<div class="gr-riga gr-giorni" id="agg-ab-giorni">' + chipsGiorni([]) + '</div>' +
+    '<div class="gr-riga gr-giorni" id="agg-ab-giorni">' + chipsGiorni([1, 2, 3, 4, 5, 6, 0]) + '</div>' +
     '<label class="gr-riga" for="agg-ab-ora"><span class="gr-eti">Ora</span>' +
     '<span class="gr-data"><input type="time" class="gr-val" id="agg-ab-ora" required aria-label="A che ora (facoltativo)"><span class="gr-mai" aria-hidden="true">Nessuno</span></span></label>' +
     '<label class="gr-riga" for="agg-ab-area"><span class="gr-eti">Area</span>' + selectAree('agg-ab-area', areaNuova('salute'), 'Area', 'gr-val') + '</label>' +
@@ -6763,7 +6770,8 @@ function ritualeCheckin(corpo: HTMLElement, rifai?: boolean): void {
     perId('ck-rifai').addEventListener('click', function () { ritualeCheckin(corpo, true); });
     return;
   }
-  const voti: Record<Voto, number> = { energia: 0, focus: 0, umore: 0 };
+  /* rifacendolo si parte da quello che avevi detto, non da zero */
+  const voti: Record<Voto, number> = diOggi ? { energia: diOggi.energia, focus: diOggi.focus, umore: diOggi.umore } : { energia: 0, focus: 0, umore: 0 };
   corpo.innerHTML = '<div class="card">' +
     testaRituale('polso', 'Energia, focus e umore',
       /* la prima metà («Energia, concentrazione e umore su una scala da 1 a
@@ -6786,14 +6794,14 @@ function ritualeCheckin(corpo: HTMLElement, rifai?: boolean): void {
     return '<div class="scala-blocco"><label class="campo">' + ICO(icona, 13) + ' ' + nome + '</label>' +
       '<div class="scala" data-campo="' + quale + '">' +
       [1, 2, 3, 4, 5].map(function (v) {
-        return '<button data-v="' + v + '" aria-label="' + v + ', ' + anc[v - 1] + '">' + v + '</button>';
+        return '<button data-v="' + v + '"' + (voti[quale] === v ? ' class="sel" aria-pressed="true"' : '') + ' aria-label="' + v + ', ' + anc[v - 1] + '">' + v + '</button>';
       }).join('') + '</div>' +
       '<div class="scala-legenda"><span>1 · ' + anc[0] + '</span><span>3 · ' + anc[2] + '</span><span>5 · ' + anc[4] + '</span></div>' +
       (base ? '<div class="scala-solito">' + ICO('solito', 13) +
         /* tutto il testo in un solo elemento: il contenitore è inline-flex
            con un gap, e un punto lasciato fuori diventava un pezzo a sé
            staccato di sei pixel («è 4.3 .») */
-        '<span>Media recente <b>' + base.toFixed(1) + '</b></span></div>' : '') +
+        '<span>Media recente <b>' + base.toFixed(1).replace('.', ',') + '</b></span></div>' : '') +
       '</div>';
   }
   corpo.querySelectorAll<HTMLElement>('.scala').forEach(function (sc) {

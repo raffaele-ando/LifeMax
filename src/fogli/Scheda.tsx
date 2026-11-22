@@ -166,7 +166,7 @@ export default function Scheda({ id }: { id: string }) {
 
   /* «dopodomani» col nome del giorno: `etichettaGiorno` dice «Mer 12» */
   const fraDue = LM.addDays(oggi, 2);
-  const nomeFraDue = etichettaGiorno(fraDue).split(' ')[0] || 'Fra due giorni';
+  const nomeFraDue = new Date(fraDue + 'T12:00:00').toLocaleDateString('it-IT', { weekday: 'long' }).replace(/^./, (c) => c.toUpperCase());
 
   return (
     <div className="sc">
@@ -176,7 +176,6 @@ export default function Scheda({ id }: { id: string }) {
 
       <div className="lista-eti"><Segno nome="calendar" dim={11} />Pianifica</div>
       <div className="q-chips sc-quando">
-        {gChip(LM.addDays(oggi, -1), 'Ieri')}
         {gChip(LM.addDays(oggi, 1), 'Domani')}
         {gChip(fraDue, nomeFraDue)}
         {gChip(LM.addDays(oggi, 7), 'Tra una settimana')}

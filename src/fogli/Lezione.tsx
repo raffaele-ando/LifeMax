@@ -69,7 +69,7 @@ export default function Lezione({ id }: { id: string }) {
           <span className="sc-val" ref={area} {...html(selectAreeOpz('lez-area', riga.areaId, 'sc-inline'))} />
         </RigaSc>
         {esp ? <RigaSc eti="Misurato con"><span className="sc-val">{esp.nome}</span></RigaSc> : null}
-        <RigaSc eti="Scritta"><span className="sc-val">{LM.fmtShort(LM.dayKey(new Date(riga.creata)))}</span></RigaSc>
+        <RigaSc eti="Aggiunta"><span className="sc-val">{LM.fmtShort(LM.dayKey(new Date(riga.creata)))}</span></RigaSc>
       </div>
 
       <div className="lista mt">
@@ -92,7 +92,7 @@ export default function Lezione({ id }: { id: string }) {
           conAnnulla('Riga tolta.', 'trash', () => { LM.rimuoviLezione(id); });
           chiudiSheet(); ridisegnaLezioni();
         }}>
-          <span className="sc-eti"><Segno nome="trash" /> Togli questa riga</span>
+          <span className="sc-eti"><Segno nome="trash" /> Elimina</span>
         </button>
       </div>
     </div>
