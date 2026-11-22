@@ -5512,3 +5512,16 @@ textarea { resize: none; field-sizing: content; max-height: 40vh; }
 .mus-link { background: var(--superficie-2); border: 1px solid var(--bordo); border-radius: 10px; padding: 6px 10px; min-width: 0; }
 /* con le notifiche bloccate gli interruttori stanno tutti a sinistra: spenti */
 .gr-spento .interr.on i { transform: none; }
+/* SU COMPUTER LA COLONNA È PIÙ LARGA, ma la stessa per tutte le pagine: la
+   settimana deve starci intera (sette colonne, non cinque e una barra di
+   scorrimento), e il resto non salta passando da una vista all'altra */
+@media (min-width: 1100px) {
+  #vista > *, #vista .vista-oggi, #vista .att-corpo, #vista #att-corpo,
+  #vista > .casa, #vista > .prof-testa, #vista > .prof-numeri, #vista > .prof-righe, #vista .testa-porta { max-width: 880px; }
+}
+@media (min-width: 700px) {
+  .wk-cols { overflow-x: visible; }
+  .wk-col { flex: 1 1 0; min-width: 0; }
+}
+.wk-col-head { height: auto; min-height: 44px; }
+.wk-untimed { display: block; font-weight: 500; }

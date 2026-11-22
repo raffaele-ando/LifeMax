@@ -5029,7 +5029,7 @@ function montaSettimanaGriglia(container: HTMLElement): void {
   var cols = giorni.map(function (k) {
     var dk = nodiGiorno(k);
     var scad = LM.snapshot().backlog.filter(function (b) { return b.scadenza === k; });
-    var untimed = dk.tray.length ? '<span class="wk-untimed" title="senza orario">+' + dk.tray.length + '</span>' : '';
+    var untimed = dk.tray.length ? '<span class="wk-untimed" title="' + dk.tray.length + ' senza orario">' + dk.tray.length + ' senza ora</span>' : '';
     var scadHtml = scad.length ? '<div class="wk-scad" title="scadenze">' + ICO('scadenza', 11) + ' ' + scad.length + '</div>' : '';
     var grid = htmlTimeGrid(dk, { pxh: pxh, rail: false, mini: true, nowMin: k === oggi ? nowMin : null });
     var lab = LM.weekdayShort(k); lab = lab.charAt(0).toUpperCase() + lab.slice(1);
