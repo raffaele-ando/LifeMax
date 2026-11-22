@@ -12,13 +12,12 @@ const DIM={tel:{viewport:{width:390,height:844},hasTouch:true,isMobile:true},tab
 const CLIC=(sel,txt)=>`(()=>{const b=[...document.querySelectorAll(${JSON.stringify(sel)})].find(x=>!${JSON.stringify(txt||'')}||x.textContent.includes(${JSON.stringify(txt||'')}));if(b)b.click();})()`;
 const S=[ // [nome, hash, passi[], descrizione]
  ['oggi-adesso','oggi',[],'Oggi › Adesso'],
- ['oggi-adesso-scorsa','oggi',['window.scrollTo(0,99999)'],'Oggi › Adesso, scorsa in fondo'],
  ['giornata-giorno','giornata',[],'Oggi › La giornata › Giorno'],
  ['giornata-giorno-fondo','giornata',['window.scrollTo(0,99999)'],'La giornata › Giorno, scorsa in fondo (senza orario, aggiunta)'],
  ['giornata-settimana','giornata',[CLIC('#vista button','Settimana')],'La giornata › Settimana'],
  ['giornata-mese','giornata',[CLIC('#vista button','Mese')],'La giornata › Mese'],
  ['giornata-anno','giornata',[CLIC('#vista button','Anno')],'La giornata › Anno'],
- ['giornata-sonno-aperto','giornata',['document.getElementById("gio-sonno-toggle")&&document.getElementById("gio-sonno-toggle").click()'],'La giornata con il pannello sonno e pasti aperto'],
+ ['giornata-sonno-aperto','giornata',['document.getElementById("gio-sonno-toggle")&&document.getElementById("gio-sonno-toggle").click()','(()=>{const e=document.getElementById("gio-sonno-toggle");if(e)e.scrollIntoView({block:"start"});window.scrollBy(0,-90);})()'],'La giornata con il pannello sonno e pasti aperto'],
  ['giornata-scheda-blocco','giornata',['(()=>{const b=document.querySelector("[data-blk-az]");if(b)b.click();})()'],'Scheda di un’attività toccata nel calendario'],
  ['giornata-scheda-abitudine','giornata',['(()=>{const b=document.querySelector("[data-blk-ab]");if(b)b.click();})()'],'Scheda di un’abitudine toccata nel calendario'],
  ['rituali','rituali',[],'Oggi › Rituali'],
