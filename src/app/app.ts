@@ -770,6 +770,7 @@ function apriCattura(): void {
   document.body.classList.add('cattura-su');
   bloccaSfondo(true);
   $inp.value = '';
+  aggiornaSalvaCattura();
   if (giaAperto) $inp.focus();
   else entraFuoco(presa($ovl.querySelector<HTMLElement>('.pannello-cattura')), true);
 }
@@ -800,6 +801,9 @@ $inp.addEventListener('keydown', function (e) {
   if (e.key === 'Escape') chiudiCattura();
 });
 perId('cattura-salva').addEventListener('click', salvaCattura);
+/* «Salva» con niente da salvare non si può premere */
+function aggiornaSalvaCattura(): void { (perId('cattura-salva') as HTMLButtonElement).disabled = !$inp.value.trim(); }
+$inp.addEventListener('input', aggiornaSalvaCattura);
 
 document.addEventListener('keydown', function (e) {
   const digitando = /input|textarea|select/i.test((document.activeElement && document.activeElement.tagName) || '');
@@ -1919,7 +1923,7 @@ export function apriPromemoria() {
     '<div class="gr-titolo">Notifiche</div><div class="gr' + (pr.val === 'bloccati' ? ' gr-spento' : '') + '">' +
       riga('mattina', 'Piano del giorno', '') +
       riga('checkin', 'Check-in', '') +
-      riga('mit', 'Priorità del giorno', '') +
+      riga('mit', 'Ricordami la priorità', '') +
       riga('sera', 'Fine giornata', '') +
       riga('abitudini', 'Abitudini con orario', '') +
     '</div>' +
@@ -3537,7 +3541,7 @@ export function testaCasa(): string {
   return '<header class="casa-testa">' +
     '<div class="casa-chi"><h1 class="casa-data">' + data + '</h1>' +
     (tot ? '<div class="casa-passo" role="img" aria-label="' + fatte + ' di ' + tot + ' fatte oggi">' +
-      '<div class="casa-barra"><i style="width:' + Math.round(p * 100) + '%"></i></div><b>' + fatte + ' di ' + tot + '</b></div>' : '') +
+      '<div class="casa-barra"><i style="width:' + Math.round(p * 100) + '%"></i></div><b>' + fatte + ' di ' + tot + ' fatte</b></div>' : '') +
     '</div>' +
     '<div class="casa-destra">' +
     (serie > 0 ? '<span class="casa-serie" role="img" aria-label="' + serie + ' giorni di fila" title="Giorni di fila">' + ICO('flame', 15, 'fiamma') + '<b>' + serie + '</b><small>giorni</small></span>' : '') +
@@ -5816,8 +5820,8 @@ export function eroePlancia() {
     const oggiK = LM.todayKey();
     html +=
       '<div class="som-testa">' +
-      '<span class="som-fiamma" role="img" aria-label="' + st.corrente + ' giorni di fila">' + ICO('flame', 26, 'fiamma') + '<b>' + st.corrente + '</b></span>' +
-      '<span class="som-quota"><b><span id="som-pct">' + pct + '</span>%</b><small>' + bil.fatte + ' di ' + bil.messe + '</small></span>' +
+      '<span class="som-fiamma" role="img" aria-label="' + st.corrente + ' giorni di fila">' + ICO('flame', 26, 'fiamma') + '<b>' + st.corrente + '</b><small>' + (st.corrente === 1 ? 'giorno di fila' : 'giorni di fila') + '</small></span>' +
+      '<span class="som-quota"><b><span id="som-pct">' + pct + '</span>%</b><small>fatte: ' + bil.fatte + ' di ' + bil.messe + ' in 30 giorni</small></span>' +
       '</div>' +
       '<div class="som-sett">' + sett.map(function (g) {
         const d = new Date(g.data + 'T12:00:00');

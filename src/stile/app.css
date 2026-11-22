@@ -5495,3 +5495,15 @@ input.campo-velato, .q-chip-data input.campo-velato, input.sc-nascosta.campo-vel
 .sheet-chiudi::after { content: ''; position: absolute; inset: -7px; }
 /* il rituale dell'ora non è un conteggio: un punto, non un «1» */
 .att-badge.att-badge-punto { width: 8px; height: 8px; min-width: 0; padding: 0; font-size: 0; background: var(--accento); vertical-align: 6px; }
+/* giro 4: nessuna freccia di sistema. Ogni menu a tendina ha la stessa
+   freccetta disegnata, e le aree di testo crescono col testo invece di
+   mostrare la maniglia del browser */
+select:where(:not(.gr-val):not(.sc-inline)) {
+  -webkit-appearance: none; appearance: none; cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23898781' stroke-width='2.2' stroke-linecap='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 10px center; background-size: 13px;
+  padding-right: 30px;
+}
+textarea { resize: none; field-sizing: content; max-height: 40vh; }
+.btn:disabled { opacity: .45; cursor: default; box-shadow: none; }
+.som-fiamma small { font-size: 12.5px; color: var(--inchiostro-2); max-width: 5.5em; line-height: 1.2; }
