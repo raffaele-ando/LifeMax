@@ -345,7 +345,7 @@
   "7|option||||Lavoro|",
   "7|option||||Altro / Esplorazione|",
   "2|div|tl-piede||||",
-  "3|button|btn.btn-mini|tl-rimanda||Sposta a domani quella non fatta|",
+  "3|button|btn.btn-mini|tl-rimanda||Rimanda a domani l’attività rimasta|",
   "4|svg|ico||||",
   "1|div|gio-so-drop||data-drop-senzaora=1||",
   "2|svg|ico||||",

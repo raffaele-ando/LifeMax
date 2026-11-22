@@ -6337,9 +6337,11 @@ function ritualeRegistro(corpo: HTMLElement): void {
      scritti si registrano col tasto in fondo, insieme ai pasti */
   var salvaNotte = corpo.querySelector<HTMLElement>('#notte-salva');
   var fine = corpo.querySelector<HTMLElement>('#rec-fine');
-  if (salvaNotte && fine && bn) {
+  const notte = bn;
+  if (salvaNotte && fine && notte) {
     salvaNotte.hidden = true;
     fine.addEventListener('click', function () {
+      const bn = notte;
       var so = bn.querySelector<HTMLInputElement>('#notte-sonno'), sv = bn.querySelector<HTMLInputElement>('#notte-sveglia');
       var on = bn.querySelector<HTMLElement>('#notte-prec .q-chip.on');
       if (so && sv && (so.value || sv.value)) {
