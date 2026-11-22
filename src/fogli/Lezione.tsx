@@ -45,7 +45,7 @@ export default function Lezione({ id }: { id: string }) {
           if (v && adesso && v !== adesso.testo) { LM.modificaLezione(id, { testo: v }); ridisegnaLezioni(); }
         }} />
 
-      <div className="lista-eti"><Segno nome="confronto" dim={11} />Evidenza</div>
+      <div className="lista-eti"><Segno nome="confronto" dim={11} />Quanto ne sei sicuro</div>
       <div className="q-chips">
         {LM.FORZE_LEZIONE.map((f) => (
           <button key={f.id} className={'q-chip' + (f.id === riga.forza ? ' on' : '')} data-forza={f.id}

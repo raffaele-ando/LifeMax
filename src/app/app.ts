@@ -1863,7 +1863,6 @@ export function htmlImpostazioni(pezzo?: 'profilo'): string {
     rigaPorta('imp-guida', 'aiuto', 'Primi passi') +
     rigaPorta('imp-scienza', 'atom', 'Scienza') +
     rigaPorta('imp-diag', 'terminale', 'Registro tecnico') +
-    rigaPorta('imp-lab', 'palette', 'Design lab') +
     '</div>' +
 
     /* --- RIPARTIRE: staccato, e in fondo. Quello che cancella non può
@@ -1905,18 +1904,20 @@ export function apriPromemoria() {
   const acceso = P.stato() === 'granted';
   apriSheet('Promemoria',
     /* in cima: come stanno, e il tasto per cambiarlo */
-    '<div class="prom-stato' + (acceso ? ' on' : '') + '" id="prom-stato">' +
+    '<div class="prom-stato' + (acceso ? ' on' : (pr.val === 'bloccati' ? ' avviso' : '')) + '" id="prom-stato">' +
       '<span class="prom-stato-ico">' + ICO(acceso ? 'campana' : 'campanaOff', 26) + '</span>' +
       '<div class="prom-stato-testo"><b>' + (acceso ? 'Accesi' : pr.val.charAt(0).toUpperCase() + pr.val.slice(1)) + '</b>' +
       (pr.nota ? '<span>' + pr.nota + '</span>' : '') + '</div>' +
       (pr.azione || '') +
     '</div>' +
 
-    '<div class="gr-titolo">Notifiche</div><div class="gr">' +
-      riga('mattina', 'Piano del mattino', '') +
+    /* con le notifiche bloccate gli interruttori non possono fare niente:
+       si vedono spenti e non si toccano, invece di sembrare accesi */
+    '<div class="gr-titolo">Notifiche</div><div class="gr' + (pr.val === 'bloccati' ? ' gr-spento' : '') + '">' +
+      riga('mattina', 'Piano del giorno', '') +
       riga('checkin', 'Check-in', '') +
       riga('mit', 'Priorità del giorno', '') +
-      riga('sera', 'Chiusura della giornata', '') +
+      riga('sera', 'Fine giornata', '') +
       riga('abitudini', 'Abitudini con orario', '') +
     '</div>' +
 
@@ -1934,7 +1935,7 @@ export function apriPromemoria() {
     htmlNotaFissa() +
 
     /* il server: si imposta una volta, quindi sta chiuso in fondo */
-    '<details class="gr gr-dettagli"' + (conf ? '' : ' open') + '><summary class="gr-riga"><span class="gr-eti">' + ICO('cloudCheck', 15) + ' Server</span>' +
+    '<details class="gr gr-dettagli"><summary class="gr-riga"><span class="gr-eti">' + ICO('cloudCheck', 15) + ' Server</span>' +
       '<span class="gr-fisso">' + (conf ? 'collegato' : 'da collegare') + '</span></summary>' +
       '<div class="gr-dentro">' +
       '<label class="campo" for="prom-server">Indirizzo</label>' +
@@ -3045,7 +3046,7 @@ function avvisoFuori(titolo: string, testo: string): void {
    guardare meno roba.
    ============================================================ */
 export function apriArchivioReview() {
-  apriFoglio('Archivio review', 'review', {});
+  apriFoglio('Riflessioni passate', 'review', {});
 }
 
 /* ============================================================
@@ -3610,7 +3611,7 @@ export function vistaFocus(): Scena {
          cominciato sono il momento peggiore per chiedere di scegliere. */
       '<div class="focus-azioni-riga">' +
       (finita
-        ? '<button class="btn btn-primario btn-grande" data-vai="rituali" data-sub="sera">' + ICO('moon', 18) + ' Review della sera</button>'
+        ? '<button class="btn btn-primario btn-grande" data-vai="rituali" data-sub="sera">' + ICO('moon', 18) + ' Fine giornata</button>'
         : '<button class="btn btn-primario btn-grande" data-vai="rituali" data-sub="mattina">' + ICO('sun', 18) + ' Scegli le azioni di oggi</button>' +
           '<button class="btn btn-mini btn-ghost" data-vai="inbox">' + ICO('inbox', 15) + ' Prendi dalle attività</button>') +
       '</div>' +
@@ -4466,8 +4467,8 @@ function apriItemGiornata(k: Giorno, id: string, tipo: 'azione' | 'abitudine', o
     (isAz
       ? '<button class="gr-riga gr-agg ig-indietro">' + ICO('lista', 15) + (e.passoDi ? ' Togli dal giorno' : ' Sposta in Da fare') + '</button>' +
         '<button class="gr-riga gr-agg gr-rosso ig-rimuovi">' + ICO('trash', 15) + ' Elimina</button>'
-      : '<button class="gr-riga gr-agg ig-salta">' + ICO('x', 15) + ' Togli solo da ' + esc(etichettaGiorno(k).toLowerCase()) + '</button>' +
-        '<button class="gr-riga gr-agg ig-finequi">' + ICO('fineperiodo', 15) + ' Finisce qui</button>' +
+      : '<button class="gr-riga gr-agg ig-salta">' + ICO('x', 15) + ' Salta ' + esc(etichettaGiorno(k).toLowerCase()) + '</button>' +
+        '<button class="gr-riga gr-agg ig-finequi">' + ICO('fineperiodo', 15) + ' Termina l’abitudine</button>' +
         '<button class="gr-riga gr-agg ig-vairituali">' + ICO('arrowRight', 15) + ' Apri l’abitudine</button>') +
     '</div>' +
 
@@ -5270,6 +5271,9 @@ export function setOrizzonte(o: Orizzonte, ancora?: Giorno): void {
   const nav = document.getElementById('orizz-nav');
   if (nav) nav.querySelectorAll<HTMLElement>('[data-orizz]').forEach(function (b) { b.classList.toggle('attivo', b.getAttribute('data-orizz') === o); });
   disegnaOrizzonte();
+  /* un'altra vista comincia dall'alto, con le sue intestazioni in vista:
+     restava lo scorrimento della vista di prima */
+  if (o !== 'giorno') window.scrollTo(0, 0);
 }
 /* anima solo quando cambi orizzonte o giorno, non a ogni spunta */
 let orizzMostrato = '';
@@ -5441,15 +5445,15 @@ function eventoDiarioHtml(ev: VoceDiario): string {
     testo = 'Check-in · energia <b>' + ev.energia + '</b> · focus <b>' + ev.focus + '</b> · umore <b>' + ev.umore + '</b>';
   } else if (ev.tipo === 'mattina') {
     ico = '<span class="diario-ico">' + ICO('sun', 15) + '</span>';
-    testo = 'Piano del mattino' + (ev.intenzione ? ' · <span class="diario-sec">' + esc(ev.intenzione) + '</span>' : '');
+    testo = 'Piano del giorno' + (ev.intenzione ? ' · <span class="diario-sec">' + esc(ev.intenzione) + '</span>' : '');
   } else if (ev.tipo === 'sera') {
     ico = '<span class="diario-ico">' + ICO('moon', 15) + '</span>';
-    testo = 'Review della sera' +
+    testo = 'Fine giornata' +
       (ev.vittoria ? ' · <span class="diario-sec">andata bene: ' + esc(ev.vittoria) + '</span>' : '') +
       (ev.blocco ? ' · <span class="diario-sec">ostacolo: ' + esc(ev.blocco) + '</span>' : '');
   } else if (ev.tipo === 'settimana') {
     ico = '<span class="diario-ico">' + ICO('calendar', 15) + '</span>';
-    testo = 'Review della settimana' + (ev.imparato ? ' · <span class="diario-sec">' + esc(ev.imparato) + '</span>' : '');
+    testo = 'Bilancio della settimana' + (ev.imparato ? ' · <span class="diario-sec">' + esc(ev.imparato) + '</span>' : '');
   } else if (ev.tipo === 'registro') {
     /* Nel diario ogni riga porta il segno della cosa di cui parla, e sono gli
        stessi segni del resto dell'app: così il registro si legge a colpo
@@ -5588,7 +5592,7 @@ function sezRiepilogo(c: HTMLElement): void {
   /* le porte in fondo, in un riquadro solo: prima «Le review di prima» era
      un riquadro con dentro un altro riquadro con dentro una riga */
   c.insertAdjacentHTML('beforeend', '<div class="lista mt">' +
-    rigaPorta('riep-review', 'archivio', 'Archivio review',
+    rigaPorta('riep-review', 'archivio', 'Riflessioni passate',
       (function () { var q = LM.quanteReview(); return q ? String(q) : ''; })()) +
     rigaPorta('riep-tempo', 'durata', 'Sessioni del timer', (function () {
       var m = LM.sessioniDi(LM.todayKey()).reduce(function (n, x) { return n + (x.minuti || 0); }, 0);
@@ -5877,8 +5881,8 @@ export const RITUALI: Rituale[] = [
   { id: 'mattina',   ico: 'sun',      nome: 'Piano del giorno',      quando: 'giorno' },
   { id: 'registro',  ico: 'ritmo',    nome: 'Sonno e pasti', quando: 'giorno' },
   { id: 'checkin',   ico: 'polso',    nome: 'Check-in',               quando: 'giorno' },
-  { id: 'sera',      ico: 'moon',     nome: 'Review della sera',      quando: 'giorno' },
-  { id: 'settimana', ico: 'calendar', nome: 'Review della settimana', quando: 'ogni tanto' }
+  { id: 'sera',      ico: 'moon',     nome: 'Fine giornata',          quando: 'giorno' },
+  { id: 'settimana', ico: 'calendar', nome: 'Bilancio della settimana', quando: 'ogni tanto' }
 ];
 /* LA COLONNA DEGLI STATI LA DISEGNA REACT, e qui non c'è più niente.
 
@@ -6887,7 +6891,7 @@ function ritualeSera(corpo: HTMLElement): void {
        riga che riassumeva tutte e tre («Voto alle aree su cui hai lavorato,
        una cosa andata bene e un ostacolo») era l'indice di una pagina lunga
        mezzo schermo. Resta il tempo che ci vuole, che nessun campo dice. */
-    testaRituale('moon', 'Review della sera', 'Due minuti.') +
+    testaRituale('moon', 'Fine giornata', 'Due minuti.') +
     '<div id="voti-aree">' + ordinate.map(function (a) {
       return '<div class="voto-area" data-area="' + a.id + '" style="--c-area:' + LM.coloreArea(a) + '">' +
         '<span class="nome">' + ICO(a.icona, 15) + ' ' + esc(a.nome) + '</span>' +
@@ -6945,7 +6949,7 @@ function ritualeSettimana(corpo: HTMLElement): void {
   var attivi = giorni.filter(function (k) { return LM.giornoAttivo(k); }).length;
 
   corpo.innerHTML = '<div class="card">' +
-    testaRituale('unaSettimana', 'Review della settimana', 'Dieci minuti.') +
+    testaRituale('unaSettimana', 'Bilancio della settimana', 'Dieci minuti.') +
     '<div class="eroe-statistiche" style="justify-content:center;margin-bottom:16px">' +
     '<div class="stat"><span class="stat-val">' + xpSett + '</span><span class="stat-eti">XP guadagnati</span></div>' +
     '<div class="stat"><span class="stat-val">' + azioniSett + '</span><span class="stat-eti">azioni completate</span></div>' +
@@ -7117,10 +7121,14 @@ export function attRigaHtml(b: Attivita, opts?: OpzRigaAtt): string {
   }
 
   var pieno = !!(opts && opts.primo);
+  /* «PORTA IN OGGI» NON È UNA SPUNTA. Stava a sinistra, quadrato, dove
+     in ogni app c'è la casella per segnare fatto, e tutti lo prendevano per
+     quella. Adesso è una pastiglia con scritto «Oggi», a destra, prima della
+     freccia: dice cosa fa. */
+  var vaOggi = '<button class="va-oggi' + (pieno ? ' piena' : '') + '" data-bkoggi="' + b.id + '"' +
+    ' aria-label="' + (isProg ? 'Porta in Oggi il prossimo passo di ' : 'Porta in Oggi ') + esc(b.testo) + '">' +
+    ICO('plus', 13) + '<span>Oggi</span></button>';
   return '<div class="lista-riga att-riga' + (b.mancata ? ' mancata-riga' : '') + '" data-bid="' + b.id + '">' +
-    '<button class="lista-azione' + (pieno ? ' piena' : '') + '" data-bkoggi="' + b.id + '"' +
-    ' aria-label="' + (isProg ? 'Porta in Oggi il prossimo passo di ' : 'Porta in Oggi ') + esc(b.testo) + '"' +
-    ' title="' + (isProg ? 'Porta in Oggi il prossimo passo' : 'Porta in Oggi') + '">' + ICO('target', 15) + '</button>' +
     '<button class="lista-apri" data-bkapri="' + b.id + '" aria-label="Apri ' + esc(b.testo) + '">' +
     '<span class="lista-corpo">' +
     '<span class="lista-tit">' +
@@ -7131,7 +7139,7 @@ export function attRigaHtml(b: Attivita, opts?: OpzRigaAtt): string {
     '</span>' +
     /* `av` c'è esattamente quando `isProg`: le due nascono dalla stessa riga */
     (isProg && av ? '<span class="lista-val">' + av.fatti + ' di ' + av.tot + '</span>' : '') +
-    '<span class="lista-chev">' + ICO('chevronGiu', 15) + '</span></button>' +
+    '</button>' + vaOggi +
     '</div>';
 }
 

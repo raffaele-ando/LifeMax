@@ -5370,3 +5370,53 @@ input.campo-velato, .q-chip-data input.campo-velato, input.sc-nascosta.campo-vel
 /* quando il contenuto scorre sotto il titolo, una linea li separa */
 .sheet.scorso .sheet-testa { box-shadow: 0 1px 0 var(--bordo); }
 .sheet-testa-sx { flex: 1; } .sheet-testa h2 { max-width: none; }
+
+/* tenere premuto un blocco del calendario non seleziona il testo */
+.tl-grid, .tl-grid *, .wk-cols, .wk-cols * { user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+/* scuro: la griglia e i bordi si devono vedere */
+:root[data-mode="dark"] { --griglia: #303030; --baseline: #424242; --bordo: rgba(255, 255, 255, 0.12); --bordo-forte: rgba(255, 255, 255, 0.2); }
+:root[data-mode="dark"] .sheet-overlay::before, :root[data-mode="dark"] .sheet-velo { background: rgba(0, 0, 0, .6); }
+
+/* scuro: la scelta attiva di un selettore è PIÙ chiara della barra, come nel chiaro */
+:root[data-mode="dark"] .segmenti button.attivo, :root[data-mode="dark"] .segmenti > a.attivo { background: var(--superficie-3); color: var(--inchiostro-1); }
+/* scuro: i pulsanti pieni non sono lastre lilla abbaglianti */
+:root[data-mode="dark"] { --accento-pieno: #6c63f0; --accento-ink: #ffffff; }
+
+.gr-spento { opacity: .45; pointer-events: none; }
+.gr-spento .interr.on { background: var(--baseline); }
+.prom-stato.avviso { background: color-mix(in srgb, var(--avviso, #e8a317) 14%, var(--superficie-1)); }
+
+.att-riga { padding-right: 12px; }
+.va-oggi {
+  flex: none; display: inline-flex; align-items: center; gap: 4px; height: 32px; padding: 0 12px;
+  border: 0; border-radius: 999px; corner-shape: round; font-size: 13px; font-weight: 600;
+  background: color-mix(in srgb, var(--accento) 12%, var(--superficie-1)); color: var(--accento-testo);
+  position: relative;
+}
+.va-oggi::after { content: ''; position: absolute; inset: -6px -4px; }
+.va-oggi.piena { background: var(--accento-pieno); color: var(--accento-ink); }
+.va-oggi:active { transform: scale(.95); }
+
+/* IL PROFILO NON È UN PULSANTE D'AZIONE: tondo, colore tenue, come
+   l'avatar di qualunque app — il quadrato viola pieno era identico al «+» */
+.casa-avatar.nav-avatar {
+  border-radius: 50% !important; corner-shape: round;
+  background: color-mix(in srgb, var(--accento) 16%, var(--superficie-1)) !important;
+  color: var(--accento-testo) !important; box-shadow: none !important;
+}
+
+/* UNA COLONNA SOLA, LARGA UGUALE IN OGNI PAGINA (computer e tablet):
+   prima Adesso era 560, Da sistemare 620 a sinistra, il Profilo 640, la
+   Giornata e Da fare a tutta larghezza. Le viste del calendario larghe
+   (settimana, mese, anno) restano larghe: lì lo spazio serve. */
+@media (min-width: 700px) {
+  #vista > *, #vista .vista-oggi, #vista .att-corpo, #vista #att-corpo { max-width: 760px; margin-left: auto; margin-right: auto; width: 100%; }
+  #vista .vista-oggi > * { max-width: none; }
+  #vista:has(.wk-cols, .me-griglia, .an-mesi) > * { max-width: 1100px; }
+}
+@media (min-width: 700px) {
+  /* dentro la colonna unica nessuno ha una larghezza sua: tutti la riempiono */
+  #vista .sm-uno, #vista .focus-altre, #vista .spina, #vista .fuoco-poi, #vista .casa-sez, #vista .focus-scena > * { max-width: none; }
+  #vista > .casa, #vista > .prof-testa, #vista > .prof-numeri, #vista > .prof-righe { max-width: 760px; margin-left: auto; margin-right: auto; }
+  #vista .testa-porta { max-width: 760px; margin-left: auto; margin-right: auto; }
+}
