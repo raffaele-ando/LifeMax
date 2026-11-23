@@ -5804,3 +5804,5 @@ textarea { resize: none; field-sizing: content; max-height: 40vh; }
   .bv-anteprima { margin-left: -150px; top: 30px; }
 }
 @media (max-width: 899px) { .bv-scena { height: 290px; } .bv-eroe { gap: 4px; } }
+.bv-salta-posto { width: 64px; }
+.bv-ant-punto { width: 8px; height: 8px; border-radius: 50%; background: currentColor; display: inline-block; }

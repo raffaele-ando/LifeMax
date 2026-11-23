@@ -1,0 +1,240 @@
+<title>Mascotte LifeMax</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: una scheda per mascotte. In ogni scheda: la forma in grande, i sette
+   stati in fila, la prova delle misure (16→128 px e sagoma piena) e quattro
+   momenti veri dell'app. Le regole stanno in cima, perché sono il criterio. */
+:root {
+  --bg: #f6f5fb; --carta: #ffffff; --carta-2: #f1eff9; --fg: #17152b; --fg-2: #5c5873; --bordo: #e3e0f0;
+  --accento: #5b4cf0; --accento-ink: #ffffff; --scelto: #0f9d63; --ok: #12a150;
+  --corpo: #5b4cf0; --occhi: #16123a; --terra: rgba(27, 22, 64, .12);
+  --f-titolo: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --f-testo: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0f0f15; --carta: #19192200; --carta: #191922; --carta-2: #22222d; --fg: #f1f0f7; --fg-2: #a9a6bd; --bordo: #2e2d3a;
+  --accento: #8b80ff; --accento-ink: #12101f; --scelto: #3fd08f; --ok: #3fd08f;
+  --corpo: #7d70ff; --occhi: #120e2e; --terra: rgba(0, 0, 0, .35); color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #0f0f15; --carta: #191922; --carta-2: #22222d; --fg: #f1f0f7; --fg-2: #a9a6bd; --bordo: #2e2d3a;
+  --accento: #8b80ff; --accento-ink: #12101f; --scelto: #3fd08f; --ok: #3fd08f;
+  --corpo: #7d70ff; --occhi: #120e2e; --terra: rgba(0, 0, 0, .35); color-scheme: dark; }
+
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--f-testo); font-size: 15px; line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 0 110px; }
+.pagina { max-width: 1120px; margin: 0 auto; display: flex; flex-direction: column; gap: 22px; }
+header { padding-block: 40px 4px; display: flex; flex-direction: column; gap: 10px; max-width: 720px; }
+.occhiello { font: 600 12px/1 var(--f-testo); letter-spacing: .08em; text-transform: uppercase; color: var(--accento); }
+h1 { margin: 0; font: 700 clamp(30px, 5vw, 44px)/1.05 var(--f-titolo); letter-spacing: -0.02em; text-wrap: balance; }
+header p { margin: 0; color: var(--fg-2); font-size: 16px; text-wrap: pretty; }
+
+.regole { background: var(--carta); border-radius: 20px; box-shadow: 0 0 0 1px var(--bordo); padding: 18px 20px; }
+.regole h2 { margin: 0 0 10px; font: 700 17px var(--f-titolo); }
+.regole ol { margin: 0; padding-left: 20px; display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 6px 28px; color: var(--fg-2); font-size: 14px; }
+.regole b { color: var(--fg); font-weight: 600; }
+
+.scheda { background: var(--carta); border-radius: 24px; box-shadow: 0 0 0 1px var(--bordo); padding: 20px; display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 20px 28px; }
+.scheda.scelta { box-shadow: 0 0 0 2.5px var(--scelto), 0 10px 28px color-mix(in srgb, var(--scelto) 16%, transparent); }
+.ritratto { display: flex; flex-direction: column; gap: 12px; }
+.ritratto .grande { background: var(--carta-2); border-radius: 18px; display: grid; place-items: center; aspect-ratio: 1; }
+.ritratto .grande svg { width: 78%; height: auto; }
+.nome { display: flex; align-items: center; gap: 10px; }
+.lettera { flex: none; width: 30px; height: 30px; border-radius: 10px; display: grid; place-items: center; font: 700 14px var(--f-titolo); background: var(--carta-2); color: var(--fg-2); }
+.nome h2 { margin: 0; font: 700 24px/1.1 var(--f-titolo); }
+.idea { margin: 0; color: var(--fg-2); font-size: 14px; }
+.scegli { min-height: 46px; border-radius: 14px; border: 1.5px solid var(--bordo); background: var(--carta); color: var(--fg); font: 600 15px var(--f-testo); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+.scegli:hover { border-color: var(--accento); }
+.scegli:focus-visible { outline: 3px solid var(--accento); outline-offset: 2px; }
+.scegli[aria-pressed="true"] { background: var(--scelto); border-color: var(--scelto); color: #fff; }
+.scegli svg { width: 18px; height: 18px; }
+
+.lato { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.eti { font: 600 11.5px/1 var(--f-testo); letter-spacing: .06em; text-transform: uppercase; color: var(--fg-2); margin-bottom: 8px; }
+.stati { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px; }
+.stato { background: var(--carta-2); border-radius: 14px; padding: 8px 4px 8px; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.stato svg { width: 100%; max-width: 84px; height: auto; }
+.stato span { font-size: 11.5px; font-weight: 600; color: var(--fg-2); text-align: center; line-height: 1.25; }
+
+.misure { display: flex; align-items: flex-end; gap: 18px; flex-wrap: wrap; padding: 12px 14px; border-radius: 14px; background: var(--carta-2); }
+.misura { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 11px; color: var(--fg-2); font-variant-numeric: tabular-nums; }
+.sagoma svg { --corpo: #17152b; --occhi: #17152b; --terra: transparent; }
+:root[data-theme="dark"] .sagoma svg { --corpo: #f1f0f7; --occhi: #f1f0f7; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .sagoma svg { --corpo: #f1f0f7; --occhi: #f1f0f7; } }
+
+.momenti { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.momento { border-radius: 16px; box-shadow: 0 0 0 1px var(--bordo); padding: 12px; display: flex; flex-direction: column; gap: 8px; min-height: 150px; }
+.momento small { font-size: 11px; color: var(--fg-2); font-weight: 600; letter-spacing: .04em; text-transform: uppercase; }
+.vuoto { display: flex; align-items: center; gap: 10px; }
+.vuoto svg { width: 56px; height: 56px; flex: none; }
+.vuoto b { display: block; font-size: 14px; }
+.vuoto span { font-size: 12.5px; color: var(--fg-2); }
+.finto-tasto { align-self: flex-start; font-size: 12.5px; font-weight: 600; color: var(--accento); background: color-mix(in srgb, var(--accento) 12%, transparent); padding: 6px 10px; border-radius: 10px; }
+.timer { display: flex; align-items: flex-end; gap: 6px; justify-content: center; }
+.timer svg.m { width: 40px; height: 40px; }
+.anello { width: 84px; height: 84px; border-radius: 50%; display: grid; place-items: center; font: 700 17px var(--f-titolo); font-variant-numeric: tabular-nums;
+  background: radial-gradient(closest-side, var(--carta) 82%, transparent 83%), conic-gradient(var(--accento) 0 62%, var(--carta-2) 62% 100%); }
+
+.barra { position: fixed; left: 0; right: 0; bottom: 0; z-index: 5;
+  padding: 12px max(16px, env(safe-area-inset-right, 0px)) calc(12px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
+  background: color-mix(in srgb, var(--carta) 92%, transparent); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); box-shadow: 0 -1px 0 var(--bordo); }
+.barra-dentro { max-width: 1120px; margin: 0 auto; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.barra-testo { flex: 1; min-width: 0; font-size: 14.5px; }
+.copia { min-height: 42px; padding: 0 16px; border-radius: 12px; border: 0; background: var(--accento); color: var(--accento-ink); font: 600 14.5px var(--f-testo); cursor: pointer; }
+.copia:disabled { opacity: .4; cursor: default; }
+
+/* il respiro: lento, piccolo, solo nel ritratto grande */
+.grande svg .corpo { transform-box: fill-box; transform-origin: 50% 100%; animation: respira 5s ease-in-out infinite; }
+@keyframes respira { 50% { transform: scale(1.015, .985); } }
+@media (prefers-reduced-motion: reduce) { .grande svg .corpo { animation: none; } }
+
+@media (max-width: 860px) {
+  .scheda { grid-template-columns: 1fr; }
+  .ritratto { display: grid; grid-template-columns: 120px 1fr; align-items: center; }
+  .ritratto .grande { grid-row: span 3; }
+  .stati { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .momenti { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 420px) { .stati { grid-template-columns: repeat(3, minmax(0, 1fr)); } .ritratto { grid-template-columns: 96px 1fr; } }
+</style>
+
+<div class="pagina">
+  <header>
+    <span class="occhiello">LifeMax · proposte, terza versione</span>
+    <h1>Mascotte semplici, che sentono</h1>
+    <p>Cinque forme, disegnate con le regole su cui le due analisi (fonti scritte e immagini vere di Phantom, Brilliant, Duolingo e Headspace) sono d’accordo. Ogni mascotte è un corpo e due occhi: le emozioni nascono solo da come cambiano gli occhi e da piccole deformazioni del corpo.</p>
+  </header>
+
+  <section class="regole" aria-label="Regole">
+    <h2>Le regole usate</h2>
+    <ol>
+      <li><b>Al massimo 4 forme</b>: corpo, due occhi, una bocca solo nella gioia.</li>
+      <li><b>Un corpo appoggiato</b>, base larga, con una sola piccola asimmetria.</li>
+      <li><b>Occhi pieni</b>, senza bianco né riflessi, insieme circa il 26% della larghezza.</li>
+      <li><b>Niente bocca, braccia, sopracciglia o accessori</b> nello stato normale.</li>
+      <li><b>Due colori piatti</b> più l’ombra a terra; niente contorni o sfumature.</li>
+      <li><b>Lo sguardo serve</b>: guarda l’attività o il timer, non chi legge.</li>
+      <li><b>Deformazioni sobrie</b>, al massimo ±8%.</li>
+      <li><b>Nessun rimprovero</b>: dopo una pausa c’è «bentornato», non lacrime.</li>
+      <li><b>Lo stesso disegno da 16 a 512 px</b>, riconoscibile anche come sagoma piena.</li>
+    </ol>
+  </section>
+
+  <main id="elenco" style="display:flex;flex-direction:column;gap:22px"></main>
+</div>
+
+<div class="barra" role="region" aria-label="Le tue scelte">
+  <div class="barra-dentro">
+    <div class="barra-testo" id="riassunto" aria-live="polite">Nessuna scelta per ora.</div>
+    <button class="copia" id="copia" disabled>Copia le scelte</button>
+  </div>
+</div>
+
+<script>
+/* ---------- le cinque forme (viewBox 0 0 100 100, terra a y=92) ----------
+   Per ogni forma: il tracciato del corpo e dove stanno gli occhi. */
+const FORME = [
+  { id: 'sasso', nome: 'Sasso', idea: 'Un ciottolo di fiume: liscio perché l’acqua ci è passata sopra un giorno alla volta. Il lato sinistro è un po’ più basso, ed è tutto il suo carattere.',
+    d: 'M13 72C13 47 29 31 51 31C74 31 89 46 89 67C89 83 75 92 51 92C27 92 13 85 13 72Z', occhi: [41, 63, 58] },
+  { id: 'bocciolo', nome: 'Bocciolo', idea: 'Una forma che sta per aprirsi: la punta morbida in alto, piegata di lato, dice «sto crescendo». Base larga, ben piantata.',
+    d: 'M57 15C61 25 73 32 80 43C87 54 89 64 87 74C85 86 71 92 50 92C29 92 15 86 13 74C11 60 21 46 35 37C45 31 52 25 57 15Z', occhi: [40, 62, 62] },
+  { id: 'tessera', nome: 'Tessera', idea: 'Il quadrato morbido dell’icona dell’app, con un angolo più tondo degli altri. Ordinata, affidabile: la casella in cui metti una cosa alla volta.',
+    d: 'M25 30H66Q86 30 86 50V81Q86 92 75 92H25Q14 92 14 81V41Q14 30 25 30Z', occhi: [39, 61, 58] },
+  { id: 'cupola', nome: 'Cupola', idea: 'Una cupola bassa, come un mochi appoggiato sul tavolo: il punto più stabile dell’app. La cima è appena spostata a destra.',
+    d: 'M16 92Q10 92 10 86C10 54 29 30 54 30C77 30 90 52 90 86Q90 92 84 92Z', occhi: [42, 64, 63] },
+  { id: 'fagiolo', nome: 'Fagiolo', idea: 'Un fagiolo sdraiato con l’incavo in alto: piccolo, sereno, impossibile da confondere. Fa una cosa sola, poi riposa.',
+    d: 'M17 66C17 46 30 37 43 40C50 42 54 42 60 38C75 31 90 43 88 63C86 81 70 92 51 92C31 92 17 82 17 66Z', occhi: [40, 63, 63] }
+];
+
+/* ---------- i sette stati ----------
+   sx/sy: deformazione del corpo attorno alla base (al massimo ±8%)
+   su: quanto sale (saltello), occhi: come sono fatti, g: dove guardano */
+const STATI = [
+  { k: 'normale', n: 'Normale', sx: 1, sy: 1, su: 0, occhi: 'punti', g: [2.5, 1.5] },
+  { k: 'concentrata', n: 'Concentrata', sx: 1.05, sy: .95, su: 0, occhi: 'fessure', g: [3, 3] },
+  { k: 'gioia', n: 'Gioia', sx: .95, sy: 1.07, su: 6, occhi: 'archi', g: [0, 0], bocca: 1 },
+  { k: 'sollievo', n: 'Sollievo', sx: 1.03, sy: .98, su: 0, occhi: 'chiusi', g: [0, 1] },
+  { k: 'stanca', n: 'Stanca', sx: 1.06, sy: .93, su: 0, occhi: 'palpebre', g: [1, 2] },
+  { k: 'bentornata', n: 'Bentornata', sx: .98, sy: 1.03, su: 4, occhi: 'punti', g: [0, -1] },
+  { k: 'dorme', n: 'Dorme (sera)', sx: 1.06, sy: .94, su: 0, occhi: 'chiusi', g: [0, 3], z: 1 }
+];
+
+function occhio(tipo, x, y) {
+  const r = 5.2;
+  if (tipo === 'punti') return `<circle cx="${x}" cy="${y}" r="${r}"/>`;
+  if (tipo === 'fessure') return `<rect x="${x - 5.6}" y="${y - 1.9}" width="11.2" height="3.8" rx="1.9"/>`;
+  if (tipo === 'archi') return `<path d="M${x - 5.2} ${y + 2.2}Q${x} ${y - 5.8} ${x + 5.2} ${y + 2.2}" fill="none" stroke="var(--occhi)" stroke-width="3.6" stroke-linecap="round"/>`;
+  if (tipo === 'chiusi') return `<path d="M${x - 5.2} ${y - 1}Q${x} ${y + 5} ${x + 5.2} ${y - 1}" fill="none" stroke="var(--occhi)" stroke-width="3.6" stroke-linecap="round"/>`;
+  /* palpebre: mezzo occhio, la metà bassa */
+  return `<path d="M${x - r} ${y}A${r} ${r} 0 0 0 ${x + r} ${y}Z"/>`;
+}
+function mascotte(f, s) {
+  const [x1, x2, y] = f.occhi, gx = s.g[0], gy = s.g[1];
+  /* la deformazione ha la base come perno: il corpo si schiaccia o si allunga
+     restando appoggiato; gli occhi seguono la stessa trasformazione */
+  const t = `translate(50 ${92 - s.su}) scale(${s.sx} ${s.sy}) translate(-50 -92)`;
+  const ombra = `<ellipse cx="50" cy="94.5" rx="${(34 * (s.su ? .82 : 1) * s.sx).toFixed(1)}" ry="3.2" fill="var(--terra)"/>`;
+  const mx = (x1 + x2) / 2 + gx, my = y + 11;
+  const bocca = s.bocca ? `<path d="M${mx - 4.6} ${my - 1}Q${mx} ${my + 6.5} ${mx + 4.6} ${my - 1}Z" fill="var(--occhi)"/>` : '';
+  const zeta = s.z ? `<path d="M80 22h7l-7 8h7M90 12h5l-5 6h5" fill="none" stroke="var(--fg-2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity=".7"/>` : '';
+  return `<svg viewBox="0 0 100 100" role="img" aria-label="${f.nome}, ${s.n.toLowerCase()}">${ombra}` +
+    `<g transform="${t}"><g class="corpo"><path d="${f.d}" fill="var(--corpo)"/>` +
+    `<g fill="var(--occhi)">${occhio(s.occhi, x1 + gx, y + gy)}${occhio(s.occhi, x2 + gx, y + gy)}</g>${bocca}</g></g>${zeta}</svg>`;
+}
+const st = k => STATI.find(s => s.k === k);
+
+const CUORE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg>';
+const CHIAVE = 'lm-mascotte-v3';
+const scelte = new Set((() => { try { return JSON.parse(localStorage.getItem(CHIAVE) || '[]'); } catch (e) { return []; } })());
+function salva() { try { localStorage.setItem(CHIAVE, JSON.stringify([...scelte])); } catch (e) { /* va bene lo stesso */ } }
+
+document.getElementById('elenco').innerHTML = FORME.map((f, i) => {
+  const L = String.fromCharCode(65 + i), on = scelte.has(f.id);
+  return `<article class="scheda${on ? ' scelta' : ''}" id="m-${f.id}">
+    <div class="ritratto">
+      <div class="grande">${mascotte(f, st('normale'))}</div>
+      <div class="nome"><span class="lettera">${L}</span><h2>${f.nome}</h2></div>
+      <p class="idea">${f.idea}</p>
+      <button class="scegli" data-id="${f.id}" aria-pressed="${on}">${CUORE}<span>${on ? 'Mi piace' : 'Mi piace?'}</span></button>
+    </div>
+    <div class="lato">
+      <div><div class="eti">Gli stati</div>
+        <div class="stati">${STATI.map(s => `<div class="stato">${mascotte(f, s)}<span>${s.n}</span></div>`).join('')}</div></div>
+      <div><div class="eti">Prova delle misure e della sagoma</div>
+        <div class="misure">${[16, 24, 32, 48, 128].map(px => `<div class="misura"><div style="width:${px}px;height:${px}px">${mascotte(f, st('normale'))}</div>${px} px</div>`).join('')}
+          <div class="misura sagoma"><div style="width:32px;height:32px">${mascotte(f, st('normale'))}</div>sagoma</div></div></div>
+      <div><div class="eti">Nell’app</div>
+        <div class="momenti">
+          <div class="momento"><small>Adesso, vuoto</small><div class="vuoto">${mascotte(f, st('normale'))}<div><b>Niente in programma</b><span>Scegli la prossima cosa.</span></div></div><span class="finto-tasto">+ Aggiungi</span></div>
+          <div class="momento"><small>Timer</small><div class="timer">${mascotte(f, st('concentrata')).replace('<svg', '<svg class="m"')}<div class="anello">24:12</div></div></div>
+          <div class="momento"><small>Dopo una pausa</small><div class="vuoto">${mascotte(f, st('bentornata'))}<div><b>Bentornato</b><span>Ieri è saltato. Riprendiamo da una cosa sola.</span></div></div></div>
+          <div class="momento"><small>Fine giornata</small><div class="vuoto">${mascotte(f, st('gioia'))}<div><b>3 di 3 fatte</b><span>Giornata chiusa. Ottimo lavoro.</span></div></div></div>
+        </div></div>
+    </div>
+  </article>`;
+}).join('');
+
+function aggiorna() {
+  const nomi = FORME.map((f, i) => scelte.has(f.id) ? String.fromCharCode(65 + i) + ' ' + f.nome : null).filter(Boolean);
+  document.getElementById('riassunto').innerHTML = nomi.length ? 'Scelte (' + nomi.length + '): <b>' + nomi.join(', ') + '</b>' : 'Nessuna scelta per ora.';
+  document.getElementById('copia').disabled = !nomi.length;
+}
+document.getElementById('elenco').addEventListener('click', ev => {
+  const b = ev.target.closest('.scegli'); if (!b) return;
+  const id = b.dataset.id; if (scelte.has(id)) scelte.delete(id); else scelte.add(id);
+  const on = scelte.has(id);
+  b.setAttribute('aria-pressed', on); b.querySelector('span').textContent = on ? 'Mi piace' : 'Mi piace?';
+  document.getElementById('m-' + id).classList.toggle('scelta', on);
+  salva(); aggiorna();
+});
+document.getElementById('copia').addEventListener('click', ev => {
+  const testo = 'Mascotte scelte: ' + FORME.map((f, i) => scelte.has(f.id) ? String.fromCharCode(65 + i) + ' ' + f.nome : null).filter(Boolean).join(', ');
+  const btn = ev.currentTarget;
+  navigator.clipboard.writeText(testo).then(() => { btn.textContent = 'Copiato'; setTimeout(() => { btn.textContent = 'Copia le scelte'; }, 1600); })
+    .catch(() => { const r = document.createRange(); r.selectNodeContents(document.getElementById('riassunto')); const s = getSelection(); s.removeAllRanges(); s.addRange(r); });
+});
+aggiorna();
+</script>

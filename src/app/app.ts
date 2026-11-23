@@ -7866,7 +7866,7 @@ function onboarding() {
           '<div class="bv-anteprima">' +
             '<div class="bv-ant-testa"><b>martedì 18 agosto</b><span class="bv-ant-passo"><i style="width:66%"></i></span><small>2 di 3</small></div>' +
             '<div class="bv-ant-carta">' +
-              '<span class="bv-ant-eti">' + ICO('book', 11) + ' Studio · adesso</span>' +
+              '<span class="bv-ant-eti"><i class="bv-ant-punto"></i>Studio · adesso</span>' +
               '<b class="bv-ant-tit">Ripasso capitolo 4</b>' +
               '<span class="bv-ant-tasti"><span class="bv-ant-ok">' + ICO('check', 13) + ' Fatto</span><span class="bv-ant-timer">' + ICO('durata', 13) + ' Timer</span></span>' +
             '</div>' +
