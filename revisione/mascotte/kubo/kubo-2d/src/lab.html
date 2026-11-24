@@ -1,0 +1,13 @@
+<!doctype html><meta charset="utf-8"><style>body{margin:0;background:#f9f6f2;font-family:Inter,sans-serif}
+.g{display:flex;flex-wrap:wrap}.c{position:relative}.c b{position:absolute;left:0;right:0;bottom:6px;text-align:center;color:#1d2a62;font-size:22px;font-weight:700}</style>
+<div class="g" id="g"></div>
+<script src="rig.js"></script>
+<script>
+const q=new URLSearchParams(location.search);const size=+(q.get('size')||400);
+window.show=(poses,vb)=>{const g=document.getElementById('g');g.innerHTML='';
+for(const [label,pose] of poses){const c=document.createElement('div');c.className='c';c.style.width=c.style.height=size+'px';
+c.innerHTML=KuboRig.build({viewBox:vb||'-400 -700 800 780',attrs:`width="${size}" height="${size}"`});
+const svg=c.firstElementChild;svg.querySelectorAll('[id]').forEach(e=>{});
+g.appendChild(c);KuboRig.applyPose({getElementById:id=>svg.querySelector('#'+id)},pose||{});
+if(label){const b=document.createElement('b');b.textContent=label;c.appendChild(b);}}};
+</script>

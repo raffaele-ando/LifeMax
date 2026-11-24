@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="it"><head><meta charset="utf-8"><title>Segno ti capisce</title>
+<style>html,body{margin:0;padding:0;background:#fff6f1;overflow:hidden}svg{display:block}</style></head>
+<body>
+<svg id="scena" width="1080" height="1080" viewBox="0 0 1080 1080" xmlns="http://www.w3.org/2000/svg"></svg>
+<script src="base.js"></script>
+<script>
+/* ===== SEGNO EMOTIVO: copia di segno() di base.js con tre aggiunte (base.js NON è toccato) =====
+   1. OCCHIO CONTINUO: un'unica forma chiusa (4 curve) riempita e bordata dello stesso colore.
+      Parametri {rx, a, b, dy, punta, tilt}: a = quanto sale l'arco alto, b = quanto scende l'arco basso.
+      a=b>0 ovale aperto · a=b≈0 riga (palpebra chiusa) · a>0,b=-a arco felice ∩ · a<0,b=-a arco chiuso ∪
+      punta=1 → goccia (cima appuntita) inclinata di tilt verso il centro. Tutto si interpola con mix():
+      nessun cambio di disegno, quindi nessun salto tra un tipo di occhio e l'altro.
+   2. RISVOLTO CONTINUO: la curvatura del bordo passa da +5 (calato) a −4 (alzato) senza scatto
+      quando il risvolto attraversa la cerniera (in base.js salta di colpo a Ll+Lr=0).
+   3. occhioR: scala del solo occhio destro (un occhio più grande / che si apre per primo). */
+const EA={rx:5.1,a:7.5,b:7.5,dy:0,punta:0,tilt:0,arco:0};   // ovale aperto (= ellisse 7.2×9.6 di base col bordo)
+const EF={rx:7,a:5,b:-5,dy:3,punta:0,tilt:0,arco:1};        // felice ∩ (= "q7 -10 14 0")
+const EC={rx:7,a:-3.5,b:3.5,dy:0,punta:0,tilt:0,arco:1};    // chiuso ∪, dorme (= "q7 7 14 0")
+const EG={rx:5.3,a:8.4,b:7.2,dy:0,punta:1,tilt:12,arco:0};  // goccia, "ti capisce"
+const ER={rx:6.2,a:.45,b:.45,dy:.5,punta:0,tilt:0,arco:.5};  // riga: palpebra giù a metà battito
+const BE={esse:6,piega:0,incl:0,sy:1,sx:1,risvolto:[17,15],g:[1,1],piedi:[[0,0],[0,0]],occhioK:1,occhioR:1,occhio:EA};
+const SE={
+  calma:   {...BE},
+  capisce: {...BE, esse:4, piega:-22, incl:6, risvolto:[22,10], occhio:EG, g:[-1,2]},
+  dorme:   {...BE, esse:0, piega:100, incl:-16, sy:.9, risvolto:[30,30], occhio:EC, g:[0,1]},
+  gioia:   {...BE, esse:8, piega:-10, sy:1.04, risvolto:[-26,-32], occhio:EF, piedi:[[-6,-2],[6,-2]]},
+  fiero:   {...BE, esse:0, sy:1.1, sx:.95, risvolto:[-30,-30], occhio:EF, piedi:[[-14,0],[14,0]]},
+};
+function spinaE(s){
+  const pts=[],N=48,ds=H*s.sy/N; let x=100,y=186;
+  for(let i=0;i<=N;i++){ const t=i/N;
+    const th=s.incl+s.piega*t+s.esse*Math.sin(t*Math.PI*2);
+    pts.push({x,y,th,t}); const r=th*Math.PI/180; x+=ds*Math.sin(r); y-=ds*Math.cos(r); }
+  return pts;
+}
+function occhioE(x,y,o,rot,k){
+  /* arco=0: ovale (maniglie d'ellisse); arco=1: arco di parabola come il "q7 -10 14 0" di base */
+  const K=.5523, rx=o.rx*k, a=o.a*k, b=o.b*k, cy=y+o.dy*k, p=o.punta, q=o.arco||0;
+  const sxA=lerp(rx,rx*2/3,q), syA=lerp(K,2/3,q), tA=lerp(K,1/3,q);
+  const hsA=a*syA*(1-.35*p)+a*.25*p, ht=rx*tA*(1-p), hsB=b*syA, hb=rx*tA;
+  const d=`M${f1(x-rx)} ${f1(cy)}C${f1(x-sxA)} ${f1(cy-hsA)} ${f1(x-ht)} ${f1(cy-a)} ${f1(x)} ${f1(cy-a)}`+
+          `C${f1(x+ht)} ${f1(cy-a)} ${f1(x+sxA)} ${f1(cy-hsA)} ${f1(x+rx)} ${f1(cy)}`+
+          `C${f1(x+sxA)} ${f1(cy+hsB)} ${f1(x+hb)} ${f1(cy+b)} ${f1(x)} ${f1(cy+b)}`+
+          `C${f1(x-hb)} ${f1(cy+b)} ${f1(x-sxA)} ${f1(cy+hsB)} ${f1(x-rx)} ${f1(cy)}Z`;
+  return `<path d="${d}" fill="${C.occhi}" stroke="${C.occhi}" stroke-width="${f1(4.2*Math.min(1.15,k))}" stroke-linejoin="round" transform="rotate(${f1(rot)} ${f1(x)} ${f1(y)})"/>`;
+}
+function segnoE(s){
+  const P=spinaE(s),N=P.length-1,top=P[N];
+  const iT=Math.round(N*TACCA/(H*s.sy));
+  const [pl,pr]=s.piedi;
+  const ps0=lato(P[0],-1,larg(0,s)+4),pd0=lato(P[0],1,larg(0,s)+4);
+  const ps=[ps0[0]+pl[0],ps0[1]+pl[1]],pd=[pd0[0]+pr[0],pd0[1]+pr[1]];
+  let d=`M${fp(ps)}`;
+  for(let i=3;i<=N;i++) d+=`L${fp(lato(P[i],-1,larg(P[i].t,s)))}`;
+  d+=`L${fp(lato(top,1,larg(1,s)))}`;
+  for(let i=N-1;i>=3;i--) d+=`L${fp(lato(P[i],1,larg(P[i].t,s)))}`;
+  d+=`L${fp(pd)}L${fp([P[iT].x,P[iT].y])}Z`;
+  const iO=Math.round(N*(1-.3)),po=P[iO],r=po.th;
+  const occhi=[-1,1].map(l=>{
+    const c=lato(po,l,12),x=c[0]+s.g[0],y=c[1]+s.g[1];
+    const k=s.occhioK*(l===1?s.occhioR:1);
+    const oc=(l===-1&&s.occhioL)?s.occhioL:s.occhio;   // occhioL facoltativo: occhio sinistro diverso
+    return occhioE(x,y,oc,r+l*-oc.tilt*oc.punta,k);
+  }).join('');
+  const [Ll,Lr]=s.risvolto,th=top.th,hw=larg(1,s);
+  const hl=lato(top,-1,hw+1),hr=lato(top,1,hw+1);
+  const el=lungo(hl,th,Ll),er=lungo(hr,th,Lr);
+  const sum=Ll+Lr, sotto=sum>0, apri=sotto?0:6*clamp(-sum/40);
+  const el2=lato({x:el[0],y:el[1],th},-1,apri),er2=lato({x:er[0],y:er[1],th},1,apri);
+  const curva=sotto?5*clamp(sum/12):-4*clamp(-sum/12);
+  const cm=lungo([(el2[0]+er2[0])/2,(el2[1]+er2[1])/2],th,curva);
+  const risv=`<path d="M${fp(hl)}L${fp(el2)}Q${fp(cm)} ${fp(er2)}L${fp(hr)}Z" fill="${C.rovescio}" stroke="${C.rovescio}" stroke-width="3" stroke-linejoin="round"/>`;
+  return (sotto?'':risv)+`<path d="${d}" fill="${C.corpo}" stroke="${C.corpo}" stroke-width="5" stroke-linejoin="round"/>`+occhi+(sotto?risv:'');
+}
+/* pone Segno in scena: piedi in (fx,fy), scala sc. Appoggio: quando il corpo è inclinato la punta
+   più bassa resta sul suolo (niente piede che sprofonda nel pavimento). */
+function piedeBasso(s){ const P=spinaE(s), [pl,pr]=s.piedi;
+  const a=lato(P[0],-1,larg(0,s)+4), b=lato(P[0],1,larg(0,s)+4);
+  return Math.max(a[1]+pl[1], b[1]+pr[1])-186; }
+function poni(s,fx,fy,sc){ const dy=piedeBasso(s)*sc;
+  return `<g transform="translate(${f1(fx)} ${f1(fy-dy)}) scale(${sc.toFixed(3)}) translate(-100 -186)">${segnoE(s)}</g>`; }
+function ombraE(cx,cy,rx,ry){ return `<ellipse cx="${f1(cx)}" cy="${f1(cy)}" rx="${f1(rx)}" ry="${f1(ry)}" fill="${C.ombra}"/>`; }
+const bump=(t,a,b,c,d)=>eIO(prog(t,a,b))*(1-eIO(prog(t,c,d)));   // 0 → 1 → 0 morbido
+
+/* ============================================================
+   SEGNO — «Non ce l'ho fatta» → ti capisce. DURATA 3,0 s.
+   0.00 calma, respira, ti guarda.
+   0.15 anticipo: un respiro dentro, si tira appena indietro.
+   0.42 si piega verso di te nella C di «capisce» (lento, ease in-out);
+   0.55 gli occhi si fanno a goccia, il risvolto arriva dopo (follow-through).
+   1.15 il risvolto cala come una palpebra comprensiva.
+   1.45 annuisce due volte (la cima si piega; il secondo più piccolo), il risvolto segue in ritardo.
+   2.10 si raddrizza, il risvolto torna su con un piccolo rimbalzo, gli occhi diventano un sorriso calmo.
+   2.50 «si mette di segno»: un piccolo affondo verso il basso e un assestamento smorzato, come un
+        segnalibro che si sistema fra le pagine. 2.75–3.0 fermo, respira.
+   ============================================================ */
+const DURATA=3.0;
+const scena=document.getElementById('scena');
+const SC=3.6, FX=556, FY=800;
+const nodo=(t,a,b)=>Math.pow(Math.sin(Math.PI*prog(t,a,b)),2);
+function cenno(t){ return nodo(t,1.45,1.82)+.62*nodo(t,1.82,2.14); }
+function stato(t){
+  const fin={...SE.calma, occhio:EF, g:[0,1]};
+  const k1=eIO(prog(t,.42,1.15)), k2=eIO(prog(t,2.1,2.55));
+  let s=mix(mix(SE.calma,SE.capisce,k1),fin,k2);
+  s.g=mix(mix([1,1],[-1,2],eIO(prog(t,.5,1.1))),[0,1],k2);
+  /* anticipo: respiro dentro e piccolo arretramento prima di piegarsi */
+  const ant=bump(t,.15,.4,.42,.78);
+  s.incl+=-3.2*ant; s.sy+=.02*ant; s.piega+=4*ant;
+  /* occhi: ovali → gocce (in ritardo sul corpo) → sorriso calmo */
+  const eg=eIO(prog(t,.55,1.05)), ef=eIO(prog(t,2.16,2.52));
+  s.occhio=mix(mix(EA,EG,eg),EF,ef);
+  /* risvolto: arriva dopo, poi cala come palpebra, poi torna su con un rimbalzo */
+  const rk=eIO(prog(t,.58,1.25));
+  const palp=eIO(prog(t,1.12,1.5))*(1-eIO(prog(t,2.08,2.42)));
+  const rb=eIO(prog(t,2.12,2.5));
+  const mr=molla(t-2.5,10,5.5);
+  s.risvolto=[ lerp(lerp(17,22,rk),17,rb)+8*palp + 4.5*cenno(t-.09) - 9*mr,
+               lerp(lerp(15,10,rk),15,rb)+11*palp + 5.5*cenno(t-.11) - 7*mr ];
+  /* annuire: la cima si piega in avanti, il corpo si accorcia un poco */
+  const n=cenno(t);
+  s.piega+=-10*n; s.sy-=.03*n; s.incl+=-1.5*n; s.g=[s.g[0]-.6*n,s.g[1]+1.4*n];
+  /* mettersi di segno: affondo e assestamento */
+  const sd=bump(t,2.42,2.56,2.56,2.72);
+  const ms=molla(t-2.6,13,6.5);
+  s.sy*=1-.06*sd+.035*ms; s.sx*=1+.05*sd-.03*ms; s.incl+=2.8*molla(t-2.48,9,5); s.esse+=2*molla(t-2.55,9,5);
+  s.piedi=[[-3*sd,0],[3*sd,0]];
+  /* respiro di fondo */
+  s.sy*=1+.008*Math.sin(t*Math.PI*2/1.5);
+  return s;
+}
+function render(t){
+  let o=`<rect width="1080" height="1080" fill="${C.fondo}"/>`;
+  const s=stato(t);
+  const lean=eIO(prog(t,.42,1.15))*(1-eIO(prog(t,2.1,2.55)));
+  o+=ombraE(FX-22*lean,FY+8,128*(1+.06*lean)*s.sx,17);
+  o+=poni(s,FX,FY,SC);
+  scena.innerHTML=o;
+}
+window.render=render; window.DURATA=DURATA;
+render(Number(new URLSearchParams(location.search).get('t')||0));
+</script>
+</body></html>

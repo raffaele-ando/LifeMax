@@ -64,20 +64,3 @@ export function illoOrbita(): string {
     '<path d="M153.5 143h8.5v8.5" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>' +
     '</svg>';
 }
-
-/* LA MASCOTTE: una goccia d'indaco con gli occhi. `umore` le cambia la
-   bocca: contenta di suo, in festa quando hai chiuso qualcosa. */
-export function mascotte(umore?: 'festa'): string {
-  const bocca = umore === 'festa'
-    ? '<path d="M46 62q14 16 28 0z" fill="#fff"/>'
-    : '<path d="M48 63q12 9 24 0" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round"/>';
-  return '<svg class="mascotte' + (umore ? ' mascotte-' + umore : '') + '" viewBox="0 0 120 120" aria-hidden="true">' +
-    '<ellipse cx="60" cy="110" rx="30" ry="5" fill="var(--superficie-3)"/>' +
-    '<path class="masc-corpo" d="M60 10C84 10 104 30 104 58S86 102 60 102 16 86 16 58 36 10 60 10z" style="fill:var(--accento-pieno)"/>' +
-    '<path d="M32 40q8-16 24-18" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" opacity=".35"/>' +
-    '<g class="masc-occhi"><circle cx="46" cy="50" r="6" fill="#fff"/><circle cx="74" cy="50" r="6" fill="#fff"/>' +
-    '<circle cx="47" cy="51" r="2.6" fill="#1b1640"/><circle cx="75" cy="51" r="2.6" fill="#1b1640"/></g>' +
-    bocca +
-    (umore === 'festa' ? '<path d="M100 14l3 7 7 3-7 3-3 7-3-7-7-3 7-3z" fill="#ffb400"/><path d="M18 22l2 4 4 2-4 2-2 4-2-4-4-2 4-2z" fill="#ff5a5f"/>' : '') +
-    '</svg>';
-}

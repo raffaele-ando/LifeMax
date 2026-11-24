@@ -1,0 +1,2 @@
+const {chromium}=require('playwright');(async()=>{const b=await chromium.launch();const p=await b.newPage({viewport:{width:1600,height:900},deviceScaleFactor:Number(process.argv[4]||1)});const e=[];p.on('pageerror',x=>e.push(x.message));p.on('console',m=>{if(m.type()==='error')e.push(m.text())});
+await p.goto('file://'+__dirname+'/'+process.argv[2]);await p.waitForTimeout(400);await p.screenshot({path:__dirname+'/'+process.argv[3],fullPage:true});console.log('errori',e);await b.close();})();

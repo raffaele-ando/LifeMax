@@ -1,0 +1,8 @@
+<!doctype html><meta charset="utf-8"><body style="margin:0;background:#f4f2fb;font:13px system-ui">
+<div id="g" style="display:grid;grid-template-columns:repeat(9,160px);gap:8px;padding:10px"></div>
+<div id="c" style="display:grid;grid-template-columns:repeat(4,160px);gap:8px;padding:10px"></div>
+<script src="germo.js"></script>
+<script>
+document.getElementById('g').innerHTML=Object.keys(GERMO.EMO).map(k=>'<div style="background:#fff;border-radius:14px;text-align:center;padding-bottom:6px">'+GERMO.disegna(k)+'<b>'+GERMO.EMO[k].n+'</b></div>').join('');
+document.getElementById('c').innerHTML=[0,1,2,3].map(f=>'<div style="background:#fff;border-radius:14px;text-align:center;padding-bottom:6px">'+GERMO.crescita(f)+'<b>Fase '+(f+1)+'</b></div>').join('');
+</script>

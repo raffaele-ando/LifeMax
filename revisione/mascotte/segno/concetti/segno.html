@@ -1,0 +1,14 @@
+<!doctype html><meta charset="utf-8"><body style="margin:0;background:#f4f2fb;font:13px system-ui">
+<div class="t">Stati</div><div id="g" class="r"></div>
+<div class="t">Viso coperto</div><div id="v" class="r"></div>
+<div class="t">Fondo scuro</div><div id="d" class="r" style="background:#101016"></div>
+<div class="t">24 · 32 · 48 · 96 px</div><div id="m" style="display:flex;gap:16px;align-items:flex-end;padding:10px"></div>
+<style>.r{display:grid;grid-template-columns:repeat(8,150px);gap:8px;padding:6px 10px}.r>div{background:#fff;border-radius:14px;text-align:center;padding-bottom:6px}#d>div{background:#1b1b24;color:#ddd}.t{padding:10px 10px 0;font-weight:700}</style>
+<script src="segno.js"></script>
+<script>
+const K=Object.keys(SEGNO.STATI);
+g.innerHTML=K.map(k=>'<div>'+SEGNO.disegna(k)+'<b>'+SEGNO.STATI[k].n+'</b></div>').join('');
+v.innerHTML=K.map(k=>'<div>'+SEGNO.disegna(k,{senzaViso:1})+'<b>'+SEGNO.STATI[k].n+'</b></div>').join('');
+d.innerHTML=K.map(k=>'<div>'+SEGNO.disegna(k,{corpo:'#7c72ff'})+'<b>'+SEGNO.STATI[k].n+'</b></div>').join('');
+m.innerHTML=[24,32,48,96].map(px=>['calma','gioia','dorme'].map(k=>'<div style="width:'+px+'px">'+SEGNO.disegna(k)+'</div>').join('')).join('<span style="width:10px"></span>');
+</script>

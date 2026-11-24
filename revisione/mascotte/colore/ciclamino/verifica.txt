@@ -1,0 +1,306 @@
+## 1. Contrasti WCAG 2.2
+
+| tema | primo piano | fondo | rapporto | soglia | esito | nota |
+|---|---|---|---|---|---|---|
+| chiaro | testo-1 `#281e26` | pagina `#f9f6f2` | 14.95 | 4.5 | PASS | 1.4.3 testo |
+| chiaro | testo-1 `#281e26` | superficie-1 `#ffffff` | 16.11 | 4.5 | PASS | 1.4.3 testo |
+| chiaro | testo-1 `#281e26` | superficie-2 `#f3f0eb` | 14.17 | 4.5 | PASS | 1.4.3 testo |
+| chiaro | testo-1 `#281e26` | superficie-3 `#e9e6e0` | 12.93 | 4.5 | PASS | 1.4.3 testo |
+| chiaro | testo-2 `#554d54` | pagina `#f9f6f2` |  7.57 | 4.5 | PASS | 1.4.3 testo |
+| chiaro | testo-2 `#554d54` | superficie-1 `#ffffff` |  8.15 | 4.5 | PASS | 1.4.3 testo |
+| chiaro | testo-2 `#554d54` | superficie-2 `#f3f0eb` |  7.17 | 4.5 | PASS | 1.4.3 testo |
+| chiaro | testo-2 `#554d54` | superficie-3 `#e9e6e0` |  6.55 | 4.5 | PASS | 1.4.3 testo |
+| chiaro | testo-3 `#686166` | pagina `#f9f6f2` |  5.58 | 4.5 | PASS | 1.4.3 testo |
+| chiaro | testo-3 `#686166` | superficie-1 `#ffffff` |  6.02 | 4.5 | PASS | 1.4.3 testo |
+| chiaro | testo-3 `#686166` | superficie-2 `#f3f0eb` |  5.29 | 4.5 | PASS | 1.4.3 testo |
+| chiaro | testo-3 `#686166` | superficie-3 `#e9e6e0` |  4.83 | 4.5 | PASS | 1.4.3 testo |
+| chiaro | azione-testo `#8d2984` | pagina `#f9f6f2` |  7.00 | 4.5 | PASS | 1.4.3 link / testo selezionato |
+| chiaro | azione-testo `#8d2984` | superficie-1 `#ffffff` |  7.55 | 4.5 | PASS | 1.4.3 link / testo selezionato |
+| chiaro | azione-testo `#8d2984` | azione-tenue `#fbe8f8` |  6.47 | 4.5 | PASS | 1.4.3 link / testo selezionato |
+| chiaro | testo-su-pieno `#ffffff` | azione `#a6339b` |  5.89 | 4.5 | PASS | 1.4.3 etichetta su pieno |
+| chiaro | testo-su-pieno `#ffffff` | azione-hover `#932789` |  7.26 | 4.5 | PASS | 1.4.3 etichetta su pieno |
+| chiaro | testo-su-pieno `#ffffff` | azione-premuta `#841f7b` |  8.53 | 4.5 | PASS | 1.4.3 etichetta su pieno |
+| chiaro | testo-su-pieno `#ffffff` | successo-pieno `#397421` |  5.68 | 4.5 | PASS | 1.4.3 etichetta su pieno |
+| chiaro | testo-su-pieno `#ffffff` | errore-pieno `#872802` |  9.00 | 4.5 | PASS | 1.4.3 etichetta su pieno |
+| chiaro | successo-testo `#356a20` | superficie-1 `#ffffff` |  6.49 | 4.5 | PASS | 1.4.3 |
+| chiaro | successo-testo `#356a20` | successo-tenue `#e2f5dc` |  5.67 | 4.5 | PASS | 1.4.3 |
+| chiaro | errore-testo `#872802` | superficie-1 `#ffffff` |  9.00 | 4.5 | PASS | 1.4.3 |
+| chiaro | errore-testo `#872802` | errore-tenue `#ffe9e3` |  7.72 | 4.5 | PASS | 1.4.3 |
+| chiaro | testo-su-oro `#281e26` | oro `#eab532` |  8.55 | 4.5 | PASS | 1.4.3 |
+| chiaro | testo-1 `#281e26` | oro-tenue `#fbeec9` | 13.94 | 4.5 | PASS | 1.4.3 |
+| chiaro | testo-1 `#281e26` | stanza-gioia `#fee9fa` | 14.00 | 4.5 | PASS | 1.4.3 |
+| chiaro | testo-1 `#281e26` | stanza-capisce `#f3ede7` | 13.86 | 4.5 | PASS | 1.4.3 |
+| chiaro | testo-1 `#281e26` | stanza-bentornato `#fdf2dd` | 14.51 | 4.5 | PASS | 1.4.3 |
+| chiaro | azione-testo `#8d2984` | stanza-gioia `#fee9fa` |  6.56 | 4.5 | PASS | 1.4.3 |
+| chiaro | linea-controllo `#848078` | pagina `#f9f6f2` |  3.65 | 3 | PASS | 1.4.11 bordo campo / spunta / interruttore |
+| chiaro | linea-controllo `#848078` | superficie-1 `#ffffff` |  3.93 | 3 | PASS | 1.4.11 bordo campo / spunta / interruttore |
+| chiaro | linea-controllo `#848078` | superficie-2 `#f3f0eb` |  3.46 | 3 | PASS | 1.4.11 bordo campo / spunta / interruttore |
+| chiaro | azione-linea `#a6339b` | pagina `#f9f6f2` |  5.46 | 3 | PASS | 1.4.11 icona / linea / anello |
+| chiaro | azione-linea `#a6339b` | superficie-1 `#ffffff` |  5.89 | 3 | PASS | 1.4.11 icona / linea / anello |
+| chiaro | successo `#53933a` | pagina `#f9f6f2` |  3.48 | 3 | PASS | 1.4.11 icona / linea / anello |
+| chiaro | successo `#53933a` | superficie-1 `#ffffff` |  3.75 | 3 | PASS | 1.4.11 icona / linea / anello |
+| chiaro | errore `#872802` | pagina `#f9f6f2` |  8.35 | 3 | PASS | 1.4.11 icona / linea / anello |
+| chiaro | errore `#872802` | superficie-1 `#ffffff` |  9.00 | 3 | PASS | 1.4.11 icona / linea / anello |
+| chiaro | focus `#8d2984` | pagina `#f9f6f2` |  7.00 | 3 | PASS | 1.4.11 icona / linea / anello |
+| chiaro | focus `#8d2984` | superficie-1 `#ffffff` |  7.55 | 3 | PASS | 1.4.11 icona / linea / anello |
+| chiaro | focus `#8d2984` | azione `#a6339b` |  1.28 | — | PASS | anello sul pieno: si usa l'anello doppio (2px pagina + 2px focus) |
+| chiaro | azione `#a6339b` | pagina `#f9f6f2` |  5.46 | — | PASS | pieno contro pagina (informativo) |
+| chiaro | segno `#b744ab` | pagina `#f9f6f2` |  4.40 | 3 | PASS | 1.4.11 sagoma della mascotte |
+| chiaro | segno `#b744ab` | superficie-1 `#ffffff` |  4.74 | 3 | PASS | 1.4.11 sagoma della mascotte |
+| chiaro | segno `#b744ab` | superficie-2 `#f3f0eb` |  4.17 | 3 | PASS | 1.4.11 sagoma della mascotte |
+| chiaro | segno-occhi `#2d162a` | segno `#b744ab` |  3.52 | 3 | PASS | 1.4.11 occhi sul corpo |
+| chiaro | segno-rovescio `#e7b5db` | segno `#b744ab` |  2.72 | — | PASS | risvolto contro corpo (lettura della piega) |
+| chiaro | segno-rovescio `#e7b5db` | pagina `#f9f6f2` |  1.62 | — | PASS | risvolto contro pagina: dettaglio interno, non sagoma |
+| chiaro | oro `#eab532` | superficie-1 `#ffffff` |  1.88 | — | PASS | oro: solo particelle o con contorno testo-1 |
+| chiaro | oro `#eab532` | testo-su-oro `#281e26` |  8.55 | 3 | PASS | fiamma oro con contorno inchiostro |
+| chiaro | oro `#eab532` | pagina `#f9f6f2` |  1.75 | — | PASS | oro sulla pagina |
+| chiaro | area-Studio `#4172c3` | superficie-1 `#ffffff` |  4.75 | 3 | PASS | 1.4.11 icona area Studio |
+| chiaro | area-Studio `#4172c3` | pagina `#f9f6f2` |  4.41 | 3 | PASS |  |
+| chiaro | area-Studio-testo `#2555a3` | area-Studio-tenue `#e6effe` |  6.24 | 4.5 | PASS | 1.4.3 etichetta su chip d'area |
+| chiaro | area-Studio-testo `#2555a3` | superficie-1 `#ffffff` |  7.22 | 4.5 | PASS |  |
+| chiaro | area-Salute `#038876` | superficie-1 `#ffffff` |  4.39 | 3 | PASS | 1.4.11 icona area Salute |
+| chiaro | area-Salute `#038876` | pagina `#f9f6f2` |  4.07 | 3 | PASS |  |
+| chiaro | area-Salute-testo `#006759` | area-Salute-tenue `#daf6ef` |  5.97 | 4.5 | PASS | 1.4.3 etichetta su chip d'area |
+| chiaro | area-Salute-testo `#006759` | superficie-1 `#ffffff` |  6.81 | 4.5 | PASS |  |
+| chiaro | area-Relazioni `#89425a` | superficie-1 `#ffffff` |  7.02 | 3 | PASS | 1.4.11 icona area Relazioni |
+| chiaro | area-Relazioni `#89425a` | pagina `#f9f6f2` |  6.52 | 3 | PASS |  |
+| chiaro | area-Relazioni-testo `#843d56` | area-Relazioni-tenue `#fee8ee` |  6.46 | 4.5 | PASS | 1.4.3 etichetta su chip d'area |
+| chiaro | area-Relazioni-testo `#843d56` | superficie-1 `#ffffff` |  7.55 | 4.5 | PASS |  |
+| chiaro | area-Finanze `#737004` | superficie-1 `#ffffff` |  5.19 | 3 | PASS | 1.4.11 icona area Finanze |
+| chiaro | area-Finanze `#737004` | pagina `#f9f6f2` |  4.81 | 3 | PASS |  |
+| chiaro | area-Finanze-testo `#5e5b00` | area-Finanze-tenue `#f0f0da` |  6.12 | 4.5 | PASS | 1.4.3 etichetta su chip d'area |
+| chiaro | area-Finanze-testo `#5e5b00` | superficie-1 `#ffffff` |  7.07 | 4.5 | PASS |  |
+| chiaro | area-Associazioni `#03628b` | superficie-1 `#ffffff` |  6.72 | 3 | PASS | 1.4.11 icona area Associazioni |
+| chiaro | area-Associazioni `#03628b` | pagina `#f9f6f2` |  6.24 | 3 | PASS |  |
+| chiaro | area-Associazioni-testo `#035f87` | area-Associazioni-tenue `#dff2fe` |  6.11 | 4.5 | PASS | 1.4.3 etichetta su chip d'area |
+| chiaro | area-Associazioni-testo `#035f87` | superficie-1 `#ffffff` |  7.02 | 4.5 | PASS |  |
+| chiaro | area-Founder `#8c7bda` | superficie-1 `#ffffff` |  3.52 | 3 | PASS | 1.4.11 icona area Founder |
+| chiaro | area-Founder `#8c7bda` | pagina `#f9f6f2` |  3.27 | 3 | PASS |  |
+| chiaro | area-Founder-testo `#59459f` | area-Founder-tenue `#eeecfe` |  6.51 | 4.5 | PASS | 1.4.3 etichetta su chip d'area |
+| chiaro | area-Founder-testo `#59459f` | superficie-1 `#ffffff` |  7.56 | 4.5 | PASS |  |
+| chiaro | area-Lavoro `#7e5736` | superficie-1 `#ffffff` |  6.36 | 3 | PASS | 1.4.11 icona area Lavoro |
+| chiaro | area-Lavoro `#7e5736` | pagina `#f9f6f2` |  5.90 | 3 | PASS |  |
+| chiaro | area-Lavoro-testo `#744f2d` | area-Lavoro-tenue `#feeadb` |  6.21 | 4.5 | PASS | 1.4.3 etichetta su chip d'area |
+| chiaro | area-Lavoro-testo `#744f2d` | superficie-1 `#ffffff` |  7.24 | 4.5 | PASS |  |
+| chiaro | area-Altro `#8d8784` | superficie-1 `#ffffff` |  3.54 | 3 | PASS | 1.4.11 icona area Altro |
+| chiaro | area-Altro `#8d8784` | pagina `#f9f6f2` |  3.29 | 3 | PASS |  |
+| chiaro | area-Altro-testo `#5c5753` | area-Altro-tenue `#f4ede9` |  6.16 | 4.5 | PASS | 1.4.3 etichetta su chip d'area |
+| chiaro | area-Altro-testo `#5c5753` | superficie-1 `#ffffff` |  7.13 | 4.5 | PASS |  |
+| scuro | testo-1 `#f2edf1` | pagina `#110f0d` | 16.54 | 4.5 | PASS | 1.4.3 testo |
+| scuro | testo-1 `#f2edf1` | superficie-1 `#1c1916` | 15.13 | 4.5 | PASS | 1.4.3 testo |
+| scuro | testo-1 `#f2edf1` | superficie-2 `#272320` | 13.48 | 4.5 | PASS | 1.4.3 testo |
+| scuro | testo-1 `#f2edf1` | superficie-3 `#342f2c` | 11.43 | 4.5 | PASS | 1.4.3 testo |
+| scuro | testo-2 `#c8c2c7` | pagina `#110f0d` | 10.93 | 4.5 | PASS | 1.4.3 testo |
+| scuro | testo-2 `#c8c2c7` | superficie-1 `#1c1916` | 10.00 | 4.5 | PASS | 1.4.3 testo |
+| scuro | testo-2 `#c8c2c7` | superficie-2 `#272320` |  8.90 | 4.5 | PASS | 1.4.3 testo |
+| scuro | testo-2 `#c8c2c7` | superficie-3 `#342f2c` |  7.55 | 4.5 | PASS | 1.4.3 testo |
+| scuro | testo-3 `#afa9ae` | pagina `#110f0d` |  8.30 | 4.5 | PASS | 1.4.3 testo |
+| scuro | testo-3 `#afa9ae` | superficie-1 `#1c1916` |  7.59 | 4.5 | PASS | 1.4.3 testo |
+| scuro | testo-3 `#afa9ae` | superficie-2 `#272320` |  6.76 | 4.5 | PASS | 1.4.3 testo |
+| scuro | testo-3 `#afa9ae` | superficie-3 `#342f2c` |  5.73 | 4.5 | PASS | 1.4.3 testo |
+| scuro | azione-testo `#e4a0da` | pagina `#110f0d` |  9.42 | 4.5 | PASS | 1.4.3 link / testo selezionato |
+| scuro | azione-testo `#e4a0da` | superficie-1 `#1c1916` |  8.62 | 4.5 | PASS | 1.4.3 link / testo selezionato |
+| scuro | azione-testo `#e4a0da` | azione-tenue `#3f223b` |  6.88 | 4.5 | PASS | 1.4.3 link / testo selezionato |
+| scuro | testo-su-pieno `#ffffff` | azione `#a6339b` |  5.89 | 4.5 | PASS | 1.4.3 etichetta su pieno |
+| scuro | testo-su-pieno `#ffffff` | azione-hover `#b341a8` |  4.95 | 4.5 | PASS | 1.4.3 etichetta su pieno |
+| scuro | testo-su-pieno `#ffffff` | azione-premuta `#962b8c` |  6.95 | 4.5 | PASS | 1.4.3 etichetta su pieno |
+| scuro | testo-su-pieno `#ffffff` | successo-pieno `#397421` |  5.68 | 4.5 | PASS | 1.4.3 etichetta su pieno |
+| scuro | testo-su-pieno `#ffffff` | errore-pieno `#872802` |  9.00 | 4.5 | PASS | 1.4.3 etichetta su pieno |
+| scuro | successo-testo `#73ba59` | superficie-1 `#1c1916` |  7.41 | 4.5 | PASS | 1.4.3 |
+| scuro | successo-testo `#73ba59` | successo-tenue `#1f3118` |  5.89 | 4.5 | PASS | 1.4.3 |
+| scuro | errore-testo `#e4896c` | superficie-1 `#1c1916` |  6.74 | 4.5 | PASS | 1.4.3 |
+| scuro | errore-testo `#e4896c` | errore-tenue `#3a221a` |  5.69 | 4.5 | PASS | 1.4.3 |
+| scuro | testo-su-oro `#281e26` | oro `#ffe38d` | 12.75 | 4.5 | PASS | 1.4.3 |
+| scuro | testo-1 `#f2edf1` | oro-tenue `#392c0c` | 11.80 | 4.5 | PASS | 1.4.3 |
+| scuro | testo-1 `#f2edf1` | stanza-gioia `#281625` | 14.74 | 4.5 | PASS | 1.4.3 |
+| scuro | testo-1 `#f2edf1` | stanza-capisce `#191512` | 15.69 | 4.5 | PASS | 1.4.3 |
+| scuro | testo-1 `#f2edf1` | stanza-bentornato `#21190d` | 15.01 | 4.5 | PASS | 1.4.3 |
+| scuro | azione-testo `#e4a0da` | stanza-gioia `#281625` |  8.39 | 4.5 | PASS | 1.4.3 |
+| scuro | linea-controllo `#7f7974` | pagina `#110f0d` |  4.45 | 3 | PASS | 1.4.11 bordo campo / spunta / interruttore |
+| scuro | linea-controllo `#7f7974` | superficie-1 `#1c1916` |  4.07 | 3 | PASS | 1.4.11 bordo campo / spunta / interruttore |
+| scuro | linea-controllo `#7f7974` | superficie-2 `#272320` |  3.63 | 3 | PASS | 1.4.11 bordo campo / spunta / interruttore |
+| scuro | azione-linea `#e4a0da` | pagina `#110f0d` |  9.42 | 3 | PASS | 1.4.11 icona / linea / anello |
+| scuro | azione-linea `#e4a0da` | superficie-1 `#1c1916` |  8.62 | 3 | PASS | 1.4.11 icona / linea / anello |
+| scuro | successo `#73ba59` | pagina `#110f0d` |  8.10 | 3 | PASS | 1.4.11 icona / linea / anello |
+| scuro | successo `#73ba59` | superficie-1 `#1c1916` |  7.41 | 3 | PASS | 1.4.11 icona / linea / anello |
+| scuro | errore `#af5234` | pagina `#110f0d` |  3.72 | 3 | PASS | 1.4.11 icona / linea / anello |
+| scuro | errore `#af5234` | superficie-1 `#1c1916` |  3.40 | 3 | PASS | 1.4.11 icona / linea / anello |
+| scuro | focus `#e4a0da` | pagina `#110f0d` |  9.42 | 3 | PASS | 1.4.11 icona / linea / anello |
+| scuro | focus `#e4a0da` | superficie-1 `#1c1916` |  8.62 | 3 | PASS | 1.4.11 icona / linea / anello |
+| scuro | focus `#e4a0da` | azione `#a6339b` |  2.90 | — | PASS | anello sul pieno: si usa l'anello doppio (2px pagina + 2px focus) |
+| scuro | azione `#a6339b` | pagina `#110f0d` |  3.25 | — | PASS | pieno contro pagina (informativo) |
+| scuro | segno `#b744ab` | pagina `#110f0d` |  4.03 | 3 | PASS | 1.4.11 sagoma della mascotte |
+| scuro | segno `#b744ab` | superficie-1 `#1c1916` |  3.69 | 3 | PASS | 1.4.11 sagoma della mascotte |
+| scuro | segno `#b744ab` | superficie-2 `#272320` |  3.29 | 3 | PASS | 1.4.11 sagoma della mascotte |
+| scuro | segno-occhi `#2d162a` | segno `#b744ab` |  3.52 | 3 | PASS | 1.4.11 occhi sul corpo |
+| scuro | segno-rovescio `#e7b5db` | segno `#b744ab` |  2.72 | — | PASS | risvolto contro corpo (lettura della piega) |
+| scuro | segno-rovescio `#e7b5db` | pagina `#110f0d` | 10.96 | — | PASS | risvolto contro pagina: dettaglio interno, non sagoma |
+| scuro | oro `#ffe38d` | superficie-1 `#1c1916` | 13.85 | — | PASS | oro: solo particelle o con contorno testo-1 |
+| scuro | oro `#ffe38d` | testo-su-oro `#281e26` | 12.75 | 3 | PASS | fiamma oro con contorno inchiostro |
+| scuro | oro `#ffe38d` | pagina `#110f0d` | 15.14 | — | PASS | oro sulla pagina |
+| scuro | area-Studio `#8cb8fe` | superficie-1 `#1c1916` |  8.67 | 3 | PASS | 1.4.11 icona area Studio |
+| scuro | area-Studio `#8cb8fe` | pagina `#110f0d` |  9.47 | 3 | PASS |  |
+| scuro | area-Studio-testo `#8db8fe` | area-Studio-tenue `#1d293d` |  7.25 | 4.5 | PASS | 1.4.3 etichetta su chip d'area |
+| scuro | area-Studio-testo `#8db8fe` | superficie-1 `#1c1916` |  8.68 | 4.5 | PASS |  |
+| scuro | area-Salute `#42d2b9` | superficie-1 `#1c1916` |  9.29 | 3 | PASS | 1.4.11 icona area Salute |
+| scuro | area-Salute `#42d2b9` | pagina `#110f0d` | 10.16 | 3 | PASS |  |
+| scuro | area-Salute-testo `#4ed0b9` | area-Salute-tenue `#0e2f29` |  7.58 | 4.5 | PASS | 1.4.3 etichetta su chip d'area |
+| scuro | area-Salute-testo `#4ed0b9` | superficie-1 `#1c1916` |  9.21 | 4.5 | PASS |  |
+| scuro | area-Relazioni `#ce849b` | superficie-1 `#1c1916` |  6.17 | 3 | PASS | 1.4.11 icona area Relazioni |
+| scuro | area-Relazioni `#ce849b` | pagina `#110f0d` |  6.74 | 3 | PASS |  |
+| scuro | area-Relazioni-testo `#e199af` | area-Relazioni-tenue `#392028` |  6.64 | 4.5 | PASS | 1.4.3 etichetta su chip d'area |
+| scuro | area-Relazioni-testo `#e199af` | superficie-1 `#1c1916` |  7.81 | 4.5 | PASS |  |
+| scuro | area-Finanze `#cfd271` | superficie-1 `#1c1916` | 10.93 | 3 | PASS | 1.4.11 icona area Finanze |
+| scuro | area-Finanze `#cfd271` | pagina `#110f0d` | 11.94 | 3 | PASS |  |
+| scuro | area-Finanze-testo `#b8b75a` | area-Finanze-tenue `#2b2a12` |  6.90 | 4.5 | PASS | 1.4.3 etichetta su chip d'area |
+| scuro | area-Finanze-testo `#b8b75a` | superficie-1 `#1c1916` |  8.30 | 4.5 | PASS |  |
+| scuro | area-Associazioni `#41a6dc` | superficie-1 `#1c1916` |  6.43 | 3 | PASS | 1.4.11 icona area Associazioni |
+| scuro | area-Associazioni `#41a6dc` | pagina `#110f0d` |  7.02 | 3 | PASS |  |
+| scuro | area-Associazioni-testo `#60bcf0` | area-Associazioni-tenue `#142c3a` |  6.86 | 4.5 | PASS | 1.4.3 etichetta su chip d'area |
+| scuro | area-Associazioni-testo `#60bcf0` | superficie-1 `#1c1916` |  8.29 | 4.5 | PASS |  |
+| scuro | area-Founder `#d0cafe` | superficie-1 `#1c1916` | 11.30 | 3 | PASS | 1.4.11 icona area Founder |
+| scuro | area-Founder `#d0cafe` | pagina `#110f0d` | 12.35 | 3 | PASS |  |
+| scuro | area-Founder-testo `#d0c9ff` | area-Founder-tenue `#28253b` |  9.51 | 4.5 | PASS | 1.4.3 etichetta su chip d'area |
+| scuro | area-Founder-testo `#d0c9ff` | superficie-1 `#1c1916` | 11.23 | 4.5 | PASS |  |
+| scuro | area-Lavoro `#c19977` | superficie-1 `#1c1916` |  6.74 | 3 | PASS | 1.4.11 icona area Lavoro |
+| scuro | area-Lavoro `#c19977` | pagina `#110f0d` |  7.37 | 3 | PASS |  |
+| scuro | area-Lavoro-testo `#cfa889` | area-Lavoro-tenue `#372414` |  6.75 | 4.5 | PASS | 1.4.3 etichetta su chip d'area |
+| scuro | area-Lavoro-testo `#cfa889` | superficie-1 `#1c1916` |  8.01 | 4.5 | PASS |  |
+| scuro | area-Altro `#d2ccc8` | superficie-1 `#1c1916` | 11.01 | 3 | PASS | 1.4.11 icona area Altro |
+| scuro | area-Altro `#d2ccc8` | pagina `#110f0d` | 12.03 | 3 | PASS |  |
+| scuro | area-Altro-testo `#d2ccc8` | area-Altro-tenue `#2d2825` |  9.16 | 4.5 | PASS | 1.4.3 etichetta su chip d'area |
+| scuro | area-Altro-testo `#d2ccc8` | superficie-1 `#1c1916` | 11.01 | 4.5 | PASS |  |
+
+**FAIL totali: 0** []
+
+## 2. Distanze ΔE OKLab ×100
+
+Soglie: ≥15 fra semantici e fra semantici e marca (normale e deuteranopia); aree: obiettivo ≥10 fra loro e dai semantici (sempre con icona ed etichetta). `azione` e `segno` sono la stessa tinta a due luminosità: la loro distanza non è un requisito.
+
+| tema | visione | min semantici | coppia | min aree↔aree | coppia | min aree↔semantici | coppia |
+|---|---|---|---|---|---|---|---|
+| chiaro | normale | **21.3** ✓ | azione↔errore | 9.1 | Relazioni↔Lavoro | 9.9 | Finanze↔successo |
+| chiaro | deuteranopia | **16.5** ✓ | segno↔successo | 5.6 | Finanze↔Lavoro | 6.8 | Associazioni↔azione |
+| chiaro | protanopia | **15.6** ✓ | successo↔oro | 3.0 | Salute↔Altro | 5.3 | Associazioni↔segno |
+| chiaro | tritanopia | **11.8** ✗ | azione↔errore | 3.1 | Studio↔Salute | 4.5 | Salute↔successo |
+| scuro | normale | **18.3** ✓ | azione↔errore | 7.8 | Founder↔Altro | 8.8 | Finanze↔oro |
+| scuro | deuteranopia | **15.2** ✓ | azione-linea↔successo | 5.8 | Relazioni↔Lavoro | 3.0 | Lavoro↔successo |
+| scuro | protanopia | **16.0** ✓ | successo↔oro | 2.6 | Salute↔Altro | 4.2 | Associazioni↔azione-linea |
+| scuro | tritanopia | **5.2** ✗ | segno↔errore | 2.1 | Finanze↔Altro | 5.9 | Associazioni↔successo |
+
+### Matrice ΔE, visione normale — chiaro
+
+| | azione | azione-linea | segno | successo | errore | oro | Studio | Salute | Relazioni | Finanze | Associazioni | Founder | Lavoro | Altro |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| azione |  | 0.0 | 5.1 | 33.5 | 21.3 | 39.3 | 19.9 | 28.6 | 12.4 | 28.2 | 23.2 | 16.8 | 20.4 | 21.2 |
+| azione-linea | 0.0 |  | 5.1 | 33.5 | 21.3 | 39.3 | 19.9 | 28.6 | 12.4 | 28.2 | 23.2 | 16.8 | 20.4 | 21.2 |
+| segno | 5.1 | 5.1 |  | 32.8 | 24.3 | 36.0 | 19.9 | 28.5 | 15.3 | 28.7 | 25.0 | 14.0 | 21.9 | 19.4 |
+| successo | 33.5 | 33.5 | 32.8 |  | 27.7 | 23.9 | 24.6 | 10.0 | 25.6 | 9.9 | 22.5 | 27.4 | 17.9 | 14.3 |
+| errore | 21.3 | 21.3 | 24.3 | 27.7 |  | 39.7 | 29.0 | 26.5 | 10.1 | 18.1 | 23.8 | 31.2 | 10.4 | 24.3 |
+| oro | 39.3 | 39.3 | 36.0 | 23.9 | 39.7 |  | 37.6 | 30.4 | 36.7 | 27.7 | 41.1 | 32.5 | 32.3 | 22.5 |
+| Studio | 19.9 | 19.9 | 19.9 | 24.6 | 29.0 | 37.6 |  | 15.7 | 20.1 | 24.4 | 10.7 | 10.9 | 21.5 | 16.0 |
+| Salute | 28.6 | 28.6 | 28.5 | 10.0 | 26.5 | 30.4 | 15.7 |  | 21.9 | 12.9 | 13.3 | 21.5 | 16.5 | 12.6 |
+| Relazioni | 12.4 | 12.4 | 15.3 | 25.6 | 10.1 | 36.7 | 20.1 | 21.9 |  | 18.1 | 17.7 | 21.6 | 9.1 | 17.9 |
+| Finanze | 28.2 | 28.2 | 28.7 | 9.9 | 18.1 | 27.7 | 24.4 | 12.9 | 18.1 |  | 20.2 | 27.5 | 9.2 | 14.6 |
+| Associazioni | 23.2 | 23.2 | 25.0 | 22.5 | 23.8 | 41.1 | 10.7 | 13.3 | 17.7 | 20.2 |  | 20.5 | 17.2 | 19.2 |
+| Founder | 16.8 | 16.8 | 14.0 | 27.4 | 31.2 | 32.5 | 10.9 | 21.5 | 21.6 | 27.5 | 20.5 |  | 24.3 | 14.4 |
+| Lavoro | 20.4 | 20.4 | 21.9 | 17.9 | 10.4 | 32.3 | 21.5 | 16.5 | 9.1 | 9.2 | 17.2 | 24.3 |  | 15.0 |
+| Altro | 21.2 | 21.2 | 19.4 | 14.3 | 24.3 | 22.5 | 16.0 | 12.6 | 17.9 | 14.6 | 19.2 | 14.4 | 15.0 |  |
+
+### Matrice ΔE, deuteranopia (Machado 2009) — chiaro
+
+| | azione | azione-linea | segno | successo | errore | oro | Studio | Salute | Relazioni | Finanze | Associazioni | Founder | Lavoro | Altro |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| azione |  | 0.0 | 5.2 | 18.0 | 19.1 | 36.4 | 6.9 | 7.9 | 9.8 | 18.1 | 6.8 | 11.4 | 14.4 | 13.2 |
+| azione-linea | 0.0 |  | 5.2 | 18.0 | 19.1 | 36.4 | 6.9 | 7.9 | 9.8 | 18.1 | 6.8 | 11.4 | 14.4 | 13.2 |
+| segno | 5.2 | 5.2 |  | 16.5 | 22.1 | 32.5 | 7.7 | 7.5 | 13.0 | 18.6 | 11.9 | 7.4 | 16.3 | 9.8 |
+| successo | 18.0 | 18.0 | 16.5 |  | 17.2 | 21.8 | 23.6 | 10.2 | 14.6 | 7.1 | 22.6 | 21.9 | 10.9 | 8.4 |
+| errore | 19.1 | 19.1 | 22.1 | 17.2 |  | 38.5 | 25.4 | 15.8 | 9.4 | 10.4 | 17.9 | 29.4 | 7.0 | 21.4 |
+| oro | 36.4 | 36.4 | 32.5 | 21.8 | 38.5 |  | 39.6 | 29.8 | 36.1 | 28.1 | 42.5 | 33.7 | 32.7 | 23.3 |
+| Studio | 6.9 | 6.9 | 7.7 | 23.6 | 25.4 | 39.6 |  | 14.0 | 16.4 | 24.5 | 9.8 | 8.6 | 21.0 | 17.4 |
+| Salute | 7.9 | 7.9 | 7.5 | 10.2 | 15.8 | 29.8 | 14.0 |  | 7.9 | 11.2 | 13.0 | 14.5 | 9.3 | 7.1 |
+| Relazioni | 9.8 | 9.8 | 13.0 | 14.6 | 9.4 | 36.1 | 16.4 | 7.9 |  | 11.0 | 10.1 | 20.4 | 5.8 | 14.9 |
+| Finanze | 18.1 | 18.1 | 18.6 | 7.1 | 10.4 | 28.1 | 24.5 | 11.2 | 11.0 |  | 20.7 | 25.3 | 5.6 | 13.6 |
+| Associazioni | 6.8 | 6.8 | 11.9 | 22.6 | 17.9 | 42.5 | 9.8 | 13.0 | 10.1 | 20.7 |  | 17.2 | 15.7 | 19.5 |
+| Founder | 11.4 | 11.4 | 7.4 | 21.9 | 29.4 | 33.7 | 8.6 | 14.5 | 20.4 | 25.3 | 17.2 |  | 23.5 | 14.0 |
+| Lavoro | 14.4 | 14.4 | 16.3 | 10.9 | 7.0 | 32.7 | 21.0 | 9.3 | 5.8 | 5.6 | 15.7 | 23.5 |  | 14.4 |
+| Altro | 13.2 | 13.2 | 9.8 | 8.4 | 21.4 | 23.3 | 17.4 | 7.1 | 14.9 | 13.6 | 19.5 | 14.0 | 14.4 |  |
+
+### Matrice ΔE, visione normale — scuro
+
+| | azione | azione-linea | segno | successo | errore | oro | Studio | Salute | Relazioni | Finanze | Associazioni | Founder | Lavoro | Altro |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| azione |  | 27.2 | 5.1 | 38.7 | 18.3 | 47.1 | 31.3 | 39.8 | 20.2 | 42.6 | 28.5 | 36.2 | 27.1 | 37.1 |
+| azione-linea | 27.2 |  | 22.4 | 26.7 | 27.4 | 23.1 | 13.1 | 23.0 | 10.6 | 22.2 | 19.9 | 10.3 | 15.0 | 12.5 |
+| segno | 5.1 | 22.4 |  | 36.5 | 18.4 | 43.0 | 27.4 | 36.8 | 16.3 | 39.1 | 26.0 | 31.6 | 24.0 | 32.9 |
+| successo | 38.7 | 26.7 | 36.5 |  | 27.3 | 22.8 | 23.6 | 11.6 | 23.1 | 14.0 | 20.8 | 25.8 | 14.9 | 19.7 |
+| errore | 18.3 | 27.4 | 18.4 | 27.3 |  | 38.7 | 32.1 | 33.4 | 16.8 | 32.6 | 28.5 | 35.3 | 17.8 | 32.3 |
+| oro | 47.1 | 23.1 | 43.0 | 22.8 | 38.7 |  | 26.2 | 21.4 | 26.9 | 8.8 | 31.9 | 18.9 | 21.8 | 12.6 |
+| Studio | 31.3 | 13.1 | 27.4 | 23.6 | 32.1 | 26.2 |  | 15.4 | 17.9 | 23.2 | 10.1 | 10.3 | 18.9 | 13.9 |
+| Salute | 39.8 | 23.0 | 36.8 | 11.6 | 33.4 | 21.4 | 15.4 |  | 23.7 | 15.1 | 15.0 | 18.4 | 18.1 | 14.7 |
+| Relazioni | 20.2 | 10.6 | 16.3 | 23.1 | 16.8 | 26.9 | 17.9 | 23.7 |  | 22.9 | 19.2 | 19.1 | 8.8 | 17.8 |
+| Finanze | 42.6 | 22.2 | 39.1 | 14.0 | 32.6 | 8.8 | 23.2 | 15.1 | 22.9 |  | 26.3 | 19.4 | 15.8 | 11.6 |
+| Associazioni | 28.5 | 19.9 | 26.0 | 20.8 | 28.5 | 31.9 | 10.1 | 15.0 | 19.2 | 26.3 |  | 19.8 | 19.0 | 20.6 |
+| Founder | 36.2 | 10.3 | 31.6 | 25.8 | 35.3 | 18.9 | 10.3 | 18.4 | 19.1 | 19.4 | 19.8 |  | 19.6 | 7.8 |
+| Lavoro | 27.1 | 15.0 | 24.0 | 14.9 | 17.8 | 21.8 | 18.9 | 18.1 | 8.8 | 15.8 | 19.0 | 19.6 |  | 14.9 |
+| Altro | 37.1 | 12.5 | 32.9 | 19.7 | 32.3 | 12.6 | 13.9 | 14.7 | 17.8 | 11.6 | 20.6 | 7.8 | 14.9 |  |
+
+### Matrice ΔE, deuteranopia (Machado 2009) — scuro
+
+| | azione | azione-linea | segno | successo | errore | oro | Studio | Salute | Relazioni | Finanze | Associazioni | Founder | Lavoro | Altro |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| azione |  | 26.2 | 5.2 | 25.7 | 16.8 | 44.1 | 24.3 | 26.1 | 19.1 | 37.0 | 15.4 | 33.0 | 23.5 | 33.4 |
+| azione-linea | 26.2 |  | 21.1 | 15.2 | 26.4 | 20.9 | 7.1 | 4.0 | 10.3 | 16.7 | 12.7 | 7.2 | 12.9 | 8.2 |
+| segno | 5.2 | 21.1 |  | 22.1 | 16.5 | 39.5 | 19.2 | 21.2 | 14.7 | 32.7 | 10.4 | 27.8 | 19.5 | 28.4 |
+| successo | 25.7 | 15.2 | 22.1 |  | 16.2 | 20.6 | 20.9 | 11.3 | 8.8 | 12.7 | 20.5 | 20.8 | 3.0 | 15.3 |
+| errore | 16.8 | 26.4 | 16.5 | 16.2 |  | 36.8 | 28.9 | 23.8 | 16.1 | 28.8 | 22.9 | 33.5 | 15.9 | 30.1 |
+| oro | 44.1 | 20.9 | 39.5 | 20.6 | 36.8 |  | 27.3 | 18.9 | 25.0 | 8.0 | 33.1 | 19.0 | 21.6 | 12.8 |
+| Studio | 24.3 | 7.1 | 19.2 | 20.9 | 28.9 | 27.3 |  | 10.7 | 13.9 | 23.6 | 9.0 | 10.0 | 18.2 | 14.6 |
+| Salute | 26.1 | 4.0 | 21.2 | 11.3 | 23.8 | 18.9 | 10.7 |  | 8.1 | 13.5 | 14.4 | 9.9 | 9.3 | 7.3 |
+| Relazioni | 19.1 | 10.3 | 14.7 | 8.8 | 16.1 | 25.0 | 13.9 | 8.1 |  | 18.1 | 11.8 | 17.4 | 5.8 | 15.1 |
+| Finanze | 37.0 | 16.7 | 32.7 | 12.7 | 28.8 | 8.0 | 23.6 | 13.5 | 18.1 |  | 27.6 | 17.7 | 13.9 | 10.3 |
+| Associazioni | 15.4 | 12.7 | 10.4 | 20.5 | 22.9 | 33.1 | 9.0 | 14.4 | 11.8 | 27.6 |  | 18.4 | 17.5 | 20.8 |
+| Founder | 33.0 | 7.2 | 27.8 | 20.8 | 33.5 | 19.0 | 10.0 | 9.9 | 17.4 | 17.7 | 18.4 |  | 19.1 | 7.5 |
+| Lavoro | 23.5 | 12.9 | 19.5 | 3.0 | 15.9 | 21.6 | 18.2 | 9.3 | 5.8 | 13.9 | 17.5 | 19.1 |  | 14.4 |
+| Altro | 33.4 | 8.2 | 28.4 | 15.3 | 30.1 | 12.8 | 14.6 | 7.3 | 15.1 | 10.3 | 20.8 | 7.5 | 14.4 |  |
+
+### Risvolto di Segno contro le aree (rischio «Segno sembra Relazioni»)
+
+- area-Studio: ΔE 30.5
+- area-Salute: ΔE 32.0
+- area-Relazioni: ΔE 35.6
+- area-Finanze: ΔE 34.6
+- area-Associazioni: ΔE 38.4
+- area-Founder: ΔE 21.5
+- area-Lavoro: ΔE 35.3
+- area-Altro: ΔE 21.5
+- azione-tenue: ΔE 13.0
+
+## 3. Differenziazione: ΔE fra Segno/azione e i colori dominanti dei concorrenti
+
+| app | colore | ΔE da segno | ΔE da azione |
+|---|---|---|---|
+| Habitica: Gamified Taskmanager | `#8e4bf8` oklch(58.8% 0.242 296) | 14.3 | 15.5 |
+| Amazing Marvin: ADHD Planner | `#895049` oklch(49.6% 0.078 28) | 18.1 | 16.3 |
+| Airbnb | `#ff385c` oklch(65.8% 0.231 17) | 18.3 | 21.0 |
+| Fabulous - Routine e benessere | `#d00016` oklch(53.9% 0.220 27) | 19.5 | 19.1 |
+| Phantom: Trading Wallet | `#ab9ff1` oklch(74.4% 0.117 290) | 20.9 | 25.1 |
+| Todoist: To do list–Calendario | `#fe463e` oklch(66.3% 0.221 28) | 21.0 | 23.5 |
+| Duolingo: Corsi di lingua | `#ca5000` oklch(58.5% 0.171 44) | 21.2 | 21.9 |
+| TickTick:To-Do List & Calendar | `#5d86fe` oklch(65.1% 0.184 267) | 21.3 | 23.5 |
+| Calm | `#3c80e0` oklch(60.5% 0.161 258) | 21.5 | 22.7 |
+| Tiimo - Planner per l'adhd | `#b9a5ef` oklch(76.6% 0.106 296) | 22.2 | 26.6 |
+| Sunsama | `#ee693c` oklch(67.7% 0.175 39) | 22.3 | 24.9 |
+| Things 3 | `#3681f4` oklch(61.8% 0.188 259) | 22.8 | 24.2 |
+| Finch: Self-Care Pet | `#df8040` oklch(69.2% 0.141 52) | 24.3 | 27.0 |
+| Microsoft To Do | `#389cea` oklch(67.1% 0.147 246) | 24.9 | 27.1 |
+| Any.do: To do list & Planner | `#3798ff` oklch(67.4% 0.176 253) | 25.1 | 27.4 |
+| Headspace: Sleep & Meditation | `#ff7300` oklch(71.3% 0.195 48) | 27.1 | 29.9 |
+| Structured - Agenda Calendario | `#ffaaa6` oklch(82.0% 0.101 22) | 28.1 | 32.6 |
+| Brilliant: Learn Math & Coding | `#53be8b` oklch(72.5% 0.125 160) | 34.6 | 37.0 |
+| Inflow - Manage Your ADHD | `#bee3db` oklch(88.7% 0.040 181) | 38.1 | 42.3 |
+| ADHD Organizer: Llama Life | `#fee16b` oklch(91.1% 0.140 96) | 44.2 | 48.1 |
+| Duolingo Feather Green | `#58cc02` oklch(74.8% 0.229 138) | 44.8 | 46.9 |
+| Goblin Tools | `#cce969` oklch(88.7% 0.157 120) | 45.4 | 49.0 |
+| Routine Planner, Habit Tracker | `#f9e000` oklch(89.9% 0.188 101) | 46.7 | 50.3 |
+| Forest - Rimani concentrato | `#e3ff99` oklch(95.7% 0.131 121) | 48.8 | 52.8 |

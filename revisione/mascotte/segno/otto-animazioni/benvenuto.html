@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="it"><head><meta charset="utf-8"><title>Segno — benvenuto</title>
+<style>html,body{margin:0;padding:0;background:#fff6f1;overflow:hidden} svg{display:block}</style></head>
+<body>
+<svg id="scena" width="1080" height="1080" viewBox="0 0 1080 1080" xmlns="http://www.w3.org/2000/svg"></svg>
+<script src="base.js"></script>
+<script src="onboarding-comune.js"></script>
+<script>
+/* ============================================================
+   SEGNO — BENVENUTO (schermata iniziale dell'onboarding), 3,0 s
+   0,00–0,22  un libro chiuso, in piedi. Bussa due volte da dentro (si inclina, si schiaccia).
+   0,24–0,52  dalla fessura fra le pagine sale Segno, occhi chiusi, risvolto trascinato giù;
+              si ferma oltre il punto e torna (overshoot), il risvolto scatta su e ricade.
+   0,52–0,90  apre gli occhi e sbircia: a sinistra, poi a destra. Due scintille.
+   0,90–1,00  anticipazione: si acquatta nella fessura, guarda in alto a destra.
+   1,00–1,58  salto ad arco fuori dal libro (il libro rincula), allungato, risvolto alzato
+              dietro, piedi che seguono; in discesa guarda dove atterra.
+   1,58–1,98  atterra: schiacciamento, occhi strizzati, il risvolto arriva in ritardo
+              e sbatte giù, rimbalzo smorzato fino alla calma.
+   1,86–2,12  ti guarda: gli occhi salgono su di te, si ingrandiscono, battito di ciglia.
+   2,12–2,72  saluto: piccola anticipazione, saltello, il risvolto si solleva di lato come
+              un cappello, occhi felici, scintille d'oro; ricade e si rimette il "cappello".
+   2,72–3,00  riapre gli occhi su di te e resta fermo: posa finale.
+   Camera: 0–0,45 s vicina al libro (×1,2); 0,45–1,0 s si allarga piano all'inquadratura intera.
+   ============================================================ */
+const DURATA=3.0;
+const G=880, BX=385, SX=750;
+const scena=document.getElementById('scena');
+
+const B0={esse:6,sy:1,sx:1,incl:0,piega:0,risvolto:[17,15],piedi:[[0,0],[0,0]]};
+const corpo=o=>({...B0,...o});
+const E0={apri:1,felici:0,dx:{apri:1,felici:0},g:[1,1],occhioK:1};
+const occ=o=>({...E0,...o});
+
+const CORPO=[
+  [0,    corpo({sy:1.08,sx:.94,esse:3,risvolto:[26,24]})],
+  [0.42, corpo({sy:1.08,sx:.94,esse:3,risvolto:[26,24]})],
+  [0.52, corpo({risvolto:[5,3]}),eOut],
+  [0.60, corpo({risvolto:[21,19]})],
+  [0.67, corpo({incl:-2.5,risvolto:[15,14]})],
+  [0.73, corpo({incl:-2.5,risvolto:[15,14]})],
+  [0.81, corpo({incl:2.5,risvolto:[17,15]})],
+  [0.89, corpo({incl:2.5,risvolto:[17,15]})],
+  [1.00, corpo({esse:1,sy:.88,sx:1.1,risvolto:[21,20],piedi:[[-5,1],[5,1]]})],
+  [1.10, corpo({esse:0,sy:1.15,sx:.88,incl:4,risvolto:[-24,-28],piedi:[[6,10],[-6,10]]}),eOut],
+  [1.30, corpo({esse:0,sy:1.1,sx:.92,incl:10,risvolto:[-26,-30],piedi:[[4,8],[-4,8]]})],
+  [1.48, corpo({esse:2,sy:1.12,sx:.9,incl:3,risvolto:[-22,-28],piedi:[[3,6],[-3,6]]})],
+  [1.58, corpo({esse:2,sy:1.14,sx:.9,incl:0,risvolto:[-24,-28],piedi:[[2,1],[-2,1]]}),eIn],
+  [1.66, corpo({esse:0,sy:.76,sx:1.22,risvolto:[4,4],piedi:[[-7,1],[7,1]]}),eOut],
+  [1.75, corpo({esse:3,sy:.93,sx:1.07,risvolto:[30,29]})],
+  [1.83, corpo({esse:5,sy:1.05,sx:.97,risvolto:[11,9]})],
+  [1.91, corpo({sy:.99,sx:1.01,risvolto:[19,17]})],
+  [2.00, corpo({risvolto:[12,10]})],
+  [2.13, corpo({risvolto:[12,10]})],
+  [2.24, corpo({esse:2,sy:.9,sx:1.08,risvolto:[20,18]})],
+  [2.38, corpo({esse:3,sy:1.08,sx:.95,incl:-5,risvolto:[-40,-6]}),eOut],
+  [2.46, corpo({esse:4,sy:1.03,sx:.98,incl:-6,risvolto:[-36,-4]})],
+  [2.54, corpo({esse:3,sy:.92,sx:1.07,incl:-2,risvolto:[3,5]}),eIn],
+  [2.63, corpo({sy:1.03,sx:.98,incl:1,risvolto:[23,20]}),eOut],
+  [2.73, corpo({incl:-.4,risvolto:[12,10]})],
+  [2.84, corpo({risvolto:[14,12]})],
+];
+const OCCHI=[
+  [0,    occ({apri:.1})],
+  [0.50, occ({apri:.1})],
+  [0.56, occ({g:[0,1]})],
+  [0.63, occ({g:[-3.5,.5]})],
+  [0.73, occ({g:[-3.5,.5]})],
+  [0.79, occ({g:[3.5,.5]})],
+  [0.89, occ({g:[3.5,.5]})],
+  [0.98, occ({g:[1.5,-3]})],
+  [1.12, occ({g:[3,-2],occhioK:1.1})],
+  [1.40, occ({g:[2,3],occhioK:1.1})],
+  [1.56, occ({g:[0,3],occhioK:1.1})],
+  [1.62, occ({apri:.1,g:[0,2]}),eOut],
+  [1.72, occ({apri:.1,g:[0,2]})],
+  [1.78, occ({g:[-1,2.5]})],
+  [1.86, occ({g:[-1,2.5]})],
+  [1.98, occ({g:[0,-1.5],occhioK:1.12})],
+  [2.04, occ({g:[0,-1.5],occhioK:1.12})],
+  [2.07, occ({apri:.1,g:[0,-1.5],occhioK:1.12})],
+  [2.11, occ({g:[0,-1.5],occhioK:1.12})],
+  [2.19, occ({apri:.1,g:[0,-1]})],
+  [2.29, occ({apri:.1,felici:1,g:[0,-1]})],
+  [2.70, occ({apri:.1,felici:1,g:[0,-1]})],
+  [2.76, occ({apri:.1,felici:0,g:[0,-1]})],
+  [2.83, occ({g:[0,-1.5],occhioK:1.1})],
+];
+
+/* traiettoria del salto: esce dritto dalla fessura, arco, scende dritto sul punto d'arrivo */
+const T_SALTO=1.0, T_TERRA=1.58, Y1=300, Y2=420;
+function posizione(t,L){
+  if(t<T_SALTO){
+    let dep;
+    if(t<.24) dep=385;
+    else if(t<.52) dep=lerp(385,160,eBack(prog(t,.24,.52),1.4));
+    else if(t<.90) dep=160;
+    else dep=lerp(160,176,eOut(prog(t,.90,1.0)));
+    return {x:BX+FX,y:L+dep,dentro:true};
+  }
+  if(t<T_TERRA){
+    const u=prog(t,T_SALTO,T_TERRA), p=warp(u,.55);
+    const y0=L+176;
+    const x=bez(prog(u,.14,1),BX+FX,BX+FX,SX,SX), y=bez(p,y0,Y1,Y2,G);
+    return {x,y,dentro:!(y+36<L || p>.5)};
+  }
+  const h=46*4*prog(t,2.26,2.54)*(1-prog(t,2.26,2.54));
+  return {x:SX,y:G-h,dentro:false};
+}
+
+function render(t){
+  let o=`<rect width="1080" height="1080" fill="${C.fondo}"/>`;
+  /* camera: si parte vicini al libro (×1,2, libro al centro); mentre Segno sbircia
+     si allarga piano fino all'inquadratura intera, prima del salto (nessun taglio) */
+  const cam=eIO(prog(t,.45,1.0)), z=lerp(1.2,1,cam), fx=lerp(BX+FX,540,cam), fy=lerp(700,640,cam);
+  o+=`<g transform="translate(540 640) scale(${z.toFixed(4)}) translate(${f1(-fx)} ${f1(-fy)})">`;
+  /* libro: bussa, spinta di Segno che esce, rinculo del salto */
+  const tilt=2.2*bump(t,.04,.13)-1.8*bump(t,.13,.22);
+  const sq=.03*bump(t,.04,.13)+.03*bump(t,.13,.22)+.03*bump(t,.28,.42)+.06*molla(t-.97,16,7);
+  const lib=libro(BX,G,sq,tilt);
+  const pos=posizione(t,lib.L);
+  const s={...traccia(t,CORPO),...traccia(t,OCCHI)};
+  if(t>2.84) s.sy*=1+.008*Math.sin((t-2.84)*7);     // respiro
+  /* ombre */
+  o+=`<ellipse cx="${BX+DB*.6}" cy="${G+6}" rx="${f1(190*(1+sq*.7))}" ry="16" fill="${C.ombra}"/>`;
+  const vicino=clamp((pos.x-(BX+BW/2+DB+20))/100);
+  if(!pos.dentro&&vicino>0){
+    const alto=clamp((G-pos.y)/420);
+    const sqo=1+.25*clamp((s.sx-1)/.22);
+    o+=`<ellipse cx="${f1(pos.x)}" cy="${G+6}" rx="${f1(105*vicino*(1-.55*alto)*sqo)}" ry="${f1(15*vicino*(1-.45*alto))}" fill="${C.ombra}"/>`;
+  }
+  o+=lib.dietro;
+  /* inclinato, un piede scenderebbe sotto il pavimento: lo si rialza (sempre, fuori dal libro) */
+  const alza=pos.dentro?0:K*(W*s.sx/2+4)*Math.sin(Math.abs(s.incl)*Math.PI/180);
+  const seg=segnoIn(s,pos.x,pos.y-alza);
+  if(pos.dentro) o+=fessura(lib.L)+`<g clip-path="url(#fessura)">${seg}</g>`;
+  o+=lib.davanti;
+  if(!pos.dentro) o+=seg;
+  /* scintille: quando sbuca, e al saluto */
+  o+=scintilla(t,BX-118,lib.L-70,15,.50,.36)+scintilla(t,BX+122,lib.L-120,11,.56,.34,-60);
+  o+=scintilla(t,SX-150,G-410,24,2.30,.46)+scintilla(t,SX+148,G-372,17,2.36,.42,-70)+scintilla(t,SX+62,G-500,12,2.42,.38);
+  scena.innerHTML=o+'</g>';
+}
+window.render=render; window.DURATA=DURATA;
+render(Number(new URLSearchParams(location.search).get('t')||2.95));
+</script>
+</body></html>

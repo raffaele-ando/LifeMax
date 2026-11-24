@@ -1,0 +1,8 @@
+<!doctype html><meta charset="utf-8"><body style="margin:0;background:#101016;color:#eee;font:13px system-ui">
+<div id="g" style="display:grid;grid-template-columns:120px repeat(9,150px);gap:6px;padding:10px;align-items:center"></div>
+<script src="personaggi.js"></script>
+<script>
+const g=document.getElementById('g');const emo=Object.keys(MASC.EMO);
+g.innerHTML='<div></div>'+emo.map(k=>'<div style="text-align:center;font-weight:600">'+MASC.EMO[k].n+'</div>').join('')+
+ Object.keys(MASC.CORPI).map(c=>'<div style="font-weight:700;font-size:16px">'+MASC.CORPI[c].nome+'</div>'+emo.map(k=>'<div style="background:#1b1b24;border-radius:14px">'+MASC.disegna(c,k,{colore:'#7d70ff',scuro:'#5a4be6'})+'</div>').join('')).join('');
+</script>

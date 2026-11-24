@@ -1,0 +1,16 @@
+<!doctype html><meta charset="utf-8"><body style="margin:0;background:#f6f3f0;font:13px system-ui">
+<div class="t">Stati — corallo</div><div id="g" class="r"></div>
+<div class="t">Viso coperto</div><div id="v" class="r"></div>
+<div class="t">Zafferano</div><div id="z" class="r"></div>
+<div class="t">Fondo scuro</div><div id="d" class="r" style="background:#101016"></div>
+<div class="t">24 · 32 · 48 · 96 px</div><div id="m" style="display:flex;gap:16px;align-items:flex-end;padding:10px"></div>
+<style>.r{display:grid;grid-template-columns:repeat(8,150px);gap:8px;padding:6px 10px}.r>div{background:#fff;border-radius:14px;text-align:center;padding-bottom:6px}#d>div{background:#1b1b24;color:#ddd}.t{padding:10px 10px 0;font-weight:700}</style>
+<script src="nastro.js"></script>
+<script>
+const K=Object.keys(NASTRO.STATI);
+g.innerHTML=K.map(k=>'<div>'+NASTRO.disegna(k)+'<b>'+NASTRO.STATI[k].n+'</b></div>').join('');
+v.innerHTML=K.map(k=>'<div>'+NASTRO.disegna(k,{senzaViso:1})+'<b>'+NASTRO.STATI[k].n+'</b></div>').join('');
+z.innerHTML=K.map(k=>'<div>'+NASTRO.disegna(k,{tema:'zafferano'})+'<b>'+NASTRO.STATI[k].n+'</b></div>').join('');
+d.innerHTML=K.map(k=>'<div>'+NASTRO.disegna(k)+'<b>'+NASTRO.STATI[k].n+'</b></div>').join('');
+m.innerHTML=[24,32,48,96].map(px=>['calma','gioia','dorme'].map(k=>'<div style="width:'+px+'px">'+NASTRO.disegna(k)+'</div>').join('')).join('<span style="width:10px"></span>');
+</script>

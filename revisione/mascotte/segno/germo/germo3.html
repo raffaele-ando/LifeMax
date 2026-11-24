@@ -1,0 +1,14 @@
+<!doctype html><meta charset="utf-8"><body style="margin:0;background:#f4f2fb;font:13px system-ui">
+<div class="t">Emozioni</div><div id="g" class="r"></div>
+<div class="t">Prova: viso coperto (parla solo il corpo e il germoglio)</div><div id="v" class="r"></div>
+<div class="t">Fasi di crescita (felice · gioia · assonnato · ti capisce nella fase 4)</div><div id="c" class="r"></div>
+<div class="t">Misure reali 24 · 32 · 48 · 96 px</div><div id="m" style="display:flex;gap:20px;align-items:flex-end;padding:10px;flex-wrap:wrap"></div>
+<style>.r{display:grid;grid-template-columns:repeat(9,150px);gap:8px;padding:6px 10px}.r>div{background:#fff;border-radius:14px;text-align:center;padding-bottom:6px}.t{padding:10px 10px 0;font-weight:700}</style>
+<script src="germo3.js"></script>
+<script>
+const E=Object.keys(GERMO3.EMO);
+g.innerHTML=E.map(k=>'<div>'+GERMO3.disegna(k)+'<b>'+GERMO3.EMO[k].n+'</b></div>').join('');
+v.innerHTML=E.map(k=>'<div>'+GERMO3.disegna(k,{senzaViso:1})+'<b>'+GERMO3.EMO[k].n+'</b></div>').join('');
+c.innerHTML=[0,1,2,3].map(f=>'<div>'+GERMO3.fase(f)+'<b>Fase '+(f+1)+'</b></div>').join('')+['gioia','assonnato','capisce'].map(k=>'<div>'+GERMO3.fase(3,k)+'<b>Fase 4 · '+GERMO3.EMO[k].n+'</b></div>').join('');
+m.innerHTML=[24,32,48,96].map(px=>E.slice(0,4).map(k=>'<div style="width:'+px+'px">'+GERMO3.disegna(k)+'</div>').join('')).join('<span style="width:14px"></span>');
+</script>

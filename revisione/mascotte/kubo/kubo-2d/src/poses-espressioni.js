@@ -1,0 +1,10 @@
+module.exports=[
+ ['aperti',{turn:0.1,rot:-2,footL:{rot:6},footR:{x:6,rot:-8}}],
+ ['felici',{expr:{felici:1},turn:0.35,rot:-8,y:-30,sy:1.04,sx:0.97,handL:{x:10,y:-40,rot:-40},handR:{x:-10,y:-60,rot:40},footL:{y:-4,rot:18},footR:{x:16,y:-22,rot:-28},antRot:-8,shadowS:0.85}],
+ ['battito',{expr:{battito:1},turn:0,rot:2,sy:0.98,sx:1.01,footL:{rot:-6},footR:{rot:6}}],
+ ['occhiolino',{expr:{occhiolino:1},mouth:0.35,turn:-0.3,rot:6,handR:{x:-14,y:-120,rot:-20},footL:{x:-10,rot:-14},footR:{x:10,y:-8,rot:20},antRot:8}],
+ ['stelle',{expr:{stelle:1},turn:0.2,rot:-4,y:-40,sy:1.07,sx:0.95,handL:{x:-6,y:-110,rot:-40},handR:{x:6,y:-120,rot:40},footL:{x:-6,y:-10,rot:16},footR:{x:8,y:-16,rot:-20},antRot:-6,shadowS:0.82}],
+ ['concentrato',{expr:{concentrato:1},handsFront:1,turn:0.25,rot:-4,sy:0.95,sx:1.03,gazeY:6,handL:{x:46,y:50,rot:30},handR:{x:-46,y:50,rot:-30},footL:{rot:-10},footR:{x:4,rot:10},antRot:-3}],
+ ['assonnato',{expr:{assonnato:1},turn:-0.2,rot:9,y:6,sy:0.92,sx:1.04,gazeY:8,handL:{y:40,rot:-14},handR:{y:36,rot:10},footL:{x:-10,rot:-22},footR:{x:8,rot:18},antRot:12,capRot:6}],
+ ['confuso',{expr:{confuso:1},turn:-0.35,rot:-10,handR:{x:-24,y:-130,rot:-20},handL:{y:10,rot:10},footL:{x:-6,rot:14},footR:{x:12,y:-10,rot:-22},antRot:16,capRot:-12}],
+];

@@ -1,0 +1,12 @@
+<!doctype html><meta charset="utf-8"><style>
+body{margin:0;background:#efe9e1;font-family:Inter,sans-serif;color:#1d2a62;width:1680px}
+h1{font-size:34px;margin:30px 40px 2px}p{margin:0 40px 10px;opacity:.7;font-size:17px}
+.g{display:grid;grid-template-columns:repeat(4,380px);gap:16px;padding:14px 40px 40px}
+.c{background:#f9f6f2;border-radius:28px;height:420px;position:relative;overflow:hidden}.c svg{width:380px;height:370px}
+.c b{position:absolute;left:0;right:0;bottom:16px;text-align:center;font-size:24px;font-weight:800}
+</style><h1>Kubo · espressioni degli occhi</h1><p>Ogni occhio è un contorno di 96 punti corrispondenti: le espressioni si interpolano con continuità (nessuno scambio di forma).</p>
+<div class="g" id="g"></div><script src="rig.js"></script><script>
+window.show=(poses)=>{const g=document.getElementById('g');for(const [l,p] of poses){const c=document.createElement('div');c.className='c';
+c.innerHTML=KuboRig.build({viewBox:'-430 -760 860 840'})+`<b>${l}</b>`;g.appendChild(c);const svg=c.firstElementChild;
+KuboRig.applyPose({getElementById:id=>svg.querySelector('#'+id)},p);svg.querySelector('#scintille').setAttribute('opacity',l==='felici'||l==='stelle'?1:0);}};
+</script>

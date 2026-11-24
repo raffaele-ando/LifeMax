@@ -1,0 +1,14 @@
+<!doctype html><meta charset="utf-8"><body style="margin:0;background:#f4f2fb;font:13px system-ui">
+<div class="t">Stati</div><div id="g" class="r"></div>
+<div class="t">Prova: viso coperto</div><div id="v" class="r"></div>
+<div class="t">Fondo scuro</div><div id="d" class="r" style="background:#101016;border-radius:14px;margin:0 10px"></div>
+<div class="t">Misure reali 24 · 32 · 48 · 96 px</div><div id="m" style="display:flex;gap:16px;align-items:flex-end;padding:10px;flex-wrap:wrap"></div>
+<style>.r{display:grid;grid-template-columns:repeat(10,140px);gap:8px;padding:6px 10px}.r>div{background:#fff;border-radius:14px;text-align:center;padding-bottom:6px}#d>div{background:#1b1b24;color:#ddd}.t{padding:10px 10px 0;font-weight:700}</style>
+<script src="germo4.js"></script>
+<script>
+const S=GERMO4.STATI;
+g.innerHTML=S.map(s=>'<div>'+GERMO4.disegna(s.k)+'<b>'+s.n+'</b></div>').join('');
+v.innerHTML=S.map(s=>'<div>'+GERMO4.disegna(s.k,{senzaViso:1})+'<b>'+s.n+'</b></div>').join('');
+d.innerHTML=S.map(s=>'<div>'+GERMO4.disegna(s.k,{corpo:'#7d70ff',terra:'rgba(0,0,0,.4)'})+'<b>'+s.n+'</b></div>').join('');
+m.innerHTML=[24,32,48,96].map(px=>['felice','gioia','stanco','affetto'].map(k=>'<div style="width:'+px+'px">'+GERMO4.disegna(k)+'</div>').join('')).join('<span style="width:12px"></span>');
+</script>

@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="it"><head><meta charset="utf-8"><title>Segno — giornata chiusa</title>
+<style>
+  html,body{margin:0;padding:0;background:#fff6f1;overflow:hidden}
+  svg{display:block}
+  text{font-family:'Inter Display','Inter',sans-serif}
+</style></head>
+<body>
+<svg id="scena" width="1080" height="1080" viewBox="0 0 1080 1080" xmlns="http://www.w3.org/2000/svg"></svg>
+<script src="base.js"></script>
+<script>
+/* ---------- KIT locale (fatta / giornata / concentrazione) ----------
+   Copia di segno() di base.js con altro nome (segnoX), estesa in modo CONTINUO:
+   - occhi: un'unica forma che passa senza salti da ovale → chiuso → arco felice
+     (apri 0..1, felici 0..1, per occhio con felL/felR e apL/apR);
+   - onda: un'onda che percorre la spina dal basso all'alto (ondaA in gradi, ondaF fronte 0..1.6);
+   - sventola: il risvolto alzato ondeggia come una bandierina (sv in unità);
+   - occhiY: altezza degli occhi lungo il corpo. */
+const BASEX={esse:6,piega:0,incl:0,sy:1,sx:1,risvolto:[17,15],g:[1,1],piedi:[[0,0],[0,0]],apri:1,occhioK:1,felici:0,
+  felL:0,felR:0,apL:1,apR:1,occhiY:.3,ondaA:0,ondaF:0,sv:0};
+const SX={
+  calma:      {...BASEX},
+  felice:     {...BASEX, esse:9, piega:-10, risvolto:[-22,-28], felici:1, piedi:[[-6,-3],[6,-3]]},
+  carica:     {...BASEX, esse:2, sy:.82, sx:1.16, risvolto:[24,23], g:[0,2.5], piedi:[[-6,1],[6,1]], occhioK:.95},
+  slancio:    {...BASEX, esse:0, sy:1.16, sx:.88, risvolto:[-14,-18], g:[0,-1], piedi:[[5,8],[-5,8]], occhioK:1.1},
+  fiero:      {...BASEX, esse:0, sy:1.1, sx:.96, risvolto:[-30,-34], felici:1, occhiY:.32, piedi:[[-15,1],[15,1]]},
+  alto:       {...BASEX, esse:0, sy:1.3, sx:.84, risvolto:[-26,-50], felici:1, piedi:[[6,6],[-6,6]]},
+  concentrato:{...BASEX, esse:0, incl:9, piega:-4, risvolto:[29,35], g:[2,6.5], apri:.5, occhioK:.95},
+  sveglio:    {...BASEX, esse:2, incl:0, risvolto:[-16,-20], g:[0,-3], apri:1, occhioK:1.14},
+  stira:      {...BASEX, esse:0, incl:-7, piega:-14, sy:1.26, sx:.85, risvolto:[-34,-38], apri:0, piedi:[[5,4],[-5,4]]},
+  rilassato:  {...BASEX, esse:7, risvolto:[13,10], felici:1, g:[0,1]},
+};
+function spinaX(s){
+  const pts=[],N=48,ds=H*s.sy/N; let x=100,y=186;
+  for(let i=0;i<=N;i++){ const t=i/N;
+    let th=s.incl+s.piega*t+s.esse*Math.sin(t*Math.PI*2);
+    if(s.ondaA){ const d=t-s.ondaF; th+=s.ondaA*Math.exp(-d*d/.045)*Math.sin(d*Math.PI*2/.42); }
+    pts.push({x,y,th,t}); const r=th*Math.PI/180; x+=ds*Math.sin(r); y-=ds*Math.cos(r); }
+  return pts;
+}
+/* occhio continuo: linea mediana ad arco + spessore; con stroke tondo da 4.2 */
+function occhioX(x,y,rot,K,ap,fe){
+  const w=lerp(5.1*K,7,clamp(fe+(1-ap)*.95));
+  const h=7.5*K*ap*(1-fe);
+  const base=3*fe, bend=5*fe-2.5*(1-ap)*(1-fe);
+  const top=[],bot=[];
+  for(let i=0;i<=16;i++){ const u=-1+2*i/16, ym=y+base-bend*(1-u*u), hh=h*Math.sqrt(Math.max(0,1-u*u));
+    top.push([x+u*w,ym-hh]); bot.push([x+u*w,ym+hh]); }
+  const d='M'+top.map(fp).join('L')+'L'+bot.reverse().map(fp).join('L')+'Z';
+  return `<path d="${d}" fill="${C.occhi}" stroke="${C.occhi}" stroke-width="4.2" stroke-linejoin="round" stroke-linecap="round" transform="rotate(${f1(rot)} ${f1(x)} ${f1(y)})"/>`;
+}
+function segnoX(s){
+  const P=spinaX(s),N=P.length-1,top=P[N];
+  const iT=Math.round(N*TACCA/(H*s.sy));
+  const [pl,pr]=s.piedi;
+  const ps0=lato(P[0],-1,larg(0,s)+4),pd0=lato(P[0],1,larg(0,s)+4);
+  const ps=[ps0[0]+pl[0],ps0[1]+pl[1]],pd=[pd0[0]+pr[0],pd0[1]+pr[1]];
+  let d=`M${fp(ps)}`;
+  for(let i=3;i<=N;i++) d+=`L${fp(lato(P[i],-1,larg(P[i].t,s)))}`;
+  d+=`L${fp(lato(top,1,larg(1,s)))}`;
+  for(let i=N-1;i>=3;i--) d+=`L${fp(lato(P[i],1,larg(P[i].t,s)))}`;
+  d+=`L${fp(pd)}L${fp([P[iT].x,P[iT].y])}Z`;
+  const fy=N*(1-s.occhiY), i0=Math.floor(fy), fr=fy-i0, pa=P[i0], pb=P[Math.min(N,i0+1)];
+  const po={x:lerp(pa.x,pb.x,fr),y:lerp(pa.y,pb.y,fr),th:lerp(pa.th,pb.th,fr)}, r=po.th;
+  const occhi=[-1,1].map(l=>{
+    const c=lato(po,l,12),x=c[0]+s.g[0],y=c[1]+s.g[1];
+    const fe=clamp(Math.max(s.felici, l<0?s.felL:s.felR)), ap=clamp(s.apri*(l<0?s.apL:s.apR),0,1.3);
+    return occhioX(x,y,r,s.occhioK,ap,fe);
+  }).join('');
+  const [Ll,Lr]=s.risvolto,th=top.th,hw=larg(1,s);
+  const hl=lato(top,-1,hw+1),hr=lato(top,1,hw+1);
+  const el=lungo(hl,th,Ll),er=lungo(hr,th,Lr);
+  const sotto=Ll+Lr>0, apri=sotto?0:6*clamp(-(Ll+Lr)/40);
+  const el2=lato({x:el[0],y:el[1],th},-1,apri),er2=lato({x:er[0],y:er[1],th},1,apri);
+  // bordo curvo; con 'sv' il bordo libero ondeggia (bandierina)
+  const cm=lungo([(el2[0]+er2[0])/2,(el2[1]+er2[1])/2],th,lerp(-4,5,clamp((Ll+Lr+12)/24))+s.sv);
+  const risv=`<path d="M${fp(hl)}L${fp(el2)}Q${fp(cm)} ${fp(er2)}L${fp(hr)}Z" fill="${C.rovescio}" stroke="${C.rovescio}" stroke-width="3" stroke-linejoin="round"/>`;
+  return (sotto?'':risv)+`<path d="${d}" fill="${C.corpo}" stroke="${C.corpo}" stroke-width="5" stroke-linejoin="round"/>`+occhi+(sotto?risv:'');
+}
+/* Segno con i piedi ancorati a (px,py) */
+function segnoA(s,px,py,sc){ return `<g transform="translate(${f1(px)} ${f1(py)}) scale(${sc.toFixed(3)}) translate(-100 -186)">${segnoX(s)}</g>`; }
+const ombraA=(cx,y,k,rx)=>k>0.01?`<ellipse cx="${f1(cx)}" cy="${f1(y+6)}" rx="${f1(rx*k)}" ry="${f1(18*k*rx/125)}" fill="${C.ombra}"/>`:'';
+/* sequenza di pose: [[t, stato, easing dell'arrivo], ...] → stato interpolato */
+function pose(t,K){
+  if(t<=K[0][0]) return {...K[0][1]};
+  for(let i=1;i<K.length;i++){ const [t1,s1,e]=K[i], [t0,s0]=K[i-1];
+    if(t<=t1) return mix(s0,s1,(e||eIO)(prog(t,t0,t1))); }
+  return {...K[K.length-1][1]};
+}
+const ritardo=(a,b,k)=>a.map((x,i)=>x+b[i]*k);
+
+/* ============================================================
+   SEGNO — GIORNATA CHIUSA (3 s)
+   raccoglie il fiato → si stiracchia alto, il risvolto si alza e si apre come una bandierina
+   → saltello e si pianta a piedi larghi (fiero) → coriandoli di minisegni
+   → respiro soddisfatto → strizza l'occhio. Testo «Giornata chiusa».
+   ============================================================ */
+const DURATA=3.0;
+const PX=540, SUOLO=780, SCALA=3.5;
+const B=(o)=>({...BASEX,...o});
+const FIERO=B({esse:0, piega:-3, sy:1.1, sx:.97, risvolto:[-30,-36], felici:1, occhiY:.31, piedi:[[-16,1],[16,1]]});
+const KF=[
+  [0.00, SX.calma],
+  [0.12, SX.calma],
+  [0.40, B({esse:2, sy:.86, sx:1.12, risvolto:[24,22], apri:0, g:[0,1], piedi:[[-5,1],[5,1]]}), eIO],          // raccoglie il fiato, occhi chiusi
+  [0.58, B({esse:0, sy:1.2, sx:.88, risvolto:[10,4], apri:.4, felici:.6, piedi:[[4,5],[-4,5]]}), eIn],           // si allunga: il risvolto è ancora giù
+  [0.82, B({esse:0, sy:1.3, sx:.84, risvolto:[-24,-50], felici:1, piedi:[[6,6],[-6,6]]}), eOut],                // in punta di piedi, la bandierina si apre
+  [0.98, B({esse:0, sy:1.22, sx:.88, risvolto:[-26,-46], felici:1, piedi:[[-10,0],[10,0]]}), eIO],               // saltello: i piedi si aprono in aria
+  [1.12, B({esse:0, sy:.88, sx:1.12, risvolto:[-14,-22], felici:1, piedi:[[-19,2],[19,2]]}), eIn],               // si pianta: schiacciamento
+  [1.34, FIERO, eOut],
+  [1.50, FIERO, eIO],
+  [1.92, B({...FIERO, sy:1.15, sx:.94, risvolto:[-33,-39]}), eIO],                                              // inspira, petto in fuori
+  [2.30, B({...FIERO, sy:1.07, sx:.99, risvolto:[-28,-32]}), eIO],                                              // espira soddisfatto
+  [2.42, B({...FIERO, sy:1.08, felici:0, g:[0,0]}), eIO],                                                       // apre gli occhi: ti guarda
+  [2.54, B({...FIERO, sy:1.08, felici:0, felR:1, incl:-3, g:[-1,0]}), eOut],                                    // strizza l'occhio
+  [2.78, B({...FIERO, sy:1.08, felici:0, felR:1, incl:-3, g:[-1,0]}), eIO],
+  [2.92, B({...FIERO, sy:1.09, felici:1, felR:1, incl:0}), eIO],                                              // e torna a sorridere
+  [3.00, B({...FIERO, sy:1.09, felici:1, felR:1, incl:0}), eIO],
+];
+const CORIANDOLI=creaBurst(31,22,540,300,420,900,1.12,1);
+CORIANDOLI.forEach(p=>p.vita=Math.min(p.vita,1.86));
+function render(t){
+  let o=`<rect width="1080" height="1080" fill="${C.fondo}"/>`;
+  const caldo=eOut(prog(t,1.1,1.7));
+  if(caldo>0) o+=`<rect width="1080" height="1080" fill="${C.caldo}" opacity="${(.5*caldo).toFixed(3)}"/>`;
+  let s=pose(t,KF);
+  if(t<.14) s.sy*=1+.012*Math.sin(t*9);
+  // sale in punta di piedi, poi un piccolo salto e si pianta
+  const punta=28*eOut(prog(t,.45,.82))*(1-prog(t,.82,.98));
+  const u=prog(t,.82,1.12);
+  const su = t<.82 ? punta : (t<1.12 ? 28*(1-u)+62*4*u*(1-u) : 0);
+  // rimbalzo smorzato dell'assestamento + bandierina che sventola
+  s.sy+= .05*molla(t-1.12,15,6);
+  s.sx-= .04*molla(t-1.12,15,6);
+  const vento=clamp(prog(t,.6,.8))*(1-.75*eOut(prog(t,1.1,1.9)));
+  s.risvolto=ritardo(s.risvolto,[Math.sin(t*13)*4,Math.sin(t*13+1.2)*7],vento);
+  s.sv+=Math.sin(t*13+.6)*6*vento;
+  s.risvolto=ritardo(s.risvolto,[1,1.3],10*molla(t-1.12,18,6));  // il risvolto arriva in ritardo
+  o+=ombraA(PX,SUOLO,1-.4*su/70,120*(1+.08*clamp(Math.abs(s.piedi[1][0])/16)));
+  o+=particelle(CORIANDOLI,t);            // escono da dietro Segno
+  o+=segnoA(s,PX,SUOLO-su,SCALA);
+  if(t>1.5){
+    const e=prog(t,1.5,1.8), sc=eBack(e,2.2);
+    o+=`<text x="540" y="${f1(lerp(975,955,eOut(e)))}" text-anchor="middle" font-size="92" font-weight="900" letter-spacing="-1" fill="${C.corpo}" opacity="${clamp(e*3).toFixed(3)}" transform="translate(540 925) scale(${sc.toFixed(3)}) translate(-540 -925)">Giornata chiusa</text>`;
+  }
+  document.getElementById('scena').innerHTML=o;
+}
+
+window.render=render; window.DURATA=DURATA;
+render(Number(new URLSearchParams(location.search).get('t')||0));
+</script>
+</body></html>

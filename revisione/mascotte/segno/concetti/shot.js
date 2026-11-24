@@ -1,0 +1,2 @@
+const {chromium}=require('playwright');(async()=>{const b=await chromium.launch();const p=await b.newPage({viewport:{width:1500,height:700},deviceScaleFactor:Number(process.argv[4]||1)});const e=[];p.on('pageerror',x=>e.push(x.message));
+await p.goto('file://'+__dirname+'/'+(process.argv[2]||'foglio.html'));await p.waitForTimeout(500);await p.screenshot({path:__dirname+'/'+(process.argv[3]||'foglio.png'),fullPage:true});console.log(e);await b.close();})();

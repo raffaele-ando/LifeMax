@@ -1,0 +1,219 @@
+{
+ "todoist": {
+  "nome": "Todoist: To do list–Calendario",
+  "dominante": "#fe463e",
+  "L": 0.66,
+  "C": 0.221,
+  "h": 28,
+  "quota_colore": 0.92,
+  "neutri": 0.08
+ },
+ "things 3 cultured code": {
+  "nome": "Things 3",
+  "dominante": "#3681f4",
+  "L": 0.62,
+  "C": 0.188,
+  "h": 259,
+  "quota_colore": 0.55,
+  "neutri": 0.45
+ },
+ "ticktick": {
+  "nome": "TickTick:To-Do List & Calendar",
+  "dominante": "#5d86fe",
+  "L": 0.65,
+  "C": 0.184,
+  "h": 267,
+  "quota_colore": 0.12,
+  "neutri": 0.83
+ },
+ "notion": {
+  "dominante": null,
+  "quota": 0,
+  "neutri": 1.0
+ },
+ "tiimo": {
+  "nome": "Tiimo - Planner per l'adhd",
+  "dominante": "#b9a5ef",
+  "L": 0.77,
+  "C": 0.106,
+  "h": 296,
+  "quota_colore": 0.43,
+  "neutri": 0.57
+ },
+ "structured daily planner": {
+  "nome": "Structured - Agenda Calendario",
+  "dominante": "#ffaaa6",
+  "L": 0.82,
+  "C": 0.101,
+  "h": 22,
+  "quota_colore": 0.8,
+  "neutri": 0.2
+ },
+ "finch self care": {
+  "nome": "Finch: Self-Care Pet",
+  "dominante": "#df8040",
+  "L": 0.69,
+  "C": 0.141,
+  "h": 52,
+  "quota_colore": 0.09,
+  "neutri": 0.89
+ },
+ "habitica": {
+  "nome": "Habitica: Gamified Taskmanager",
+  "dominante": "#8e4bf8",
+  "L": 0.59,
+  "C": 0.242,
+  "h": 296,
+  "quota_colore": 0.96,
+  "neutri": 0.04
+ },
+ "forest focus": {
+  "nome": "Forest - Rimani concentrato",
+  "dominante": "#e3ff99",
+  "L": 0.96,
+  "C": 0.131,
+  "h": 121,
+  "quota_colore": 0.67,
+  "neutri": 0.0
+ },
+ "headspace": {
+  "nome": "Headspace: Sleep & Meditation",
+  "dominante": "#ff7300",
+  "L": 0.71,
+  "C": 0.195,
+  "h": 48,
+  "quota_colore": 0.42,
+  "neutri": 0.58
+ },
+ "duolingo": {
+  "nome": "Duolingo: Corsi di lingua",
+  "dominante": "#ca5000",
+  "L": 0.58,
+  "C": 0.171,
+  "h": 44,
+  "quota_colore": 0.35,
+  "neutri": 0.25
+ },
+ "airbnb": {
+  "nome": "Airbnb",
+  "dominante": "#ff385c",
+  "L": 0.66,
+  "C": 0.231,
+  "h": 17,
+  "quota_colore": 0.89,
+  "neutri": 0.11
+ },
+ "phantom wallet": {
+  "nome": "Phantom: Trading Wallet",
+  "dominante": "#ab9ff1",
+  "L": 0.74,
+  "C": 0.117,
+  "h": 290,
+  "quota_colore": 0.74,
+  "neutri": 0.26
+ },
+ "brilliant learn math": {
+  "nome": "Brilliant: Learn Math & Coding",
+  "dominante": "#53be8b",
+  "L": 0.73,
+  "C": 0.125,
+  "h": 160,
+  "quota_colore": 0.27,
+  "neutri": 0.64
+ },
+ "inflow adhd": {
+  "nome": "Inflow - Manage Your ADHD",
+  "dominante": "#bee3db",
+  "L": 0.89,
+  "C": 0.04,
+  "h": 181,
+  "quota_colore": 0.84,
+  "neutri": 0.14
+ },
+ "goblin tools": {
+  "nome": "Goblin Tools",
+  "dominante": "#cce969",
+  "L": 0.89,
+  "C": 0.157,
+  "h": 120,
+  "quota_colore": 0.96,
+  "neutri": 0.04
+ },
+ "fabulous daily routine planner": {
+  "nome": "Fabulous - Routine e benessere",
+  "dominante": "#d00016",
+  "L": 0.54,
+  "C": 0.22,
+  "h": 27,
+  "quota_colore": 0.3,
+  "neutri": 0.05
+ },
+ "routinery": {
+  "nome": "Routine Planner, Habit Tracker",
+  "dominante": "#f9e000",
+  "L": 0.9,
+  "C": 0.188,
+  "h": 101,
+  "quota_colore": 0.33,
+  "neutri": 0.67
+ },
+ "llama life": {
+  "nome": "ADHD Organizer: Llama Life",
+  "dominante": "#fee16b",
+  "L": 0.91,
+  "C": 0.14,
+  "h": 96,
+  "quota_colore": 0.68,
+  "neutri": 0.3
+ },
+ "sunsama": {
+  "nome": "Sunsama",
+  "dominante": "#ee693c",
+  "L": 0.68,
+  "C": 0.175,
+  "h": 39,
+  "quota_colore": 0.33,
+  "neutri": 0.67
+ },
+ "calm sleep meditation": {
+  "nome": "Calm",
+  "dominante": "#3c80e0",
+  "L": 0.6,
+  "C": 0.161,
+  "h": 258,
+  "quota_colore": 0.65,
+  "neutri": 0.05
+ },
+ "amazing marvin": {
+  "nome": "Amazing Marvin: ADHD Planner",
+  "dominante": "#895049",
+  "L": 0.5,
+  "C": 0.078,
+  "h": 28,
+  "quota_colore": 0.01,
+  "neutri": 0.99
+ },
+ "todo microsoft": {
+  "nome": "Microsoft To Do",
+  "dominante": "#389cea",
+  "L": 0.67,
+  "C": 0.147,
+  "h": 246,
+  "quota_colore": 0.19,
+  "neutri": 0.81
+ },
+ "any.do": {
+  "nome": "Any.do: To do list & Planner",
+  "dominante": "#3798ff",
+  "L": 0.67,
+  "C": 0.176,
+  "h": 253,
+  "quota_colore": 0.96,
+  "neutri": 0.04
+ },
+ "linear app": {
+  "dominante": null,
+  "quota": 0,
+  "neutri": 1.0
+ }
+}

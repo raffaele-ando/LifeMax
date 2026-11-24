@@ -1,0 +1,137 @@
+<!doctype html><meta charset="utf-8">
+<style>html,body{margin:0;background:#f6f3f0}svg{display:block}</style>
+<svg id="s" viewBox="0 0 1080 1080" width="1080" height="1080"></svg>
+<script src="../mascotte5/nastro3.js"></script>
+<script>
+/* SEGNO DIVENTA UNA COCCARDA — la «fenice» del segnalibro, per un traguardo di serie.
+   Tempi (secondi):
+   0.00–0.45  calma, respira, sbatte gli occhi
+   0.45–0.80  anticipazione: si schiaccia, il risvolto scende a visiera (si concentra)
+   0.80–1.15  slancio: si allunga e salta, il risvolto si alza a ciuffo
+   1.15–1.75  all'apice gira su sé stesso e si avvolge: il nastro diventa coccarda
+   1.75–2.05  esplosione: lampo, raggi, coriandoli
+   2.05–3.40  la coccarda respira, le code ondeggiano in ritardo, compare «7 giorni di fila»
+   3.40–4.40  assestamento: i coriandoli cadono, un ultimo occhiolino */
+const S = document.getElementById('s');
+const C = { corpo: '#d9445a', chiaro: '#f4a3ae', scuro: '#b8334a', oro: '#ffb224', oroChiaro: '#ffd27a', occhi: '#2b0f1c', fondo: '#f6f3f0' };
+const DUR = 4.4;
+const cl = (x, a, b) => Math.max(a, Math.min(b, x));
+const fase = (t, a, b) => cl((t - a) / (b - a), 0, 1);
+const easeOut = x => 1 - Math.pow(1 - x, 3);
+const easeIn = x => x * x * x;
+const easeInOut = x => x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+const back = x => { const c1 = 1.9, c3 = c1 + 1; return 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2); };
+const molla = (x, f = 3, d = 5) => 1 - Math.cos(x * Math.PI * f) * Math.exp(-d * x);
+
+/* il nastro: si riusa il disegno del personaggio, scegliendo la posa e deformandolo */
+function nastro(stato, tx, ty, sx, sy, rot, alpha) {
+  const svg = NASTRO3.disegna(stato);
+  const dentro = svg.replace(/^<svg[^>]*>/, '').replace(/<\/svg>$/, '');
+  /* il disegno vive in 200×200 con i piedi a y≈190: lo si porta a 1080 (scala 3.2) con il perno ai piedi */
+  return `<g opacity="${alpha}" transform="translate(${tx} ${ty}) rotate(${rot}) scale(${sx * 3.2} ${sy * 3.2}) translate(-100 -190)">${dentro}</g>`;
+}
+
+/* la coccarda: petali pieghettati, centro d'oro con gli occhi di Segno, due code a coda di rondine */
+function coccarda(cx, cy, k, t, occhi) {
+  if (k <= 0) return '';
+  let s = `<g transform="translate(${cx} ${cy}) scale(${k})">`;
+  /* code: ondeggiano con un ritardo (follow-through) */
+  const onda = Math.sin(t * 5.2) * 6 * Math.exp(-Math.max(0, t - 2) * .9);
+  const coda = (lato) => {
+    const a = lato * 14 + onda * lato * .6;
+    return `<g transform="rotate(${a})"><path d="M${-34 + lato * 26} 60 L${-4 + lato * 26} 60 L${4 + lato * 30} 320 L${-15 + lato * 28} 292 L${-38 + lato * 26} 320 Z" fill="${lato < 0 ? C.corpo : C.scuro}"/></g>`;
+  };
+  s += coda(-1) + coda(1);
+  /* petali: 18 spicchi alternati, che si aprono dal centro */
+  const n = 18;
+  for (let i = 0; i < n; i++) {
+    const a = i / n * 360 + t * 8;
+    s += `<path d="M0 0 L${-38} -205 Q0 -232 38 -205 Z" fill="${i % 2 ? C.corpo : C.chiaro}" transform="rotate(${a})"/>`;
+  }
+  s += `<circle r="150" fill="${C.corpo}"/><circle r="122" fill="${C.oro}"/><circle r="122" fill="none" stroke="${C.oroChiaro}" stroke-width="10" stroke-dasharray="2 18" stroke-linecap="round"/>`;
+  s += occhi;
+  return s + '</g>';
+}
+function occhiCoccarda(t) {
+  /* felici; un occhiolino verso la fine; un battito a 2.9 */
+  const strizza = (t > 3.9 && t < 4.15);
+  const batte = Math.abs(t - 2.9) < .07;
+  const arco = (x) => `<path d="M${x - 24} 10 Q${x} -28 ${x + 24} 10" fill="none" stroke="${C.occhi}" stroke-width="15" stroke-linecap="round"/>`;
+  const occhio = (x) => `<ellipse cx="${x}" cy="-6" rx="17" ry="${batte ? 3 : 24}" fill="${C.occhi}"/>`;
+  if (t < 2.5) return arco(-42) + arco(42);
+  return occhio(-42) + (strizza ? arco(42) : occhio(42));
+}
+
+/* coriandoli deterministici */
+let seme = 7; const rnd = () => (seme = (seme * 16807) % 2147483647) / 2147483647;
+const COLORI = [C.corpo, C.oro, C.chiaro, '#4cc3a0', '#7d70ff', C.oroChiaro];
+const PEZZI = Array.from({ length: 90 }, () => {
+  const a = rnd() * Math.PI * 2, v = 600 + rnd() * 900;
+  return { vx: Math.cos(a) * v, vy: Math.sin(a) * v - 500, r: rnd() * 360, vr: (rnd() - .5) * 900, w: 10 + rnd() * 14, h: 6 + rnd() * 8, c: COLORI[Math.floor(rnd() * COLORI.length)], forma: rnd() < .3 ? 'cerchio' : 'striscia' };
+});
+function coriandoli(t, cx, cy) {
+  const t0 = 1.75; if (t < t0) return '';
+  const dt = t - t0, g = 1500, attrito = Math.exp(-dt * 1.6);
+  return PEZZI.map(p => {
+    const x = cx + p.vx * (1 - attrito) / 1.6, y = cy + p.vy * (1 - attrito) / 1.6 + .5 * g * dt * dt * .45;
+    const op = cl(1 - (dt - 1.8) / .8, 0, 1);
+    if (op <= 0 || y > 1120) return '';
+    const flip = Math.cos(dt * 9 + p.r) ;
+    return p.forma === 'cerchio'
+      ? `<circle cx="${x}" cy="${y}" r="${p.h * .8}" fill="${p.c}" opacity="${op}"/>`
+      : `<rect x="${-p.w / 2}" y="${-p.h / 2}" width="${p.w}" height="${p.h * Math.abs(flip) + 1}" rx="2" fill="${p.c}" opacity="${op}" transform="translate(${x} ${y}) rotate(${p.r + p.vr * dt})"/>`;
+  }).join('');
+}
+
+function render(t) {
+  let out = `<rect width="1080" height="1080" fill="${C.fondo}"/>`;
+  const cx = 540, terra = 820;
+  /* bagliore dietro, dall'esplosione in poi */
+  const gl = fase(t, 1.7, 2.1);
+  if (gl > 0) out += `<defs><radialGradient id="bg"><stop offset="0" stop-color="${C.oroChiaro}" stop-opacity=".75"/><stop offset=".55" stop-color="${C.oroChiaro}" stop-opacity=".35"/><stop offset="1" stop-color="${C.oroChiaro}" stop-opacity="0"/></radialGradient></defs><circle cx="${cx}" cy="400" r="${300 + 200 * easeOut(gl)}" fill="url(#bg)" opacity="${gl}"/>`;
+  /* raggi */
+  const rg = fase(t, 1.75, 2.6);
+  if (rg > 0 && rg < 1) {
+    for (let i = 0; i < 14; i++) {
+      const a = i / 14 * 360 + 10, L1 = 200 + 330 * easeOut(rg), L0 = 160 + 380 * easeIn(rg);
+      out += `<path d="M${-8} ${-L0} L8 ${-L0} L4 ${-L1} L-4 ${-L1}Z" fill="${C.oro}" opacity="${1 - rg}" transform="translate(${cx} 400) rotate(${a})" stroke="${C.oro}" stroke-width="10" stroke-linejoin="round"/>`;
+    }
+  }
+  /* ombra a terra */
+  let alto = 0;
+  if (t >= .8 && t < 1.75) alto = Math.sin(fase(t, .8, 1.75) * Math.PI * .5) * 330;
+  if (t < 1.75) out += `<ellipse cx="${cx}" cy="${terra + 12}" rx="${110 * (1 - alto / 600)}" ry="16" fill="#000" opacity="${.1 * (1 - alto / 500)}"/>`;
+
+  if (t < 1.64) {
+    let stato = 'calma', sx = 1, sy = 1, y = terra, rot = 0;
+    if (t < .45) { const b = Math.sin(t * 9) * .015; sx = 1 - b; sy = 1 + b; }
+    else if (t < .8) { const k = easeOut(fase(t, .45, .8)); stato = 'concentrato'; sx = 1 + .16 * k; sy = 1 - .2 * k; }
+    else if (t < 1.15) { const k = fase(t, .8, 1.15); stato = 'gioia'; sx = 1.16 - .3 * easeOut(k); sy = .8 + .45 * easeOut(k); y = terra - alto; }
+    else {
+      /* l'avvitamento: gira e si stringe in larghezza come un nastro che si arrotola */
+      const k = fase(t, 1.15, 1.75); stato = 'gioia';
+      rot = 360 * easeInOut(k); sx = (.86 + .2 * (1 - k)) * (1 - easeIn(k)); sy = 1.25 - .5 * k; y = terra - alto;
+    }
+    out += nastro(stato, cx, y, sx, sy, rot, 1);
+  }
+  /* la coccarda nasce dall'avvitamento con un rimbalzo */
+  const kc = fase(t, 1.55, 2.15);
+  if (kc > 0) {
+    const resp = t > 2.2 ? 1 + Math.sin((t - 2.2) * 4) * .015 : 1;
+    out += coccarda(cx, 400, back(kc) * resp * .9, t, occhiCoccarda(t));
+  }
+  /* lampo */
+  const lp = fase(t, 1.72, 1.95);
+  if (lp > 0 && lp < 1) out += `<circle cx="${cx}" cy="400" r="${80 + 420 * easeOut(lp)}" fill="#fffaf0" opacity="${.8 * (1 - lp)}"/>`;
+  out += coriandoli(t, cx, 400);
+  /* il traguardo */
+  const tx = fase(t, 2.2, 2.6), tx2 = fase(t, 2.45, 2.85);
+  if (tx > 0) {
+    out += `<text x="${cx}" y="905" text-anchor="middle" font-family="system-ui, -apple-system, Segoe UI, sans-serif" font-weight="800" font-size="${130 * back(tx)}" fill="${C.occhi}">7</text>`;
+  }
+  if (tx2 > 0) out += `<text x="${cx}" y="${975 + 20 * (1 - easeOut(tx2))}" text-anchor="middle" font-family="system-ui, -apple-system, Segoe UI, sans-serif" font-weight="700" font-size="46" fill="${C.scuro}" opacity="${tx2}">giorni di fila</text>`;
+  S.innerHTML = out;
+}
+window.render = render; window.DUR = DUR;
+render(0);
+</script>

@@ -1,0 +1,248 @@
+<title>Il colore di LifeMax</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: una colonna di lettura, con le tavole di campioni che si allargano a griglia. La pagina usa la palette che propone. */
+:root{
+  --pagina:#fbf7f4; --sup:#ffffff; --sup2:#f4eeea; --inch:#2a1a1f; --muto:#6e6166; --linea:#e6dcd7;
+  --marca:#d9445a; --pieno:#c8344f; --marca-testo:#a8283f; --tenue:#fbe4e7; --oro:#f5b440; --oro-testo:#8a5a00; --errore:#894100;
+  --risvolto:#f4a3ae;
+  --f-titolo:"Bricolage Grotesque", "Inter", system-ui, sans-serif; --f-testo:"Inter", system-ui, sans-serif; --f-dato:"JetBrains Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --pagina:#121011; --sup:#1c191a; --sup2:#2a2627; --inch:#f5eff1; --muto:#a89da1; --linea:#332e30;
+  --marca-testo:#ff7a8c; --tenue:#3a1f25; --oro-testo:#f5b440; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --pagina:#121011; --sup:#1c191a; --sup2:#2a2627; --inch:#f5eff1; --muto:#a89da1; --linea:#332e30;
+  --marca-testo:#ff7a8c; --tenue:#3a1f25; --oro-testo:#f5b440; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--pagina);color:var(--inch);font:400 16px/1.6 var(--f-testo);margin:0}
+.col{max-width:860px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:40px 80px;display:flex;flex-direction:column;gap:56px}
+h1,h2,h3{font-family:var(--f-titolo);text-wrap:balance;margin:0;line-height:1.1}
+h1{font-size:clamp(2.2rem,6vw,3.6rem);font-weight:800;letter-spacing:-.02em}
+h2{font-size:1.75rem;font-weight:800;letter-spacing:-.01em}
+h3{font-size:1.1rem;font-weight:600}
+p{margin:0;max-width:66ch}
+section{display:flex;flex-direction:column;gap:20px}
+.eti{font:600 .72rem/1 var(--f-testo);letter-spacing:.09em;text-transform:uppercase;color:var(--muto)}
+code{font-family:var(--f-dato);font-size:.82em}
+.muto{color:var(--muto)}
+.apertura{display:grid;grid-template-columns:1fr auto;gap:24px;align-items:end}
+.apertura img{width:150px;height:auto}
+.tesi{font-size:1.2rem;line-height:1.5}
+.tesi b{color:var(--marca-testo)}
+.trovato{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.trovato div{background:var(--sup);border:1px solid var(--linea);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.trovato b{font-family:var(--f-titolo);font-size:1.6rem;font-weight:800;font-variant-numeric:tabular-nums}
+.chi{border-left:4px solid var(--marca);padding:4px 0 4px 18px;display:flex;flex-direction:column;gap:10px}
+.ruoli{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px}
+.ruoli li{display:grid;grid-template-columns:56px 1fr;gap:12px;align-items:start;background:var(--sup);border:1px solid var(--linea);border-radius:14px;padding:14px;min-width:0}
+.ruoli .c{width:56px;height:56px;border-radius:12px;background:var(--c)}
+.ruoli .c.bordo{box-shadow:inset 0 0 0 1px var(--linea)}
+.ruoli b{display:block;font-weight:600}
+.ruoli small{display:block;color:var(--muto);font-size:.86rem;line-height:1.45}
+.ruoli code{color:var(--muto)}
+.tabella{overflow-x:auto;border:1px solid var(--linea);border-radius:14px;background:var(--sup)}
+table{border-collapse:collapse;width:100%;min-width:560px;font-size:.9rem}
+th,td{text-align:left;padding:10px 14px;border-bottom:1px solid var(--linea);vertical-align:top}
+th{font-weight:600;color:var(--muto);font-size:.78rem;letter-spacing:.06em;text-transform:uppercase}
+tr:last-child td{border-bottom:0}
+td.n{font-variant-numeric:tabular-nums;font-family:var(--f-dato);font-size:.85rem;white-space:nowrap}
+.ok{color:var(--marca-testo);font-weight:600}
+.aree{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px}
+.aree li{display:grid;grid-template-columns:22px 1fr;grid-template-rows:auto auto;column-gap:10px;align-items:center;background:var(--sup);border:1px solid var(--linea);border-radius:12px;padding:10px 12px;min-width:0}
+.aree .sw{grid-row:span 2;width:22px;height:22px;border-radius:50%;background:var(--c)}
+.aree .an{font-weight:500;font-size:.92rem}
+.aree code{font-size:.75rem;color:var(--muto)}
+.aree .hx-d{display:none}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .aree .sw{background:var(--cd)} :root:not([data-theme="light"]) .aree .hx-c{display:none} :root:not([data-theme="light"]) .aree .hx-d{display:inline}}
+:root[data-theme="dark"] .aree .sw{background:var(--cd)} :root[data-theme="dark"] .aree .hx-c{display:none} :root[data-theme="dark"] .aree .hx-d{display:inline}
+.segno{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.segno figure{margin:0;background:var(--sup);border:1px solid var(--linea);border-radius:16px;padding:16px 12px 12px;display:flex;flex-direction:column;align-items:center;gap:8px}
+.segno img{width:100%;max-width:150px}
+.segno figcaption{font-size:.85rem;color:var(--muto);text-align:center}
+.pelle{display:flex;gap:6px;flex-wrap:wrap}
+.pelle span{display:inline-flex;align-items:center;gap:6px;font-size:.82rem;background:var(--sup2);border-radius:999px;padding:4px 10px 4px 4px}
+.pelle i{width:18px;height:18px;border-radius:50%;background:var(--c);display:inline-block}
+.regole{margin:0;padding-left:1.3em;display:flex;flex-direction:column;gap:10px;max-width:70ch}
+.regole li::marker{font-family:var(--f-titolo);font-weight:800;color:var(--marca-testo)}
+.prova{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+.scheda{background:var(--sup);border:1px solid var(--linea);border-radius:18px;padding:18px;display:flex;flex-direction:column;gap:12px}
+.scheda .area{display:flex;align-items:center;gap:8px;font-size:.82rem;color:var(--muto)}
+.scheda .area i{width:9px;height:9px;border-radius:50%;background:#226fb3}
+.scheda h3{font-size:1.35rem}
+.btn{font:600 1rem var(--f-testo);border:0;border-radius:12px;padding:13px 16px;width:100%}
+.btn-marca{background:var(--pieno);color:#fff}
+.btn-sec{background:var(--sup2);color:var(--inch)}
+.btn-err{background:#894100;color:#fff}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{font-size:.85rem;border-radius:999px;padding:6px 12px;background:var(--sup2);color:var(--inch)}
+.chip.sel{background:var(--inch);color:var(--pagina)}
+.serie{display:inline-flex;align-items:center;gap:6px;font-weight:700;color:var(--oro-testo);font-variant-numeric:tabular-nums}
+.serie i{width:12px;height:16px;background:var(--oro);border-radius:50% 50% 45% 45%/60% 60% 40% 40%}
+.alt{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.alt div{border:1px dashed var(--linea);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:6px}
+@media (max-width:560px){.apertura{grid-template-columns:1fr}.apertura img{width:110px}.segno{grid-template-columns:1fr 1fr 1fr}}
+</style>
+
+<div class="col">
+
+<header class="apertura">
+  <div style="display:flex;flex-direction:column;gap:16px">
+    <span class="eti">LifeMax · proposta di color branding</span>
+    <h1>Il colore di LifeMax</h1>
+    <p class="tesi">Oggi l'app non ha un colore suo. Propongo che <b>il colore di marca sia quello di Segno</b>, un corallo caldo, e che compaia quando qualcosa va bene. Tutto il resto diventa neutro e caldo, così il colore torna a voler dire qualcosa.</p>
+  </div>
+  <img src="{{IMG0}}" alt="Segno, il nastro segnalibro corallo con il risvolto rosa">
+</header>
+
+<section>
+  <span class="eti">Cosa hanno trovato i tre revisori</span>
+  <h2>Il colore oggi non comunica</h2>
+  <p>Tre revisioni indipendenti hanno guardato 349 foto dell'app: ogni schermata e ogni azione, in chiaro e in scuro. Sono arrivate alle stesse conclusioni.</p>
+  <div class="trovato">
+    <div><b>96%</b><span>delle schermate è neutro. Del colore che resta, metà è un indaco a ΔE 18 dall'indigo-500 di Tailwind: è il colore di un modello di partenza, non una scelta.</span></div>
+    <div><b>104</b><span>colori scritti a mano fuori dai token. Ci sono 9 verdi, 9 arancioni e 10 rossi diversi. Il tema scuro è ridefinito in 7 blocchi diversi del CSS.</span></div>
+    <div><b>5</b><span>significati sulla stessa tinta rosso-arancio: la serie, l'area Founder, l'area Altro, l'errore e la mascotte. Non ci stanno tutti.</span></div>
+    <div><b>5</b><span>tinte diverse nella scheda «Adesso», che promette «una cosa alla volta». Il pulsante principale è verde per un'abitudine e indaco per un'attività.</span></div>
+    <div><b>1,4:1</b><span>il contrasto del bordo dei campi, contro il minimo di 3:1. Sono sotto soglia anche il cerchio della spunta (1,5) e l'interruttore spento (1,05).</span></div>
+    <div><b>0</b><span>colori della gioia. I coriandoli vengono da due palette arcobaleno casuali, gli XP sono indaco come i pulsanti e «Fatto» è verde.</span></div>
+  </div>
+</section>
+
+<section>
+  <span class="eti">La decisione</span>
+  <h2>Chi tiene il corallo</h2>
+  <div class="chi">
+    <p>Il nodo era uno solo: la tinta rosso-arancio. Propongo di <b>darla a Segno e alla marca</b>, e di spostare tutti gli altri significati.</p>
+    <p>La regola che ne esce è semplice da ricordare: <b>il corallo vuol dire che qualcosa è andato bene</b>. È il colore di «Fatto», del logo, di Segno e delle feste. Le azioni strutturali (schede, selezioni, filtri) restano in inchiostro caldo e non competono. Il rosso dell'errore diventa un mattone scuro e compare solo nella conferma finale di un'eliminazione. Il giallo d'avviso sparisce: «in ritardo» e «non ce l'ho fatta» non si colorano.</p>
+    <p class="muto">È la strada di Duolingo, dove il verde della mascotte è anche il colore del «giusto». Qui un corallo caldo, raro fra le app di produttività, che sono quasi tutte blu o viola.</p>
+  </div>
+</section>
+
+<section>
+  <span class="eti">La palette</span>
+  <h2>Sei ruoli, un colore ciascuno</h2>
+  <p>Ogni colore ha un solo lavoro. I campioni seguono il tema della pagina: passa allo scuro per vederli nell'altro tema.</p>
+  <ul class="ruoli">
+    <li><span class="c" style="--c:var(--marca)"></span><div><b>Marca · Segno</b><small>Il corpo di Segno, il logo e le illustrazioni. È uguale nei due temi.</small><code>#d9445a</code></div></li>
+    <li><span class="c" style="--c:var(--pieno)"></span><div><b>Pieno di marca</b><small>«Fatto» e il pulsante principale. Al massimo uno per schermata. Il testo bianco sopra fa 5,17:1.</small><code>#c8344f</code></div></li>
+    <li><span class="c" style="--c:var(--oro)"></span><div><b>Oro · ricompensa</b><small>Serie, XP, scintille e cifre dei traguardi. Si muove ed è breve.</small><code>#f5b440 · testo #8a5a00</code></div></li>
+    <li><span class="c" style="--c:var(--inch)"></span><div><b>Inchiostro caldo</b><small>Il testo, le icone, e lo stato selezionato (filtri, schede, chip). Parente degli occhi di Segno.</small><code>#2a1a1f · scuro #f5eff1</code></div></li>
+    <li><span class="c bordo" style="--c:var(--pagina)"></span><div><b>Neutri caldi</b><small>Pagina, superfici e linee. Sono grigi con una punta di rosa, non lilla.</small><code>#fbf7f4 / #fff / #f4eeea</code></div></li>
+    <li><span class="c" style="--c:var(--errore)"></span><div><b>Mattone · errore</b><small>Solo nella conferma di un'eliminazione definitiva, sempre con icona e testo. Sta a ΔE 15 dal pieno di marca.</small><code>#894100</code></div></li>
+  </ul>
+  <p class="muto">Il verde di successo e il giallo d'avviso escono dal sistema. Una cosa fatta si riconosce dalla spunta e dal corallo. Il ritardo si riconosce dall'orologio e dal testo, senza un colore d'allarme.</p>
+</section>
+
+<section>
+  <span class="eti">Misure</span>
+  <h3>Contrasti principali (WCAG 2.2)</h3>
+  <div class="tabella"><table>
+    <thead><tr><th>Coppia</th><th>Chiaro</th><th>Scuro</th><th>Soglia</th></tr></thead>
+    <tbody>
+      <tr><td>Testo su pagina</td><td class="n">15,6</td><td class="n">16,7</td><td class="n">4,5</td></tr>
+      <tr><td>Testo secondario su superficie 2</td><td class="n">5,1</td><td class="n">5,7</td><td class="n">4,5</td></tr>
+      <tr><td>Bordo di campi e controlli su superficie</td><td class="n">3,9</td><td class="n">3,8</td><td class="n">3,0</td></tr>
+      <tr><td>Bianco sul pieno di marca</td><td class="n">5,2</td><td class="n">5,2</td><td class="n">4,5</td></tr>
+      <tr><td>Testo di marca (link) su pagina</td><td class="n">6,5</td><td class="n">7,6</td><td class="n">4,5</td></tr>
+      <tr><td>Testo oro su pagina</td><td class="n">5,6</td><td class="n">10,4</td><td class="n">4,5</td></tr>
+      <tr><td>Sagoma di Segno su pagina</td><td class="n">4,0</td><td class="n">4,5</td><td class="n">3,0</td></tr>
+      <tr><td>Bianco sul pulsante mattone</td><td class="n">7,5</td><td class="n">7,5</td><td class="n">4,5</td></tr>
+    </tbody>
+  </table></div>
+  <p class="muto">Le distanze di colore sono misurate in OKLab, con ΔE ×100. Fra marca, oro ed errore il minimo è 15: si distinguono a colpo d'occhio. Fra marca e oro la distanza resta 22 anche in deuteranopia.</p>
+</section>
+
+<section>
+  <span class="eti">Le aree</span>
+  <h2>Otto aree, nessuna nei toni di Segno</h2>
+  <p>Le aree hanno stessa luminosità e stessa saturazione, e cambiano solo di tinta. Nessuna cade fra i rossi, i rosa e i gialli di Segno e dell'oro. «Altro» lascia il rosso e diventa viola, Relazioni diventa orchidea e si stacca dal risvolto rosa. Un'area si vede sempre come un puntino o un'icona accanto al nome, mai come fondo di una scheda.</p>
+  <ul class="aree">{{AREE}}</ul>
+  <p class="muto">Ogni area fa almeno 4,7:1 sulla superficie chiara e 6,7:1 su quella scura, quindi si legge anche come icona. Il commento del CSS che le diceva distinguibili dai daltonici non era vero, e non lo è nemmeno qui: per questo vanno sempre accompagnate da icona ed etichetta.</p>
+</section>
+
+<section>
+  <span class="eti">Come appare</span>
+  <h2>La scheda Adesso, ricolorata</h2>
+  <div class="prova">
+    <div class="scheda">
+      <span class="area"><i></i>Studio / Università · adesso</span>
+      <h3>Ripasso capitolo 4</h3>
+      <div class="chips"><span class="chip sel">Oggi</span><span class="chip">Domani</span><span class="chip">Senza data</span></div>
+      <button class="btn btn-marca" type="button">Fatto</button>
+      <button class="btn btn-sec" type="button">Più tardi</button>
+    </div>
+    <div class="scheda">
+      <span class="serie"><i></i>38 giorni di fila</span>
+      <p>Il colore pieno è uno solo, ed è la cosa da fare. L'area è un puntino. La selezione è in inchiostro. La serie è oro, e l'oro è il colore della ricompensa ovunque.</p>
+      <button class="btn btn-err" type="button">Elimina per sempre</button>
+      <small class="muto">Il mattone compare solo qui, nell'ultima conferma.</small>
+    </div>
+  </div>
+</section>
+
+<section>
+  <span class="eti">La mascotte e le animazioni</span>
+  <h2>Segno non cambia colore, cambia la stanza</h2>
+  <div class="segno">
+    <figure><img src="{{IMG0}}" alt="Segno calmo"><figcaption>calma</figcaption></figure>
+    <figure><img src="{{IMG1}}" alt="Segno felice in salto"><figcaption>gioia</figcaption></figure>
+    <figure><img src="{{IMG2}}" alt="Segno che fa l'occhiolino"><figcaption>occhiolino</figcaption></figure>
+  </div>
+  <div class="pelle"><span><i style="--c:#d9445a"></i>corpo #d9445a</span><span><i style="--c:#f4a3ae"></i>risvolto, il rovescio del raso #f4a3ae</span><span><i style="--c:#2b0f1c"></i>occhi #2b0f1c</span><span><i style="--c:#f5b440"></i>scintille #f5b440</span></div>
+  <p>Il personaggio ha sempre gli stessi quattro colori, in chiaro e in scuro, come un oggetto vero sotto una luce diversa. Nell'app sta su fondo trasparente, senza il quadrato crema dei video. Ogni momento emotivo cambia invece il fondo, le particelle e il testo.</p>
+  <div class="tabella"><table>
+    <thead><tr><th>Stanza</th><th>Momenti</th><th>Fondo</th><th>Particelle</th><th>Durata</th></tr></thead>
+    <tbody>
+      <tr><td><b>Gioia grande</b></td><td>giornata chiusa, traguardi di serie, fine onboarding</td><td>velo rosa <code>#ffe4e4</code> · scuro <code>#2b161a</code></td><td>40% oro, 35% corallo, 25% rosa; meno numerose nello scuro</td><td class="n">≤ 2,5 s, una volta al giorno</td></tr>
+      <tr><td><b>Gioia piccola</b></td><td>cosa fatta, spunta</td><td>nessun velo; un cerchio corallo al 16% dove tocchi</td><td>6–10 scintille oro e corallo, vicino al dito</td><td class="n">0,5–0,7 s</td></tr>
+      <tr><td><b>Calma</b></td><td>attesa, timer, stati vuoti</td><td>la pagina</td><td>nessuna</td><td class="n">solo respiro</td></tr>
+      <tr><td><b>Comprensione</b></td><td>non ce l'ho fatta, giorno saltato</td><td>crema grigio <code>#fbf7f5</code> · scuro <code>#171415</code></td><td>nessuna; mai rosso, mai giallo</td><td class="n">3 s</td></tr>
+      <tr><td><b>Bentornato</b></td><td>rientro dopo giorni</td><td>crema caldo <code>#fff6f1</code> · scuro <code>#1c1513</code></td><td>3–4 scintille oro al risveglio</td><td class="n">3,5 s</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section>
+  <span class="eti">Regole d'uso</span>
+  <h2>Dieci regole</h2>
+  <ol class="regole">
+    <li>Una sola massa di colore pieno per schermata, ed è l'azione consigliata.</li>
+    <li>Il corallo vuol dire che qualcosa è andato bene: «Fatto», le feste, Segno e il logo. Non va mai su badge, avvisi o anelli di focus.</li>
+    <li>Selezionato, scheda attiva e filtri sono in inchiostro, non in colore di marca.</li>
+    <li>L'oro è solo ricompensa: serie, XP, scintille e cifre dei traguardi. Non è mai un avviso.</li>
+    <li>Le aree compaiono solo come puntino o icona accanto al nome. Mai come fondo di una scheda o di un pulsante.</li>
+    <li>«In ritardo», «non ce l'ho fatta» e «salta» restano neutri, con icona e testo. Nessun colore giudica.</li>
+    <li>Distruttivo vuol dire neutro con icona. Il mattone compare solo nella conferma finale.</li>
+    <li>Una sola palette per le particelle (oro, corallo, rosa), letta dai token. Basta arcobaleni casuali.</li>
+    <li>Ogni controllo ha un bordo di almeno 3:1 e un focus in inchiostro con 2 px di distacco, visibile anche sul pieno di marca.</li>
+    <li>I colori vivono in un file solo: primitive, poi semantici, poi componenti. Una prova automatica vieta gli esadecimali scritti fuori di lì.</li>
+  </ol>
+</section>
+
+<section>
+  <span class="eti">Le altre strade</span>
+  <h3>Cosa ho scartato e perché</h3>
+  <div class="alt">
+    <div><b>Inchiostro + Segno</b><span class="muto">Telaio monocromo, e il colore arriva solo con la mascotte. È molto calma, ma con pulsanti neri l'app sembra uno strumento, e la marca si riconosce solo quando c'è Segno.</span></div>
+    <div><b>Tenere l'indaco, Segno viola</b><span class="muto">Costa meno, ma resta il colore di partenza di Tailwind. È freddo, contro il tono dell'app, e nella produttività il viola è già di tutti.</span></div>
+    <div><b>Indaco per fare, corallo per sentire</b><span class="muto">Due identità che convivono. È ragionevole, ma tiene un colore di marca che non è di nessuno e lascia Segno ospite nella sua app.</span></div>
+  </div>
+</section>
+
+<section>
+  <span class="eti">Da dove si comincia</span>
+  <h2>L'ordine dei lavori</h2>
+  <ol class="regole">
+    <li>Un solo file di token, chiaro e scuro, al posto delle tre «pelli» sovrapposte. Via l'indaco, i vecchi gradienti e le due palette di coriandoli.</li>
+    <li>Neutri caldi, testo e linee dei controlli a norma, focus visibile.</li>
+    <li>«Fatto» e il pulsante principale nel pieno di marca. La scheda Adesso diventa neutra, con l'area come puntino.</li>
+    <li>La serie e gli XP in oro. «Scarta» ed «Elimina» neutri. Il giallo esce da «in ritardo» e da «mancata».</li>
+    <li>Le nuove aree, ripassate con la prova esistente sulle aree.</li>
+    <li>Segno al posto della sfera indaco negli stati vuoti, poi le animazioni nelle cinque stanze. Il logo si ricava dalla coda di rondine del nastro.</li>
+  </ol>
+</section>
+
+</div>

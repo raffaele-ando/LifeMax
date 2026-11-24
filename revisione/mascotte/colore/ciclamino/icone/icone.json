@@ -1,0 +1,158 @@
+{
+ "todoist": {
+  "nome": "Todoist: To do list–Calendario",
+  "venditore": "Todoist Inc.",
+  "file": "todoist.jpg",
+  "url": "https://apps.apple.com/it/app/todoist-to-do-list-calendario/id572688855?uo=4"
+ },
+ "things 3 cultured code": {
+  "nome": "Things 3",
+  "venditore": "Cultured Code GmbH & Co. KG",
+  "file": "things.jpg",
+  "url": "https://apps.apple.com/it/app/things-3/id904237743?uo=4"
+ },
+ "ticktick": {
+  "nome": "TickTick:To-Do List & Calendar",
+  "venditore": "Appest Limited",
+  "file": "ticktick.jpg",
+  "url": "https://apps.apple.com/it/app/ticktick-to-do-list-calendar/id626144601?uo=4"
+ },
+ "notion": {
+  "nome": "Notion: Notes, Tasks, AI",
+  "venditore": "Notion Labs, Incorporated",
+  "file": "notion.jpg",
+  "url": "https://apps.apple.com/it/app/notion-notes-tasks-ai/id1232780281?uo=4"
+ },
+ "tiimo": {
+  "nome": "Tiimo - Planner per l'adhd",
+  "venditore": "tiimo ApS",
+  "file": "tiimo.jpg",
+  "url": "https://apps.apple.com/it/app/tiimo-planner-per-ladhd/id1480220328?uo=4"
+ },
+ "structured daily planner": {
+  "nome": "Structured - Agenda Calendario",
+  "venditore": "unorderly GmbH",
+  "file": "structured.jpg",
+  "url": "https://apps.apple.com/it/app/structured-agenda-calendario/id1499198946?uo=4"
+ },
+ "finch self care": {
+  "nome": "Finch: Self-Care Pet",
+  "venditore": "Finch Care Public Benefit Corporation",
+  "file": "finch.jpg",
+  "url": "https://apps.apple.com/it/app/finch-self-care-pet/id1528595748?uo=4"
+ },
+ "habitica": {
+  "nome": "Habitica: Gamified Taskmanager",
+  "venditore": "HabitRPG, Inc.",
+  "file": "habitica.jpg",
+  "url": "https://apps.apple.com/it/app/habitica-gamified-taskmanager/id994882113?uo=4"
+ },
+ "forest focus": {
+  "nome": "Forest - Rimani concentrato",
+  "venditore": "SEEKRTECH CO., LTD.",
+  "file": "forest.jpg",
+  "url": "https://apps.apple.com/it/app/forest-rimani-concentrato/id866450515?uo=4"
+ },
+ "headspace": {
+  "nome": "Headspace: Sleep & Meditation",
+  "venditore": "Headspace Inc.",
+  "file": "headspace.jpg",
+  "url": "https://apps.apple.com/it/app/headspace-sleep-meditation/id493145008?uo=4"
+ },
+ "duolingo": {
+  "nome": "Duolingo: Corsi di lingua",
+  "venditore": "Duolingo, Inc",
+  "file": "duolingo.jpg",
+  "url": "https://apps.apple.com/it/app/duolingo-corsi-di-lingua/id570060128?uo=4"
+ },
+ "airbnb": {
+  "nome": "Airbnb",
+  "venditore": "Airbnb, Inc.",
+  "file": "airbnb.jpg",
+  "url": "https://apps.apple.com/it/app/airbnb/id401626263?uo=4"
+ },
+ "phantom wallet": {
+  "nome": "Phantom: Trading Wallet",
+  "venditore": "Phantom Technologies Incorporated",
+  "file": "phantom.jpg",
+  "url": "https://apps.apple.com/it/app/phantom-trading-wallet/id1598432977?uo=4"
+ },
+ "brilliant learn math": {
+  "nome": "Brilliant: Learn Math & Coding",
+  "venditore": "Brilliant Worldwide, Inc",
+  "file": "brilliant.jpg",
+  "url": "https://apps.apple.com/it/app/brilliant-learn-math-coding/id913335252?uo=4"
+ },
+ "inflow adhd": {
+  "nome": "Inflow - Manage Your ADHD",
+  "venditore": "Get Inflow Ltd.",
+  "file": "inflow.jpg",
+  "url": "https://apps.apple.com/it/app/inflow-manage-your-adhd/id1528183849?uo=4"
+ },
+ "goblin tools": {
+  "nome": "Goblin Tools",
+  "venditore": "Skyhook",
+  "file": "goblin.jpg",
+  "url": "https://apps.apple.com/it/app/goblin-tools/id6449003064?uo=4"
+ },
+ "fabulous daily routine planner": {
+  "nome": "Fabulous - Routine e benessere",
+  "venditore": "Fabulous",
+  "file": "fabulous.jpg",
+  "url": "https://apps.apple.com/it/app/fabulous-routine-e-benessere/id1203637303?uo=4"
+ },
+ "routinery": {
+  "nome": "Routine Planner, Habit Tracker",
+  "venditore": "Routinery Corp.",
+  "file": "routinery.jpg",
+  "url": "https://apps.apple.com/it/app/routine-planner-habit-tracker/id1450486923?uo=4"
+ },
+ "llama life": {
+  "nome": "ADHD Organizer: Llama Life",
+  "venditore": "Llama Life Pty Ltd",
+  "file": "llama.jpg",
+  "url": "https://apps.apple.com/it/app/adhd-organizer-llama-life/id6454469750?uo=4"
+ },
+ "sunsama": {
+  "nome": "Sunsama",
+  "venditore": "Summay, INC",
+  "file": "sunsama.jpg",
+  "url": "https://apps.apple.com/it/app/sunsama/id1475755747?uo=4"
+ },
+ "calm sleep meditation": {
+  "nome": "Calm",
+  "venditore": "Calm.com, Inc.",
+  "file": "calm.jpg",
+  "url": "https://apps.apple.com/it/app/calm/id571800810?uo=4"
+ },
+ "amazing marvin": {
+  "nome": "Amazing Marvin: ADHD Planner",
+  "venditore": "Amazing GmbH",
+  "file": "amazing.jpg",
+  "url": "https://apps.apple.com/it/app/amazing-marvin-adhd-planner/id1314511546?uo=4"
+ },
+ "todo microsoft": {
+  "nome": "Microsoft To Do",
+  "venditore": "Microsoft Corporation",
+  "file": "todo.jpg",
+  "url": "https://apps.apple.com/it/app/microsoft-to-do/id1212616790?uo=4"
+ },
+ "any.do": {
+  "nome": "Any.do: To do list & Planner",
+  "venditore": "Any.DO inc.",
+  "file": "anydo.jpg",
+  "url": "https://apps.apple.com/it/app/any-do-to-do-list-planner/id497328576?uo=4"
+ },
+ "motion ai planner": {
+  "nome": "Notion: Notes, Tasks, AI",
+  "venditore": "Notion Labs, Incorporated",
+  "file": "motion.jpg",
+  "url": "https://apps.apple.com/it/app/notion-notes-tasks-ai/id1232780281?uo=4"
+ },
+ "linear app": {
+  "nome": "Linear Mobile",
+  "venditore": "Linear Orbit, Inc.",
+  "file": "linear.jpg",
+  "url": "https://apps.apple.com/it/app/linear-mobile/id1645587184?uo=4"
+ }
+}

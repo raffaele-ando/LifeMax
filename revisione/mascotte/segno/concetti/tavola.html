@@ -1,0 +1,8 @@
+<!doctype html><meta charset="utf-8"><body style="margin:0;background:#f4f2fb;font:13px system-ui">
+<div id="g" style="display:grid;grid-template-columns:110px repeat(8,140px);gap:8px;padding:10px;align-items:center"></div>
+<script src="concetti.js"></script>
+<script>
+const {CONCETTI:C,EMO:E,disegna:d}=CONCETTI;
+g.innerHTML='<div></div>'+E.map(e=>'<b style="text-align:center">'+e[1]+'</b>').join('')+
+ C.map(c=>'<b style="font-size:15px">'+c.nome+'</b>'+E.map(e=>'<div style="background:#fff;border-radius:14px">'+d(c.id,e[0])+'</div>').join('')).join('');
+</script>

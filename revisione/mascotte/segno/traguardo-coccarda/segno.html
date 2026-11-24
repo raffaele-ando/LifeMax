@@ -1,0 +1,363 @@
+<!doctype html>
+<html lang="it"><head><meta charset="utf-8"><title>Segno — traguardo 7 giorni</title>
+<style>
+  html,body{margin:0;padding:0;background:#fff6f1;overflow:hidden}
+  svg{display:block}
+  text{font-family:'Inter Display','Inter',sans-serif}
+</style></head>
+<body>
+<svg id="scena" width="1080" height="1080" viewBox="0 0 1080 1080" xmlns="http://www.w3.org/2000/svg"></svg>
+<script>
+/* ============================================================
+   SEGNO — celebrazione traguardo di serie (7 giorni)
+   Orologio controllabile: window.render(t) con t in secondi.
+   Trasformazione: il segnalibro si plissetta in una COCCARDA.
+   ============================================================ */
+const C = { corpo:'#d9445a', rovescio:'#f4a3ae', occhi:'#2b0f1c', oro:'#f5b440', fondo:'#fff6f1', caldo:'#ffe4e4', raggio:'#ffd6da', ombra:'#f3dcd6' };
+const DURATA = 4.5;
+
+/* ---------- utilità ---------- */
+const clamp=(x,a=0,b=1)=>Math.max(a,Math.min(b,x));
+const lerp=(a,b,t)=>a+(b-a)*t;
+const prog=(t,a,b)=>clamp((t-a)/(b-a));
+const eIO=t=>t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;     // ease in-out cubic
+const eOut=t=>1-Math.pow(1-t,3);
+const eIn=t=>t*t*t;
+const eBack=(t,s=2.2)=>1+(s+1)*Math.pow(t-1,3)+s*Math.pow(t-1,2); // overshoot
+const molla=(t,f=9,k=5)=>t<=0?0:Math.exp(-k*t)*Math.sin(f*t);      // oscillazione smorzata
+const f1=v=>v.toFixed(1);
+function mix(a,b,t){ // interpola stati (numeri e array annidati)
+  if(typeof a==='number') return lerp(a,b,t);
+  if(Array.isArray(a)) return a.map((x,i)=>mix(x,b[i],t));
+  const o={}; for(const k in a) o[k]=(k in b)?mix(a[k],b[k],t):a[k]; return o;
+}
+/* rng deterministico */
+function rng(seed){ let s=seed>>>0; return ()=>{ s=(s*1664525+1013904223)>>>0; return s/4294967296; }; }
+
+/* ---------- SEGNO (dal disegno NASTRO3, reso parametrico) ---------- */
+const W=60,H=108,TACCA=30;
+function spina(s){
+  const pts=[],N=48,ds=H*s.sy/N; let x=100,y=186;
+  for(let i=0;i<=N;i++){ const t=i/N;
+    const th=s.incl+s.piega*t+s.esse*Math.sin(t*Math.PI*2);
+    pts.push({x,y,th,t}); const r=th*Math.PI/180; x+=ds*Math.sin(r); y-=ds*Math.cos(r); }
+  return pts;
+}
+const larg=(t,s)=>W*s.sx*(1-.14*Math.sin(Math.PI*Math.min(1,t*1.15)))/2;
+const lato=(p,l,d)=>{const r=p.th*Math.PI/180;return [p.x+l*d*Math.cos(r),p.y+l*d*Math.sin(r)];};
+const lungo=(pt,th,d)=>{const r=th*Math.PI/180;return [pt[0]-d*Math.sin(r),pt[1]+d*Math.cos(r)];};
+const fp=p=>f1(p[0])+' '+f1(p[1]);
+
+function segno(s){
+  const P=spina(s),N=P.length-1,top=P[N];
+  const iT=Math.round(N*TACCA/(H*s.sy));
+  const [pl,pr]=s.piedi;
+  const ps0=lato(P[0],-1,larg(0,s)+4),pd0=lato(P[0],1,larg(0,s)+4);
+  const ps=[ps0[0]+pl[0],ps0[1]+pl[1]],pd=[pd0[0]+pr[0],pd0[1]+pr[1]];
+  let d=`M${fp(ps)}`;
+  for(let i=3;i<=N;i++) d+=`L${fp(lato(P[i],-1,larg(P[i].t,s)))}`;
+  d+=`L${fp(lato(top,1,larg(1,s)))}`;
+  for(let i=N-1;i>=3;i--) d+=`L${fp(lato(P[i],1,larg(P[i].t,s)))}`;
+  d+=`L${fp(pd)}L${fp([P[iT].x,P[iT].y])}Z`;
+  const iO=Math.round(N*(1-.3)),po=P[iO],r=po.th;
+  const occhi=[-1,1].map(l=>{
+    const c=lato(po,l,12),x=c[0]+s.g[0],y=c[1]+s.g[1];
+    if(s.felici>.5) return `<path d="M${f1(x-7)} ${f1(y+3)}q7 -10 14 0" fill="none" stroke="${C.occhi}" stroke-width="4.2" stroke-linecap="round" transform="rotate(${f1(r)} ${f1(x)} ${f1(y)})"/>`;
+    const ry=9.6*s.apri*s.occhioK, rx=7.2*s.occhioK;
+    if(s.apri<.18) return `<path d="M${f1(x-7)} ${f1(y)}q7 5 14 0" fill="none" stroke="${C.occhi}" stroke-width="4.2" stroke-linecap="round" transform="rotate(${f1(r)} ${f1(x)} ${f1(y)})"/>`;
+    return `<ellipse cx="${f1(x)}" cy="${f1(y)}" rx="${f1(rx)}" ry="${f1(ry)}" fill="${C.occhi}" transform="rotate(${f1(r)} ${f1(x)} ${f1(y)})"/>`;
+  }).join('');
+  const [Ll,Lr]=s.risvolto,th=top.th,hw=larg(1,s);
+  const hl=lato(top,-1,hw+1),hr=lato(top,1,hw+1);
+  const el=lungo(hl,th,Ll),er=lungo(hr,th,Lr);
+  const sotto=Ll+Lr>0, apri=sotto?0:6*clamp(-(Ll+Lr)/40);
+  const el2=lato({x:el[0],y:el[1],th},-1,apri),er2=lato({x:er[0],y:er[1],th},1,apri);
+  const cm=lungo([(el2[0]+er2[0])/2,(el2[1]+er2[1])/2],th,sotto?5:-4);
+  const risv=`<path d="M${fp(hl)}L${fp(el2)}Q${fp(cm)} ${fp(er2)}L${fp(hr)}Z" fill="${C.rovescio}" stroke="${C.rovescio}" stroke-width="3" stroke-linejoin="round"/>`;
+  return (sotto?'':risv)+`<path d="${d}" fill="${C.corpo}" stroke="${C.corpo}" stroke-width="5" stroke-linejoin="round"/>`+occhi+(sotto?risv:'');
+}
+const BASE={esse:6,piega:0,incl:0,sy:1,sx:1,risvolto:[17,15],g:[1,1],piedi:[[0,0],[0,0]],apri:1,occhioK:1,felici:0};
+const S={
+  calma:   {...BASE},
+  guarda:  {...BASE, esse:4, risvolto:[11,9], g:[0,-3.5], occhioK:1.08},
+  carica:  {...BASE, esse:1, sy:.76, sx:1.22, risvolto:[25,25], g:[0,2.5], piedi:[[-7,1],[7,1]], occhioK:.95},
+  slancio: {...BASE, esse:0, sy:1.24, sx:.84, risvolto:[-30,-36], g:[0,-1], piedi:[[6,10],[-6,10]], occhioK:1.15},
+};
+
+/* ---------- COCCARDA (Segno trasformato) ---------- */
+function corona(cx,cy,R,r,n,sweep,a0,col){ // anello plissettato: pieghe arrotondate, aperto a ventaglio per 'sweep' (0..1)
+  if(sweep<=0.001) return '';
+  const tot=sweep*Math.PI*2, k=Math.max(1,Math.ceil(n*sweep)), step=tot/k;
+  const P=(a,rr)=>[cx+rr*Math.sin(a),cy-rr*Math.cos(a)];
+  let d=`M${f1(cx)} ${f1(cy)}L${fp(P(a0,r))}`;
+  for(let i=0;i<k;i++){ const a=a0+step*i;
+    // ogni piega: sale al bordo, curva morbida (stoffa), ridiscende nella valle
+    d+=`Q${fp(P(a+step*.04,R*1.02))} ${fp(P(a+step*.5,R*1.04))}T${fp(P(a+step,r))}`; }
+  d+='Z';
+  return `<path d="${d}" fill="${col}" stroke="${col}" stroke-width="5" stroke-linejoin="round"/>`;
+}
+function coda(cx,cy,ang,len,w){ // coda di nastro con taglio a coda di rondine (i piedi)
+  const a=ang*Math.PI/180, dx=Math.sin(a), dy=Math.cos(a), nx=Math.cos(a), ny=-Math.sin(a);
+  const p=(u,v)=>[cx+dx*u+nx*v, cy+dy*u+ny*v];
+  const w2=w*1.12;
+  const pts=[p(0,-w/2),p(len,-w2/2),p(len-w*.55,0),p(len,w2/2),p(0,w/2)];
+  return `<path d="M${pts.map(fp).join('L')}Z" fill="${C.corpo}" stroke="${C.corpo}" stroke-width="8" stroke-linejoin="round"/>`;
+}
+function occhiCoccarda(cx,cy,o){ // o: {apri, felici, g:[x,y]}
+  return [-1,1].map(l=>{
+    const x=cx+l*38+o.g[0], y=cy-6+o.g[1];
+    if(o.felici>.5) return `<path d="M${f1(x-22)} ${f1(y+9)}q22 -31 44 0" fill="none" stroke="${C.occhi}" stroke-width="13" stroke-linecap="round"/>`;
+    if(o.apri<.18) return `<path d="M${f1(x-22)} ${f1(y)}q22 16 44 0" fill="none" stroke="${C.occhi}" stroke-width="13" stroke-linecap="round"/>`;
+    return `<ellipse cx="${f1(x)}" cy="${f1(y)}" rx="22" ry="${f1(30*o.apri)}" fill="${C.occhi}"/>`;
+  }).join('');
+}
+
+/* ---------- particelle: mini-segnalibri + scintille ---------- */
+function minisegno(w,h,col){ // rettangolo con tacca a V
+  const n=h*.28;
+  return `<path d="M${f1(-w/2)} ${f1(-h/2)}H${f1(w/2)}V${f1(h/2)}L0 ${f1(h/2-n)}L${f1(-w/2)} ${f1(h/2)}Z" fill="${col}"/>`;
+}
+function stella(r,col){ const q=r*.28;
+  return `<path d="M0 ${-r}Q${q} ${-q} ${r} 0Q${q} ${q} 0 ${r}Q${-q} ${q} ${-r} 0Q${-q} ${-q} 0 ${-r}Z" fill="${col}"/>`; }
+
+function creaBurst(seed,n,cx,cy,v0,v1,t0,scala){
+  const R=rng(seed), out=[];
+  const cols=[C.corpo,C.rovescio,C.oro,C.corpo,C.oro];
+  for(let i=0;i<n;i++){
+    const a=(i/n)*Math.PI*2+R()*.5, v=lerp(v0,v1,R());
+    out.push({t0:t0+R()*.04, x:cx+Math.sin(a)*30*scala, y:cy-Math.cos(a)*30*scala, vx:Math.sin(a)*v, vy:-Math.cos(a)*v-120*R(),
+      rot:R()*360, vr:(R()-.5)*900, flip:R()*6, vf:6+R()*8,
+      tipo:R()<.68?'segno':'stella', col:cols[Math.floor(R()*cols.length)],
+      w:(10+R()*8)*scala, h:(24+R()*14)*scala, r:(12+R()*12)*scala, vita:2.4+R()*1.6});
+  }
+  return out;
+}
+const BURST1=creaBurst(7,46,540,400,520,1250,1.41,1);
+const BURST2=creaBurst(77,18,540,840,320,640,2.24,.75);
+function particelle(lista,t){
+  let s='';
+  for(const p of lista){
+    const tau=t-p.t0; if(tau<0||tau>p.vita) continue;
+    const drag=2.1, g=1100;
+    // moto con attrito (soluzione analitica) + gravità terminale
+    const k=(1-Math.exp(-drag*tau))/drag;
+    const x=p.x+p.vx*k + Math.sin(tau*3+p.flip)*14*clamp(tau*2);
+    const y=p.y+p.vy*k + g*(tau/drag - k/drag);
+    const sc=clamp(tau/.06)*(1-eIn(prog(tau,p.vita-.5,p.vita)));
+    if(p.tipo==='segno'){
+      const fx=Math.cos(p.flip+tau*p.vf); // flip 3D del pezzetto di raso
+      s+=`<g transform="translate(${f1(x)} ${f1(y)}) rotate(${f1(p.rot+p.vr*tau*.5)}) scale(${(sc*Math.max(.12,Math.abs(fx))).toFixed(3)} ${sc.toFixed(3)})">${minisegno(p.w,p.h,p.col)}</g>`;
+    } else {
+      const tw=.6+.4*Math.abs(Math.sin(tau*9+p.flip));
+      s+=`<g transform="translate(${f1(x)} ${f1(y)}) scale(${(sc*tw).toFixed(3)})">${stella(p.r,C.oro)}</g>`;
+    }
+  }
+  return s;
+}
+
+/* ---------- VENTAGLIO: il segnalibro si plissetta e si apre in coccarda ----------
+   Il segnalibro è diviso in due all'altezza del perno O:
+   - sopra: una pila di 22 pieghe identiche, tutte dritte (è il corpo). Aprendosi a
+     ventaglio, ognuna ruota al suo posto e si assottiglia in uno spicchio: chiudono il cerchio;
+   - sotto: le due metà della parte bassa, con la tacca, si separano e diventano le due code. */
+const TS=1.42;                       // fine della trasformazione = inizio della coccarda finale
+const NP=22, A0=-Math.PI*.15, STEP=Math.PI*2/NP;
+const ANG=Array.from({length:NP},(_,i)=>{ let a=A0+STEP*(i+.5); a=Math.atan2(Math.sin(a),Math.cos(a)); return a; });
+const ORD=ANG.map((a,i)=>i).sort((i,j)=>Math.abs(ANG[j])-Math.abs(ANG[i]));   // dietro → davanti
+const NI=17, A0I=-Math.PI*.15+.2, STEPI=Math.PI*2/NI;
+const ANGI=Array.from({length:NI},(_,i)=>{ let a=A0I+STEPI*(i+.5); return Math.atan2(Math.sin(a),Math.cos(a)); });
+const ORDI=ANGI.map((a,i)=>i).sort((i,j)=>Math.abs(ANGI[j])-Math.abs(ANGI[i]));
+function colMix(a,b,k){ const h=x=>[1,3,5].map(i=>parseInt(x.substr(i,2),16)); const A=h(a),B=h(b);
+  return '#'+A.map((v,i)=>Math.round(lerp(v,B[i],k)).toString(16).padStart(2,'0')).join(''); }
+function piega(a,hb,ht,Ls,Lm,col){   // spicchio che punta nella direzione a (0 = su)
+  const P=(x,y)=>[x*Math.cos(a)-y*Math.sin(a), x*Math.sin(a)+y*Math.cos(a)];
+  const cy=2*Lm-Ls;
+  return `<path d="M${fp(P(-hb,0))}L${fp(P(-ht,-Ls))}Q${fp(P(0,-cy))} ${fp(P(ht,-Ls))}L${fp(P(hb,0))}Z" fill="${col}" stroke="${col}" stroke-width="5" stroke-linejoin="round"/>`;
+}
+function puntiCoda(ang,len,w){ const a=ang*Math.PI/180,dx=Math.sin(a),dy=Math.cos(a),nx=Math.cos(a),ny=-Math.sin(a);
+  const p=(u,v)=>[dx*u+nx*v, 40+dy*u+ny*v], w2=w*1.12;
+  return [p(0,-w/2),p(len,-w2/2),p(len-w*.55,0),p(len,w2/2),p(0,w/2)]; }
+function ventaglio(t,ox,oy){
+  const HW=88, SU=210, GIU=259, TAC=105;              // misure del segnalibro all'apice del salto
+  const pre=prog(t,1.02,1.14), ap=eOut(prog(t,1.1,TS)); // stringersi (le pieghe), poi aprirsi
+  const stringi=1-.16*Math.sin(Math.PI*pre)*(1-ap);
+  let o=`<g transform="translate(${f1(ox)} ${f1(oy)})">`;
+  /* code: le metà basse del segnalibro diventano le due code */
+  const cK=eIO(prog(t,1.12,TS));
+  const meta=l=>{ const x0=l*HW*stringi;
+    const da=[[x0,0],[x0+l*10,GIU+28],[x0/2,GIU-TAC/2+12],[0,GIU-TAC],[0,0]];
+    const a=l<0?puntiCoda(-25,232,72):puntiCoda(25,216,72);
+    const b=l<0?a:[a[4],a[3],a[2],a[1],a[0]];      // stesso verso dei punti
+    const q=da.map((p,i)=>[lerp(p[0],b[i][0],cK),lerp(p[1],b[i][1],cK)]);
+    return `<path d="M${q.map(fp).join('L')}Z" fill="${C.corpo}" stroke="${C.corpo}" stroke-width="${f1(lerp(5,8,cK))}" stroke-linejoin="round"/>`; };
+  o+=meta(-1)+meta(1);
+  /* il risvolto (alzato, dietro) si richiude mentre le pieghe si formano */
+  const rv=1-eIO(prog(t,1.02,1.16));
+  if(rv>0){ const xl=-HW*stringi-4, xr=HW*stringi+4, yl=-SU-105*rv, yr=-SU-126*rv;
+    o+=`<path d="M${f1(xl)} ${-SU}L${f1(xl-21*rv)} ${f1(yl)}Q0 ${f1((yl+yr)/2-14*rv)} ${f1(xr+21*rv)} ${f1(yr)}L${f1(xr)} ${-SU}Z" fill="${C.rovescio}" stroke="${C.rovescio}" stroke-width="10" stroke-linejoin="round"/>`; }
+  /* le 22 pieghe del corpo */
+  const ombra=Math.sin(Math.PI*clamp(ap*1.15))*.55 + .5*Math.sin(Math.PI*pre)*(1-ap);
+  for(const i of ORD){
+    const a=ANG[i]*ap;
+    const hb=lerp(HW*stringi,2,ap), ht=lerp(HW*stringi,32,ap);
+    const Ls=lerp(SU,186,ap), Lm=lerp(SU+4,218,ap);
+    o+=piega(a,hb,ht,Ls,Lm,i%2?C.corpo:colMix(C.corpo,'#a82a40',clamp(ombra)));
+  }
+  /* le pieghe si vedono già sul segnalibro chiuso: linee di piega */
+  const lp=Math.sin(Math.PI*clamp(pre*1.2))*(1-ap*3);
+  if(lp>0) for(const x of [-.6,-.2,.2,.6]) o+=`<path d="M${f1(x*HW*stringi)} ${-SU+8}V-6" stroke="#a82a40" stroke-width="5" stroke-linecap="round" opacity="${(lp*.6).toFixed(3)}"/>`;
+  /* il rovescio chiaro: la corona interna sboccia dal centro, in ritardo */
+  const ai=eOut(prog(t,1.2,TS));
+  if(ai>0) for(const i of ORDI){ const k=ai;
+    o+=piega(ANGI[i]*k,lerp(10,2,k),lerp(14,30,k),134*k,154*k,C.rovescio); }
+  /* il disco del viso */
+  const dk=eOut(prog(t,1.26,TS));
+  if(dk>0) o+=`<circle r="${f1(108*dk)}" fill="${C.corpo}"/>`;
+  /* occhi felici: dal segnalibro scivolano al centro della coccarda */
+  const ek=eIO(prog(t,1.1,TS));
+  const ex=lerp(42*stringi,38,ek), ey=lerp(-69,-6,ek), hw=lerp(24.5,22,ek), up=lerp(35,31,ek), sw=lerp(14.7,13,ek), dy=lerp(10.5,9,ek);
+  for(const l of [-1,1]){ const x=l*ex;
+    o+=`<path d="M${f1(x-hw)} ${f1(ey+dy)}q${f1(hw)} ${f1(-up)} ${f1(2*hw)} 0" fill="none" stroke="${C.occhi}" stroke-width="${f1(sw)}" stroke-linecap="round"/>`; }
+  return o+'</g>';
+}
+
+/* ---------- scena ---------- */
+const scena=document.getElementById('scena');
+const CX=540, CY=400;      // centro della coccarda
+const SC=3.5;              // scala di Segno (unità 200 -> px)
+const SUOLO=760;           // dove poggiano i piedi
+
+function render(t){
+  let o='';
+  /* --- fondo che si scalda --- */
+  const caldo=eOut(prog(t,1.4,1.95));
+  o+=`<rect width="1080" height="1080" fill="${C.fondo}"/>`;
+  if(caldo>0) o+=`<rect width="1080" height="1080" fill="${C.caldo}" opacity="${(.75*caldo).toFixed(3)}"/>`;
+  /* raggi che girano piano dietro la coccarda */
+  const rg=eOut(prog(t,1.4,2.2));
+  if(rg>0){
+    let d=''; const n=14, rot=(t-1.4)*9;
+    for(let i=0;i<n;i++){ const a0=(i/n)*360+rot, a1=a0+360/n*.45;
+      const p=a=>[CX+700*Math.sin(a*Math.PI/180),CY-700*Math.cos(a*Math.PI/180)];
+      d+=`M${CX} ${CY}L${fp(p(a0))}L${fp(p(a1))}Z`; }
+    o+=`<path d="${d}" fill="${C.raggio}" opacity="${(.5*rg).toFixed(3)}"/>`;
+  }
+
+  /* --- ombra a terra --- */
+  const volo=eOut(prog(t,.75,1.2));            // 0 a terra, 1 all'apice
+  const terraY=SUOLO-(186-132)*SC;              // centro del corpo quando poggia
+  const ombraK = t<1.4 ? 1-volo*.55 : lerp(.45,.0,eOut(prog(t,1.4,1.8)));
+  const squashOmbra = t>=.35&&t<.75 ? 1+.15*eIO(prog(t,.35,.7)) : 1;
+  if(ombraK>0.01) o+=`<ellipse cx="540" cy="${SUOLO+6}" rx="${f1(125*ombraK*squashOmbra)}" ry="${f1(18*ombraK)}" fill="${C.ombra}"/>`;
+
+  /* --- SEGNO (forma nastro) fino alla trasformazione --- */
+  if(t<1.02){
+    let s;
+    if(t<.12) s=S.calma;
+    else if(t<.35) s=mix(S.calma,S.guarda,eIO(prog(t,.12,.33)));
+    else if(t<.75) s=mix(S.guarda,S.carica,eIO(prog(t,.35,.72)));
+    else if(t<.95) s=mix(S.carica,S.slancio,eOut(prog(t,.75,.92)));
+    else s=S.slancio;
+    s={...s};
+    if(t<.35){ s.sy*=1+.012*Math.sin(t*9); }                 // respiro
+    if(t>.58&&t<.75){ s.incl=Math.sin(t*95)*1.2; }            // tremito di carica
+    if(t>=.95){ const k=molla(t-.95,22,7); s.risvolto=[s.risvolto[0]+k*14,s.risvolto[1]+k*10]; } // follow-through del risvolto
+    if(t>1.02) s.felici=1;
+    // IL NASTRO SI AVVOLGE: la spina si curva fino a chiudersi in un anello
+    const arr=eIO(prog(t,1.02,1.34));
+    if(arr>0){ s.piega=lerp(0,330,arr); s.esse=lerp(s.esse,0,arr); s.sx=lerp(s.sx,.55,arr); s.sy=lerp(s.sy,1.3,arr);
+      s.risvolto=[lerp(s.risvolto[0],-10,arr),lerp(s.risvolto[1],-10,arr)]; s.piedi=[[0,0],[0,0]]; }
+    // perno = baricentro della spina, così l'anello resta centrato mentre si chiude
+    const P=spina(s); let ux=0,uy=0; P.forEach(q=>{ux+=q.x;uy+=q.y;}); ux/=P.length; uy/=P.length;
+    const px=lerp(540,CX,volo), py=lerp(terraY,CY,volo);
+    const spin=0;
+    const k=SC*(1-.25*eIn(prog(t,1.2,1.38)));
+    const g=`translate(${f1(px)} ${f1(py)}) rotate(${f1(spin)}) scale(${k.toFixed(3)}) translate(${f1(-ux)} ${f1(-uy)})`;
+    const op=1;
+    o+=`<g transform="${g}" opacity="${op.toFixed(3)}">${segno(s)}</g>`;
+  } else if(t<TS){
+    const vo=eOut(prog(t,.75,1.2)), cen=lerp(SUOLO-(186-132)*SC,CY,vo);
+    o+=ventaglio(t,540,cen-24*(1-eIO(prog(t,1.02,TS))));
+  }
+
+  /* --- COCCARDA --- */
+  if(t>=TS){
+    const sweep=1;
+    const pop=1+molla(t-TS,12,5.5)*.16;
+    const respiro=t>2.4 ? 1+.018*Math.sin((t-2.4)*4.2) : 1;
+    const sc=pop*respiro;
+    // rotazione: continua lo spin, poi si assesta con overshoot
+    const rot = molla(t-TS,10,4.5)*-14;
+    // galleggia: leggero bob dopo l'assestamento
+    const bob = t>2.0 ? Math.sin((t-2.0)*3.1)*6*clamp((t-2.0)*2) : 0;
+    const cy=CY+bob;
+    // code (i piedi): spuntano e oscillano a pendolo smorzato
+    const cl=1;
+    if(cl>0){
+      const sw=molla(t-1.45,7.5,3.2)*20;
+      const vento=Math.sin(t*2.6)*2.5*clamp(t-2.2);
+      o+=`<g transform="translate(${CX} ${f1(cy)}) scale(${sc.toFixed(3)})">`+
+         coda(0,40,-25+sw+vento,232*cl,72)+coda(0,40,25+sw*.8+vento*1.3,216*cl,72)+`</g>`;
+    }
+    o+=`<g transform="translate(${CX} ${f1(cy)}) scale(${sc.toFixed(3)}) rotate(${f1(rot)})">`;
+    const a0=-Math.PI*.15;
+    o+=corona(0,0,210,186,22,sweep,a0,C.corpo);                       // il corpo plissettato
+    o+=corona(0,0,154,134,17,1,a0+.2,C.rovescio); // il rovescio chiaro (era il risvolto)
+    const disco=1;
+    if(disco>0) o+=`<circle cx="0" cy="0" r="${f1(108*disco)}" fill="${C.corpo}"/>`;
+    o+=`</g>`;
+    // occhi (non ruotano: lo sguardo resta stabile, come una testa)
+    if(t>=TS){
+      let ob={apri:1,felici:1,g:[0,0]};
+      const sguardoGiu=prog(t,2.28,2.42)*(1-prog(t,2.95,3.08));
+      if(sguardoGiu>0&&t<3.05){ ob={apri:1,felici:0,g:[0,lerp(0,14,eIO(sguardoGiu))]}; }
+      if(t>3.05&&t<3.12) ob={apri:.12,felici:0,g:[0,0]};
+      const bl=t>4.0&&t<4.14; if(bl) ob={apri:.1,felici:0,g:[0,0]};
+      const sop=1;
+      o+=`<g transform="translate(${CX} ${f1(cy)}) scale(${(sc*sop).toFixed(3)})">${occhiCoccarda(0,0,ob)}</g>`;
+    }
+  }
+
+  /* --- FLASH del climax --- */
+  const fl=prog(t,TS-.01,1.72);
+  if(fl>0&&fl<1){
+    o+=`<circle cx="${CX}" cy="${CY}" r="${f1(lerp(60,420,eOut(fl)))}" fill="none" stroke="${C.oro}" stroke-width="${f1(lerp(70,0,eOut(fl)))}" opacity="${(1-fl*.6).toFixed(3)}"/>`;
+    const lampo=1-eOut(prog(t,TS,1.56));
+    if(t>TS) o+=`<circle cx="${CX}" cy="${CY}" r="${f1(lerp(220,330,eOut(prog(t,TS,1.56))))}" fill="none" stroke="#fff" stroke-width="${f1(lerp(60,0,eOut(prog(t,TS,1.56))))}" opacity="${(lampo*.9).toFixed(3)}"/>`;
+  }
+
+  /* --- scintille che pulsano nel finale --- */
+  if(t>2.6){
+    const pos=[[300,250,1],[790,215,.8],[845,520,1.1],[240,560,.75],[700,120,.6],[380,130,.7]];
+    pos.forEach(([x,y,k],i)=>{ const ph=(t-2.6-i*.27); if(ph<0) return;
+      const v=Math.max(0,Math.sin(ph*3.2)); if(v<=0) return;
+      o+=`<g transform="translate(${x} ${y}) rotate(${f1(ph*40)}) scale(${(v*k).toFixed(3)})">${stella(20,C.oro)}</g>`; });
+  }
+  /* --- particelle --- */
+  o+=particelle(BURST1,t);
+
+  /* --- contatore 6 -> 7 --- */
+  if(t>1.9){
+    const ny=918;
+    const in6=eBack(prog(t,1.9,2.12),2.4);
+    const via6=eIn(prog(t,2.18,2.32));
+    if(via6<1) o+=`<text x="540" y="${f1(ny-via6*90)}" text-anchor="middle" font-size="230" font-weight="900" fill="${C.rovescio}" opacity="${(1-via6).toFixed(3)}" transform="translate(540 ${ny-80}) scale(${in6.toFixed(3)}) translate(-540 ${-(ny-80)})">6</text>`;
+    if(t>2.2){
+      const in7=prog(t,2.2,2.5);
+      const y7=lerp(ny+70,ny,eOut(prog(t,2.2,2.34)));
+      const s7=t<2.34? lerp(.6,1.32,eOut(prog(t,2.2,2.34))) : 1+.32*Math.exp(-7*(t-2.34))*Math.cos(13*(t-2.34));
+      o+=`<text x="540" y="${f1(y7)}" text-anchor="middle" font-size="230" font-weight="900" fill="${C.corpo}" opacity="${clamp(in7*4).toFixed(3)}" transform="translate(540 ${ny-80}) scale(${s7.toFixed(3)}) translate(-540 ${-(ny-80)})">7</text>`;
+    }
+  }
+  o+=particelle(BURST2,t);
+  /* --- etichetta --- */
+  if(t>2.42){
+    const e=eOut(prog(t,2.42,2.8));
+    o+=`<text x="540" y="${f1(lerp(1022,1000,e))}" text-anchor="middle" font-size="62" font-weight="700" letter-spacing="-.5" fill="${C.occhi}" opacity="${e.toFixed(3)}">giorni di fila</text>`;
+  }
+  scena.innerHTML=o;
+}
+window.render=render; window.DURATA=DURATA;
+render(Number(new URLSearchParams(location.search).get('t')||3.8));
+</script>
+</body></html>

@@ -4705,15 +4705,6 @@ body.cattura-su > .app, body.cattura-su > #nav-tab, body.cattura-su > #banda-dem
 .rit-corpo textarea { min-height: 48px; height: 48px; }
 .rit-corpo .eroe-statistiche { display: grid; grid-template-columns: repeat(3, auto); gap: 16px; justify-content: start; }
 
-/* --- la mascotte --- */
-.mascotte { width: 112px; height: 112px; display: block; margin: 0 auto 12px; }
-.mascotte .masc-corpo { transform-origin: 50% 90%; animation: masc-respira 3.2s var(--ease-in-out) infinite; }
-.mascotte .masc-occhi { transform-origin: 50% 42%; animation: masc-occhi 4.6s infinite; }
-.mascotte-festa { animation: masc-salta .9s var(--ease-spring) both; }
-@keyframes masc-respira { 50% { transform: scale(1.03, .97); } }
-@keyframes masc-occhi { 0%, 92%, 100% { transform: scaleY(1); } 96% { transform: scaleY(.1); } }
-@keyframes masc-salta { 0% { transform: translateY(24px) scale(.8); opacity: 0; } 100% { transform: none; opacity: 1; } }
-.ck-masc .mascotte { width: 72px; height: 72px; margin: -8px auto 0; }
 .vuoto b { font-size: 20px; }
 
 /* sul desktop la Home è una colonna sola, larga quanto la scheda */
@@ -5596,7 +5587,6 @@ textarea { resize: none; field-sizing: content; max-height: 40vh; }
 
 .bv-eroe { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 8px 24px 28px; max-width: 1120px; width: 100%; margin: 0 auto; text-align: center; }
 .bv-scena { position: relative; width: 260px; height: 220px; flex: none; }
-.bv-scena .mascotte { width: 132px; height: 132px; position: absolute; left: 50%; top: 46px; margin: 0; transform: translateX(-50%); }
 .bv-alone { position: absolute; inset: 26px 40px 10px; border-radius: 50%; background: radial-gradient(circle, color-mix(in srgb, var(--accento) 22%, transparent), transparent 70%); }
 .bv-bolla {
   position: absolute; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;
@@ -5649,7 +5639,6 @@ textarea { resize: none; field-sizing: content; max-height: 40vh; }
   .bv-azioni { flex-direction: row; max-width: none; }
   .bv-azioni .bv-cta, .bv-azioni .bv-secondario { width: auto; min-width: 200px; }
   .bv-scena { width: 360px; height: 320px; transform: scale(1.15); }
-  .bv-scena .mascotte { width: 170px; height: 170px; top: 70px; }
   .bv-perche { grid-template-columns: repeat(3, 1fr); gap: 16px; }
 }
 
@@ -5716,7 +5705,6 @@ textarea { resize: none; field-sizing: content; max-height: 40vh; }
 .bv-scelta.on .bv-radio { border: 7px solid var(--accento-pieno); }
 
 .bv-festa { display: grid; place-items: center; margin: 4px 0 8px; }
-.bv-festa .mascotte { width: 120px; height: 120px; margin: 0; }
 .bv-riepilogo { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
 .bv-riepilogo li { display: flex; gap: 12px; align-items: flex-start; padding: 14px 16px; border-radius: 16px; background: var(--superficie-1); box-shadow: 0 0 0 1px var(--bordo); font-size: 15px; line-height: 1.45; }
 .bv-riepilogo li .ico { flex: none; color: var(--accento-testo); margin-top: 2px; }

@@ -1,0 +1,173 @@
+<title>Mascotte LifeMax</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: Germo grande in apertura che respira, il selettore del colore, poi gli stati,
+   la prova a viso coperto, le misure e i momenti veri dell'app. */
+:root { --bg:#f6f5fb; --carta:#fff; --carta-2:#f1eff9; --fg:#17152b; --fg-2:#5c5873; --bordo:#e3e0f0; --accento:#5b4cf0; --accento-ink:#fff;
+  --f-titolo:"Space Grotesk", ui-sans-serif, system-ui, sans-serif; --f-testo:"Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg:#0f0f15; --carta:#191922; --carta-2:#22222d; --fg:#f1f0f7; --fg-2:#a9a6bd; --bordo:#2e2d3a; --accento:#8b80ff; --accento-ink:#12101f; color-scheme:dark; } }
+:root[data-theme="dark"] { --bg:#0f0f15; --carta:#191922; --carta-2:#22222d; --fg:#f1f0f7; --fg-2:#a9a6bd; --bordo:#2e2d3a; --accento:#8b80ff; --accento-ink:#12101f; color-scheme:dark; }
+* { box-sizing:border-box; }
+body { margin:0; background:var(--bg); color:var(--fg); font-family:var(--f-testo); font-size:15px; line-height:1.5;
+  padding-left:max(16px, env(safe-area-inset-left, 0px)); padding-right:max(16px, env(safe-area-inset-right, 0px)); padding-block:0 48px; }
+.pagina { max-width:1100px; margin:0 auto; display:flex; flex-direction:column; gap:26px; }
+.eroe { display:grid; grid-template-columns:minmax(0,1fr) 300px; gap:28px; align-items:center; padding-top:36px; }
+.occhiello { font:600 12px/1 var(--f-testo); letter-spacing:.08em; text-transform:uppercase; color:var(--accento); }
+h1 { margin:10px 0 8px; font:700 clamp(32px,5vw,48px)/1.04 var(--f-titolo); letter-spacing:-.02em; }
+.eroe p { margin:0 0 10px; color:var(--fg-2); max-width:58ch; }
+.ritratto { background:var(--carta); border-radius:28px; box-shadow:0 0 0 1px var(--bordo); aspect-ratio:1; display:grid; place-items:center; }
+.ritratto svg { width:86%; }
+.ritratto svg > g { transform-origin:100px 190px; animation:respira 4.5s ease-in-out infinite; }
+@keyframes respira { 50% { transform:scale(1.02,.98); } }
+@media (prefers-reduced-motion: reduce) { .ritratto svg > g { animation:none; } }
+.scelta { display:inline-flex; gap:4px; padding:4px; border-radius:14px; background:var(--carta-2); }
+.scelta button { border:0; background:none; font:600 14px var(--f-testo); color:var(--fg-2); padding:8px 14px; border-radius:10px; cursor:pointer; display:inline-flex; gap:8px; align-items:center; }
+.scelta button[aria-pressed="true"] { background:var(--carta); color:var(--fg); box-shadow:0 1px 3px rgba(0,0,0,.12); }
+.scelta i { width:14px; height:14px; border-radius:50%; display:inline-block; }
+.scelta button:focus-visible { outline:3px solid var(--accento); outline-offset:2px; }
+section h2 { margin:0 0 4px; font:700 20px var(--f-titolo); }
+section > p { margin:0 0 12px; color:var(--fg-2); font-size:14px; max-width:70ch; }
+.griglia { display:grid; grid-template-columns:repeat(5, minmax(0,1fr)); gap:10px; }
+@media (max-width:560px) { .griglia { grid-template-columns:repeat(2, minmax(0,1fr)); } }
+.cella { background:var(--carta); border-radius:16px; box-shadow:0 0 0 1px var(--bordo); padding:6px 6px 10px; text-align:center; }
+.cella svg { width:100%; height:auto; display:block; }
+.cella b { font-size:13px; } .cella small { display:block; font-size:11.5px; color:var(--fg-2); line-height:1.3; padding:0 4px; }
+.misure { display:flex; gap:22px; align-items:flex-end; flex-wrap:wrap; background:var(--carta); border-radius:16px; box-shadow:0 0 0 1px var(--bordo); padding:16px; }
+.misure div { display:flex; flex-direction:column; align-items:center; gap:4px; font-size:11px; color:var(--fg-2); font-variant-numeric:tabular-nums; }
+.momenti { display:grid; grid-template-columns:repeat(auto-fit, minmax(230px,1fr)); gap:12px; }
+.momento { background:var(--carta); border-radius:18px; box-shadow:0 0 0 1px var(--bordo); padding:14px; display:flex; gap:12px; align-items:center; }
+.momento svg { width:72px; height:72px; flex:none; }
+.momento small { display:block; font-size:11px; font-weight:600; letter-spacing:.05em; text-transform:uppercase; color:var(--fg-2); }
+.momento b { display:block; font-size:15px; } .momento span { font-size:13px; color:var(--fg-2); }
+.storia { background:var(--carta); border-radius:18px; box-shadow:0 0 0 1px var(--bordo); padding:16px 18px; }
+.storia ol { margin:0; padding-left:20px; color:var(--fg-2); font-size:14px; display:flex; flex-direction:column; gap:4px; }
+.storia b { color:var(--fg); }
+@media (max-width:760px) { .eroe { grid-template-columns:1fr; } .ritratto { max-width:280px; } }
+</style>
+<div class="pagina">
+  <header class="eroe">
+    <div>
+      <span class="occhiello">LifeMax · mascotte</span>
+      <h1>Germo</h1>
+      <p>Un seme che si è appena aperto. Tenero, testardo, ottimista. Con la costanza cresce; se salti un giorno non appassisce mai: al massimo dorme.</p>
+      <p>Quattro forme e tre colori: il seme, due occhi pieni, il germoglio. Le emozioni le dicono solo il corpo che si allunga o si affloscia, lo sguardo e il germoglio, che fa da coda del cane.</p>
+      <div class="scelta" role="group" aria-label="Colore del corpo">
+        <button id="c-noc" aria-pressed="true"><i style="background:#c98d5a"></i>Nocciola</button>
+        <button id="c-ind" aria-pressed="false"><i style="background:#6a5cf5"></i>Indaco</button>
+      </div>
+    </div>
+    <div class="ritratto" id="ritratto"></div>
+  </header>
+  <section><h2>Gli stati</h2><p>Ognuno ha un germoglio suo: alto è energia, una foglia alzata è un saluto, il punto interrogativo è curiosità, il bocciolo è concentrazione, la conca è cura, il cuore è affetto, piegato è stanchezza, il ricciolo è sonno.</p><div class="griglia" id="stati"></div></section>
+  <section><h2>Prova a viso coperto</h2><p>Se l’emozione si capisce anche senza occhi, la porta davvero il corpo.</p><div class="griglia" id="coperti"></div></section>
+  <section><h2>Nell’app</h2><div class="momenti" id="momenti"></div></section>
+  <section><h2>Misure</h2><p>Sotto i 32 px il germoglio diventa più spesso e la bocca sparisce.</p><div class="misure" id="misure"></div></section>
+  <section class="storia" aria-label="Come ci si è arrivati"><h2>Come ci si è arrivati</h2><ol>
+    <li><b>Ricerca</b>: due analisi indipendenti di Phantom, Brilliant, Duolingo e Headspace, una dai testi e una dalle immagini; da lì i limiti (max 4 forme, 3 colori, niente braccia né sopracciglia).</li>
+    <li><b>Cinque giri di giudizio</b> da un art director senza contesto, dopo ognuno le correzioni: via Mochi e Pip (anonimi), occhi raddoppiati, «Concentrato» e «Stanco» resi non giudicanti, «Ti capisce» con il germoglio a conca, sagoma da cipolla a seme.</li>
+    <li><b>Ultimo giudizio</b>: «quasi». Funzionano Gioia, Curioso, Affetto, Dorme; il nocciola dice «seme» meglio dell’indaco.</li>
+  </ol></section>
+</div>
+<script>
+/* GERMO, sesta versione. Quattro forme: seme a fagiolo + 2 occhi + germoglio.
+   Correzioni del quarto giudizio:
+   - sagoma a fagiolo/mandorla: punto più largo a metà altezza, cima tonda, base morbida,
+     un fianco più pieno dell'altro; il germoglio nasce fuori asse (non è una cipolla);
+   - occhi grandi il doppio (ognuno ~20% della larghezza), ovali verticali, bassi;
+   - nessuna ombra nel personaggio: la mette l'interfaccia, se serve;
+   - ogni stato ha una sagoma sua, riconoscibile anche col viso coperto. */
+(function () {
+  const INK = '#1d1747', VERDE = '#2fbf86';
+  /* il fagiolo: alto ~130, largo ~124; il fianco destro più pieno */
+  const SEME = 'M108 56C126 60 158 84 162 122C165 150 160 170 148 180C142 185 132 186 120 186H76C62 186 50 182 44 172C36 158 36 136 42 116C52 84 86 58 108 56Z';
+  const BASE = [98, 186], CIMA = [108, 58];       /* da dove nasce il germoglio: fuori asse */
+  const OX = 22, OY = 130, RX = 12.5, RY = 15.6;
+
+  function occhi(s) {
+    const [gx, gy] = s.g || [0, 0], k = s.scala || 1;
+    const ox = OX * (s.vicini || 1), c = [[99 - ox + gx, OY + gy + (s.storti ? -2 : 0)], [99 + ox + gx, OY + gy + (s.storti ? 2 : 0)]];
+    const rx = RX * k, ry = RY * k * (s.schiaccia || 1);
+    if (s.o === 'archi') return c.map(([x, y]) => `<path d="M${x - 12} ${y + 5}Q${x} ${y - 12} ${x + 12} ${y + 5}" fill="none" stroke="${INK}" stroke-width="7.5" stroke-linecap="round"/>`).join('');
+    if (s.o === 'chiusi') return c.map(([x, y]) => `<path d="M${x - 12} ${y}Q${x} ${y + 10} ${x + 12} ${y}" fill="none" stroke="${INK}" stroke-width="7.5" stroke-linecap="round"/>`).join('');
+    /* mezzi: la parte bassa dell'ovale, con il taglio dritto: stanco ma sereno */
+    if (s.o === 'mezzi') return c.map(([x, y]) => `<path d="M${x - rx} ${y + 1}Q${x} ${y - 3} ${x + rx} ${y + 1}A${rx} ${ry * .7} 0 0 1 ${x - rx} ${y + 1}Z" fill="${INK}"/>`).join('');
+    if (s.o === 'su') return c.map(([x, y]) => `<path d="M${x - rx} ${y + 1}A${rx} ${ry * .8} 0 0 1 ${x + rx} ${y + 1}Q${x} ${y + 5} ${x - rx} ${y + 1}Z" fill="${INK}"/>`).join('');
+    return c.map(([x, y]) => `<ellipse cx="${x}" cy="${y}" rx="${rx.toFixed(1)}" ry="${ry.toFixed(1)}" fill="${INK}"/>`).join('');
+  }
+
+  const F = 'M0 0C7 -13 25 -15 35 -5C25 6 10 7 0 0Z';
+  const foglia = (x, y, a, s) => `<path d="${F}" transform="translate(${x} ${y}) rotate(${a}) scale(${s || 1})"/>`;
+  function germoglio(p, piccolo) {
+    const [x0, y0] = CIMA, sw = piccolo ? 12 : 9;
+    const g = (d, f) => `<g fill="${VERDE}"><path d="${d}" fill="none" stroke="${VERDE}" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round"/>${f}</g>`;
+    const m = `M${x0} ${y0}`;
+    switch (p) {
+      case 'riposo':   return g(`${m}C${x0} 48 ${x0 + 2} 40 ${x0 + 4} 32`, foglia(x0 + 4, 33, -145, 1.05) + foglia(x0 + 4, 33, -35, 1.05));
+      /* ciao: una foglia sola, alzata e aperta come una mano */
+      case 'ciao':     return g(`${m}C${x0} 46 ${x0 + 4} 38 ${x0 + 8} 34`, foglia(x0 + 8, 36, 175, .6) + foglia(x0 + 8, 35, -82, 1.45));
+      case 'alto':     return g(`${m}V14`, foglia(x0, 16, -128, 1.1) + foglia(x0, 16, -52, 1.1));
+      case 'largo':    return g(`${m}V30`, foglia(x0, 32, 192, 1.2) + foglia(x0, 32, -12, 1.2));
+      /* punto interrogativo */
+      case 'domanda':  return g(`${m}C${x0} 48 ${x0 - 2} 40 ${x0 + 6} 32C${x0 + 16} 22 ${x0 + 4} 10 ${x0 - 8} 18`, foglia(x0 - 8, 18, 160, .8));
+      case 'bocciolo': return g(`${m}V32`, `<path d="M${x0} 34C${x0 - 15} 32 ${x0 - 16} 16 ${x0 - 6} 12Q${x0} 17 ${x0 + 6} 12C${x0 + 16} 16 ${x0 + 15} 32 ${x0} 34Z"/>`);
+      /* coppa: due foglie che salgono e si chiudono, come mani a conca */
+      case 'coppa':    return g(`${m}V42`, `<path d="M${x0} 44C${x0 - 26} 44 ${x0 - 38} 30 ${x0 - 32} 12C${x0 - 26} 22 ${x0 - 16} 30 ${x0 - 4} 32Q${x0} 33 ${x0 + 4} 32C${x0 + 16} 30 ${x0 + 26} 22 ${x0 + 32} 12C${x0 + 38} 30 ${x0 + 26} 44 ${x0} 44Z"/>`);
+      case 'cuore':    return g(`${m}V38`, `<path d="M${x0} 42C${x0 - 10} 33 ${x0 - 24} 28 ${x0 - 26} 16C${x0 - 28} 4 ${x0 - 11} 0 ${x0} 14C${x0 + 11} 0 ${x0 + 28} 4 ${x0 + 26} 16C${x0 + 24} 28 ${x0 + 10} 33 ${x0} 42Z"/>`);
+      /* stanco: piegato di lato fino a toccare il corpo */
+      case 'piegato':  return g(`${m}C${x0} 40 ${x0 + 24} 34 ${x0 + 30} 50`, foglia(x0 + 30, 50, 100, .95) + foglia(x0 + 30, 50, 70, .85));
+      /* dorme: un solo grande ricciolo, leggibile anche piccolo */
+      case 'ricciolo': return g(`${m}C${x0} 38 ${x0 + 28} 32 ${x0 + 28} 48C${x0 + 28} 58 ${x0 + 14} 58 ${x0 + 14} 48`, '');
+    }
+    return '';
+  }
+
+  /* r = altezza/larghezza (volume costante), incl = gradi, su = salto, g = sguardo */
+  const STATI = [
+    { k: 'felice',      n: 'Felice',      r: 1.04, incl: 0,   o: 'ovali', g: [1, -2],   ger: 'riposo' },
+    { k: 'ciao',        n: 'Ciao!',       r: 1.03, incl: 10,  o: 'ovali', g: [-2, 0],   ger: 'ciao', su: 8 },
+    { k: 'gioia',       n: 'Gioia',       r: 1.09, incl: 0,   o: 'archi', g: [0, -2],   ger: 'alto', su: 20, bocca: 1 },
+    { k: 'fiero',       n: 'Fiero',       r: 1.06, incl: -10, o: 'su',    g: [-2, -6],  ger: 'largo' },
+    { k: 'curioso',     n: 'Curioso',     r: 1.03, incl: 14,  o: 'ovali', g: [10, -5],  ger: 'domanda' },
+    { k: 'concentrato', n: 'Concentrato', r: .94,  incl: 6,   o: 'ovali', g: [5, 8],    ger: 'bocciolo', schiaccia: .82 },
+    { k: 'capisce',     n: 'Ti capisce',  r: .92,  incl: -9,  o: 'ovali', g: [-4, 6],   ger: 'coppa', scala: .82, vicini: .82 },
+    { k: 'affetto',     n: 'Affetto',     r: .9,   incl: 0,   o: 'archi', g: [0, 2],    ger: 'cuore', vicini: .78, storti: 1 },
+    { k: 'stanco',      n: 'Stanco',      r: .84,  incl: 4,   o: 'mezzi', g: [0, 5],    ger: 'piegato' },
+    { k: 'dorme',       n: 'Dorme',       r: .8,   incl: -8,  o: 'chiusi', g: [0, 4],   ger: 'ricciolo' }
+  ];
+
+  function disegna(k, opz) {
+    opz = opz || {};
+    const s = STATI.find(x => x.k === k), sx = 1 / Math.sqrt(s.r), sy = Math.sqrt(s.r), su = s.su || 0;
+    const base = `translate(${BASE[0]} ${BASE[1]}) scale(.78) translate(${-BASE[0]} ${-BASE[1]})`;
+    const posa = `translate(${BASE[0]} ${BASE[1] - su}) rotate(${s.incl}) scale(${sx.toFixed(3)} ${sy.toFixed(3)}) translate(${-BASE[0]} ${-BASE[1]})`;
+    const bocca = s.bocca && !opz.piccolo ? `<path d="M87 150Q99 164 111 150" fill="none" stroke="${INK}" stroke-width="7" stroke-linecap="round"/>` : '';
+    return `<svg viewBox="0 0 200 200" role="img" aria-label="Germo: ${s.n}"><g transform="translate(0 6)"><g transform="${base}"><g transform="${posa}">` +
+      germoglio(s.ger, opz.piccolo) + `<path d="${SEME}" fill="${opz.corpo || '#6a5cf5'}"/>` + (opz.senzaViso ? '' : occhi(s) + bocca) + `</g></g></g></svg>`;
+  }
+  window.GERMO7 = { disegna, STATI };
+})();
+
+const S = GERMO7.STATI;
+const DESC = { felice:'lo stato di base', ciao:'quando apri l’app', gioia:'hai chiuso qualcosa', fiero:'una settimana di fila', curioso:'una scoperta nuova', concentrato:'il timer gira', capisce:'una giornata storta', affetto:'bentornato', stanco:'tardi, la sera', dorme:'la notte, o una pausa' };
+let colore = '#c98d5a';
+try { if (localStorage.getItem('lm-germo-colore') === 'indaco') colore = '#6a5cf5'; } catch (e) {}
+function disegnaTutto() {
+  const scuro = matchMedia('(prefers-color-scheme: dark)').matches && document.documentElement.dataset.theme !== 'light' || document.documentElement.dataset.theme === 'dark';
+  const c = scuro && colore === '#6a5cf5' ? '#7d70ff' : (scuro ? '#d49a66' : colore);
+  document.getElementById('ritratto').innerHTML = GERMO7.disegna('felice', { corpo: c });
+  document.getElementById('stati').innerHTML = S.map(s => '<div class="cella">' + GERMO7.disegna(s.k, { corpo: c }) + '<b>' + s.n + '</b><small>' + DESC[s.k] + '</small></div>').join('');
+  document.getElementById('coperti').innerHTML = S.map(s => '<div class="cella">' + GERMO7.disegna(s.k, { corpo: c, senzaViso: 1 }) + '<b>' + s.n + '</b></div>').join('');
+  document.getElementById('misure').innerHTML = [16, 24, 32, 48, 96].map(px => '<div><div style="width:' + px + 'px">' + GERMO7.disegna('felice', { corpo: c, piccolo: px < 40 }) + '</div>' + px + ' px</div>').join('') +
+    ['gioia', 'capisce', 'dorme'].map(k => '<div><div style="width:48px">' + GERMO7.disegna(k, { corpo: c }) + '</div>' + GERMO7.STATI.find(s => s.k === k).n + '</div>').join('');
+  const M = [['ciao', 'Apertura', 'Ciao, Giulia', 'Oggi: una cosa alla volta.'], ['concentrato', 'Timer', '24:12', 'Germo lavora con te, zitto.'], ['capisce', 'Dopo una pausa', 'Bentornata', 'Ieri è saltato. Ripartiamo da una cosa sola.'], ['gioia', 'Fine giornata', '3 di 3 fatte', 'Giornata chiusa.']];
+  document.getElementById('momenti').innerHTML = M.map(([k, a, b, d]) => '<div class="momento">' + GERMO7.disegna(k, { corpo: c }) + '<div><small>' + a + '</small><b>' + b + '</b><span>' + d + '</span></div></div>').join('');
+  document.getElementById('c-noc').setAttribute('aria-pressed', colore !== '#6a5cf5');
+  document.getElementById('c-ind').setAttribute('aria-pressed', colore === '#6a5cf5');
+}
+document.getElementById('c-noc').onclick = () => { colore = '#c98d5a'; try { localStorage.setItem('lm-germo-colore', 'nocciola'); } catch (e) {} disegnaTutto(); };
+document.getElementById('c-ind').onclick = () => { colore = '#6a5cf5'; try { localStorage.setItem('lm-germo-colore', 'indaco'); } catch (e) {} disegnaTutto(); };
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', disegnaTutto);
+disegnaTutto();
+</script>

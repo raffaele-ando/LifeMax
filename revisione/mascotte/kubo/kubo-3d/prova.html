@@ -1,0 +1,56 @@
+<!doctype html><meta charset="utf-8">
+<style>html,body{margin:0;background:#f6f7fc}canvas{display:block}</style>
+<canvas id="c" width="1080" height="1080"></canvas>
+<script type="importmap">{"imports":{"three":"./node_modules/three/build/three.module.js","three/addons/":"./node_modules/three/examples/jsm/"}}</script>
+<script type="module">
+import { creaKubo, scena, POSA0, traccia, molla, accel } from './kubo3d.js';
+/* PROVA DI CARATTERE (4,6 s)
+   0.0  respira (sale e scende piano), sbatte le ciglia
+   0.9  si accorge di te: occhi più grandi, antenna che vibra
+   1.3  si carica: si schiaccia, le mani scendono
+   1.55 salta: si allunga, mani in alto, occhi felici, l'antenna resta indietro
+   2.05 atterra: schiacciamento, l'antenna oscilla
+   2.5  saluta con la mano destra, inclina la testa, guance
+   3.6  occhiolino, assestamento */
+const stile = new URLSearchParams(location.search).get('stile') || 'morbido';
+const DURATA = 4.6;
+const { r, s, cam } = scena(document.getElementById('c'), stile);
+const K = creaKubo(s, stile);
+const T = (...k) => traccia(k);
+const T0 = 1.55, T1 = 2.05, H = .62;
+const salto = t => (t > T0 && t < T1) ? 4 * H * ((t - T0) / (T1 - T0)) * (1 - (t - T0) / (T1 - T0)) : 0;
+const respiro = t => .025 * Math.sin(t * 2 * Math.PI / 1.6) * (t < 1.2 ? 1 : t > 3.6 ? 1 : 0);
+const y = t => salto(t) + respiro(t) + .04;
+const sy = T([0,1],[1.05,1],[1.3,.8],[1.5,.84],[1.6,1.16],[1.8,1.04],[2.0,1.02],[2.08,.78],[2.2,1.05],[2.32,.98],[2.45,1],[4.6,1]);
+const inclina = T([0,0],[2.4,0],[2.7,.14],[3.4,.12],[3.6,-.04],[3.8,0],[4.6,0]);
+const annuisci = T([0,0],[0.85,0],[1.0,-.08],[1.25,-.04],[1.3,.12],[1.55,-.1],[1.8,-.06],[2.05,.04],[2.15,.14],[2.35,0],[4.6,0]);
+/* antenna: la spinge l'accelerazione verticale e il cambio di inclinazione */
+const antX = molla(DURATA + .2, t => accel(y, t) * .02 + accel(annuisci, t) * .35, { k: 150, c: 6 });
+const antZ = molla(DURATA + .2, t => accel(inclina, t) * .5 + (t > .9 && t < .95 ? 30 : 0), { k: 150, c: 6 });
+const apri = T([0,1],[.5,1],[.55,.1],[.62,.1],[.7,1],[1.45,1],[1.58,.4],[1.68,-1],[2.2,-1],[2.3,1],[2.45,1],[2.55,-1],[4.6,-1]);
+const apriD = T([0,1],[.5,1],[.55,.1],[.62,.1],[.7,1],[1.45,1],[1.58,.4],[1.68,-1],[2.2,-1],[2.3,1],[2.45,1],[2.55,-1],[3.75,-1],[3.82,.12],[4.0,.12],[4.1,-1],[4.6,-1]);
+const occhioK = T([0,1],[.85,1],[1.0,1.22],[1.3,1.12],[1.5,1],[4.6,1]);
+const sguardoY = T([0,0],[.85,0],[1.0,.03],[1.3,0],[4.6,0]);
+const guance = T([0,0],[2.3,0],[2.6,1],[4.6,1]);
+/* mani: [x, y, z, rotazione] */
+const msY = T([0,0],[1.2,0],[1.45,-.12],[1.6,.42],[1.85,.5],[2.05,.25],[2.15,-.08],[2.35,0],[4.6,0]);
+const msX = T([0,0],[1.45,.04],[1.6,-.14],[1.9,-.16],[2.2,0],[4.6,0]);
+const mdY = T([0,0],[1.2,0],[1.45,-.12],[1.6,.42],[1.85,.5],[2.05,.25],[2.15,-.08],[2.4,.1],[2.6,.58],[3.5,.58],[3.75,.05],[3.9,0],[4.6,0]);
+const mdX = T([0,0],[1.45,-.04],[1.6,.14],[1.9,.16],[2.2,0],[2.6,.12],[3.5,.12],[3.8,0],[4.6,0]);
+const saluto = t => (t > 2.6 && t < 3.55) ? Math.sin((t - 2.6) * 15) * .45 * Math.min(1, (t - 2.6) * 6) * Math.min(1, (3.55 - t) * 6) : 0;
+const piedi = T([0,0],[1.5,0],[1.6,.06],[1.8,.12],[1.98,.02],[2.05,0],[4.6,0]);
+function render(t) {
+  const p = { ...POSA0 };
+  p.y = y(t); p.sy = sy(t); p.sx = 1 / Math.sqrt(p.sy);
+  p.inclina = inclina(t) + Math.sin(t * 1.3) * .015; p.annuisci = annuisci(t);
+  p.antX = antX(t); p.antZ = antZ(t) - p.inclina * .3;
+  p.apriS = apri(t); p.apriD = apriD(t); p.occhioK = occhioK(t); p.sguardo = [0, sguardoY(t)]; p.guance = guance(t);
+  const ys = (p.sy - 1) * .9;      // le mani seguono lo schiacciamento
+  p.manoS = [msX(t), msY(t) + ys, 0, .25 - msY(t) * .9];
+  p.manoD = [mdX(t), mdY(t) + ys, 0, -.25 + mdY(t) * .9 + saluto(t)];
+  const pd = piedi(t); p.piedeS = [-pd * .3, -pd * .4 - p.y * 0, .35 * pd * 4]; p.piedeD = [pd * .3, -pd * .2, .2 * pd * 4];
+  p.giro = -.32 + Math.sin(t * .8) * .06;
+  K.posa(p); r.render(s, cam);
+}
+window.render = render; window.DURATA = DURATA; window.pronto = true; render(0);
+</script>

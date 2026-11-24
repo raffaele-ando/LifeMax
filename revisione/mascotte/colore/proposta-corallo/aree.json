@@ -1,0 +1,22 @@
+{
+ "chiaro": {
+  "Studio": "#226fb3",
+  "Salute": "#487c25",
+  "Relazioni": "#944c8f",
+  "Finanze": "#786f00",
+  "Associazioni": "#00827c",
+  "Founder": "#5f60b5",
+  "Lavoro": "#007b9f",
+  "Altro": "#7e55a7"
+ },
+ "scuro": {
+  "Studio": "#73b6fa",
+  "Salute": "#90c273",
+  "Relazioni": "#dc95d5",
+  "Finanze": "#bcb554",
+  "Associazioni": "#35c9c2",
+  "Founder": "#a2a8fc",
+  "Lavoro": "#42c2e6",
+  "Altro": "#c39dee"
+ }
+}

@@ -44,7 +44,7 @@ import { countUp, burst, flyXp, pioggiaCoriandoli } from './moto';
 import { abilitaTrascina } from './trascina';
 import { fmtMin, fmtOre, etichettaGiorno, oraDi } from './tempo';
 import { avviaScorrimento } from './scorri';
-import { illoInbox, illoFlask, mascotte } from './illustrazioni';
+import { illoSole, illoInbox, illoFlask } from './illustrazioni';
 export { illoInbox } from './illustrazioni';
 export { fmtOre, etichettaGiorno } from './tempo';
 import type { OpzFesta } from './moto';
@@ -3621,7 +3621,7 @@ export function vistaFocus(): Scena {
 
   if (!prossima) {
     var finita = oggi.length > 0;
-    scena.dentro += '<div class="vuoto">' + mascotte(oggi.length ? 'festa' : undefined) +
+    scena.dentro += '<div class="vuoto">' + illoSole() +
       (oggi.length ? '<b>Per oggi hai finito tutto.</b>'
                    : '<b>Cosa fai oggi?</b>') +
       '</div>' +
@@ -6456,7 +6456,7 @@ export function apriCheckinVeloce(): void {
   const voti: Record<Voto, number> = { energia: 0, focus: 0, umore: 0 };
   const DOM: [Voto, string][] = [['energia', 'Energia'], ['focus', 'Concentrazione'], ['umore', 'Umore']];
   const FACCE = ['😫', '😕', '😐', '🙂', '🤩'];
-  apriSheet('Come stai?', '<div class="ck"><div class="ck-masc">' + mascotte() + '</div>' + DOM.map(function (q) {
+  apriSheet('Come stai?', '<div class="ck">' + DOM.map(function (q) {
     return '<div class="ck-riga"><span class="ck-eti">' + q[1] + '</span><div class="ck-scala" data-campo="' + q[0] + '">' +
       [1, 2, 3, 4, 5].map(function (v) {
         return '<button data-v="' + v + '" aria-label="' + q[1] + ': ' + ANCORE[q[0]][v - 1] + '">' + FACCE[v - 1] + '</button>';
