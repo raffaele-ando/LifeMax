@@ -11,9 +11,10 @@
         `window.onerror` e a `unhandledrejection`: se qualcosa si rompe
         caricando i moduli dopo, quell'errore finisce nel registro tecnico
         invece che in una console che sul telefono non c'è.
-     2. LO STILE, e poi la forma degli angoli. `forma.ts` disegna già alla
-        prima schermata: caricata dopo, si vedrebbe un lampo di angoli tondi
-        normali e poi lo scatto alla curva di Apple.
+     2. LO STILE — prima i colori (`token.css`, la loro unica fonte), poi
+        il foglio che li usa — e poi la forma degli angoli. `forma.ts`
+        disegna già alla prima schermata: caricata dopo, si vedrebbe un
+        lampo di angoli tondi normali e poi lo scatto alla curva di Apple.
      3. I DATI. `dati.ts` scrive nel registro (che c'è già) e mette `LM` su
         `window`, dove lo cercano il service worker e la nuvola.
      4. IL REGISTRO DEGLI SCHERMI. Riempie i due registri di `app.ts` e il
@@ -27,6 +28,7 @@
      6. `avvia()`, che disegna.
    ============================================================ */
 import './registro/registro';
+import './stile/token.css';
 import './stile/app.css';
 import './forma/forma';
 import './dati/dati';

@@ -74,12 +74,15 @@ AI slop»**. Aveva ragione, e le skill di design lo dicono con dei nomi:
 | le lavate di gradiente come decorazione | la scheda dell'andamento |
 | l'alone colorato sotto al logo | la barra laterale |
 
-**L'accento è inchiostro.** `#17323f` in chiaro, il suo ribaltamento in scuro.
-Piatto, senza gradiente. Il perché non è gusto: le otto aree della vita
-occupano già tutta la ruota dei colori, e un accento a mezza saturazione, di
-qualunque tinta, sembrerebbe una nona area. E questo non è un prodotto che
-vende: è uno strumento che si legge. Su uno strumento i colori appartengono ai
-**dati**; l'ago e le cifre sono inchiostro.
+**L'accento è il blu di Kubo, e fa una cosa sola.** La marca è la mascotte:
+il blu delle sue antenne e dei suoi piedi (`--azione`, `#0151e3`) è il tasto
+principale, identico nei due temi, col bianco sopra a 6,4:1. Piatto, senza
+gradiente, e **al 10% della schermata**: un pieno per schermata, la linea
+attiva, Kubo. Mai un fondo grande, mai un'intestazione blu. Le parole sono
+inchiostro blu notte (il visore di Kubo desaturato) su carta calda, e lo
+scuro è il visore stesso. Prima l'accento è stato un petrolio, poi un indaco
+che sembrava una nona area; le aree si sono spostate perché il blu non fosse
+di nessuna (Studio adesso è viola-ardesia).
 
 **Le cifre hanno un carattere loro.** Un graziato di sistema — New York sugli
 Apple, Cambria o Georgia su Windows, Noto Serif su Android — sul tempo del
@@ -98,20 +101,42 @@ sotto ci torni.
 
 ## Il colore
 
-Un accento solo, e vive in due varianti che non sono intercambiabili:
+**Una fonte sola: `src/stile/token.css`.** Fuori da lì non si scrive un
+esadecimale né un `rgb()`, e `prove/colori.js` lo controlla. Tre piani:
+primitive (i colori veri, `--blu-50`), semantici (il mestiere, `--azione`,
+`--testo-2`: gli unici che cambiano fra chiaro e scuro) e componenti (le
+scelte di un pezzo, `--campo-bordo`, `--timer-anello`). I valori e le loro
+ragioni stanno in `revisione/mascotte/colore/kubo/rapporto-brand-kubo.md`.
 
-- `--accento` per le **linee e le superfici**
-- `--accento-testo` per le **parole** — è la variante scura, quella che passa
-  il contrasto AA
+Un colore, un significato:
 
-Confonderle è già successo: un «+10» verde scritto col colore delle linee
-faceva 2.89:1. `prove/colori.js` misura il contrasto di ogni testo dell'app
-nei due temi, ed è lui ad avere l'ultima parola.
+| colore | vuol dire | dove |
+|---|---|---|
+| blu di Kubo | agisci | il tasto principale (uno per schermata), il fuoco, la linea dell'ora |
+| blu tenue + parola blu | scelto | chip, voti, giorni, voce di navigazione: **tonale, mai pieno** |
+| smeraldo | fatto | la spunta fatta, le barre di quello che hai fatto. Arriva DOPO il tasto |
+| oro | ricompensa | la serie e la fiamma, gli XP, la costanza, la festa |
+| ruggine | distrugge | solo il tasto della domanda di conferma. «Elimina», «Scarta», «Termina l'abitudine» sono neutri col cestino |
+| colore dell'area | categoria | solo il segno o il puntino accanto al nome. Mai il fondo di una scheda |
 
-Gli otto colori delle aree sono una palette categorica scelta per essere
-distinguibile anche da chi ha una carenza cromatica; i tre che sotto i 3:1 su
-chiaro non ci arrivano portano **sempre** anche un'etichetta e un'icona. Il
-colore da solo non dice mai niente.
+**Non c'è un colore d'attenzione.** In ritardo, mancata, scaduta sono neutri
+— grigi, con la parola e l'orologio. Un giallo d'avviso sarebbe l'oro della
+ricompensa usato per un rimprovero, e per una testa ADHD una lista che si
+accende di rosso è un rimprovero.
+
+Ogni colore ha due o tre varianti che non sono intercambiabili: la linea
+(`--azione-linea`, `--successo`: ≥ 3:1) e la parola (`--azione-testo`,
+`--successo-testo`: ≥ 4,5:1). Confonderle è già successo: un «+10» verde
+scritto col colore delle linee faceva 2,89:1.
+
+I controlli hanno una linea loro, `--linea-controllo`, a 3:1 su ogni
+superficie: il bordo dei campi, il cerchio della spunta, l'interruttore
+spento. La linea che divide (`--linea-decor`) è un'altra cosa e può essere
+leggera. Il segnaposto ha un colore esplicito (`--testo-3`, ≥ 4,5:1).
+
+Gli otto colori delle aree **non** sono distinguibili fra loro da chi ha una
+carenza cromatica, e non serve che lo siano: un'area porta **sempre** anche
+il suo segno e il suo nome. Il colore da solo non dice mai niente.
 
 ## I comandi
 

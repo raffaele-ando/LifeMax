@@ -1,4 +1,5 @@
-/* Il contrasto del testo, su tutta l'app e nei due temi.
+/* Il contrasto del testo e dei controlli, su tutta l'app e nei due temi, e
+   i colori scritti in un posto solo (vedi CONTROLLI e statico() più sotto).
    Nasce da un errore che l'occhio non vede: scritto `var(--inchiostro)` al
    posto di `var(--inchiostro-1)`, il color-mix diventa invalido e il testo
    torna al colore ereditato — grigio su bianco, cioè un colore plausibile.
@@ -48,11 +49,38 @@ const SCENE = [
       if (b) b.click();
       const c = document.getElementById('imp-prom-come');
       if (c) c.click();
-    }) }
+    }) },
+  /* i posti che la prima versione non guardava: un foglio con campi e passi,
+     le abitudini con le loro spunte, e il primo avvio — che nello scuro
+     prendeva i colori delle aree del chiaro */
+  { nome: 'Aspetto', vai: 'profilo', apri: async p => {
+      await p.evaluate(() => { const b = [...document.querySelectorAll('#vista .lista-riga, #vista button')].find(x => x.textContent.includes('Impostazioni')); if (b) b.click(); });
+      await p.waitForTimeout(700);
+      await p.evaluate(() => { const b = document.getElementById('imp-aspetto'); if (b) b.click(); });
+      /* i tre interruttori partono accesi: se ne spegne uno, per misurarlo */
+      await p.waitForTimeout(600);
+      await p.evaluate(() => { const i = document.querySelector('.sheet .interr.on'); if (i) i.click(); });
+    } },
+  { nome: 'Da fare · scheda', vai: 'inbox', apri: p => p.evaluate(() => {
+      const t = [...document.querySelectorAll('#vista button')].find(x => x.textContent.includes('Da fare')); if (t) t.click();
+      setTimeout(() => { const b = document.querySelector('#vista [data-bkapri]'); if (b) b.click(); }, 300);
+    }) },
+  { nome: 'Abitudini', vai: 'inbox', apri: p => p.evaluate(() => {
+      const t = [...document.querySelectorAll('#vista button')].find(x => x.textContent.includes('Abitudini')); if (t) t.click();
+    }) },
+  { nome: 'Benvenuto', vai: 'oggi', vuoto: true },
+  { nome: 'Benvenuto · aree', vai: 'oggi', vuoto: true, apri: async p => {
+      await p.evaluate(() => { const b = document.querySelector('[data-bv=inizia]'); if (b) b.click(); });
+      await p.waitForTimeout(500);
+      await p.evaluate(() => { const b = document.querySelector('[data-bv=avanti]'); if (b) b.click(); });
+      await p.waitForTimeout(500);
+      await p.evaluate(() => { [...document.querySelectorAll('[data-area]')].slice(0, 2).forEach(e => e.click()); });
+    } }
 ];
-
 /* dentro la pagina: ogni testo visibile, il suo contrasto col fondo dipinto */
-const CONTRASTI = `(function () {
+/* gli attrezzi comuni alle due misure: risolvere un colore, comporre gli
+   strati, il rapporto di contrasto */
+const AIUTI = `
   var cv = document.createElement('canvas'); cv.width = cv.height = 1;
   var cx = cv.getContext('2d', { willReadFrequently: true });
   /* Un colore CSS qualunque → [r, g, b, a], alfa compresa.
@@ -133,6 +161,10 @@ const CONTRASTI = `(function () {
     });
   }
 
+`;
+
+/* dentro la pagina: ogni testo visibile, il suo contrasto col fondo dipinto */
+const CONTRASTI = `(function () {` + AIUTI + `
   var fuori = [], ammessi = [], visti = 0;
   document.querySelectorAll('body *').forEach(function (el) {
     /* solo chi ha testo proprio: se lo contasse anche il genitore, lo stesso
@@ -185,7 +217,193 @@ const CONTRASTI = `(function () {
 let fail = 0;
 const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  ') + n + (d ? '  → ' + d : '')); };
 
+/* ============================================================
+   I CONTROLLI, NON SOLO LE PAROLE (SC 1.4.11, 2.4.7)
+
+   La misura qui sopra guarda il testo, e per questo era verde mentre il
+   bordo dei campi stava a 1,36:1, il cerchio della spunta a 1,46:1 e
+   l'interruttore spento a 1,05:1: nessuno dei tre è un nodo di testo. E il
+   segnaposto, che è uno pseudo-elemento, lo disegnava il browser in un
+   grigio suo che sulle superfici grigie dei fogli scendeva sotto 4,5.
+   Qui si misurano, sugli elementi veri di ogni schermata:
+     · il bordo di ogni campo, contro il fondo fuori e dentro   ≥ 3:1
+     · il cerchio di ogni spunta non ancora fatta                ≥ 3:1
+     · l'interruttore spento: il contorno e il pomello           ≥ 3:1
+     · il segnaposto di ogni campo vuoto                         ≥ 4,5:1
+     · l'anello del fuoco sul tasto principale: spesso almeno 2px,
+       staccato almeno 2px, e ≥ 3:1 sul fondo dove cade
+   e, una volta per tema, le coppie di token che li fanno.
+   Il bordo che `forma.ts` ridisegna come immagine si legge da
+   `data-forma-bordo`, dove forma.ts lo mette da parte: il bordo vero, a quel
+   punto, è stato reso trasparente. */
+const CONTROLLI = `(function (conToken) {` + AIUTI + `
+  var fuori = [], visti = 0;
+  function vede(el) {
+    var r = el.getBoundingClientRect(); if (r.width < 2 || r.height < 2) return false;
+    var st = getComputedStyle(el); if (st.visibility === 'hidden' || st.display === 'none') return false;
+    if (el.closest('[hidden], .lab-demo, #lab-demo, .gr-spento')) return false;
+    for (var e = el; e; e = e.parentElement) if (+getComputedStyle(e).opacity < 0.5) return false;
+    return true;
+  }
+  function nome(el) { return el.tagName.toLowerCase() + (el.className && el.className.toString ? '.' + el.className.toString().trim().split(/\\s+/).slice(0, 2).join('.') : ''); }
+  function peggio(col, el) {
+    var m = null;
+    fondi(el).forEach(function (bg) { var r = rapporto(sopra(risolvi(col), bg), bg); if (m === null || r < m) m = r; });
+    return m;
+  }
+  function misura(cosa, el, col, dove, minimo) {
+    if (!col || risolvi(col)[3] < 0.05) return;
+    visti++;
+    var r = peggio(col, dove);
+    if (r < minimo) fuori.push(cosa + ' ' + nome(el) + ' ' + r + ' < ' + minimo);
+  }
+  /* il colore che fa vedere un controllo: il bordo, o quello dello
+     pseudo-elemento che lo disegna, o l'ombra interna che fa da bordo */
+  function tratto(el) {
+    var st = getComputedStyle(el);
+    if (parseFloat(st.borderTopWidth) >= 1) {
+      var c = el.dataset.formaBordo || st.borderTopColor;
+      if (risolvi(c)[3] > 0.05) return c;
+    }
+    var pr = getComputedStyle(el, '::before');
+    if (pr.content !== 'none' && parseFloat(pr.borderTopWidth) >= 1) return pr.borderTopColor;
+    var m = /(rgba?\\([^)]*\\)|color\\([^)]*\\)|oklab\\([^)]*\\))[^,]*inset/.exec(st.boxShadow);
+    return m ? m[1] : null;
+  }
+  var CAMPI = 'input[type=text], input[type=url], input[type=time], input[type=date], input[type=number], textarea, select';
+  document.querySelectorAll(CAMPI).forEach(function (el) {
+    if (!vede(el)) return;
+    var st = getComputedStyle(el);
+    if (parseFloat(st.borderTopWidth) >= 1) {
+      var c = el.dataset.formaBordo || st.borderTopColor;
+      misura('bordo del campo', el, c, el.parentElement, 3);
+      if (risolvi(st.backgroundColor)[3] > 0.5) misura('bordo del campo (dentro)', el, c, el, 3);
+    }
+    if (el.placeholder && !el.value) misura('segnaposto', el, getComputedStyle(el, '::placeholder').color, el, 4.5);
+  });
+  var SPUNTE = '.spunta-tonda, .giornata .gio-so-riga:not(.fatta) .tl-check, .lista-riga:not(.fatta) .lista-azione.spunta, ' +
+    '.riga-azione:not(.fatta) .spunta, .tl-blk-att:not(.fatta) .tl-blk-check, .tl-ed-riga:not(.fatta) .tl-check, ' +
+    '.ab-carta:not(.fatta) .ab-spunta, .bv-tessera:not(.on) .bv-spunta, .bv-scelta:not(.on) .bv-radio';
+  document.querySelectorAll(SPUNTE).forEach(function (el) {
+    if (!vede(el)) return;
+    misura('cerchio della spunta', el, tratto(el), el.parentElement, 3);
+  });
+  document.querySelectorAll('.interr:not(.on)').forEach(function (el) {
+    if (!vede(el)) return;
+    misura('interruttore spento', el, tratto(el), el.parentElement, 3);
+    var i = el.querySelector('i'); if (i) misura('pomello spento', i, getComputedStyle(i).backgroundColor, el.parentElement, 3);
+  });
+  /* il fuoco sul tasto principale: è il caso difficile, perché il blu
+     dell'anello e il blu del pieno sono lo stesso blu */
+  var tasto = [].slice.call(document.querySelectorAll('.btn-primario, .btn-ok, .bv-cta, .fascia-ora button')).filter(vede)[0];
+  if (tasto) {
+    tasto.focus({ focusVisible: true });
+    var fs = getComputedStyle(tasto);
+    visti++;
+    if (fs.outlineStyle === 'none' || parseFloat(fs.outlineWidth) < 2) fuori.push('anello del fuoco assente o sotto i 2px su ' + nome(tasto) + ' (' + fs.outlineStyle + ' ' + fs.outlineWidth + ')');
+    else {
+      if (parseFloat(fs.outlineOffset) < 2) fuori.push('anello del fuoco attaccato al pieno su ' + nome(tasto) + ' (offset ' + fs.outlineOffset + ')');
+      misura('anello del fuoco', tasto, fs.outlineColor, tasto.parentElement, 3);
+    }
+    tasto.blur();
+  }
+  if (conToken) {
+    var R = getComputedStyle(document.documentElement);
+    var t = function (n) { return R.getPropertyValue('--' + n).trim(); };
+    var coppia = function (a, b, minimo) {
+      visti++;
+      var f = risolvi(t(b)); f[3] = 1;
+      var r = rapporto(sopra(risolvi(t(a)), f), f);
+      if (r < minimo) fuori.push('token --' + a + ' su --' + b + ' ' + r + ' < ' + minimo);
+    };
+    ['pagina', 'superficie-1', 'superficie-2'].forEach(function (s) {
+      coppia('linea-controllo', s, 3); coppia('focus', s, 3); coppia('azione-linea', s, 3);
+    });
+    ['pagina', 'superficie-1', 'superficie-2', 'superficie-3'].forEach(function (s) {
+      coppia('campo-segnaposto', s, 4.5); coppia('testo-3', s, 4.5);
+    });
+    ['azione', 'azione-hover', 'azione-premuta', 'successo-pieno', 'errore-pieno'].forEach(function (s) {
+      coppia('testo-su-pieno', s, 4.5);
+    });
+    coppia('testo-su-oro', 'oro', 4.5);
+    coppia('timer-anello', 'timer-fondo', 3); coppia('timer-anello-pausa', 'timer-fondo', 3);
+  }
+  return { visti: visti, fuori: fuori };
+})`;
+
+/* ============================================================
+   UN COLORE SI SCRIVE IN UN POSTO SOLO
+
+   Fuori da `src/stile/token.css` nessun esadecimale e nessun `rgb()`: prima
+   erano centoquattro, nove arancioni per la stessa fiamma. E dentro
+   token.css gli esadecimali stanno solo fra le PRIMITIVE; i due temi sono
+   un blocco ciascuno, e nessun altro foglio ridefinisce un token.
+   Le eccezioni sono scritte qui, col perché:
+     · il Design lab (src/lab, lab.css, Lab.tsx): dieci interfacce diverse
+       per scelta, ognuna col suo colore, chiuse sotto `#lab-demo`;
+     · il logo di Google sul tasto d'accesso: i suoi quattro colori li
+       impongono le linee guida del marchio;
+     · il colore della barra del browser in index.html e nel manifest: un
+       attributo HTML e un JSON non leggono var(). Devono essere UGUALI a
+       --pagina del tema, e questa prova lo controlla.
+   Le icone PNG/SVG in icone/ sono immagini, non codice, e non si leggono. */
+const ECCEZIONI_HEX = {
+  'src/segni/segni.ts': ['#ea4335', '#4285f4', '#fbbc05', '#34a853']
+};
+function statico() {
+  const RAMO = path.join(__dirname, '..');
+  const tutti = d => fs.readdirSync(d, { withFileTypes: true }).flatMap(e => e.isDirectory() ? tutti(path.join(d, e.name)) : [path.join(d, e.name)]);
+  const senzaCommenti = s => s.replace(/\/\*[\s\S]*?\*\//g, m => m.replace(/[^\n]/g, ' '))
+    .replace(/<!--[\s\S]*?-->/g, m => m.replace(/[^\n]/g, ' ')).replace(/(^|[^:'"\\])\/\/.*$/gm, '$1');
+  const COLORE = /(?<![&\w])#[0-9a-fA-F]{3,8}\b|\b(?:rgba?|hsla?)\(/g;
+  const tok = fs.readFileSync(path.join(RAMO, 'src/stile/token.css'), 'utf8');
+  /* i valori dei token, per seguire le catene var() fino all'esadecimale */
+  const blocchi = {};
+  senzaCommenti(tok).replace(/(:root(?:\[data-mode="dark"\])?)\s*\{([\s\S]*?)\n\}/g, (m, sel, corpo) => {
+    (blocchi[sel] = blocchi[sel] || []).push(corpo); return m;
+  });
+  ok('token.css: un blocco solo per tema', (blocchi[':root'] || []).length === 1 && (blocchi[':root[data-mode="dark"]'] || []).length === 1,
+    ':root ×' + (blocchi[':root'] || []).length + ', scuro ×' + (blocchi[':root[data-mode="dark"]'] || []).length);
+  const decl = c => { const o = {}; c.replace(/(--[\w-]+)\s*:\s*([^;]+);/g, (m, k, v) => { o[k] = v.trim(); return m; }); return o; };
+  const chiaro = decl((blocchi[':root'] || [''])[0]);
+  const scuro = Object.assign({}, chiaro, decl((blocchi[':root[data-mode="dark"]'] || [''])[0]));
+  const vale = (t, n, giro) => { const v = t[n] || ''; const m = /^var\((--[\w-]+)\)$/.exec(v); return m && (giro || 0) < 9 ? vale(t, m[1], (giro || 0) + 1) : v.toLowerCase(); };
+  /* gli esadecimali di token.css stanno solo nelle primitive */
+  const iSem = tok.indexOf('-- 2. SEMANTICI');
+  const fuoriPrim = (senzaCommenti(tok.slice(iSem)).match(/(?<![&\w%])#[0-9a-fA-F]{3,8}\b/g) || []);
+  ok('token.css: esadecimali solo fra le primitive', fuoriPrim.length === 0, fuoriPrim.join(' ') || 'semantici e componenti puntano alle primitive');
+  /* nessun altro foglio ridefinisce un token */
+  const nomi = new Set(Object.keys(chiaro));
+  const fuori = [], ridefiniti = [];
+  for (const f of tutti(path.join(RAMO, 'src'))) {
+    const rel = path.relative(RAMO, f).split(path.sep).join('/');
+    if (!/\.(css|ts|tsx|html)$/.test(f) || rel === 'src/stile/token.css') continue;
+    if (/^src\/lab\/|^src\/stile\/lab\.css$|^src\/schermi\/Lab\.tsx$/.test(rel)) continue;
+    const testo = senzaCommenti(fs.readFileSync(f, 'utf8'));
+    testo.split('\n').forEach((riga, i) => {
+      (riga.match(COLORE) || []).forEach(h => {
+        const v = h.toLowerCase();
+        if ((ECCEZIONI_HEX[rel] || []).includes(v)) return;
+        if (rel === 'src/index.html' && /theme-color/.test(riga)) return;   /* controllato sotto */
+        fuori.push(rel + ':' + (i + 1) + ' ' + h);
+      });
+    });
+    if (/\.css$/.test(f)) testo.replace(/(--[\w-]+)\s*:/g, (m, k) => { if (nomi.has(k)) ridefiniti.push(rel + ' ' + k); return m; });
+  }
+  ok('nessun colore scritto fuori da token.css', fuori.length === 0, fuori.slice(0, 12).join(' | ') || 'eccezioni: lab, logo Google, barra del browser');
+  ok('nessun foglio ridefinisce un token', ridefiniti.length === 0, ridefiniti.slice(0, 12).join(' | ') || 'fonte unica');
+  /* la barra del browser = --pagina */
+  const html = fs.readFileSync(path.join(RAMO, 'src/index.html'), 'utf8');
+  const meta = s => ((new RegExp('theme-color" content="(#[0-9a-fA-F]{6})" media="\\(prefers-color-scheme: ' + s)).exec(html) || [])[1];
+  const man = JSON.parse(fs.readFileSync(path.join(RAMO, 'public/manifest.webmanifest'), 'utf8'));
+  const pc = vale(chiaro, '--pagina'), ps = vale(scuro, '--pagina');
+  ok('barra del browser = --pagina', (meta('light') || '').toLowerCase() === pc && (meta('dark') || '').toLowerCase() === ps &&
+    man.theme_color.toLowerCase() === pc && man.background_color.toLowerCase() === pc, 'chiaro ' + pc + ', scuro ' + ps);
+}
+
 (async () => {
+  console.log('IL CODICE');
+  statico();
   const srv = http.createServer((q, r) => {
     let p = decodeURIComponent(q.url.split('?')[0]); if (p === '/') p = '/index.html';
     fs.readFile(path.join(RADICE, p), (e, d) => {
@@ -195,7 +413,7 @@ const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  
   });
   await new Promise(r => srv.listen(PORTA, r));
   const b = await require('./comune/lancia')();
-  let totale = 0;
+  let totale = 0, controlli = 0;
   const noti = new Set();
 
   for (const scuro of [false, true]) {
@@ -209,7 +427,7 @@ const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  
         window.Date = F;
       }, new Date('2026-08-18T' + (s.ora || '10:30') + ':00').getTime());
       await p.goto('http://localhost:' + PORTA + '/index.html'); await p.waitForTimeout(320);
-      await p.evaluate(() => { localStorage.clear(); LM.seedDemo(); });
+      await p.evaluate(v => { localStorage.clear(); if (!v) LM.seedDemo(); }, !!s.vuoto);
       if (s.prep) await p.evaluate(s.prep);
       await p.evaluate(v => { location.hash = '#/' + v; }, s.vai);
       await p.reload(); await p.waitForTimeout(700);
@@ -220,14 +438,15 @@ const ok = (n, c, d) => { if (!c) fail++; console.log('  ' + (c ? 'ok  ' : 'KO  
       ok(s.nome.padEnd(20) + r.visti + ' testi', r.fuori.length === 0,
         r.fuori.length ? r.fuori.map(dillo).join(' | ') : 'tutti sopra il minimo');
       r.ammessi.forEach(x => noti.add(dillo(x)));
+      const k = await p.evaluate(CONTROLLI + '(' + (s === SCENE[0]) + ')');
+      controlli += k.visti;
+      ok(s.nome.padEnd(20) + k.visti + ' controlli', k.fuori.length === 0, k.fuori.length ? k.fuori.join(' | ') : 'bordi, spunte, segnaposto e fuoco sopra il minimo');
       await p.close();
     }
   }
-  console.log('\n' + totale + ' testi misurati');
+  console.log('\n' + totale + ' testi misurati, ' + controlli + ' controlli');
   if (noti.size) {
-    console.log('\n--- sotto il minimo, e lo sappiamo: il bianco sul pieno di marca ---');
-    console.log('    (per sistemarlo va scurita la sfumatura di tutta l\u2019app: viola e blu');
-    console.log('     cambiano appena, il ciano diventa turchese. \u00c8 una scelta sull\u2019aspetto.)');
+    console.log('\n--- sotto il minimo, e lo sappiamo ---');
     [...noti].sort().forEach(x => console.log('  ' + x));
   }
   console.log(fail ? '>>> ' + fail + ' PROBLEMI' : '>>> TUTTO A POSTO');

@@ -415,14 +415,16 @@ function GOOGLE_G(size?: number): string {
     '<path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>';
 };
 
-/* Logomark: tessera con gradiente brand + picco ascendente.
-   Riusato in sidebar, onboarding e favicon. */
+/* Logomark: tessera del blu di Kubo + picco ascendente, nel bianco dei suoi
+   occhi. Riusato in sidebar, onboarding e favicon. Era un gradiente sui tre
+   `--brand-*`, cioè (alla fine) un indaco piatto; il colore viene da
+   token.css come tutti gli altri. */
 function LOGO(size?: number): string {
   const s = size || 30;
   const id = 'lg' + Math.random().toString(36).slice(2, 7);
   return '<svg width="' + s + '" height="' + s + '" viewBox="0 0 48 48" aria-hidden="true">' +
     '<defs><linearGradient id="' + id + '" x1="0" y1="1" x2="1" y2="0">' +
-    '<stop offset="0" stop-color="var(--brand-a)"/><stop offset=".55" stop-color="var(--brand-b)"/><stop offset="1" stop-color="var(--brand-c)"/>' +
+    '<stop offset="0" stop-color="var(--logo-1)"/><stop offset="1" stop-color="var(--logo-2)"/>' +
     '</linearGradient></defs>' +
     /* Non un `rect` con `rx`: quello è un rettangolo con quattro archi di
              CERCHIO. Questo è il tracciato dell'angolo CONTINUO di Apple — tre
@@ -432,8 +434,8 @@ function LOGO(size?: number): string {
              ci sta, cioè il caso in cui i due angoli si toccano a metà del lato.
              Generato con: node segni/icone.mjs */
     '<path transform="translate(2 2)" d="M 22 0 L 22 0 C 28.335 0 31.502 0 34.912 1.078 C 38.634 2.433 41.567 5.366 42.922 9.088 C 44 12.498 44 15.665 44 22 L 44 22 C 44 28.335 44 31.502 42.922 34.912 C 41.567 38.634 38.634 41.567 34.912 42.922 C 31.502 44 28.335 44 22 44 L 22 44 C 15.665 44 12.498 44 9.088 42.922 C 5.366 41.567 2.433 38.634 1.078 34.912 C 0 31.502 0 28.335 0 22 L 0 22 C 0 15.665 0 12.498 1.078 9.088 C 2.433 5.366 5.366 2.433 9.088 1.078 C 12.498 0 15.665 0 22 0 Z" fill="url(#' + id + ')"/>' +
-    '<path d="M12 30.5l7-7 5 5L34.5 18" fill="none" stroke="#fff" stroke-width="4.4" stroke-linecap="round" stroke-linejoin="round"/>' +
-    '<path d="M27.5 17h7.5v7.5" fill="none" stroke="#fff" stroke-width="4.4" stroke-linecap="round" stroke-linejoin="round"/>' +
+    '<path d="M12 30.5l7-7 5 5L34.5 18" fill="none" stroke="var(--logo-segno)" stroke-width="4.4" stroke-linecap="round" stroke-linejoin="round"/>' +
+    '<path d="M27.5 17h7.5v7.5" fill="none" stroke="var(--logo-segno)" stroke-width="4.4" stroke-linecap="round" stroke-linejoin="round"/>' +
     '</svg>';
 }
 /* i quattro campi attaccati alla funzione, come prima: `prove/segni.js` li
