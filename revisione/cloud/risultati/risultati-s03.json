@@ -1,0 +1,119 @@
+[
+  {
+    "scenario": "S3.1 modifica vs modifica offline (pc modifica per ultimo, torna per ultimo): tutti uguali e vince l’ultima modifica (ORE 9)",
+    "ok": true,
+    "dettaglio": {
+      "telefono": "Telefonare al medico ORE 9",
+      "pc": "Telefonare al medico ORE 9",
+      "ipad": "Telefonare al medico ORE 9",
+      "cloud": "Telefonare al medico ORE 9"
+    }
+  },
+  {
+    "scenario": "S3.2 modifica vs modifica offline (pc modifica per ultimo, torna per PRIMO): tutti uguali e vince v-pc-ultima",
+    "ok": false,
+    "dettaglio": {
+      "telefono": "v-telefono",
+      "pc": "v-telefono",
+      "ipad": "v-telefono",
+      "cloud": "v-telefono"
+    }
+  },
+  {
+    "scenario": "S3.3 cancella (telefono) vs modifica successiva (pc), offline: tutti uguali (qualunque esito, ma uguale)",
+    "ok": false,
+    "dettaglio": {
+      "telefono": "",
+      "pc": "modificata dopo la cancellazione",
+      "ipad": "",
+      "cloud": "modificata dopo la cancellazione"
+    }
+  },
+  {
+    "scenario": "S3.4 cancellazione offline + aggiunta online altrove: nessuno ha più «da cancellare», tutti hanno «nuova dal pc»",
+    "ok": false,
+    "dettaglio": {
+      "telefono": "da tenere",
+      "pc": "da tenere | nuova dal pc",
+      "ipad": "da tenere | nuova dal pc",
+      "cloud": "da tenere"
+    }
+  },
+  {
+    "scenario": "S3.4b dopo un’altra scrittura del pc la cosa cancellata non risorge",
+    "ok": true,
+    "dettaglio": {
+      "telefono": "da tenere | nuova dal pc",
+      "pc": "da tenere | nuova dal pc",
+      "ipad": "da tenere | nuova dal pc",
+      "cloud": "da tenere | nuova dal pc"
+    }
+  },
+  {
+    "scenario": "S3.5 stessa cosa creata su due dispositivi offline: tutti uguali (2 righe «Palestra», non deduplicate: atteso)",
+    "ok": false,
+    "dettaglio": {
+      "telefono": "Palestra | Palestra",
+      "pc": "Palestra | Palestra",
+      "ipad": "Palestra",
+      "cloud": "Palestra | Palestra"
+    }
+  },
+  {
+    "scenario": "S3.6 tre dispositivi offline, ritorno a raffica C→A→B: tutti hanno T1,T2,P1,P2,I1",
+    "ok": false,
+    "dettaglio": {
+      "telefono": "P1 | P2 | Palestra | Palestra | T1 | T2",
+      "pc": "P1 | P2 | Palestra | Palestra",
+      "ipad": "I1 | P1 | P2 | Palestra | Palestra | T1 | T2",
+      "cloud": "I1 | P1 | P2 | Palestra | Palestra | T1 | T2"
+    }
+  },
+  {
+    "scenario": "S3.7 pc con orologio 2 min indietro cancella una cosa creata sul telefono: sparisce dappertutto",
+    "ok": false,
+    "dettaglio": {
+      "telefono": "creata sul telefono",
+      "pc": "",
+      "ipad": "creata sul telefono",
+      "cloud": ""
+    }
+  },
+  {
+    "scenario": "S3.7b ...e non risorge dopo una scrittura del telefono",
+    "ok": false,
+    "dettaglio": {
+      "telefono": "creata sul telefono",
+      "pc": "creata sul telefono",
+      "ipad": "creata sul telefono",
+      "cloud": "creata sul telefono"
+    }
+  },
+  {
+    "scenario": "S3.8 pc con orologio 3h avanti: il telefono cambia tema DOPO, ma alla prima scrittura del pc vince il pc? (atteso: chiaro ovunque)",
+    "ok": false,
+    "dettaglio": [
+      "scuro",
+      "scuro",
+      "scuro"
+    ]
+  },
+  {
+    "scenario": "S3.9 XP guadagnati offline su due dispositivi si sommano (telefono 10 + pc 20)",
+    "ok": false,
+    "dettaglio": [
+      [
+        20,
+        3
+      ],
+      [
+        20,
+        3
+      ],
+      [
+        20,
+        3
+      ]
+    ]
+  }
+]

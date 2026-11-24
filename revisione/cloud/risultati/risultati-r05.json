@@ -1,0 +1,34 @@
+[
+  {
+    "scenario": "R05 PC sempre aperto riceve la cosa scritta in metro dal telefono",
+    "ok": false,
+    "dettaglio": {
+      "telefono": "Scritta in metro (telefono),Scritta in ufficio (pc)",
+      "pc": "Scritta in ufficio (pc)",
+      "cloud": "Scritta in metro (telefono),Scritta in ufficio (pc)",
+      "updatedAtCloud": 1795535253373,
+      "scrittureDelPc": [
+        1795535250464,
+        1795535253373
+      ]
+    }
+  },
+  {
+    "scenario": "R05b ...neanche dopo un minuto?",
+    "ok": false,
+    "dettaglio": "Scritta in ufficio (pc)"
+  },
+  {
+    "scenario": "R05c il telefono va in tasca (app chiusa) e il PC scrive ancora: la cosa della metro resta nel cloud",
+    "ok": false,
+    "dettaglio": [
+      "Scritta in ufficio (pc)",
+      "Altra cosa dal pc, telefono in tasca"
+    ]
+  },
+  {
+    "scenario": "R05d un iPad che accede adesso vede la cosa della metro",
+    "ok": false,
+    "dettaglio": "Altra cosa dal pc, telefono in tasca,Scritta in ufficio (pc)"
+  }
+]

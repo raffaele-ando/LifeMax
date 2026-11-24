@@ -1,0 +1,67 @@
+[
+  {
+    "scenario": "S1.1 scritture simultanee (telefono+pc online): tutti vedono X e Y",
+    "ok": true,
+    "dettaglio": {
+      "telefono": "X da telefono,Y da pc",
+      "pc": "X da telefono,Y da pc",
+      "ipad": "X da telefono,Y da pc",
+      "cloud": "X da telefono,Y da pc"
+    }
+  },
+  {
+    "scenario": "S1.2 telefono offline aggiunge X, pc aggiunge Y, telefono torna online: tutti vedono X e Y",
+    "ok": false,
+    "dettaglio": {
+      "telefono": "X offline telefono",
+      "pc": "X offline telefono,Y pc",
+      "ipad": "X offline telefono,Y pc",
+      "cloud": "X offline telefono"
+    }
+  },
+  {
+    "scenario": "S1.3 dopo il ritorno: il pc (che ha scritto per ultimo) vede la X del telefono",
+    "ok": true,
+    "dettaglio": {
+      "telefono": "X solo telefono,Y pc (piu recente)",
+      "pc": "X solo telefono,Y pc (piu recente)",
+      "ipad": "X solo telefono,Y pc (piu recente)",
+      "cloud": "X solo telefono,Y pc (piu recente)",
+      "scrittureTelefono": [
+        1795532865229,
+        1795532871027,
+        1795532871027,
+        1795532871839
+      ],
+      "scrittureP": [
+        1795532866151,
+        1795532871839,
+        1795532871839
+      ]
+    }
+  },
+  {
+    "scenario": "S1.3b il pc scrive ancora: X resta nel cloud e arriva al pc",
+    "ok": true,
+    "dettaglio": {
+      "telefono": "X solo telefono,Y pc (piu recente),Z pc",
+      "pc": "X solo telefono,Y pc (piu recente),Z pc",
+      "ipad": "X solo telefono,Y pc (piu recente),Z pc",
+      "cloud": "X solo telefono,Y pc (piu recente),Z pc"
+    }
+  },
+  {
+    "scenario": "S1.3c il telefono non torna più (telefono cambiato): X è ancora nel cloud",
+    "ok": true,
+    "dettaglio": {
+      "cloud": "W pc,X solo telefono,Y pc (piu recente),Z pc",
+      "pc": "W pc,X solo telefono,Y pc (piu recente),Z pc",
+      "ipad": "W pc,X solo telefono,Y pc (piu recente),Z pc"
+    }
+  },
+  {
+    "scenario": "S1.3d ricaricando l’iPad, X ricompare?",
+    "ok": true,
+    "dettaglio": "W pc,X solo telefono,Y pc (piu recente),Z pc"
+  }
+]

@@ -1,0 +1,44 @@
+[
+  {
+    "scenario": "R04a.1 sessione chiusa da Firebase (account disabilitato): l’utente viene avvisato",
+    "ok": false,
+    "dettaglio": {
+      "connesso": false,
+      "azioni": 1,
+      "avvisi": []
+    }
+  },
+  {
+    "scenario": "R04a.2 Luigi accede sullo stesso pc: il suo account NON contiene i dati di Mario",
+    "ok": false,
+    "dettaglio": {
+      "cloudLuigi": [
+        "Analisi del sangue (privato di Mario)"
+      ],
+      "checkinsLuigi": 1,
+      "schermoLuigi": "Analisi del sangue (privato di Mario)"
+    }
+  },
+  {
+    "scenario": "R04b.1 «Esci» nella scheda 1: dopo 6 s la scheda 2 è disconnessa e vuota",
+    "ok": false,
+    "dettaglio": {
+      "connesso": true,
+      "azioni": 1
+    }
+  },
+  {
+    "scenario": "R04b.2 dopo una scrittura nella scheda 2, il salvataggio del dispositivo resta pulito",
+    "ok": false,
+    "dettaglio": [
+      "Colloquio di lavoro segreto (Mario)"
+    ]
+  },
+  {
+    "scenario": "R04b.3 Luigi accede nella scheda 1: nessun dato di Mario nel suo account",
+    "ok": false,
+    "dettaglio": [
+      "Colloquio di lavoro segreto (Mario)"
+    ]
+  }
+]

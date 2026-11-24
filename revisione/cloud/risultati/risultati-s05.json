@@ -1,0 +1,92 @@
+[
+  {
+    "scenario": "S5 storia di 90 giorni: 339 KB; nel cloud e sul pc arriva tutto",
+    "ok": true,
+    "dettaglio": {
+      "KB": 339,
+      "sync": "saved ",
+      "cloudAzioni": 637,
+      "telefono": 637,
+      "pc": 637,
+      "tempi": {
+        "saveMs": 6,
+        "unisciMs": 10
+      },
+      "accessoPcMs": 1677,
+      "avvisoAllUtente": "Dati aggiornati da un altro dispositivo.",
+      "lsKB": 729
+    }
+  },
+  {
+    "scenario": "S5 storia di 180 giorni: 585 KB; nel cloud e sul pc arriva tutto",
+    "ok": true,
+    "dettaglio": {
+      "KB": 585,
+      "sync": "saved ",
+      "cloudAzioni": 1267,
+      "telefono": 1267,
+      "pc": 1267,
+      "tempi": {
+        "saveMs": 13,
+        "unisciMs": 33
+      },
+      "accessoPcMs": 1858,
+      "avvisoAllUtente": "Dati aggiornati da un altro dispositivo.",
+      "lsKB": 1255
+    }
+  },
+  {
+    "scenario": "S5 storia di 365 giorni: 1087 KB; nel cloud e sul pc arriva tutto",
+    "ok": false,
+    "dettaglio": {
+      "KB": 1087,
+      "sync": "error Salvataggio non riuscito. Controlla la configurazione di Firestore.",
+      "cloudAzioni": 0,
+      "telefono": 2562,
+      "pc": 0,
+      "tempi": {
+        "saveMs": 27,
+        "unisciMs": 35
+      },
+      "accessoPcMs": 1179,
+      "avvisoAllUtente": "Dati aggiornati da un altro dispositivo.",
+      "lsKB": 2328
+    }
+  },
+  {
+    "scenario": "S5 storia di 540 giorni: 1563 KB; nel cloud e sul pc arriva tutto",
+    "ok": false,
+    "dettaglio": {
+      "KB": 1563,
+      "sync": "error Salvataggio non riuscito. Controlla la configurazione di Firestore.",
+      "cloudAzioni": 0,
+      "telefono": 3787,
+      "pc": 0,
+      "tempi": {
+        "saveMs": 55,
+        "unisciMs": 46
+      },
+      "accessoPcMs": 1251,
+      "avvisoAllUtente": "Dati aggiornati da un altro dispositivo.",
+      "lsKB": 3348
+    }
+  },
+  {
+    "scenario": "S5 storia di 730 giorni: 2081 KB; nel cloud e sul pc arriva tutto",
+    "ok": false,
+    "dettaglio": {
+      "KB": 2081,
+      "sync": "error Salvataggio non riuscito. Controlla la configurazione di Firestore.",
+      "cloudAzioni": 0,
+      "telefono": 5117,
+      "pc": 0,
+      "tempi": {
+        "saveMs": 44,
+        "unisciMs": 77
+      },
+      "accessoPcMs": 1238,
+      "avvisoAllUtente": "Dati aggiornati da un altro dispositivo.",
+      "lsKB": 2087
+    }
+  }
+]

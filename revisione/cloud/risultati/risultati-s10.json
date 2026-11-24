@@ -1,0 +1,12 @@
+[
+  {
+    "scenario": "S10 10 riaperture del telefono con differenze: le copie nel cloud restano poche (o vengono sfoltite)",
+    "ok": false,
+    "dettaglio": {
+      "copieNelCloud": 11,
+      "MBscaricatiAprendoBackup": 5.1,
+      "msPerElencarle": 273,
+      "elencate": 11
+    }
+  }
+]

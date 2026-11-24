@@ -1,0 +1,37 @@
+[
+  {
+    "scenario": "R03 iPad nuovo accede: il profilo del telefono resta (nome, visione, sveglia, timer, tema)",
+    "ok": false,
+    "dettaglio": {
+      "telefonoPrima": {
+        "nome": "Mario",
+        "visione": "Vivere con calma",
+        "sveglia": "06:00",
+        "pomodoro": 50,
+        "modo": "scuro",
+        "updatedAt": 1795535093379
+      },
+      "iPadAppenaAperto": {
+        "updatedAt": 1795535096020,
+        "onboarded": false,
+        "benvenuto": true
+      },
+      "telefonoDopo": {
+        "nome": "",
+        "visione": "",
+        "sveglia": "07:30",
+        "pomodoro": 50,
+        "modo": "auto",
+        "updatedAt": 1795535096020
+      },
+      "iPadDopo": {
+        "nome": "",
+        "visione": "",
+        "sveglia": "07:30",
+        "pomodoro": 50,
+        "modo": "auto",
+        "updatedAt": 1795535096020
+      }
+    }
+  }
+]
