@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LifeMax: organizza la giornata, un passo alla volta</title>
+<meta name="description" content="LifeMax è un'app gratuita per pianificare la giornata, fare una cosa alla volta e costruire abitudini. Funziona nel browser, anche senza account.">
+<link rel="icon" href="icone/favicon-32.png">
+<style>
+  :root { --pagina:#f9f6f2; --carta:#ffffff; --testo:#1a2135; --testo-2:#4a5168; --linea:#e3ddd4; --blu:#0151e3; --su-blu:#ffffff; }
+  @media (prefers-color-scheme: dark) { :root { --pagina:#0c0f18; --carta:#151a27; --testo:#eef0f6; --testo-2:#a9afc2; --linea:#262c3d; --blu:#7ea6ff; --su-blu:#0c0f18; } }
+  * { box-sizing: border-box; }
+  html { background: var(--pagina); color: var(--testo); }
+  body { margin: 0; font: 17px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  .giro { max-width: 960px; margin: 0 auto; padding: 0 16px; }
+  header { display: flex; align-items: center; gap: 10px; padding: 20px 0; }
+  header img { width: 36px; height: 36px; border-radius: 9px; }
+  header strong { font-size: 20px; }
+  header nav { margin-left: auto; font-size: 15px; display: flex; gap: 16px; }
+  a { color: var(--blu); }
+  h1 { font-size: clamp(32px, 6vw, 48px); line-height: 1.1; margin: 32px 0 12px; }
+  .sotto { font-size: 19px; color: var(--testo-2); max-width: 640px; margin: 0 0 24px; }
+  .tasto { display: inline-block; background: var(--blu); color: var(--su-blu); text-decoration: none; font-weight: 600; padding: 12px 22px; border-radius: 12px; }
+  .nota { font-size: 14px; color: var(--testo-2); margin-top: 10px; }
+  .schermi { display: flex; gap: 16px; overflow-x: auto; padding: 32px 0 8px; scroll-snap-type: x mandatory; }
+  .schermi figure { margin: 0; flex: 0 0 200px; scroll-snap-align: start; }
+  .schermi img { width: 200px; height: auto; border-radius: 18px; border: 1px solid var(--linea); display: block; }
+  .schermi figcaption { font-size: 14px; color: var(--testo-2); margin-top: 6px; }
+  h2 { font-size: 24px; margin: 48px 0 12px; }
+  .griglia { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+  .carta { background: var(--carta); border: 1px solid var(--linea); border-radius: 16px; padding: 16px 18px; }
+  .carta h3 { margin: 0 0 6px; font-size: 17px; }
+  .carta p { margin: 0; color: var(--testo-2); font-size: 15px; }
+  footer { border-top: 1px solid var(--linea); margin-top: 56px; padding: 24px 0 48px; font-size: 14px; color: var(--testo-2); }
+  footer a { margin-right: 16px; }
+</style>
+</head>
+<body>
+<div class="giro">
+<header>
+  <img src="icone/icona-192.png" alt="">
+  <strong>LifeMax</strong>
+  <nav><a href="./">Apri l'app</a><a href="privacy">Privacy</a><a href="#en">English</a></nav>
+</header>
+
+<main>
+<h1>LifeMax</h1>
+<p class="sotto"><strong>LifeMax</strong> è un'app gratuita per organizzare la giornata. Ti mostra una cosa alla volta da fare adesso, ti aiuta a pianificare la giornata e a costruire abitudini, e ti fa vedere come vanno le cose nel tempo.</p>
+<a class="tasto" href="./">Apri LifeMax</a>
+<p class="nota">Funziona nel browser, su telefono, tablet e computer. Si usa anche senza account; l'accesso con Google serve solo a sincronizzare i tuoi dispositivi.</p>
+
+<div class="schermi" aria-label="Schermate di LifeMax">
+  <figure><img src="info/oggi-adesso.webp" width="360" height="780" alt="Schermata Oggi: la cosa da fare adesso, con il tasto Fatto"><figcaption>Oggi: una cosa alla volta</figcaption></figure>
+  <figure><img src="info/giornata-giorno.webp" width="360" height="780" alt="Schermata La giornata: le attività disposte sulle ore del giorno"><figcaption>La giornata, ora per ora</figcaption></figure>
+  <figure><img src="info/rituale-checkin.webp" width="360" height="780" alt="Schermata Check-in: energia, concentrazione e umore da 1 a 5"><figcaption>Check-in di energia e umore</figcaption></figure>
+  <figure><img src="info/andamento.webp" width="360" height="780" alt="Schermata Andamento: giorni di fila e costanza per area"><figcaption>Andamento e costanza</figcaption></figure>
+</div>
+
+<h2>Cosa fa</h2>
+<div class="griglia">
+  <div class="carta"><h3>Una cosa alla volta</h3><p>La schermata Oggi mostra solo la prossima cosa da fare, con un timer di concentrazione.</p></div>
+  <div class="carta"><h3>Pianifica la giornata</h3><p>Metti le attività sulle ore del giorno, dividile per aree della vita (studio, lavoro, salute…) e spostale quando cambia il programma.</p></div>
+  <div class="carta"><h3>Abitudini e rituali</h3><p>Abitudini da spuntare, piano del mattino, check-in e riflessione della sera.</p></div>
+  <div class="carta"><h3>Andamento</h3><p>Giorni di fila, costanza per area e tempo di concentrazione, per vedere cosa funziona.</p></div>
+</div>
+
+<h2>Google Calendar e Outlook</h2>
+<p>Puoi collegare, se vuoi, i tuoi calendari Google o Microsoft. Scegli quali calendari collegare: i loro eventi compaiono in LifeMax come attività della giornata, e quando sposti, rinomini o elimini una di quelle attività in LifeMax, la stessa modifica avviene nel calendario. LifeMax usa i dati del calendario solo per questo. Non li vende, non li condivide, non li usa per pubblicità e non li usa per addestrare o alimentare intelligenza artificiale. I dettagli sono nell'<a href="privacy">informativa privacy</a>.</p>
+
+<h2>Cosa non fa</h2>
+<p>LifeMax non genera immagini, video o altri contenuti con l'intelligenza artificiale, e non usa le API di Google per nessuno scopo diverso da quelli descritti in questa pagina.</p>
+</main>
+
+<section id="en" lang="en">
+<h2>LifeMax (English)</h2>
+<p><strong>LifeMax</strong> is a free web app for planning your day. It shows you one thing to do right now, helps you schedule your day hour by hour across life areas, track habits and daily check-ins, and see your progress over time. It works in the browser on phones, tablets and computers, with or without an account; signing in with Google is only used to sync your devices.</p>
+<p><strong>Google Calendar and Outlook (optional):</strong> you choose which calendars to connect. Their events appear in LifeMax as tasks for the day, and when you move, rename or delete one of those tasks in LifeMax, the same change is made in your calendar. Calendar data is used only for this. It is never sold, shared, used for advertising, or used to train or power AI.</p>
+<p>LifeMax does not generate images, video or any other content with AI, and does not use Google APIs for any purpose other than those described on this page. See the <a href="privacy">privacy policy</a>.</p>
+<p><a class="tasto" href="./">Open LifeMax</a></p>
+</section>
+
+<footer>
+  <a href="./">Apri l'app</a><a href="privacy">Privacy</a><a href="mailto:andolinaraffaele70@gmail.com">Contatti</a>
+  <p>LifeMax · Raffaele Tiziano Andolina · <a href="mailto:andolinaraffaele70@gmail.com">andolinaraffaele70@gmail.com</a></p>
+</footer>
+</div>
+</body>
+</html>
