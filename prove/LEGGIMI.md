@@ -393,6 +393,52 @@ genera le chiavi, in un browser vero).
   Le due controprove: rimettendo l'ascolto che non si riattacca diventano rosse
   quattro righe; rimettendo il documento che sostituisce invece di unire, una
   riga sola e dice tutto — «le scoperte che stavano solo qui: 9 → 0».
+- **nuvola-fusione.js**, **nuvola-account.js**, **nuvola-spazio.js** — LA
+  SINCRONIZZAZIONE CON IL CLOUD VERO, IN PICCOLO. Sono i riproduttori della
+  verifica del cloud del 24 novembre 2026 (`revisione/cloud/RAPPORTO.md`)
+  diventati prove che restano. A differenza di `cloud.js` qui Firebase non è
+  finto: è la stessa libreria che il sito scarica da gstatic, collegata
+  all'**emulatore ufficiale di Firebase** (Auth + Firestore) con le regole vere
+  di `firestore.rules`. Ogni «dispositivo» è un Chromium separato coi suoi
+  dati e il suo orologio, che si può spostare avanti e indietro. Il banco sta
+  in `comune/emulatore.js`, e lì è spiegato anche cosa serve: l'emulatore non
+  sta nel ramo (sono 450 MB e vuole Java), si installa una volta con
+  `npm i --prefix prove/.emulatore firebase-tools@15 firebase@12.16.0`. Senza,
+  le tre prove si fermano e FALLISCONO dicendo cosa manca: una prova saltata
+  che risulta verde mente.
+  · `nuvola-fusione.js` — più dispositivi sullo stesso account: il PC sempre
+    aperto che riceve quello che il telefono ha scritto in metro (e non lo
+    cancella dal cloud alla scrittura dopo), un dispositivo nuovo o l'altro
+    indirizzo del sito che NON azzera il profilo, una spunta tolta (coi suoi
+    punti), un'area spenta, gli orari di un giorno rimessi che arrivano a
+    tutti e non tornano indietro, due modifiche offline dove vince l'ultima
+    FATTA e non l'ultima arrivata, un orologio indietro o avanti che non
+    cambia chi vince, i punti guadagnati in parallelo che si sommano, «Azzera
+    tutto» che toglie anche aree e diario; e i tre sospetti del rapporto
+    provati uno per uno (oltre tremila righe azzerate, un dispositivo fermo
+    più a lungo delle lapidi, un check-in modificato).
+  · `nuvola-account.js` — i dati di un account restano di quell'account:
+    la sessione chiusa da Firebase (account disabilitato, dati del browser
+    cancellati) che viene DETTA e svuota il dispositivo, «Esci» in una scheda
+    che fa uscire anche l'altra, Luigi che entra sullo stesso computer e non
+    si ritrova niente di Mario; «Esci» senza rete che non perde l'ultima
+    modifica (parte appena torna la rete, anche ad app chiusa e riaperta); i
+    messaggi d'errore scritti per chi usa l'app; due schede che scrivono
+    insieme senza perdere niente.
+  · `nuvola-spazio.js` — il cloud nel tempo: più di un anno di storia (oltre
+    1 MB) che si sincronizza senza che nessun documento si avvicini al limite
+    di Firestore; il documento della versione di prima che passa da solo alla
+    forma nuova, con una copia presa PRIMA, e una scheda con la versione
+    vecchia che lo riscrive senza distruggere niente; le copie nel cloud che
+    restano poche e si elencano senza scaricarle; l'app chiusa subito dopo una
+    modifica; «non ancora nel cloud» che si vede, anche riaprendo; la fascia
+    «Aggiornamento dal cloud…» su un dispositivo riaperto dopo settimane; il
+    profilo azzerato ripreso da una copia (anche della versione di prima); il
+    vecchio indirizzo github.io che accompagna al nuovo senza lasciare
+    indietro niente; il Worker che serve `/__/auth/*` per l'accesso da iPhone.
+  Girano ognuna col suo emulatore, su porte sue (97xx, 98xx, 99xx), e ci
+  mettono qualche minuto. Sul codice di prima del 24 novembre 2026 cadono
+  quasi tutte le righe: è così che si sa che guardano le cose giuste.
 - **scorri.js** — SFOGLIARE DI LATO FRA LE SCHERMATE. Di un gesto così la
   parte facile è riconoscerlo; la parte che decide se l'app resta usabile è
   NON riconoscerlo quando non c'è. Un'app che cambia schermata mentre provi a

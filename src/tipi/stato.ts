@@ -564,6 +564,26 @@ export interface Stato {
      poterlo togliere e per non mandarlo mai nel cloud. `null` quando non ce
      n'è. Resta su questo dispositivo. */
   esempio?: ImprontaEsempio | null;
+  /* GLI OROLOGI DELLE CHIAVI. Per ogni punto dei dati che è stato CAMBIATO
+     o TOLTO (un giorno dei voti, la spunta di un'abitudine in un giorno, un
+     campo del profilo, un'area attivata o spenta) l'ora in cui è successo.
+     La chiave è la strada fino a quel punto, coi pezzi separati da «/»:
+     `valutazioni/2026-11-20/studio`, `abitudini/iabc/fatti/2026-11-20`,
+     `profilo/nome`, `areeAttive/studio`. Serve alla fusione fra dispositivi
+     per sapere CHI ha toccato per ultimo una cosa — compreso il caso in cui
+     l'ultima cosa è stata toglierla, che prima non lasciava traccia e quindi
+     tornava indietro alla prima fusione. Li scrive `save()` da sé
+     (`segnaOrologi` in dati.ts), come le lapidi. */
+  orologi: Record<string, number>;
+  /* I PUNTI, CONTATI DISPOSITIVO PER DISPOSITIVO. Per ogni giorno, e per
+     ogni dispositivo, quanti punti ha dato [0] e quanti ne ha tolti [1].
+     Ognuno scrive solo la sua riga, e le righe non tornano mai indietro:
+     così due dispositivi che guadagnano punti nello stesso momento si
+     sommano invece di prendersi il più grande, e una spunta tolta su un
+     telefono toglie i punti anche sugli altri. `xp` e `xpPerGiorno` si
+     ricavano da qui (`ricalcolaXp` in dati.ts). La chiave `_` tiene i punti
+     di prima che esistesse questo conto, senza un giorno. */
+  xpConti: Record<string, Record<string, [number, number]>>;
 }
 export interface ImprontaEsempio {
   ids: Record<string, string[]>;
@@ -578,8 +598,11 @@ export interface ImprontaEsempio {
    `ramo`    un oggetto di preferenze: campo per campo, vince il più recente
    `massimo` un numero che non torna indietro (un'ora, un contatore)
    `oppure`  un sì che non torna un no (chiusa una volta, resta chiusa)
-   `recente` vince quello del documento più recente, e basta            */
-export type ModoFusione = 'elenco' | 'mappa' | 'insieme' | 'ramo' | 'massimo' | 'oppure' | 'recente';
+   `recente` vince quello del documento più recente, e basta
+   `orologi` le ore delle chiavi: per ognuna la più grande
+   `contatore` i punti per dispositivo: per ognuno il più grande dei due
+             conti, che non tornano mai indietro                         */
+export type ModoFusione = 'elenco' | 'mappa' | 'insieme' | 'ramo' | 'massimo' | 'oppure' | 'recente' | 'orologi' | 'contatore';
 
 /* UNA REGOLA PER OGNI CAMPO, E IL COMPILATORE LO PRETENDE.
    È il difetto `demoChiusa` reso impossibile: manca una regola e non
@@ -616,5 +639,7 @@ export const COME_UNIRE: { readonly [K in keyof Stato]-?: ModoFusione } = {
   cancellati: 'elenco',
   log: 'elenco',
   timer: 'recente',
-  sessioni: 'elenco'
+  sessioni: 'elenco',
+  orologi: 'orologi',
+  xpConti: 'contatore'
 } as const;

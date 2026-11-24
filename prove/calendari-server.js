@@ -60,7 +60,13 @@ export function collection() { return { via: [].slice.call(arguments, 1).join('/
 export function getDoc() { return Promise.resolve({ exists: () => false, data: () => null, id: 'x' }); }
 export function getDocs() { return Promise.resolve({ forEach: () => {} }); }
 export function setDoc() { return Promise.resolve(); }
-export function onSnapshot() { return function () {}; }`;
+export function onSnapshot() { return function () {}; }
+/* quello che serve alla sincronizzazione divisa in pezzi (src/nuvola/):
+   qui il cloud non conta, risponde e basta */
+export function serverTimestamp() { return {}; }
+export function deleteDoc() { return Promise.resolve(); }
+export function writeBatch() { const b = { set() { return b; }, delete() { return b; }, commit: () => Promise.resolve() }; return b; }
+export async function runTransaction(db, f) { const tx = { get: () => Promise.resolve({ exists: () => false, data: () => undefined, id: 'x' }), set() { return tx; }, delete() { return tx; } }; return f(tx); }`;
 
 (async () => {
   const W = await mondo({ indirizzo: SITO, ritorni: SITO + '/', origini: SITO });

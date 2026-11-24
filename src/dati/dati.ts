@@ -128,6 +128,80 @@ function creaLM() {
 
   var STORAGE_KEY = 'lifemax.v2';
 
+  /* LA GENERAZIONE DEI DATI DI QUESTO BROWSER. Cambia quando il dispositivo
+     viene svuotato apposta: uscendo da un account, o lasciando l'esempio per
+     entrare in uno. Serve alle ALTRE finestre aperte sulla stessa app: prima
+     una scheda rimasta aperta, dopo «Esci» nell'altra, alla sua prima
+     modifica riscriveva sul dispositivo tutti i dati dell'account appena
+     chiuso — e da lì potevano finire nell'account di chi entrava dopo. Una
+     finestra che trova la generazione cambiata butta quello che ha in
+     memoria e rilegge. */
+  var GEN_KEY = 'lifemax.generazione';
+  var generazione: string | null = null;
+  function leggiGenerazione(): string {
+    try { return localStorage.getItem(GEN_KEY) || ''; } catch (e) { return ''; }
+  }
+  function nuovaGenerazione(): void {
+    var g = 'g' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+    try { localStorage.setItem(GEN_KEY, g); } catch (e) { /* senza memoria: c'è una finestra sola */ }
+    generazione = g;
+  }
+  /* il testo che QUESTA finestra ha letto o scritto per ultimo: è il «com'era
+     prima» da cui si capisce cosa ha cambiato lei, e non un'altra finestra */
+  var ultimoScritto: string | null = null;
+
+  /* ==================================================================
+     L'OROLOGIO DEI DATI
+     ==================================================================
+     Fra due dispositivi vince la modifica più recente, e «più recente» lo
+     dice un orologio. Prima era quello del dispositivo e basta: un computer
+     indietro di due minuti faceva risorgere una cosa cancellata, uno avanti
+     di tre ore vinceva su modifiche fatte dopo di lui.
+     Le ore che decidono la fusione passano tutte da qui, con due correzioni:
+       · lo SCARTO col server: la nuvola misura di quanto l'orologio di
+         questo dispositivo è avanti o indietro rispetto a quello di
+         Firestore (`impostaScarto`, chiamata da nuvola.ts) e lo toglie;
+       · e non si torna MAI indietro rispetto a un'ora già vista arrivare
+         dagli altri: una cosa fatta qui dopo averne vista una fatta là ha
+         sempre un'ora più grande. È l'idea dell'«orologio logico ibrido». */
+  var scartoServer = 0;
+  var ultimoIstante = 0;
+  function adesso(): number {
+    var t = Date.now() + scartoServer;
+    if (t <= ultimoIstante) t = ultimoIstante + 1;
+    ultimoIstante = t;
+    return t;
+  }
+  /* un'ora arrivata da fuori: da qui in poi non si scrive niente di più
+     vecchio. Un'ora più avanti di un giorno non si prende: è un orologio
+     rotto, e seguirlo vorrebbe dire rompere anche questo. */
+  function osserva(t: unknown): void {
+    if (typeof t !== 'number' || !isFinite(t)) return;
+    if (t > Date.now() + scartoServer + 86400000) return;
+    if (t > ultimoIstante) ultimoIstante = t;
+  }
+  /* sotto i cinque secondi non vale la pena correggere: è il tempo di un
+     giro di rete, e la misura stessa non è più precisa di così */
+  function impostaScarto(ms: number): void {
+    if (typeof ms !== 'number' || !isFinite(ms) || Math.abs(ms) > 400 * 86400000) return;
+    scartoServer = Math.abs(ms) > 5000 ? Math.round(ms) : 0;
+  }
+
+  /* IL NOME DI QUESTO DISPOSITIVO, lo stesso che usano il timer e i
+     promemoria. Serve ai punti (`xpConti`): ognuno conta i suoi. */
+  var questoDispositivo = '';
+  function idDispositivo(): string {
+    if (questoDispositivo) return questoDispositivo;
+    var v = '';
+    try { v = localStorage.getItem('lm-dispositivo') || ''; } catch (e) { v = ''; }
+    if (!v) {
+      v = 'd' + Math.random().toString(36).slice(2, 10);
+      try { localStorage.setItem('lm-dispositivo', v); } catch (e) { /* vale per questa sessione */ }
+    }
+    questoDispositivo = v;
+    return v;
+  }
+
   /* ---------- date utils (sempre timezone locale) ---------- */
 
   function pad(n: number): string { return (n < 10 ? '0' : '') + n; }
@@ -327,7 +401,11 @@ function creaLM() {
          fusione il permesso di togliere: senza, azzerare un dispositivo si
          annullerebbe da sé alla prima sincronizzazione con l'altro. */
       azzerato: 0,
-      esempio: null
+      esempio: null,
+      /* le ore delle chiavi cambiate o tolte (vedi `segnaOrologi`) */
+      orologi: {},
+      /* i punti contati dispositivo per dispositivo (vedi `ricalcolaXp`) */
+      xpConti: {}
     };
   }
 
@@ -399,13 +477,24 @@ function creaLM() {
     return 'v' + JSON.stringify(r);
   }
 
-  /* QUANDO QUESTA RIGA È STATA TOCCATA L'ULTIMA VOLTA. Si guardano tutti i
-     campi che nell'app segnano un momento, e si prende il più recente. Se non
-     ne ha nessuno vale l'orologio del documento da cui viene. */
+  /* QUANDO QUESTA RIGA È STATA TOCCATA L'ULTIMA VOLTA.
+     Se la riga porta `aggiornata`, decide quella e basta: la scrive
+     `segnaOrologi` a ogni salvataggio che cambia la riga, con l'orologio
+     corretto (vedi `adesso`), anche quando il cambiamento è TOGLIERE
+     qualcosa. Prima si prendeva il più grande fra tutti i campi con un'ora,
+     e togliere una spunta azzerava `doneAt`: la versione «fatta» sembrava
+     sempre la più recente, e la spunta tolta tornava indietro alla prima
+     fusione. E un `creata` scritto da un dispositivo con l'orologio avanti
+     di tre ore batteva tutte le modifiche fatte dopo.
+     Le righe scritte prima di questo cambiamento non hanno `aggiornata`, e
+     per loro vale la regola di prima: il più grande dei campi con un'ora,
+     o l'orologio del documento da cui vengono. */
   var CAMPI_MOMENTO = ['aggiornata', 'doneAt', 'ts', 'completatoAt', 'chiusoAt', 'creata'] as const;
   function momentoRiga(r: unknown, quandoDoc: number): number {
     var v = 0;
     if (eMappa(r)) {
+      var agg = r['aggiornata'];
+      if (typeof agg === 'number' && agg > 0) return agg;
       for (var i = 0; i < CAMPI_MOMENTO.length; i++) {
         var nome = CAMPI_MOMENTO[i];
         var x = nome === undefined ? undefined : r[nome];
@@ -415,53 +504,117 @@ function creaLM() {
     return v || quandoDoc || 0;
   }
 
-  /* due dizionari: l'unione delle chiavi. Dove una chiave c'è da tutte e due
-     e i valori sono ancora dizionari si scende; se no vince il più recente. */
-  function unisciMappa(x: unknown, y: unknown, qx: number, qy: number): Mappa {
+  /* ==================================================================
+     LA FUSIONE CON GLI OROLOGI
+     ==================================================================
+     Due copie si uniscono chiave per chiave, e dove dicono cose diverse
+     decide chi ha toccato quella chiave per ultimo. Chi l'ha toccata lo
+     dicono gli `orologi` di ognuna delle due copie (vedi `segnaOrologi`):
+     un orologio su una chiave vuol dire «questa chiave l'ho cambiata, o
+     TOLTA, a quest'ora». Un orologio su un ramo intero (`valutazioni`, o un
+     giorno) vale per tutto quello che ci sta sotto, a meno che sotto ci sia
+     un orologio più recente.
+     Così, per la prima volta, togliere qualcosa da una mappa arriva agli
+     altri dispositivi: una spunta tolta, un orario rimesso come prima, un
+     voto cancellato. Prima la fusione univa le chiavi e basta, e quello
+     che era stato tolto da una parte tornava dall'altra.
+     Dove nessuna delle due ha un orologio — i dati scritti prima di questo
+     cambiamento, o due dispositivi che scrivono la stessa chiave per la
+     prima volta — vale la regola di sempre: vince il documento più recente,
+     e quello che c'è da una parte sola resta. */
+  interface Fusione { oa: Record<string, number>; ob: Record<string, number>; qa: number; qb: number }
+  type Foglia = (x: unknown, y: unknown, qx: number, qy: number) => unknown;
+  var NIENTE: Record<string, number> = {};
+
+  /* un pezzo della strada: la «/» separa i pezzi, quindi dentro un pezzo non ci può stare */
+  function pezzoVia(k: string): string { return String(k).replace(/%/g, '%25').replace(/\//g, '%2F'); }
+  function orologioDi(o: Record<string, number>, via: string, eredita: number): number {
+    var v = o[via];
+    return (typeof v === 'number' && v > eredita) ? v : eredita;
+  }
+  function stessoValore(x: unknown, y: unknown): boolean {
+    if (x === y) return true;
+    if (!x || !y || typeof x !== 'object' || typeof y !== 'object') return false;
+    try { return JSON.stringify(x) === JSON.stringify(y); } catch (e) { return false; }
+  }
+  function vinceRecente(x: unknown, y: unknown, qx: number, qy: number): unknown { return (qy >= qx) ? y : x; }
+  /* due conti di punti dello stesso dispositivo: [dati, tolti] crescono e
+     basta, quindi il più grande è sempre il più aggiornato */
+  function massimoConto(x: unknown, y: unknown, qx: number, qy: number): unknown {
+    if (!Array.isArray(x) || !Array.isArray(y)) return vinceRecente(x, y, qx, qy);
+    return [Math.max(Number(x[0]) || 0, Number(y[0]) || 0), Math.max(Number(x[1]) || 0, Number(y[1]) || 0)];
+  }
+
+  /* due dizionari, con la strada fino a loro e l'orologio ereditato da sopra */
+  function unisciNodo(x: Mappa, y: Mappa, via: string, ea: number, eb: number, f: Fusione, foglia: Foglia): Mappa {
     var out: Mappa = {};
-    if (eMappa(x)) Object.keys(x).forEach(function (k) { out[k] = x[k]; });
-    if (eMappa(y)) {
-      var dy = y;
-      Object.keys(dy).forEach(function (k) {
-        if (!(k in out)) { out[k] = dy[k]; return; }
-        if (eMappa(out[k]) && eMappa(dy[k])) { out[k] = unisciMappa(out[k], dy[k], qx, qy); return; }
-        if (qy >= qx) out[k] = dy[k];
-      });
-    }
+    var chiavi = Object.keys(x);
+    Object.keys(y).forEach(function (k) { if (!Object.prototype.hasOwnProperty.call(x, k)) chiavi.push(k); });
+    chiavi.forEach(function (k) {
+      var p = via + '/' + pezzoVia(k);
+      var pa = orologioDi(f.oa, p, ea), pb = orologioDi(f.ob, p, eb);
+      var inX = Object.prototype.hasOwnProperty.call(x, k), inY = Object.prototype.hasOwnProperty.call(y, k);
+      var vx = x[k], vy = y[k];
+      if (inX && inY) {
+        if (eMappa(vx) && eMappa(vy)) { out[k] = unisciNodo(vx, vy, p, pa, pb, f, foglia); return; }
+        if (stessoValore(vx, vy)) { out[k] = vx; return; }
+        if (pa > pb) out[k] = vx;
+        else if (pb > pa) out[k] = vy;
+        else out[k] = foglia(vx, vy, f.qa, f.qb);
+        return;
+      }
+      /* C'È DA UNA PARTE SOLA. Resta, a meno che l'altra parte l'abbia tolta
+         DOPO l'ultima volta che questa l'ha toccata. Se è un ramo, si guarda
+         dentro: quello che sotto è stato toccato dopo la cancellazione resta. */
+      var solo = inX ? vx : vy, mio = inX ? pa : pb, suo = inX ? pb : pa;
+      if (!(suo > mio)) { out[k] = solo; return; }
+      if (eMappa(solo)) {
+        var resto = inX ? unisciNodo(solo, {}, p, pa, pb, f, foglia) : unisciNodo({}, solo, p, pa, pb, f, foglia);
+        if (Object.keys(resto).length) out[k] = resto;
+      }
+    });
     return out;
+  }
+  /* la radice di un campo che è un dizionario (una mappa, il profilo) */
+  function unisciRadice(va: unknown, vb: unknown, via: string, f: Fusione, foglia: Foglia): unknown {
+    if (!eMappa(va) || !eMappa(vb)) return foglia(va, vb, f.qa, f.qb);
+    return unisciNodo(va, vb, via, orologioDi(f.oa, via, 0), orologioDi(f.ob, via, 0), f, foglia);
   }
 
   /* due versioni della STESSA riga. Vince la più recente campo per campo, ma
-     i dizionari dentro la riga si uniscono: le spunte di un'abitudine
-     (`fatti`, `salti`) sono un giorno per chiave, e prendere in blocco quelle
-     di una copia sola vuol dire buttare via le spunte messe sull'altro
-     dispositivo. */
-  function unisciRiga(x: unknown, y: unknown, qx: number, qy: number): unknown {
+     i dizionari dentro la riga si uniscono chiave per chiave, con gli
+     orologi: le spunte di un'abitudine (`fatti`, `salti`) sono un giorno per
+     chiave, e prendere in blocco quelle di una copia sola vuol dire buttare
+     via le spunte messe sull'altro dispositivo — mentre unirle e basta
+     faceva tornare quelle tolte. */
+  function unisciRiga(x: unknown, y: unknown, qx: number, qy: number, via?: string, f?: Fusione): unknown {
     if (!eMappa(x) || !eMappa(y)) return (qy >= qx) ? y : x;
     var dx = x, dy = y;
     var vecchia = (qy >= qx) ? dx : dy, nuova = (qy >= qx) ? dy : dx;
     var out: Mappa = {};
     Object.keys(vecchia).forEach(function (k) { out[k] = vecchia[k]; });
     Object.keys(nuova).forEach(function (k) { out[k] = nuova[k]; });
+    var fr: Fusione = { oa: f ? f.oa : NIENTE, ob: f ? f.ob : NIENTE, qa: qx, qb: qy };
     Object.keys(out).forEach(function (k) {
-      if (eMappa(dx[k]) && eMappa(dy[k])) out[k] = unisciMappa(dx[k], dy[k], qx, qy);
+      var nx = dx[k], ny = dy[k];
+      if (eMappa(nx) && eMappa(ny)) out[k] = unisciRadice(nx, ny, (via || '?') + '/' + pezzoVia(k), fr, vinceRecente);
     });
     return out;
   }
 
-  function unisciElenco(x: unknown, y: unknown, qx: number, qy: number): unknown[] {
-    var out: { r: unknown; q: number }[] = [];
+  function unisciElenco(x: unknown, y: unknown, qx: number, qy: number, campo?: string, f?: Fusione): unknown[] {
+    var out: { r: unknown; q: number; c: string }[] = [];
     var indice: Record<string, number> = {};
     var metti = function (arr: unknown, q: number) {
       if (!Array.isArray(arr)) return;
       for (var i = 0; i < arr.length; i++) {
         var r: unknown = arr[i], k = chiaveRiga(r);
         var dove = indice[k];
-        if (dove === undefined) { indice[k] = out.length; out.push({ r: r, q: momentoRiga(r, q) }); continue; }
+        if (dove === undefined) { indice[k] = out.length; out.push({ r: r, q: momentoRiga(r, q), c: k }); continue; }
         var g = out[dove];
         if (!g) continue;
         var qr = momentoRiga(r, q);
-        g.r = unisciRiga(g.r, r, g.q, qr);
+        g.r = unisciRiga(g.r, r, g.q, qr, (campo || '?') + '/' + pezzoVia(k), f);
         g.q = Math.max(g.q, qr);
       }
     };
@@ -469,14 +622,29 @@ function creaLM() {
     return out.map(function (g) { return g.r; });
   }
 
-  function unisciInsieme(x: unknown, y: unknown): unknown[] {
+  /* LE AREE ATTIVE, CON L'ORA. Prima erano un insieme che si univa e basta:
+     un'area spenta su un dispositivo tornava accesa alla prima fusione con
+     un altro, che l'aveva ancora. Adesso spegnere e accendere lascia un
+     orologio (`areeAttive/<id>`), e un'area che c'è da una parte sola resta
+     solo se l'altra non l'ha spenta dopo. */
+  function unisciInsieme(x: unknown, y: unknown, campo?: string, f?: Fusione): unknown[] {
     var out: unknown[] = [];
     var visti: Record<string, boolean> = {};
+    var inX: Record<string, boolean> = {}, inY: Record<string, boolean> = {};
+    if (Array.isArray(x)) x.forEach(function (v: unknown) { inX[String(v)] = true; });
+    if (Array.isArray(y)) y.forEach(function (v: unknown) { inY[String(v)] = true; });
     [x, y].forEach(function (arr) {
       if (!Array.isArray(arr)) return;
       arr.forEach(function (v: unknown) {
         var k = String(v);
-        if (!visti[k]) { visti[k] = true; out.push(v); }
+        if (visti[k]) return;
+        visti[k] = true;
+        if (f && campo && !(inX[k] && inY[k])) {
+          var p = campo + '/' + pezzoVia(k);
+          var pa = orologioDi(f.oa, p, 0), pb = orologioDi(f.ob, p, 0);
+          if (inX[k] ? pb > pa : pa > pb) return;   /* spenta dall'altra parte, dopo */
+        }
+        out.push(v);
       });
     });
     return out;
@@ -487,6 +655,11 @@ function creaLM() {
      nessuna delle venti funzioni che cancellano: le scrive `save()` da sé
      confrontando com'era e com'è (vedi `segnaLapidi`), così una funzione che
      cancella e che verrà scritta domani è già coperta. */
+  /* QUANTO DURA UNA LAPIDE (e un orologio). Erano sei mesi, e un iPad
+     lasciato in un cassetto più a lungo poteva far risorgere quello che era
+     stato cancellato nel frattempo. Adesso sono due anni; e per chi torna
+     dopo ancora più tempo c'è la regola dell'assenza lunga (vedi `unisci`). */
+  var DURATA_LAPIDI = 730 * 24 * 3600 * 1000;
   function applicaLapidi(s: Stato): Stato {
     if (!Array.isArray(s.cancellati) || !s.cancellati.length) return s;
     var perCampo: Record<string, Record<string, number>> = {};
@@ -538,19 +711,48 @@ function creaLM() {
         return !(t && t >= momentoRiga(r, 0));
       });
     });
-    /* le lapidi non si accumulano per sempre: dopo mezzo anno tutti i
-       dispositivi hanno saputo, e tenerle costa spazio a vuoto */
-    var soglia = Date.now() - 180 * 24 * 3600 * 1000;
-    s.cancellati = s.cancellati.filter(function (t) { return t && t.ts > soglia; }).slice(-3000);
+    /* NIENTE PIÙ TETTO DI TREMILA. «Azzera tutto» su chi ha più di tremila
+       righe ne lasciava senza lapide le più vecchie, che alla prima fusione
+       tornavano. Le lapidi adesso viaggiano nel cloud divise per mese (vedi
+       src/nuvola/pezzi.ts), quindi il loro numero non pesa più su un
+       documento solo; resta solo la scadenza. */
+    var soglia = Date.now() - DURATA_LAPIDI;
+    s.cancellati = s.cancellati.filter(function (t) { return t && t.ts > soglia; });
     return s;
   }
 
+  /* COME SI UNISCE, OLTRE AI DUE STATI.
+     `nuovo`: quale delle due copie viene da un dispositivo che con questo
+     account NON si è mai unito (un telefono nuovo, l'app reinstallata, un
+     browser che ha cancellato i dati, l'altro indirizzo del sito). Quella
+     copia non vince MAI dove le due dicono cose diverse senza un orologio a
+     decidere, e i suoi orologi del profilo non contano: è il caso in cui un
+     telefono appena aperto, coi valori di partenza e l'ora di adesso,
+     azzerava nome, visione e sveglia su tutti i dispositivi.
+     `assenzaLunga`: la copia `a` viene da un dispositivo che non si è
+     sincronizzato da più tempo di quanto durano le lapidi. Quello che quella
+     copia ha e l'altra no, ed era già lì all'ultima sincronizzazione (`da`),
+     era nel cloud allora: se adesso nel cloud non c'è, è stato tolto — anche
+     se la lapide, nel frattempo, è scaduta. */
+  interface OpzUnisci { nuovo?: 'a' | 'b'; assenzaLunga?: { da: number } }
+
   /* IL PUNTO DI ENTRATA. `a` e `b` sono due stati interi; torna un terzo che
      contiene tutto quello che c'era nei due. Non tocca né `a` né `b`. */
-  function unisci(a: unknown, b: unknown): Stato | null {
+  function unisci(a: unknown, b: unknown, opz?: OpzUnisci): Stato | null {
     if (!eMappa(a)) return b ? JSON.parse(JSON.stringify(b)) : null;
     if (!eMappa(b)) return JSON.parse(JSON.stringify(a));
     var qa = Number(a.updatedAt) || 0, qb = Number(b.updatedAt) || 0;
+    var oa = eMappa(a['orologi']) ? a['orologi'] as Record<string, number> : NIENTE;
+    var ob = eMappa(b['orologi']) ? b['orologi'] as Record<string, number> : NIENTE;
+    /* la copia mai unita: perde i pareggi, e il suo profilo non ha orologi */
+    var senzaProfilo = function (o: Record<string, number>) {
+      var r: Record<string, number> = {};
+      Object.keys(o).forEach(function (k) { if (k.indexOf('profilo/') !== 0 && k !== 'profilo') { var v = o[k]; if (typeof v === 'number') r[k] = v; } });
+      return r;
+    };
+    if (opz && opz.nuovo === 'a') { qa = 0; oa = senzaProfilo(oa); }
+    if (opz && opz.nuovo === 'b') { qb = 0; ob = senzaProfilo(ob); }
+    var f: Fusione = { oa: oa, ob: ob, qa: qa, qb: qb };
     var out: Mappa = {};
     var chiavi: Record<string, 1> = {};
     Object.keys(a).forEach(function (k) { chiavi[k] = 1; });
@@ -576,35 +778,47 @@ function creaLM() {
         return;
       }
       switch (modo) {
-        case 'elenco':  out[k] = unisciElenco(va, vb, qa, qb); break;
-        case 'insieme': out[k] = unisciInsieme(va, vb); break;
-        case 'mappa':   out[k] = unisciMappa(va, vb, qa, qb); break;
-        case 'ramo':    out[k] = unisciRiga(va, vb, qa, qb); break;
+        case 'elenco':  out[k] = unisciElenco(va, vb, qa, qb, k, f); break;
+        case 'insieme': out[k] = unisciInsieme(va, vb, k, f); break;
+        case 'mappa':   out[k] = unisciRadice(va, vb, k, f, vinceRecente); break;
+        case 'ramo':    out[k] = unisciRadice(va, vb, k, f, vinceRecente); break;
+        case 'contatore': out[k] = unisciRadice(va, vb, k, f, massimoConto); break;
+        case 'orologi': {
+          var o: Record<string, number> = {};
+          [va, vb].forEach(function (m) {
+            if (!eMappa(m)) return;
+            Object.keys(m).forEach(function (c) { var t = Number(m[c]) || 0; if (t > (o[c] || 0)) o[c] = t; });
+          });
+          /* un orologio vale quanto una lapide, e scade come lei */
+          var limite = Date.now() - DURATA_LAPIDI;
+          Object.keys(o).forEach(function (c) { if ((o[c] || 0) < limite) delete o[c]; });
+          out[k] = o;
+          break;
+        }
         case 'massimo': out[k] = Math.max(Number(va as number) || 0, Number(vb as number) || 0); break;
         case 'oppure':  out[k] = !!(va || vb); break;
         case 'recente': out[k] = (qb >= qa) ? vb : va; break;
         default:        out[k] = (qb >= qa) ? vb : va;
       }
     });
-    out['updatedAt'] = Math.max(qa, qb);
-    /* AZZERARE DEVE POTER FUNZIONARE. Con una fusione che non perde niente,
-       «Azzera tutto» su un dispositivo si annullerebbe da sé alla prima
-       sincronizzazione: l'altro rimanderebbe indietro tutto. L'unica cosa che
-       taglia è un azzeramento DICHIARATO, con la sua ora: tutto quello che è
-       più vecchio di quell'istante se ne va, il resto no. */
-    /* IL TAGLIO NON C'È PIÙ. Un «Azzera tutto» era un'ora dopo la quale
-       sopravviveva solo quello più nuovo — su tutti i dispositivi e per
-       sempre. Un ripristino da backup riportava righe più vecchie di
-       quell'ora, e l'altro dispositivo le tagliava di nuovo: ripristinavi qui
-       e là restava vuoto. Adesso l'azzeramento lascia una lapide per ogni
-       riga, come una cancellazione qualunque, e un ripristino le riporta in
-       vita una per una. */
-    var taglio = 0;
-    if (taglio) {
+    out['updatedAt'] = Math.max(Number(a.updatedAt) || 0, Number(b.updatedAt) || 0);
+    /* L'ASSENZA LUNGA (vedi `OpzUnisci`): quello che `a` aveva già all'ultima
+       sincronizzazione e `b` non ha più, se ne va. Le righe guardano la loro
+       ora; i giorni delle mappe guardano il giorno. */
+    if (opz && opz.assenzaLunga) {
+      var da = opz.assenzaLunga.da, giornoDa = dayKey(new Date(da));
       Object.keys(regole).forEach(function (k) {
-        var lista = out[k];
-        if (regole[k] !== 'elenco' || !Array.isArray(lista) || k === 'cancellati') return;
-        out[k] = lista.filter(function (r: unknown) { return momentoRiga(r, 0) >= taglio; });
+        var modo = regole[k], lb = b[k], lo = out[k];
+        if (modo === 'elenco' && Array.isArray(lo) && k !== 'cancellati' && k !== 'registro' && k !== 'log') {
+          var inB: Record<string, 1> = {};
+          if (Array.isArray(lb)) lb.forEach(function (r: unknown) { inB[chiaveRiga(r)] = 1; });
+          out[k] = lo.filter(function (r: unknown) { return inB[chiaveRiga(r)] || momentoRiga(r, 0) > da; });
+        } else if (modo === 'mappa' && eMappa(lo)) {
+          var mo = lo;
+          Object.keys(mo).forEach(function (g) {
+            if (/^\d{4}-\d\d-\d\d$/.test(g) && g <= giornoDa && !(eMappa(lb) && g in lb)) delete mo[g];
+          });
+        }
       });
     }
     var fuso = out as unknown as Stato;
@@ -626,21 +840,24 @@ function creaLM() {
      Qui si guarda invece il risultato: cos'era salvato prima, cos'è salvato
      adesso, e quello che non c'è più prende la sua lapide. Una funzione che
      cancella e che verrà scritta l'anno prossimo è già coperta. */
-  function segnaLapidi(primaRaw: string | null, s: Stato) {
-    if (!primaRaw) return;
+  function leggiOggetto(raw: string | Mappa | null): Mappa | null {
+    if (!raw) return null;
+    if (typeof raw !== 'string') return raw;
     var grezzo: unknown;
-    try { grezzo = JSON.parse(primaRaw); } catch (e) { return; }
-    if (!eMappa(grezzo)) return;
-    var prima = grezzo;
-    var adesso = s as unknown as Record<string, unknown>;
+    try { grezzo = JSON.parse(raw); } catch (e) { return null; }
+    return eMappa(grezzo) ? grezzo : null;
+  }
+  function segnaLapidi(primaRaw: string | Mappa | null, s: Stato) {
+    var prima = leggiOggetto(primaRaw);
+    if (!prima) return;
+    var adesso2 = s as unknown as Record<string, unknown>;
     var regole = COME_UNIRE as unknown as Record<string, ModoFusione | undefined>;
-    var ora = Date.now();
+    var ora = adesso();
     var nate = s.cancellati || (s.cancellati = []);
     Object.keys(regole).forEach(function (k) {
       if (regole[k] !== 'elenco' || k === 'cancellati' || k === 'registro' || k === 'log') return;
-      var era = prima[k], ce = adesso[k];
+      var era = prima ? prima[k] : undefined, ce = adesso2[k];
       if (!Array.isArray(era) || !Array.isArray(ce)) return;
-      if (era.length <= ce.length) return;             /* niente è sparito */
       var restano: Record<string, 1> = {};
       ce.forEach(function (r: unknown) { restano[chiaveRiga(r)] = 1; });
       era.forEach(function (r: unknown) {
@@ -654,7 +871,125 @@ function creaLM() {
     var ultimaDi: Record<string, number> = {};
     nate.forEach(function (t, i) { if (t) ultimaDi[t.k + '|' + t.chiave] = i; });
     s.cancellati = nate.filter(function (t, i) { return !t || ultimaDi[t.k + '|' + t.chiave] === i; });
-    if (s.cancellati.length > 3000) s.cancellati = s.cancellati.slice(-3000);
+  }
+
+  /* GLI OROLOGI SE LI SCRIVE `save()`, come le lapidi.
+     Si confronta com'era con com'è, e:
+       · una RIGA cambiata (o nata) prende `aggiornata` = adesso: è l'ora che
+         decide fra due versioni della stessa riga (vedi `momentoRiga`);
+       · in un DIZIONARIO (una mappa per giorno, il profilo, le spunte di
+         un'abitudine dentro la sua riga) ogni chiave cambiata o tolta prende
+         il suo orologio; una chiave nuova lo prende solo se lì c'era già
+         stato un orologio (cioè se torna dopo essere stata tolta), così le
+         aggiunte normali — che sono la quasi totalità — non pesano niente;
+       · un dizionario svuotato di molte chiavi in un colpo («Azzera tutto»)
+         prende un orologio solo, sul ramo intero;
+       · un'area accesa o spenta prende `areeAttive/<id>`.
+     `xpPerGiorno` non ne ha bisogno: si ricava da `xpConti`. */
+  var SENZA_OROLOGI: Record<string, 1> = { cancellati: 1, registro: 1, log: 1, xpPerGiorno: 1, orologi: 1, updatedAt: 1 };
+  function haOrologio(o: Record<string, number>, via: string): boolean {
+    if (o[via]) return true;
+    var i = via.lastIndexOf('/');
+    while (i > 0) { if (o[via.slice(0, i)]) return true; i = via.lastIndexOf('/', i - 1); }
+    return false;
+  }
+  function segnaNodo(a: unknown, b: unknown, via: string, o: Record<string, number>, t: number, soloStruttura: boolean): void {
+    if (!eMappa(a) || !eMappa(b)) { if (!stessoValore(a, b) && !soloStruttura) o[via] = t; return; }
+    var ka = Object.keys(a), kb = Object.keys(b);
+    var tolte = ka.filter(function (k) { return !Object.prototype.hasOwnProperty.call(b, k); });
+    if (tolte.length > 20 && tolte.length === ka.length) { o[via] = t; return; }
+    tolte.forEach(function (k) { o[via + '/' + pezzoVia(k)] = t; });
+    kb.forEach(function (k) {
+      var p = via + '/' + pezzoVia(k);
+      if (!Object.prototype.hasOwnProperty.call(a, k)) { if (haOrologio(o, p)) o[p] = t; return; }
+      var va = a[k], vb = b[k];
+      if (stessoValore(va, vb)) return;
+      if (eMappa(va) && eMappa(vb)) segnaNodo(va, vb, p, o, t, soloStruttura);
+      else if (!soloStruttura) o[p] = t;
+    });
+  }
+  function segnaOrologi(primaRaw: string | Mappa | null, s: Stato): void {
+    var prima = leggiOggetto(primaRaw);
+    if (!prima) return;
+    if (!eMappa(s.orologi)) s.orologi = {};
+    var o = s.orologi;
+    var t = adesso();
+    var ora2 = s as unknown as Record<string, unknown>;
+    var regole = COME_UNIRE as unknown as Record<string, ModoFusione | undefined>;
+    Object.keys(regole).forEach(function (k) {
+      if (SENZA_OROLOGI[k]) return;
+      var modo = regole[k], era = prima ? prima[k] : undefined, ce = ora2[k];
+      if (modo === 'elenco') {
+        if (!Array.isArray(ce)) return;
+        var prime: Record<string, unknown> = {};
+        if (Array.isArray(era)) era.forEach(function (r: unknown) { prime[chiaveRiga(r)] = r; });
+        ce.forEach(function (r: unknown) {
+          if (!eMappa(r)) return;
+          var c = chiaveRiga(r), pr = prime[c];
+          /* una riga nuova che porta già la sua ora (le scoperte, le sessioni
+             del timer: la usano anche per metterle in fila) la tiene */
+          if (pr === undefined) { if (typeof r['aggiornata'] !== 'number') r['aggiornata'] = t; return; }
+          if (stessoValore(pr, r)) return;
+          r['aggiornata'] = t;
+          if (!eMappa(pr)) return;
+          var vr = k + '/' + pezzoVia(c), riga = r, primaRiga = pr;
+          Object.keys(riga).forEach(function (cc) {
+            var nv = riga[cc], vv = primaRiga[cc];
+            if ((eMappa(nv) || eMappa(vv)) && !stessoValore(nv, vv)) {
+              segnaNodo(eMappa(vv) ? vv : {}, eMappa(nv) ? nv : {}, vr + '/' + pezzoVia(cc), o, t, false);
+            }
+          });
+        });
+      } else if (modo === 'mappa' || modo === 'ramo' || modo === 'contatore') {
+        if (stessoValore(era, ce)) return;
+        segnaNodo(eMappa(era) ? era : {}, eMappa(ce) ? ce : {}, k, o, t, modo === 'contatore');
+      } else if (modo === 'insieme') {
+        var x: Record<string, 1> = {}, y: Record<string, 1> = {};
+        if (Array.isArray(era)) era.forEach(function (v: unknown) { x[String(v)] = 1; });
+        if (Array.isArray(ce)) ce.forEach(function (v: unknown) { y[String(v)] = 1; });
+        Object.keys(x).forEach(function (v) { if (!y[v]) o[k + '/' + pezzoVia(v)] = t; });
+        Object.keys(y).forEach(function (v) { if (!x[v]) o[k + '/' + pezzoVia(v)] = t; });
+      }
+    });
+  }
+
+  /* I PUNTI SI RICAVANO DAI CONTI (vedi `xpConti` in tipi/stato.ts).
+     Prima `xp` si univa col «più grande dei due»: due dispositivi che
+     guadagnavano punti insieme ne tenevano uno solo, e una spunta tolta su
+     un telefono non toglieva i punti sugli altri. Qui ogni giorno somma i
+     conti di tutti i dispositivi. Uno stato che i conti non li ha ancora
+     (scritto prima, o arrivato da una versione vecchia dell'app aperta in
+     un'altra scheda) li riceve dai numeri che ha, sotto il nome `base`. */
+  function ricalcolaXp(s: Stato, primaVolta?: boolean): void {
+    if (!eMappa(s.xpConti)) s.xpConti = {};
+    var conti = s.xpConti;
+    if (!eMappa(s.xpPerGiorno)) s.xpPerGiorno = {};
+    var perGiorno = s.xpPerGiorno;
+    var somma = 0;
+    Object.keys(perGiorno).forEach(function (g) {
+      var v = Number(perGiorno[g]) || 0;
+      somma += v;
+      /* un giorno che i conti hanno già conosciuto (e magari tolto, con
+         «Azzera tutto») non si riaccende da un numero rimasto indietro */
+      if (!conti[g] && v > 0 && !haOrologio(s.orologi || NIENTE, 'xpConti/' + pezzoVia(g))) conti[g] = { base: [v, 0] };
+    });
+    if (primaVolta) {
+      var resto = (Number(s.xp) || 0) - somma;
+      if (resto > 0 && !conti['_']) conti['_'] = { base: [resto, 0] };
+    }
+    var tot = 0, nuovo: Record<string, number> = {};
+    Object.keys(conti).forEach(function (g) {
+      var c = conti[g];
+      if (!c || !eMappa(c)) { delete conti[g]; return; }
+      var cc = c;
+      var p = 0, n = 0;
+      Object.keys(cc).forEach(function (d) { var v = cc[d]; if (Array.isArray(v)) { p += Number(v[0]) || 0; n += Number(v[1]) || 0; } });
+      var val = Math.max(0, p - n);
+      tot += val;
+      if (g !== '_') nuovo[g] = val;
+    });
+    s.xpPerGiorno = nuovo;
+    s.xp = tot;
   }
 
   var state: Stato | null = null;
@@ -672,9 +1007,12 @@ function creaLM() {
     if (state) return state;
     var raw = null;
     try { raw = localStorage.getItem(STORAGE_KEY); } catch (e) { raw = null; }
+    generazione = leggiGenerazione();
+    ultimoScritto = null;
     if (raw) {
       try {
         state = JSON.parse(raw) as Stato;
+        ultimoScritto = raw;
       } catch (e) {
         state = null;
         try { localStorage.setItem(RECUPERO_PRE + Date.now(), raw); } catch (e2) { /* pieno */ }
@@ -692,7 +1030,20 @@ function creaLM() {
        niente si lamentasse. */
     var partenza: unknown = (!state || typeof state !== 'object') ? statoVuoto() : state;
     state = normalizza(partenza);
+    osserva(state.updatedAt);
     return state;
+  }
+  /* RILEGGE DALLA MEMORIA DEL DISPOSITIVO, buttando quello che questa
+     finestra aveva in mano: un'altra finestra ha svuotato il dispositivo
+     (uscita dall'account) o la nuvola l'ha appena rimesso a posto. */
+  function ricarica(): Stato {
+    state = null;
+    var s = load();
+    /* `ricarica` nel dettaglio: non è una modifica fatta qui, e la nuvola
+       non deve trattarla come tale */
+    try { document.dispatchEvent(new CustomEvent('lm:change', { detail: 'ricarica' as unknown as void })); } catch (e) { /* niente */ }
+    try { window.dispatchEvent(new CustomEvent('lm:remote')); } catch (e) { /* niente */ }
+    return s;
   }
   /* i pezzi messi da parte, per poterli mostrare e riprovare a leggerli */
   function recuperi(): { chiave: string; ts: number; testo: string | null }[] {
@@ -727,9 +1078,13 @@ function creaLM() {
     var perChiave = s as unknown as Record<string, unknown>;
     var vuoto = statoVuoto();
     var vuotoPerChiave = vuoto as unknown as Record<string, unknown>;
+    /* uno stato che i conti dei punti non li ha mai avuti: si fanno adesso,
+       una volta sola, dai numeri che ha (vedi `ricalcolaXp`) */
+    var senzaConti = !eMappa(perChiave['xpConti']);
     Object.keys(vuoto).forEach(function (k) {
       if (perChiave[k] === undefined || perChiave[k] === null) perChiave[k] = vuotoPerChiave[k];
     });
+    if (!eMappa(perChiave['orologi'])) perChiave['orologi'] = {};
     /* UN CAMPO DEL TIPO SBAGLIATO NON SI BUTTA, SI METTE DA PARTE.
        Qui c'erano righe come `if (!Array.isArray(s.lezioni)) s.lezioni = []`:
        se per qualunque motivo quel campo arrivava storto, il suo contenuto
@@ -822,6 +1177,7 @@ function creaLM() {
         if (mitVisti[a.data]) a.mit = false; else mitVisti[a.data] = true;
       });
     }
+    ricalcolaXp(s, senzaConti);
     return s;
   }
 
@@ -982,15 +1338,15 @@ function creaLM() {
   /* `chiave` arriva da `Object.keys` di un dizionario indicizzato per
      giorno: per il compilatore è una stringa qualunque, e `giorno()` è il
      punto in cui si dichiara che è un giorno. Una riga, non trenta. */
-  function marcaRitorno(primaRaw: string | null, adesso: Stato): void {
+  function marcaRitorno(primaRaw: string | null, st: Stato): void {
     var primaObj = primaRaw ? safeParse(primaRaw) : null;
     if (!primaObj || !eMappa(primaObj)) return;
     var regoleU = COME_UNIRE as unknown as Record<string, ModoFusione | undefined>;
-    var ora = Date.now();
+    var ora = adesso();
     var tornate: Record<string, 1> = {};
     Object.keys(regoleU).forEach(function (k) {
       if (regoleU[k] !== 'elenco' || k === 'cancellati' || k === 'registro' || k === 'log') return;
-      var era = (primaObj as unknown as Record<string, unknown>)[k], ce = (adesso as unknown as Record<string, unknown>)[k];
+      var era = (primaObj as unknown as Record<string, unknown>)[k], ce = (st as unknown as Record<string, unknown>)[k];
       if (!Array.isArray(ce)) return;
       var cePrima: Record<string, 1> = {};
       if (Array.isArray(era)) era.forEach(function (r: unknown) { cePrima[chiaveRiga(r)] = 1; });
@@ -1002,12 +1358,15 @@ function creaLM() {
     /* anche i giorni delle mappe (il diario, i voti) */
     Object.keys(regoleU).forEach(function (k) {
       if (regoleU[k] !== 'mappa') return;
-      var era = (primaObj as unknown as Record<string, unknown>)[k], ce = (adesso as unknown as Record<string, unknown>)[k];
+      var era = (primaObj as unknown as Record<string, unknown>)[k], ce = (st as unknown as Record<string, unknown>)[k];
       if (!eMappa(ce)) return;
       Object.keys(ce).forEach(function (g) { if (!eMappa(era) || !(g in era)) tornate[k + '|' + g] = 1; });
     });
-    rivivi(adesso, tornate, ora);
-    segnaLapidi(primaRaw, adesso);
+    rivivi(st, tornate, ora);
+    segnaLapidi(primaRaw, st);
+    /* e quello che il ritorno ha cambiato prende il suo orologio: una spunta
+       tolta tornando indietro deve restare tolta anche sugli altri */
+    segnaOrologi(primaRaw, st);
   }
 
   /* le righe tornate prendono una lapide «viva» con la stessa chiave: la
@@ -1029,16 +1388,34 @@ function creaLM() {
   function riprendiCopia(obj: unknown): boolean {
     if (!eMappa(obj)) return false;
     var copia = JSON.parse(JSON.stringify(obj)) as Record<string, unknown>;
-    var ora = Date.now(), tornate: Record<string, 1> = {};
+    var ora = adesso(), tornate: Record<string, 1> = {};
     var regoleU = COME_UNIRE as unknown as Record<string, ModoFusione | undefined>;
+    var qui = load() as unknown as Record<string, unknown>;
+    /* gli orologi della copia: quello che torna diventa «toccato adesso»,
+       così vince sulla cancellazione che l'aveva tolto */
+    var oc: Record<string, number> = {};
     Object.keys(regoleU).forEach(function (k) {
-      var v = copia[k];
+      var v = copia[k], h = qui[k];
       if (regoleU[k] === 'elenco' && Array.isArray(v) && k !== 'cancellati' && k !== 'registro' && k !== 'log') {
-        v.forEach(function (r: unknown) { if (eMappa(r)) { r['aggiornata'] = ora; tornate[k + '|' + chiaveRiga(r)] = 1; } });
+        /* SOLO LE RIGHE CHE QUI MANCANO tornano «nuove»: una riga che c'è
+           già, magari cambiata dopo la copia, resta com'è adesso — riprendere
+           aggiunge, non riporta indietro */
+        var ci: Record<string, 1> = {};
+        if (Array.isArray(h)) h.forEach(function (r: unknown) { ci[chiaveRiga(r)] = 1; });
+        v.forEach(function (r: unknown) {
+          if (!eMappa(r)) return;
+          var c = chiaveRiga(r);
+          tornate[k + '|' + c] = 1;
+          if (!ci[c]) r['aggiornata'] = ora;
+        });
       } else if (regoleU[k] === 'mappa' && eMappa(v)) {
-        Object.keys(v).forEach(function (g) { tornate[k + '|' + g] = 1; });
+        Object.keys(v).forEach(function (g) {
+          tornate[k + '|' + g] = 1;
+          if (!(eMappa(h) && g in h)) oc[k + '/' + pezzoVia(g)] = ora;
+        });
       }
     });
+    copia['orologi'] = oc;
     copia['cancellati'] = [];
     /* prima le lapidi «vive», poi la copia: al contrario la fusione la
        ritaglierebbe con le lapidi vecchie prima che il ritorno conti */
@@ -1122,18 +1499,45 @@ function creaLM() {
   }
 
   function save() {
-    /* com'era prima: si legge dal salvataggio, che è ancora quello vecchio */
-    var prima = null;
-    if (!staTornandoIndietro) {
-      try { prima = localStorage.getItem(STORAGE_KEY); } catch (e) { prima = null; }
+    /* UN'ALTRA FINESTRA HA SVUOTATO IL DISPOSITIVO (si è usciti
+       dall'account là). Quello che questa finestra ha in mano è dell'account
+       appena chiuso: riscriverlo vorrebbe dire rimetterlo sul dispositivo,
+       a disposizione di chi entra dopo. Si butta e si rilegge. */
+    if (state && generazione !== null && leggiGenerazione() !== generazione) {
+      if (window.LMLog) window.LMLog.add('avviso', 'dati', 'un’altra finestra ha svuotato il dispositivo: rileggo invece di riscrivere');
+      ricarica();
+      return;
     }
-    /* QUELLO CHE È SPARITO PRENDE LA SUA LAPIDE. Va fatto PRIMA di scrivere,
-       perché confronta il salvataggio vecchio con lo stato nuovo. Durante un
-       ritorno indietro non si segna niente: là le righe non sono cancellate,
-       sono tornate come stavano. */
+    /* com'era prima: quello che QUESTA finestra ha letto o scritto per
+       ultimo. Non si rilegge dalla memoria: se nel frattempo un'altra
+       finestra ha scritto, le sue righe nuove sembrerebbero cancellate da
+       questa, e prenderebbero una lapide. */
+    var prima = staTornandoIndietro ? null : ultimoScritto;
+    /* QUELLO CHE È SPARITO PRENDE LA SUA LAPIDE, e quello che è cambiato il
+       suo orologio. Va fatto PRIMA di scrivere, perché confronta il
+       salvataggio vecchio con lo stato nuovo. Durante un ritorno indietro
+       non si segna niente qui: lo fa `marcaRitorno`, che sa com'era prima. */
     var suo = load();
-    if (!staTornandoIndietro && !senzaLapidi) segnaLapidi(prima, suo);
-    suo.updatedAt = Date.now();
+    if (!staTornandoIndietro && !senzaLapidi) {
+      var primaObj = leggiOggetto(prima);
+      segnaLapidi(primaObj, suo);
+      segnaOrologi(primaObj, suo);
+    }
+    ricalcolaXp(suo);
+    /* DUE FINESTRE DELLA STESSA APP. Se un'altra ha scritto dopo l'ultima
+       volta che questa ha letto, non si scrive sopra: si unisce. L'evento
+       `storage` di solito arriva prima, ma non è garantito che arrivi in
+       tempo — due tocchi ravvicinati in due finestre bastano. */
+    var fuori: string | null = null;
+    try { fuori = localStorage.getItem(STORAGE_KEY); } catch (e) { fuori = null; }
+    /* (non quando si SOSTITUISCE apposta — uscire, ripristinare una copia:
+       unire lì vorrebbe dire non sostituire) */
+    if (!senzaLapidi && fuori && fuori !== ultimoScritto) {
+      var loro = leggiOggetto(fuori);
+      var insieme = loro ? unisci(loro, suo) : null;
+      if (insieme) { state = normalizza(insieme); suo = state; }
+    }
+    suo.updatedAt = adesso();
     var ok = true;
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
@@ -1173,12 +1577,13 @@ function creaLM() {
       document.dispatchEvent(new CustomEvent('lm:errore-salvataggio'));
     }
     if (ok) salvataggioRotto = false;
+    var scritto: string | null = null;
+    try { scritto = localStorage.getItem(STORAGE_KEY); } catch (e) { scritto = null; }
+    if (ok) ultimoScritto = scritto;
     if (!staTornandoIndietro) {
-      var adesso = null;
-      try { adesso = localStorage.getItem(STORAGE_KEY); } catch (e) { adesso = null; }
       /* `updatedAt` cambia a ogni salvataggio: si toglie da entrambi, altrimenti
          ogni salvataggio sembrerebbe un cambiamento */
-      segnaPunto(prima, senzaOrologio(prima), senzaOrologio(adesso));
+      segnaPunto(prima, senzaOrologio(prima), senzaOrologio(scritto));
     }
     document.dispatchEvent(new CustomEvent('lm:change'));
   }
@@ -1187,42 +1592,42 @@ function creaLM() {
   }
 
   /* AZZERARE. Da soli si riparte da zero su questo dispositivo, e basta.
-     Collegati a un account si toglie anche dal cloud: ogni riga e ogni
-     giorno prende la sua lapide — come una cancellazione qualunque — così
-     un backup ripristinato dopo li riporta in vita, su tutti i dispositivi. */
+     Collegati a un account si toglie anche dal cloud: ogni riga prende la
+     sua lapide e ogni dizionario svuotato il suo orologio — come una
+     cancellazione qualunque — così un backup ripristinato dopo li riporta in
+     vita, su tutti i dispositivi.
+     PRIMA RESTAVANO FUORI LE AREE, LE RINOMINE E IL DIARIO: le aree create e
+     quelle spente tornavano dagli altri dispositivi, i nomi cambiati pure, e
+     il diario restava intero. Adesso si azzera passando da `save()` come
+     ogni altra modifica, quindi tutto quello che cambia lascia la sua
+     traccia; il diario, che `save()` lascia fuori apposta perché si accorcia
+     da sé, prende le lapidi qui. Restano invece le lapidi e gli orologi di
+     prima: sono la memoria di quello che era già stato tolto. */
   function reset(perAccount?: boolean) {
     backup('prima-azzeramento');
     scordaPunti();
     var prima = load();
     var nuovo = statoVuoto();
     nuovo.azzerato = 0;
+    nuovo.cancellati = Array.isArray(prima.cancellati) ? prima.cancellati.slice() : [];
+    nuovo.orologi = eMappa(prima.orologi) ? JSON.parse(JSON.stringify(prima.orologi)) : {};
     if (perAccount) {
-      var ora = Date.now(), lapidi: Lapide[] = [];
-      var regoleU = COME_UNIRE as unknown as Record<string, ModoFusione | undefined>;
-      var grezzo = prima as unknown as Record<string, unknown>;
-      Object.keys(regoleU).forEach(function (k) {
-        var v = grezzo[k];
-        if (regoleU[k] === 'elenco' && Array.isArray(v) && k !== 'cancellati' && k !== 'registro' && k !== 'log' && k !== 'aree' && k !== 'areeAttive') {
-          v.forEach(function (r: unknown) { lapidi.push({ k: k, chiave: chiaveRiga(r), ts: ora, vivo: false }); });
-        } else if (regoleU[k] === 'mappa' && eMappa(v)) {
-          Object.keys(v).forEach(function (g) {
-            var val = (v as Record<string, unknown>)[g];
-            var l: Lapide = { k: k, chiave: g, ts: ora, vivo: false };
-            if (!eMappa(val) || !momentoRiga(val, 0)) l.firma = firma(val);
-            lapidi.push(l);
-          });
-        }
+      var ora = adesso();
+      (prima.registro || []).forEach(function (r) {
+        nuovo.cancellati.push({ k: 'registro', chiave: chiaveRiga(r), ts: ora, vivo: false });
       });
-      nuovo.cancellati = lapidi.slice(-3000);
       nuovo.onboarded = true;
     }
     nuovo.profilo.skin = prima.profilo.skin;
     nuovo.profilo.modo = prima.profilo.modo;
     state = nuovo;
     registra('dati', perAccount ? 'Dati azzerati, anche nell’account' : 'Dati azzerati su questo dispositivo', true);
-    senzaLapidi++;
-    save();
-    senzaLapidi--;
+    if (perAccount) { save(); return; }
+    /* DA SOLI, SOLO QUI: niente lapidi e niente orologi, che un giorno
+       potrebbero andare in un account e togliere dati veri */
+    nuovo.cancellati = [];
+    nuovo.orologi = {};
+    senzaLapidi++; save(); senzaLapidi--;
   }
 
   /* ---------- backup, ricchezza, export/import ----------
@@ -1384,15 +1789,33 @@ function creaLM() {
   /* `sostituisci` è vero SOLO per le tre cose che vogliono dire «questa storia
      non è mai successa»: annullare, tornare a un punto, ripristinare una copia
      di sicurezza. Tutto il resto — il cloud, un file importato — unisce. */
-  function hydrate(obj: unknown, sostituisci?: boolean) {
+  function hydrate(obj: unknown, sostituisci?: boolean, opz?: OpzUnisci) {
     if (!obj || typeof obj !== 'object') return;
-    var fuso = (sostituisci ? obj : unisci(load(), obj)) as Stato | null;
+    var qui = load();
+    var fuso = (sostituisci ? obj : unisci(qui, obj, opz)) as Stato | null;
     if (!fuso) return;
     var quando = eMappa(obj) ? obj['updatedAt'] : undefined;
     if (typeof quando === 'number') fuso.updatedAt = Math.max(fuso.updatedAt || 0, quando);
+    /* QUELLO CHE SI SAPEVA RESTA SAPUTO. Anche quando si sostituisce
+       (annullare, tornare a una copia) gli orologi di adesso non si buttano:
+       dicono cosa è stato tolto e quando, e senza di loro una cosa rimessa al
+       suo posto da una copia vecchia sparirebbe di nuovo alla prima fusione
+       con un dispositivo che sa della cancellazione. */
+    if (sostituisci && eMappa(qui.orologi)) {
+      var o: Record<string, number> = eMappa(fuso.orologi) ? JSON.parse(JSON.stringify(fuso.orologi)) : {};
+      Object.keys(qui.orologi).forEach(function (k) { var t = qui.orologi[k] || 0; if (t > (o[k] || 0)) o[k] = t; });
+      fuso.orologi = o;
+    }
+    /* le ore viste arrivare da fuori: da qui in poi non si scrive niente di più vecchio */
+    osserva(fuso.updatedAt);
+    if (eMappa(fuso.orologi)) { var mx = 0; Object.keys(fuso.orologi).forEach(function (k) { var t = fuso && fuso.orologi[k] || 0; if (t > mx) mx = t; }); osserva(mx); }
     senzaLapidi++;
     state = normalizza(fuso);
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) { /* ignora */ }
+    try {
+      var testo = JSON.stringify(state);
+      localStorage.setItem(STORAGE_KEY, testo);
+      ultimoScritto = testo;
+    } catch (e) { /* ignora */ }
     senzaLapidi--;
     document.dispatchEvent(new CustomEvent('lm:change'));
   }
@@ -1405,12 +1828,25 @@ function creaLM() {
 
   /* ---------- mutazioni ---------- */
 
+  /* I PUNTI VANNO NEL CONTO DI QUESTO DISPOSITIVO (vedi `xpConti`), e
+     `xp` e `xpPerGiorno` si rifanno da lì. Dare aggiunge alla prima colonna,
+     togliere alla seconda: nessuna delle due torna mai indietro, ed è per
+     questo che due dispositivi si possono unire senza perdere niente. */
+  function contoDi(s: Stato, k: string): [number, number] {
+    if (!eMappa(s.xpConti)) s.xpConti = {};
+    var g = s.xpConti[k] || (s.xpConti[k] = {});
+    var d = idDispositivo();
+    var c = g[d];
+    if (!c || !Array.isArray(c)) { c = [0, 0]; g[d] = c; }
+    return c;
+  }
   function premiaXp(tipo: keyof typeof XP_EVENTI, quando?: Giorno) {
     var s = load();
     var punti = XP_EVENTI[tipo] || 0;
     var k = quando || todayKey();
-    s.xp += punti;
-    s.xpPerGiorno[k] = (s.xpPerGiorno[k] || 0) + punti;
+    var c = contoDi(s, k);
+    c[0] += punti;
+    ricalcolaXp(s);
     return punti;
   }
   /* XP in una misura che non sta nella tabella degli eventi: serve per il
@@ -1419,16 +1855,24 @@ function creaLM() {
   function dammiXp(punti: number, quando?: Giorno) {
     var s = load();
     var k = quando || todayKey();
-    s.xp += punti;
-    s.xpPerGiorno[k] = (s.xpPerGiorno[k] || 0) + punti;
+    var c = contoDi(s, k);
+    c[0] += punti;
+    ricalcolaXp(s);
     return punti;
   }
-  /* toglie XP già assegnati (es. quando si toglie la spunta a una task) */
+  /* toglie XP già assegnati (es. quando si toglie la spunta a una task).
+     Come prima, un giorno non va sotto zero: si toglie al massimo quello
+     che quel giorno ha. */
   function togliXp(punti: number, quando?: Giorno) {
     var s = load();
     var k = quando || todayKey();
-    s.xp = Math.max(0, s.xp - punti);
-    s.xpPerGiorno[k] = Math.max(0, (s.xpPerGiorno[k] || 0) - punti);
+    ricalcolaXp(s);
+    var ha = s.xpPerGiorno[k] || 0;
+    var via = Math.min(Math.max(0, punti), ha);
+    if (!via) return;
+    var c = contoDi(s, k);
+    c[1] += via;
+    ricalcolaXp(s);
   }
 
   /* Registro: storia di TUTTO ciò che si fa (impostazioni, scritte, selezioni,
@@ -3890,6 +4334,13 @@ function creaLM() {
       });
     }
     if (ancheTesti) tolte += togliDiarioEsempio(st);
+    /* i punti si ricavano dai conti: un giorno d'esempio tolto da
+       `xpPerGiorno` se ne va anche da lì, se no tornerebbe al primo calcolo */
+    if (eMappa(st.xpConti)) {
+      var conti = st.xpConti, perGiorno = st.xpPerGiorno || {};
+      Object.keys(conti).forEach(function (g) { if (g !== '_' && !(g in perGiorno)) delete conti[g]; });
+      ricalcolaXp(st);
+    }
     if (imp || ancheTesti) {
       if (st.profilo.visione === PROFILO_ESEMPIO.visione) st.profilo.visione = '';
     }
@@ -4001,6 +4452,10 @@ function creaLM() {
     /* le cancellazioni fatte qui da ospite riguardavano righe di qui: nel
        cloud non devono togliere niente */
     if (st.cancellati && st.cancellati.length) { st.cancellati = []; cambiato = true; }
+    /* e così gli orologi: «Azzera tutto» fatto qui da ospite lascia un
+       orologio su ogni dizionario svuotato, e portato nell'account
+       toglierebbe i voti e i diari veri degli altri dispositivi */
+    if (st.orologi && Object.keys(st.orologi).length) { st.orologi = {}; cambiato = true; }
     if (cambiato) { senzaLapidi++; save(); senzaLapidi--; }
   }
 
@@ -4018,6 +4473,9 @@ function creaLM() {
     nuovo.profilo.modo = prima.profilo.modo;
     nuovo.azzerato = 0;
     state = nuovo;
+    /* le altre finestre aperte devono saperlo: quello che hanno in mano non
+       è più di questo dispositivo (vedi GEN_KEY) */
+    nuovaGenerazione();
     senzaLapidi++; save(); senzaLapidi--;
   }
   /* entrando in un account: se qui c'è l'esempio, si mette da parte tutto */
@@ -4030,6 +4488,111 @@ function creaLM() {
     return true;
   }
   function lasciaAccount(): void { pulito('uscita-dall-account'); }
+
+  /* UNA COPIA DA PARTE PER UN ACCOUNT, quando si esce senza che il cloud
+     abbia ancora tutto: «Esci» senza rete, o la sessione chiusa da Firebase
+     (account disabilitato, sessione scaduta, dati del browser cancellati).
+     Il dispositivo si svuota lo stesso — i dati di un account non restano
+     a disposizione di chi entra dopo — ma questa copia resta qui, in un
+     contenitore che porta il nome dell'account e che nessun altro legge.
+     Quando QUELLO stesso account rientra su questo dispositivo, la copia si
+     unisce e se ne va: quello che non era ancora arrivato nel cloud ci
+     arriva. Se entra un altro account, la copia non la tocca. */
+  var DA_PARTE_PRE = 'lifemax.daparte.';
+  function mettiDaParte(uid: string): boolean {
+    if (!uid) return false;
+    try {
+      localStorage.setItem(DA_PARTE_PRE + uid, JSON.stringify({ ts: Date.now(), stato: snapshotPerCloud() }));
+      return true;
+    } catch (e) { return false; }
+  }
+  function haDaParte(uid: string): boolean {
+    try { return !!localStorage.getItem(DA_PARTE_PRE + uid); } catch (e) { return false; }
+  }
+  /* la copia messa da parte, senza toccare quello che c'è qui: serve a
+     mandarla nel cloud quando si è usciti senza rete (vedi nuvola.ts) */
+  function copiaDaParte(uid: string): Stato | null {
+    var raw: string | null = null;
+    try { raw = localStorage.getItem(DA_PARTE_PRE + uid); } catch (e) { raw = null; }
+    if (!raw) return null;
+    var obj: unknown;
+    try { obj = JSON.parse(raw); } catch (e) { obj = null; }
+    var st = eMappa(obj) ? obj['stato'] : null;
+    return eMappa(st) ? normalizza(st) : null;
+  }
+  function scartaDaParte(uid: string): void {
+    try { localStorage.removeItem(DA_PARTE_PRE + uid); } catch (e) { /* niente */ }
+  }
+  function riprendiDaParte(uid: string): boolean {
+    var raw: string | null = null;
+    try { raw = localStorage.getItem(DA_PARTE_PRE + uid); } catch (e) { raw = null; }
+    if (!raw) return false;
+    var obj: unknown;
+    try { obj = JSON.parse(raw); } catch (e) { obj = null; }
+    var st = eMappa(obj) ? obj['stato'] : null;
+    if (eMappa(st)) hydrate(st);
+    try { localStorage.removeItem(DA_PARTE_PRE + uid); } catch (e) { /* resta: si riunirà la prossima volta, senza danni */ }
+    return eMappa(st);
+  }
+
+  /* QUELLO CHE È CAMBIATO DOPO UN CERTO ISTANTE, come uno stato piccolo.
+     Serve a una cosa sola: la pagina che si chiude subito dopo una modifica
+     (vedi `pagehide` in nuvola.ts) ha il tempo di mandare UNA richiesta
+     piccola, non di fare un giro intero. Unito con `unisci` a quello che c'è
+     nel cloud porta le modifiche e non toglie niente: quello che qui manca
+     manca solo da questo pezzetto, e le cancellazioni viaggiano come lapidi e
+     orologi. Dentro: tutti i campi piccoli, le righe toccate dopo `da`, i
+     giorni delle mappe degli ultimi sette giorni o con un orologio dopo `da`,
+     le lapidi e gli orologi dopo `da`. */
+  function cambiateDopo(da: number): Stato {
+    var st = snapshotPerCloud() as unknown as Record<string, unknown>;
+    var out: Record<string, unknown> = {};
+    var regoleU = COME_UNIRE as unknown as Record<string, ModoFusione | undefined>;
+    var o = eMappa(st['orologi']) ? st['orologi'] as Record<string, number> : NIENTE;
+    var recenti = dayKey(new Date(Date.now() - 7 * 86400000));
+    Object.keys(st).forEach(function (k) {
+      var v = st[k], modo = regoleU[k];
+      if (k === 'cancellati' && Array.isArray(v)) { out[k] = v.filter(function (t: Lapide) { return t && t.ts > da; }); return; }
+      if (k === 'orologi' && eMappa(v)) { var oo: Record<string, number> = {}, ov = v; Object.keys(ov).forEach(function (c) { var t = Number(ov[c]) || 0; if (t > da) oo[c] = t; }); out[k] = oo; return; }
+      if (modo === 'elenco' && Array.isArray(v) && v.length > 50) { out[k] = v.filter(function (r: unknown) { return momentoRiga(r, 0) > da; }); return; }
+      if ((modo === 'mappa' || modo === 'contatore') && eMappa(v) && Object.keys(v).length > 14) {
+        var m: Record<string, unknown> = {}, vm = v;
+        Object.keys(vm).forEach(function (g) {
+          if (g >= recenti || !/^\d{4}-\d\d-\d\d$/.test(g)) { m[g] = vm[g]; return; }
+          var p = k + '/' + pezzoVia(g);
+          var tocca = Object.keys(o).some(function (c) { return (c === p || c.indexOf(p + '/') === 0) && (o[c] || 0) > da; });
+          if (tocca) m[g] = vm[g];
+        });
+        out[k] = m;
+        return;
+      }
+      out[k] = v;
+    });
+    return out as unknown as Stato;
+  }
+
+  /* RIPRENDERE SOLO IL PROFILO da una copia (nome, visione, sveglia, tema,
+     impostazioni del timer…). È la strada per chi si è visto azzerare il
+     profilo da un dispositivo nuovo: le sue cose fatte nel frattempo restano
+     come sono, e torna solo quello. Ogni campo della copia va sopra a quello
+     di adesso, e quelli che la copia non ha restano. Passa da `save()`, quindi
+     ogni campo rimesso prende il suo orologio e vince su tutti i dispositivi. */
+  function riprendiProfilo(profilo: unknown): boolean {
+    if (!eMappa(profilo)) return false;
+    backup('prima-di-riprendere-il-profilo');
+    var s = load();
+    var sopra = function (dove: Mappa, da: Mappa) {
+      Object.keys(da).forEach(function (k) {
+        var v = da[k];
+        if (eMappa(v) && eMappa(dove[k])) sopra(dove[k] as Mappa, v);
+        else dove[k] = JSON.parse(JSON.stringify(v === undefined ? null : v));
+      });
+    };
+    sopra(s.profilo as unknown as Mappa, profilo);
+    registra('dati', 'Ripreso il profilo da una copia nel cloud', true);
+    save();
+    return true;
+  }
 
   /* ==================================================================
      DUE FINESTRE DELLA STESSA APP, SULLO STESSO DISPOSITIVO
@@ -4048,7 +4611,18 @@ function creaLM() {
      due finestre si rispondono a vicenda — io scrivo, tu ricevi e scrivi, io
      ricevo e scrivo — e non si fermano più. */
   window.addEventListener('storage', function (ev) {
+    /* un'altra finestra ha svuotato il dispositivo (uscita dall'account):
+       qui non si unisce niente, si butta quello che si ha e si rilegge */
+    if (ev.key === GEN_KEY) {
+      if (generazione !== null && (ev.newValue || '') !== generazione) {
+        if (window.LMLog) window.LMLog.add('info', 'dati', 'un’altra finestra ha svuotato il dispositivo: rileggo');
+        ricarica();
+      }
+      return;
+    }
     if (ev.key !== STORAGE_KEY || !ev.newValue) return;
+    if (generazione !== null && leggiGenerazione() !== generazione) { ricarica(); return; }
+    if (ev.newValue === ultimoScritto) return;
     var venuto: unknown;
     try { venuto = JSON.parse(ev.newValue); } catch (e) { return; }
     if (!venuto || typeof venuto !== 'object') return;
@@ -4057,9 +4631,14 @@ function creaLM() {
     /* si confronta quello che verrebbe fuori con quello che c'è già, senza
        l'orologio: `updatedAt` cambia a ogni salvataggio e da solo farebbe
        sembrare un cambiamento ogni volta */
-    if (senzaOrologio(JSON.stringify(normalizza(fuso))) === senzaOrologio(JSON.stringify(state))) return;
+    if (senzaOrologio(JSON.stringify(normalizza(fuso))) === senzaOrologio(JSON.stringify(state))) {
+      /* uguale a quello che abbiamo: da qui in poi è quello il «com'era» */
+      ultimoScritto = ev.newValue;
+      return;
+    }
     if (window.LMLog) window.LMLog.add('info', 'dati', 'un’altra finestra ha salvato: unisco');
     hydrate(venuto);
+    try { window.dispatchEvent(new CustomEvent('lm:remote')); } catch (e) { /* niente */ }
   });
 
   /* ---------- API pubblica ---------- */
@@ -4070,6 +4649,9 @@ function creaLM() {
     XP_EVENTI: XP_EVENTI,
     load: load, save: save, reset: reset, seedDemo: seedDemo,
     togliEsempio: togliEsempio, contaEsempio: contaEsempio, snapshotPerCloud: snapshotPerCloud, primaUnione: primaUnione, lasciaEsempio: lasciaEsempio, lasciaAccount: lasciaAccount, hydrate: hydrate, snapshot: snapshot,
+    mettiDaParte: mettiDaParte, haDaParte: haDaParte, riprendiDaParte: riprendiDaParte, copiaDaParte: copiaDaParte, scartaDaParte: scartaDaParte, riprendiProfilo: riprendiProfilo,
+    adesso: adesso, osserva: osserva, impostaScarto: impostaScarto, idDispositivo: idDispositivo, ricarica: ricarica, normalizza: normalizza,
+    generazione: function () { load(); return generazione || ''; }, cambiateDopo: cambiateDopo,
     unisci: unisci, recuperi: recuperi, COME_UNIRE: COME_UNIRE, statoVuoto: statoVuoto,
     backup: backup, listBackups: listBackups, restoreBackup: restoreBackup, ricchezza: ricchezza,
     exportJson: exportJson, importJson: importJson, ripristinaStato: ripristinaStato, riprendiCopia: riprendiCopia,

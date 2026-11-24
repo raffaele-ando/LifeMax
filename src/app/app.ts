@@ -643,6 +643,25 @@ document.addEventListener('lm:accesso-fallito', function (e) {
   const d = (e as CustomEvent<{ titolo: string; testo: string }>).detail;
   if (d) avviso({ titolo: d.titolo, testo: d.testo, azione: 'OK' });
 });
+
+/* LA SESSIONE CHIUSA DA GOOGLE, DETTA. Prima succedeva in silenzio: l'app
+   restava com'era, coi dati a vista, e chi entrava dopo sullo stesso
+   computer se li ritrovava nel suo account. Adesso il dispositivo si svuota
+   (lo fa la nuvola) e qui lo si spiega, con la strada per rientrare. */
+window.addEventListener('lm:sessione-finita', function () {
+  render();
+  toast('La sessione è finita: accedi di nuovo per ritrovare i tuoi dati.', 0, 'cloud');
+  avviso({
+    titolo: 'La sessione è finita',
+    testo: 'Google ha chiuso l’accesso su questo dispositivo: succede quando scade, quando viene revocato o quando il browser cancella i suoi dati. Per proteggerli, i tuoi dati qui non si vedono più. Accedi di nuovo per ritrovarli: quello che non era ancora arrivato nel cloud è stato messo da parte e torna appena rientri.',
+    azione: 'Accedi di nuovo', annulla: 'Più tardi'
+  }, function () { if (window.LMCloud && window.LMCloud.available) void window.LMCloud.signIn(); });
+});
+
+/* «Esci» senza rete: si è usciti, ma una modifica deve ancora partire */
+window.addEventListener('lm:uscita-in-attesa', function () {
+  toast('Sei uscito. Una modifica non era ancora nel cloud: parte da sola appena c’è rete.', 0, 'cloud');
+});
 export function avviso(opz: OpzAvviso, onSi?: () => void, onNo?: () => void): void {
   if (avvisoAperto) { if (onNo) onNo(); return; }
   const ovl = document.createElement('div');
@@ -1607,8 +1626,8 @@ export function statoSync(): StatoSalvataggio {
   if (y.state === 'saving') return { ico: 'cloud', cls: '', testo: 'Salvataggio…', breve: 'Salvataggio…' };
   /* la scrittura è in coda: i dati sono già sul dispositivo, il cloud
      arriverà. Dirlo chiaramente invece di lasciare un "…" infinito. */
-  if (y.state === 'attesa') return { ico: 'cloud', cls: 'sync-attesa', testo: 'Salvato qui, in attesa di rete', breve: 'In attesa di rete',
-    title: 'I dati sono salvati su questo dispositivo. Appena c’è rete finiscono anche nel cloud.' + (y.at ? ' Ultimo salvataggio nel cloud: ' + oraDi(y.at) + '.' : '') };
+  if (y.state === 'attesa') return { ico: 'cloud', cls: 'sync-attesa', testo: 'Salvato qui, non ancora nel cloud', breve: 'Non ancora nel cloud',
+    title: 'Le ultime modifiche sono salvate su questo dispositivo ma non sono ancora arrivate nel cloud. Partono da sole appena c’è rete.' + (y.at ? ' Ultimo salvataggio nel cloud: ' + oraDi(y.at) + '.' : '') };
   if (y.state === 'muto') return { ico: 'cloud', cls: 'sync-errore', testo: 'Cloud non raggiungibile', breve: 'Cloud non risponde', title: y.error };
   if (y.state === 'error') return { ico: 'cloud', cls: 'sync-errore', testo: 'Sync non riuscita', breve: 'Sync non riuscita', title: y.error };
   if (y.state === 'saved') return { ico: 'cloudCheck', cls: 'sync-ok', testo: 'Salvato nel cloud' + quando, breve: 'Salvato' + quando, title: 'Ultimo salvataggio confermato dal server alle ' + oraDi(y.at) + '.' };
@@ -2302,9 +2321,9 @@ export function wireAspettoDati(root: HTMLElement): void {
   var le = root.querySelector<HTMLElement>('#imp-esci');
   if (le) le.addEventListener('click', function () {
     chiudiSheet();
-    Promise.resolve(window.LMCloud ? window.LMCloud.signOut() : undefined).then(function () {
+    Promise.resolve(window.LMCloud ? window.LMCloud.signOut() : undefined).then(function (esito) {
       location.hash = '#/oggi'; render();
-      toast('Disconnesso. I dati restano nel tuo account.', 0, 'logout');
+      if (esito !== 'in-attesa') toast('Disconnesso. I dati restano nel tuo account.', 0, 'logout');
     });
   });
   var d = root.querySelector<HTMLElement>('#imp-demo'); if (d) d.addEventListener('click', caricaDemo);
@@ -2428,7 +2447,7 @@ export function statoSalvataggioSpiegato(): Spiegazione {
   }
   if (y.state === 'saved') return { cls: 'diag-ok', tit: 'Al sicuro anche nel cloud', txt: 'Ultima conferma dal server alle ' + oraDi(y.at) + '. ' + locale };
   if (y.state === 'saving') return { cls: 'diag-corso', tit: 'Salvataggio nel cloud in corso', txt: locale + ' Sta arrivando la conferma del server.' };
-  if (y.state === 'attesa') return { cls: 'diag-attesa', tit: 'Salvato qui, in coda per il cloud', txt: locale + ' La copia online partirà appena c’è rete: non serve fare niente.' + (y.at ? ' Ultima copia nel cloud: ' + oraDi(y.at) + '.' : '') };
+  if (y.state === 'attesa') return { cls: 'diag-attesa', tit: 'Salvato qui, non ancora nel cloud', txt: locale + ' Le ultime modifiche partiranno per il cloud appena c’è rete: non serve fare niente.' + (y.at ? ' Ultima copia nel cloud: ' + oraDi(y.at) + '.' : '') };
   if (y.state === 'muto' || y.state === 'error') return { cls: 'diag-guasto', tit: 'Il cloud non sta salvando', txt: (y.error || '') + ' ' + locale };
   return { cls: 'diag-ok', tit: 'Niente in sospeso', txt: locale };
 }
@@ -8467,7 +8486,7 @@ window.addEventListener('lm:sync', function (e) {
   }
   if (y.state === 'attesa' && ultimoErroreSync !== 'attesa') {
     ultimoErroreSync = 'attesa';
-    toast('Sei offline: sincronizzo appena torna la rete.', 0, 'cloud');
+    toast('Salvato qui, non ancora nel cloud: parte da solo appena c’è rete.', 0, 'cloud');
   }
   if (y.state === 'saved') ultimoErroreSync = '';
 });

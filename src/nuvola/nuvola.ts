@@ -6,21 +6,61 @@
    bloccata, script non raggiungibile) l'app continua a funzionare in
    locale su questo dispositivo. Nessun errore fatale.
 
-   Modello di sincronizzazione: un solo documento per utente
-   (users/{uid}) che contiene l'intero stato serializzato in JSON.
-   Regola dei conflitti: non c'è un vincitore, si UNISCE — vedi il
-   commento lungo in `primaSincronizzazione`. Un listener in tempo
-   reale (onSnapshot) tiene allineati i dispositivi.
+   COM'ERA E PERCHÉ È CAMBIATO (la verifica del 24 novembre 2026, in
+   revisione/cloud/RAPPORTO.md). Prima c'era un documento solo per utente,
+   e ogni dispositivo lo SOVRASCRIVEVA intero con la sua copia, senza
+   leggere prima cosa c'era; riconosceva le proprie scritture dall'ora, che
+   la fusione però copiava dagli altri. Il risultato: un computer sempre
+   aperto che smetteva di sentire, cose scritte sul telefono che sparivano
+   dal cloud alla scrittura successiva del computer, e oltre 1 MB la
+   sincronizzazione ferma per sempre.
+
+   COME FUNZIONA ADESSO
+   · I dati nel cloud sono divisi in PEZZI (src/nuvola/pezzi.ts): il
+     documento principale `users/{uid}` tiene solo l'elenco dei pezzi con la
+     loro impronta, e ogni pezzo sta in `users/{uid}/pezzi/`. Niente più
+     limite di dimensione, e un salvataggio riscrive solo i pezzi cambiati.
+   · OGNI salvataggio è una TRANSAZIONE che legge quello che c'è nel cloud,
+     lo unisce con quello che c'è qui (`LM.unisci`, con gli orologi delle
+     chiavi) e scrive il risultato solo se è diverso. Se nel frattempo un
+     altro dispositivo ha scritto, Firestore rifà il giro da capo. Non
+     esiste più una scrittura «cieca».
+   · Le proprie scritture si riconoscono da un NOME DI SCRITTURA a caso, non
+     dall'ora; e comunque riunire una propria scrittura non fa danni,
+     perché unire due volte la stessa cosa dà la stessa cosa.
+   · Quando il cloud cambia, il dispositivo rifà il giro: legge, unisce,
+     e se aveva qualcosa che il cloud non ha lo rimanda su.
+   · Le copie di sicurezza nel cloud sono al massimo una al giorno, ne
+     restano le ultime trenta, e si elencano senza scaricarle.
+   · I dati appartengono a UN account: al cambio d'account, alla sessione
+     chiusa da Firebase, a «Esci» in un'altra scheda, il dispositivo si
+     svuota — e quello che non era ancora nel cloud resta da parte per
+     quell'account soltanto (vedi `mettiDaParte` in dati.ts).
    ============================================================ */
 import type { Stato } from '../tipi/stato';
 import type {
   App, Auth, Db, Provider, Documento, DatiDocumento, ErroreFirebase,
-  ModuloApp, ModuloAuth, ModuloFirestore, UtenteFirebase
+  ModuloApp, ModuloAuth, ModuloFirestore, UtenteFirebase, Transazione, VocePezzo, OraServer
 } from './sdk';
+import { dividi, ricomponi, affetta, hash } from './pezzi';
+import type { Pezzo } from './pezzi';
+
+/* ⚠️ L'INTERRUTTORE DELL'ACCESSO DA IPHONE — UNA RIGA, E VA TOCCATA SOLO DOPO
+   I PASSI SCRITTI IN revisione/cloud/RAPPORTO.md («Accesso su iPhone»).
+   Su Safari, quando il popup di Google è bloccato, l'accesso passa da un
+   redirect che deve tornare sullo STESSO indirizzo del sito: con
+   `authDomain` su firebaseapp.com può non tornare. Il Worker serve già
+   `/__/auth/*` da lifemax.theproject.world (sentinella/worker.mjs), ma
+   accendere questo interruttore PRIMA di aver aggiunto
+   https://lifemax.theproject.world/__/auth/handler fra gli indirizzi di
+   ritorno del client OAuth di Google (e il dominio fra quelli autorizzati
+   di Firebase) romperebbe l'accesso a tutti. */
+const ACCESSO_DAL_DOMINIO = false;
+const DOMINIO = 'lifemax.theproject.world';
 
 const firebaseConfig = {
   apiKey: 'AIzaSyCDaZSbI1Emzz27QKKixn61Lmu60hrA2BM',
-  authDomain: 'lifemax-9dc63.firebaseapp.com',
+  authDomain: (ACCESSO_DAL_DOMINIO && location.hostname === DOMINIO) ? DOMINIO : 'lifemax-9dc63.firebaseapp.com',
   projectId: 'lifemax-9dc63',
   storageBucket: 'lifemax-9dc63.firebasestorage.app',
   messagingSenderId: '168732828259',
@@ -30,10 +70,19 @@ const firebaseConfig = {
 
 const SDK = 'https://www.gstatic.com/firebasejs/12.16.0/';
 
-/* ------------------------------------------------------- quello che si vede
-   Le due forme che il resto dell'app legge da `window`. Erano oggetti
-   costruiti a mano con `Object.assign`, e ogni punto che li leggeva doveva
-   indovinare quali campi ci fossero. */
+/* la forma dei dati nel cloud: 2 = divisa in pezzi (vedi in cima) */
+const SCHEMA = 2;
+/* scritto nel documento principale per chi lo apre con la console o con una
+   versione vecchia: i dati non stanno più qui dentro */
+const AVVISO_SCHEMA = 'I dati stanno in users/{uid}/pezzi (schema 2). Una scheda con la versione vecchia di LifeMax va ricaricata.';
+/* quante copie di sicurezza tenere nel cloud, e ogni quanto farne una */
+const COPIE_DA_TENERE = 30;
+const COPIA_OGNI_MS = 20 * 3600 * 1000;
+/* oltre questo, un dispositivo che torna è «assente da molto» (vedi
+   `assenzaLunga` in dati.ts): le lapidi durano due anni */
+const ASSENZA_LUNGA_MS = 600 * 24 * 3600 * 1000;
+
+/* ------------------------------------------------------- quello che si vede */
 export interface Utente { uid: string; email: string; name: string; photo: string }
 
 export interface StatoAuth {
@@ -47,13 +96,10 @@ export interface StatoAuth {
      'idle'    nulla da salvare
      'saving'  scrittura in corso (breve)
      'saved'   confermato dal server
-     'attesa'  scritto sul dispositivo, il server non ha ancora confermato
-               (rete assente o lenta): Firestore mette la scrittura in coda e
-               la promessa NON si risolve finché non torna la rete — senza
-               questo stato la scritta restava "Sincronizzazione…" per sempre
-     'muto'    online ma il server non conferma: quasi sempre Firestore non
-               è attivo o le regole non sono pubblicate
-     'error'   rifiutato (permessi, database non attivo…)                    */
+     'attesa'  scritto sul dispositivo, NON ANCORA NEL CLOUD (rete assente o
+               lenta, o app riaperta con modifiche rimaste indietro)
+     'muto'    online ma il server non risponde
+     'error'   rifiutato                                                    */
 export type StatoScrittura = 'idle' | 'saving' | 'saved' | 'attesa' | 'muto' | 'error';
 
 export interface StatoSync {
@@ -63,22 +109,33 @@ export interface StatoSync {
   inCoda: boolean;
 }
 
-export interface CopiaNelCloud { id: string; ts: number; salvato: number; ricchezza: number }
+/* una copia di sicurezza nel cloud, come la si vede nell'elenco. `vecchia`:
+   presa dalla versione di prima dell'app (users/{uid}/backups) */
+export interface CopiaNelCloud {
+  id: string; ts: number; salvato: number; ricchezza: number;
+  nome?: string; visione?: string; motivo?: string; vecchia?: boolean;
+}
+
+export type EsitoUscita = 'uscito' | 'in-attesa';
 
 export interface ApiCloud {
   available: boolean;
   signIn(): void | Promise<void>;
-  signOut(): void | Promise<void>;
+  signOut(): void | Promise<void | EsitoUscita>;
   backups?(): Promise<CopiaNelCloud[]>;
-  riprendiBackup?(id: string): Promise<boolean>;
-  sostituisciConBackup?(id: string): Promise<boolean>;
+  backupsVecchi?(): Promise<CopiaNelCloud[]>;
+  riprendiBackup?(id: string, vecchia?: boolean): Promise<boolean>;
+  sostituisciConBackup?(id: string, vecchia?: boolean): Promise<boolean>;
+  riprendiProfilo?(id: string, vecchia?: boolean): Promise<boolean>;
+  /* ci sono modifiche fatte qui che il cloud non ha ancora? */
+  inSospeso?(): boolean;
+  /* manda subito quello che manca; vero quando il cloud l'ha confermato */
+  svuota?(attesaMs?: number): Promise<boolean>;
   /* il gettone di Firebase dell'utente collegato ('' se non c'è): lo usa
      src/calendari/server.ts per farsi riconoscere dalla sentinella */
   gettone?(forza?: boolean): Promise<string>;
 }
 
-/* la risposta alla domanda sui dati di esempio: due parole e non un booleano,
-   perché nel registro tecnico si legge quale delle due è stata scelta */
 export type RispostaEsempio = 'unisci' | 'solo-cloud';
 
 export interface DettaglioEsempio {
@@ -91,47 +148,78 @@ export interface DettaglioEsempio {
 let AUTHM: ModuloAuth | null = null, FSM: ModuloFirestore | null = null;
 let auth: Auth | null = null, db: Db | null = null, provider: Provider | null = null;
 let currentUser: Utente | null = null;
-let utenteFb: UtenteFirebase | null = null;   /* lo stesso, come lo dà Firebase: serve per il gettone */
+let utenteFb: UtenteFirebase | null = null;
 let unsubDoc: (() => void) | null = null;
-let applyingRemote = false;   /* stiamo scrivendo lo stato ricevuto dal cloud */
-/* LE NOSTRE SCRITTURE, NON SOLO L'ULTIMA.
-   Riconoscere la propria eco tenendo a mente un solo numero funziona finché
-   si scrive una volta ogni tanto. Con due salvataggi ravvicinati — che qui
-   sono la norma, si tocca tanto e in fretta — l'eco della prima torna
-   indietro quando il ricordo porta già il numero della seconda: non
-   combacia, e il dispositivo scambia se stesso per un altro. Da lì partiva
-   tutto il corteo sbagliato: una copia di sicurezza, una fusione dei propri
-   dati con i propri dati, e l'avviso «aggiornato da un altro dispositivo»
-   mentre stavi soltanto scrivendo. E siccome applicare un'eco riportava il
-   ricordo al numero vecchio, anche la seconda scrittura sembrava di
-   qualcun altro: una sola raffica bastava a far partire la catena.
-   Si tengono quindi le ultime trentadue, che una raffica non le riempie. */
-const nostreScritture = new Set<number>();
-const RICORDO = 32;
-let ascoltoAttivo = false;    /* il listener degli altri dispositivi è vivo? */
+let applyingRemote = false;
+let ascoltoAttivo = false;
 let riprovaTimer: ReturnType<typeof setTimeout> | null = null;
-let attesaRiprova = 0;        /* quanto aspettare la prossima volta */
-let cadute = 0;               /* quante volte è caduto in questa sessione */
-let pushTimer: ReturnType<typeof setTimeout> | undefined;
-let pushInCorso = false;      /* una setDoc è già in volo */
-let pushPendente = false;     /* sono arrivate modifiche mentre scrivevamo */
+let attesaRiprova = 0;
+let cadute = 0;
 
-/* `AUTHM` non lo legge nessuno tranne l'inizializzazione: sta lì perché era
-   così anche prima, e perché tenerlo dice a chi legge che il modulo di
-   autenticazione è stato caricato. */
-void AUTHM;
+/* LE NOSTRE SCRITTURE, riconosciute dal nome che portano (`scrittore`), non
+   dall'ora: la fusione copia le ore degli altri, e un'ora presa in prestito
+   faceva scambiare per propria la scrittura di un altro dispositivo, che
+   quindi veniva ignorata. Era il «computer sordo» della verifica. */
+const mieScritture = new Set<string>();
+function ricordaScrittura(w: string): void {
+  mieScritture.add(w);
+  if (mieScritture.size > 64) { const v = mieScritture.values().next(); if (!v.done) mieScritture.delete(v.value); }
+}
 
-function ricorda(at: number): void {
-  if (!at) return;
-  nostreScritture.add(at);
-  if (nostreScritture.size <= RICORDO) return;
-  const piuVecchia = nostreScritture.values().next();
-  if (!piuVecchia.done) nostreScritture.delete(piuVecchia.value);
+/* IL GIRO DI SINCRONIZZAZIONE: uno alla volta. Se ne serve un altro mentre
+   uno è in corso (una modifica qui, un cambiamento nel cloud) si segna e si
+   rifà appena quello finisce: niente si perde per strada, e due giri non
+   si pestano i piedi. Prima un aggiornamento arrivato durante una propria
+   scrittura veniva scartato. */
+let syncInCorso: Promise<boolean> | null = null;
+let syncPendente = false;
+let syncDi = '';
+let syncTimer: ReturnType<typeof setTimeout> | null = null;
+let riprovaSyncTimer: ReturnType<typeof setTimeout> | null = null;
+let attesaSync = 0;
+/* le modifiche fatte qui: quante, e se il cloud le ha già tutte */
+let modifiche = 0;
+let sporco = false;
+/* finché la prima unione di questo dispositivo con l'account non è riuscita:
+   «mai unito» (vedi `nuovo` in dati.ts) */
+let primaFusione: { nuovo: boolean } | null = null;
+/* l'uscita è stata chiesta (non è Firebase che ha chiuso la sessione) */
+let uscitaVoluta = false;
+/* la sessione chiusa da Firebase è stata vista da questa finestra (anche
+   all'avvio): serve a non dirlo due volte */
+let fineSessioneDetta = false;
+
+/* QUELLO CHE SI SA DEL CLOUD. Le fette dei pezzi si chiamano col nome del
+   pezzo e la sua impronta (`azioni.2026q4~abc123~0`), quindi una fetta letta
+   una volta vale per sempre: se il pezzo cambia, cambia il nome. */
+const fette = new Map<string, string>();
+let revNota = 0;
+/* i pezzi trovati nel cloud quando il documento principale non li elenca
+   più (l'ha sovrascritto una scheda con la versione vecchia dell'app) */
+let orfani: string[] | null = null;
+/* la copia del documento vecchio (un JSON solo) presa prima di dividerlo */
+let copiaVecchiaFatta = '';
+/* l'istante da cui parte l'ultimo giro riuscito: quello che è cambiato
+   dopo è quello che il cloud potrebbe non avere ancora */
+let giroDa = 0;
+/* il gettone dell'utente, tenuto pronto: quando la pagina si chiude non c'è
+   tempo di chiederlo */
+let gettonePronto = '';
+function rinfrescaGettone(): void {
+  const u = utenteFb;
+  if (u && u.getIdToken) u.getIdToken().then(function (t) { gettonePronto = t; }, function () { /* resta quello di prima */ });
 }
 
 function log(liv: 'info' | 'avviso' | 'errore', msg: string, dati?: unknown): void {
   if (window.LMLog) window.LMLog.add(liv, 'cloud', msg, dati);
 }
+function leggi(k: string): string { try { return localStorage.getItem(k) || ''; } catch { return ''; } }
+function scrivi(k: string, v: string): void { try { localStorage.setItem(k, v); } catch { /* senza memoria */ } }
+function togli(k: string): void { try { localStorage.removeItem(k); } catch { /* niente */ } }
+const CHI = 'lm-account-unito';            /* di quale account sono i dati qui */
+const SOSPESO = 'lm-sospeso';              /* l'account con modifiche non ancora nel cloud */
+const ULTIMA = 'lm-ultima-sincronia';      /* l'ultima volta che il cloud ha detto «ho tutto» */
+const USCITA = 'lm-uscita-in-attesa';      /* «Esci» senza rete: si chiude appena il cloud ha tutto */
 
 function emitAuth(extra?: Partial<StatoAuth>): void {
   window.LM_AUTH = Object.assign(
@@ -145,26 +233,51 @@ function emitUnavailable(): void {
   window.LM_AUTH = { user: null, available: false, syncing: false };
   window.LMCloud = { available: false, signIn: function () {}, signOut: function () {} };
   window.dispatchEvent(new CustomEvent('lm:auth'));
+  nascondiAggiornamento();
+}
+
+/* «NON ANCORA NEL CLOUD», SEMPRE A VISTA. Sul computer lo dice la barra di
+   lato; sul telefono la barra non c'è, e un avviso che sparisce dopo tre
+   secondi non basta: chi chiude l'app deve poter vedere che l'ultima cosa
+   non è ancora partita. Una pastiglia piccola, in alto, che non prende i
+   tocchi e se ne va appena il cloud conferma. */
+function pastiglia(state: StatoScrittura): void {
+  const serve = state === 'attesa' && !!(currentUser || leggi(CHI));
+  let p = document.getElementById('lm-non-ancora');
+  if (!serve) { if (p) p.remove(); return; }
+  if (p || !document.body) return;
+  if (!document.getElementById('lm-non-ancora-stile')) {
+    const st = document.createElement('style');
+    st.id = 'lm-non-ancora-stile';
+    st.textContent = '#lm-non-ancora{position:fixed;right:12px;top:max(10px,env(safe-area-inset-top));z-index:9997;pointer-events:none;' +
+      'background:var(--superficie,#fff);color:var(--testo,#222);border:1px solid var(--bordo,#ddd);border-radius:999px;padding:4px 10px;' +
+      'font:600 12px/1.3 system-ui,sans-serif;box-shadow:0 2px 10px rgba(0,0,0,.12)}@media (min-width:861px){#lm-non-ancora{display:none}}';
+    document.head.appendChild(st);
+  }
+  p = document.createElement('div');
+  p.id = 'lm-non-ancora';
+  p.setAttribute('role', 'status');
+  p.textContent = 'Non ancora nel cloud';
+  document.body.appendChild(p);
 }
 
 function emitSync(state: StatoScrittura, error?: string): void {
+  pastiglia(state);
   const prec = window.LM_SYNC;
-  if (prec && prec.state === state && (prec.error || '') === (error || '')) return; /* niente rumore inutile */
+  if (prec && prec.state === state && (prec.error || '') === (error || '')) return;
   const at = (state === 'saved') ? Date.now() : (prec && prec.at) || 0;
   window.LM_SYNC = { state: state, error: error || '', at: at, inCoda: state === 'attesa' };
   window.dispatchEvent(new CustomEvent('lm:sync', { detail: window.LM_SYNC }));
 }
 
 /* --- una sola clessidra per tutte le operazioni cloud ---
-   Prima ogni push apriva i propri timer e ri-emetteva 'saving': con
-   più operazioni sovrapposte (o una lettura iniziale che non torna
-   mai) lo stato restava "Salvataggio…" per sempre. Ora le operazioni
-   si contano: 'saving' si emette solo alla prima, l'esito solo quando
-   l'ultima si chiude. Nessuna operazione può restare senza esito. */
-const ATTESA_MS = 6000;    /* oltre questo, diciamo che è in coda */
-const MUTO_MS = 25000;     /* se siamo ONLINE e ancora niente, non è la rete */
-
+   Le operazioni si contano: 'saving' si emette solo alla prima, l'esito
+   solo quando l'ultima si chiude. Nessuna operazione resta senza esito. */
+const ATTESA_MS = 6000;
+const MUTO_MS = 25000;
 let opAperte = 0;
+/* all'apertura c'erano modifiche rimaste indietro dall'ultima volta */
+let rimastoIndietro = false;
 let tAttesa: ReturnType<typeof setTimeout> | null = null;
 let tMuto: ReturnType<typeof setTimeout> | null = null;
 
@@ -172,51 +285,99 @@ function opInizio(che: string): void {
   opAperte++;
   log('info', 'operazione avviata: ' + che, 'in corso: ' + opAperte);
   if (opAperte > 1) return;
-  emitSync('saving');
-  if (tAttesa) return;   /* una clessidra è già in corsa: non ripartire da zero */
-  /* Se il server non risponde entro qualche secondo NON restiamo appesi a
-     "Salvataggio…": diciamo che è salvato qui e in coda per il cloud.
-     La scrittura resta viva: quando il server conferma, passiamo a 'saved'. */
+  /* senza rete non si finge di salvare: si dice subito «non ancora nel
+     cloud»; e così pure all'apertura, se l'ultima volta qualcosa era rimasto
+     indietro, finché il cloud non conferma */
+  emitSync(navigator.onLine && !rimastoIndietro ? 'saving' : 'attesa');
+  if (tAttesa) return;
   tAttesa = setTimeout(function () {
     log('avviso', 'il cloud non ha ancora confermato dopo ' + (ATTESA_MS / 1000) + 's', 'online: ' + navigator.onLine);
     emitSync('attesa');
   }, ATTESA_MS);
-  /* Due situazioni molto diverse per la sicurezza dei dati: senza rete è
-     tutto normale (la coda si svuoterà), ma se siamo online e il server non
-     risponde comunque, il problema è la configurazione del cloud e va detto
-     — altrimenti l'utente crede di avere un backup che non ha. */
   tMuto = setTimeout(function () {
     if (!navigator.onLine) return;
     log('errore', 'cloud muto: online da ' + (MUTO_MS / 1000) + 's senza risposta');
-    emitSync('muto', 'Il cloud non risponde pur essendoci rete: controlla che Firestore sia attivo e che le regole siano pubblicate. Per ora i dati restano su questo dispositivo.');
+    emitSync('muto', 'Il cloud non risponde da un po’. I tuoi dati sono al sicuro su questo dispositivo e partono appena risponde.');
   }, MUTO_MS);
 }
 
 function opFine(che: string, stato: StatoScrittura, error?: string): void {
   opAperte = Math.max(0, opAperte - 1);
-  log(stato === 'saved' ? 'info' : 'errore', 'operazione conclusa: ' + che + ' → ' + stato, error || '');
-  if (opAperte > 0) return;      /* c'è ancora qualcosa in volo: l'esito lo darà l'ultima */
+  log(stato === 'saved' ? 'info' : 'avviso', 'operazione conclusa: ' + che + ' → ' + stato, error || '');
+  if (opAperte > 0) return;
   if (tAttesa) clearTimeout(tAttesa);
   if (tMuto) clearTimeout(tMuto);
   tAttesa = tMuto = null;
   emitSync(stato, error);
 }
 
-/* L'operazione finisce ma l'esito non è ancora deciso: subito dopo ne parte
-   un'altra (tipico: la lettura iniziale che sfocia in una scrittura). La
-   clessidra resta in corsa e lo stato lo darà quella, così non si vede un
-   "Salvato" lampeggiare in mezzo a un salvataggio ancora aperto. */
-function opCede(che: string, a: string): void {
-  opAperte = Math.max(0, opAperte - 1);
-  log('info', che + ' → prosegue con: ' + a);
+function messaggio(e: unknown): string {
+  if (e instanceof Error) return e.message;
+  const f = e as ErroreFirebase | null;
+  return (f && (f.message || f.code)) || '';
 }
+function codice(e: unknown): string { return ((e as ErroreFirebase | null)?.code || '') + ''; }
+/* un errore che vuol dire «manca la rete», e non «c'è un guasto» */
+function eRete(e: unknown): boolean {
+  if (!navigator.onLine) return true;
+  return /unavailable|offline|network|deadline-exceeded/i.test(codice(e) + ' ' + messaggio(e));
+}
+
+/* --------------------------------------------- «aggiornamento…» all'apertura
+   Un dispositivo riaperto dopo giorni mostrava per un paio di secondi i dati
+   vecchi, che poi cambiavano sotto gli occhi: una cosa fatta ieri sul
+   telefono non c'era, poi c'era; una cancellata c'era, poi spariva. Adesso,
+   se l'ultima volta che questo dispositivo ha parlato col cloud è lontana,
+   finché non arriva l'aggiornamento si vede una fascia che lo dice, e i dati
+   sotto restano sbiaditi. Senza rete, o se il cloud tarda, la fascia lo dice
+   e si toglie: si lavora coi dati di qui, che poi si uniranno. */
+let fasciaTimer: ReturnType<typeof setTimeout> | null = null;
+function mostraAggiornamento(): void {
+  if (document.getElementById('lm-aggiornamento')) return;
+  const stile = document.createElement('style');
+  stile.id = 'lm-aggiornamento-stile';
+  stile.textContent = 'html.lm-aggiornando #app,html.lm-aggiornando main{opacity:.35;transition:opacity .3s}' +
+    '#lm-aggiornamento{position:fixed;left:50%;top:max(12px,env(safe-area-inset-top));transform:translateX(-50%);z-index:9999;' +
+    'background:var(--superficie,#fff);color:var(--testo,#222);border:1px solid var(--bordo,#ddd);border-radius:999px;' +
+    'padding:8px 16px;font:600 14px/1.3 system-ui,sans-serif;box-shadow:0 4px 18px rgba(0,0,0,.15);max-width:calc(100vw - 32px);text-align:center}';
+  document.head.appendChild(stile);
+  const f = document.createElement('div');
+  f.id = 'lm-aggiornamento';
+  f.setAttribute('role', 'status');
+  f.textContent = 'Aggiornamento dal cloud…';
+  (document.body || document.documentElement).appendChild(f);
+  document.documentElement.classList.add('lm-aggiornando');
+  fasciaTimer = setTimeout(function () { nascondiAggiornamento('Il cloud tarda: per ora vedi i dati di questo dispositivo.'); }, 12000);
+}
+function nascondiAggiornamento(ultima?: string): void {
+  if (fasciaTimer) { clearTimeout(fasciaTimer); fasciaTimer = null; }
+  document.documentElement.classList.remove('lm-aggiornando');
+  const f = document.getElementById('lm-aggiornamento');
+  if (!f) return;
+  if (ultima) { f.textContent = ultima; setTimeout(function () { f.remove(); }, 3500); }
+  else f.remove();
+}
+(function () {
+  const chi = leggi(CHI);
+  if (!chi) return;
+  const ultima = Number(leggi(ULTIMA)) || 0;
+  /* le modifiche rimaste indietro l'ultima volta: si dice subito */
+  if (leggi(SOSPESO) === chi) {
+    sporco = true; rimastoIndietro = true; emitSync('attesa');
+    if (!document.body) document.addEventListener('DOMContentLoaded', function () { if (window.LM_SYNC) pastiglia(window.LM_SYNC.state); });
+  }
+  if (Date.now() - ultima < 10 * 60 * 1000) return;
+  if (!navigator.onLine) return;
+  const via = function () { if (document.body) mostraAggiornamento(); else document.addEventListener('DOMContentLoaded', mostraAggiornamento); };
+  via();
+})();
+window.addEventListener('offline', function () {
+  if (document.getElementById('lm-aggiornamento')) nascondiAggiornamento('Senza rete: vedi i dati di questo dispositivo.');
+});
 
 /* --------------------------------------------------------------- l'avvio */
 void (async function init() {
   try {
-    /* `@vite-ignore`: l'indirizzo è composto a runtime e sta su gstatic, non
-       nel pacco. Senza questa nota Vite prova ad analizzarlo e avvisa a ogni
-       build di una cosa che è voluta. */
     const [appMod, authMod, fsMod] = await Promise.all([
       import(/* @vite-ignore */ SDK + 'firebase-app.js') as Promise<ModuloApp>,
       import(/* @vite-ignore */ SDK + 'firebase-auth.js') as Promise<ModuloAuth>,
@@ -228,31 +389,13 @@ void (async function init() {
     const app: App = appMod.initializeApp(firebaseConfig);
     const autenticazione = authMod.getAuth(app);
     auth = autenticazione;
-    /* IL CANALE LUNGO, DICHIARATO INVECE CHE SPERATO.
-       `WebChannelConnection RPC 'Listen' stream transport errored` è la firma
-       di una rete che non digerisce lo streaming: dati mobili che cambiano
-       cella, un proxy, una VPN, certe reti aziendali. La cura documentata è
-       lasciare che Firestore si accorga da sé e ripieghi sul «long polling»,
-       che è più lento ma passa dappertutto.
-       Nelle versioni recenti dell'SDK questo riconoscimento è già acceso di
-       suo, quindi molto probabilmente questa riga non cambia niente OGGI.
-       Vale la pena scriverla lo stesso per una ragione sola: così è una scelta
-       nostra e non un valore predefinito che può cambiare sotto i piedi con
-       l'aggiornamento di una libreria. Se il nome dell'opzione non esiste più,
-       si ripiega sul modo normale invece di far cadere tutto il cloud. */
+    /* IL CANALE LUNGO, DICHIARATO INVECE CHE SPERATO: su reti che non
+       digeriscono lo streaming Firestore ripiega da sé sul «long polling».
+       NIENTE `localCache`, ED È UNA SCELTA: la coda offline ce l'ha già
+       LifeMax (lo stato in localStorage, unito al cloud a ogni giro), e due
+       code che riconciliano gli stessi dati con regole diverse sono il modo
+       di perderne. */
     try {
-      /* NIENTE `localCache`, ED È UNA SCELTA.
-         Firestore sa tenersi una cache persistente su IndexedDB
-         (`persistentLocalCache`) che mette in coda le scritture fatte offline
-         e le manda quando la rete torna. Qui non si usa, e non è una
-         dimenticanza: LifeMax quella coda ce l'ha già. Lo stato vero sta in
-         localStorage, la fusione la fa `COME_UNIRE` in `dati.ts` con le sue
-         lapidi per le cancellazioni, e quel pezzo è costato un bug vero — le
-         cose cancellate che tornavano vive.
-         Accendere la cache di Firestore vorrebbe dire avere DUE code offline
-         che riconciliano gli stessi dati, ognuna con le sue regole. Verificato
-         sulla documentazione del v12: l'API è quella giusta e non è
-         deprecata; è il nostro caso che non la vuole. */
       db = fsMod.initializeFirestore(app, { experimentalAutoDetectLongPolling: true });
       log('info', 'Firestore avviato', 'riconoscimento automatico del canale lungo attivo');
     } catch (e) {
@@ -272,124 +415,95 @@ void (async function init() {
         try {
           await authMod.signInWithPopup(autenticazione, prov);
         } catch (e) {
-          const codice = (e as ErroreFirebase | null)?.code || '';
-          log('avviso', 'accesso con Google non riuscito', codice + ' ' + messaggio(e));
-          /* QUANDO IL FOGLIO DI GOOGLE SI CHIUDE DA SOLO. Il caso più comune è
-             l'indirizzo: l'accesso con Google funziona solo dagli indirizzi
-             scritti fra i «domini autorizzati» del progetto Firebase, e un
-             indirizzo nuovo (per esempio quello di Cloudflare) non c'è finché
-             qualcuno non ce lo aggiunge. Prima l'errore finiva nella console e
-             a chi tocca il tasto non arrivava niente. */
+          const cod = codice(e);
+          log('avviso', 'accesso con Google non riuscito', cod + ' ' + messaggio(e));
+          /* I MESSAGGI SONO PER CHI USA L'APP. Prima dicevano «aggiungi il
+             dominio in Firebase: Authentication → Impostazioni…», cioè
+             parlavano al programmatore. Il dettaglio tecnico resta nel
+             Registro tecnico, qui sopra. */
           const dire = function (titolo: string, testo: string): void {
             document.dispatchEvent(new CustomEvent('lm:accesso-fallito', { detail: { titolo: titolo, testo: testo } }));
           };
-          if (/unauthorized-domain/.test(codice)) {
-            dire('Questo indirizzo non è autorizzato',
-              'Google accetta l’accesso solo dagli indirizzi autorizzati. Aggiungi «' + location.hostname + '» in Firebase: Authentication → Impostazioni → Domini autorizzati. Poi riprova.');
-          } else if (/operation-not-allowed/.test(codice)) {
-            dire('Accesso con Google spento', 'Nel progetto Firebase l’accesso con Google è disattivato: Authentication → Metodo di accesso → Google.');
-          } else if (/popup-blocked|cancelled-popup-request|popup-closed-by-user/.test(codice) && Date.now() - partito > 2500) {
+          if (/unauthorized-domain/.test(cod)) {
+            dire('Da qui l’accesso non è attivo',
+              'Da questo indirizzo non si può ancora accedere con Google. Apri LifeMax da ' + DOMINIO + ' e accedi da lì: i tuoi dati ti aspettano.');
+          } else if (/operation-not-allowed/.test(cod)) {
+            dire('Accesso momentaneamente spento', 'L’accesso con Google in questo momento non è disponibile. I tuoi dati restano su questo dispositivo: riprova più tardi.');
+          } else if (/popup-blocked|cancelled-popup-request|popup-closed-by-user/.test(cod) && Date.now() - partito > 2500) {
             /* chiuso da te dopo averlo visto: non è un errore */
-          } else if (/popup/.test(codice)) {
-            /* bloccato, o chiuso dal browser appena aperto: si va con il redirect */
+          } else if (/popup/.test(cod)) {
             try { await authMod.signInWithRedirect(autenticazione, prov); } catch (e2) {
-              dire('Accesso non riuscito', 'Il browser ha chiuso la finestra di Google. Se succede ancora, prova da un’altra scheda o apri l’app nel browser invece che dalla schermata Home. (' + ((e2 as ErroreFirebase | null)?.code || 'errore') + ')');
+              log('avviso', 'anche il redirect non è partito', codice(e2));
+              dire('Accesso non riuscito', 'Il browser ha chiuso la finestra di Google. Riprova; se succede ancora, apri LifeMax nel browser invece che dalla schermata Home.');
             }
-          } else if (/network/.test(codice)) {
-            dire('Niente rete', 'Per accedere serve la connessione.');
+          } else if (/network/.test(cod)) {
+            dire('Niente rete', 'Per accedere serve la connessione. I tuoi dati restano su questo dispositivo.');
           } else {
-            dire('Accesso non riuscito', 'Google ha risposto: ' + (codice || messaggio(e)) + '.');
+            dire('Accesso non riuscito', 'Non è andata, e non per colpa tua. Riprova fra poco.');
           }
         }
       },
-      /* USCIRE LASCIA IL DISPOSITIVO PULITO. I dati sono dell'account e
-         restano nell'account: qui se ne tiene una copia nei backup locali e
-         si riparte vuoti. Se restassero, chi entra poi con un ALTRO account
-         (o carica l'esempio e rientra) se li vedrebbe mescolare con altri. */
-      signOut: async function () {
-        const chi = currentUser;
-        if (chi) { try { await push(chi.uid); } catch { /* resta il backup locale */ } }
-        try { await authMod.signOut(autenticazione); } catch { /* ignora */ }
-        try { localStorage.removeItem('lm-account-unito'); } catch { /* pazienza */ }
-        window.LM.lasciaAccount();
-      },
-      /* LE COPIE CHE STANNO NEL CLOUD, per poterle guardare e riprendere.
-         Ogni volta che il documento remoto sta per essere toccato ne viene
-         messa da parte una copia in `users/{uid}/backups/{ts}` — succede da
-         mesi, e finora nessuno poteva vederle: erano una rete di sicurezza
-         invisibile, cioè metà rete. Quando i dati sono spariti da un
-         dispositivo e da lì sono saliti, la copia buona è ESATTAMENTE là. */
-      backups: async function () {
-        if (!currentUser || !db) return [];
-        try {
-          const q = await fsMod.getDocs(fsMod.collection(db, 'users', currentUser.uid, 'backups'));
-          const out: CopiaNelCloud[] = [];
-          q.forEach(function (d) {
-            const v = d.data() || {};
-            let ricchezza = 0;
-            try { ricchezza = window.LM.ricchezza(JSON.parse(v.data || 'null')); } catch { ricchezza = 0; }
-            out.push({ id: d.id, ts: v.updatedAt || +d.id || 0, salvato: v.salvato || 0, ricchezza: ricchezza });
-          });
-          return out.sort(function (a, b) { return (b.ts || 0) - (a.ts || 0); });
-        } catch (e) {
-          log('errore', 'non riesco a leggere le copie nel cloud', messaggio(e));
-          return [];
-        }
-      },
-      /* riprende una copia dal cloud. Non sostituisce: UNISCE, come tutto il
-         resto — chi va a ripescare una copia vuole riavere quello che manca,
-         non buttare via quello che nel frattempo ha fatto. */
-      riprendiBackup: async function (id: string) { return daBackup(id, false); },
-      /* RIPRENDERE AGGIUNGE, SOSTITUIRE RIFÀ DA CAPO.
-         «Riprendi» unisce, ed è quello che serve quasi sempre: una copia è un
-         pezzo della stessa vita, e buttare il resto sarebbe una perdita.
-         Ma c'è un caso in cui unire è esattamente il problema: quando quello
-         che c'è adesso NON è tuo. I dati di esempio finiti nell'account a un
-         accesso sono il caso vero — da lì non si torna indietro unendo, e
-         finché questa via non è esistita non si tornava indietro affatto:
-         la fusione aggiunge, l'importazione aggiunge, «riprendi» aggiunge, e
-         l'unica cosa che sostituisce valeva solo per le copie di questo
-         dispositivo, che quei dati di esempio ce li avevano già dentro.
-         Prima di rifare si mette da parte una copia locale: sostituire è la
-         sola cosa qui che TOGLIE, e deve avere una strada per tornare. */
-      sostituisciConBackup: async function (id: string) { return daBackup(id, true); },
+      signOut: esci,
+      backups: elencaCopie,
+      backupsVecchi: elencaCopieVecchie,
+      riprendiBackup: function (id: string, vecchia?: boolean) { return daCopia(id, 'riprendi', !!vecchia); },
+      sostituisciConBackup: function (id: string, vecchia?: boolean) { return daCopia(id, 'sostituisci', !!vecchia); },
+      riprendiProfilo: function (id: string, vecchia?: boolean) { return daCopia(id, 'profilo', !!vecchia); },
+      inSospeso: function () { return sporco; },
+      svuota: function (ms?: number) { return conTempo(sincronizza('richiesta'), ms || 8000); },
       gettone: async function (forza?: boolean) {
         const u = utenteFb;
-        if (!u || !u.getIdToken) return '';
+        if (!u || !u.getIdToken || !currentUser) return '';
         try { return await u.getIdToken(!!forza); } catch { return ''; }
       }
     };
 
     log('info', 'cloud pronto', 'progetto ' + firebaseConfig.projectId);
 
-    /* completa un eventuale accesso via redirect */
     try { await authMod.getRedirectResult(autenticazione); } catch (e) { log('avviso', 'esito del redirect di accesso non recuperato', messaggio(e)); }
 
     authMod.onAuthStateChanged(autenticazione, async function (u: UtenteFirebase | null) {
-      if (unsubDoc) { unsubDoc(); unsubDoc = null; }
+      fermaAscolto();
       utenteFb = u;
       if (u) {
+        /* «Esci» senza rete, rimasto a metà: qui si finisce, senza mostrare niente */
+        const inAttesa = leggi(USCITA);
+        if (inAttesa && inAttesa === u.uid) { currentUser = null; emitAuth(); void completaUscita(u); return; }
+        if (inAttesa) togli(USCITA);
         currentUser = { uid: u.uid, email: u.email || '', name: u.displayName || '', photo: u.photoURL || '' };
+        uscitaVoluta = false; fineSessioneDetta = false;
+        rinfrescaGettone();
         log('info', 'accesso riscontrato, avvio la prima sincronizzazione', 'uid ' + u.uid.slice(0, 6) + '…');
         emitAuth({ syncing: true });
+        await misuraOrologio(u.uid);
         await primaSincronizzazione(u.uid);
-        /* ascolta i cambiamenti dagli altri dispositivi, e riattaccalo se cade */
-        ascolta(u.uid);
+        if (currentUser && currentUser.uid === u.uid) ascolta(u.uid);
         emitAuth({ syncing: false });
       } else {
         currentUser = null;
         ascoltoAttivo = false;
         if (riprovaTimer) { clearTimeout(riprovaTimer); riprovaTimer = null; }
         attesaRiprova = 0;
+        const proprietario = leggi(CHI);
+        if (proprietario && !uscitaVoluta) sessioneFinita(proprietario);
+        uscitaVoluta = false;
+        nascondiAggiornamento();
         log('info', 'nessun account connesso: i dati restano su questo dispositivo');
         emitAuth();
         emitSync('idle');
       }
     });
 
-    /* ogni modifica locale viene salvata sul cloud (con debounce) */
-    document.addEventListener('lm:change', function () {
-      if (currentUser && !applyingRemote) programmaPush();
+    /* ogni modifica locale va nel cloud: subito se non c'è un giro in corso,
+       subito dopo se c'è */
+    document.addEventListener('lm:change', function (e) {
+      if (applyingRemote) return;
+      /* il dispositivo riletto (un'altra scheda l'ha svuotato): non è una modifica */
+      if ((e as CustomEvent<unknown>).detail === 'ricarica') return;
+      modifiche++;
+      if (!currentUser) return;
+      if (!sporco) { sporco = true; scrivi(SOSPESO, currentUser.uid); }
+      programmaSync();
     });
 
   } catch (e) {
@@ -399,316 +513,736 @@ void (async function init() {
   }
 })();
 
-function messaggio(e: unknown): string {
-  if (e instanceof Error) return e.message;
-  const f = e as ErroreFirebase | null;
-  return (f && (f.message || f.code)) || '';
+/* ----------------------------------------------------- di chi sono i dati
+
+   LA FUGA FRA ACCOUNT (problema 1 della verifica). Due strade portavano i
+   dati di Mario nell'account di Luigi sullo stesso computer:
+     · Firebase chiudeva la sessione da solo (account disabilitato, sessione
+       revocata o scaduta, dati del browser cancellati) e l'app non se ne
+       accorgeva: i dati di Mario restavano lì, e al primo accesso di Luigi
+       si univano al suo account;
+     · «Esci» in una scheda lasciava l'altra scheda dentro, coi dati, e alla
+       sua prima modifica li riscriveva sul dispositivo.
+   Adesso i dati sul dispositivo hanno un proprietario (`lm-account-unito`)
+   e non si uniscono MAI con un account diverso. */
+function sessioneFinita(proprietario: string): void {
+  if (fineSessioneDetta) return;
+  fineSessioneDetta = true;
+  log('avviso', 'la sessione è stata chiusa da Firebase: svuoto il dispositivo', 'account ' + proprietario.slice(0, 6) + '…');
+  /* quello che non era ancora nel cloud resta da parte, per quell'account
+     soltanto: torna quando quell'account rientra qui */
+  if (leggi(SOSPESO) === proprietario) window.LM.mettiDaParte(proprietario);
+  togli(CHI); togli(SOSPESO);
+  window.LM.lasciaAccount();
+  sporco = false;
+  fette.clear(); orfani = null; revNota = 0;
+  window.dispatchEvent(new CustomEvent('lm:sessione-finita'));
 }
 
-async function primaSincronizzazione(uid: string): Promise<void> {
+/* «Esci». Prima si prova a mandare quello che manca. Se non si riesce
+   (niente rete), i dati si mettono da parte per questo account e si esce lo
+   stesso dallo schermo — il dispositivo si svuota subito — ma la sessione
+   resta aperta di nascosto finché il cloud non ha tutto: appena torna la
+   rete, anche ad app riaperta, la modifica parte e solo allora si chiude.
+   Prima, uscendo senza rete, l'ultima modifica restava solo nel backup
+   locale e nel cloud non arrivava più. */
+async function esci(): Promise<EsitoUscita> {
+  const chi = currentUser;
+  uscitaVoluta = true;
+  let rinviata = false;
+  if (chi) {
+    const ok = sporco ? await conTempo(sincronizza('uscita'), 6000) : true;
+    if (!ok || sporco) {
+      window.LM.mettiDaParte(chi.uid);
+      scrivi(USCITA, chi.uid);
+      rinviata = true;
+      log('avviso', 'esco senza aver mandato tutto: lo mando appena c’è rete, poi chiudo la sessione');
+    }
+  }
+  fermaAscolto();
+  currentUser = null;
+  /* prima si dice alle altre schede che l'account non c'è più (smettono di
+     sincronizzare), poi si svuota il dispositivo */
+  togli(CHI); togli(SOSPESO);
+  window.LM.lasciaAccount();
+  sporco = false;
+  fette.clear(); orfani = null; revNota = 0;
+  emitAuth(); emitSync('idle');
+  if (rinviata) {
+    window.dispatchEvent(new CustomEvent('lm:uscita-in-attesa'));
+    return 'in-attesa';
+  }
+  try { if (AUTHM && auth) await AUTHM.signOut(auth); } catch { /* ignora */ }
+  return 'uscito';
+}
+
+/* la parte rimasta di un'uscita senza rete: manda la copia messa da parte,
+   poi chiude la sessione. Niente si mostra sullo schermo. */
+let uscitaInCorso = false;
+async function completaUscita(u: UtenteFirebase): Promise<void> {
+  if (uscitaInCorso) return;
+  uscitaInCorso = true;
+  try {
+    const copia = window.LM.copiaDaParte(u.uid);
+    if (copia) {
+      await giro(u.uid, { locale: copia, soloCloud: true, email: u.email || '', name: u.displayName || '' });
+      window.LM.scartaDaParte(u.uid);
+      log('info', 'uscita completata: la modifica rimasta indietro è nel cloud');
+    }
+    togli(USCITA);
+    uscitaVoluta = true;
+    if (AUTHM && auth) await AUTHM.signOut(auth);
+  } catch (e) {
+    log('avviso', 'uscita ancora in attesa: il cloud non risponde', messaggio(e));
+  } finally {
+    uscitaInCorso = false;
+  }
+}
+
+/* «Esci» in UN'ALTRA scheda: anche questa esce. Il dispositivo l'ha già
+   svuotato l'altra (e dati.ts rilegge da sé: vedi GEN_KEY). */
+window.addEventListener('storage', function (ev) {
+  if (ev.key !== CHI) return;
+  if (!currentUser || ev.newValue === currentUser.uid) return;
+  log('info', 'uscita da un’altra scheda: esco anche qui');
+  uscitaVoluta = true;
+  fermaAscolto();
+  currentUser = null;
+  sporco = false;
+  fette.clear(); orfani = null; revNota = 0;
+  emitAuth(); emitSync('idle');
+  if (AUTHM && auth) { const a = auth; void AUTHM.signOut(a).catch(function () { /* già fuori */ }); }
+});
+
+/* ------------------------------------------------ l'orologio del server
+   Un documento piccolo per dispositivo (`users/{uid}/dispositivi/{id}`):
+   si scrive l'ora del server, si rilegge, e la differenza con l'orologio di
+   qui è lo scarto da correggere (vedi `adesso` in dati.ts). Senza, un
+   dispositivo con l'orologio indietro faceva risorgere le cose cancellate. */
+async function misuraOrologio(uid: string): Promise<void> {
   if (!FSM || !db) return;
   const fs = FSM, base = db;
-  const ref = fs.doc(base, 'users', uid);
-  let snap: Documento;
-  opInizio('lettura iniziale');
   try {
-    snap = await fs.getDoc(ref);
-    /* La lettura è andata: da qui in poi l'esito lo decide il ramo scelto.
-       Prima questa funzione poteva terminare senza mai chiudere lo stato, e
-       la scritta "Salvataggio…" restava lì per sempre. */
-    log('info', 'lettura iniziale completata', snap.exists() ? 'documento presente' : 'nessun documento nel cloud');
-  } catch (e) {
-    opFine('lettura iniziale', 'error', erroreLeggibile(e));
-    console.warn('LifeMax: lettura cloud non riuscita.', messaggio(e));
-    return;
+    await conTempo((async function () {
+      const ref = fs.doc(base, 'users', uid, 'dispositivi', window.LM.idDispositivo());
+      const t0 = Date.now();
+      await fs.setDoc(ref, { servito: fs.serverTimestamp(), visto: t0 });
+      const d = await fs.getDoc(ref);
+      const t1 = Date.now();
+      const s = d.data() as { servito?: OraServer } | undefined;
+      /* la misura vale solo se il giro è stato rapido: l'errore è al più
+         metà del tempo di andata e ritorno */
+      if (t1 - t0 < 3000 && s && s.servito && typeof s.servito.toMillis === 'function') {
+        const scarto = s.servito.toMillis() - Math.round((t0 + t1) / 2);
+        window.LM.impostaScarto(scarto);
+        if (Math.abs(scarto) > 5000) log('avviso', 'l’orologio di questo dispositivo è sfasato di ' + Math.round(scarto / 1000) + ' s: lo correggo nei dati');
+      }
+      return true;
+    })(), 5000);
+  } catch (e) { log('avviso', 'non riesco a misurare l’orologio', messaggio(e)); }
+}
+
+/* ------------------------------------------------ la prima sincronizzazione */
+async function primaSincronizzazione(uid: string): Promise<void> {
+  if (!FSM || !db) return;
+  /* DI CHI SONO I DATI QUI. Di un altro account: si mettono da parte per
+     lui (se aveva modifiche non ancora nel cloud) e il dispositivo si svuota.
+     Non si uniscono mai. */
+  const proprietario = leggi(CHI);
+  if (proprietario && proprietario !== uid) {
+    log('avviso', 'qui c’erano i dati di un altro account: li tolgo prima di entrare');
+    if (leggi(SOSPESO) === proprietario) window.LM.mettiDaParte(proprietario);
+    window.LM.lasciaAccount();
+    togli(CHI); togli(SOSPESO);
   }
-  /* la prima volta che QUESTO dispositivo si unisce a QUESTO account:
-     l'esempio resta fuori, e un «Azzera tutto» fatto qui prima non taglia
-     i dati veri che stanno nel cloud */
-  let giaUnito = false;
-  try { giaUnito = localStorage.getItem('lm-account-unito') === uid; } catch { /* senza memoria: come la prima volta */ }
-  /* QUI C'È L'ESEMPIO: CONTA SOLO L'ACCOUNT. Chi entra con Google dopo
-     aver curiosato fra i dati di esempio vuole ritrovare i SUOI dati, non
-     un miscuglio. Prima si domandava «unisco?», e chi rispondeva di sì (o
-     non rispondeva) si ritrovava l'esempio sopra i dati veri, nel cloud e
-     su tutti i dispositivi. Adesso l'esempio si mette da parte in un backup
-     e il dispositivo prende quello che c'è nell'account, e basta. Vale
-     anche se questo dispositivo era già stato collegato prima. */
+  let giaUnito = leggi(CHI) === uid;
+  /* QUI C'È L'ESEMPIO: CONTA SOLO L'ACCOUNT. L'esempio va in un backup di
+     questo dispositivo e si prende quello che c'è nell'account. */
   const eraEsempio = window.LM.lasciaEsempio(giaUnito);
   if (eraEsempio) log('info', 'qui c’erano i dati di esempio', 'messi da parte: conta solo l’account');
   else if (!giaUnito) {
     window.LM.primaUnione();
     log('info', 'prima unione da questo dispositivo', 'esempio tenuto fuori, azzeramento locale non applicato al cloud');
   }
-  const locale = window.LM.snapshotPerCloud();
-  const localAt = locale.updatedAt || 0;
-  const localR = window.LM.ricchezza(locale);
-  const dati = snap.data();
-
-  if (snap.exists() && dati && dati.data) {
-    const remObj = parseDoc(dati);
-    const remoteR = window.LM.ricchezza(remObj);
-    const remoteAt = dati.updatedAt || 0;
-    log('info', 'confronto', 'qui ' + localR + ' elementi (' + quando(localAt) + ') · cloud ' + remoteR + ' elementi (' + quando(remoteAt) + ')');
-
-    /* NON SI SCEGLIE PIÙ UN VINCITORE: SI UNISCE.
-       Qui c'erano quattro rami e tre di questi ADOTTAVANO un documento intero,
-       buttando via l'altro. L'unica protezione era «non adottare mai il vuoto»,
-       e non bastava: basta che una copia sia più povera in UN punto — un
-       telefono con zero scoperte perché sono nate mentre lui era offline — e
-       alla prima cosa fatta su quel telefono il suo documento diventa il più
-       recente, sale, e le scoperte spariscono da tutte le parti. Il conto
-       totale restava alto, quindi la protezione contro il vuoto non scattava.
-       È così che il registro delle Scoperte si è svuotato.
-       `LM.unisci` tiene tutto quello che c'è da una parte sola e lascia
-       decidere al più recente solo dove le due dicono cose diverse sulla
-       STESSA riga. Poi si rimanda su il risultato, così anche il cloud ha
-       tutto. La copia del documento remoto si prende lo stesso, prima di
-       toccarlo: se anche la fusione sbagliasse, quello che c'era è ancora là. */
-    /* L'ESEMPIO NON ENTRA SENZA CHIEDERE. Unire è la regola e resta la
-       regola; ma i dati di esempio non sono «un pezzo della stessa vita»,
-       sono inventati — e una volta uniti non c'è più una strada per toglierli.
-       Lo stato di esempio si riconosce da sé (`demo`), e allora si domanda.
-       Non si decide al posto suo: chi ha caricato l'esempio può averci
-       lavorato sopra per settimane, e l'app non ha modo di saperlo. */
-    const sostituendo = eraEsempio;
-    window.LM.backup(sostituendo ? 'prima-di-togliere-i-dati-di-esempio' : 'prima-di-unire-col-cloud');
-    applicaRemoto(dati, false, sostituendo);
-    const dopo = window.LM.ricchezza(window.LM.snapshot());
-    log('info', sostituendo ? 'tenuti quelli del cloud' : 'uniti', 'adesso ' + dopo + ' elementi (erano ' + localR + ' qui e ' + remoteR + ' nel cloud)');
-    /* SE L'UNIONE NON HA CAMBIATO NIENTE, NON SI RISCRIVE. Prima a ogni
-       apertura partivano due scritture da 115 KB (la copia di sicurezza del
-       documento e il documento stesso) anche con i due lati identici: il
-       registro di un telefono le mostrava a ogni avvio. Si confrontano i
-       contenuti senza l'ora di modifica, con le chiavi in ordine. */
-    if (!sostituendo && uguali(window.LM.snapshotPerCloud(), remObj)) {
-      opFine('lettura iniziale', 'saved');
-      log('info', 'il cloud ha già tutto: niente da scrivere');
-    } else {
-      await backupRemoto(uid, dati);
-      opCede('lettura iniziale', 'scrittura');
-      await push(uid);
-    }
-    try { localStorage.setItem('lm-account-unito', uid); } catch { /* pazienza */ }
-    /* l'esempio entrato nell'account con le versioni di prima: si offre di toglierlo */
+  /* quello che era rimasto da parte per questo account (un'uscita senza
+     rete, una sessione chiusa con modifiche non ancora arrivate) torna qui
+     e da qui va nel cloud. È roba dell'account: il dispositivo conta come
+     già unito. */
+  if (window.LM.riprendiDaParte(uid)) {
+    log('info', 'ripreso quello che era rimasto da parte per questo account');
+    giaUnito = true;
+    sporco = true;
+  }
+  primaFusione = giaUnito ? null : { nuovo: true };
+  /* tutti i pezzi in una volta sola, fuori dalla transazione: dentro, ogni
+     lettura è un giro di rete */
+  await precarica(uid);
+  const ok = await sincronizza('prima sincronizzazione');
+  if (ok) {
     const restoEsempio = window.LM.contaEsempio();
     if (restoEsempio > 0) window.dispatchEvent(new CustomEvent('lm:esempio-nell-account', { detail: restoEsempio }));
-  } else {
-    /* Nessun documento cloud: carica ciò che c'è in locale. */
-    log('info', 'primo salvataggio per questo account');
-    opCede('lettura iniziale', 'scrittura');
-    await push(uid);
-    try { localStorage.setItem('lm-account-unito', uid); } catch { /* pazienza */ }
   }
 }
 
-/* una copia dal cloud, unita o messa al posto di tutto. Le due strade
-   condividono tutto tranne una parola, e tenerle separate voleva dire due
-   posti dove sbagliare il salvataggio di sicurezza. */
-async function daBackup(id: string, sostituisci: boolean): Promise<boolean> {
-  if (!currentUser || !FSM || !db) return false;
-  try {
-    const d = await FSM.getDoc(FSM.doc(db, 'users', currentUser.uid, 'backups', String(id)));
-    const dati = d.data();
-    if (!d.exists() || !dati) return false;
-    window.LM.backup(sostituisci ? 'prima-di-sostituire-con-una-copia-dal-cloud' : 'prima-di-riprendere-una-copia-dal-cloud');
-    /* una copia ripresa deve tornare su TUTTI i dispositivi: passa dalla
-       strada che riporta in vita le righe sepolte dalle lapidi degli altri */
-    const obj = parseDoc(dati);
-    if (!obj) return false;
-    if (window.LM.scordaPunti) window.LM.scordaPunti();
-    if (sostituisci) window.LM.ripristinaStato(obj); else window.LM.riprendiCopia(obj);
-    await push(currentUser.uid);
-    return true;
-  } catch (e) {
-    log('errore', sostituisci ? 'non riesco a sostituire con la copia' : 'non riesco a riprendere la copia', messaggio(e));
-    return false;
-  }
-}
-
-function quando(t: number): string {
-  return t ? new Date(t).toLocaleString('it-IT', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'mai';
-}
-
-/* Copia il documento cloud esistente in una sotto-collezione di backup
-   prima di sovrascriverlo: users/{uid}/backups/{timestamp}. */
-async function backupRemoto(uid: string, docData: DatiDocumento): Promise<void> {
+async function precarica(uid: string): Promise<void> {
   if (!FSM || !db) return;
-  /* SENZA `data` NON C'È NIENTE DA METTERE DA PARTE, e Firestore rifiuta un
-     campo `undefined`: una copia di sicurezza che va in errore proprio nel
-     momento in cui serve è peggio di nessuna copia. Chi chiama ha già
-     guardato che ci sia — questo è il controllo che lo dice. */
-  if (docData.data === undefined) {
-    log('avviso', 'niente copia del documento remoto: era senza dati');
+  try {
+    const q = await conTempo(FSM.getDocs(FSM.collection(db, 'users', uid, 'pezzi')), 15000);
+    if (!q) return;
+    const migliori: Record<string, { h: string; rev: number; n: number; parti: Record<number, string> }> = {};
+    const tutte: Record<string, { h: string; rev: number; n: number; parti: Record<number, string> }> = {};
+    q.forEach(function (d) {
+      const v = d.data();
+      if (!v || typeof v.data !== 'string' || typeof v.nome !== 'string' || typeof v.h !== 'string') return;
+      fette.set(v.nome + '~' + v.h + '~' + (v.i || 0), v.data);
+      const k = v.nome + '~' + v.h;
+      const g = tutte[k] || (tutte[k] = { h: v.h, rev: Number(v.rev) || 0, n: Number(v.n) || 1, parti: {} });
+      g.parti[Number(v.i) || 0] = v.data;
+    });
+    /* i pezzi «orfani»: per ogni nome, la versione completa più recente */
+    Object.keys(tutte).forEach(function (k) {
+      const g = tutte[k]; if (!g) return;
+      const nome = k.slice(0, k.indexOf('~'));
+      for (let i = 0; i < g.n; i++) if (g.parti[i] === undefined) return;
+      const m = migliori[nome];
+      if (!m || g.rev > m.rev) migliori[nome] = g;
+    });
+    orfani = Object.keys(migliori).sort().map(function (n) {
+      const g = migliori[n]; if (!g) return '';
+      let t = ''; for (let i = 0; i < g.n; i++) t += g.parti[i] || '';
+      return t;
+    }).filter(Boolean);
+    log('info', 'pezzi nel cloud letti in blocco', q.size !== undefined ? q.size + ' fette' : '');
+  } catch (e) {
+    log('avviso', 'non riesco a leggere i pezzi in blocco: li leggo uno per uno', messaggio(e));
+  }
+}
+
+/* ------------------------------------------------------------ il giro
+
+   UN GIRO = una transazione: legge il cloud, unisce, scrive solo se serve.
+   Se due dispositivi fanno il giro insieme, il secondo che arriva trova il
+   documento cambiato e Firestore gli fa rifare tutto da capo con quello
+   nuovo: nessuno dei due scrive sopra all'altro senza averlo letto. */
+class DaFareFuori extends Error {
+  cosa: 'copia-vecchia' | 'troppe-fette' | 'orfani';
+  dati: unknown;
+  constructor(cosa: 'copia-vecchia' | 'troppe-fette' | 'orfani', dati?: unknown) { super(cosa); this.cosa = cosa; this.dati = dati; }
+}
+
+interface EsitoGiro {
+  unito: Stato; pezzi: Record<string, Pezzo>; scritto: boolean; copia: Record<string, unknown> | null;
+  vecchi: Record<string, VocePezzo>; rev: number; scrittore: string; vecchio: string;
+}
+interface OpzGiro { locale?: Stato; soloCloud?: boolean; motivoCopia?: string; email?: string; name?: string }
+
+function nomeFetta(nome: string, h: string, i: number): string { return nome + '~' + h + '~' + i; }
+
+/* le fette di un pezzo: dalla memoria se le abbiamo, se no dal cloud */
+async function testoPezzo(tx: Transazione, uid: string, nome: string, v: VocePezzo): Promise<string | null> {
+  if (!FSM || !db) return null;
+  let t = '';
+  for (let i = 0; i < v.n; i++) {
+    const k = nomeFetta(nome, v.h, i);
+    let f = fette.get(k);
+    if (f === undefined) {
+      const d = await tx.get(FSM.doc(db, 'users', uid, 'pezzi', k));
+      const x = d.exists() ? d.data() : undefined;
+      if (!x || typeof x.data !== 'string') return null;
+      f = x.data;
+      fette.set(k, f);
+    }
+    t += f;
+  }
+  return t;
+}
+
+/* il cloud com'è adesso, ricomposto */
+async function leggiCloud(tx: Transazione, uid: string, m: DatiDocumento | null): Promise<Record<string, unknown> | null> {
+  if (!m) return null;
+  let testi: string[] = [];
+  const voci = (m.schema === SCHEMA && m.pezzi && typeof m.pezzi === 'object') ? m.pezzi : null;
+  if (voci) {
+    const nomi = Object.keys(voci).sort();
+    for (const n of nomi) {
+      const v = voci[n];
+      if (!v) continue;
+      const t = await testoPezzo(tx, uid, n, v);
+      /* UN PEZZO CHE NON SI LEGGE non vuol dire «vuoto»: si va avanti senza,
+         e unire senza un pezzo non toglie niente (quello che manca da una
+         parte resta). Quello che c'è qui lo riscriverà. */
+      if (t === null) { log('errore', 'un pezzo del cloud non si legge: vado avanti senza', n); continue; }
+      testi.push(t);
+    }
+  } else if (typeof m.data === 'string') {
+    /* il documento principale non elenca i pezzi: o non ci sono mai stati
+       (dati della versione di prima, da dividere adesso), o una scheda con
+       la versione vecchia l'ha sovrascritto. I pezzi, se ci sono, si
+       recuperano da soli. */
+    if (orfani === null) throw new DaFareFuori('orfani');
+    testi = orfani;
+  }
+  let s: Record<string, unknown> | null = testi.length ? ricomponi(testi) : null;
+  if (s && typeof m.updatedAt === 'number') s['updatedAt'] = m.updatedAt;
+  /* la posta lasciata dalle pagine che si sono chiuse: si unisce */
+  if (m.posta && typeof m.posta === 'object') {
+    Object.keys(m.posta).forEach(function (dev) {
+      const d = parseJson(String((m.posta as Record<string, string>)[dev] || ''));
+      if (!d) return;
+      s = s ? (window.LM.unisci(s, d) as unknown as Record<string, unknown>) : d;
+      log('info', 'unita la posta lasciata da un dispositivo che si chiudeva', dev);
+    });
+  }
+  return s;
+}
+
+function parseJson(t: string): Record<string, unknown> | null {
+  try { const v = JSON.parse(t); return (v && typeof v === 'object' && !Array.isArray(v)) ? v : null; } catch { return null; }
+}
+
+function opzioniFusione(): { nuovo?: 'a'; assenzaLunga?: { da: number } } {
+  const o: { nuovo?: 'a'; assenzaLunga?: { da: number } } = {};
+  if (primaFusione && primaFusione.nuovo) o.nuovo = 'a';
+  const ultima = Number(leggi(ULTIMA)) || 0;
+  if (!o.nuovo && ultima && Date.now() - ultima > ASSENZA_LUNGA_MS) o.assenzaLunga = { da: ultima };
+  return o;
+}
+
+async function giro(uid: string, o: OpzGiro): Promise<void> {
+  if (!FSM || !db) throw new Error('cloud non avviato');
+  const inizio = window.LM.adesso() - 1;
+  const fs = FSM, base = db;
+  const rifPrincipale = fs.doc(base, 'users', uid);
+  const locale = (o.locale || window.LM.snapshotPerCloud()) as Stato;
+  const opzU = o.soloCloud ? {} : opzioniFusione();
+  const primaQui = o.soloCloud ? null : dividi(locale);
+  /* la «generazione» del dispositivo all'inizio del giro: se nel frattempo
+     il dispositivo è stato svuotato (uscita, sessione finita, un'altra
+     scheda), il risultato di questo giro è di un account che qui non c'è
+     più, e NON si rimette sul dispositivo */
+  const gen0 = window.LM.generazione();
+  const caricati = new Set<string>();
+  for (let tentativo = 0; tentativo < 4; tentativo++) {
+    const tenuto: { e: EsitoGiro | null } = { e: null };
+    const scrittore = 'w' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+    try {
+      await fs.runTransaction(base, async function (tx) {
+        tenuto.e = null;
+        const snap = await tx.get(rifPrincipale);
+        const m = snap.exists() ? (snap.data() || {}) : null;
+        let remoto = await leggiCloud(tx, uid, m);
+        /* IL DOCUMENTO DELLA VERSIONE DI PRIMA (un JSON solo): si unisce, e
+           da qui in poi i dati stanno nei pezzi. Prima di toccarlo se ne
+           prende una copia di sicurezza, che si fa fuori dalla transazione. */
+        const vecchio = (m && typeof m.data === 'string') ? m.data : '';
+        if (vecchio) {
+          if (copiaVecchiaFatta !== hash(vecchio)) throw new DaFareFuori('copia-vecchia', vecchio);
+          const v = parseJson(vecchio);
+          if (v) {
+            if (typeof m?.updatedAt === 'number' && typeof v['updatedAt'] !== 'number') v['updatedAt'] = m.updatedAt;
+            remoto = remoto ? (window.LM.unisci(remoto, v) as unknown as Record<string, unknown>) : v;
+          }
+        }
+        const unito = window.LM.normalizza(remoto ? window.LM.unisci(locale, remoto, opzU) : JSON.parse(JSON.stringify(locale)));
+        /* l'impronta dei dati di esempio non va nel cloud e non torna di qua:
+           tornando, la fusione la sostituirebbe con il «niente» del cloud, e
+           l'esempio caricato qui smetterebbe di essere riconosciuto — finendo
+           nell'account alla scrittura dopo */
+        delete unito.esempio;
+        const pezzi = dividi(unito);
+        const vecchi: Record<string, VocePezzo> = (m && m.schema === SCHEMA && m.pezzi) ? m.pezzi : {};
+        const nuovaRev = ((m && Number(m.rev)) || 0) + 1;
+        const nomi = Object.keys(pezzi);
+        const cambiati = nomi.some(function (n) { const v = vecchi[n], p = pezzi[n]; return !v || !p || v.h !== p.h; }) ||
+          Object.keys(vecchi).some(function (n) { return !pezzi[n]; });
+        const serve = !m || m.schema !== SCHEMA || !!vecchio || cambiati || !!(m.posta && Object.keys(m.posta).length);
+        const daCaricare = nomi.filter(function (n) {
+          const v = vecchi[n], p = pezzi[n];
+          return !!p && (!v || v.h !== p.h) && !caricati.has(n + '~' + p.h);
+        });
+        let quanteFette = 0;
+        daCaricare.forEach(function (n) { const p = pezzi[n]; if (p) quanteFette += affetta(p.testo).length; });
+        if (serve && quanteFette > 300) throw new DaFareFuori('troppe-fette', daCaricare.map(function (n) { return pezzi[n]; }));
+        const ora = Date.now();
+        /* la copia del giorno (o quella chiesta prima di un ripristino). Il
+           documento di prima ha già avuto la sua, appena presa qui sopra. */
+        const copiaDovuta = serve && !!remoto && !vecchio && (!!o.motivoCopia || ora - Number((m && m.ultimaCopia) || 0) > COPIA_OGNI_MS);
+        if (serve) {
+          daCaricare.forEach(function (n) {
+            const p = pezzi[n]; if (!p) return;
+            const parti = affetta(p.testo);
+            parti.forEach(function (t, i) {
+              tx.set(fs.doc(base, 'users', uid, 'pezzi', nomeFetta(n, p.h, i)), { data: t, nome: n, h: p.h, i: i, n: parti.length, rev: nuovaRev });
+            });
+          });
+          const elenco: Record<string, VocePezzo> = {};
+          nomi.forEach(function (n) { const p = pezzi[n]; if (p) elenco[n] = { h: p.h, n: affetta(p.testo).length }; });
+          tx.set(rifPrincipale, {
+            schema: SCHEMA, rev: nuovaRev, scrittore: scrittore,
+            updatedAt: Number(unito.updatedAt) || ora,
+            pezzi: elenco,
+            email: o.email !== undefined ? o.email : (currentUser ? currentUser.email : ''),
+            name: o.name !== undefined ? o.name : (currentUser ? currentUser.name : ''),
+            servito: fs.serverTimestamp(),
+            ultimaCopia: (copiaDovuta || vecchio) ? ora : Number((m && m.ultimaCopia) || 0),
+            avviso: AVVISO_SCHEMA
+          });
+        }
+        tenuto.e = { unito: unito, pezzi: pezzi, scritto: serve, copia: copiaDovuta ? remoto : null, vecchi: vecchi,
+          rev: serve ? nuovaRev : Number((m && m.rev) || 0), scrittore: scrittore, vecchio: vecchio };
+      });
+    } catch (e) {
+      if (e instanceof DaFareFuori) {
+        if (e.cosa === 'orfani') { await precarica(uid); if (orfani === null) orfani = []; continue; }
+        if (e.cosa === 'copia-vecchia') {
+          const t = String(e.dati || '');
+          const v = parseJson(t);
+          if (v) await scriviCopia(uid, v, 'prima-di-dividere-il-documento');
+          copiaVecchiaFatta = hash(t);
+          log('info', 'documento della versione di prima messo da parte: adesso lo divido in pezzi');
+          continue;
+        }
+        if (e.cosa === 'troppe-fette') {
+          /* tanti pezzi nuovi in una volta (la prima divisione di un documento
+             grande): le fette si caricano prima, fuori dalla transazione. Si
+             può, perché il loro nome contiene la loro impronta: finché il
+             documento principale non le nomina, non le legge nessuno. */
+          await caricaFette(uid, (e.dati as Pezzo[]) || [], caricati);
+          continue;
+        }
+      }
+      throw e;
+    }
+    const fatto = tenuto.e;
+    if (!fatto) return;
+    /* quello che si sa adesso del cloud */
+    const elenco: Record<string, VocePezzo> = {};
+    Object.keys(fatto.pezzi).forEach(function (n) {
+      const p = fatto.pezzi[n]; if (!p) return;
+      const parti = affetta(p.testo);
+      parti.forEach(function (t, i) { fette.set(nomeFetta(n, p.h, i), t); });
+      elenco[n] = { h: p.h, n: parti.length };
+    });
+    revNota = fatto.rev;
+    if (!o.soloCloud) giroDa = inizio;
+    if (fatto.scritto) {
+      ricordaScrittura(fatto.scrittore);
+      if (fatto.vecchio) orfani = null;
+      void sparecchia(uid, fatto.vecchi, elenco);
+      log('info', 'cloud aggiornato', Object.keys(elenco).filter(function (n) { const v = fatto.vecchi[n], x = elenco[n]; return !v || !x || v.h !== x.h; }).length + ' pezzi riscritti su ' + Object.keys(elenco).length);
+    }
+    if (fatto.copia) {
+      const c = fatto.copia;
+      void scriviCopia(uid, c, o.motivoCopia || 'copia-del-giorno').then(function () { return potaCopie(uid); });
+    }
+    const ancoraQui = !!currentUser && currentUser.uid === uid && window.LM.generazione() === gen0;
+    if (!o.soloCloud && !ancoraQui) log('avviso', 'il giro è finito dopo un cambio d’account: il risultato resta nel cloud e non torna qui');
+    if (!o.soloCloud && ancoraQui) {
+      /* il risultato torna anche qui: unito (non sostituito) con quello che
+         c'è adesso, perché durante il giro si può aver toccato qualcosa */
+      applyingRemote = true;
+      try { window.LM.hydrate(fatto.unito); } finally { applyingRemote = false; }
+      /* dal cloud è arrivato qualcosa che qui non c'era? */
+      const arrivato = !!primaQui && Object.keys(fatto.pezzi).some(function (n) { const a = primaQui[n], b = fatto.pezzi[n]; return !a || !b || a.h !== b.h; });
+      if (arrivato) window.dispatchEvent(new CustomEvent('lm:remote'));
+    }
     return;
   }
-  try {
-    const ts = String(docData.updatedAt || Date.now());
-    await FSM.setDoc(FSM.doc(db, 'users', uid, 'backups', ts), {
-      data: docData.data, updatedAt: docData.updatedAt || 0, salvato: Date.now()
-    });
-  } catch (e) { console.warn('LifeMax: backup cloud non riuscito.', messaggio(e)); }
+  throw new Error('il giro non si chiude: troppi tentativi');
 }
 
-/* due stati uguali a meno dell'ora dell'ultima modifica */
-function canonico(v: unknown): unknown {
-  if (Array.isArray(v)) return v.map(canonico);
-  if (v && typeof v === 'object') {
-    const o = v as Record<string, unknown>, fuori: Record<string, unknown> = {};
-    Object.keys(o).sort().forEach(function (k) { if (k !== 'updatedAt' && o[k] !== undefined) fuori[k] = canonico(o[k]); });
-    return fuori;
-  }
-  return v;
-}
-function uguali(a: unknown, b: unknown): boolean {
-  try { return JSON.stringify(canonico(a)) === JSON.stringify(canonico(b)); } catch { return false; }
-}
-
-function parseDoc(d: DatiDocumento): unknown {
-  try { return JSON.parse(d.data || 'null'); } catch { return null; }
-}
-
-function applicaRemoto(d: DatiDocumento, notifica: boolean, sostituisci?: boolean): void {
-  const obj = parseDoc(d);
-  if (!obj) return;
-  const prima = window.LM.ricchezza(window.LM.snapshot());
-  log('info', (sostituisci ? 'sostituisco con i dati' : 'unisco i dati ') + (notifica ? ' arrivati da un altro dispositivo' : ' del cloud'), window.LM.ricchezza(obj) + ' elementi');
-  if (notifica) window.LM.backup('prima-di-aggiornamento-da-altro-dispositivo');
-  applyingRemote = true;
-  ricorda(d.updatedAt || (obj as Partial<Stato>).updatedAt || 0);
-  /* arrivano dati da un altro dispositivo: i punti a cui tornare parlavano di
-     una storia diversa e tornarci mescolerebbe due timeline */
-  if (window.LM.scordaPunti) window.LM.scordaPunti();
-  /* si UNISCE, non si sostituisce: vedi il commento lungo in
-     primaSincronizzazione, e LM.unisci in src/dati/dati.ts. L'unica eccezione
-     è `sostituisci`, che si chiede a mano da «Backup e ripristino» quando
-     quello che c'è adesso non è roba tua. */
-  window.LM.hydrate(obj, !!sostituisci);
-  applyingRemote = false;
-  const dopo = window.LM.ricchezza(window.LM.snapshot());
-  if (!sostituisci && dopo < prima) {
-    /* non deve poter succedere: la fusione toglie solo dove c'è una lapide o
-       un azzeramento dichiarato. Se succede lo stesso, si grida — e la copia
-       di sicurezza presa qui sopra è la via di uscita. */
-    log('errore', 'dopo la fusione ci sono MENO elementi di prima', prima + ' → ' + dopo);
-  }
-  if (notifica) {
-    /* QUELLO CHE AVEVAMO SOLO NOI DEVE RISALIRE, e non alla prossima volta
-       che tocchi qualcosa. Arrivato un documento da un altro dispositivo, la
-       fusione lascia qui l'unione delle due parti — ma nel cloud resta
-       quella dell'altro, che la nostra metà non ce l'ha. Prima quell'unione
-       risaliva solo per caso, al primo `lm:change` di questo dispositivo:
-       fino ad allora, per tutti gli altri, la nostra metà non esisteva.
-       Si rimanda su solo se la fusione ha davvero aggiunto qualcosa,
-       altrimenti due dispositivi si rimbalzerebbero lo stesso documento
-       all'infinito. */
-    if (dopo > prima && currentUser) programmaPush();
-    window.dispatchEvent(new CustomEvent('lm:remote'));
-  }
-}
-
-let ultimaPartenza = 0;
-function programmaPush(): void {
-  clearTimeout(pushTimer);
-  /* ADHD: si tocca tanto e in fretta. Un debounce raccoglie la raffica in
-     una sola scrittura invece di bombardare il server (e la batteria).
-
-     Ma l'attesa serve SOLO dentro una raffica. Un gesto isolato — far
-     partire un timer, spuntare una cosa — aspettava sette decimi di secondo
-     per niente, e quei sette decimi si sommano alla rete e al giro
-     dell'altro dispositivo: da fuori sembra che il sito ci pensi su. Se
-     l'ultima scrittura è vecchia di più di due secondi, questa è la prima di
-     una raffica che forse non ci sarà: parte subito, e se poi la raffica
-     arriva davvero le successive tornano ad aspettare. */
-  const soli = Date.now() - ultimaPartenza > 2000;
-  pushTimer = setTimeout(function () {
-    ultimaPartenza = Date.now();
-    if (currentUser) void push(currentUser.uid);
-  }, soli ? 0 : 700);
-}
-
-/* Le scritture non si sovrappongono: Firestore non garantisce l'ordine di
-   due setDoc in volo, e due push concorrenti facevano rimbalzare lo stato.
-   Se arrivano modifiche mentre scriviamo, ne teniamo nota e rifacciamo il
-   giro subito dopo con lo stato più fresco. */
-async function push(uid: string): Promise<void> {
+/* le fette che nessuno nomina più: via, senza aspettare (se non si riesce
+   restano lì, e non fanno danni: nessuno le legge) */
+async function sparecchia(uid: string, vecchi: Record<string, VocePezzo>, nuovi: Record<string, VocePezzo>): Promise<void> {
   if (!FSM || !db) return;
-  if (pushInCorso) { pushPendente = true; log('info', 'scrittura già in volo: accodo le nuove modifiche'); return; }
-  pushInCorso = true;
-  /* nel cloud va tutto tranne l'esempio contrassegnato */
-  const s = window.LM.snapshotPerCloud();
-  const at = s.updatedAt || Date.now();
-  const payload = JSON.stringify(s);
-  ricorda(at);
-  opInizio('scrittura');
-  log('info', 'scrivo nel cloud', Math.round(payload.length / 1024) + ' KB · updatedAt ' + new Date(at).toLocaleTimeString('it-IT'));
+  const fs = FSM, base = db;
+  const via: string[] = [];
+  Object.keys(vecchi).forEach(function (n) {
+    const v = vecchi[n], x = nuovi[n];
+    if (!v || (x && x.h === v.h)) return;
+    for (let i = 0; i < v.n; i++) via.push(nomeFetta(n, v.h, i));
+  });
+  if (!via.length) return;
   try {
-    await FSM.setDoc(FSM.doc(db, 'users', uid), {
-      data: payload,
-      updatedAt: at,
-      email: currentUser ? currentUser.email : '',
-      name: currentUser ? currentUser.name : ''
-    });
-    opFine('scrittura', 'saved');
-  } catch (e) {
-    opFine('scrittura', 'error', erroreLeggibile(e));
-    console.warn('LifeMax: salvataggio sul cloud non riuscito.', messaggio(e));
-  } finally {
-    pushInCorso = false;
+    for (let i = 0; i < via.length; i += 400) {
+      const b = fs.writeBatch(base);
+      via.slice(i, i + 400).forEach(function (k) { b.delete(fs.doc(base, 'users', uid, 'pezzi', k)); fette.delete(k); });
+      await b.commit();
+    }
+  } catch (e) { log('avviso', 'non riesco a togliere le fette vecchie (non fa danni)', messaggio(e)); }
+}
+
+async function caricaFette(uid: string, pezzi: Pezzo[], caricati: Set<string>): Promise<void> {
+  if (!FSM || !db) return;
+  const fs = FSM, base = db;
+  const scritture: { k: string; d: object }[] = [];
+  pezzi.forEach(function (p) {
+    if (!p) return;
+    const parti = affetta(p.testo);
+    parti.forEach(function (t, i) { scritture.push({ k: nomeFetta(p.nome, p.h, i), d: { data: t, nome: p.nome, h: p.h, i: i, n: parti.length, rev: revNota + 1 } }); });
+  });
+  for (let i = 0; i < scritture.length; i += 200) {
+    const b = fs.writeBatch(base);
+    scritture.slice(i, i + 200).forEach(function (s) { b.set(fs.doc(base, 'users', uid, 'pezzi', s.k), s.d); });
+    await b.commit();
   }
-  if (pushPendente) { pushPendente = false; return push(uid); }
+  pezzi.forEach(function (p) { if (p) caricati.add(p.nome + '~' + p.h); });
+  log('info', 'caricate in anticipo ' + scritture.length + ' fette');
+}
+
+/* ------------------------------------------------ chi chiede un giro
+
+   Subito, se non ce n'è uno in corso; appena finito, se c'è. Prima ogni
+   modifica aspettava sette decimi di secondo, e una raffica seguita dalla
+   chiusura dell'app non arrivava mai. */
+let ultimaPartenza = 0;
+function programmaSync(): void {
+  /* un gesto isolato parte subito; dentro una raffica (l'ultimo giro è
+     partito da meno di due secondi) si aspetta che la raffica finisca, e
+     diventa una scrittura sola invece di dieci */
+  const soli = Date.now() - ultimaPartenza > 2000;
+  if (syncTimer) { if (soli) return; clearTimeout(syncTimer); }
+  syncTimer = setTimeout(function () { syncTimer = null; ultimaPartenza = Date.now(); void sincronizza('modifica'); }, soli ? 30 : 700);
+}
+
+function sincronizza(motivo: string, opz?: OpzGiro): Promise<boolean> {
+  if (!currentUser || !FSM || !db) return Promise.resolve(false);
+  const uid = currentUser.uid;
+  if (syncInCorso && syncDi !== uid) {
+    /* c'è ancora in giro il giro di un altro account (uscito da poco, magari
+       senza rete): si aspetta che finisca e si parte da capo per questo */
+    const prima = syncInCorso;
+    return prima.then(function () { return sincronizza(motivo, opz); });
+  }
+  if (syncInCorso) { syncPendente = true; return syncInCorso; }
+  syncDi = uid;
+  if (riprovaSyncTimer) { clearTimeout(riprovaSyncTimer); riprovaSyncTimer = null; }
+  rinfrescaGettone();
+  syncInCorso = (async function () {
+    opInizio('sincronizzazione (' + motivo + ')');
+    let giri = 0;
+    try {
+      do {
+        syncPendente = false;
+        const quante = modifiche;
+        await giro(uid, opz || {});
+        opz = undefined;
+        if (!currentUser || currentUser.uid !== uid) break;
+        /* la prima unione è riuscita: da qui in poi questo dispositivo è
+           dell'account */
+        if (primaFusione) primaFusione = null;
+        scrivi(CHI, uid);
+        scrivi(ULTIMA, String(Date.now()));
+        if (modifiche === quante) { sporco = false; togli(SOSPESO); }
+        else syncPendente = true;
+        giri++;
+      } while (syncPendente && giri < 6);
+      attesaSync = 0;
+      rimastoIndietro = false;
+      nascondiAggiornamento();
+      opFine('sincronizzazione', 'saved');
+      if (leggi(USCITA) && utenteFb) void completaUscita(utenteFb);
+      return true;
+    } catch (e) {
+      const rete = eRete(e);
+      log(rete ? 'avviso' : 'errore', 'sincronizzazione non riuscita', codice(e) + ' ' + messaggio(e));
+      if (rete) nascondiAggiornamento('Senza rete: vedi i dati di questo dispositivo.');
+      else nascondiAggiornamento();
+      opFine('sincronizzazione', rete ? 'attesa' : 'error', rete ? '' : erroreLeggibile(e));
+      /* si riprova da sé, con attese che raddoppiano: la rete torna, le
+         regole si sistemano, un intoppo passa */
+      attesaSync = attesaSync ? Math.min(attesaSync * 2, rete ? 60000 : 300000) : (rete ? 5000 : 15000);
+      riprovaSyncTimer = setTimeout(function () { riprovaSyncTimer = null; if (sporco || syncPendente) void sincronizza('nuovo tentativo'); }, attesaSync);
+      return false;
+    } finally {
+      syncInCorso = null;
+    }
+  })();
+  return syncInCorso;
+}
+
+function conTempo<T>(p: Promise<T>, ms: number): Promise<T | false> {
+  return new Promise(function (ok) {
+    let fatto = false;
+    const t = setTimeout(function () { if (!fatto) { fatto = true; ok(false); } }, ms);
+    p.then(function (v) { if (!fatto) { fatto = true; clearTimeout(t); ok(v); } },
+      function () { if (!fatto) { fatto = true; clearTimeout(t); ok(false); } });
+  });
+}
+
+/* ------------------------------------------------ le copie di sicurezza
+
+   Una copia è lo stato intero di com'era il cloud, in fette sotto
+   `users/{uid}/copie/{id}/parti/`, con un documento piccolo che la descrive
+   (quando, quanti elementi, il nome nel profilo). Elencarle vuol dire
+   leggere solo i documenti piccoli: prima, per aprire «Backup», si
+   scaricavano tutte intere — cinque megabyte dopo dieci riaperture.
+   Si fanno al massimo una volta al giorno (più quelle prima di un
+   ripristino), e ne restano le ultime trenta. */
+async function scriviCopia(uid: string, stato: Record<string, unknown>, motivo: string): Promise<void> {
+  if (!FSM || !db) return;
+  const fs = FSM, base = db;
+  try {
+    const testo = JSON.stringify(stato);
+    const parti = affetta(testo);
+    const id = String(Date.now()) + '-' + Math.random().toString(36).slice(2, 6);
+    const prof = (stato['profilo'] && typeof stato['profilo'] === 'object') ? stato['profilo'] as Record<string, unknown> : {};
+    const b = fs.writeBatch(base);
+    parti.forEach(function (t, i) { b.set(fs.doc(base, 'users', uid, 'copie', id, 'parti', String(i)), { data: t }); });
+    b.set(fs.doc(base, 'users', uid, 'copie', id), {
+      ts: Number(stato['updatedAt']) || Date.now(), salvato: Date.now(), motivo: motivo,
+      ricchezza: window.LM.ricchezza(stato), n: parti.length,
+      nome: String(prof['nome'] || ''), visione: String(prof['visione'] || '').slice(0, 120), schema: SCHEMA
+    });
+    await b.commit();
+    log('info', 'copia di sicurezza nel cloud', motivo + ' · ' + Math.round(testo.length / 1024) + ' KB');
+  } catch (e) { log('avviso', 'copia di sicurezza nel cloud non riuscita', messaggio(e)); }
+}
+
+async function potaCopie(uid: string): Promise<void> {
+  if (!FSM || !db) return;
+  const fs = FSM, base = db;
+  try {
+    const q = await fs.getDocs(fs.collection(base, 'users', uid, 'copie'));
+    const tutte: { id: string; salvato: number; n: number }[] = [];
+    q.forEach(function (d) { const v = d.data() || {}; tutte.push({ id: d.id, salvato: Number(v.salvato) || 0, n: Number(v.n) || 0 }); });
+    tutte.sort(function (a, b) { return b.salvato - a.salvato; });
+    const via = tutte.slice(COPIE_DA_TENERE);
+    if (!via.length) return;
+    const b = fs.writeBatch(base);
+    via.forEach(function (c) {
+      for (let i = 0; i < c.n; i++) b.delete(fs.doc(base, 'users', uid, 'copie', c.id, 'parti', String(i)));
+      b.delete(fs.doc(base, 'users', uid, 'copie', c.id));
+    });
+    await b.commit();
+    log('info', 'copie di sicurezza nel cloud sfoltite', via.length + ' tolte, ne restano ' + COPIE_DA_TENERE);
+  } catch (e) { log('avviso', 'non riesco a sfoltire le copie nel cloud', messaggio(e)); }
+}
+
+async function elencaCopie(): Promise<CopiaNelCloud[]> {
+  if (!currentUser || !FSM || !db) return [];
+  try {
+    const q = await FSM.getDocs(FSM.collection(db, 'users', currentUser.uid, 'copie'));
+    const out: CopiaNelCloud[] = [];
+    q.forEach(function (d) {
+      const v = d.data() || {};
+      out.push({ id: d.id, ts: Number(v.ts) || 0, salvato: Number(v.salvato) || 0, ricchezza: Number(v.ricchezza) || 0,
+        nome: String(v.nome || ''), visione: String(v.visione || ''), motivo: String(v.motivo || '') });
+    });
+    return out.sort(function (a, b) { return (b.salvato || b.ts) - (a.salvato || a.ts); });
+  } catch (e) {
+    log('errore', 'non riesco a leggere le copie nel cloud', messaggio(e));
+    return [];
+  }
+}
+
+/* LE COPIE DELLA VERSIONE DI PRIMA (users/{uid}/backups): intere, una per
+   documento. Sono lì da mesi e possono essere tante e pesanti, quindi si
+   leggono solo a richiesta. È qui che sta il profilo di prima, per chi se
+   l'è visto azzerare da un dispositivo nuovo. */
+async function elencaCopieVecchie(): Promise<CopiaNelCloud[]> {
+  if (!currentUser || !FSM || !db) return [];
+  try {
+    const q = await FSM.getDocs(FSM.collection(db, 'users', currentUser.uid, 'backups'));
+    const out: CopiaNelCloud[] = [];
+    q.forEach(function (d) {
+      const v = d.data() || {};
+      const s = parseJson(String(v.data || ''));
+      const prof = (s && s['profilo'] && typeof s['profilo'] === 'object') ? s['profilo'] as Record<string, unknown> : {};
+      out.push({ id: d.id, ts: Number(v.updatedAt) || +d.id || 0, salvato: Number(v.salvato) || 0, ricchezza: s ? window.LM.ricchezza(s) : 0,
+        nome: String(prof['nome'] || ''), visione: String(prof['visione'] || '').slice(0, 120), vecchia: true });
+    });
+    return out.sort(function (a, b) { return (b.ts || 0) - (a.ts || 0); });
+  } catch (e) {
+    log('errore', 'non riesco a leggere le copie vecchie nel cloud', messaggio(e));
+    return [];
+  }
+}
+
+async function leggiCopia(uid: string, id: string, vecchia: boolean): Promise<Record<string, unknown> | null> {
+  if (!FSM || !db) return null;
+  if (vecchia) {
+    const d = await FSM.getDoc(FSM.doc(db, 'users', uid, 'backups', id));
+    const v = d.exists() ? d.data() : undefined;
+    return v && typeof v.data === 'string' ? parseJson(v.data) : null;
+  }
+  const d = await FSM.getDoc(FSM.doc(db, 'users', uid, 'copie', id));
+  const v = d.exists() ? d.data() : undefined;
+  if (!v) return null;
+  let t = '';
+  for (let i = 0; i < (Number(v.n) || 0); i++) {
+    const p = await FSM.getDoc(FSM.doc(db, 'users', uid, 'copie', id, 'parti', String(i)));
+    const x = p.exists() ? p.data() : undefined;
+    if (!x || typeof x.data !== 'string') return null;
+    t += x.data;
+  }
+  return parseJson(t);
+}
+
+/* una copia dal cloud: unita, messa al posto di tutto, o solo il profilo */
+async function daCopia(id: string, modo: 'riprendi' | 'sostituisci' | 'profilo', vecchia: boolean): Promise<boolean> {
+  if (!currentUser) return false;
+  try {
+    const obj = await leggiCopia(currentUser.uid, String(id), vecchia);
+    if (!obj) return false;
+    if (modo === 'profilo') {
+      if (!window.LM.riprendiProfilo(obj['profilo'])) return false;
+    } else {
+      window.LM.backup(modo === 'sostituisci' ? 'prima-di-sostituire-con-una-copia-dal-cloud' : 'prima-di-riprendere-una-copia-dal-cloud');
+      if (window.LM.scordaPunti) window.LM.scordaPunti();
+      if (modo === 'sostituisci') window.LM.ripristinaStato(obj); else window.LM.riprendiCopia(obj);
+    }
+    /* e prima di toccare il cloud, una copia di com'era */
+    await sincronizza('copia ripresa', { motivoCopia: 'prima-di-' + (modo === 'profilo' ? 'riprendere-il-profilo' : modo === 'sostituisci' ? 'sostituire-con-una-copia' : 'riprendere-una-copia') });
+    return true;
+  } catch (e) {
+    log('errore', 'non riesco a usare la copia dal cloud', messaggio(e));
+    return false;
+  }
 }
 
 /* ==================================================================
    L'ASCOLTO DEGLI ALTRI DISPOSITIVI, E COSA SUCCEDE QUANDO CADE
    ==================================================================
-   Nei registri comparivano righe come:
-     WebChannelConnection RPC 'Listen' stream 0x... transport errored
-   Quel messaggio da solo è quasi sempre rumore: è Firestore che dice «il
-   canale si è rotto» e se lo ripara da sé — succede a ogni passaggio fra wifi
-   e dati, a ogni galleria, a ogni proxy che non digerisce lo streaming. Ma
-   guardando come l'app lo trattava è saltato fuori un guasto vero.
-
-   `onSnapshot` prende due funzioni: una per i dati, una per gli errori. Quella
-   degli errori NON è una notifica di un intoppo passeggero: quando viene
-   chiamata, l'ascolto è FINITO e Firestore non lo riattacca. Qui dentro
-   faceva `console.warn` e basta. Cioè: al primo errore che arrivava fin lì,
-   questo dispositivo smetteva di ricevere qualunque cosa dagli altri per
-   tutto il resto della sessione — in silenzio, senza che niente cambiasse
-   sullo schermo, finché non si ricaricava la pagina. E un dispositivo sordo è
-   un dispositivo che si allontana dagli altri: è la condizione da cui è nata
-   la sparizione delle Scoperte.
-
-   Adesso: quando cade lo si dice (nel Registro tecnico, non solo in una
-   console che sul telefono non esiste), si riattacca da sé con attese che
-   raddoppiano fino a un minuto, e si riprova SUBITO quando torna la rete o
-   quando si torna sull'app — che sono i due momenti in cui ha davvero senso. */
+   `onSnapshot` prende due funzioni: una per i dati, una per gli errori.
+   Quella degli errori è il certificato di morte dell'ascolto: Firestore non
+   lo riattacca. Qui si dice (nel Registro tecnico), si riattacca da sé con
+   attese che raddoppiano fino a un minuto, e si riprova SUBITO quando torna
+   la rete o quando si torna sull'app.
+   Si ascolta solo il documento principale, che è piccolo: quando cambia, e
+   non l'abbiamo cambiato noi, si fa un giro — che legge i pezzi cambiati,
+   unisce, e rimanda su quello che il cloud non ha. */
+function fermaAscolto(): void {
+  if (unsubDoc) { try { unsubDoc(); } catch { /* niente */ } unsubDoc = null; }
+  ascoltoAttivo = false;
+}
 function ascolta(uid: string): void {
   if (!FSM || !db) return;
   const fs = FSM, base = db;
-  if (unsubDoc) { try { unsubDoc(); } catch { /* niente */ } unsubDoc = null; }
+  fermaAscolto();
   if (riprovaTimer) { clearTimeout(riprovaTimer); riprovaTimer = null; }
   try {
-    unsubDoc = fs.onSnapshot(fs.doc(base, 'users', uid), function (snap) {
-      /* L'ATTESA RIPARTE DA ZERO SOLO QUANDO ARRIVA QUALCOSA DAVVERO.
-         Prima ripartiva appena `onSnapshot` tornava senza lamentarsi — ma
-         quello vuol dire soltanto «ho registrato l'ascolto», non «il canale
-         funziona». Con un server irraggiungibile il giro diventava:
-         attacco, errore, due secondi, attacco, errore, due secondi… per
-         sempre, ogni due secondi, senza mai rallentare. Cioè il contrario di
-         quello che l'attesa che raddoppia serve a fare, e su dati mobili è un
-         modo eccellente di consumare la batteria.
-         Un dato ricevuto è l'unica prova che il canale è vivo. */
+    unsubDoc = fs.onSnapshot(fs.doc(base, 'users', uid), function (snap: Documento) {
       attesaRiprova = 0;
       if (!ascoltoAttivo) { ascoltoAttivo = true; emitAuth(); }
       if (!snap.exists()) return;
-      /* la nostra stessa scrittura, ancora non confermata dal server: è la
-         copia ottimistica che Firestore rimanda indietro all'istante */
-      if (snap.metadata && snap.metadata.hasPendingWrites) return;
       const d = snap.data();
       if (!d) return;
-      if (typeof d.updatedAt === 'number' && nostreScritture.has(d.updatedAt)) return; /* nostra scrittura */
-      applicaRemoto(d, true);
+      /* la nostra scrittura confermata. (L'ora del server che porta NON si
+         usa per correggere l'orologio: arriva quando arriva — dopo un buco
+         di rete anche molto dopo — e scambiare quel ritardo per un orologio
+         sbagliato faceva datare le modifiche successive nel passato.) */
+      const nostra = !!d.scrittore && mieScritture.has(d.scrittore) && typeof d.data !== 'string' && !(d.posta && Object.keys(d.posta).length);
+      if (nostra) return;
+      const conPosta = !!(d.posta && Object.keys(d.posta).length);
+      if (typeof d.data !== 'string' && !conPosta && Number(d.rev) === revNota && revNota > 0) return;
+      if (typeof d.data === 'string') {
+        log('avviso', 'una versione vecchia dell’app ha scritto nel cloud: unisco e rimetto a posto');
+        orfani = null;
+      } else {
+        log('info', 'il cloud è cambiato da un altro dispositivo: sincronizzo', 'rev ' + d.rev);
+      }
+      void sincronizza('dal cloud');
     }, function (err) {
       ascoltoAttivo = false;
       unsubDoc = null;
@@ -731,47 +1265,100 @@ function ascolta(uid: string): void {
 
 function riattacca(uid: string): void {
   if (riprovaTimer) return;
-  /* si raddoppia fino a un minuto: se la rete è via per un'ora non ha senso
-     bussare ogni due secondi, e se è un intoppo di un attimo si riprende
-     subito */
   attesaRiprova = attesaRiprova ? Math.min(attesaRiprova * 2, 60000) : 2000;
   log('avviso', 'riprovo a mettermi in ascolto fra ' + Math.round(attesaRiprova / 1000) + ' secondi');
   riprovaTimer = setTimeout(function () {
     riprovaTimer = null;
-    if (currentUser && currentUser.uid === uid) ascolta(uid);
+    if (currentUser && currentUser.uid === uid) {
+      ascolta(uid);
+      /* mentre era sordo può essere cambiato qualcosa: un giro lo dice */
+      void sincronizza('ascolto riattaccato');
+    }
   }, attesaRiprova);
 }
 
-/* i due momenti in cui vale la pena riprovare subito invece di aspettare */
 function riprovaSubito(perche: string): void {
   if (!currentUser || ascoltoAttivo) return;
   log('info', 'riprovo l’ascolto subito: ' + perche);
   attesaRiprova = 0;
   ascolta(currentUser.uid);
+  void sincronizza(perche);
 }
+
+/* L'APP CHE SI CHIUDE SUBITO DOPO UNA MODIFICA. Sul telefono «chiudere» è
+   mandare l'app in secondo piano: il browser lo dice (`visibilitychange`,
+   `pagehide`) e per qualche istante la pagina vive ancora. È lì che si
+   manda quello che manca, senza aspettare. Se non fa in tempo, la modifica
+   resta segnata come «non ancora nel cloud» e parte alla prossima apertura. */
 document.addEventListener('visibilitychange', function () {
-  if (!document.hidden) riprovaSubito('sei tornato sull’app');
+  if (document.hidden) { if (currentUser && sporco) void sincronizza('l’app va in secondo piano'); return; }
+  riprovaSubito('sei tornato sull’app');
+  if (currentUser && (sporco || !ascoltoAttivo)) void sincronizza('sei tornato sull’app');
+});
+window.addEventListener('pagehide', function () {
+  if (!currentUser || !sporco) return;
+  void sincronizza('la pagina si chiude');
+  imbuca(currentUser.uid);
 });
 
-/* rete che va e viene: appena torna, riprova subito e aggiorna lo stato */
+/* LA CASSETTA DELLE LETTERE. Una pagina che si chiude (la scheda chiusa sul
+   computer) non ha il tempo di fare un giro intero: il giro parte, ma la
+   pagina muore prima della risposta. Ha però il tempo di mandare UNA
+   richiesta, che il browser porta a termine anche a pagina chiusa
+   (`keepalive`). Si manda quello che è cambiato dall'ultimo giro riuscito
+   (`cambiateDopo` in dati.ts), piccolo, dentro al documento principale,
+   nel campo `posta.<dispositivo>` — senza toccare nient'altro di quel
+   documento. Il primo giro di qualunque dispositivo la unisce e la toglie.
+   Se non parte (pagina troppo carica, gettone scaduto, un browser che non
+   lo permette) non si perde niente: la modifica resta «non ancora nel
+   cloud» e parte alla prossima apertura. */
+function imbuca(uid: string): void {
+  try {
+    if (!gettonePronto || primaFusione) return;
+    const base = (window as unknown as { __LM_FIRESTORE_REST?: string }).__LM_FIRESTORE_REST ||
+      ('https://firestore.googleapis.com/v1/projects/' + firebaseConfig.projectId + '/databases/(default)/documents');
+    const delta = JSON.stringify(window.LM.cambiateDopo(Math.max(0, giroDa - 5000)));
+    if (delta.length > 55000) { log('avviso', 'la pagina si chiude: troppe modifiche per la cassetta delle lettere, partiranno alla prossima apertura'); return; }
+    const dev = window.LM.idDispositivo().replace(/[^A-Za-z0-9_]/g, '_');
+    const nome = base.slice(base.indexOf('projects/')) + '/users/' + uid;
+    const corpo = {
+      writes: [{
+        update: { name: nome, fields: {
+          posta: { mapValue: { fields: { [dev]: { stringValue: delta } } } },
+          scrittore: { stringValue: 'posta-' + dev + '-' + Date.now().toString(36) }
+        } },
+        updateMask: { fieldPaths: ['posta.' + dev, 'scrittore'] },
+        currentDocument: { exists: true }
+      }]
+    };
+    void fetch(base + ':commit', {
+      method: 'POST', keepalive: true,
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + gettonePronto },
+      body: JSON.stringify(corpo)
+    }).catch(function () { /* resta in sospeso: parte alla prossima apertura */ });
+    log('info', 'la pagina si chiude: modifiche imbucate', Math.round(delta.length / 1024) + ' KB');
+  } catch (e) { log('avviso', 'non riesco a imbucare le modifiche', messaggio(e)); }
+}
+
 window.addEventListener('offline', function () {
-  if (currentUser) emitSync('attesa');
+  if (currentUser && sporco) emitSync('attesa');
 });
 window.addEventListener('online', function () {
-  if (currentUser) { log('info', 'rete tornata: riprovo il salvataggio'); programmaPush(); }
+  if (currentUser) { log('info', 'rete tornata: riprovo il salvataggio'); attesaSync = 0; void sincronizza('è tornata la rete'); }
+  else if (leggi(USCITA) && utenteFb) void completaUscita(utenteFb);
   riprovaSubito('è tornata la rete');
 });
 
-/* traduce i codici d'errore Firestore più comuni in messaggi utili */
+/* GLI ERRORI DETTI A CHI USA L'APP. Prima: «Permessi Firestore negati:
+   pubblica le regole di sicurezza», «attivalo nella console Firebase» —
+   parole per il programmatore. Il codice tecnico resta nel Registro. */
 function erroreLeggibile(e: unknown): string {
-  const code = messaggio(e) || ((e as ErroreFirebase | null)?.code || '');
-  if (/permission-denied|insufficient/i.test(code)) return 'Permessi Firestore negati: pubblica le regole di sicurezza.';
-  if (/unavailable|not-found|Cloud Firestore API|database/i.test(code)) return 'Database Firestore non raggiungibile: attivalo nella console Firebase.';
-  if (/unauthenticated/i.test(code)) return 'Sessione scaduta: riprova ad accedere.';
-  return 'Salvataggio non riuscito. Controlla la configurazione di Firestore.';
+  const c = codice(e) + ' ' + messaggio(e);
+  if (/unauthenticated/i.test(c)) return 'La sessione è scaduta: accedi di nuovo per salvare nel cloud. I dati restano su questo dispositivo.';
+  if (/permission-denied|insufficient/i.test(c)) return 'Il cloud in questo momento non accetta il salvataggio. I tuoi dati sono al sicuro su questo dispositivo; riprovo da solo.';
+  if (/resource-exhausted|too large|exceeds/i.test(c)) return 'Il cloud è troppo pieno per questo salvataggio. I tuoi dati sono al sicuro su questo dispositivo: esporta una copia da Impostazioni.';
+  if (/unavailable|not-found|database/i.test(c)) return 'Il cloud non è raggiungibile. I tuoi dati sono al sicuro su questo dispositivo e partono appena possibile.';
+  return 'Il salvataggio nel cloud non è riuscito. I tuoi dati sono al sicuro su questo dispositivo; riprovo da solo.';
 }
 
-/* `auth` e `provider` restano a livello di modulo come prima: non li legge
-   nessun altro, ma tenerli è la differenza fra «l'SDK è avviato» e «l'SDK è
-   avviato e ce l'abbiamo ancora in mano». */
-void auth; void provider;
+void auth; void provider; void AUTHM;

@@ -46,9 +46,10 @@ function Account() {
       <div className="menu-account">
         <Segno nome="cloudCheck" /> Connesso come <b>{chi.name || chi.email}</b>
         <button className="btn btn-mini btn-ghost" id="menu-esci" onClick={() => {
-          if (window.LMCloud) void window.LMCloud.signOut();
           chiudiSheet();
-          toast('Hai effettuato la disconnessione.', 0, 'logout');
+          void Promise.resolve(window.LMCloud ? window.LMCloud.signOut() : undefined).then((esito) => {
+            if (esito !== 'in-attesa') toast('Hai effettuato la disconnessione.', 0, 'logout');
+          });
         }}><Segno nome="logout" /> Esci</button>
       </div>
       <Chip />

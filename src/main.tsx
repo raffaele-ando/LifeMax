@@ -32,6 +32,8 @@ import './stile/token.css';
 import './stile/app.css';
 import './forma/forma';
 import './dati/dati';
+/* il trasloco dal vecchio indirizzo (github.io): niente Firebase dentro, quindi può stare qui */
+import './nuvola/trasloco';
 import { LM_PROMEMORIA as P } from './promemoria/promemoria';
 import './grafici/grafici';
 import './app/registro-schermi';

@@ -25,88 +25,133 @@ const MOTIVI: Record<string, string> = {
   'prima-di-riprendere-una-copia-dal-cloud': 'prima di riprendere una copia dal cloud',
   'prima-di-sostituire-con-una-copia-dal-cloud': 'prima di sostituire con una copia dal cloud',
   'prima-di-togliere-i-dati-di-esempio': 'prima di togliere i dati di esempio',
-  'prima-di-sfoltire-il-registro': 'prima di fare spazio'
+  'prima-di-sfoltire-il-registro': 'prima di fare spazio',
+  'prima-di-riprendere-il-profilo': 'prima di riprendere il profilo',
+  'prima-di-dividere-il-documento': 'prima di passare al cloud diviso in pezzi',
+  'copia-del-giorno': 'copia del giorno',
+  'prima-di-sostituire-con-una-copia': 'prima di sostituire con una copia',
+  'prima-di-riprendere-una-copia': 'prima di riprendere una copia',
+  'prima-di-entrare-nell-account': 'prima di entrare nell’account',
+  'uscita-dall-account': 'all’uscita dall’account'
 };
 
 const quando = (ts: number): string => (ts
   ? new Date(ts).toLocaleString('it-IT', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
   : 'senza data');
 
-/* LE COPIE NEL CLOUD, che arrivano dalla rete e quindi dopo. */
+/* LE COPIE NEL CLOUD, che arrivano dalla rete e quindi dopo.
+
+   Tre cose si possono fare con una copia, e ognuna dice cosa tocca:
+     · «Riprendi il profilo» rimette SOLO nome, visione, sveglia, tema,
+       timer… di quella copia, e lascia tutto il resto com'è. È la strada per
+       chi si è visto azzerare il profilo da un telefono nuovo o dall'altro
+       indirizzo del sito;
+     · «Riprendi tutto» AGGIUNGE quello che manca e non toglie niente;
+     · «Sostituisci» mette quella copia al posto di tutto.
+   Le copie della versione di prima dell'app (fino a novembre 2026) stanno a
+   parte e sono intere, quindi pesanti: si cercano solo a richiesta. */
+function RigaCopia({ b, puo }: { b: CopiaNelCloud; puo: Puo }) {
+  const chi = b.nome ? '«' + b.nome + '»' : 'profilo senza nome';
+  return (
+    <div className="backup-riga" key={String(b.id)}>
+      <div><b>{quando(b.ts || b.salvato)}</b><small>{b.ricchezza} elementi · {chi}{b.motivo && MOTIVI[b.motivo] ? ' · ' + MOTIVI[b.motivo] : ''}</small></div>
+      <Tasto testo="Riprendi il profilo" misura="mini" dati={{ 'data-cloudprof': String(b.id) }} onClick={() => {
+        avviso({
+          titolo: 'Riprendere il profilo di questa copia?',
+          testo: 'Tornano il nome' + (b.nome ? ' (' + b.nome + ')' : '') + ', la visione, la sveglia, il tema e le altre impostazioni di quella copia, su tutti i tuoi dispositivi. Le cose fatte, i voti e il diario restano come sono adesso. Prima faccio un backup.',
+          azione: 'Riprendi il profilo'
+        }, () => {
+          void puo.profilo(b.id, !!b.vecchia).then((fatto) => {
+            chiudiSheet(); applicaTema(); render();
+            toast(fatto ? 'Profilo ripreso.' : 'Non sono riuscito a riprenderlo.', 0, fatto ? 'cloudCheck' : 'alert');
+          });
+        });
+      }} />
+      <Tasto testo="Riprendi tutto" misura="mini" piu="btn-ghost" dati={{ 'data-cloudbk': String(b.id) }} onClick={() => {
+        avviso({
+          titolo: 'Riprendere tutta questa copia?',
+          testo: 'Quello che c’è nella copia e adesso manca viene aggiunto, su tutti i tuoi dispositivi. Non viene tolto niente.',
+          azione: 'Riprendi tutto'
+        }, () => {
+          void puo.riprendi(b.id, !!b.vecchia).then((fatto) => {
+            chiudiSheet(); render();
+            toast(fatto ? 'Copia ripresa e unita.' : 'Non sono riuscito a riprenderla.', 0, fatto ? 'cloudCheck' : 'alert');
+          });
+        });
+      }} />
+      <Tasto testo="Sostituisci" misura="mini" piu="btn-ghost" dati={{ 'data-cloudsost': String(b.id) }} onClick={() => {
+        avviso({
+          titolo: 'Sostituire con questa copia?',
+          testo: 'I dati attuali verranno salvati in un backup e sostituiti da questa copia, su tutti i tuoi dispositivi. Quello che hai fatto dopo quella data non ci sarà più (resta nel backup).',
+          azione: 'Sostituisci', pericolo: true
+        }, () => {
+          void puo.sostituisci(b.id, !!b.vecchia).then((fatto) => {
+            chiudiSheet(); applicaTema(); render();
+            toast(fatto ? 'Fatto: adesso ci sono solo i dati di quella copia.' : 'Non sono riuscito a sostituire.',
+              0, fatto ? 'cloudCheck' : 'alert');
+          });
+        });
+      }} />
+    </div>
+  );
+}
+
+interface Puo {
+  leggi: () => Promise<CopiaNelCloud[]>;
+  vecchie: () => Promise<CopiaNelCloud[]>;
+  riprendi: (id: string, vecchia?: boolean) => Promise<boolean>;
+  sostituisci: (id: string, vecchia?: boolean) => Promise<boolean>;
+  profilo: (id: string, vecchia?: boolean) => Promise<boolean>;
+}
+
 function Cloud() {
-  /* Le tre funzioni delle copie sono facoltative nell'API della nuvola, e
-     non per prudenza: ci sono soltanto quando l'SDK si è caricato. Prese
-     tutte e tre insieme qui, o c'è tutto il pannello o non c'è niente —
-     un tasto «Riprendi» acceso su una nuvola che non sa riprendere è
-     peggio del tasto che non c'è. */
+  /* Le funzioni delle copie ci sono soltanto quando l'SDK si è caricato.
+     Prese tutte insieme qui: o c'è tutto il pannello o non c'è niente. */
   const c = window.LMCloud;
-  const puo = c && c.available && c.backups && c.riprendiBackup && c.sostituisciConBackup
-    ? { leggi: c.backups, riprendi: c.riprendiBackup, sostituisci: c.sostituisciConBackup }
+  const puo: Puo | null = c && c.available && c.backups && c.backupsVecchi && c.riprendiBackup && c.sostituisciConBackup && c.riprendiProfilo
+    ? { leggi: c.backups, vecchie: c.backupsVecchi, riprendi: c.riprendiBackup, sostituisci: c.sostituisciConBackup, profilo: c.riprendiProfilo }
     : null;
   const [stato, setStato] = useState<'attesa' | 'arrivate'>('attesa');
   const [righe, setRighe] = useState<CopiaNelCloud[]>([]);
+  const [vecchie, setVecchie] = useState<'no' | 'cerco' | CopiaNelCloud[]>('no');
 
   useEffect(() => {
     if (!puo) return undefined;
     let via = false;
     void puo.leggi().then((arr) => { if (!via) { setRighe(arr); setStato('arrivate'); } });
     return () => { via = true; };
-  }, [puo]);
+  }, [puo ? 1 : 0]);
 
   if (!puo) return null;
   const eti = (conta: number | null): ReactNode => (
     <div className="lista-eti"><Segno nome="cloudCheck" dim={11} />Nel cloud{conta ? <> <span>{conta}</span></> : null}</div>
   );
-  if (stato === 'attesa') {
-    return <>{eti(null)}<div className="imp-nota" style={{ margin: 0 }}>Sto guardando…</div></>;
-  }
-  if (!righe.length) {
-    return <>{eti(null)}<div className="imp-nota" style={{ margin: 0 }}>Nessuna copia online. Ne viene creata una ogni volta che il cloud sta per essere sovrascritto.</div></>;
-  }
   return (<>
-    {eti(righe.length)}
-    {/* RIPRENDERE AGGIUNGE, SOSTITUIRE RIFÀ DA CAPO. La seconda esiste per un
-        caso solo, ma è un caso vero: quando quello che c'è adesso non è tuo.
-        Unire è la regola dappertutto — la fusione col cloud, l'importazione da
-        un file — proprio per non perdere niente; e allora da una fusione
-        sbagliata non si tornava indietro in nessun modo. */}
-    <div className="imp-nota" style={{ margin: 0 }}>
-      <b>Riprendi</b> AGGIUNGE quello che manca e non toglie niente.{' '}
-      <b>Sostituisci</b> mette questa copia al posto di tutto: serve quando quello che c’è adesso non è roba tua
-      {' '}— i dati di esempio finiti nell’account a un accesso — e non c’è altro modo di toglierla.
-    </div>
-    <div className="backup-lista">
-      {righe.map((b) => (
-        <div className="backup-riga" key={String(b.id)}>
-          <div><b>{quando(b.ts)}</b><small>{b.ricchezza} elementi</small></div>
-          <Tasto testo="Riprendi" misura="mini" dati={{ 'data-cloudbk': String(b.id) }} onClick={() => {
-            avviso({
-              titolo: 'Riprendere questa copia?',
-              testo: 'Quello che manca verrà aggiunto ai dati attuali. Non verrà tolto niente.',
-              azione: 'Riprendi'
-            }, () => {
-              void puo.riprendi(b.id).then((fatto) => {
-                chiudiSheet(); render();
-                toast(fatto ? 'Copia ripresa e unita.' : 'Non sono riuscito a riprenderla.', 0, fatto ? 'cloudCheck' : 'alert');
-              });
-            });
-          }} />
-          <Tasto testo="Sostituisci" misura="mini" piu="btn-ghost" dati={{ 'data-cloudsost': String(b.id) }} onClick={() => {
-            avviso({
-              titolo: 'Sostituire con questa copia?',
-              testo: 'I dati attuali verranno salvati in un backup e sostituiti da questa copia.',
-              azione: 'Sostituisci', pericolo: true
-            }, () => {
-              void puo.sostituisci(b.id).then((fatto) => {
-                chiudiSheet(); applicaTema(); render();
-                toast(fatto ? 'Fatto: adesso ci sono solo i dati di quella copia.' : 'Non sono riuscito a sostituire.',
-                  0, fatto ? 'cloudCheck' : 'alert');
-              });
-            });
-          }} />
-        </div>
-      ))}
-    </div>
+    {eti(stato === 'arrivate' && righe.length ? righe.length : null)}
+    {stato === 'attesa' ? <div className="imp-nota" style={{ margin: 0 }}>Sto guardando…</div> : null}
+    {stato === 'arrivate' && !righe.length ? <div className="imp-nota" style={{ margin: 0 }}>Nessuna copia online, per ora. Ne faccio una al giorno, e una prima di ogni ripristino; tengo le ultime trenta.</div> : null}
+    {righe.length ? (<>
+      <div className="imp-nota" style={{ margin: 0 }}>
+        <b>Riprendi il profilo</b> rimette solo nome, visione, sveglia, tema e impostazioni.{' '}
+        <b>Riprendi tutto</b> aggiunge quello che manca e non toglie niente.{' '}
+        <b>Sostituisci</b> mette la copia al posto di tutto.
+      </div>
+      <div className="backup-lista">{righe.map((b) => <RigaCopia key={b.id} b={b} puo={puo} />)}</div>
+    </>) : null}
+    {vecchie === 'no' ? (
+      <Tasto testo="Cerca anche le copie di prima (fino a novembre 2026)" misura="mini" piu="btn-ghost" dati={{ 'data-cloudvecchie': '1' }} onClick={() => {
+        setVecchie('cerco');
+        void puo.vecchie().then((arr) => setVecchie(arr));
+      }} />
+    ) : vecchie === 'cerco' ? (
+      <div className="imp-nota" style={{ margin: 0 }}>Cerco le copie di prima… sono intere, può volerci un po’.</div>
+    ) : vecchie.length ? (<>
+      <div className="lista-eti"><Segno nome="archivio" dim={11} />Copie di prima <span>{vecchie.length}</span></div>
+      <div className="imp-nota" style={{ margin: 0 }}>Copie prese dalla versione di prima dell’app. Se il tuo profilo è stato azzerato, cerca qui una copia col tuo nome e usa «Riprendi il profilo».</div>
+      <div className="backup-lista">{vecchie.map((b) => <RigaCopia key={'v' + b.id} b={b} puo={puo} />)}</div>
+    </>) : (
+      <div className="imp-nota" style={{ margin: 0 }}>Nessuna copia di prima nel cloud.</div>
+    )}
   </>);
 }
 

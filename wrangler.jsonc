@@ -4,13 +4,15 @@
   "compatibility_date": "2026-11-17",
   // IL SITO, COME PRIMA: i file della radice, con il ritorno a index.html per
   // gli indirizzi che non esistono. `run_worker_first` passa al codice SOLO
-  // /api/*: tutto il resto non lo tocca, e _headers vale come sempre.
+  // /api/* e le pagine dell'accesso con Google (/__/auth/*, /__/firebase/*,
+  // prese da firebaseapp.com: vedi `accessoFirebase` in sentinella/worker.mjs):
+  // tutto il resto non lo tocca, e _headers vale come sempre.
   "main": "sentinella/worker.mjs",
   "assets": {
     "directory": ".",
     "binding": "ASSETS",
     "not_found_handling": "single-page-application",
-    "run_worker_first": ["/api/*"]
+    "run_worker_first": ["/api/*", "/__/auth/*", "/__/firebase/*"]
   },
   // LA SENTINELLA DEI CALENDARI (sentinella/): un Durable Object per utente,
   // con il suo SQLite. Non va creato niente a mano: nasce col deploy.

@@ -30,3 +30,8 @@ skills-lock.json
 #  ignorato ogni cosa in radice.)
 scratchpad/
 .wrangler
+
+# L'EMULATORE DI FIREBASE PER LE PROVE DEL CLOUD (prove/nuvola-*.js): 450 MB
+# di firebase-tools, si installa una volta sulla macchina che fa le prove con
+# `npm i --prefix prove/.emulatore firebase-tools@15 firebase@12.16.0`.
+prove/.emulatore

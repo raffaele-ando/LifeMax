@@ -179,3 +179,65 @@ Poi:
 2. Lancia uno script: `node script/r05-pc-sordo.js`.
 
 Ogni correzione va verificata rilanciando il riproduttore del problema che chiude.
+
+## Correzioni (25 novembre 2026)
+
+Tutti i problemi qui sopra sono stati corretti. Ogni correzione ha una prova che resta nel ramo e che usa Firebase vero contro l'emulatore ufficiale, come questa verifica:
+- `prove/nuvola-fusione.js`: più dispositivi sullo stesso account;
+- `prove/nuvola-account.js`: i dati di un account restano di quell'account;
+- `prove/nuvola-spazio.js`: tanti dati, versioni vecchie, copie, chiusure, indirizzi.
+
+Sono spiegate in `prove/LEGGIMI.md`. Serve l'emulatore, che non sta nel ramo: `npm i --prefix prove/.emulatore firebase-tools@15 firebase@12.16.0` (e Java).
+
+Sul codice di prima (commit `1a85823`) le tre prove falliscono; su quello nuovo passano. I conti precisi sono in fondo.
+
+### Come funziona adesso, in breve
+- **I dati nel cloud sono divisi in pezzi** (`src/nuvola/pezzi.ts`): per campo e per trimestre (`azioni.2026q4`, `giorni.2026q4`, `base`…). Il documento principale `users/{uid}` tiene solo l'elenco dei pezzi. Un salvataggio riscrive solo i pezzi cambiati.
+- **Ogni salvataggio è una transazione**: legge il cloud, unisce, scrive solo se il risultato è diverso. Se intanto un altro dispositivo ha scritto, si rifà il giro. Non esistono più scritture «cieche».
+- **Ogni modifica lascia la sua ora**: le righe hanno `aggiornata`, e le chiavi dei dizionari (voti, spunte delle abitudini, profilo, aree attive) hanno un «orologio» in `orologi`, anche quando la modifica è togliere. La fusione fa vincere chi ha toccato per ultimo.
+- **L'orologio dei dati** (`adesso` in `src/dati/dati.ts`) corregge lo scarto col server e non torna mai indietro rispetto alle ore viste arrivare dagli altri.
+- **I punti** si contano per dispositivo (`xpConti`): si sommano invece di prendere il più grande.
+- **I dati sul dispositivo hanno un proprietario** (l'account) e non si uniscono mai con un altro account.
+
+### Problema → correzione → prova
+| # | Problema | Correzione | Prova |
+|---|---|---|---|
+| 1 | Fuga di dati fra account | Proprietario dei dati sul dispositivo. Sessione chiusa da Firebase: il dispositivo si svuota, l'app lo dice («La sessione è finita»), e quello che non era ancora nel cloud resta da parte solo per quell'account. «Esci» fa uscire tutte le schede (`lifemax.generazione`, evento `storage`). Un giro di sincronizzazione finito dopo un cambio d'account non rimette niente sul dispositivo. | `nuvola-account.js` |
+| 2 | PC sordo, scritture cieche | Transazione leggi-unisci-scrivi; le proprie scritture si riconoscono da un nome a caso (`scrittore`), non dall'ora; ogni cambiamento del cloud fa un giro; si rimanda su ogni volta che il risultato è diverso dal cloud; niente si scarta durante una scrittura in corso. | `nuvola-fusione.js` |
+| 3 | Dispositivo nuovo azzera il profilo | Orologi per ogni campo del profilo; un dispositivo mai unito all'account non vince mai sul profilo né sui pareggi. | `nuvola-fusione.js` |
+| 4 | Annullare non arriva e torna | `aggiornata` scritta a ogni modifica di una riga (anche togliere la spunta); orologi per le chiavi dei dizionari (anche quelle tolte); aree attive con orologio; punti dai conti per dispositivo. Vale anche per «annulla» dal diario. | `nuvola-fusione.js` |
+| 5 | Limite di 1 MB | Dati divisi in pezzi per campo e trimestre, e ogni pezzo in fette sotto i 300 mila caratteri. Il passaggio dal documento vecchio è automatico, ripetibile senza danni, con una copia di sicurezza presa prima. Una scheda con la versione vecchia che riscrive il documento non distrugge niente: la forma nuova si ricostruisce da sola e quello che ha scritto entra. | `nuvola-spazio.js` (420 giorni, 1,3 MB: il pezzo più grosso 201 KB, il documento principale 3 KB) |
+| 6 | Modifiche offline perse | Vince la modifica fatta per ultima (la sua ora), non chi torna online per ultimo. | `nuvola-fusione.js` |
+| 7 | Ultima modifica persa chiudendo | Un gesto isolato parte subito; quando l'app va in secondo piano o la pagina si chiude si manda quello che manca; a pagina chiusa parte una richiesta piccola (`keepalive`) nella «cassetta delle lettere» del documento principale. Si vede «Non ancora nel cloud», anche riaprendo. | `nuvola-spazio.js` |
+| 8 | Orologio sbagliato | Scarto misurato col server all'accesso (`users/{uid}/dispositivi/`) e orologio logico ibrido. | `nuvola-fusione.js` |
+| 9 | «Esci» senza rete | Si esce dallo schermo subito, la modifica resta da parte e parte appena torna la rete (anche ad app chiusa e riaperta); solo allora la sessione si chiude. L'app lo dice. | `nuvola-account.js` |
+| 10 | Punti in parallelo | Conti per dispositivo, che si sommano. | `nuvola-fusione.js` |
+| 11 | Sessione chiusa in silenzio, messaggi da programmatore | Avviso «La sessione è finita» con «Accedi di nuovo»; tutti i messaggi riscritti per chi usa l'app (i dettagli tecnici restano nel Registro tecnico). | `nuvola-account.js` |
+| 12 | Copie nel cloud senza limite | Al massimo una al giorno (più quelle prima di un ripristino), ne restano trenta, e si elencano senza scaricarle (`users/{uid}/copie`). | `nuvola-spazio.js` |
+| 13 | «Azzera tutto» lascia aree e diario | Azzerare passa dalla stessa strada di ogni modifica: aree create, nomi cambiati, aree spente e diario se ne vanno anche dagli altri dispositivi. | `nuvola-fusione.js` |
+| 14 | Due schede | Ogni salvataggio unisce con quello che l'altra scheda ha scritto nel frattempo. | `nuvola-account.js` |
+| 15 | Dati vecchi per un attimo | Se l'ultima sincronizzazione è lontana, finché non arriva l'aggiornamento si vede «Aggiornamento dal cloud…» e i dati sotto sono sbiaditi. | `nuvola-spazio.js` |
+| S | Lapidi scadute (dispositivo fermo a lungo) | Lapidi e orologi durano due anni; oltre, la regola dell'assenza lunga toglie quello che c'era già all'ultima sincronizzazione e nel cloud non c'è più. | `nuvola-fusione.js` |
+| S | Oltre 3000 lapidi | Il tetto di 3000 non c'è più. | `nuvola-fusione.js` |
+| S | Check-in e diario modificati | Provato innocuo: un check-in modificato resta uno, il diario non raddoppia. | `nuvola-fusione.js` |
+| S | Accesso su iPhone (`authDomain`) | Il Worker serve `/__/auth/*` e `/__/firebase/*` da lifemax.theproject.world. L'app NON lo usa ancora: interruttore `ACCESSO_DAL_DOMINIO` in `src/nuvola/nuvola.ts`, da accendere dopo i passi qui sotto. | `nuvola-spazio.js` |
+| - | Due indirizzi | Su github.io compare «LifeMax ha cambiato indirizzo». Con l'account: si va solo dopo che il cloud ha confermato tutto. Senza account: «Porta i miei dati» li passa con un tocco al nuovo indirizzo (o con un file). Niente si cancella. | `nuvola-spazio.js` |
+| - | Profilo già azzerato | In «Backup e ripristino» → «Nel cloud»: «Riprendi il profilo» da una copia, anche dalle copie di prima. | `nuvola-spazio.js` |
+
+### Accesso su iPhone: i passi a mano (dopo, si cambia una riga)
+1. Google Cloud Console (console.cloud.google.com), progetto **lifemax-9dc63** → menu → **API e servizi** → **Credenziali**.
+2. In «ID client OAuth 2.0» apri **Web client (auto created by Google Service)**.
+3. In **URI di reindirizzamento autorizzati** → **Aggiungi URI** → `https://lifemax.theproject.world/__/auth/handler`. In **Origini JavaScript autorizzate** controlla che ci sia `https://lifemax.theproject.world` (se no aggiungilo). **Salva**.
+4. Firebase console (console.firebase.google.com) → progetto lifemax-9dc63 → **Authentication** → **Settings** (Impostazioni) → **Authorized domains** (Domini autorizzati): deve esserci `lifemax.theproject.world` (se no **Add domain**).
+5. Controllo: apri `https://lifemax.theproject.world/__/firebase/init.json`. Deve comparire un testo con `"projectId":"lifemax-9dc63"`, non l'app.
+6. Solo dopo: in `src/nuvola/nuvola.ts` la riga `const ACCESSO_DAL_DOMINIO = false;` diventa `true`, si ricostruisce (`npm run build:nuovo`) e si pubblica.
+
+### Le regole di Firestore
+Non cambiano: la regola esistente copre già le nuove raccolte (`pezzi`, `copie`, `dispositivi`). Nel file è cambiato solo il commento; ripubblicarle non serve.
+
+### Il profilo già azzerato (il caso del fondatore)
+1. Apri LifeMax da lifemax.theproject.world e accedi.
+2. Impostazioni → **Backup e ripristino** → sezione **Nel cloud**.
+3. Tocca **Cerca anche le copie di prima (fino a novembre 2026)**: sono le copie che la versione di prima metteva da parte; possono volerci alcuni secondi.
+4. Ogni copia mostra la data, quanti elementi ha e il nome del profilo. Scegli una copia **di prima** dell'azzeramento, col tuo nome.
+5. Tocca **Riprendi il profilo** e conferma. Tornano nome, visione, sveglia, tema e impostazioni, su tutti i dispositivi; le cose fatte, i voti e il diario restano come sono. Prima viene preso un backup.

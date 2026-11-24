@@ -1,5 +1,6 @@
 /* ============================================================
-   IL WORKER «lifemax»: il sito come prima, più /api/calendari/.
+   IL WORKER «lifemax»: il sito come prima, più /api/calendari/ e le
+   pagine dell'accesso con Google (/__/auth/*, vedi `accessoFirebase`).
 
    Il sito resta quello che era: i file statici della radice, serviti da
    Cloudflare con le regole di `_headers` e il ritorno a index.html per gli
@@ -151,9 +152,39 @@ async function api(req, env) {
   return json(cfg, req, r.j, r.stato);
 }
 
+/* L'ACCESSO CON GOOGLE SERVITO DA QUI (/__/auth/* e /__/firebase/*).
+   Su iPhone, quando il popup di Google è bloccato, l'accesso passa da un
+   redirect: Google rimanda a una pagina di Firebase (`/__/auth/handler`) che
+   deve stare sullo STESSO indirizzo del sito, se no Safari — che tiene
+   separati i dati dei siti diversi — può perdere l'accesso per strada. Qui
+   quelle pagine si prendono dal progetto Firebase e si servono da
+   lifemax.theproject.world, così com'erano: il Worker NON guarda e NON
+   tocca niente di quello che passa, e non scrive niente su Firestore.
+   Basta a far funzionare la strada; a USARLA si passa cambiando una riga in
+   src/nuvola/nuvola.ts (`ACCESSO_DAL_DOMINIO`), dopo i passi a mano su
+   Google Cloud e Firebase scritti in revisione/cloud/RAPPORTO.md. */
+const FIREBASE_AUTH = 'https://lifemax-9dc63.firebaseapp.com';
+export async function accessoFirebase(req) {
+  const u = new URL(req.url);
+  const verso = FIREBASE_AUTH + u.pathname + u.search;
+  const h = new Headers(req.headers);
+  h.delete('host');
+  const metodo = req.method || 'GET';
+  const r = await fetch(verso, {
+    method: metodo, headers: h, redirect: 'manual',
+    body: (metodo === 'GET' || metodo === 'HEAD') ? undefined : await req.arrayBuffer()
+  });
+  /* la risposta torna com'è: intestazioni comprese (anche i biscotti) */
+  return new Response(r.body, { status: r.status, statusText: r.statusText, headers: r.headers });
+}
+
 export default {
   async fetch(req, env) {
     const u = new URL(req.url);
+    if (u.pathname.indexOf('/__/auth/') === 0 || u.pathname.indexOf('/__/firebase/') === 0) {
+      try { return await accessoFirebase(req); }
+      catch { return new Response('Accesso momentaneamente non raggiungibile', { status: 502 }); }
+    }
     if (u.pathname === '/api' || u.pathname.indexOf('/api/') === 0) {
       try { return await api(req, env); }
       catch { return json(config(env), req, { errore: 'altro' }, 500); }

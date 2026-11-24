@@ -62,40 +62,83 @@ export function signOut() { B.utente = null; if (B.avvisa) B.avvisa(null); retur
 B.entra = function (uid) { B.utente = { uid: uid || 'prova-uid', email: 'prova@esempio.it', displayName: 'Prova' }; if (B.avvisa) B.avvisa(B.utente); };
 `;
 
+/* IL FIRESTORE FINTO SA FARE QUELLO CHE FA QUELLO VERO, IN PICCOLO.
+   La sincronizzazione adesso divide i dati in pezzi (src/nuvola/pezzi.ts) e
+   ogni salvataggio è una transazione: qui dentro c'è un piccolo archivio in
+   memoria (`B.tutto`, un documento per strada) con le transazioni, i lotti,
+   l'ora del server e l'elenco di una collezione. Il documento principale
+   resta `B.doc`, come prima, così la prova può ancora mettere lì un
+   documento «di un altro dispositivo» — scritto nella forma vecchia, un JSON
+   solo in `data`, che è anche quello che scrive una scheda con la versione
+   vecchia dell'app. `B.testo()` ricompone quello che c'è nel cloud. */
 const FINTO_FS = `
 const B = (window.__fb = window.__fb || {});
-B.doc = null;              /* il documento remoto: {data, updatedAt} */
-B.copie = {};              /* users/uid/backups/... : le copie di sicurezza */
-B.scritture = [];          /* tutto quello che l'app ha mandato su */
+B.doc = null;              /* il documento principale (users/uid) */
+B.tutto = {};              /* tutti gli altri documenti, per strada */
+B.copie = {};              /* le copie di sicurezza (backups/ e copie/) */
+B.scritture = [];          /* tutto quello che l'app ha mandato sul documento principale */
 B.attacchi = [];           /* quando l'ascolto è stato attaccato */
 B.rompi = null;            /* chiamandola, l'ascolto cade */
 B.consegna = null;         /* chiamandola, arriva un documento */
 B.vivo = false;            /* c'è un ascolto attaccato in questo momento? */
+const principale = (via) => via.split('/').length === 2 && via.indexOf('users/') === 0;
+function ora(d) {
+  if (!d || typeof d !== 'object') return d;
+  const o = {};
+  Object.keys(d).forEach((k) => { const v = d[k]; o[k] = (v && v.__oraServer) ? { toMillis: () => Date.now() } : v; });
+  return o;
+}
+function scrivi(via, dati) {
+  if (principale(via)) { B.doc = dati; B.scritture.push(dati); return; }
+  B.tutto[via] = dati;
+  const pz = via.split('/');
+  if (pz.length === 4 && (pz[2] === 'backups' || pz[2] === 'copie')) B.copie[via] = dati;
+}
+function togli(via) { if (principale(via)) B.doc = null; else { delete B.tutto[via]; delete B.copie[via]; } }
+function leggi(via) { return principale(via) ? B.doc : (B.tutto[via] || null); }
+function foto(via) { const d = leggi(via); return { id: via.split('/').pop(), exists: () => !!d, data: () => d || undefined, metadata: { hasPendingWrites: false, fromCache: false } }; }
+B.testo = function () {
+  const d = B.doc || {};
+  let t = typeof d.data === 'string' ? d.data : '';
+  const p = d.pezzi || {};
+  Object.keys(p).forEach((n) => {
+    const v = p[n];
+    for (let i = 0; i < v.n; i++) {
+      const k = Object.keys(B.tutto).find((x) => x.endsWith('/pezzi/' + n + '~' + v.h + '~' + i));
+      if (k) t += B.tutto[k].data;
+    }
+  });
+  return t;
+};
 export function getFirestore() { return { finto: true }; }
 export function initializeFirestore(a, opz) { B.opzioni = opz; return { finto: true }; }
 export function doc(db) { return { via: [].slice.call(arguments, 1).join('/') }; }
 export function collection(db) { return { via: [].slice.call(arguments, 1).join('/') }; }
-/* LE COPIE NEL CLOUD ESISTONO ANCHE QUI DENTRO.
-   Prima il finto Firestore le buttava via: una scrittura su .../backups/x non
-   andava da nessuna parte e una lettura tornava vuota. Ma la copia presa
-   PRIMA di unire è tutta la rete di sicurezza dell'accesso — è il posto dove
-   stanno i dati veri di chi si è ritrovato l'esempio nell'account — e finché
-   la prova non la teneva, quella rete non la guardava nessuno. */
-export function getDoc(ref) {
-  const d = /backups/.test(ref.via) ? (B.copie[ref.via] || null) : B.doc;
-  return Promise.resolve({ exists: () => !!d, data: () => d, id: 'x' });
+export function serverTimestamp() { return { __oraServer: true }; }
+export function getDoc(ref) { return Promise.resolve(foto(ref.via)); }
+export function getDocs(coll) {
+  const figli = Object.keys(B.tutto).filter((v) => v.startsWith(coll.via + '/') && v.slice(coll.via.length + 1).indexOf('/') < 0);
+  return Promise.resolve({ size: figli.length, forEach: (f) => figli.forEach((v) => f(foto(v))) });
 }
-export function getDocs() { return Promise.resolve({ forEach: () => {} }); }
-export function setDoc(ref, dati) {
-  if (/backups/.test(ref.via)) { B.copie[ref.via] = dati; return Promise.resolve(); }
-  B.doc = dati; B.scritture.push(dati);
-  return Promise.resolve();
+export function setDoc(ref, dati) { scrivi(ref.via, ora(dati)); return Promise.resolve(); }
+export function deleteDoc(ref) { togli(ref.via); return Promise.resolve(); }
+export function writeBatch() {
+  const w = [];
+  const b = { set: (r, d) => { w.push(() => scrivi(r.via, ora(d))); return b; }, delete: (r) => { w.push(() => togli(r.via)); return b; }, commit: () => { w.forEach((f) => f()); return Promise.resolve(); } };
+  return b;
+}
+export async function runTransaction(db, f) {
+  const w = [];
+  const tx = { get: (r) => Promise.resolve(foto(r.via)), set: (r, d) => { w.push(() => scrivi(r.via, ora(d))); return tx; }, delete: (r) => { w.push(() => togli(r.via)); return tx; } };
+  const esito = await f(tx);
+  w.forEach((x) => x());
+  return esito;
 }
 export function onSnapshot(ref, suDati, suErrore) {
   B.attacchi.push(Date.now());
   B.vivo = true;
   B.rompi = function (codice) { if (!B.vivo) return false; B.vivo = false; suErrore({ code: codice || 'unavailable', message: 'canale rotto apposta' }); return true; };
-  B.consegna = function (d) { if (!B.vivo) return false; B.doc = d; suDati({ exists: () => true, data: () => d }); return true; };
+  B.consegna = function (d) { if (!B.vivo) return false; B.doc = d; suDati({ exists: () => true, data: () => d, metadata: { hasPendingWrites: false } }); return true; };
   return function () { B.vivo = false; };
 }
 `;
@@ -430,6 +473,10 @@ export function onSnapshot(ref, suDati, suErrore) {
     const r = await p.evaluate(async () => {
       window.__fb.utente = null; if (window.__fb.avvisa) window.__fb.avvisa(null);
       await new Promise((r2) => setTimeout(r2, 300));
+      /* una sessione chiusa così, da sotto, l'app la DICE (è il problema 1
+         della verifica del cloud): qui si chiude l'avviso e si va avanti */
+      document.querySelectorAll('.avviso-ovl .avv-no').forEach((x) => x.click());
+      await new Promise((r2) => setTimeout(r2, 300));
       localStorage.clear();
       /* il caso peggiore: questo dispositivo era GIÀ stato collegato a
          quell'account, e prima di rientrare si è caricato l'esempio */
@@ -452,7 +499,7 @@ export function onSnapshot(ref, suDati, suErrore) {
       }
       await new Promise((r2) => setTimeout(r2, 1200));
       const qui = JSON.stringify(LM.snapshot());
-      const nube = String((window.__fb.doc || {}).data || '');
+      const nube = window.__fb.testo();
       const vie = Object.keys(window.__fb.copie);
       return {
         conImpronta: conImpronta, domanda: domanda,
@@ -478,6 +525,10 @@ export function onSnapshot(ref, suDati, suErrore) {
     const z = await p.evaluate(async () => {
       window.__fb.utente = null; if (window.__fb.avvisa) window.__fb.avvisa(null);
       await new Promise((r2) => setTimeout(r2, 300));
+      /* una sessione chiusa così, da sotto, l'app la DICE (è il problema 1
+         della verifica del cloud): qui si chiude l'avviso e si va avanti */
+      document.querySelectorAll('.avviso-ovl .avv-no').forEach((x) => x.click());
+      await new Promise((r2) => setTimeout(r2, 300));
       localStorage.clear();
       LM.seedDemo(); LM.reset(false);     /* «Azzera tutto» da soli, per togliere l'esempio */
       const azzerato = LM.load().cancellati.length === 0 && !LM.load().azzerato;
@@ -488,7 +539,7 @@ export function onSnapshot(ref, suDati, suErrore) {
       window.__fb.doc = { data: JSON.stringify(vero), updatedAt: vero.updatedAt };
       window.__fb.entra('uid-azzera');
       await new Promise((r2) => setTimeout(r2, 1500));
-      return { azzerato: azzerato, qui: /DAL TELEFONO, DI IERI/.test(JSON.stringify(LM.snapshot())), nube: /DAL TELEFONO, DI IERI/.test(String((window.__fb.doc || {}).data || '')) };
+      return { azzerato: azzerato, qui: /DAL TELEFONO, DI IERI/.test(JSON.stringify(LM.snapshot())), nube: /DAL TELEFONO, DI IERI/.test(window.__fb.testo()) };
     });
     ok('«Azzera tutto» fatto da soli non porta niente verso il cloud', z.azzerato);
     ok('ma collegandosi i dati del telefono arrivano qui', z.qui);
@@ -496,6 +547,10 @@ export function onSnapshot(ref, suDati, suErrore) {
 
     const t = await p.evaluate(async () => {
       window.__fb.utente = null; if (window.__fb.avvisa) window.__fb.avvisa(null);
+      await new Promise((r2) => setTimeout(r2, 300));
+      /* una sessione chiusa così, da sotto, l'app la DICE (è il problema 1
+         della verifica del cloud): qui si chiude l'avviso e si va avanti */
+      document.querySelectorAll('.avviso-ovl .avv-no').forEach((x) => x.click());
       await new Promise((r2) => setTimeout(r2, 300));
       localStorage.clear();
       LM.seedDemo(); LM.aggiungiAzione('MIA', 'altro', {});
@@ -517,7 +572,7 @@ export function onSnapshot(ref, suDati, suErrore) {
       await window.LMCloud.signOut();
       await new Promise((r2) => setTimeout(r2, 300));
       const qui = JSON.stringify(LM.snapshot());
-      const fuori = { pulito: !/DELL’ACCOUNT/.test(qui), legame: localStorage.getItem('lm-account-unito'), nube: /DELL’ACCOUNT/.test(String((window.__fb.doc || {}).data || '')) };
+      const fuori = { pulito: !/DELL’ACCOUNT/.test(qui), legame: localStorage.getItem('lm-account-unito'), nube: /DELL’ACCOUNT/.test(window.__fb.testo()) };
       window.__fb.entra('uid-dopo');
       await new Promise((r2) => setTimeout(r2, 1200));
       fuori.torna = /DELL’ACCOUNT/.test(JSON.stringify(LM.snapshot()));

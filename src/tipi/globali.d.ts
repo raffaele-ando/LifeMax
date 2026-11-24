@@ -72,6 +72,10 @@ declare global {
     'lm:calendari': CustomEvent<void>;
     /* una riga nuova nel registro tecnico */
     'lm:log': CustomEvent<RigaRegistro>;
+    /* Firebase ha chiuso la sessione da solo: il dispositivo è stato svuotato */
+    'lm:sessione-finita': CustomEvent<void>;
+    /* «Esci» senza rete: si è usciti, una modifica parte appena c'è rete */
+    'lm:uscita-in-attesa': CustomEvent<void>;
   }
   interface DocumentEventMap {
     /* i dati sono cambiati: chi disegna ridisegna */

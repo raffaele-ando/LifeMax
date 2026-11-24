@@ -7,7 +7,16 @@ service cloud.firestore {
   match /databases/{database}/documents {
     match /users/{uid} {
       allow read, write: if request.auth != null && request.auth.uid == uid;
-      // backup automatici (users/{uid}/backups/{id}): stesso proprietario
+      // Tutto quello che sta SOTTO il documento dell'utente, stesso
+      // proprietario:
+      //   users/{uid}/pezzi/{nome~impronta~n}  i dati, divisi in pezzi (da
+      //                                         novembre 2026: src/nuvola/pezzi.ts)
+      //   users/{uid}/copie/{id}[/parti/{n}]    le copie di sicurezza nuove
+      //   users/{uid}/dispositivi/{id}          l'ora del server, per correggere
+      //                                         gli orologi sbagliati
+      //   users/{uid}/backups/{id}              le copie della versione di prima
+      // La regola qui sotto le copre già tutte: con la divisione in pezzi
+      // queste regole NON sono cambiate, e non c'è niente da ripubblicare.
       match /{document=**} {
         allow read, write: if request.auth != null && request.auth.uid == uid;
       }

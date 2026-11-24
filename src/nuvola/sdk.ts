@@ -44,7 +44,8 @@ export interface UtenteFirebase {
 export interface Documento {
   id: string;
   exists(): boolean;
-  data(): DatiDocumento | undefined;
+  /* la forma la decide chi legge: il documento principale, una fetta, una copia */
+  data(): (DatiDocumento & Partial<DatiFetta> & Partial<DatiCopia>) | undefined;
   /* Firestore consegna OGNI scrittura anche a chi l'ha fatta, e la consegna
      due volte: subito, dal suo ottimismo locale (`hasPendingWrites`), e di
      nuovo quando il server l'ha accettata. Chi ascolta deve saperlo
@@ -55,17 +56,64 @@ export interface Documento {
   metadata?: { hasPendingWrites: boolean; fromCache: boolean };
 }
 
-/* il documento come lo scriviamo noi: lo stato in JSON, più quattro etichette */
+/* l'ora del server, come la consegna Firestore */
+export interface OraServer { toMillis(): number }
+/* il segnaposto «metti qui l'ora del server» che si manda scrivendo */
+export type SegnapostoOra = { readonly __segnaposto: true };
+
+/* UN PEZZO NEL DOCUMENTO PRINCIPALE: quale versione (`h`) e in quante fette */
+export interface VocePezzo { h: string; n: number }
+
+/* il documento come lo scriviamo noi. Due forme, perché una versione
+   vecchia dell'app aperta in una scheda può ancora scrivere la prima:
+     · VECCHIA: tutto lo stato in JSON nel campo `data`;
+     · NUOVA (`schema: 2`): lo stato diviso in pezzi (src/nuvola/pezzi.ts),
+       e qui solo l'elenco dei pezzi con la loro impronta. */
 export interface DatiDocumento {
   data?: string;
   updatedAt?: number;
   salvato?: number;
   email?: string;
   name?: string;
+  schema?: number;
+  rev?: number;
+  scrittore?: string;
+  pezzi?: Record<string, VocePezzo>;
+  servito?: OraServer | SegnapostoOra | null;
+  ultimaCopia?: number;
+  avviso?: string;
+  /* la «cassetta delle lettere»: quello che un dispositivo ha mandato
+     mentre la pagina si chiudeva (vedi `pagehide` in nuvola.ts), per
+     dispositivo, in JSON */
+  posta?: Record<string, string>;
+}
+
+/* una fetta di un pezzo: users/{uid}/pezzi/{nome~impronta~i} */
+export interface DatiFetta { data: string; nome: string; h: string; i: number; n: number; rev: number }
+
+/* una copia di sicurezza nuova: users/{uid}/copie/{id}, con le fette sotto */
+export interface DatiCopia {
+  ts: number; salvato: number; motivo: string; ricchezza: number; n: number;
+  nome?: string; visione?: string; schema?: number;
+}
+
+/* il documento di un dispositivo: serve a misurare l'orologio */
+export interface DatiDispositivo { servito?: OraServer | SegnapostoOra | null; visto?: number }
+
+export interface Transazione {
+  get(rif: Rif): Promise<Documento>;
+  set(rif: Rif, dati: object): Transazione;
+  delete(rif: Rif): Transazione;
+}
+export interface Lotto {
+  set(rif: Rif, dati: object): Lotto;
+  delete(rif: Rif): Lotto;
+  commit(): Promise<void>;
 }
 
 export interface Elenco {
   forEach(f: (d: Documento) => void): void;
+  size?: number;
 }
 
 export interface ErroreFirebase { code?: string; message?: string }
@@ -93,6 +141,10 @@ export interface ModuloFirestore {
   collection(db: Db, ...parti: string[]): Coll;
   getDoc(rif: Rif): Promise<Documento>;
   getDocs(coll: Coll): Promise<Elenco>;
-  setDoc(rif: Rif, dati: DatiDocumento): Promise<void>;
+  setDoc(rif: Rif, dati: object): Promise<void>;
+  deleteDoc(rif: Rif): Promise<void>;
   onSnapshot(rif: Rif, ok: (d: Documento) => void, ko: (e: ErroreFirebase) => void): () => void;
+  runTransaction<T>(db: Db, f: (tx: Transazione) => Promise<T>, opz?: { maxAttempts?: number }): Promise<T>;
+  writeBatch(db: Db): Lotto;
+  serverTimestamp(): SegnapostoOra;
 }
