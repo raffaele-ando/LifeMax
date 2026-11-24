@@ -1,0 +1,458 @@
+/* ============================================================
+   I COLORI DI LIFEMAX — una fonte sola, ed è questo file.
+
+   Prima i colori stavano in fondo a cinquemila righe di app.css, ridefiniti
+   uno sopra l'altro: il tema scuro in sette blocchi, il chiaro in due, con
+   tre «pelli» sovrapposte — l'inchiostro di petrolio, poi una «seconda pelle»
+   indaco scritta in fondo «perché vince», poi i grigi di iOS scritti ancora
+   più in fondo. Il valore che arrivava sullo schermo lo decideva l'ordine
+   del file più la specificità dei selettori: il verde pieno di «Fatto» era
+   `#0a7a42` nel chiaro e `#0f7a2e` nello scuro per caso, perché il blocco
+   indaco non vinceva su quello scuro. Fuori dai blocchi c'erano altri
+   centoquattro esadecimali scritti a mano: nove arancioni per la stessa
+   fiamma, quattro marroni per lo stesso «in ritardo».
+
+   Da qui in avanti un colore si scrive QUI e da nessun'altra parte. Lo
+   controlla `prove/colori.js`, che cerca esadecimali e `rgb()` in tutto
+   `src/` e cade se ne trova uno fuori da questo file (le eccezioni, poche,
+   sono scritte lì con il perché).
+
+   Il sistema è «Kubo», costruito sul blu della mascotte e approvato dal
+   fondatore: valori, ragioni e misure in
+   `revisione/mascotte/colore/kubo/` (rapporto-brand-kubo.md, token.json,
+   verifica.txt — 0 coppie sotto soglia su 161). I valori qui sotto sono
+   quelli, copiati da `token.json`; quelli che l'app aggiunge per bisogni
+   suoi (la linea decorativa più forte, il testo disattivato, la rampa
+   dell'oro, i dati dei grafici) sono calcolati con la stessa funzione
+   (`lib.hx`, OKLCH con il croma ridotto se esce dallo sRGB) e segnati
+   «aggiunto».
+
+   TRE PIANI, e ognuno parla solo con quello sotto:
+
+     1. PRIMITIVE — i colori veri, con un nome che dice cosa sono e non a
+        cosa servono: famiglia e luminosità OKLCH (`--blu-50` è il blu di
+        Kubo a L 50%). Non cambiano col tema e NESSUN componente le usa.
+     2. SEMANTICI — il mestiere: `--azione`, `--testo-2`, `--successo`.
+        Sono gli unici che cambiano fra chiaro e scuro, e per questo sono
+        gli unici che compaiono due volte: una in `:root`, una in
+        `:root[data-mode="dark"]`. Il tema lo mette `app.ts` (`applicaTema`)
+        sull'elemento radice, come prima: lo scuro è un attributo, non una
+        media query, perché si sceglie anche a mano dal Profilo.
+     3. COMPONENTI — le scelte di un pezzo dell'interfaccia: di che colore
+        è il bordo di un campo, il pieno di un tasto, l'anello del timer.
+        Puntano ai semantici e quindi seguono il tema da soli.
+
+   In fondo ai componenti ci sono i NOMI STORICI (`--accento`,
+   `--inchiostro-1`, `--ok-pieno`…): sono i nomi che le milleseicento righe
+   del foglio usavano già, ora tutti riportati a un semantico. Restano perché
+   rinominare ogni uso in un colpo vorrebbe dire toccare mille righe per non
+   cambiare niente — e il codice nuovo scritto altrove nel frattempo
+   continuerebbe a chiamarli. Il codice nuovo usa i semantici.
+
+   La pelle «Arcade» (`data-skin`) resta, ma non tocca più i colori: cambia
+   solo i raggi, in app.css. Un colore che cambia a seconda della pelle è un
+   significato che cambia a seconda della pelle.
+   ============================================================ */
+
+:root {
+  /* ---------------------------------------------------------- 1. PRIMITIVE */
+
+  /* carta — i neutri caldi del tema chiaro, e le parole del tema scuro.
+     La carta invece del bianco ottico è una delle cinque leve che tengono
+     distinta una marca blu in una categoria piena di blu (rapporto §3.3). */
+  --carta-97: #f9f6f2;        /* oklch(97.4% 0.006 75) */
+  --carta-96: #f3f0eb;        /* oklch(95.6% 0.007 81) */
+  --carta-95: #f1eee9;        /* oklch(95.0% 0.007 81) */
+  --carta-93: #e9e6e0;        /* oklch(92.6% 0.009 85) */
+  --carta-90: #e0dcd5;        /* oklch(89.6% 0.010 82) */
+  --carta-84: #cfcac2;        /* oklch(84.1% 0.012 80)  aggiunto */
+  --carta-82: #c7c3bd;        /* oklch(81.9% 0.009 78) */
+  --carta-74: #afaaa3;        /* oklch(74.0% 0.011 77) */
+  /* la carta in ombra: la stanza «capisce» */
+  --ombra-95: #f3ede7;        /* oklch(94.9% 0.010 68) */
+  --ombra-21: #1c1712;        /* oklch(20.9% 0.012 67) */
+  --bianco: #ffffff;
+
+  /* notte — il visore di Kubo con il croma ridotto: l'inchiostro del
+     chiaro e le superfici dello scuro */
+  --notte-66: #8f929a;        /* oklch(66.0% 0.012 269) aggiunto */
+  --notte-60: #7d8089;        /* oklch(60.0% 0.014 271) */
+  --notte-60b: #7b808d;       /* oklch(60.0% 0.021 269) la stessa luce, un filo più blu: per lo scuro */
+  --notte-52: #656974;        /* oklch(52.1% 0.018 270) aggiunto */
+  --notte-50: #5e6370;        /* oklch(50.0% 0.022 269) */
+  --notte-43: #494f61;        /* oklch(42.9% 0.031 271) */
+  --notte-40: #424756;        /* oklch(39.9% 0.026 271) aggiunto */
+  --notte-33: #303543;        /* oklch(33.0% 0.026 270) */
+  --notte-31: #2b303f;        /* oklch(31.1% 0.028 270) */
+  --notte-26: #1f2430;        /* oklch(26.1% 0.024 267) */
+  --notte-25: #1a2135;        /* oklch(25.1% 0.039 269) */
+  --notte-21: #151924;        /* oklch(21.5% 0.023 269) */
+  --notte-17: #0c0f18;        /* oklch(17.0% 0.020 270) */
+
+  /* blu — il blu di Kubo (tinta 262°, dato fisso) e i suoi gradini */
+  --blu-95: #e7effe;          /* oklch(95.1% 0.022 263) */
+  --blu-92: #d7e5fe;          /* oklch(91.9% 0.037 262) */
+  --blu-74: #7daafd;          /* oklch(74.0% 0.130 262) */
+  --blu-70: #719def;          /* oklch(69.9% 0.130 262) */
+  --blu-55: #1e64ef;          /* oklch(55.0% 0.220 262) */
+  --blu-50: #0151e3;          /* oklch(50.0% 0.231 262) IL blu di Kubo */
+  --blu-47: #064cce;          /* oklch(47.1% 0.210 262) */
+  --blu-46: #0248ca;          /* oklch(45.9% 0.210 262) */
+  --blu-45: #0045c6;          /* oklch(45.0% 0.209 262) */
+  --blu-41: #003caf;          /* oklch(41.0% 0.191 262) */
+  --blu-34: #1e3663;          /* oklch(33.9% 0.085 262) */
+  --blu-30: #1a2d51;          /* oklch(30.1% 0.070 262) */
+
+  /* smeraldo — «fatto». 172° e non un verde prato: nello scuro il prato
+     cade sull'errore in deuteranopia (rapporto §6) */
+  --smeraldo-95: #d8f7ec;     /* oklch(95.1% 0.035 172) */
+  --smeraldo-84: #6ce4c2;     /* oklch(84.0% 0.120 172) */
+  --smeraldo-60: #029678;     /* oklch(60.0% 0.116 172) */
+  --smeraldo-50: #04755d;     /* oklch(50.1% 0.096 172) */
+  --smeraldo-47: #046b55;     /* oklch(47.1% 0.090 172) */
+  --smeraldo-29: #0f3329;     /* oklch(29.2% 0.045 172) */
+
+  /* ruggine — la distruzione che non si disfa, e nient'altro */
+  --ruggine-95: #ffe9e3;      /* oklch(95.0% 0.025 36) */
+  --ruggine-72: #e4896c;      /* oklch(72.0% 0.119 38) */
+  --ruggine-55: #b44e2e;      /* oklch(55.0% 0.141 38) */
+  --ruggine-40: #7e2401;      /* oklch(39.9% 0.130 38) */
+  --ruggine-28: #3a221a;      /* oklch(28.1% 0.040 39) */
+
+  /* oro — le scintille di Kubo: ricompensa, serie, XP */
+  --oro-96: #fcf0cf;          /* oklch(95.6% 0.045 90) */
+  --oro-95: #fbeec9;          /* oklch(95.0% 0.050 91) */
+  --oro-92: #f8e5b1;          /* oklch(92.5% 0.070 90) */
+  --oro-90: #ffd981;          /* oklch(89.9% 0.115 87)  aggiunto: rampa */
+  --oro-86: #fec72d;          /* oklch(85.6% 0.165 87)  l'oro di Kubo */
+  --oro-72: #c89e32;          /* oklch(72.0% 0.130 86)  aggiunto: rampa */
+  --oro-62: #a78004;          /* oklch(62.1% 0.126 87)  aggiunto: oro che regge 3:1 sulla carta */
+  --oro-45: #6b5100;          /* oklch(45.0% 0.092 87)  aggiunto: rampa */
+  --oro-30: #392c0c;          /* oklch(30.1% 0.050 87) */
+  --oro-29: #382901;          /* oklch(29.1% 0.058 87) */
+  --oro-25: #2b2005;          /* oklch(25.0% 0.045 87) */
+
+  /* lavanda — il corpo di Kubo; visore — il suo schermo */
+  --lavanda-95: #edeffe;      /* oklch(95.5% 0.020 280) */
+  --lavanda-92: #e2e4fa;      /* oklch(92.4% 0.030 282) */
+  --lavanda-86: #cbceef;      /* oklch(86.0% 0.046 281) */
+  --lavanda-24: #191d34;      /* oklch(23.9% 0.044 275) */
+  --visore-31: #1d2a62;       /* oklch(30.9% 0.100 270) */
+
+  /* le otto aree: tinta, fondo tenue, testo — chiaro e scuro */
+  --studio-95: #eeecfe;  --studio-77: #b3abe9;  --studio-60: #876cca;  --studio-55: #7167a7;  --studio-46: #584d8b;  --studio-28: #28253b;
+  --salute-95: #feeadf;  --salute-85: #ffbe9a;  --salute-85b: #febe9b; --salute-63: #bd754c;  --salute-46: #864317;  --salute-28: #392316;
+  --relazioni-95: #fee7f1; --relazioni-76: #dd9ab9; --relazioni-74: #d992b3; --relazioni-52: #934f71; --relazioni-46: #803e60; --relazioni-28: #38212c;
+  --finanze-95: #f5efd8; --finanze-79: #cfb969; --finanze-79b: #cdba6e; --finanze-57: #8b7517; --finanze-46: #685704; --finanze-28: #2f2910;
+  --associazioni-95: #d9f4fb; --associazioni-76: #3dc4e1; --associazioni-60: #568999; --associazioni-47: #026678; --associazioni-46: #026375; --associazioni-28: #0d2e35;
+  --founder-95: #fbe8f8; --founder-86: #feb4f5; --founder-86b: #ffb4f5; --founder-64: #bc6ab3; --founder-46: #82347b; --founder-28: #342132;
+  --lavoro-95: #e7f3de;  --lavoro-76: #96c16d;  --lavoro-72: #88b55b;  --lavoro-50: #467103;  --lavoro-46: #3e6501;  --lavoro-28: #222d18;
+  --altro-95: #f9edd8;   --altro-76: #bab09e;   --altro-69: #a49a88;   --altro-47: #635948;   --altro-46: #605745;   --altro-28: #302817;
+
+  --nero: #000000;                            /* solo per le ombre dello scuro */
+
+  /* ---------------------------------------------------------- 2. SEMANTICI (chiaro) */
+
+  /* l'ombra del chiaro è d'inchiostro, non nera: un'ombra nera sulla carta
+     calda si vede grigia e sporca */
+  --ombra-colore: var(--notte-25);
+
+  /* superfici: 60% della schermata */
+  --pagina: var(--carta-97);
+  --superficie-1: var(--bianco);
+  --superficie-2: var(--carta-96);
+  --superficie-3: var(--carta-93);
+
+  /* linee. Due mestieri che prima avevano lo stesso nome e quindi lo stesso
+     colore: la linea che DIVIDE (decorativa, 1,2:1, ammessa da WCAG) e la
+     linea che FA VEDERE UN CONTROLLO — il bordo di un campo, il cerchio
+     della spunta, l'interruttore spento — che deve stare a 3:1 (SC 1.4.11).
+     Il bordo dei campi era a 1,36:1: c'era, ma non si vedeva. */
+  --linea-decor: var(--carta-90);
+  --linea-decor-forte: var(--carta-84);       /* aggiunto: il bordo dei tasti secondari */
+  --linea-controllo: var(--notte-60);         /* 3,47–3,95:1 su tutte le superfici chiare */
+
+  /* testo: blu notte desaturato, mai nero, mai blu saturo */
+  --testo-1: var(--notte-25);
+  --testo-2: var(--notte-43);
+  --testo-3: var(--notte-50);                 /* anche il segnaposto: 4,82:1 anche su superficie-3 */
+  --testo-disattivo: var(--notte-66);         /* aggiunto: volutamente sotto 4,5 — è esente (1.4.3) e deve sembrarlo */
+  --testo-su-pieno: var(--bianco);
+
+  /* azione: il blu di Kubo. Un solo pieno per schermata */
+  --azione: var(--blu-50);
+  --azione-hover: var(--blu-45);
+  --azione-premuta: var(--blu-41);
+  --azione-testo: var(--blu-47);
+  --azione-linea: var(--blu-50);
+  --azione-tenue: var(--blu-95);
+  --azione-tenue-hover: var(--blu-92);
+  --focus: var(--blu-47);
+
+  /* successo: «fatto» */
+  --successo: var(--smeraldo-60);
+  --successo-testo: var(--smeraldo-47);
+  --successo-pieno: var(--smeraldo-50);
+  --successo-tenue: var(--smeraldo-95);
+
+  /* errore: solo per la conferma di una distruzione. NON esiste un colore
+     d'«attenzione»: il ritardo e la cosa mancata sono neutri, con
+     l'orologio (rapporto-brand-kubo §6) */
+  --errore: var(--ruggine-40);
+  --errore-testo: var(--ruggine-40);
+  --errore-pieno: var(--ruggine-40);
+  --errore-tenue: var(--ruggine-95);
+
+  /* oro: ricompensa, giorni di fila, XP. Sul chiaro non sta mai da solo
+     (1,45:1): o con l'inchiostro sopra, o con il contorno d'inchiostro */
+  --oro: var(--oro-86);
+  --oro-tenue: var(--oro-95);
+  --oro-profondo: var(--oro-62);              /* aggiunto: l'oro come linea, ≥ 3:1 sulla carta */
+  --testo-su-oro: var(--notte-25);
+
+  /* le stanze emotive: il colore lo porta la stanza, l'emozione il viso */
+  --stanza-gioia: var(--oro-96);
+  --stanza-raggio: var(--oro-92);
+  --stanza-calma: var(--carta-97);
+  --stanza-capisce: var(--ombra-95);
+  --stanza-bentornato: var(--lavanda-95);
+  --stanza-concentrazione: var(--notte-17);   /* il visore, anche nel chiaro */
+
+  /* Kubo: uguale nei due temi */
+  --kubo-blu: var(--blu-50);
+  --kubo-visore: var(--visore-31);
+  --kubo-corpo: var(--lavanda-92);
+  --kubo-ombra: var(--lavanda-86);
+  --kubo-occhi: var(--bianco);
+  --kubo-scintilla: var(--oro-86);
+
+  /* le aree, per posto (slot 1…8, dati.ts). `coloreArea()` restituisce
+     `var(--area-N)`: il tema cambia senza ridisegnare niente. Tinta per il
+     puntino e l'icona (≥ 3:1), tenue per il fondo di un chip, testo per
+     l'etichetta (≥ 4,5:1 anche sul tenue). */
+  --area-1: var(--studio-55);        --area-1-tenue: var(--studio-95);        --area-1-testo: var(--studio-46);
+  --area-2: var(--salute-63);        --area-2-tenue: var(--salute-95);        --area-2-testo: var(--salute-46);
+  --area-3: var(--relazioni-52);     --area-3-tenue: var(--relazioni-95);     --area-3-testo: var(--relazioni-46);
+  --area-4: var(--finanze-57);       --area-4-tenue: var(--finanze-95);       --area-4-testo: var(--finanze-46);
+  --area-5: var(--associazioni-47);  --area-5-tenue: var(--associazioni-95);  --area-5-testo: var(--associazioni-46);
+  --area-6: var(--founder-64);       --area-6-tenue: var(--founder-95);       --area-6-testo: var(--founder-46);
+  --area-7: var(--lavoro-50);        --area-7-tenue: var(--lavoro-95);        --area-7-testo: var(--lavoro-46);
+  --area-8: var(--altro-47);         --area-8-tenue: var(--altro-95);         --area-8-testo: var(--altro-46);
+
+  /* i dati dei grafici: NON sono le aree e non sono l'azione. Le tre linee
+     del check-in sono il codice di Kubo — oro, blu, inchiostro — e si
+     distinguono per luminosità anche a chi non vede i colori. La rampa
+     della costanza è d'oro perché conta i giorni in cui hai fatto: è
+     ricompensa, e prima era un blu uguale all'area Studio. */
+  --dato-1: var(--oro-profondo);              /* energia */
+  --dato-2: var(--azione-linea);              /* focus */
+  --dato-3: var(--testo-2);                   /* umore */
+  --rampa-1: var(--oro-95);
+  --rampa-2: var(--oro-90);
+  --rampa-3: var(--oro-86);
+  --rampa-4: var(--oro-62);
+
+  /* la freccia delle tendine: un'immagine, quindi niente var() dentro —
+     ce n'è una per tema, del colore di --testo-3 */
+  --freccia-tendina: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%235e6370' stroke-width='2.2' stroke-linecap='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+
+  /* quanto pesa il velo sotto un pannello in questo tema */
+  --velo-forza: 45%;
+
+  /* ---------------------------------------------------------- 3. COMPONENTI */
+
+  /* il tasto principale: un pieno per schermata, hover e premuto con un
+     colore vero (prima era `filter: brightness(1.06)`, che non si vedeva) */
+  --primario-fondo: var(--azione);
+  --primario-hover: var(--azione-hover);
+  --primario-premuto: var(--azione-premuta);
+  --primario-testo: var(--testo-su-pieno);
+
+  /* SELEZIONATO È TONALE, e non è il primario. Prima un chip scelto, un
+     voto scelto, un giorno scelto e «Registra» erano lo stesso pieno indaco:
+     tre «5» scelti nel check-in pesavano come il tasto che salva. */
+  --selezione-fondo: var(--azione-tenue);
+  --selezione-fondo-hover: var(--azione-tenue-hover);
+  --selezione-testo: var(--azione-testo);
+  --selezione-bordo: var(--azione-linea);
+
+  /* il fuoco: un anello STACCATO dall'elemento di due pixel (`outline-offset`
+     in app.css), così fra l'anello e il pieno passa la pagina. Sul pieno blu
+     un anello blu attaccato fa 1,12:1 e non si vede */
+  --fuoco-anello: var(--focus);
+
+  /* i controlli */
+  --campo-bordo: var(--linea-controllo);
+  --campo-bordo-hover: var(--testo-3);
+  --campo-segnaposto: var(--testo-3);
+  --spunta-bordo: var(--linea-controllo);
+  --spunta-fatta: var(--successo-pieno);
+  --interruttore-spento: var(--linea-controllo);
+  --interruttore-acceso: var(--azione);
+  --pomello: var(--bianco);
+  --disattivato-fondo: var(--superficie-3);
+  --disattivato-testo: var(--testo-disattivo);
+  --premuto: color-mix(in srgb, var(--testo-1) 8%, transparent);
+
+  /* la serie, la fiamma e gli XP: l'oro. La fiamma sul chiaro ha il
+     contorno d'inchiostro e il cuore d'oro; sullo scuro è oro e basta */
+  --fiamma-tratto: var(--testo-su-oro);
+  --fiamma-riempi: var(--oro);
+  --serie-fondo: var(--oro-tenue);
+  --serie-testo: var(--testo-1);
+  --xp-fondo: var(--oro);
+  --xp-testo: var(--testo-su-oro);
+
+  /* lo schermo del timer: la stanza «concentrazione», il visore di Kubo.
+     È scuro in tutti e due i temi, quindi i suoi colori sono fissi.
+     L'anello in corsa è il blu delle linee dello scuro; in pausa è grigio —
+     verde avrebbe voluto dire «fatto» */
+  --timer-fondo: var(--stanza-concentrazione);
+  --timer-testo-1: var(--carta-95);
+  --timer-testo-2: var(--carta-82);
+  --timer-testo-3: var(--carta-74);
+  --timer-anello: var(--blu-70);
+  --timer-anello-pausa: var(--notte-60b);
+  --timer-traccia: color-mix(in srgb, var(--bianco) 7%, transparent);
+  --timer-tasto: color-mix(in srgb, var(--bianco) 8%, transparent);
+  --timer-tasto-hover: color-mix(in srgb, var(--bianco) 14%, transparent);
+  --timer-fine: var(--oro);
+
+  /* la festa: una palette sola, letta da qui da moto.ts e da app.ts.
+     Oro 60%, blu 25%, il corpo di Kubo 15%. Niente verde, niente rosso,
+     niente arcobaleno */
+  --festa-1: var(--kubo-scintilla);
+  --festa-2: var(--kubo-blu);
+  --festa-3: var(--kubo-corpo);
+
+  /* le illustrazioni dei vuoti (illustrazioni.ts) e il logo (segni.ts):
+     l'oro delle scintille per il sole, il blu di Kubo per il resto, e il
+     bianco dei suoi occhi per i segni sopra */
+  --illo-caldo-1: var(--oro-72);
+  --illo-caldo-2: var(--oro);
+  --illo-caldo-3: var(--oro-90);
+  --illo-blu-1: var(--kubo-visore);
+  --illo-blu-2: var(--kubo-blu);
+  --illo-blu-3: var(--blu-70);
+  --illo-luce: var(--kubo-occhi);
+  --logo-1: var(--kubo-blu);
+  --logo-2: var(--kubo-blu);
+  --logo-segno: var(--kubo-occhi);
+
+  /* l'aurora dietro le pagine: il corpo di Kubo e una scintilla, appena */
+  --aurora-1: var(--kubo-corpo);
+  --aurora-2: var(--oro-tenue);
+  --aurora-3: var(--azione-tenue);
+
+  /* elevazione, vetro, velo */
+  --e1: 0 1px 2px color-mix(in srgb, var(--ombra-colore) 5%, transparent);
+  --e2: 0 1px 2px color-mix(in srgb, var(--ombra-colore) 4%, transparent),
+        0 12px 32px -18px color-mix(in srgb, var(--ombra-colore) 22%, transparent);
+  --e3: 0 2px 6px color-mix(in srgb, var(--ombra-colore) 5%, transparent),
+        0 24px 48px -20px color-mix(in srgb, var(--ombra-colore) 28%, transparent);
+  --vetro: color-mix(in srgb, var(--superficie-1) 78%, transparent);
+  --velo-colore: color-mix(in srgb, var(--notte-17) var(--velo-forza), transparent);
+  --velo-colore-forte: color-mix(in srgb, var(--notte-17) 78%, transparent);
+  --luce: color-mix(in srgb, var(--bianco) 92%, transparent);   /* testo secondario su un pieno */
+
+  /* NOMI STORICI — gli stessi semantici, con i nomi che il foglio usava */
+  --accento: var(--azione-linea);
+  --accento-pieno: var(--azione);
+  --accento-ink: var(--testo-su-pieno);
+  --accento-testo: var(--azione-testo);
+  --accento-tenue: var(--azione-tenue);
+  --inchiostro-1: var(--testo-1);
+  --inchiostro-2: var(--testo-2);
+  --inchiostro-muto: var(--testo-3);
+  --bordo: var(--linea-decor);
+  --bordo-forte: var(--linea-decor-forte);
+  --griglia: var(--linea-decor);
+  --baseline: var(--linea-controllo);
+  --ok: var(--successo);
+  --ok-pieno: var(--successo-pieno);
+  --ok-testo: var(--successo-testo);
+  --critico: var(--errore);
+  --critico-testo: var(--errore-testo);
+  --critico-pieno: var(--errore-pieno);
+
+  color-scheme: light;
+}
+
+/* ============================================================
+   IL TEMA SCURO È IL VISORE DI KUBO
+
+   Non è il chiaro rovesciato: le superfici sono il visore (blu notte,
+   17-31% di luce, la più alta è la più chiara perché al buio le ombre non
+   si vedono) e il testo è il bianco caldo degli occhi-luce. Qui si
+   ridefiniscono SOLO i semantici che cambiano: il pieno d'azione, Kubo,
+   l'oro e i pieni di successo ed errore sono gli stessi del chiaro.
+   ============================================================ */
+:root[data-mode="dark"] {
+  --pagina: var(--notte-17);
+  --superficie-1: var(--notte-21);
+  --superficie-2: var(--notte-26);
+  --superficie-3: var(--notte-31);
+
+  --linea-decor: var(--notte-33);
+  --linea-decor-forte: var(--notte-40);
+  --linea-controllo: var(--notte-60b);        /* 3,93–4,84:1 */
+
+  --testo-1: var(--carta-95);
+  --testo-2: var(--carta-82);
+  --testo-3: var(--carta-74);
+  --testo-disattivo: var(--notte-52);
+
+  --azione-hover: var(--blu-55);
+  --azione-premuta: var(--blu-46);
+  --azione-testo: var(--blu-74);
+  --azione-linea: var(--blu-70);
+  --azione-tenue: var(--blu-30);
+  --azione-tenue-hover: var(--blu-34);
+  --focus: var(--blu-74);
+
+  --successo: var(--smeraldo-84);
+  --successo-testo: var(--smeraldo-84);
+  --successo-tenue: var(--smeraldo-29);
+
+  --errore: var(--ruggine-55);
+  --errore-testo: var(--ruggine-72);
+  --errore-tenue: var(--ruggine-28);
+
+  --oro-tenue: var(--oro-30);
+  --oro-profondo: var(--oro-86);              /* sullo scuro l'oro sta da solo (11:1) */
+
+  --stanza-gioia: var(--oro-25);
+  --stanza-raggio: var(--oro-29);
+  --stanza-calma: var(--notte-17);
+  --stanza-capisce: var(--ombra-21);
+  --stanza-bentornato: var(--lavanda-24);
+
+  --area-1: var(--studio-60);        --area-1-tenue: var(--studio-28);        --area-1-testo: var(--studio-77);
+  --area-2: var(--salute-85);        --area-2-tenue: var(--salute-28);        --area-2-testo: var(--salute-85b);
+  --area-3: var(--relazioni-74);     --area-3-tenue: var(--relazioni-28);     --area-3-testo: var(--relazioni-76);
+  --area-4: var(--finanze-79);       --area-4-tenue: var(--finanze-28);       --area-4-testo: var(--finanze-79b);
+  --area-5: var(--associazioni-60);  --area-5-tenue: var(--associazioni-28);  --area-5-testo: var(--associazioni-76);
+  --area-6: var(--founder-86);       --area-6-tenue: var(--founder-28);       --area-6-testo: var(--founder-86b);
+  --area-7: var(--lavoro-72);        --area-7-tenue: var(--lavoro-28);        --area-7-testo: var(--lavoro-76);
+  --area-8: var(--altro-69);         --area-8-tenue: var(--altro-28);         --area-8-testo: var(--altro-76);
+
+  --rampa-1: var(--oro-30);
+  --rampa-2: var(--oro-45);
+  --rampa-3: var(--oro-72);
+  --rampa-4: var(--oro-86);
+
+  --freccia-tendina: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23afaaa3' stroke-width='2.2' stroke-linecap='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+
+  /* al buio un'ombra chiara non esiste: nera, e più forte */
+  --e1: 0 1px 2px color-mix(in srgb, var(--nero) 50%, transparent);
+  --e2: 0 1px 2px color-mix(in srgb, var(--nero) 40%, transparent),
+        0 14px 36px -16px color-mix(in srgb, var(--nero) 60%, transparent);
+  --e3: 0 2px 6px color-mix(in srgb, var(--nero) 45%, transparent),
+        0 28px 56px -20px color-mix(in srgb, var(--nero) 70%, transparent);
+  --velo-forza: 66%;
+
+  /* componenti che nello scuro scelgono diversamente */
+  --fiamma-tratto: var(--oro);
+
+  color-scheme: dark;
+}

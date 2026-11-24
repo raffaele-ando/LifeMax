@@ -40,7 +40,7 @@ import type { VoceAdesso, CosaAdesso, VoceDiario, GiornoDiDiario } from '../dati
 import { ICO, GOOGLE_G, LOGO } from '../segni/segni';
 import { LMCharts } from '../grafici/grafici';
 import { LM_FORMA } from '../forma/forma';
-import { countUp, burst, flyXp, pioggiaCoriandoli } from './moto';
+import { countUp, burst, flyXp, pioggiaCoriandoli, coloriFesta } from './moto';
 import { abilitaTrascina } from './trascina';
 import { fmtMin, fmtOre, etichettaGiorno, oraDi } from './tempo';
 import { avviaScorrimento } from './scorri';
@@ -3994,7 +3994,7 @@ export function vistaFocus(): Scena {
   function rigaCoda(a: typeof oggi[number], fatta: boolean, conPunto: boolean): string {
     const ar = areaById(a.areaId);
     return '<button class="coda-riga' + (fatta ? ' coda-fatta' : '') + '" data-fa-fuoco="' + a.id + '">' +
-      (conPunto ? '<i class="coda-pt" style="background:' + (fatta ? 'var(--ok)' : LM.coloreArea(ar)) + '"></i>' : '') +
+      (conPunto ? '<i class="coda-pt" style="background:' + (fatta ? 'var(--successo)' : LM.coloreArea(ar)) + '"></i>' : '') +
       '<b>' + esc(a.testo) + '</b>' + (a.ora ? '<span>' + esc(a.ora) + '</span>' : '') + '</button>';
   }
 
@@ -5670,7 +5670,6 @@ function sezAree(c: HTMLElement): void {
 
 /* --- Andamento: check-in nel tempo + minuti per area --- */
 function sezAndamento(c: HTMLElement): void {
-  var dark = document.documentElement.getAttribute('data-mode') === 'dark';
   c.innerHTML = '<div class="card" style="--i:0"><div class="card-testa"><h2>' + ICO('polso', 15) + ' Energia, focus e umore</h2>' +
     '<div class="segmenti mini-seg" id="seg-periodo">' +
     '<button data-g="14" class="' + (periodoTrend === 14 ? 'attivo' : '') + '">14 giorni</button>' +
@@ -5679,10 +5678,13 @@ function sezAndamento(c: HTMLElement): void {
     '<div class="card mt" style="--i:1"><h2>' + ICO('tempospeso', 15) + ' Come hai speso il tempo</h2>' +
     '<div id="hbar-minuti"></div></div>';
 
+  /* i colori delle tre linee sono i dati del sistema (token.css, `--dato-*`):
+     oro, blu e inchiostro, che si distinguono anche per luminosità. Prima
+     erano scritti qui per tema, e Focus era il blu dell'area Studio */
   LMCharts.trend(perId('trend-checkin'), [
-    { nome: 'Energia', colore: dark ? '#c98500' : '#eda100', punti: LM.serieCheckin('energia', periodoTrend) },
-    { nome: 'Focus',   colore: dark ? '#3987e5' : '#2a78d6', punti: LM.serieCheckin('focus', periodoTrend) },
-    { nome: 'Umore',   colore: dark ? '#199e70' : '#1baf7a', punti: LM.serieCheckin('umore', periodoTrend) }
+    { nome: 'Energia', colore: 'var(--dato-1)', punti: LM.serieCheckin('energia', periodoTrend) },
+    { nome: 'Focus',   colore: 'var(--dato-2)', punti: LM.serieCheckin('focus', periodoTrend) },
+    { nome: 'Umore',   colore: 'var(--dato-3)', punti: LM.serieCheckin('umore', periodoTrend) }
   ], { min: 1, max: 5, label: 'Andamento di energia, focus e umore' });
 
   LMCharts.hbar(perId('hbar-minuti'),
@@ -6430,13 +6432,19 @@ document.addEventListener('lm:change', function () {
 });
 
 /* LA FESTA: una manciata di coriandoli dal centro dello schermo. Sta su
-   quello che si chiude davvero — un rituale, la giornata — non su ogni tocco. */
+   quello che si chiude davvero — un rituale, la giornata — non su ogni tocco.
+   I colori sono gli stessi della pioggia di `moto.ts`, presi dallo stesso
+   posto (`coloriFesta`, che li legge da token.css): oro, il blu di Kubo e il
+   suo corpo bianco. Prima qui c'era una seconda tavolozza scritta a mano —
+   rosso, giallo, verde, blu, viola, rosa — diversa da quella della pioggia:
+   due feste con due arcobaleni, e dentro il verde di «fatto» e il rosso
+   dell'errore. */
 export function festa(): void {
   if ((LM.load().profilo.effetti || 'pieni') === 'minimi') return;
   if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
   const strato = document.createElement('div');
   strato.className = 'festa'; strato.setAttribute('aria-hidden', 'true');
-  const COL = ['#ff5a5f', '#ffb400', '#00c781', '#3b82f6', '#a855f7', '#ff7ac6'];
+  const COL = coloriFesta();
   let dentro = '';
   for (let i = 0; i < 36; i++) {
     const ang = (Math.PI * 2 * i) / 36 + Math.random() * 0.4;
@@ -6886,11 +6894,10 @@ function ritualeCheckin(corpo: HTMLElement, rifai?: boolean): void {
     render();
   });
 
-  var dark = document.documentElement.getAttribute('data-mode') === 'dark';
   LMCharts.trend(perId('mini-trend'), [
-    { nome: 'Energia', colore: dark ? '#c98500' : '#eda100', punti: LM.serieCheckin('energia', 14) },
-    { nome: 'Focus',   colore: dark ? '#3987e5' : '#2a78d6', punti: LM.serieCheckin('focus', 14) },
-    { nome: 'Umore',   colore: dark ? '#199e70' : '#1baf7a', punti: LM.serieCheckin('umore', 14) }
+    { nome: 'Energia', colore: 'var(--dato-1)', punti: LM.serieCheckin('energia', 14) },
+    { nome: 'Focus',   colore: 'var(--dato-2)', punti: LM.serieCheckin('focus', 14) },
+    { nome: 'Umore',   colore: 'var(--dato-3)', punti: LM.serieCheckin('umore', 14) }
   ], { min: 1, max: 5, h: 180 });
 }
 
@@ -7920,7 +7927,7 @@ function onboarding() {
       sotto = 'Scegline quante vuoi. Potrai rinominarle o aggiungerne altre dopo.';
       corpo = '<div class="bv-griglia">' + LM.AREE_DEFAULT.map(function (a) {
         const on = scelte.aree.indexOf(a.id) >= 0;
-        return '<button class="bv-tessera' + (on ? ' on' : '') + '" data-area="' + a.id + '" aria-pressed="' + on + '" style="--c-area:' + LM.SLOT_COLORI[a.slot][0] + '">' +
+        return '<button class="bv-tessera' + (on ? ' on' : '') + '" data-area="' + a.id + '" aria-pressed="' + on + '" style="--c-area:' + LM.coloreArea(a) + '">' +
           '<span class="bv-tessera-ico">' + ICO(a.icona, 26) + '</span><span class="bv-tessera-nome">' + esc(a.nome) + '</span>' +
           '<span class="bv-spunta">' + ICO('check', 13) + '</span></button>';
       }).join('') + '</div>';

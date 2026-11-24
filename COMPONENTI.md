@@ -124,8 +124,9 @@ Assorbe le 13 varianti di `btn-*`.
               pieno     l'azione della schermata. UNA per schermata.
               tonale    salva un blocco dentro a una schermata più lunga
               quieto    si può fare, non è la cosa principale
-              chiude    verde: la conferma che chiude qualcosa
-              pericolo  rosso: l'unica azione che distrugge
+              chiude    «Fatto»: ha il pieno del principale; il verde
+                        arriva dopo, sulla spunta
+              pericolo  ruggine: solo nella conferma di una distruzione
     misura  normale | grande | mini
     spento · etichetta (per chi non vede)
 

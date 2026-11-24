@@ -201,25 +201,31 @@ function creaLM() {
     { id: 'altro',        nome: 'Altro / Esplorazione',icona: 'lightbulb', slot: 8, sistema: 'Spazio libero per la novità: una cosa nuova a settimana' }
   ];
 
-  /* Palette categorica di riferimento (validata: vedi README).
-     slot → [light, dark]. Il colore non porta mai il significato da solo:
-     ogni uso è accompagnato da icona + etichetta. */
-  var SLOT_COLORI: Record<Slot, readonly [string, string]> = {
-    /* nello scuro i colori si schiariscono: scuriti diventavano marrone e
-       oliva e il verde spariva sul fondo */
-    1: ['#2a78d6', '#5aa2f0'],
-    2: ['#008300', '#3fb950'],
-    3: ['#e87ba4', '#ee8db2'],
-    4: ['#eda100', '#f2b53b'],
-    5: ['#1baf7a', '#33c792'],
-    6: ['#eb6834', '#f2804f'],
-    7: ['#4a3aa7', '#9085e9'],
-    8: ['#e34948', '#ee7a79']
-  };
+  /* IL COLORE DI UN'AREA È UN NOME, NON UN VALORE.
+     Qui c'era la tavolozza scritta a mano — slot → [chiaro, scuro] — e
+     `coloreArea()` sceglieva fra i due guardando il tema IN QUEL MOMENTO.
+     Due difetti venivano da lì: chi la chiamava senza passare da qui
+     (l'onboarding prendeva sempre il valore chiaro, anche al buio) e chi
+     aveva già disegnato restava del tema vecchio finché non ridisegnava.
+     Adesso restituisce `var(--area-N)`, e i valori per chiaro e scuro
+     stanno in token.css con tutti gli altri colori: il browser sceglie da
+     sé, sempre.
+     I colori sono quelli del sistema «Kubo» (Studio non è più blu, perché
+     il blu è il tasto; Salute non è più verde, perché il verde è «fatto»).
+     NON sono distinguibili fra loro da chi ha una carenza cromatica — in
+     deuteranopia Salute, Finanze e Altro si avvicinano — e non devono
+     esserlo: un'area non si dice mai col colore da solo, c'è sempre il suo
+     segno e il suo nome (SC 1.4.1).
 
+     I DATI SALVATI NON CAMBIANO. Un'area salvata porta il suo `slot`, mai un
+     colore: il colore si ricava dallo slot a ogni disegno. Per questo il
+     nuovo sistema arriva a tutti — anche alle aree rinominate o aggiunte a
+     mano, che tengono nome, icona e slot — senza nessuna migrazione dello
+     stato, e un dispositivo col codice vecchio che si sincronizza con uno
+     nuovo non riceve niente da tradurre. */
   function coloreArea(area: Area): string {
-    var dark = document.documentElement.getAttribute('data-mode') === 'dark';
-    return SLOT_COLORI[area.slot][dark ? 1 : 0];
+    var slot = area && area.slot >= 1 && area.slot <= 8 ? area.slot : 8;
+    return 'var(--area-' + slot + ')';
   }
 
   /* ---------- XP ---------- */
@@ -3990,7 +3996,6 @@ function creaLM() {
 
   return {
     AREE_DEFAULT: AREE_DEFAULT,
-    SLOT_COLORI: SLOT_COLORI,
     METRICHE_ESPERIMENTO: METRICHE_ESPERIMENTO,
     XP_EVENTI: XP_EVENTI,
     load: load, save: save, reset: reset, seedDemo: seedDemo,

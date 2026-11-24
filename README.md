@@ -613,11 +613,11 @@ confine senza avere i moduli.
 
 ### Grafici
 
-La palette categorica (8 slot fissi, un colore per area di vita) è la palette di
-riferimento validata per visione normale e CVD in entrambe le modalità
-(ΔE adiacente ≥8 CVD, ≥15 visione normale); i tre colori sotto 3:1 su superficie
-chiara sono sempre accompagnati da etichetta+icona, mai colore da solo. Sequenziale =
-un solo blu chiaro→scuro (heatmap). Una sola scala Y per grafico. Tooltip su hover
+I colori vengono tutti da `src/stile/token.css` (sistema «Kubo», vedi
+DESIGN.md). Le aree hanno 8 slot fissi (`--area-1…8`, chiaro e scuro), sempre
+accompagnati da etichetta e icona, mai colore da solo. Le linee del check-in
+sono `--dato-1…3` (oro, blu, inchiostro), separate dalle aree. Sequenziale =
+una rampa d'oro (`--rampa-1…4`, heatmap della costanza). Una sola scala Y per grafico. Tooltip su hover
 ovunque; legenda sempre presente da 2 serie in su.
 
 ## Limiti del prototipo

@@ -46,7 +46,20 @@ export function countUp(el: HTMLElement, to: number, opzioni?: OpzContatore): vo
   requestAnimationFrame(step);
 }
 
-const COLORI_FESTA = ['#7c5df0', '#4a7bf5', '#2ab8e8', '#0ca30c', '#eda100', '#e87ba4'];
+/* I COLORI DELLA FESTA SI LEGGONO DAI TOKEN, ed è una tavolozza sola.
+   Qui c'era il vecchio gradiente «Momentum» (viola, blu, ciano) più un
+   verde, un'ambra e un rosa; in `app.ts` ce n'era un'altra, tutta diversa.
+   Adesso le due feste chiedono qui: oro, il blu di Kubo e il suo corpo
+   bianco — le sue scintille, il suo colore — nelle proporzioni del sistema,
+   60 / 25 / 15. Niente verde (è «fatto») e niente rosso (è l'errore).
+   La tela vuole un colore vero, non `var(--…)`: si chiede al browser il
+   valore calcolato, a ogni festa, così segue anche il tema. */
+const SEQUENZA_FESTA = [1, 2, 1, 1, 3, 1, 2, 1, 1, 2, 1, 3, 1, 1, 2, 1, 1, 3, 2, 1];
+export function coloriFesta(): string[] {
+  const st = getComputedStyle(document.documentElement);
+  const tre = [1, 2, 3].map(function (n) { return st.getPropertyValue('--festa-' + n).trim(); });
+  return SEQUENZA_FESTA.map(function (n) { return tre[n - 1] || 'currentColor'; });
+}
 
 /* LO SCOPPIO ATTORNO AL DITO: sulla stessa tela della pioggia.
    Anche questo erano diciotto elementi aggiunti alla pagina, cioè diciotto
@@ -145,8 +158,9 @@ export function festa(opt: OpzFesta): void {
   const ctx = telaCtx, tela = telaFesta;
   if (!ctx || !tela) return;
   const W = telaW, H = telaH, n = opt.quanti || 40;
+  const colori = coloriFesta();
   for (let i = 0; i < n; i++) {
-    const col = COLORI_FESTA[i % COLORI_FESTA.length] || '#7c5df0';
+    const col = colori[i % colori.length] || 'currentColor';
     if (opt.da === 'punto') {
       const ang = Math.random() * Math.PI * 2, forza = 170 + Math.random() * 280;
       pezziFesta.push({

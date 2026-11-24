@@ -124,6 +124,19 @@ genera le chiavi, in un browser vero).
   `var(--inchiostro-1)` rende invalido il color-mix e il testo torna al grigio
   ereditato, che è un colore plausibile.
 
+  Misura anche quello che non è testo, e che per questo restava fuori
+  mentre la prova diceva verde: il bordo di ogni campo, il cerchio di ogni
+  spunta non ancora fatta e l'interruttore spento (≥ 3:1, SC 1.4.11), il
+  segnaposto dei campi vuoti (≥ 4,5:1), e l'anello del fuoco sul tasto
+  principale — almeno 2px, staccato di almeno 2px, ≥ 3:1 sul fondo: il blu
+  del fuoco e il blu del tasto sono lo stesso blu. Le scene comprendono un
+  foglio con i passi, le abitudini, l'Aspetto con un interruttore spento e il
+  primo avvio. Prima del browser legge il codice: **un colore si scrive solo
+  in `src/stile/token.css`**, e lì solo fra le primitive; un blocco per tema;
+  nessun altro foglio ridefinisce un token; la barra del browser
+  (`index.html`, manifest) vale `--pagina`. Le eccezioni, scritte nella prova
+  col perché: il Design lab, i quattro colori del logo Google.
+
 - **spazi.js** — gli spazi fra gli elementi, misurati come una griglia. Per
   ogni schermata e a quattro larghezze prende la distanza fra due elementi
   incolonnati e pretende che stia sulla scala 0/4/8/12/16/24/32/40; che il

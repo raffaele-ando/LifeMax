@@ -100,6 +100,15 @@ function el<K extends keyof SVGElementTagNameMap>(
   return n;
 }
 
+/* `var(--nome)` → il colore che quel nome vale adesso, nel tema di adesso.
+   Serve dove un `var()` non arriva (le fermate di un gradiente); dove
+   arriva — un tratto, un fondo — si lascia il nome, che segue il tema da sé. */
+function valoreVero(colore: string): string {
+  const m = /^var\((--[\w-]+)\)$/.exec(colore.trim());
+  if (!m || !m[1]) return colore;
+  return getComputedStyle(document.documentElement).getPropertyValue(m[1]).trim() || 'currentColor';
+}
+
 /* ---------- tooltip condiviso ---------- */
 
 let tip: HTMLDivElement | null = null;
@@ -138,7 +147,7 @@ function sparkline(container: HTMLElement, punti: Punto[], opzioni?: Opzioni): v
   const pad = 3;
   const min = opts.min !== undefined ? opts.min : 0;
   const max = opts.max !== undefined ? opts.max : Math.max.apply(null, punti.map(function (p) { return p.valore || 0; }).concat([1]));
-  const colore = opts.colore || 'var(--serie-1)';
+  const colore = opts.colore || 'var(--dato-2)';
 
   const svg = el('svg', { width: '100%', height: H, viewBox: '0 0 ' + W + ' ' + H, 'aria-hidden': 'false', role: 'img' }, container);
   /* un titolo c'è sempre: un grafico senza nome è muto per chi usa lo screen reader */
@@ -165,8 +174,12 @@ function sparkline(container: HTMLElement, punti: Punto[], opzioni?: Opzioni): v
     const gid = 'sg' + Math.random().toString(36).slice(2, 8);
     const defs = el('defs', {}, svg);
     const grad = el('linearGradient', { id: gid, x1: 0, y1: 0, x2: 0, y2: 1 }, defs);
-    const s1 = el('stop', { offset: '0', 'stop-opacity': '.16' }, grad); s1.setAttribute('stop-color', colore.indexOf('var(') === 0 ? '#2a78d6' : colore);
-    const s2 = el('stop', { offset: '1', 'stop-opacity': '0' }, grad); s2.setAttribute('stop-color', colore.indexOf('var(') === 0 ? '#2a78d6' : colore);
+    /* le fermate di un gradiente il colore lo vogliono vero: un `var(…)` si
+       chiede al browser. Prima qui c'era il blu di Studio scritto a mano, per
+       qualunque linea */
+    const vero = valoreVero(colore);
+    const s1 = el('stop', { offset: '0', 'stop-opacity': '.16' }, grad); s1.setAttribute('stop-color', vero);
+    const s2 = el('stop', { offset: '1', 'stop-opacity': '0' }, grad); s2.setAttribute('stop-color', vero);
     void s1; void s2;
     /* area chiusa sulla baseline lungo i punti noti */
     if (noti.length > 1) {
@@ -381,14 +394,16 @@ function hbar(container: HTMLElement, items: Voce[], opzioni?: Opzioni): void {
 /* giorni: [{data, valore}] — bin 0 recede verso la superficie,
    poi 4 passi della rampa blu (chiaro→scuro = poco→tanto). */
 
-const RAMPA_LIGHT = ['#cde2fb', '#86b6ef', '#3987e5', '#184f95'];
-const RAMPA_DARK  = ['#0d366b', '#1c5cab', '#3987e5', '#86b6ef'];
+/* LA RAMPA È D'ORO, e sta in token.css (`--rampa-1…4`, per tema). Conta gli
+   XP di ogni giorno, cioè la ricompensa, e l'oro è il colore della
+   ricompensa; prima era una rampa blu scritta qui, che finiva sul blu
+   dell'area Studio e faceva sembrare la costanza «tutta Studio». */
+const RAMPA = ['var(--rampa-1)', 'var(--rampa-2)', 'var(--rampa-3)', 'var(--rampa-4)'];
 
 function heatmap(container: HTMLElement, giorni: GiornoCaldo[], opzioni?: Opzioni): void {
   void (opzioni || {});
   container.innerHTML = '';
-  const dark = document.documentElement.getAttribute('data-mode') === 'dark';
-  const rampa = dark ? RAMPA_DARK : RAMPA_LIGHT;
+  const rampa = RAMPA;
   const max = Math.max.apply(null, giorni.map(function (g) { return g.valore || 0; }).concat([1]));
 
   /* allinea la prima colonna a lunedì */
@@ -470,7 +485,7 @@ function experiment(container: HTMLElement, ris: EsitoProva, opzioni?: Opzioni):
   /* fascia della fase B (wash leggerissimo, non satura) */
   const primoB = punti.findIndex(function (p) { return p.fase === 'B'; });
   if (primoB > 0) {
-    el('rect', { x: X(primoB), y: m.t, width: W - m.r - X(primoB), height: H - m.t - m.b, fill: 'var(--wash-b)' }, svg);
+    el('rect', { x: X(primoB), y: m.t, width: W - m.r - X(primoB), height: H - m.t - m.b, fill: 'var(--superficie-2)' }, svg);
     const tb = el('text', { x: X(primoB) + 6, y: m.t - 8, 'font-size': 11, fill: 'var(--inchiostro-2)', 'font-weight': 600 }, svg);
     tb.textContent = 'Dopo la modifica';
     const ta = el('text', { x: m.l, y: m.t - 8, 'font-size': 11, fill: 'var(--inchiostro-muto)', 'font-weight': 600 }, svg);
@@ -486,7 +501,7 @@ function experiment(container: HTMLElement, ris: EsitoProva, opzioni?: Opzioni):
     t.textContent = String(tv);
   });
 
-  const colA = 'var(--inchiostro-muto)', colB = 'var(--serie-1)';
+  const colA = 'var(--inchiostro-muto)', colB = 'var(--dato-2)';
 
   /* punti giorno */
   punti.forEach(function (p, i) {
