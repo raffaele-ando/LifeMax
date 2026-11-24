@@ -92,6 +92,12 @@ export interface Azione {
      legge già: così, fra due dispositivi, vince la versione appena allineata
      al calendario invece di quella col `creata` più recente. */
   aggiornata?: number;
+  /* UN EVENTO LONTANO, NON ANCORA UN'ATTIVITÀ. Le viste della Giornata
+     mostrano anche gli eventi oltre i sessanta giorni, presi dallo specchio
+     della sentinella (src/calendari/sincronia.ts, `fantasmi`): non stanno
+     nei dati, e diventano un'attività vera appena li tocchi. Non si salva
+     mai una riga con questo segno. */
+  fantasma?: boolean;
 }
 
 /* ------------------------------------------------------------ i calendari */
@@ -115,6 +121,11 @@ export interface Esterno {
   cal: string;   /* l'id del calendario */
   id: string;    /* l'id dell'evento, o dell'istanza se si ripete */
   istantanea: Istantanea;
+  /* «solo» (tuo, senza altri invitati), «tua» (tua, con altri), «altrui»
+     (di qualcun altro). Decide cosa fa la sera «rimanda a domani»: solo il
+     primo si sposta da sé. Manca sulle righe importate prima che si
+     leggesse. */
+  invito?: 'solo' | 'tua' | 'altrui';
 }
 
 /* un calendario dell'account, con la scelta di chi lo usa */

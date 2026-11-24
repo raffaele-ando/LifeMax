@@ -61,10 +61,23 @@
    arriva un altro mentre uno è in corso, si rifà alla fine. Senza rete non
    si fa niente, e si riprova quando torna.
 
-   I PERMESSI STANNO SOLO QUI. Quali calendari, con che area, dove scrivere:
+   I PERMESSI, DUE STRADE. Quali calendari, con che area, dove scrivere:
    sono nel profilo e si sincronizzano. Il permesso di Google o di Microsoft
-   no — resta in questo browser, e ogni dispositivo si collega da sé. Il
-   pannello lo dice.
+     · CON LA SENTINELLA (server.ts: il Worker ha i suoi segreti e hai fatto
+       l'accesso a LifeMax) lo tiene il server, cifrato, e lo rinnova da
+       solo: vale per l'account, su ogni dispositivo, e il calendario si
+       guarda anche ad app chiusa;
+     · SENZA, resta in questo browser come sempre, e ogni dispositivo si
+       collega da sé. Il pannello lo dice.
+   L'algoritmo qui sotto è lo stesso per tutte e due: cambia solo il
+   fornitore che risponde (vedi FORNITORI).
+
+   PIÙ LONTANO DI SESSANTA GIORNI (solo con la sentinella). Le attività
+   nascono dagli eventi dei prossimi sessanta giorni, come prima: oltre, un
+   anno di riunioni gonfierebbe i dati che vanno nel cloud. Ma le viste
+   della Giornata mostrano anche gli eventi più lontani, presi dallo
+   specchio della sentinella (`fantasmi`), e uno diventa un'attività vera
+   appena lo tocchi.
    ============================================================ */
 import { LM } from '../dati/dati';
 import type { Azione, Esterno, Istantanea, Provenienza, Calendari, AccountCalendario, CalendarioScelto, Giorno, Ora } from '../tipi/stato';
@@ -72,8 +85,22 @@ import type { Fornitore, EventoRemoto, Scrittura } from './fornitore';
 import { ErroreCalendario, istante, piuGiorni, giornoDi, giorniFra } from './fornitore';
 import { google, chiaveGoogle, precarica } from './google';
 import { microsoft, completaRitorno } from './microsoft';
+import type { OpServer } from './server';
+import {
+  viaServer, fornitoreServer, controllaServizio, aggiornaSpecchio, contoServer, completaRitornoServer, spiegaEsito,
+  spedisciSubito, eventiSpecchio, eventoSpecchio, daNeutro, versioneSpecchio
+} from './server';
 
-export const FORNITORI: Record<Provenienza, Fornitore> = { google: google, microsoft: microsoft };
+/* CHI RISPONDE PER OGNI CALENDARIO: la sentinella se c'è (e hai fatto
+   l'accesso), il browser se no. Si decide ogni volta che lo si chiede:
+   l'accesso a LifeMax può arrivare dopo l'apertura dell'app. */
+const SERVITI: Record<Provenienza, Fornitore> = { google: fornitoreServer('google', 'Google'), microsoft: fornitoreServer('microsoft', 'Outlook') };
+const NEL_BROWSER: Record<Provenienza, Fornitore> = { google: google, microsoft: microsoft };
+export const FORNITORI: Record<Provenienza, Fornitore> = {
+  get google() { return viaServer('google') ? SERVITI.google : NEL_BROWSER.google; },
+  get microsoft() { return viaServer('microsoft') ? SERVITI.microsoft : NEL_BROWSER.microsoft; }
+};
+export { viaServer };
 const ORDINE: Provenienza[] = ['google', 'microsoft'];
 
 const PRIMA = 7;          /* giorni guardati all'indietro */
@@ -127,6 +154,19 @@ const uguali = (a: Campi, b: Campi): boolean =>
   a.testo === b.testo && a.data === b.data && a.ora === b.ora && a.durata === b.durata;
 const istDa = (e: EventoRemoto): Istantanea =>
   ({ testo: e.testo, data: e.data, ora: e.ora, durata: e.durata, versione: e.versione });
+
+/* COSA SCRIVERE per una riga cambiata qui: solo i campi cambiati, e la
+   versione da cui si parte (la sentinella non scrive se là nel frattempo è
+   cambiato). La stessa funzione serve al giro e a `spedisciOra`: la stessa
+   modifica deve uscire identica dalle due strade, perché la sentinella la
+   riconosca e la faccia una volta sola. */
+function scritturaPer(loc: Campi, base: Campi, ev: EventoRemoto | null, versione: string): Scrittura {
+  const w: Scrittura = {};
+  if (loc.testo !== base.testo) w.testo = loc.testo;
+  if (loc.data !== base.data || loc.ora !== base.ora || loc.durata !== base.durata) w.tempo = tempoDaScrivere(loc, base, ev);
+  w.se = versione;
+  return w;
+}
 
 /* COME SI SCRIVE IL TEMPO DI UN'ATTIVITÀ SPOSTATA.
    La regola che conta: spostare non accorcia. Un evento di tre ore spostato
@@ -189,7 +229,7 @@ function attivo(p: Provenienza): boolean {
 type Op =
   | { t: 'crea'; az: Azione }
   | { t: 'aggiorna'; id: string; ev: EventoRemoto; conflitto: boolean }
-  | { t: 'istantanea'; id: string; ist: Istantanea }
+  | { t: 'istantanea'; id: string; ist: Istantanea; invito?: Esterno['invito'] }
   | { t: 'sparito'; id: string }
   | { t: 'collega'; id: string; esterno: Esterno; ev: EventoRemoto }
   | { t: 'tolto'; id: string }
@@ -281,7 +321,7 @@ async function giroDi(f: Fornitore, ops: Op[], conto: Conto): Promise<void> {
       const loc = campi(x);
       const tempo = tempoDaScrivere(loc, { testo: '', data: loc.data, ora: null, durata: null }, null);
       const ev = await f.crea(cal, x.testo, tempo, p === 'google' ? chiaveGoogle(x.id) : x.id);
-      ops.push({ t: 'collega', id: x.id, esterno: { prov: p, cal: cal, id: ev.id, istantanea: istDa(ev) }, ev: ev });
+      ops.push({ t: 'collega', id: x.id, esterno: { prov: p, cal: cal, id: ev.id, istantanea: istDa(ev), invito: ev.invito || 'solo' }, ev: ev });
       conto.spedite++;
     }
   }
@@ -295,7 +335,7 @@ function nuova(id: string, p: Provenienza, cal: string, ev: EventoRemoto, sc: Ca
   return {
     id: id, areaId: area, testo: ev.testo, ifThen: '', mit: false, done: false,
     data: ev.data, doneAt: null, creata: ora, ora: ev.ora, durata: ev.durata, passoDi: null,
-    esterno: { prov: p, cal: cal, id: ev.id, istantanea: istDa(ev) }, aggiornata: ora
+    esterno: Object.assign({ prov: p, cal: cal, id: ev.id, istantanea: istDa(ev) }, ev.invito ? { invito: ev.invito } : {}), aggiornata: ora
   };
 }
 
@@ -304,11 +344,13 @@ async function confronta(f: Fornitore, az: Azione, ev: EventoRemoto, sc: Calenda
   const base = campi(est.istantanea), loc = campi(az), rem = campi(ev);
   const remCambiato = !uguali(rem, base), locCambiato = !uguali(loc, base);
   if (!remCambiato && !locCambiato) {
-    if (ev.versione !== est.istantanea.versione) ops.push({ t: 'istantanea', id: az.id, ist: istDa(ev) });
+    /* anche «chi c'è» si tiene allineato: le righe importate prima che lo si
+       leggesse lo imparano al primo giro */
+    if (ev.versione !== est.istantanea.versione || (ev.invito && ev.invito !== est.invito)) ops.push({ t: 'istantanea', id: az.id, ist: istDa(ev), invito: ev.invito });
     return;
   }
   /* cambiati tutti e due, ma nello stesso modo: non è un conflitto */
-  if (uguali(loc, rem)) { ops.push({ t: 'istantanea', id: az.id, ist: istDa(ev) }); return; }
+  if (uguali(loc, rem)) { ops.push({ t: 'istantanea', id: az.id, ist: istDa(ev), invito: ev.invito }); return; }
   if (remCambiato) {
     ops.push({ t: 'aggiorna', id: az.id, ev: ev, conflitto: locCambiato });
     conto.aggiornate++;
@@ -319,15 +361,16 @@ async function confronta(f: Fornitore, az: Azione, ev: EventoRemoto, sc: Calenda
      qui: là non si può scrivere, e rimetterla com'era sarebbe disfare
      quello che hai appena fatto. */
   if (sc.lettura) return;
-  const w: Scrittura = {};
-  if (loc.testo !== base.testo) w.testo = loc.testo;
-  if (loc.data !== base.data || loc.ora !== base.ora || loc.durata !== base.durata) w.tempo = tempoDaScrivere(loc, base, ev);
+  const w = scritturaPer(loc, base, ev, ev.versione);
   try {
     const nuovo = await f.aggiorna(est.cal, est.id, w);
     /* si prende quello che il calendario dice DOPO: se ha arrotondato
-       qualcosa, la riga si allinea e il giro dopo non rispedisce */
-    ops.push({ t: 'aggiorna', id: az.id, ev: nuovo, conflitto: false });
-    conto.spedite++;
+       qualcosa, la riga si allinea e il giro dopo non rispedisce. Con la
+       sentinella può tornare «conflitto»: là era cambiato nel frattempo, e
+       vince il calendario come sempre */
+    ops.push({ t: 'aggiorna', id: az.id, ev: nuovo, conflitto: !!nuovo.conflitto });
+    if (nuovo.conflitto) { conto.aggiornate++; conto.conflitti++; }
+    else conto.spedite++;
   } catch (e) {
     if (e instanceof ErroreCalendario && e.tipo === 'sparito') { ops.push({ t: 'sparito', id: az.id }); return; }
     if (e instanceof ErroreCalendario && e.tipo === 'permesso') { ops.push({ t: 'lettura', prov: est.prov, cal: est.cal }); return; }
@@ -354,11 +397,13 @@ function applica(ops: Op[], nomeDi: (p: Provenienza) => string): boolean {
       }
       az.testo = op.ev.testo; az.data = op.ev.data; az.ora = op.ev.ora; az.durata = op.ev.durata;
       az.esterno.istantanea = istDa(op.ev);
+      if (op.ev.invito) az.esterno.invito = op.ev.invito;
       az.aggiornata = ora;
     } else if (op.t === 'istantanea') {
       const az = trova(op.id);
       if (!az || !az.esterno) return;
       az.esterno.istantanea = op.ist;
+      if (op.invito) az.esterno.invito = op.invito;
       az.aggiornata = ora;
     } else if (op.t === 'sparito') {
       const i = s.azioni.findIndex(function (x) { return x.id === op.id; });
@@ -441,11 +486,31 @@ async function unGiro(perche: string): Promise<void> {
   const intoppi: string[] = [];
   const note: string[] = [];
   let rete = false, provati = 0;
+  /* con la sentinella, prima di tutto lo specchio: una richiesta sola porta
+     tutto quello che è cambiato là (anche mentre l'app era chiusa) */
+  let specchioOk = true;
+  if (quali.some(viaServer)) {
+    try { await aggiornaSpecchio(accesi()); }
+    catch (e) {
+      specchioOk = false;
+      if (e instanceof ErroreCalendario && e.tipo === 'rete') { rete = true; intoppi.push('LifeMax adesso non raggiunge il calendario: riprovo fra poco.'); }
+      else intoppi.push(e instanceof Error ? e.message : String(e));
+    }
+  }
   for (const p of quali) {
     const f = FORNITORI[p];
+    if (viaServer(p) && !specchioOk) continue;
     if (!f.pronto()) {
       /* niente permesso QUI: non è un problema del calendario, è di questo
-         browser, e lo dice il pannello di questo browser */
+         browser (o, con la sentinella, dell'account), e lo dice il pannello */
+      if (viaServer(p)) {
+        qui.ricollega[p] = true;
+        const cs = contoServer(p);
+        note.push(cs && cs.revocato
+          ? 'Il permesso di ' + f.nome + ' è stato ritirato (o è scaduto): basta un tocco su «Ricollega».'
+          : 'Da adesso il permesso di ' + f.nome + ' lo tiene LifeMax, e vale su tutti i tuoi dispositivi: serve un tocco su «Ricollega», una volta sola.');
+        continue;
+      }
       qui.ricollega[p] = eraQui(p);
       if (qui.ricollega[p]) note.push('Il permesso di ' + f.nome + ' su questo dispositivo è scaduto: basta un tocco su «Ricollega».');
       continue;
@@ -460,7 +525,8 @@ async function unGiro(perche: string): Promise<void> {
       const err = e instanceof ErroreCalendario ? e : new ErroreCalendario('altro', String((e as Error)?.message || e));
       if (err.tipo === 'token') {
         qui.ricollega[p] = true;
-        note.push('Il permesso di ' + f.nome + ' su questo dispositivo è scaduto: basta un tocco su «Ricollega».');
+        note.push(viaServer(p) ? 'Il permesso di ' + f.nome + ' non vale più: basta un tocco su «Ricollega».'
+          : 'Il permesso di ' + f.nome + ' su questo dispositivo è scaduto: basta un tocco su «Ricollega».');
       } else if (err.tipo === 'rete') {
         rete = true;
         intoppi.push(f.nome + ' adesso non risponde: riprovo fra poco.');
@@ -510,11 +576,86 @@ function firma(): string {
 }
 
 let attesaModifica: ReturnType<typeof setTimeout> | null = null;
+let attesaSubito: ReturnType<typeof setTimeout> | null = null;
 function forseCambiato(): void {
   if (applicando || !ORDINE.some(function (p) { return attivo(p) && FORNITORI[p].pronto(); })) return;
   if (firma() === ultimaFirma) return;
+  /* con la sentinella la modifica parte SUBITO (un quarto di secondo, per
+     raccogliere i salvataggi di un gesto solo), in una richiesta che
+     sopravvive alla chiusura dell'app. Il giro di qualche secondo dopo
+     controlla com'è andata. */
+  if (ORDINE.some(viaServer)) {
+    if (attesaSubito) clearTimeout(attesaSubito);
+    attesaSubito = setTimeout(function () { attesaSubito = null; spedisciOra(); }, 250);
+  }
   if (attesaModifica) clearTimeout(attesaModifica);
   attesaModifica = setTimeout(function () { attesaModifica = null; void sincronizza('modifica'); }, ATTESA_MODIFICA);
+}
+
+/* i calendari accesi, per fornitore, come li vuole lo specchio */
+function accesi(): Partial<Record<Provenienza, string[]>> {
+  const c = conf();
+  const out: Partial<Record<Provenienza, string[]>> = {};
+  ORDINE.forEach(function (p) {
+    const a = c[p];
+    if (!viaServer(p) || !a || !a.collegato) return;
+    out[p] = Object.keys(a.calendari).filter(function (k) { const v = a.calendari[k]; return !!v && v.on; });
+  });
+  return out;
+}
+
+/* LE MODIFICHE DA MANDARE, DECISE SENZA LA RETE. È la stessa decisione
+   del giro (le cancellazioni chieste qui, le righe cambiate solo qui, le
+   nuove con orario), presa guardando lo specchio invece del calendario:
+   così può partire anche nell'ultimo istante prima che l'app si chiuda. In
+   dubbio (l'evento non è nello specchio, o là è cambiato) non manda niente:
+   decide il giro, con le regole di sempre. */
+function piano(): OpServer[] {
+  const s = LM.load();
+  const c = conf();
+  const oggi = LM.todayKey();
+  const out: OpServer[] = [];
+  const tolti = c.tolti || {};
+  ORDINE.forEach(function (p) {
+    const a = c[p];
+    if (!viaServer(p) || !a || !a.collegato || !FORNITORI[p].pronto()) return;
+    Object.keys(tolti).forEach(function (idA) {
+      const t = tolti[idA];
+      if (!t || t.fatto || t.prov !== p) return;
+      if (s.azioni.some(function (x) { return x.id === idA; })) return;
+      const sc = a.calendari[t.cal];
+      if (sc && sc.lettura) return;
+      out.push({ p: p, tipo: 'togli', c: t.cal, id: t.id });
+    });
+    s.azioni.forEach(function (x) {
+      const e = x.esterno;
+      if (!e || e.prov !== p) return;
+      const sc = a.calendari[e.cal];
+      if (!sc || !sc.on || sc.lettura) return;
+      const base = campi(e.istantanea), loc = campi(x);
+      if (uguali(loc, base)) return;
+      const n = eventoSpecchio(p, e.cal, e.id);
+      if (!n || n.via || (n.v || '') !== e.istantanea.versione) return;
+      const ev = daNeutro(n);
+      if (uguali(loc, campi(ev))) return;
+      out.push({ p: p, tipo: 'aggiorna', c: e.cal, id: e.id, w: scritturaPer(loc, base, ev, ev.versione) });
+    });
+    const dest = c.destinazione || '';
+    if (dest.indexOf(p + '|') === 0) {
+      const cal = dest.slice(p.length + 1);
+      const daQuando = c.destinazioneDa || Infinity;
+      s.azioni.forEach(function (x) {
+        if (x.esterno !== undefined || !x.ora || x.done || x.dopo || x.data < oggi || x.creata < daQuando) return;
+        const loc = campi(x);
+        out.push({ p: p, tipo: 'crea', c: cal, testo: x.testo, tempo: tempoDaScrivere(loc, { testo: '', data: loc.data, ora: null, durata: null }, null),
+          chiave: p === 'google' ? chiaveGoogle(x.id) : x.id });
+      });
+    }
+  });
+  return out;
+}
+function spedisciOra(): void {
+  try { spedisciSubito(piano()); } catch { /* il giro ci riprova */ }
 }
 
 /* =============================================================== I GESTI */
@@ -524,7 +665,7 @@ function forseCambiato(): void {
    cui aprire la finestrella di Google è una cosa chiesta. */
 export async function sincronizzaOra(): Promise<void> {
   const g = conf().google;
-  if (attivo('google') && !google.pronto() && g) {
+  if (attivo('google') && !viaServer('google') && !google.pronto() && g) {
     try { await google.ricollega(g.email); qui.ricollega.google = false; qui.nota = ''; segnaQui('google', true); }
     catch (e) { qui.errore = e instanceof Error ? e.message : String(e); }
   }
@@ -563,6 +704,11 @@ export async function ricollega(p: Provenienza): Promise<void> {
    lavoro con trenta riunioni a settimana che entra da solo in LifeMax è il
    modo più veloce per riempire «Oggi» di rumore. */
 async function dopoCollegato(p: Provenienza, email: string): Promise<void> {
+  if (!email && viaServer(p)) {
+    try { await aggiornaSpecchio(accesi()); } catch { /* l'email arriva al prossimo giro */ }
+    const cs = contoServer(p);
+    email = cs ? cs.email : '';
+  }
   cambiaConf(function (c) {
     const a = account(c, p);
     a.collegato = true;
@@ -653,6 +799,35 @@ export function avviaCalendari(onRitorno?: () => void): void {
   if (avviato) return;
   avviato = true;
 
+  /* c'è la sentinella? si chiede una volta, senza fermare niente */
+  void controllaServizio().then(function () { avvisa(); });
+
+  /* tornati da Google o Microsoft passando dalla sentinella */
+  const daServer = completaRitornoServer();
+  if (daServer) {
+    const rp = daServer.p;
+    void attendiAccesso().then(function () {
+      if (daServer.esito === 'ok') {
+        qui.ricollega[rp] = false; qui.nota = '';
+        return dopoCollegato(rp, '').then(function () { void sincronizza('collegato'); });
+      }
+      qui.errore = spiegaEsito(daServer.esito, NEL_BROWSER[rp].nome);
+      avvisa();
+      return undefined;
+    }).then(function () { if (onRitorno) onRitorno(); });
+  }
+
+  /* i fantasmi (gli eventi lontani nelle viste) diventano attività appena
+     li tocchi: il tocco arriva QUI prima che al suo pulsante */
+  LM.registraFantasmi(fantasmi);
+  document.addEventListener('pointerdown', toccaFantasma, true);
+  document.addEventListener('click', toccaFantasma, true);
+
+  /* l'app va in secondo piano o si chiude: le modifiche partono adesso */
+  const via = function () { if (ORDINE.some(viaServer) && firma() !== ultimaFirma) spedisciOra(); };
+  window.addEventListener('pagehide', via);
+  document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'hidden') via(); });
+
   /* tornati da Microsoft con un codice in tasca */
   completaRitorno().then(function (email) {
     if (email === null) return;
@@ -669,6 +844,9 @@ export function avviaCalendari(onRitorno?: () => void): void {
   const ritirati = function () {
     ORDINE.forEach(function (p) {
       const a = conf()[p];
+      /* solo nel browser: con la sentinella il permesso è dell'account, e un
+         dispositivo che non ha ancora ricevuto il profilo non deve ritirarlo */
+      if (viaServer(p)) return;
       if (a && !a.collegato && (FORNITORI[p].pronto() || eraQui(p))) { segnaQui(p, false); void FORNITORI[p].dimentica(); }
     });
   };
@@ -693,15 +871,96 @@ export function avviaCalendari(onRitorno?: () => void): void {
 }
 
 /* il pannello carica la libreria di Google appena si apre, così il tocco su
-   «Collega» apre la finestra nello stesso istante */
+   «Collega» apre la finestra nello stesso istante (nel browser: con la
+   sentinella non serve) */
 export function preparaPannello(): void {
-  if (google.idApp()) void precarica().catch(function () { /* lo dirà il tocco */ });
+  if (!viaServer('google') && google.idApp()) void precarica().catch(function () { /* lo dirà il tocco */ });
+}
+
+/* l'accesso a LifeMax arriva qualche istante dopo l'apertura: chi ha
+   bisogno della sentinella all'avvio lo aspetta (al massimo 15 secondi) */
+function attendiAccesso(): Promise<void> {
+  return new Promise<void>(function (ok) {
+    const fatto = function () { const a = window.LM_AUTH; return !!(a && a.user); };
+    if (fatto()) { ok(); return; }
+    const t = setTimeout(function () { window.removeEventListener('lm:auth', su); ok(); }, 15000);
+    const su = function () { if (fatto()) { clearTimeout(t); window.removeEventListener('lm:auth', su); ok(); } };
+    window.addEventListener('lm:auth', su);
+  });
+}
+
+/* ============================================================ I FANTASMI
+   Gli eventi dello specchio che non sono (ancora) attività: quelli oltre i
+   sessanta giorni, o non ancora importati. Le viste li mostrano come
+   attività normali, con l'id che avranno davvero (`idAzione`), ma non
+   stanno nei dati. Toccandone uno, diventa vero — con lo stesso id, quindi
+   il pulsante toccato lo trova. */
+const fantasmiVisti = new Map<string, Azione>();
+let indice: { v: number; oggi: string; per: Map<string, { p: Provenienza; c: string; ev: EventoRemoto }[]> } | null = null;
+function indiceFantasmi() {
+  const oggi = LM.todayKey();
+  const v = versioneSpecchio();
+  if (indice && indice.v === v && indice.oggi === oggi) return indice.per;
+  const per = new Map<string, { p: Provenienza; c: string; ev: EventoRemoto }[]>();
+  eventiSpecchio().forEach(function (x) {
+    const ev = daNeutro(x.n);
+    if (ev.via || ev.data < oggi) return;
+    const l = per.get(ev.data) || [];
+    l.push({ p: x.p, c: x.c, ev: ev });
+    per.set(ev.data, l);
+  });
+  indice = { v: v, oggi: oggi, per: per };
+  return per;
+}
+function fantasmi(k: Giorno): Azione[] {
+  if (!ORDINE.some(viaServer)) return [];
+  const l = indiceFantasmi().get(k);
+  if (!l || !l.length) return [];
+  const s = LM.load();
+  const c = conf();
+  const tolti = c.tolti || {};
+  const out: Azione[] = [];
+  l.forEach(function (x) {
+    const a = c[x.p];
+    const sc = a && a.collegato ? a.calendari[x.c] : undefined;
+    if (!sc || !sc.on || !viaServer(x.p)) return;
+    const id = idAzione(x.p, x.c, x.ev.id);
+    if (tolti[id] || s.azioni.some(function (y) { return y.id === id; })) return;
+    const az = nuova(id, x.p, x.c, x.ev, sc);
+    az.fantasma = true;
+    fantasmiVisti.set(id, az);
+    out.push(az);
+  });
+  return out;
+}
+function materializza(id: string): boolean {
+  const f = fantasmiVisti.get(id);
+  if (!f) return false;
+  const s = LM.load();
+  if (s.azioni.some(function (x) { return x.id === id; })) return false;
+  const vera: Azione = Object.assign({}, f, { creata: Date.now(), aggiornata: Date.now() });
+  delete vera.fantasma;
+  s.azioni.push(vera);
+  ultimaFirma = firma();
+  LM.save();
+  return true;
+}
+function toccaFantasma(e: Event): void {
+  if (!fantasmiVisti.size) return;
+  let el = e.target instanceof Element ? e.target : null;
+  for (let giri = 0; el && giri < 12; giri++, el = el.parentElement) {
+    for (const at of Array.from(el.attributes)) {
+      if (at.name.indexOf('data-') === 0 && fantasmiVisti.has(at.value)) { materializza(at.value); return; }
+    }
+  }
 }
 
 /* LA PORTA PER LE PROVE (vedi main.tsx): le stesse funzioni dei tasti, più
    l'id di un evento — che la prova deve saper calcolare per controllare che
    due dispositivi non facciano doppioni. */
 export const CALENDARI = {
+  piano: function () { return piano(); },
+  materializza: materializza,
   sincronizza: sincronizza,
   sincronizzaOra: sincronizzaOra,
   idAzione: idAzione,

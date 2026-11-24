@@ -40,7 +40,7 @@
    quelli di lavoro o di scuola.
    ============================================================ */
 import type { Fornitore, EventoRemoto, CalendarioRemoto, Scrittura } from './fornitore';
-import { ErroreCalendario, conOrario, istante, piuGiorni, SENZA_TITOLO } from './fornitore';
+import { ErroreCalendario, conOrario, istante, piuGiorni, SENZA_TITOLO, invitoDa } from './fornitore';
 import { giorno } from '../tipi/stato';
 import { MICROSOFT_CLIENT_ID } from './config';
 import { LM } from '../dati/dati';
@@ -63,6 +63,8 @@ interface EventoGraph {
   isAllDay?: boolean; isCancelled?: boolean;
   start?: Quando; end?: Quando;
   responseStatus?: { response?: string };
+  isOrganizer?: boolean;
+  attendees?: { type?: string }[];
 }
 
 function leggi(): Permesso | null {
@@ -225,7 +227,10 @@ async function chiama<T>(metodo: string, via: string, corpo?: unknown, testa?: R
 }
 
 /* ------------------------------------------------------------ la traduzione */
-const CAMPI = '$select=id,subject,start,end,isAllDay,isCancelled,responseStatus,changeKey,lastModifiedDateTime';
+/* `isOrganizer` e `attendees` servono a una domanda sola, «è solo tua?»:
+   Microsoft non lascia chiedere meno dell'elenco degli invitati, che qui si
+   conta e si butta (vedi `traduci`) */
+const CAMPI = '$select=id,subject,start,end,isAllDay,isCancelled,responseStatus,changeKey,lastModifiedDateTime,isOrganizer,attendees';
 
 /* «2026-11-24T09:00:00.0000000» con `timeZone: UTC` accanto: l'ora c'è, il
    fuso no. Si aggiunge la Z, e il browser lo porta nell'ora di qui. */
@@ -238,6 +243,7 @@ function traduci(e: EventoGraph): EventoRemoto {
   const via = !!e.isCancelled || !!(e.responseStatus && e.responseStatus.response === 'declined');
   const testo = (e.subject || '').trim() || SENZA_TITOLO;
   const versione = e.changeKey || e.lastModifiedDateTime || '';
+  const invito = invitoDa(e.isOrganizer !== false, (e.attendees || []).some(function (a) { return !!a && a.type !== 'resource'; }));
   if (e.isAllDay) {
     /* TUTTO IL GIORNO È UNA DATA, NON UN'ORA: Microsoft la scrive come la
        mezzanotte di quel giorno, e quel giorno resta quello qualunque sia il
@@ -248,11 +254,11 @@ function traduci(e: EventoGraph): EventoRemoto {
     const aS = ((e.end && e.end.dateTime) || '').slice(0, 10);
     const a = aS ? giorno(aS) : piuGiorni(da, 1);
     return { id: e.id, testo, data: da, ora: null, durata: null, versione, tuttoIlGiorno: true,
-      inizio: istante(da, null), fine: istante(a, null), via };
+      inizio: istante(da, null), fine: istante(a, null), via, invito };
   }
   const inizio = utc(e.start), fine = utc(e.end) || inizio;
   const t = conOrario(inizio, fine);
-  return { id: e.id, testo, data: t.data, ora: t.ora, durata: t.durata, versione, tuttoIlGiorno: false, inizio, fine, via };
+  return { id: e.id, testo, data: t.data, ora: t.ora, durata: t.durata, versione, tuttoIlGiorno: false, inizio, fine, via, invito };
 }
 
 function corpoDi(w: Scrittura): Record<string, unknown> {

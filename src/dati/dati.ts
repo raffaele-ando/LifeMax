@@ -1590,17 +1590,60 @@ function creaLM() {
     return a;
   }
 
+  /* UN IMPEGNO DEL CALENDARIO, LA SERA: SI SPOSTA DA SOLO? Sì solo se è
+     tuo e basta — l'hai organizzato tu, non c'è nessun altro invitato, e il
+     calendario si può scrivere. Allora spostarlo a domani (alla stessa ora,
+     con la stessa durata) non disturba nessuno, e lo fa anche là la
+     sincronizzazione, come per uno spostamento a mano. Una riunione con
+     altre persone no: la riunione di oggi non diventa quella di domani
+     perché non l'hai spuntata. Per quelle la Giornata chiede, una per una
+     (`riunioniDaDecidere`), e dice perché. */
+  function perche(s: Stato, x: Azione): string {
+    var e = x.esterno;
+    if (!e) return '';
+    var acc = s.profilo.calendari && s.profilo.calendari[e.prov];
+    var sc = acc && acc.collegato ? acc.calendari[e.cal] : undefined;
+    if (!sc || sc.lettura) return 'lettura';
+    if (e.invito === 'solo') return '';
+    return e.invito || 'ignoto';
+  }
+  function siSpostaDaSola(s: Stato, x: Azione) { return !x.esterno || perche(s, x) === ''; }
+  function riunioniDaDecidere(daGiorno: Giorno) {
+    var s = load();
+    var spiega: Record<string, string> = {
+      tua: 'Ci sono altri invitati: se la sposti, si sposta per tutti.',
+      altrui: 'L’ha organizzata qualcun altro: nel calendario non la puoi spostare, qui sì.',
+      lettura: 'Il calendario è in sola lettura: là non si sposta, qui sì.',
+      ignoto: 'Non so ancora se ci sono altri invitati: decidi tu.'
+    };
+    /* «saltata» (non ci sei riuscito) è già una risposta: non si richiede */
+    return s.azioni.filter(function (x) { return x.data === daGiorno && !x.done && !x.mancata && !!x.esterno && !siSpostaDaSola(s, x); })
+      .map(function (x) {
+        var m = perche(s, x);
+        /* «staccare» vuol dire spostarla solo qui: là non si può scrivere */
+        return { id: x.id, testo: x.testo, ora: x.ora, perche: spiega[m] || '', stacca: m === 'altrui' || m === 'lettura' };
+      });
+  }
+  /* SPOSTARE SOLO QUI una riunione che il calendario non lascia spostare:
+     si stacca (non si sincronizza più) e si sposta. Il calendario resta
+     com'è. */
+  function spostaStaccata(id: string, giorno: Giorno) {
+    var s = load();
+    var a = s.azioni.find(function (x) { return x.id === id; });
+    if (!a) return null;
+    if (a.esterno) { a.esterno = null; a.aggiornata = Date.now(); }
+    return spostaAzione(id, giorno);
+  }
+
   /* Porta al giorno dopo tutto quello che non è stato fatto: la sera si
      ripulisce la giornata senza riscrivere niente (e senza penalità). */
   function rimandaNonFatte(daGiorno: Giorno, aGiorno: Giorno) {
     var s = load();
     var da = daGiorno || todayKey();
     var a2 = aGiorno || addDays(da, 1);
-    /* un impegno del calendario non si porta a domani in blocco: la
-       riunione di ieri non diventa la riunione di domani perché non l'hai
-       spuntata. Una per una, se vuoi, si sposta — e allora si sposta anche
-       là. */
-    var mosse = s.azioni.filter(function (x) { return x.data === da && !x.done && !x.esterno; });
+    /* gli impegni solo tuoi del calendario vanno con le altre; le riunioni
+       con altre persone restano, e le decidi una per una (vedi sopra) */
+    var mosse = s.azioni.filter(function (x) { return x.data === da && !x.done && siSpostaDaSola(s, x); });
     if (!mosse.length) return 0;
     mosse.forEach(function (x) { x.data = a2; x.mit = false; });
     /* nel giorno di arrivo serve una sola priorità */
@@ -1790,9 +1833,16 @@ function creaLM() {
     registra('giornata', 'Durata di «' + a.testo + '» → ' + (minuti ? minuti + ' min' : 'nessuna'), false);
     save();
   }
-  /* azioni di un giorno qualsiasi (per le viste settimana/mese) */
-  function azioniDelGiorno(k: Giorno) {
-    return load().azioni.filter(function (a) { return a.data === k; });
+  /* azioni di un giorno qualsiasi (per le viste settimana/mese). Con i
+     calendari collegati alla sentinella ci sono anche i FANTASMI: gli eventi
+     lontani che non sono ancora attività (src/calendari/sincronia.ts). Non
+     stanno nei dati: li si aggiunge qui, a chi guarda. */
+  var fantasmiDi: ((k: Giorno) => Azione[]) | null = null;
+  function registraFantasmi(f: (k: Giorno) => Azione[]) { fantasmiDi = f; }
+  function azioniDelGiorno(k: Giorno): Azione[] {
+    var vere = load().azioni.filter(function (a) { return a.data === k; });
+    if (!fantasmiDi) return vere;
+    try { return vere.concat(fantasmiDi(k)); } catch (e) { return vere; }
   }
 
   /* ---------- i promemoria ----------
@@ -4034,6 +4084,7 @@ function creaLM() {
     cattura: cattura, triageInbox: triageInbox, modificaInbox: modificaInbox, cambiaAreaAzione: cambiaAreaAzione,
     modificaAzione: modificaAzione, rimuoviAzione: rimuoviAzione, serveMit: serveMit,
     spostaAzione: spostaAzione, rimandaNonFatte: rimandaNonFatte, azioneInBacklog: azioneInBacklog,
+    riunioniDaDecidere: riunioniDaDecidere, spostaStaccata: spostaStaccata, registraFantasmi: registraFantasmi,
     setOraAzione: setOraAzione, setDurataAzione: setDurataAzione, azioniDelGiorno: azioniDelGiorno,
     impostaRitmo: impostaRitmo, RITMO_DEFAULT: RITMO_DEFAULT,
     impostaChiedi: impostaChiedi, chiediQuando: chiediQuando, CHIEDI_DEFAULT: CHIEDI_DEFAULT,

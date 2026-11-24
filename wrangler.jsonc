@@ -2,8 +2,25 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "lifemax",
   "compatibility_date": "2026-11-17",
+  // IL SITO, COME PRIMA: i file della radice, con il ritorno a index.html per
+  // gli indirizzi che non esistono. `run_worker_first` passa al codice SOLO
+  // /api/*: tutto il resto non lo tocca, e _headers vale come sempre.
+  "main": "sentinella/worker.mjs",
   "assets": {
     "directory": ".",
-    "not_found_handling": "single-page-application"
-  }
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*"]
+  },
+  // LA SENTINELLA DEI CALENDARI (sentinella/): un Durable Object per utente,
+  // con il suo SQLite. Non va creato niente a mano: nasce col deploy.
+  // Senza i segreti (src/calendari/LEGGIMI.md) risponde «non configurato» e
+  // l'app resta come prima.
+  "durable_objects": {
+    "bindings": [{ "name": "SENTINELLA", "class_name": "Sentinella" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Sentinella"] }],
+  // ogni sentinella si sveglia da sé ogni dieci minuti; questo, una volta
+  // all'ora, controlla che nessuna sveglia sia andata persa
+  "triggers": { "crons": ["17 * * * *"] }
 }

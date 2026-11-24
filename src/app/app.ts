@@ -4254,6 +4254,10 @@ export const DURATE: { v: number | ''; t: string }[] = [{ v: '', t: 'Nessuna' },
 
 /* orizzonte della pagina "Giornata" e giorno/settimana/mese di riferimento */
 let giornataSonnoAperto = false;  /* pannello sonno/pasti in cima alla pagina Giornata */
+/* dopo «rimanda», le riunioni da decidere di quel giorno (e quella di cui si
+   sta scegliendo il giorno) */
+let riunioniAperte: Giorno | null = null;
+let riunioneSposta: string | null = null;
 /* C'era anche un `giornataPopVista` ('vista' | 'modifica') per il pop-up su
    schermo stretto: dichiarato e mai letto, in tutta la vita del file. Il
    pop-up si apre già in modifica. */
@@ -4725,6 +4729,27 @@ function montaGiornata(container: HTMLElement, opzioni?: OpzGriglia): void {
         (nonFatte.length === 1 ? ' Rimanda a ' + doveVa + ' l’attività rimasta' : ' Rimanda a ' + doveVa + ' le ' + nonFatte.length + ' attività rimaste') + '</button></div>';
     }
   }
+  /* LE RIUNIONI CHE «RIMANDA» NON SPOSTA DA SOLO. Dopo il tocco restano qui
+     sotto, una per una, con il perché e tre risposte: com'è andata davvero
+     (fatta, saltata) o dove va (sposta…). */
+  if (!compact && riunioniAperte === k) {
+    var riu = LM.riunioniDaDecidere(k);
+    if (riu.length) {
+      footer += '<div class="tl-riunioni" id="tl-riunioni"><div class="tl-riunioni-eti">' +
+        (riu.length === 1 ? 'Questa non la sposto da solo' : 'Queste non le sposto da solo') + '</div>' +
+        riu.map(function (x) {
+          return '<div class="tl-riu" data-riu="' + x.id + '"><div class="tl-riu-testo"><b>' + esc(x.testo) + '</b>' +
+            (x.ora ? ' <span class="tl-riu-ora">' + esc(x.ora) + '</span>' : '') + '<span class="tl-riu-perche">' + esc(x.perche) + '</span></div>' +
+            '<div class="tl-riu-tasti"><button class="btn btn-mini" data-riu-fatta="' + x.id + '">Fatta</button>' +
+            '<button class="btn btn-mini" data-riu-saltata="' + x.id + '">Saltata</button>' +
+            '<button class="btn btn-mini" data-riu-sposta="' + x.id + '">Sposta…</button></div>' +
+            (riunioneSposta === x.id ? '<div class="tl-riu-dove"><label class="tl-riu-eti" for="tl-riu-data">Al giorno</label>' +
+              '<input type="date" id="tl-riu-data" value="' + LM.addDays(k, 1) + '" min="' + LM.todayKey() + '">' +
+              '<button class="btn btn-mini btn-primario" data-riu-ok="' + x.id + '" data-riu-stacca="' + (x.stacca ? '1' : '') + '">Sposta</button></div>' : '') +
+            '</div>';
+        }).join('') + '</div>';
+    } else { riunioniAperte = null; riunioneSposta = null; }
+  }
   if (compact && opts.controls !== false) {
     footer = '<div class="tl-piede"><button class="btn btn-primario btn-mini" id="tl-apri-pagina">' + ICO('calendar', 15) + ' Gestisci la giornata ' + ICO('arrowRight', 13) + '</button></div>';
   }
@@ -4939,8 +4964,31 @@ function montaGiornata(container: HTMLElement, opzioni?: OpzGriglia): void {
   var rim = container.querySelector<HTMLElement>('#tl-rimanda');
   if (rim) rim.addEventListener('click', function () {
     var n = LM.rimandaNonFatte(k, LM.addDays(k, 1));
-    toast(n === 1 ? 'Spostata al giorno dopo.' : n + ' cose spostate al giorno dopo.', 0, 'rimanda');
+    var restano = LM.riunioniDaDecidere(k).length;
+    riunioniAperte = restano ? k : null; riunioneSposta = null;
+    toast((n === 1 ? 'Spostata al giorno dopo.' : n ? n + ' cose spostate al giorno dopo.' : 'Niente da spostare da solo.') +
+      (restano ? (restano === 1 ? ' Una riunione la decidi tu, qui sotto.' : ' ' + restano + ' riunioni le decidi tu, qui sotto.') : ''), 0, 'rimanda');
     montaGiornata(container, opts); aggiornaNav();
+  });
+  function dopoRiunione(): void { montaGiornata(container, opts); aggiornaNav(); }
+  container.querySelectorAll<HTMLElement>('[data-riu-fatta]').forEach(function (b) {
+    b.addEventListener('click', function () { LM.completaAzione(b.getAttribute('data-riu-fatta') || ''); riunioneSposta = null; dopoRiunione(); });
+  });
+  container.querySelectorAll<HTMLElement>('[data-riu-saltata]').forEach(function (b) {
+    b.addEventListener('click', function () { LM.segnaMancata(b.getAttribute('data-riu-saltata') || '', 'altro', '', 'niente'); riunioneSposta = null; dopoRiunione(); });
+  });
+  container.querySelectorAll<HTMLElement>('[data-riu-sposta]').forEach(function (b) {
+    b.addEventListener('click', function () { const id = b.getAttribute('data-riu-sposta'); riunioneSposta = riunioneSposta === id ? null : id; dopoRiunione(); });
+  });
+  container.querySelectorAll<HTMLElement>('[data-riu-ok]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      const campo = container.querySelector<HTMLInputElement>('#tl-riu-data');
+      const g = campo && campo.value ? comeGiorno(campo.value) : LM.addDays(k, 1);
+      const id = b.getAttribute('data-riu-ok') || '';
+      if (b.getAttribute('data-riu-stacca')) LM.spostaStaccata(id, g); else LM.spostaAzione(id, g);
+      toast('Spostata a ' + etichettaGiorno(g).toLowerCase() + '.', 0, 'calendar');
+      riunioneSposta = null; dopoRiunione();
+    });
   });
   var ap = container.querySelector<HTMLElement>('#tl-apri-pagina');
   if (ap) ap.addEventListener('click', function () { chiudiSheet(); location.hash = '#/giornata'; });

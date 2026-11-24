@@ -51,7 +51,7 @@
   <tr><td>Contenuti che inserisci: attività, aree, abitudini e spunte, piano del giorno, check-in (energia, concentrazione, umore), diario e riflessioni, sessioni del timer, sonno e pasti, impostazioni</td><td>Sempre</td><td>Sono l'app stessa: servono a mostrarteli e a calcolare l'andamento</td><td>Nel tuo browser (localStorage) sul dispositivo</td></tr>
   <tr><td>Dati dell'account Google: identificativo dell'account, indirizzo email, nome, URL dell'immagine del profilo</td><td>Solo se accedi con Google</td><td>Riconoscerti e tenere i tuoi dati separati da quelli degli altri utenti</td><td>Google Firebase Authentication; email anche nel tuo documento Firestore</td></tr>
   <tr><td>Copia dei contenuti sopra e copie di sicurezza automatiche</td><td>Solo se accedi con Google</td><td>Sincronizzare i tuoi dispositivi e poter ripristinare i dati</td><td>Google Cloud Firestore, in uno spazio leggibile e scrivibile solo dal tuo account</td></tr>
-  <tr><td>Dati di Google Calendar o Microsoft Outlook (vedi sezione 4)</td><td>Solo se colleghi un calendario</td><td>Mostrare i tuoi eventi come attività e riportare nel calendario le modifiche che fai</td><td>Nel browser e, se hai fatto l'accesso, nel tuo documento Firestore</td></tr>
+  <tr><td>Dati di Google Calendar o Microsoft Outlook (vedi sezione 4)</td><td>Solo se colleghi un calendario</td><td>Mostrare i tuoi eventi come attività e riportare nel calendario le modifiche che fai</td><td>Nel browser e, se hai fatto l'accesso, nel tuo documento Firestore; se hai fatto l'accesso, permessi cifrati e copia degli eventi anche sul server di LifeMax (Cloudflare)</td></tr>
   <tr><td>Indirizzo per le notifiche del browser (push), orari e testi dei promemoria</td><td>Solo se attivi i promemoria</td><td>Mandarti i promemoria quando l'app è chiusa</td><td>Servizio Cloudflare Workers</td></tr>
 </table></div>
 <p>Non raccogliamo la tua posizione, i contatti, foto, microfono o fotocamera, né dati di pagamento.</p>
@@ -62,8 +62,8 @@
 <h3>4.1 A quali dati accediamo</h3>
 <ul>
   <li><code>https://www.googleapis.com/auth/calendar.calendarlist.readonly</code>: l'elenco dei tuoi calendari (nome, colore, se puoi modificarli), solo per farti scegliere quali collegare.</li>
-  <li><code>https://www.googleapis.com/auth/calendar.events</code>: gli eventi dei soli calendari che hai scelto, da 7 giorni fa a 60 giorni avanti. Di ogni evento usiamo titolo, data e ora di inizio e fine (o «tutto il giorno»), tipo e stato dell'evento, la tua risposta all'invito (per non importare gli eventi che hai rifiutato) e gli identificativi tecnici (id dell'evento e della ricorrenza, etag). Google restituisce l'evento completo, ma LifeMax <strong>non legge né conserva</strong> descrizione, luogo, altri partecipanti, allegati o link alle riunioni.</li>
-  <li>Per Microsoft: <code>User.Read</code> (solo il tuo indirizzo email, per mostrarti quale account è collegato) e <code>Calendars.ReadWrite</code>, sugli stessi dati e con gli stessi limiti.</li>
+  <li><code>https://www.googleapis.com/auth/calendar.events</code>: gli eventi dei soli calendari che hai scelto, da 7 giorni fa a circa 13 mesi avanti (60 giorni avanti se il calendario è collegato solo dal browser, vedi 4.3). Di ogni evento usiamo titolo, data e ora di inizio e fine (o «tutto il giorno»), tipo e stato dell'evento, la tua risposta all'invito (per non importare gli eventi che hai rifiutato), gli identificativi tecnici (id dell'evento e della ricorrenza, etag) e due informazioni sì/no: <strong>se l'organizzatore sei tu</strong> e <strong>se ci sono altri invitati</strong>. Per saperlo, di ogni invitato chiediamo a Google solo se sei tu e se è una sala: <strong>non leggiamo né conserviamo chi sono</strong> (nomi o indirizzi). Non leggiamo né conserviamo descrizione, luogo, allegati o link alle riunioni.</li>
+  <li>Per Microsoft: <code>User.Read</code> (solo il tuo indirizzo email, per mostrarti quale account è collegato), <code>Calendars.ReadWrite</code> e <code>offline_access</code> (per rinnovare il permesso senza chiederti di accedere ogni volta), sugli stessi dati e con gli stessi limiti. Microsoft non permette di chiedere l'elenco degli invitati senza i loro indirizzi: l'elenco arriva, LifeMax conta se c'è qualcun altro oltre a te e lo scarta subito, senza conservarlo.</li>
 </ul>
 
 <h3>4.2 Come li usiamo</h3>
@@ -71,32 +71,36 @@
   <li>Ogni evento dei calendari scelti diventa un'attività in LifeMax, nell'area di vita che hai indicato.</li>
   <li>Quando sposti, rinomini, cambi la durata o elimini in LifeMax un'attività nata da un evento, LifeMax fa la stessa modifica all'evento nel calendario.</li>
   <li>Se scegli un «calendario di destinazione», le nuove attività con orario che crei in LifeMax vengono create anche lì come eventi.</li>
+  <li>«Sei l'organizzatore» e «ci sono altri invitati» servono solo a una cosa: la sera, «rimanda a domani» sposta da solo un impegno che è solo tuo, e per una riunione con altre persone ti chiede cosa fare.</li>
+  <li>Gli eventi più lontani di 60 giorni li vedi nella Giornata, ma diventano attività di LifeMax solo quando li apri o quando si avvicinano.</li>
   <li>Non usiamo questi dati per nessun altro scopo: niente pubblicità, niente profilazione, niente analisi, niente intelligenza artificiale.</li>
 </ul>
 
 <h3>4.3 Come li conserviamo e proteggiamo</h3>
 <ul>
-  <li>Le richieste a Google e Microsoft partono <strong>direttamente dal tuo browser</strong>, su connessione cifrata HTTPS. I dati del calendario non passano da nostri server.</li>
-  <li>I permessi di accesso (token OAuth) restano <strong>solo nel browser del dispositivo</strong> che li ha ottenuti. Non vengono mai inviati al cloud né a nessun altro. Il token di Google scade da solo dopo circa un'ora.</li>
+  <li><strong>Se hai fatto l'accesso a LifeMax con Google</strong>, il collegamento passa dal server di LifeMax (un servizio Cloudflare Workers, sullo stesso indirizzo dell'app). Il server riceve da Google o Microsoft un permesso che si rinnova da solo (refresh token) e lo conserva <strong>cifrato</strong> (AES-256-GCM, con una chiave che sta solo nella configurazione segreta del server e non nel codice). Il permesso non viene mai mandato al browser né scritto nel tuo documento Firestore. Con quel permesso il server guarda i calendari che hai scelto ogni dieci minuti circa, anche quando l'app è chiusa, e ci riporta le modifiche che fai in LifeMax, riprovando da solo se il calendario non risponde.</li>
+  <li>Sul server c'è anche una <strong>copia degli eventi</strong> dei calendari scelti (i soli dati elencati in 4.1, da 7 giorni fa a circa 13 mesi avanti) e l'elenco delle modifiche da riportare nel calendario. Ogni utente ha uno spazio suo, separato da quello degli altri; per raggiungerlo l'app deve presentare il gettone di accesso di Firebase del tuo account, che il server controlla. Una copia degli stessi eventi resta anche nel browser (localStorage), non nel tuo documento Firestore.</li>
+  <li>Durante il collegamento il server lascia nel browser un cookie tecnico (<code>lmcal_google</code> o <code>lmcal_microsoft</code>), valido dieci minuti, che serve solo a controllare che il «sì» dato a Google o Microsoft torni allo stesso browser che l'ha chiesto. Non serve a tracciarti.</li>
+  <li><strong>Se non hai fatto l'accesso</strong> (o finché il server non è attivo), le richieste a Google e Microsoft partono <strong>direttamente dal tuo browser</strong>, su HTTPS, e i permessi restano <strong>solo nel browser del dispositivo</strong> che li ha ottenuti; quello di Google scade da solo dopo circa un'ora.</li>
   <li>Le attività nate dagli eventi, con titolo, orari e identificativi, fanno parte dei tuoi dati di LifeMax. Restano sul dispositivo e, se hai fatto l'accesso, nel tuo documento Firestore. Le regole di sicurezza di Firestore permettono di leggerlo e scriverlo solo al tuo account. I dati sono cifrati in transito e, da Google, anche a riposo.</li>
 </ul>
 
 <h3>4.4 Con chi li condividiamo</h3>
-<p>Con nessuno. Non vendiamo, non cediamo e non trasferiamo i dati utente di Google a terzi. Fa eccezione solo l'infrastruttura che li conserva per conto tuo, cioè Google Firebase (vedi sezione 5), o un obbligo di legge. Nessuna persona legge i tuoi dati del calendario, a meno che tu non ce lo chieda esplicitamente, per esempio per risolvere un problema, o che lo imponga la legge.</p>
+<p>Con nessuno. Non vendiamo, non cediamo e non trasferiamo i dati utente di Google a terzi. Fa eccezione solo l'infrastruttura che li conserva per conto tuo, cioè Google Firebase e Cloudflare (vedi sezione 5), o un obbligo di legge. Nessuna persona legge i tuoi dati del calendario, a meno che tu non ce lo chieda esplicitamente, per esempio per risolvere un problema, o che lo imponga la legge.</p>
 
 <h3>4.5 Uso limitato (Limited Use)</h3>
 <p>L'uso e il trasferimento ad altre app delle informazioni ricevute dalle API di Google da parte di LifeMax rispettano le <a href="https://developers.google.com/terms/api-services-user-data-policy">Google API Services User Data Policy</a>, compresi i requisiti di Limited Use.</p>
 
 <h3>4.6 Come togliere l'accesso</h3>
 <ul>
-  <li>In LifeMax: Profilo → Calendari collegati → Scollega. Puoi scegliere se tenere le attività già importate o toglierle.</li>
+  <li>In LifeMax: Profilo → Calendari collegati → Scollega. Puoi scegliere se tenere le attività già importate o toglierle. Se il collegamento passava dal server, scollegando LifeMax ritira subito il permesso presso Google e cancella dal server il permesso, la copia degli eventi e le modifiche in attesa. Microsoft non offre un modo per ritirare un singolo permesso: il server lo cancella, e puoi togliere l'app anche dalla pagina del tuo account Microsoft qui sotto.</li>
   <li>Da Google: <a href="https://myaccount.google.com/permissions">myaccount.google.com/permissions</a>. Da Microsoft: <a href="https://account.live.com/consent/Manage">account.live.com/consent/Manage</a>.</li>
 </ul>
 
 <h2>5. Fornitori che usiamo</h2>
 <ul>
   <li><strong>Google Firebase</strong> (Google Ireland Ltd / Google LLC): accesso con Google e database Firestore. Può conservare dati fuori dall'UE, tutelati dalle clausole contrattuali standard e dal Data Privacy Framework UE-USA.</li>
-  <li><strong>Cloudflare</strong> (Cloudflare, Inc.): pubblica il sito e, se li attivi, invia i promemoria.</li>
+  <li><strong>Cloudflare</strong> (Cloudflare, Inc.): pubblica il sito, ospita il server dei calendari collegati (Workers e Durable Objects: permessi cifrati e copia degli eventi, vedi 4.3) e, se li attivi, invia i promemoria. Può trattare dati fuori dall'UE, con le clausole contrattuali standard e il Data Privacy Framework UE-USA.</li>
 </ul>
 <p>Questi fornitori trattano i dati solo per offrire il loro servizio a LifeMax.</p>
 
@@ -106,6 +110,7 @@
   <li>Sul dispositivo: Impostazioni → «Cancella tutti i dati», oppure cancella i dati del sito dal browser.</li>
   <li>Account e copie nel cloud: scrivi a <a href="mailto:andolinaraffaele70@gmail.com">andolinaraffaele70@gmail.com</a> dall'indirizzo del tuo account. Cancelliamo il tuo account, il documento Firestore e tutte le copie di sicurezza entro 30 giorni e te lo confermiamo.</li>
   <li>Le attività nate dai calendari vengono tolte quando scolleghi il calendario e scegli di toglierle, o quando cancelli i dati come sopra.</li>
+  <li>Sul server dei calendari: il permesso e la copia degli eventi restano finché il calendario è collegato, e si cancellano subito quando scolleghi (o con la richiesta di cancellazione dell'account qui sopra). Un evento cancellato nel calendario resta segnato come «cancellato» per 30 giorni, così che tutti i tuoi dispositivi lo sappiano; una modifica già riportata nel calendario si ricorda per 7 giorni, per non farla due volte.</li>
 </ul>
 
 <h2>7. Base giuridica e i tuoi diritti</h2>
@@ -141,7 +146,7 @@
   <tr><td>Content you enter: tasks, life areas, habits and check-offs, day plan, check-ins (energy, focus, mood), journal and reflections, timer sessions, sleep and meals, settings</td><td>Always</td><td>It is the app itself: we show it to you and compute your progress</td><td>Your browser's local storage on your device</td></tr>
   <tr><td>Google account data: account ID, email address, name, profile picture URL</td><td>Only if you sign in with Google</td><td>To identify you and keep your data separate from other users'</td><td>Google Firebase Authentication; email also in your Firestore document</td></tr>
   <tr><td>A copy of the content above, plus automatic backups</td><td>Only if you sign in with Google</td><td>To sync your devices and let you restore data</td><td>Google Cloud Firestore, in a space only your account can read and write</td></tr>
-  <tr><td>Google Calendar or Microsoft Outlook data (see section 4)</td><td>Only if you connect a calendar</td><td>To show your events as tasks and write your changes back to the calendar</td><td>Your browser and, if signed in, your Firestore document</td></tr>
+  <tr><td>Google Calendar or Microsoft Outlook data (see section 4)</td><td>Only if you connect a calendar</td><td>To show your events as tasks and write your changes back to the calendar</td><td>Your browser and, if signed in, your Firestore document; if signed in, encrypted permissions and a copy of the events also on LifeMax's server (Cloudflare)</td></tr>
   <tr><td>Browser push endpoint, reminder times and texts</td><td>Only if you turn on reminders</td><td>To send reminders while the app is closed</td><td>Cloudflare Workers</td></tr>
 </table></div>
 <p>We do not collect your location, contacts, photos, microphone or camera data, or payment data.</p>
@@ -151,36 +156,40 @@
 <h3>4.1 Data accessed</h3>
 <ul>
   <li><code>https://www.googleapis.com/auth/calendar.calendarlist.readonly</code>: your list of calendars (name, color, whether you can edit them), only so you can choose which ones to connect.</li>
-  <li><code>https://www.googleapis.com/auth/calendar.events</code>: events from the calendars you selected only, from 7 days ago to 60 days ahead. For each event we use the title, start and end date/time (or "all day"), event type and status, your own response to the invitation (so declined events are not imported) and technical identifiers (event and recurrence ID, etag). Google returns the full event, but LifeMax <strong>does not read or store</strong> descriptions, locations, other attendees, attachments or meeting links.</li>
-  <li>Microsoft: <code>User.Read</code> (only your email address, to show which account is connected) and <code>Calendars.ReadWrite</code>, for the same data and with the same limits.</li>
+  <li><code>https://www.googleapis.com/auth/calendar.events</code>: events from the calendars you selected only, from 7 days ago to about 13 months ahead (60 days ahead when the calendar is connected from the browser only, see 4.3). For each event we use the title, start and end date/time (or "all day"), event type and status, your own response to the invitation (so declined events are not imported), technical identifiers (event and recurrence ID, etag) and two yes/no facts: <strong>whether you are the organizer</strong> and <strong>whether anyone else is invited</strong>. To know this we ask Google only, for each attendee, whether it is you and whether it is a room: <strong>we do not read or store who they are</strong> (names or addresses). We do not read or store descriptions, locations, attachments or meeting links.</li>
+  <li>Microsoft: <code>User.Read</code> (only your email address, to show which account is connected), <code>Calendars.ReadWrite</code> and <code>offline_access</code> (to renew access without asking you to sign in each time), for the same data and with the same limits. Microsoft does not allow asking for the attendee list without their addresses: the list arrives, LifeMax only checks whether anyone other than you is on it and discards it immediately, without storing it.</li>
 </ul>
 <h3>4.2 Data usage</h3>
 <ul>
   <li>Each event from the selected calendars becomes a task in LifeMax, in the life area you chose.</li>
   <li>When you move, rename, change the duration of, or delete such a task in LifeMax, LifeMax makes the same change to the event in your calendar.</li>
   <li>If you choose a "destination calendar", new timed tasks you create in LifeMax are also created there as events.</li>
+  <li>"You are the organizer" and "others are invited" are used for one thing only: in the evening, "move to tomorrow" moves an event that is only yours by itself, and asks you what to do with a meeting with other people.</li>
+  <li>Events further than 60 days away are shown in the Day views, but become LifeMax tasks only when you open them or when they get closer.</li>
   <li>The data is used for nothing else: no advertising, profiling, analytics or AI.</li>
 </ul>
 <h3>4.3 Data storage and protection</h3>
 <ul>
-  <li>Requests to Google and Microsoft go <strong>directly from your browser</strong> over encrypted HTTPS. Calendar data does not pass through any server of ours.</li>
-  <li>OAuth access tokens stay <strong>only in the browser of the device</strong> that obtained them. They are never sent to our cloud storage or to anyone else. Google tokens expire after about one hour.</li>
+  <li><strong>If you are signed in to LifeMax with Google</strong>, the connection goes through LifeMax's server (a Cloudflare Workers service on the app's own address). The server receives from Google or Microsoft a renewable permission (refresh token) and stores it <strong>encrypted</strong> (AES-256-GCM, with a key kept only in the server's secret configuration, not in the code). The permission is never sent to the browser or written to your Firestore document. With it, the server checks the calendars you selected about every ten minutes, also while the app is closed, and writes back the changes you make in LifeMax, retrying by itself if the calendar does not answer.</li>
+  <li>The server also keeps a <strong>copy of the events</strong> of the selected calendars (only the data listed in 4.1, from 7 days ago to about 13 months ahead) and the list of changes still to be written to the calendar. Each user has a separate space; to reach it the app must present your account's Firebase sign-in token, which the server verifies. A copy of the same events is also kept in the browser (localStorage), not in your Firestore document.</li>
+  <li>While connecting, the server sets a technical cookie (<code>lmcal_google</code> or <code>lmcal_microsoft</code>) valid for ten minutes, used only to check that the consent given to Google or Microsoft comes back to the same browser that asked for it. It is not used for tracking.</li>
+  <li><strong>If you are not signed in</strong> (or while the server is not active), requests to Google and Microsoft go <strong>directly from your browser</strong> over HTTPS, and permissions stay <strong>only in the browser of the device</strong> that obtained them; Google's expires after about one hour.</li>
   <li>Tasks created from events, with their title, times and identifiers, are part of your LifeMax data. They stay on your device and, if you are signed in, in your Firestore document. Firestore security rules allow only your account to read and write it. Data is encrypted in transit and, at Google, at rest.</li>
 </ul>
 <h3>4.4 Data sharing</h3>
-<p>None. We do not sell, transfer or disclose Google user data to third parties. The only exceptions are the infrastructure that stores it on your behalf (Google Firebase, see section 5) and cases where the law requires it. No human reads your calendar data unless you explicitly ask us to, for example for support, or the law requires it.</p>
+<p>None. We do not sell, transfer or disclose Google user data to third parties. The only exceptions are the infrastructure that stores it on your behalf (Google Firebase and Cloudflare, see section 5) and cases where the law requires it. No human reads your calendar data unless you explicitly ask us to, for example for support, or the law requires it.</p>
 <h3>4.5 Limited Use</h3>
 <p>LifeMax's use and transfer to any other app of information received from Google APIs will adhere to the <a href="https://developers.google.com/terms/api-services-user-data-policy">Google API Services User Data Policy</a>, including the Limited Use requirements.</p>
 <h3>4.6 Revoking access</h3>
 <ul>
-  <li>In LifeMax: Profile → Connected calendars → Disconnect. You can choose whether to keep or remove the tasks already imported.</li>
+  <li>In LifeMax: Profile → Connected calendars → Disconnect. You can choose whether to keep or remove the tasks already imported. If the connection went through the server, disconnecting immediately revokes the permission at Google and deletes from the server the permission, the copy of the events and any pending changes. Microsoft offers no way to revoke a single permission: the server deletes it, and you can also remove the app from your Microsoft account page below.</li>
   <li>Google: <a href="https://myaccount.google.com/permissions">myaccount.google.com/permissions</a>. Microsoft: <a href="https://account.live.com/consent/Manage">account.live.com/consent/Manage</a>.</li>
 </ul>
 
 <h2>5. Service providers</h2>
 <ul>
   <li><strong>Google Firebase</strong> (Google Ireland Ltd / Google LLC): Google sign-in and the Firestore database. It may store data outside the EU, protected by Standard Contractual Clauses and the EU-US Data Privacy Framework.</li>
-  <li><strong>Cloudflare</strong> (Cloudflare, Inc.): hosts the website and, if you turn them on, sends reminders.</li>
+  <li><strong>Cloudflare</strong> (Cloudflare, Inc.): hosts the website, runs the connected-calendars server (Workers and Durable Objects: encrypted permissions and a copy of the events, see 4.3) and, if you turn them on, sends reminders. It may process data outside the EU, under Standard Contractual Clauses and the EU-US Data Privacy Framework.</li>
 </ul>
 <p>These providers process data only to provide their service to LifeMax.</p>
 
@@ -190,6 +199,7 @@
   <li>On your device: Settings → "Cancella tutti i dati" (delete all data), or clear the site data in your browser.</li>
   <li>Account and cloud copies: email <a href="mailto:andolinaraffaele70@gmail.com">andolinaraffaele70@gmail.com</a> from your account's address. We delete your account, your Firestore document and all backups within 30 days, and confirm it to you.</li>
   <li>Tasks created from calendars are removed when you disconnect the calendar and choose to remove them, or when you delete your data as above.</li>
+  <li>On the calendar server: the permission and the copy of the events are kept while the calendar is connected, and deleted immediately when you disconnect (or with the account deletion request above). An event deleted in the calendar stays marked as "deleted" for 30 days so that all your devices learn about it; a change already written to the calendar is remembered for 7 days so it is not made twice.</li>
 </ul>
 
 <h2>7. Legal basis and your rights</h2>

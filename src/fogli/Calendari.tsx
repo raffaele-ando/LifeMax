@@ -9,7 +9,12 @@
    vale solo per QUESTO browser. La scelta dei calendari si sincronizza con
    i tuoi dati, il permesso no — quindi su un dispositivo nuovo il pannello
    dice «collegato su un altro dispositivo» e chiede un tocco su «Collega».
-   È voluto: un permesso sul tuo calendario di lavoro non viaggia nel cloud. */
+   È voluto: un permesso sul tuo calendario di lavoro non viaggia nel cloud.
+
+   CON LA SENTINELLA (il server di LifeMax, sentinella/) è diverso: il
+   permesso lo tiene il server, cifrato, ed è dell'account. Un tocco su
+   «Collega» vale per tutti i dispositivi, non scade ogni ora, e il
+   calendario resta allineato anche ad app chiusa. Il pannello lo dice. */
 import { useEffect, useState } from 'react';
 import type { Provenienza, AccountCalendario } from '../tipi/stato';
 import { Tasto } from '../pezzi/pezzi';
@@ -18,7 +23,7 @@ import { areeAttive } from '../app/app';
 import { ISTRUZIONI } from '../calendari/config';
 import {
   FORNITORI, conf, statoQui, collega, ricollega, scollega, scegli, scegliDestinazione,
-  salvaId, sincronizzaOra, aggiornaCalendari, preparaPannello
+  salvaId, sincronizzaOra, aggiornaCalendari, preparaPannello, viaServer
 } from '../calendari/sincronia';
 
 const NOMI: Record<Provenienza, string> = { google: 'Google Calendar', microsoft: 'Outlook e Microsoft 365' };
@@ -38,6 +43,7 @@ function Servizio({ p }: { p: Provenienza }) {
   const collegato = !!a && a.collegato;
   const pronto = f.pronto();
   const qui = statoQui();
+  const server = viaServer(p);
   const [chiede, setChiede] = useState(false);
 
   /* COSA SI LEGGE ACCANTO A «STATO»: quattro casi, e il quarto è quello che
@@ -45,7 +51,7 @@ function Servizio({ p }: { p: Provenienza }) {
   let stato: string;
   if (!configurato) stato = 'Da configurare';
   else if (!collegato) stato = 'Da collegare';
-  else if (!pronto) stato = qui.ricollega[p] ? 'Da ricollegare' : 'Collegato su un altro dispositivo';
+  else if (!pronto) stato = server || qui.ricollega[p] ? 'Da ricollegare' : 'Collegato su un altro dispositivo';
   else stato = 'Collegato';
 
   const calendari = a ? Object.keys(a.calendari).map((id) => ({ id, c: a.calendari[id] })) : [];
@@ -78,8 +84,8 @@ function Servizio({ p }: { p: Provenienza }) {
       ) : null}
       {configurato && collegato && !pronto ? (
         <button type="button" className="gr-riga gr-agg cal-tasto" id={'cal-' + p + '-ricollega'}
-          onClick={() => { if (qui.ricollega[p]) void ricollega(p); else void collega(p); }}>
-          {qui.ricollega[p] ? 'Ricollega' : 'Collega anche qui'}
+          onClick={() => { if (server || qui.ricollega[p]) void ricollega(p); else void collega(p); }}>
+          {server || qui.ricollega[p] ? 'Ricollega' : 'Collega anche qui'}
         </button>
       ) : null}
       {calendari.map(({ id, c }) => c ? (
@@ -104,8 +110,14 @@ function Servizio({ p }: { p: Provenienza }) {
         <a className="sp-link cal-link" href={ISTRUZIONI} target="_blank" rel="noopener">Come si ottiene</a>
       </p>
     ) : null}
-    {configurato && collegato && !pronto && !qui.ricollega[p] ? (
+    {configurato && collegato && !pronto && !qui.ricollega[p] && !server ? (
       <p className="gr-nota">Il permesso resta in ogni browser: su questo dispositivo basta un tocco.</p>
+    ) : null}
+    {server && collegato && !pronto ? (
+      <p className="gr-nota" id={'cal-' + p + '-server'}>Il permesso adesso lo tiene LifeMax: un tocco, una volta sola, e vale su tutti i tuoi dispositivi, anche ad app chiusa.</p>
+    ) : null}
+    {server && collegato && pronto ? (
+      <p className="gr-nota" id={'cal-' + p + '-server'}>Resta allineato anche ad app chiusa: il permesso lo tiene LifeMax, cifrato, e non scade.</p>
     ) : null}
     {collegato && pronto && !calendari.some((x) => x.c && x.c.on) ? (
       <p className="gr-nota">Accendi i calendari che vuoi vedere fra le tue attività.</p>

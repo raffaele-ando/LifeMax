@@ -30,7 +30,7 @@
    permesso è scaduto mentre l'app lavorava da sola.
    ============================================================ */
 import type { Fornitore, EventoRemoto, CalendarioRemoto, Scrittura } from './fornitore';
-import { ErroreCalendario, conOrario, istante, piuGiorni, SENZA_TITOLO } from './fornitore';
+import { ErroreCalendario, conOrario, istante, piuGiorni, SENZA_TITOLO, invitoDa } from './fornitore';
 import { giorno } from '../tipi/stato';
 import type { Giorno } from '../tipi/stato';
 import { GOOGLE_CLIENT_ID } from './config';
@@ -69,7 +69,8 @@ interface EventoGoogle {
   id: string; status?: string; summary?: string; etag?: string; updated?: string;
   eventType?: string;
   start?: Quando; end?: Quando;
-  attendees?: { self?: boolean; responseStatus?: string }[];
+  attendees?: { self?: boolean; resource?: boolean; responseStatus?: string }[];
+  organizer?: { self?: boolean };
 }
 interface Permesso { t: string; scade: number }
 
@@ -187,17 +188,20 @@ function traduci(e: EventoGoogle): EventoRemoto {
     (e.attendees || []).some(function (a) { return !!a.self && a.responseStatus === 'declined'; });
   const testo = (e.summary || '').trim() || SENZA_TITOLO;
   const versione = e.etag || e.updated || '';
+  /* l'organizzatore è «questo calendario»? e c'è qualcun altro (che non sia
+     una sala)? Gli indirizzi degli invitati non si guardano */
+  const invito = invitoDa(!e.organizer || !!e.organizer.self, (e.attendees || []).some(function (a) { return !a.self && !a.resource; }));
   const s = e.start || {}, f = e.end || {};
   if (s.date) {
     const da = giorno(s.date);
     const a: Giorno = f.date ? giorno(f.date) : piuGiorni(da, 1);
     return { id: e.id, testo, data: da, ora: null, durata: null, versione, tuttoIlGiorno: true,
-      inizio: istante(da, null), fine: istante(a, null), via };
+      inizio: istante(da, null), fine: istante(a, null), via, invito };
   }
   const inizio = Date.parse(s.dateTime || '') || 0;
   const fine = Date.parse(f.dateTime || '') || inizio;
   const t = conOrario(inizio, fine);
-  return { id: e.id, testo, data: t.data, ora: t.ora, durata: t.durata, versione, tuttoIlGiorno: false, inizio, fine, via };
+  return { id: e.id, testo, data: t.data, ora: t.ora, durata: t.durata, versione, tuttoIlGiorno: false, inizio, fine, via, invito };
 }
 
 function corpoDi(w: Scrittura): Record<string, unknown> {

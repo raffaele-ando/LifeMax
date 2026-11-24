@@ -843,6 +843,39 @@ genera le chiavi, in un browser vero).
   Microsoft dal rimando alla pagina di accesso con la sfida PKCE fino al
   rinnovo col refresh token e allo «Scollega».
 
+- **sentinella.js** — IL SERVER DEI CALENDARI (sentinella/), DA SOLO, SENZA
+  BROWSER. Si importa il Worker com'è e gli si danno un `env` finto e un
+  `fetch` finto (`comune/sentinella-finta.js`): i Durable Object hanno un
+  SQLite vero (`node:sqlite`) e una sveglia che la prova fa suonare a mano;
+  Google, Microsoft e le chiavi di Firebase sono finti, e un indirizzo che il
+  finto non conosce fa fallire la prova invece di uscire in rete.
+  Copre: senza segreti «non configurato» e il sito che passa com'era; il
+  gettone di Firebase (rifiutati quello firmato da altri, scaduto, per un
+  altro progetto o emittente, con chiave sconosciuta, senza firma, `alg:
+  none`); CORS solo per i due indirizzi dell'app; il collegamento con PKCE,
+  accesso offline, `state` legato all'utente e al browser (il biscotto di
+  /vai) e usabile una volta; il permesso CIFRATO nel database; lo specchio
+  con «organizzatore» e «altri invitati» e nessun indirizzo; il rinnovo
+  silenzioso; la sveglia che legge solo i cambiamenti (e rilegge tutto con
+  un syncToken scaduto); la coda che ritenta, non scrive due volte e non
+  sovrascrive un cambiamento fatto là; Microsoft col refresh token che
+  cambia; il permesso ritirato; lo scollegamento che revoca e cancella; il
+  cron che rimette le sveglie.
+
+- **calendari-server.js** — L'APP VERA DAVANTI ALLA SENTINELLA. Un Chromium
+  con un Firebase finto (un utente già dentro, il cui gettone lo firma la
+  prova) e il Worker che gira nello stesso server delle prove, su /api/. La
+  pagina di Google la fa il server della prova: Playwright non intercetta i
+  passaggi di un 302, e senza questo il browser andrebbe dal Google vero.
+  Copre: il collegamento passando dal server (e nessun permesso nel
+  browser), l'importazione con «solo tuo / con altri / di altri», un evento
+  fra dieci mesi che si vede nella vista del mese senza essere un'attività e
+  lo diventa al tocco, una modifica e l'app chiusa subito dopo che arriva lo
+  stesso, un cambiamento fatto là ad app chiusa che si trova riaprendo, il
+  permesso breve scaduto senza «Ricollega», la sera («rimanda»: l'impegno
+  solo tuo va a domani anche nel calendario, le riunioni restano con il
+  perché e «Fatta / Saltata / Sposta…»), e lo scollegamento.
+
 ## Come si lanciano
 
 **Prima si costruisce.** Le prove aprono `index.html`, che è generato: se il

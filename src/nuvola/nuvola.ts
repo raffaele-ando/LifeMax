@@ -72,6 +72,9 @@ export interface ApiCloud {
   backups?(): Promise<CopiaNelCloud[]>;
   riprendiBackup?(id: string): Promise<boolean>;
   sostituisciConBackup?(id: string): Promise<boolean>;
+  /* il gettone di Firebase dell'utente collegato ('' se non c'è): lo usa
+     src/calendari/server.ts per farsi riconoscere dalla sentinella */
+  gettone?(forza?: boolean): Promise<string>;
 }
 
 /* la risposta alla domanda sui dati di esempio: due parole e non un booleano,
@@ -88,6 +91,7 @@ export interface DettaglioEsempio {
 let AUTHM: ModuloAuth | null = null, FSM: ModuloFirestore | null = null;
 let auth: Auth | null = null, db: Db | null = null, provider: Provider | null = null;
 let currentUser: Utente | null = null;
+let utenteFb: UtenteFirebase | null = null;   /* lo stesso, come lo dà Firebase: serve per il gettone */
 let unsubDoc: (() => void) | null = null;
 let applyingRemote = false;   /* stiamo scrivendo lo stato ricevuto dal cloud */
 /* LE NOSTRE SCRITTURE, NON SOLO L'ULTIMA.
@@ -348,7 +352,12 @@ void (async function init() {
          dispositivo, che quei dati di esempio ce li avevano già dentro.
          Prima di rifare si mette da parte una copia locale: sostituire è la
          sola cosa qui che TOGLIE, e deve avere una strada per tornare. */
-      sostituisciConBackup: async function (id: string) { return daBackup(id, true); }
+      sostituisciConBackup: async function (id: string) { return daBackup(id, true); },
+      gettone: async function (forza?: boolean) {
+        const u = utenteFb;
+        if (!u || !u.getIdToken) return '';
+        try { return await u.getIdToken(!!forza); } catch { return ''; }
+      }
     };
 
     log('info', 'cloud pronto', 'progetto ' + firebaseConfig.projectId);
@@ -358,6 +367,7 @@ void (async function init() {
 
     authMod.onAuthStateChanged(autenticazione, async function (u: UtenteFirebase | null) {
       if (unsubDoc) { unsubDoc(); unsubDoc = null; }
+      utenteFb = u;
       if (u) {
         currentUser = { uid: u.uid, email: u.email || '', name: u.displayName || '', photo: u.photoURL || '' };
         log('info', 'accesso riscontrato, avvio la prima sincronizzazione', 'uid ' + u.uid.slice(0, 6) + '…');

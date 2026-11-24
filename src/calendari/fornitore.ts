@@ -31,6 +31,21 @@ export interface EventoRemoto {
   fine: number;
   /* cancellato, o rifiutato da te: per LifeMax è come se non ci fosse */
   via: boolean;
+  /* CHI C'È, detto in una parola (serve alla sera, a «rimanda a domani»):
+       solo    l'hai organizzato tu e non hai invitato nessuno
+       tua     l'hai organizzato tu, ma ci sono altri invitati
+       altrui  l'ha organizzato qualcun altro
+     CHI siano gli altri non si legge: solo se ci sono. Manca quando il
+     calendario non l'ha detto. */
+  invito?: Invito;
+  /* lo mette la sentinella quando una modifica mandata da qui trova
+     l'evento già cambiato là: vince il calendario, e il Diario lo dice */
+  conflitto?: boolean;
+}
+
+export type Invito = 'solo' | 'tua' | 'altrui';
+export function invitoDa(organizzatore: boolean, altri: boolean): Invito {
+  return !organizzatore ? 'altrui' : altri ? 'tua' : 'solo';
 }
 
 export interface CalendarioRemoto {
@@ -52,6 +67,10 @@ export interface Scrittura {
     dataInizio: Giorno;      /* per uno di tutto il giorno */
     dataFine: Giorno;        /* esclusa, come la vogliono tutti e due */
   };
+  /* LA VERSIONE DA CUI SI PARTE. Solo la sentinella la usa: prima di
+     scrivere guarda l'evento, e se nel frattempo è cambiato là non scrive
+     (vince il calendario, come sempre). Nel browser il giro lo sa già. */
+  se?: string;
 }
 
 /* PERCHÉ È ANDATA MALE, detto in cinque parole e non in cinquanta codici.

@@ -35,6 +35,10 @@ export interface UtenteFirebase {
   email: string | null;
   displayName: string | null;
   photoURL: string | null;
+  /* il «gettone» firmato da Google che dice chi sei: lo controlla la
+     sentinella dei calendari (sentinella/identita.mjs). Firebase lo tiene e
+     lo rinnova da sé; `true` lo fa rinnovare subito. */
+  getIdToken?(forza?: boolean): Promise<string>;
 }
 
 export interface Documento {
