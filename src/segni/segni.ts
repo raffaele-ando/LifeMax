@@ -175,6 +175,7 @@ const PATHS: Record<string, string> = {
   coffee: '<path d="M4 8h13v6a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4z"/><path d="M17 9.5h1.6a2.4 2.4 0 0 1 0 4.8H17"/><path d="M7.5 3.2c-.4.7-.4 1.3 0 2M11 3.2c-.4.7-.4 1.3 0 2"/>',
   bed: '<path d="M3 6v13M3 12h18a0 0 0 0 1 0 0v7M21 19v-4a3 3 0 0 0-3-3H3M6.5 12v-2a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/>',
   /* ---------- presi dal pacco ---------- */
+  calendarioCollegato: '<path d="M11 10v4h4"/><path d="m11 14 1.535-1.605a5 5 0 018 1.5"/><path d="M16 2v3"/><path d="m21 18-1.535 1.605a5 5 0 01-8-1.5"/><path d="M21 22v-4h-4"/><path d="M21 8.517V5a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 002 2h3.517"/><path d="M3 9h4"/><path d="M8 2v3"/>',  /* lucide:calendar-sync — un calendario esterno collegato, e ciò che ne arriva */
   nonFunziona: '<path d="M9 18.12 10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H20a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2.76a2 2 0 0 0-1.79 1.11L12 22a3.13 3.13 0 0 1-3-3.88Z"/><path d="M17 14V2"/>',  /* lucide:thumbs-down — una cosa che non ti funziona */
   funziona: '<path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2a3.13 3.13 0 0 1 3 3.88Z"/><path d="M7 10v12"/>',  /* lucide:thumbs-up — una cosa che ti funziona (verdetto tuo su di te) */
   cuffie: '<path d="M3 14h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a9 9 0 0 1 18 0v7a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3"/>',  /* lucide:headphones — la musica sotto il lavoro */
@@ -240,6 +241,7 @@ const SENSO: Record<string, string> = {
   altro: 'il menu delle pagine che non stanno nella barra',
   altreOpzioni: 'le altre cose che puoi fare su questa riga',
   cuffie: 'la musica sotto il lavoro',
+  calendarioCollegato: 'un calendario esterno collegato, e ciò che ne arriva',
   notaFissa: 'la nota che resta fra le notifiche',
   fonte: 'lo studio da cui viene',
 

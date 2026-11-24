@@ -390,5 +390,12 @@
   "tab": null,
   "poi": "(async () => {\n  const sez = document.querySelector('#vista .rit-blocco[data-rit=\"registro\"]');\n  if (!sez) throw new Error('manca la riga: registro');\n  if (!sez.classList.contains('aperto')) {\n    sez.querySelector('.rit-riga').click();\n    await new Promise((r) => setTimeout(r, 700));\n  }\n})()",
   "prova": "#blocco-recupero, #blocco-notte"
+ },
+ {
+  "nome": "Calendari collegati",
+  "via": "profilo",
+  "tab": null,
+  "poi": "(async () => {\n  /* un account collegato altrove, tre calendari, un esito: il pannello con tutte le sue righe, senza rete */\n  const s = LM.load(); s.profilo.calendari = { idGoogle: 'x.apps.googleusercontent.com', google: { collegato: true, email: 'io@esempio.it', calendari: { 'io@esempio.it': { nome: 'io@esempio.it', on: false, areaId: 'lavoro' }, 'lavoro@gruppo': { nome: 'Lavoro', on: true, areaId: 'lavoro' }, 'feste@gruppo': { nome: 'Festività italiane', on: false, areaId: 'altro', lettura: true } } }, esito: { ts: Date.now() - 3600000, ok: true, testo: '2 attività nuove, 1 aggiornata.' } }; LM.save();\n  await new Promise((r) => setTimeout(r, 300));\n  const c = document.getElementById('imp-calendari');\n  if (!c) throw new Error('manca #imp-calendari');\n  c.click();\n})()",
+  "prova": "#cal-google"
  }
 ]

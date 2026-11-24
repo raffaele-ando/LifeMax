@@ -48,6 +48,7 @@ export interface PropDiFoglio {
   sessioni: Niente;
   'imp-timer': Niente;
   musica: Niente;
+  calendari: Niente;
 }
 
 export type NomeFoglio = keyof PropDiFoglio;

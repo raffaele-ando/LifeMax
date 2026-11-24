@@ -78,6 +78,88 @@ export interface Azione {
      è l'unico posto che le rilegge. Il campo lo scriveva `dati.ts` e il tipo
      non lo conosceva: chi lo leggeva non compilava. */
   dopo?: boolean;
+  /* VIENE DA UN CALENDARIO (Google o Outlook), e ci torna. `null` vuol dire
+     che il collegamento c'era ed è stato staccato apposta — un evento
+     cancellato là quando qui era già fatto, o un account scollegato tenendo
+     le attività — e non va confuso con «non c'è mai stato»: un'attività
+     staccata non si riscrive in nessun calendario. Perché `null` e non un
+     campo tolto: la fusione fra dispositivi riga per riga non sa togliere
+     un campo (vince l'unione), sa solo far vincere il valore più recente.
+     Tutta la logica sta in src/calendari/sincronia.ts. */
+  esterno?: Esterno | null;
+  /* QUANDO LA RIGA È STATA TOCCATA DA FUORI. La scrive la sincronizzazione
+     dei calendari quando cambia un'attività, e `momentoRiga` in dati.ts la
+     legge già: così, fra due dispositivi, vince la versione appena allineata
+     al calendario invece di quella col `creata` più recente. */
+  aggiornata?: number;
+}
+
+/* ------------------------------------------------------------ i calendari */
+export type Provenienza = 'google' | 'microsoft';
+
+/* COM'ERA L'EVENTO ALL'ULTIMO ACCORDO. Senza una fotografia comune non si
+   sa CHI ha cambiato cosa: se qui c'è scritto 15:00 e là 16:00, può averlo
+   spostato chiunque dei due. Confrontando tutti e due con questa si sa. */
+export interface Istantanea {
+  testo: string;
+  data: Giorno;
+  ora: Ora | null;
+  durata: number | null;
+  /* l'etag di Google o la changeKey di Microsoft: quando cambia, là è
+     cambiato qualcosa (magari solo la descrizione, che qui non c'è) */
+  versione: string;
+}
+
+export interface Esterno {
+  prov: Provenienza;
+  cal: string;   /* l'id del calendario */
+  id: string;    /* l'id dell'evento, o dell'istanza se si ripete */
+  istantanea: Istantanea;
+}
+
+/* un calendario dell'account, con la scelta di chi lo usa */
+export interface CalendarioScelto {
+  nome: string;
+  on: boolean;
+  areaId: string;
+  /* sola lettura: un calendario condiviso con te senza permesso di
+     scrittura. Le modifiche fatte qui restano qui. */
+  lettura?: boolean;
+}
+
+export interface AccountCalendario {
+  collegato: boolean;
+  email: string;
+  calendari: Record<string, CalendarioScelto>;
+}
+
+/* UNA CANCELLAZIONE CHIESTA DA TE, da riportare nel calendario. Non basta
+   la lapide della riga: le lapidi le lasciano anche «Azzera tutto», «togli
+   i dati di esempio», un backup ripristinato — e nessuna di quelle vuol
+   dire «cancella la riunione di martedì su Google». Questo sì, e lo scrive
+   soltanto chi elimina un'attività a mano. */
+export interface Tolto { prov: Provenienza; cal: string; id: string; ts: number; fatto?: boolean }
+
+export interface EsitoCalendari {
+  ts: number;
+  ok: boolean;
+  testo: string;
+}
+
+export interface Calendari {
+  google?: AccountCalendario;
+  microsoft?: AccountCalendario;
+  /* gli ID dell'app (Client ID) quando non stanno in src/calendari/config.ts:
+     si incollano dal pannello, come l'indirizzo del postino. Non sono
+     segreti — finiscono comunque nel browser di chiunque apra l'app. */
+  idGoogle?: string;
+  idMicrosoft?: string;
+  /* dove scrivere le NUOVE attività con orario: 'google|<id>' o '' */
+  destinazione?: string;
+  /* da quando vale la destinazione: le attività nate prima non si spediscono */
+  destinazioneDa?: number;
+  tolti?: Record<string, Tolto | null>;
+  esito?: EsitoCalendari;
 }
 
 export interface Nota {
@@ -306,6 +388,10 @@ export interface Profilo {
   nav?: Nav;
   forma?: Forma;
   promemoria?: Promemoria;
+  /* I CALENDARI COLLEGATI: quali, con che area, dove scrivere. Nel profilo,
+     che si fonde campo per campo: la scelta si ritrova su ogni dispositivo.
+     I permessi (i token) invece NO — stanno solo in questo browser. */
+  calendari?: Calendari;
   /* L'INTERRUTTORE DELLE SCHERMATE NUOVE, e non lo legge più nessuno.
      Serviva mentre le schermate passavano una per una al motore nuovo; adesso
      ce n'è uno solo, e il campo resta dichiarato per una ragione sola: c'è

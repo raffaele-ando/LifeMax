@@ -154,7 +154,10 @@ const SCENE_PREMUTO=[
   ['Promemoria','plancia',null,()=>{const b=document.getElementById('fondo-impostazioni')||document.querySelector('[data-imp]');if(b)b.click();
     const c=document.getElementById('imp-prom-come');if(c)c.click();}],
   ['Scheda di un’attività','inbox',1,()=>{const r=document.querySelector('[data-bkapri]');if(r)r.click();}],
-  ['Scheda di un’abitudine','inbox',2,()=>{const r=document.querySelector('[data-abdett]');if(r)r.click();}]
+  ['Scheda di un’abitudine','inbox',2,()=>{const r=document.querySelector('[data-abdett]');if(r)r.click();}],
+  /* i calendari collegati: un account collegato altrove, così ci sono tutte le righe */
+  ['Calendari collegati','profilo',null,()=>{const s = LM.load(); s.profilo.calendari = { idGoogle: 'x.apps.googleusercontent.com', google: { collegato: true, email: 'io@esempio.it', calendari: { 'io@esempio.it': { nome: 'io@esempio.it', on: false, areaId: 'lavoro' }, 'lavoro@gruppo': { nome: 'Lavoro', on: true, areaId: 'lavoro' }, 'feste@gruppo': { nome: 'Festività italiane', on: false, areaId: 'altro', lettura: true } } }, esito: { ts: Date.now() - 3600000, ok: true, testo: '2 attività nuove, 1 aggiornata.' } }; LM.save();
+    const c=document.getElementById('imp-calendari');if(c)c.click();}]
 ];
 {
   const pp=await b.newPage({viewport:{width:390,height:844},hasTouch:true,isMobile:true});

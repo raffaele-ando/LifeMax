@@ -5794,3 +5794,23 @@ textarea { resize: none; field-sizing: content; max-height: 40vh; }
 @media (max-width: 899px) { .bv-scena { height: 290px; } .bv-eroe { gap: 4px; } }
 .bv-salta-posto { width: 64px; }
 .bv-ant-punto { width: 8px; height: 8px; border-radius: 50%; background: currentColor; display: inline-block; }
+
+/* ============================================================
+   CALENDARI COLLEGATI (src/fogli/Calendari.tsx). Il pannello è fatto
+   delle righe raggruppate di sempre: qui ci sono solo le tre cose che
+   quelle righe non sapevano fare.
+   ============================================================ */
+/* un comando dentro a un gruppo di righe: al tocco si accende il fondo,
+   come ogni altra riga che si preme */
+.cal-tasto { cursor: pointer; }
+.cal-tasto:active { background-color: var(--premuto); }
+/* il nome del calendario va a capo invece di spingere fuori l'area e
+   l'interruttore: «Compleanni e ricorrenze dei contatti» è un nome vero */
+.cal-riga { gap: 8px; }
+.cal-nome { display: block; overflow-wrap: anywhere; }
+.cal-riga select.gr-val { max-width: 8.5em; }
+/* l'email è lunga e non deve spingere l'etichetta fuori dal bordo */
+.cal-email { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; }
+.gr input.cal-id { flex: 1; max-width: none; text-align: left; font-weight: 500; }
+.cal-link { min-height: 0; display: inline; }
+.cal-chiede { margin-top: 8px; }

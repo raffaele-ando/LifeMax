@@ -33,7 +33,8 @@ import './dati/dati';
 import { LM_PROMEMORIA as P } from './promemoria/promemoria';
 import './grafici/grafici';
 import './app/registro-schermi';
-import { avvia } from './app/app';
+import { avvia, apriFoglio } from './app/app';
+import { avviaCalendari, CALENDARI } from './calendari/sincronia';
 
 /* la nuvola è un `import()` e non un `import`: quello che c'è dentro fa una
    richiesta di rete, e il resto dell'app non la deve aspettare. Prima era
@@ -62,6 +63,12 @@ void import('./nuvola/nuvola');
    nessuno — una porta per le prove che l'app comincia a usare smette di
    essere una porta per le prove e diventa un globale, cioè la cosa da cui
    veniamo. */
-window.__PROVE__ = { promemoria: P };
+window.__PROVE__ = { promemoria: P, calendari: CALENDARI };
 
 avvia();
+
+/* I CALENDARI COLLEGATI, dopo il primo disegno. Non fanno niente finché
+   nessuno li ha collegati; quando sì, il primo giro parte da solo dopo un
+   attimo. Il pannello si riapre da sé tornando dalla pagina di Microsoft,
+   che è l'unico punto dove l'app esce e rientra. */
+avviaCalendari(function () { apriFoglio('Calendari collegati', 'calendari', {}); });

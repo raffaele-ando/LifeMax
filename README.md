@@ -590,6 +590,7 @@ src/segni/segni.ts  iconografia SVG proprietaria + logo Google
 src/grafici/        micro-libreria SVG: sparkline, trend, heatmap, barre, anello, A/B
 src/forma/          la curva di Apple applicata al DOM vero, a runtime
 src/nuvola/         Firebase: accesso Google + sync Firestore
+src/calendari/      Google Calendar e Outlook nei due sensi, e il LEGGIMI per attivarli
 src/promemoria/     le notifiche: il pezzo che parla col Worker postino
 src/registro/       il registro tecnico
 src/stile/app.css   design system: token, 2 skin, chiaro/scuro, mobile
@@ -624,7 +625,10 @@ ovunque; legenda sempre presente da 2 serie in su.
 
 - Senza account i dati restano solo in `localStorage` su quel dispositivo; con
   l'accesso Google vengono sincronizzati via Firestore (vedi sopra).
-- Gli "input automatici" (calendario, wearable, screen time) sono fuori scope qui:
-  il modello dati (`minuti[data][area]`, check-in timestampati) è già pronto a riceverli.
+- Il **calendario** c'è: Google Calendar e Outlook/Microsoft 365, nei due sensi
+  (*Profilo → Calendari collegati*). Come si attiva, e cosa fa e non fa, sta in
+  [`src/calendari/LEGGIMI.md`](src/calendari/LEGGIMI.md). Wearable e screen time
+  restano fuori: il modello dati (`minuti[data][area]`, check-in timestampati) è
+  già pronto a riceverli.
 - L'analisi N-of-1 riporta medie ed effect size con avvertenze esplicite; non è
   un'inferenza statistica completa (niente autocorrelazione, niente randomizzazione).

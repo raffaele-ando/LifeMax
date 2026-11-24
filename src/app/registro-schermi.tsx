@@ -59,6 +59,7 @@ import Review from '../fogli/Review';
 import Lezione from '../fogli/Lezione';
 import Diagnostica from '../fogli/Diagnostica';
 import Backup from '../fogli/Backup';
+import Calendari from '../fogli/Calendari';
 
 /* ================================================================
    LE LINGUETTE, E PERCHÉ STANNO IN UN PORTALE
@@ -118,7 +119,8 @@ const FOGLI: Pannelli = {
   'quando-passo': QuandoPasso, 'da-abitudine': DaAbitudine,
   mancata: Mancata, timer: Timer, review: Review,
   lezione: Lezione, diagnostica: Diagnostica, backup: Backup,
-  sessioni: Sessioni, 'imp-timer': ImpTimer, musica: Musica
+  sessioni: Sessioni, 'imp-timer': ImpTimer, musica: Musica,
+  calendari: Calendari
 };
 
 /* una radice per contenitore: React vuole tenersela fra un disegno e

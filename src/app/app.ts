@@ -130,6 +130,9 @@ export interface Nodo {
      «rimessa in Da fare». Non lo metteva `nodiGiorno`: lo cercava su un
      oggetto che non ce l'aveva, quindi quella frase non è mai comparsa. */
   passoDi?: PassoDi | null;
+  /* VIENE DA UN CALENDARIO: la giornata ci mette accanto il segno della
+     provenienza, perché spostarla qui la sposta anche là */
+  esterno?: 'google' | 'microsoft' | undefined;
 }
 
 /* IL GIORNO INTERO, come lo legge la griglia. `wake` e `sleep` sono i due
@@ -1833,6 +1836,14 @@ export function htmlImpostazioni(pezzo?: 'profilo'): string {
       rigaPorta('imp-aree', 'aree', 'Aree', nAree + ' attive') +
       rigaPorta('imp-ritmo', 'ritmo', 'Sonno e pasti', valRitmo) +
       rigaPorta('imp-prom-come', 'campana', 'Promemoria', pr.val) +
+      rigaPorta('imp-calendari', 'calendarioCollegato', 'Calendari collegati', (function () {
+        /* i nomi dei servizi collegati, o «nessuno»: si legge senza aprire */
+        const c = s.profilo.calendari || {};
+        const nomi = ([['google', 'Google'], ['microsoft', 'Outlook']] as const)
+          .filter(function (x) { const a = c[x[0]]; return !!a && a.collegato; })
+          .map(function (x) { return x[1]; });
+        return nomi.length ? nomi.join(', ') : 'nessuno';
+      })()) +
       '</div>' +
       '<div class="lista mt-s">' +
       rigaPorta('imp-diario', 'quaderno', 'Diario') +
@@ -2319,6 +2330,7 @@ export function wireAspettoDati(root: HTMLElement): void {
   var asp = root.querySelector<HTMLElement>('#imp-aspetto'); if (asp) asp.addEventListener('click', apriAspetto);
   var itm = root.querySelector<HTMLElement>('#imp-timer'); if (itm) itm.addEventListener('click', function () { apriFoglio('Timer', 'imp-timer', {}); });
   var imu = root.querySelector<HTMLElement>('#imp-musica'); if (imu) imu.addEventListener('click', function () { apriFoglio('Musica', 'musica', {}); });
+  var ica = root.querySelector<HTMLElement>('#imp-calendari'); if (ica) ica.addEventListener('click', function () { apriFoglio('Calendari collegati', 'calendari', {}); });
   var gu = root.querySelector<HTMLElement>('#imp-guida'); if (gu) gu.addEventListener('click', apriGuida);
   var sc = root.querySelector<HTMLElement>('#imp-scienza');
   if (sc) sc.addEventListener('click', function () { chiudiSheet(); location.hash = '#/scienza'; });
@@ -4267,7 +4279,7 @@ function nodiGiorno(k: Giorno): NodiDelGiorno {
     (e.min == null ? tray : placed).push(e);
   });
   LM.azioniDelGiorno(k).forEach(function (a) {
-    const e: Nodo = { tipo: 'azione', min: minOf(a.ora), ora: a.ora, dur: a.durata || null, id: a.id, testo: a.testo, areaId: a.areaId, mit: a.mit, done: a.done, mancata: a.mancata || null, passoDi: a.passoDi };
+    const e: Nodo = { tipo: 'azione', min: minOf(a.ora), ora: a.ora, dur: a.durata || null, id: a.id, testo: a.testo, areaId: a.areaId, mit: a.mit, done: a.done, mancata: a.mancata || null, passoDi: a.passoDi, esterno: a.esterno ? a.esterno.prov : undefined };
     (e.min == null ? tray : placed).push(e);
   });
   /* qui dentro l'ora c'è per costruzione: chi non ce l'ha è finito nel
@@ -4414,7 +4426,7 @@ function htmlTimeGrid(d: NodiDelGiorno, opzioni?: OpzGriglia): string {
     else clic += ' data-drag-ab="' + e.id + '" data-drag-k="' + d.k + '"' + (opts.mini ? ' data-manico' : '');
     return '<div class="tl-blk tl-blk-att' + (e.tipo === 'abitudine' ? ' tl-blk-abit' : '') + (fatto ? ' fatta' : '') + (e.mancata ? ' mancata' : '') + (basso ? ' tl-blk-basso' : '') + (corto ? ' tl-blk-corto' : '') + (opts.interactive && !opts.mini ? ' tl-blk-clic' : '') + '"' + clic + ' style="' + pos + ';--c-area:' + col + '" title="' + esc(e.testo) + '">' +
       check + (!opts.mini && opts.interactive ? '<span class="manico" data-manico aria-hidden="true">' + ICO('presa', 13) + '</span>' : '') +
-      (righe === 0 ? '' : '<span class="tl-blk-t">' + (e.mit ? ICO('star', 11) + ' ' : '') + (e.tipo === 'abitudine' && !opts.mini ? ICO('refresh', 11) + ' ' : '') + esc(e.testo) + '</span>') +
+      (righe === 0 ? '' : '<span class="tl-blk-t">' + (e.mit ? ICO('star', 11) + ' ' : '') + (e.tipo === 'abitudine' && !opts.mini ? ICO('refresh', 11) + ' ' : '') + (e.esterno && !opts.mini ? ICO('calendarioCollegato', 11) + ' ' : '') + esc(e.testo) + '</span>') +
       (!corto && !opts.mini ? '<span class="tl-blk-ora">' + e.ora + '–' + fmtMin((e.min ?? 0) + dur) + '</span>' : '') + '</div>';
   }).join('');
   let now = '';
@@ -4459,6 +4471,10 @@ function aggiornaLineaGriglia(): void {
    spuntala, dàlle un orario, una durata, un'area. Sostituisce la vecchia
    lista "Orari e durate" che raddoppiava tutto quello che era già nel grafico.
    onCambio() ridisegna la giornata dietro al pannello. */
+/* il nome che si legge accanto al segno: Google, o Outlook per tutto quello
+   che arriva da Microsoft (è il nome che la gente conosce) */
+function nomeProvenienza(p: 'google' | 'microsoft'): string { return p === 'google' ? 'Google' : 'Outlook'; }
+
 function apriItemGiornata(k: Giorno, id: string, tipo: 'azione' | 'abitudine', onCambio?: () => void, spuntabileOpz?: boolean): void {
   const isAz = tipo === 'azione';
   const spuntabile = spuntabileOpz === undefined ? true : spuntabileOpz;
@@ -4475,6 +4491,9 @@ function apriItemGiornata(k: Giorno, id: string, tipo: 'azione' | 'abitudine', o
 
   const html = '<div class="ig-ed">' +
     '<div class="abd-chi"><span>' + (isAz ? 'Attività' : ICO('refresh', 11) + ' Abitudine') + ' · ' + esc(etichettaGiorno(k)) + '</span>' +
+      /* DA DOVE VIENE, detto con la parola e non solo col segno: qui si
+         decide se spostarla, e spostarla qui la sposta anche nel calendario */
+      (e.esterno ? '<span>' + ICO('calendarioCollegato', 11) + ' ' + nomeProvenienza(e.esterno) + '</span>' : '') +
       (fatto ? '<span class="abd-fatta">' + ICO('check', 13) + ' Fatta</span>' : '') + '</div>' +
     (spuntabile
       ? '<button class="btn btn-grande ' + (fatto ? 'btn-ghost' : 'btn-ok') + ' ig-fatto"><span class="ig-fatto-ico">' + ICO(fatto ? 'annulla' : 'check', 15) + '</span>' + (fatto ? 'Segna come non fatta' : 'Fatto') + '</button>'

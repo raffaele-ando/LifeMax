@@ -1452,6 +1452,20 @@ function creaLM() {
     return !load().azioni.some(function (a) { return a.data === k && a.mit; });
   }
 
+  /* UN'ATTIVITÀ CHE VIENE DA UN CALENDARIO, TOLTA A MANO: la cancellazione
+     va riportata là. Si scrive qui, nei due soli gesti che vogliono dire
+     «non c'è più» — eliminarla e rimetterla fra le cose da fare — e non
+     nelle lapidi, che nascono anche da un «Azzera tutto» o da un backup
+     ripristinato: nessuno dei due deve svuotare il calendario di Google.
+     A spedirla ci pensa src/calendari/sincronia.ts. */
+  function segnaTolta(s: Stato, a: Azione) {
+    var e = a.esterno;
+    if (!e) return;
+    var c = s.profilo.calendari || (s.profilo.calendari = {});
+    var t = c.tolti || (c.tolti = {});
+    t[a.id] = { prov: e.prov, cal: e.cal, id: e.id, ts: Date.now() };
+  }
+
   function aggiungiAzione(testo: string, areaId: string | null, opts?: OpzAzione) {
     var s = load();
     opts = opts || {};
@@ -1533,6 +1547,7 @@ function creaLM() {
     var a = presa(s.azioni[i]);
     var eraPasso = !!a.passoDi;
     s.azioni.splice(i, 1);
+    segnaTolta(s, a);
     if (a.mit) {
       var erede = s.azioni.find(function (x) { return x.data === a.data && !x.done; });
       if (erede) erede.mit = true;
@@ -1575,7 +1590,11 @@ function creaLM() {
     var s = load();
     var da = daGiorno || todayKey();
     var a2 = aGiorno || addDays(da, 1);
-    var mosse = s.azioni.filter(function (x) { return x.data === da && !x.done; });
+    /* un impegno del calendario non si porta a domani in blocco: la
+       riunione di ieri non diventa la riunione di domani perché non l'hai
+       spuntata. Una per una, se vuoi, si sposta — e allora si sposta anche
+       là. */
+    var mosse = s.azioni.filter(function (x) { return x.data === da && !x.done && !x.esterno; });
     if (!mosse.length) return 0;
     mosse.forEach(function (x) { x.data = a2; x.mit = false; });
     /* nel giorno di arrivo serve una sola priorità */
@@ -1737,6 +1756,7 @@ function creaLM() {
     var i = s.azioni.findIndex(function (x) { return x.id === id; });
     if (i < 0) return;
     var a = presa(s.azioni.splice(i, 1)[0]);
+    segnaTolta(s, a);
     /* se era la priorità, il giorno non deve restare senza: promuovi la
        prima cosa ancora da fare, così resta chiaro da dove ripartire. */
     if (a.mit) {

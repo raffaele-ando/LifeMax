@@ -807,6 +807,29 @@ genera le chiavi, in un browser vero).
   Rimettendo il difetto la prova dà 11 problemi; togliendolo, zero. Una prova
   che non si è vista fallire sul difetto che dice di prendere non prova niente.
 
+- **calendari.js** — I CALENDARI COLLEGATI, CON UN GOOGLE E UN MICROSOFT FINTI.
+  È il pezzo dell'app che può fare danni FUORI dall'app: un errore qui non
+  sporca LifeMax, sposta o cancella la riunione di qualcun altro. Quindi la
+  rete vera è chiusa (`comune/lancia.js` blocca la libreria di Google, le due
+  API e la pagina di accesso di Microsoft) e al suo posto ci sono dei finti
+  che tengono gli eventi in memoria e il registro di ogni richiesta: la prova
+  non guarda solo che la riga sia giusta, guarda che sia partita proprio una
+  PATCH con dentro l'ora giusta in UTC. L'orologio è fermo a un lunedì di
+  novembre a Roma, così fusi e «oggi» sono sempre gli stessi.
+  Copre: l'ID mancante (da configurare, e nessuna richiesta), l'importazione
+  (il passato e i rifiutati no, un'ora in UTC che arriva nell'ora di Roma,
+  tutto il giorno senza orario, a cavallo della mezzanotte), un cambio sul
+  calendario che arriva qui, un cambio qui che parte con il solo campo
+  cambiato e senza accorciare l'evento, le cancellazioni nei due sensi (una
+  già fatta resta staccata, e righe sparite senza un «elimina» — come dopo
+  «Azzera tutto» — NON cancellano niente là), il conflitto (vince il
+  calendario e il Diario lo dice), due dispositivi che importano lo stesso
+  evento e dopo la fusione hanno una riga sola, il permesso scaduto (nessuna
+  finestra aperta da sola, «Ricollega» e un tocco), le nuove attività con
+  orario nel calendario scelto (spedite due volte, un evento solo), e
+  Microsoft dal rimando alla pagina di accesso con la sfida PKCE fino al
+  rinnovo col refresh token e allo «Scollega».
+
 ## Come si lanciano
 
 **Prima si costruisce.** Le prove aprono `index.html`, che è generato: se il

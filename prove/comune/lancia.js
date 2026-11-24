@@ -22,6 +22,16 @@
 const { chromium } = require('playwright');
 
 const SDK = 'https://www.gstatic.com/firebasejs/**';
+/* LO STESSO PER I CALENDARI COLLEGATI (src/calendari/): la libreria di
+   Google, le due API e la pagina di accesso di Microsoft. Nessuna prova deve
+   poter parlare col calendario vero di qualcuno; chi li vuole li finge,
+   come fa `prove/calendari.js`. */
+const CALENDARI = [
+  'https://accounts.google.com/**',
+  'https://www.googleapis.com/**',
+  'https://login.microsoftonline.com/**',
+  'https://graph.microsoft.com/**'
+];
 
 module.exports = async function lancia() {
   const b = await chromium.launch({ executablePath: process.env.CHROMIUM || undefined, args: process.env.PROVE_ARGS ? process.env.PROVE_ARGS.split(' ') : [] });
@@ -29,6 +39,7 @@ module.exports = async function lancia() {
   b.newContext = async function (opzioni) {
     const c = await contesto(opzioni);
     await c.route(SDK, (r) => r.abort());
+    for (const via of CALENDARI) await c.route(via, (r) => r.abort());
     return c;
   };
   /* `newPage()` sul browser si fa un contesto suo, senza passare da qui

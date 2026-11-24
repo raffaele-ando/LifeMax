@@ -26,6 +26,7 @@ import type { ApiLM } from '../dati/dati';
 import type { Registro, Riga as RigaRegistro } from '../registro/registro';
 import type { StatoAuth, StatoSync, ApiCloud, DettaglioEsempio } from '../nuvola/nuvola';
 import type { Promemoria } from '../promemoria/promemoria';
+import type { CALENDARI } from '../calendari/sincronia';
 
 declare global {
   interface Window {
@@ -40,7 +41,7 @@ declare global {
        là. Dentro a `src/` non la nomina nessuno: `prove/pezzi.js` lo
        controlla, perché una porta per le prove che l'app comincia a usare
        smette di essere una porta e diventa un globale. */
-    __PROVE__?: { promemoria: Promemoria };
+    __PROVE__?: { promemoria: Promemoria; calendari: typeof CALENDARI };
   }
 }
 
@@ -66,6 +67,9 @@ declare global {
     /* c'è un esempio qui e dei dati veri nell'account: chiedere prima di
        unire, e rispondere con `decidi` */
     'lm:esempio-nell-account': CustomEvent<number>;
+    /* i calendari collegati hanno qualcosa di nuovo da mostrare: un giro
+       partito o finito, un permesso da rinnovare (src/calendari/) */
+    'lm:calendari': CustomEvent<void>;
     /* una riga nuova nel registro tecnico */
     'lm:log': CustomEvent<RigaRegistro>;
   }

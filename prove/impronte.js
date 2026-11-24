@@ -133,7 +133,7 @@ const APERTURE = {
     await p.evaluate(() => { const b = document.getElementById('sc-mancata'); if (b) b.click(); });
   } },
   /* la scelta del timer si apre da «Adesso», sulla cosa di adesso */
-  timer: { titolo: 'Quanto ci stai', vai: 'oggi', apri: (p) => p.evaluate(() => {
+  timer: { titolo: 'Timer', vai: 'oggi', apri: (p) => p.evaluate(() => {
     const b = document.getElementById('btn-timer');
     if (b) b.click();
   }) },
@@ -152,7 +152,7 @@ const APERTURE = {
   lezione: { titolo: 'Una cosa che hai capito', vai: 'esperimenti', apri: (p) => p.evaluate(() => {
     const b = document.querySelector('[data-lezapri]'); if (b) b.click();
   }) },
-  review: { titolo: 'Le review di prima', vai: 'plancia', apri: (p) => p.evaluate(() => {
+  review: { titolo: 'Riflessioni passate', vai: 'plancia', apri: (p) => p.evaluate(() => {
     const b = document.getElementById('riep-review'); if (b) b.click();
   }) },
   guida: { titolo: 'Primi passi', vai: 'profilo', apri: async (p) => {
@@ -178,7 +178,13 @@ const APERTURE = {
   ],
   abitudine: { vai: 'inbox', tab: 2, apri: (p) => p.evaluate(() => {
     const r = document.querySelector('[data-abdett]'); if (r) r.click();
-  }) }
+  }) },
+  /* i calendari collegati, con un account collegato su un altro dispositivo:
+     è il caso che mostra tutte le righe senza bisogno della rete. L'esito ha
+     un'ora: l'orologio della prova è fermo, quindi è sempre la stessa. */
+  calendari: { titolo: 'Calendari collegati', vai: 'profilo',
+    prima: (p) => p.evaluate(() => { const s = LM.load(); s.profilo.calendari = { idGoogle: 'x.apps.googleusercontent.com', google: { collegato: true, email: 'io@esempio.it', calendari: { 'io@esempio.it': { nome: 'io@esempio.it', on: false, areaId: 'lavoro' }, 'lavoro@gruppo': { nome: 'Lavoro', on: true, areaId: 'lavoro' }, 'feste@gruppo': { nome: 'Festività italiane', on: false, areaId: 'altro', lettura: true } } }, esito: { ts: Date.now() - 3600000, ok: true, testo: '2 attività nuove, 1 aggiornata.' } }; LM.save(); }),
+    apri: (p) => p.evaluate(() => { const b = document.getElementById('imp-calendari'); if (b) b.click(); }) }
 };
 
 /* L'IMPRONTA DI UN ALBERO. Si scende in profondità e si scrive una riga per

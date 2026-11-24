@@ -154,7 +154,11 @@ const SCENE = [
   { nome: 'Gestisci le aree', vai: 'plancia', poi: async p => {
       await p.evaluate(() => { const b = (document.getElementById('fondo-impostazioni') || document.querySelector('[data-imp]')); if (b) b.click(); });
       await p.waitForTimeout(650);
-      await p.evaluate(() => { const b = document.getElementById('imp-aree'); if (b) b.click(); }); } }
+      await p.evaluate(() => { const b = document.getElementById('imp-aree'); if (b) b.click(); }); } },
+  { nome: 'Calendari collegati', vai: 'profilo', poi: async p => {
+      await p.evaluate(() => { const s = LM.load(); s.profilo.calendari = { idGoogle: 'x.apps.googleusercontent.com', google: { collegato: true, email: 'io@esempio.it', calendari: { 'io@esempio.it': { nome: 'io@esempio.it', on: false, areaId: 'lavoro' }, 'lavoro@gruppo': { nome: 'Lavoro', on: true, areaId: 'lavoro' }, 'feste@gruppo': { nome: 'Festività italiane', on: false, areaId: 'altro', lettura: true } } }, esito: { ts: Date.now() - 3600000, ok: true, testo: '2 attività nuove, 1 aggiornata.' } }; LM.save(); });
+      await p.waitForTimeout(400);
+      await p.evaluate(() => { const b = document.getElementById('imp-calendari'); if (b) b.click(); }); } }
 ];
 
 (async () => {
