@@ -22,8 +22,10 @@ Tre risposte veloci, prima:
 
 ## Cosa devi fare
 
-L'indirizzo del sito è **`https://raffaele-ando.github.io/LifeMax/`**. Serve
-due volte qui sotto: scrivilo identico, con la `/` finale.
+L'indirizzo che usi è **`https://lifemax.theproject.world/`**. Lo stesso sito
+risponde anche su `https://raffaele-ando.github.io/LifeMax/`: per il browser
+sono due siti diversi, con dati e permessi separati, quindi qui sotto li
+registri tutti e due (se usi solo il primo, il secondo puoi saltarlo).
 
 ### 1 · Google: attiva l'API del calendario
 
@@ -83,9 +85,10 @@ scrivi tu, fino a 100**, senza nessun controllo da parte sua.
 3. **Origini JavaScript autorizzate** → **Aggiungi URI**:
 
    ```
-   https://raffaele-ando.github.io
+   https://lifemax.theproject.world
    ```
 
+   e, con un secondo «Aggiungi URI», `https://raffaele-ando.github.io`.
    Solo l'origine: senza `/LifeMax/`, senza `/` finale. Per provare in
    locale aggiungi anche `http://localhost:5173`.
 4. **URI di reindirizzamento autorizzati**: lascialo vuoto. Il permesso di
@@ -113,10 +116,11 @@ scrivi tu, fino a 100**, senza nessun controllo da parte sua.
    pagina singola (SPA)** — *non* «Web» — e scrivi:
 
    ```
-   https://raffaele-ando.github.io/LifeMax/
+   https://lifemax.theproject.world/
    ```
 
-   Con la `/` finale. Per provare in locale, dopo, aggiungi anche
+   Con la `/` finale. Dopo la registrazione, in **Autenticazione**, aggiungi
+   anche `https://raffaele-ando.github.io/LifeMax/` (sempre SPA). Per provare in locale, dopo, aggiungi anche
    `http://localhost:5173/` (sempre come SPA).
 6. **Registra**.
 7. Nella pagina che si apre, in alto: **ID applicazione (client)**. È una
