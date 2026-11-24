@@ -2,8 +2,8 @@
 
 **Se non vuoi leggere niente:** [le istruzioni cliccabili sono qui sotto, dal
 punto 1](#cosa-devi-fare). Non serve il terminale, non serve installare nulla.
-Sono due registrazioni (una da Google, una da Microsoft) e due ID da
-incollare nell'app. **Poi** c'è [la sentinella](#la-sentinella--il-calendario-anche-ad-app-chiusa):
+Sono due registrazioni (una da Google, una da Microsoft) e due ID — già
+scritti in `config.ts`, quindi i punti 1-7 sono fatti. **Poi** c'è [la sentinella](#la-sentinella--il-calendario-anche-ad-app-chiusa):
 tre segreti da mettere in Cloudflare, e il calendario resta allineato anche
 ad app chiusa, senza più «Ricollega».
 

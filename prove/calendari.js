@@ -258,8 +258,13 @@ async function microsoftLogin(route) {
     .map((a) => ({ id: a.id, ev: a.esterno.id, testo: a.testo, data: a.data, ora: a.ora, durata: a.durata, area: a.areaId, done: a.done })), prov);
   const diEvento = async (p, ev) => (await collegate(p, 'google')).find((a) => a.ev === ev);
 
-  /* ================================================== 1. senza ID */
-  console.log('\n1. SENZA ID DELL’APP: DA CONFIGURARE, E NIENTE PARTE');
+  /* ================================================== 1. senza ID
+     L'ID di Google può essere già scritto in src/calendari/config.ts (il
+     fondatore ce l'ha messo): allora «da configurare» lo controlla solo
+     Microsoft, e Google parte già «da collegare» senza campo da riempire. */
+  const CONF = fs.readFileSync(path.join(__dirname, '..', 'src', 'calendari', 'config.ts'), 'utf8');
+  const IN_G = /GOOGLE_CLIENT_ID = '[^']+'/.test(CONF), IN_M = /MICROSOFT_CLIENT_ID = '[^']+'/.test(CONF);
+  console.log('\n1. SENZA ID DELL’APP: DA CONFIGURARE, E NIENTE PARTE' + (IN_G || IN_M ? ' (ID già nel codice: ' + [IN_G && 'Google', IN_M && 'Microsoft'].filter(Boolean).join(', ') + ')' : ''));
   const A = await dispositivo('A');
   const p = A.p;
   await apriPannello(p);
@@ -273,10 +278,11 @@ async function microsoftLogin(route) {
       sinc: !!document.getElementById('cal-sincronizza')
     }));
     ok('il pannello si apre dal Profilo', /Calendari collegati/.test(v.titolo || ''), v.titolo);
-    ok('Google è «da configurare»', v.g === 'Da configurare', v.g);
-    ok('e anche Microsoft', v.m === 'Da configurare', v.m);
-    ok('con il link alle istruzioni', v.link.length === 2 && v.link.every((h) => /LEGGIMI\.md$/.test(h)), v.link[0]);
-    ok('e niente da collegare né da sincronizzare', !v.collega && !v.sinc);
+    ok(IN_G ? 'Google, con l’ID nel codice, è già «da collegare»' : 'Google è «da configurare»', v.g === (IN_G ? 'Da collegare' : 'Da configurare'), v.g);
+    ok(IN_M ? 'Microsoft, con l’ID nel codice, è già «da collegare»' : 'Microsoft è «da configurare»', v.m === (IN_M ? 'Da collegare' : 'Da configurare'), v.m);
+    const mancano = (IN_G ? 0 : 1) + (IN_M ? 0 : 1);
+    ok('un link alle istruzioni per ogni ID che manca', v.link.length === mancano && v.link.every((h) => /LEGGIMI\.md$/.test(h)), v.link.length + '');
+    ok('e niente da sincronizzare' + (IN_G ? '' : ' né da collegare'), (IN_G || !v.collega) && !v.sinc);
     const prima = G.richieste.length + M.richieste.length;
     await giro(p);
     ok('un giro non manda nessuna richiesta', G.richieste.length + M.richieste.length === prima, (G.richieste.length + M.richieste.length - prima) + ' richieste');
@@ -286,9 +292,11 @@ async function microsoftLogin(route) {
   /* ============================================ 2. Google: importazione */
   console.log('\n2. GOOGLE: SI COLLEGA, SI SCEGLIE, SI IMPORTA');
   {
-    await p.fill('#cal-google-id', '1234-finto.apps.googleusercontent.com');
-    await p.press('#cal-google-id', 'Enter');
-    await p.waitForTimeout(500);
+    if (!IN_G) {
+      await p.fill('#cal-google-id', '1234-finto.apps.googleusercontent.com');
+      await p.press('#cal-google-id', 'Enter');
+      await p.waitForTimeout(500);
+    }
     const stato = await p.textContent('#cal-google-stato');
     ok('incollato l’ID, Google è «da collegare»', stato === 'Da collegare', stato);
     await p.click('#cal-google-collega');
@@ -540,8 +548,10 @@ async function microsoftLogin(route) {
   /* ================================================= 10. Microsoft */
   console.log('\n10. OUTLOOK: DAL RIMANDO ALLA PAGINA DI ACCESSO ALLA MODIFICA SPEDITA');
   {
-    await p.fill('#cal-microsoft-id', 'id-finto-microsoft');
-    await p.press('#cal-microsoft-id', 'Enter');
+    if (!IN_M) {
+      await p.fill('#cal-microsoft-id', 'id-finto-microsoft');
+      await p.press('#cal-microsoft-id', 'Enter');
+    }
     await p.waitForTimeout(400);
     await Promise.all([p.waitForNavigation(), p.click('#cal-microsoft-collega')]);
     await p.waitForTimeout(1800);

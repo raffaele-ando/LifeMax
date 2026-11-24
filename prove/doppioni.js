@@ -253,8 +253,13 @@ const SCENE = [
           scelto: scelto, chiude: chiude }; })()`);
       const ok = await p.evaluate(`(function () { const l = ${LISTA}; if (!l[${i}]) return false; l[${i}].click(); return true; })()`);
       await p.waitForTimeout(650);
-      if (ok) await calma(p);
-      const dopo = ok ? await p.evaluate(IMPRONTA) : null;
+      /* UN COMANDO CHE PORTA FUORI DALL'APP. «Collega Outlook» manda la pagina
+         da Microsoft (qui l'indirizzo vero è bloccato): dopo non c'è più l'app
+         da misurare. Il suo effetto è proprio quello, ed è unico. */
+      let fuori = false;
+      try { if (ok) await calma(p); } catch (_) { fuori = true; }
+      const dopo = !ok ? null : fuori ? null : await p.evaluate(IMPRONTA).catch(() => { fuori = true; return null; });
+      if (fuori) { await p.close(); continue; }
       await p.close();
       if (!dopo || !eti) continue;
       effetti.push({ ...eti, eff: JSON.stringify({

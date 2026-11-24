@@ -18,8 +18,8 @@
         stessa strada dell'indirizzo del postino.
    Vuoti, il servizio si mostra «da configurare» e non parte niente.
    ============================================================ */
-export const GOOGLE_CLIENT_ID = '';
-export const MICROSOFT_CLIENT_ID = '';
+export const GOOGLE_CLIENT_ID = '168732828259-r62fu4bc9ppa5fdtljdmffj6qib16epa.apps.googleusercontent.com';
+export const MICROSOFT_CLIENT_ID = '139c6fa8-e084-4b27-902b-fc348453b4f4';
 
 /* dove sono scritte le istruzioni: il link del pannello quando un ID manca */
 export const ISTRUZIONI = 'https://github.com/raffaele-ando/LifeMax/blob/HEAD/src/calendari/LEGGIMI.md';
