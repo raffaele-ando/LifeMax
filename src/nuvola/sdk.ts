@@ -82,6 +82,8 @@ export interface DatiDocumento {
   servito?: OraServer | SegnapostoOra | null;
   ultimaCopia?: number;
   avviso?: string;
+  /* la versione più vecchia dell'app che può ancora scrivere (nuvola.ts, M5) */
+  versioneMinima?: number;
   /* la «cassetta delle lettere»: quello che un dispositivo ha mandato
      mentre la pagina si chiudeva (vedi `pagehide` in nuvola.ts), per
      dispositivo, in JSON */

@@ -168,27 +168,75 @@ function creaLM() {
        · e non si torna MAI indietro rispetto a un'ora già vista arrivare
          dagli altri: una cosa fatta qui dopo averne vista una fatta là ha
          sempre un'ora più grande. È l'idea dell'«orologio logico ibrido». */
+  /* OROLOGI MOLTO SBAGLIATI (verifica del 25 novembre 2026, M7). Prima lo
+     scarto si misurava solo all'accesso, stava solo in memoria e oltre 400
+     giorni non si applicava: un telefono avanti di tre ore aperto senza
+     cloud vinceva su modifiche fatte dopo, un tablet tornato al 2001
+     faceva tornare indietro rinomine e cancellazioni, un PC avanti di due
+     anni buttava tutte le lapidi. Adesso:
+       · lo scarto misurato si RICORDA (`lm-scarto-orologio`), e vale anche
+         quando il cloud non risponde; si rimisura a ogni ritorno della rete;
+       · un orologio prima del PAVIMENTO (il giorno di questa versione) è
+         certamente sbagliato: finché non c'è una misura si scrive dal
+         pavimento in su, e le ore che arrivano dagli altri si prendono;
+       · anche l'ultima ora vista si ricorda (`lm-ultimo-istante`), così
+         riaprendo non si scrive mai più indietro di prima;
+       · lapidi e orologi delle chiavi scadono solo con un orologio misurato
+         (`scadenzaSicura`), e contando con l'ora corretta. */
+  var SCARTO_KEY = 'lm-scarto-orologio';
+  var ISTANTE_KEY = 'lm-ultimo-istante';
+  var PAVIMENTO = Date.UTC(2026, 10, 25);
   var scartoServer = 0;
+  var scartoMisurato = false;
   var ultimoIstante = 0;
-  function adesso(): number {
+  (function () {
+    try {
+      var v = JSON.parse(localStorage.getItem(SCARTO_KEY) || 'null');
+      if (v && typeof v.ms === 'number' && isFinite(v.ms)) { scartoServer = v.ms; scartoMisurato = true; }
+      var u = Number(localStorage.getItem(ISTANTE_KEY)) || 0;
+      if (u > 0 && isFinite(u)) ultimoIstante = u;
+    } catch (e) { /* senza memoria si parte da zero */ }
+  })();
+  function oraCorretta(): number {
     var t = Date.now() + scartoServer;
+    return (!scartoMisurato && t < PAVIMENTO) ? PAVIMENTO : t;
+  }
+  function adesso(): number {
+    var t = oraCorretta();
     if (t <= ultimoIstante) t = ultimoIstante + 1;
     ultimoIstante = t;
     return t;
   }
   /* un'ora arrivata da fuori: da qui in poi non si scrive niente di più
      vecchio. Un'ora più avanti di un giorno non si prende: è un orologio
-     rotto, e seguirlo vorrebbe dire rompere anche questo. */
+     rotto, e seguirlo vorrebbe dire rompere anche questo — tranne quando il
+     rotto è questo (prima del pavimento, e non ancora misurato). */
   function osserva(t: unknown): void {
     if (typeof t !== 'number' || !isFinite(t)) return;
-    if (t > Date.now() + scartoServer + 86400000) return;
+    var dubbio = !scartoMisurato && Date.now() + scartoServer < PAVIMENTO;
+    if (!dubbio && t > oraCorretta() + 86400000) return;
     if (t > ultimoIstante) ultimoIstante = t;
   }
   /* sotto i cinque secondi non vale la pena correggere: è il tempo di un
-     giro di rete, e la misura stessa non è più precisa di così */
+     giro di rete, e la misura stessa non è più precisa di così. Nessun tetto
+     di giorni: un orologio indietro di venticinque anni va corretto più di
+     tutti. */
   function impostaScarto(ms: number): void {
-    if (typeof ms !== 'number' || !isFinite(ms) || Math.abs(ms) > 400 * 86400000) return;
+    if (typeof ms !== 'number' || !isFinite(ms)) return;
     scartoServer = Math.abs(ms) > 5000 ? Math.round(ms) : 0;
+    scartoMisurato = true;
+    /* l'orologio logico NON si riporta indietro, anche se le ore scritte
+       prima della misura erano avanti: una modifica fatta dopo deve sempre
+       avere un'ora più grande di una fatta prima qui, se no al primo giro
+       tornerebbe la versione vecchia. Si allinea da solo quando l'ora vera
+       lo raggiunge. */
+    try { localStorage.setItem(SCARTO_KEY, JSON.stringify({ ms: scartoServer, quando: Date.now() + scartoServer })); } catch (e) { /* vale per questa sessione */ }
+  }
+  /* da quando in là lapidi e orologi possono scadere; null = non si sa, e
+     allora non scade niente */
+  function scadenzaSicura(durata: number): number | null {
+    if (!scartoMisurato) return null;
+    return Date.now() + scartoServer - durata;
   }
 
   /* IL NOME DI QUESTO DISPOSITIVO, lo stesso che usano il timer e i
@@ -740,8 +788,8 @@ function creaLM() {
        tornavano. Le lapidi adesso viaggiano nel cloud divise per mese (vedi
        src/nuvola/pezzi.ts), quindi il loro numero non pesa più su un
        documento solo; resta solo la scadenza. */
-    var soglia = Date.now() - DURATA_LAPIDI;
-    s.cancellati = s.cancellati.filter(function (t) { return t && t.ts > soglia; });
+    var soglia = scadenzaSicura(DURATA_LAPIDI);
+    s.cancellati = s.cancellati.filter(function (t) { return t && (soglia === null || t.ts > soglia); });
     return s;
   }
 
@@ -814,8 +862,8 @@ function creaLM() {
             Object.keys(m).forEach(function (c) { var t = Number(m[c]) || 0; if (t > (o[c] || 0)) o[c] = t; });
           });
           /* un orologio vale quanto una lapide, e scade come lei */
-          var limite = Date.now() - DURATA_LAPIDI;
-          Object.keys(o).forEach(function (c) { if ((o[c] || 0) < limite) delete o[c]; });
+          var limite = scadenzaSicura(DURATA_LAPIDI);
+          if (limite !== null) { var lim = limite; Object.keys(o).forEach(function (c) { if ((o[c] || 0) < lim) delete o[c]; }); }
           out[k] = o;
           break;
         }
@@ -1611,6 +1659,7 @@ function creaLM() {
     var scritto: string | null = null;
     try { scritto = localStorage.getItem(STORAGE_KEY); } catch (e) { scritto = null; }
     if (ok) ultimoScritto = scritto;
+    try { localStorage.setItem(ISTANTE_KEY, String(ultimoIstante)); } catch (e) { /* niente */ }
     if (!staTornandoIndietro) {
       /* `updatedAt` cambia a ogni salvataggio: si toglie da entrambi, altrimenti
          ogni salvataggio sembrerebbe un cambiamento */

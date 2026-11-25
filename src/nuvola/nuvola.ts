@@ -75,6 +75,21 @@ const SCHEMA = 2;
 /* scritto nel documento principale per chi lo apre con la console o con una
    versione vecchia: i dati non stanno più qui dentro */
 const AVVISO_SCHEMA = 'I dati stanno in users/{uid}/pezzi (schema 2). Una scheda con la versione vecchia di LifeMax va ricaricata.';
+/* LA VERSIONE PIÙ VECCHIA DELL'APP CHE PUÒ ANCORA SCRIVERE (verifica del
+   25 novembre 2026, M5). Una scheda rimasta aperta per giorni, con una
+   versione di prima, non riceveva più niente e nessuno lo diceva. Da qui in
+   poi il documento principale porta `versioneMinima`: ogni versione ci
+   scrive almeno la sua VERSIONE_MINIMA, e una scheda la cui VERSIONE_APP è
+   più bassa smette di scrivere e dice «C'è una versione nuova: ricarica».
+   VERSIONE_APP si alza a ogni versione che cambia il modo di salvare;
+   VERSIONE_MINIMA solo quando le versioni di prima non devono più scrivere
+   (una forma dei dati che non capiscono). Per le schede di PRIMA di questo
+   campo non c'è rimedio: il loro codice è già quello che è. */
+const VERSIONE_APP = 1;
+const VERSIONE_MINIMA = 1;
+class VersioneVecchia extends Error {
+  constructor() { super('versione dell’app troppo vecchia per questi dati'); }
+}
 /* quante copie di sicurezza tenere nel cloud, e ogni quanto farne una */
 const COPIE_DA_TENERE = 30;
 const COPIA_OGNI_MS = 20 * 3600 * 1000;
@@ -375,8 +390,62 @@ window.addEventListener('offline', function () {
   if (document.getElementById('lm-aggiornamento')) nascondiAggiornamento('Senza rete: vedi i dati di questo dispositivo.');
 });
 
-/* --------------------------------------------------------------- l'avvio */
-void (async function init() {
+/* --------------------------------------------------------------- l'avvio
+   SE L'SDK NON ARRIVA (verifica del 25 novembre 2026, M6): rete che va e
+   viene all'apertura, gstatic lento. Prima si provava una volta sola, e il
+   cloud restava spento finché non si chiudeva l'app — sul telefono, ore.
+   Adesso si riprova quando torna la rete, quando si torna sull'app e ogni
+   minuto; e intanto le modifiche di un dispositivo che è di un account si
+   segnano «non ancora nel cloud» lo stesso (vedi `lm:change` qui sotto).
+   RIPROVARE VUOL DIRE RICARICARE LA PAGINA: il browser si ricorda che quel
+   modulo non è arrivato, e un secondo `import()` dello stesso indirizzo
+   fallisce senza nemmeno chiederlo (e l'SDK si importa da sé per indirizzo
+   intero: non si può cambiare con un «?r=2»). Allora si guarda se gstatic
+   adesso risponde e, se sì, si ricarica — ma solo con l'app a vista e
+   nessun campo in cui stai scrivendo: i dati sono già tutti salvati sul
+   dispositivo a ogni modifica. Al massimo una volta al minuto, così una
+   rete che finge di esserci non fa ricaricare all'infinito. */
+let avvioInCorso = false;
+let sdkFallito = false;
+let sdkRiprova: ReturnType<typeof setInterval> | null = null;
+const RICARICA_SDK = 'lm-ricarica-per-sdk';
+function staiScrivendo(): boolean {
+  const a = document.activeElement as HTMLElement | null;
+  return !!a && (a.tagName === 'INPUT' || a.tagName === 'TEXTAREA' || a.tagName === 'SELECT' || a.isContentEditable);
+}
+function riprovaSdk(perche: string): void {
+  if (FSM || avvioInCorso || !navigator.onLine) return;
+  if (!sdkFallito) { void init(); return; }
+  if (document.hidden || staiScrivendo()) return;
+  let ultima = 0;
+  try { ultima = Number(sessionStorage.getItem(RICARICA_SDK)) || 0; } catch { ultima = 0; }
+  if (Date.now() - ultima < 60000) return;
+  void fetch(SDK + 'firebase-app.js', { mode: 'no-cors', cache: 'no-store' }).then(function () {
+    if (FSM || document.hidden || staiScrivendo()) return;
+    log('info', 'l’SDK di Firebase adesso arriva: ricarico la pagina per accendere il cloud (' + perche + ')');
+    try { sessionStorage.setItem(RICARICA_SDK, String(Date.now())); } catch { /* niente */ }
+    location.reload();
+  }).catch(function () { /* ancora niente: la prossima volta */ });
+}
+function armaRiprovaSdk(): void {
+  if (sdkRiprova) return;
+  sdkRiprova = setInterval(function () { riprovaSdk('un minuto dopo'); }, 60000);
+  window.addEventListener('online', function () { riprovaSdk('è tornata la rete'); });
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) riprovaSdk('sei tornato sull’app'); });
+}
+document.addEventListener('lm:change', function (e) {
+  if (FSM || applyingRemote) return;
+  if ((e as CustomEvent<unknown>).detail === 'ricarica') return;
+  const chi = leggi(CHI);
+  if (!chi) return;
+  modifiche++;
+  if (!sporco) { sporco = true; scrivi(SOSPESO, chi); }
+  emitSync('attesa');
+});
+void init();
+async function init(): Promise<void> {
+  if (avvioInCorso || FSM) return;
+  avvioInCorso = true;
   try {
     const [appMod, authMod, fsMod] = await Promise.all([
       import(/* @vite-ignore */ SDK + 'firebase-app.js') as Promise<ModuloApp>,
@@ -411,6 +480,26 @@ void (async function init() {
     window.LMCloud = {
       available: true,
       signIn: async function () {
+        /* L'USCITA DI UN ALTRO, ANCORA A METÀ (verifica del 25 novembre 2026,
+           M1). Mario è uscito mentre il cloud non rispondeva: la sua ultima
+           modifica aspetta qui, e la sua sessione è rimasta aperta di
+           nascosto per mandarla. Prima, se entrava Luigi, quella modifica si
+           fermava sul PC finché Mario non tornava proprio lì. Adesso prima si
+           prova a finire l'uscita di Mario; se il cloud ancora non risponde,
+           si dice, e solo un secondo «Accedi» entra lo stesso (la modifica
+           di Mario resta su questo dispositivo, per lui). */
+        const sospesa = leggi(USCITA);
+        if (sospesa && utenteFb && utenteFb.uid === sospesa) {
+          await conTempo(completaUscita(utenteFb), 8000);
+          if (leggi(USCITA) && Date.now() - avvisoUscitaAltrui > 120000) {
+            avvisoUscitaAltrui = Date.now();
+            document.dispatchEvent(new CustomEvent('lm:accesso-fallito', { detail: {
+              titolo: 'Un momento',
+              testo: 'Chi è uscito da qui poco fa ha ancora una modifica che non è arrivata nel cloud, e il cloud adesso non risponde. Parte da sola appena può: riprova fra poco. Se tocchi di nuovo «Accedi» entri lo stesso, e quella modifica resta su questo dispositivo finché quell’account non rientra.'
+            } }));
+            return;
+          }
+        }
         const partito = Date.now();
         try {
           await authMod.signInWithPopup(autenticazione, prov);
@@ -429,8 +518,12 @@ void (async function init() {
               'Da questo indirizzo non si può ancora accedere con Google. Apri LifeMax da ' + DOMINIO + ' e accedi da lì: i tuoi dati ti aspettano.');
           } else if (/operation-not-allowed/.test(cod)) {
             dire('Accesso momentaneamente spento', 'L’accesso con Google in questo momento non è disponibile. I tuoi dati restano su questo dispositivo: riprova più tardi.');
-          } else if (/popup-blocked|cancelled-popup-request|popup-closed-by-user/.test(cod) && Date.now() - partito > 2500) {
-            /* chiuso da te dopo averlo visto: non è un errore */
+          } else if (/popup-closed-by-user|cancelled-popup-request/.test(cod)) {
+            /* la finestra di Google l'hai chiusa tu (anche subito: un
+               ripensamento, un tocco sbagliato). Non è un errore, e non si
+               porta la pagina intera da Google (verifica 2, m1). */
+          } else if (/popup-blocked/.test(cod) && Date.now() - partito > 2500) {
+            /* «bloccato» dopo averlo visto: chiuso da te */
           } else if (/popup/.test(cod)) {
             try { await authMod.signInWithRedirect(autenticazione, prov); } catch (e2) {
               log('avviso', 'anche il redirect non è partito', codice(e2));
@@ -506,12 +599,18 @@ void (async function init() {
       programmaSync();
     });
 
+    if (sdkRiprova) { clearInterval(sdkRiprova); sdkRiprova = null; }
   } catch (e) {
     console.warn('LifeMax: cloud non disponibile, uso solo questo dispositivo.', messaggio(e));
-    log('errore', 'SDK Firebase non caricato: si lavora solo in locale', messaggio(e));
+    log('errore', 'SDK Firebase non caricato: si lavora solo in locale (riprovo)', messaggio(e));
+    AUTHM = null; FSM = null;
+    sdkFallito = true;
     emitUnavailable();
+    armaRiprovaSdk();
+  } finally {
+    avvioInCorso = false;
   }
-})();
+}
 
 /* ----------------------------------------------------- di chi sono i dati
 
@@ -579,6 +678,7 @@ async function esci(): Promise<EsitoUscita> {
 /* la parte rimasta di un'uscita senza rete: manda la copia messa da parte,
    poi chiude la sessione. Niente si mostra sullo schermo. */
 let uscitaInCorso = false;
+let avvisoUscitaAltrui = 0;
 async function completaUscita(u: UtenteFirebase): Promise<void> {
   if (uscitaInCorso) return;
   uscitaInCorso = true;
@@ -677,7 +777,13 @@ async function primaSincronizzazione(uid: string): Promise<void> {
   /* tutti i pezzi in una volta sola, fuori dalla transazione: dentro, ogni
      lettura è un giro di rete */
   await precarica(uid);
-  const ok = await sincronizza('prima sincronizzazione');
+  /* UN DISPOSITIVO NUOVO PER QUESTO ACCOUNT: prima di unire, una copia del
+     cloud com'è adesso, anche se oggi ce n'è già una (verifica 2, m11). La
+     copia del giorno si prende al primo salvataggio della giornata, e non
+     contiene quello che si è scritto dopo: se proprio questa prima unione
+     rovinasse il profilo, «Riprendi il profilo» deve avere da dove
+     riprenderlo. */
+  const ok = await sincronizza('prima sincronizzazione', giaUnito ? undefined : { motivoCopia: 'primo-accesso-di-un-dispositivo' });
   if (ok) {
     const restoEsempio = window.LM.contaEsempio();
     if (restoEsempio > 0) window.dispatchEvent(new CustomEvent('lm:esempio-nell-account', { detail: restoEsempio }));
@@ -830,6 +936,7 @@ async function giro(uid: string, o: OpzGiro): Promise<void> {
         tenuto.e = null;
         const snap = await tx.get(rifPrincipale);
         const m = snap.exists() ? (snap.data() || {}) : null;
+        if (m && Number(m.versioneMinima) > VERSIONE_APP) throw new VersioneVecchia();
         let remoto = await leggiCloud(tx, uid, m);
         /* IL DOCUMENTO DELLA VERSIONE DI PRIMA (un JSON solo): si unisce, e
            da qui in poi i dati stanno nei pezzi. Prima di toccarlo se ne
@@ -885,7 +992,8 @@ async function giro(uid: string, o: OpzGiro): Promise<void> {
             name: o.name !== undefined ? o.name : (currentUser ? currentUser.name : ''),
             servito: fs.serverTimestamp(),
             ultimaCopia: (copiaDovuta || vecchio) ? ora : Number((m && m.ultimaCopia) || 0),
-            avviso: AVVISO_SCHEMA
+            avviso: AVVISO_SCHEMA,
+            versioneMinima: Math.max(Number((m && m.versioneMinima) || 0), VERSIONE_MINIMA)
           });
         }
         tenuto.e = { unito: unito, pezzi: pezzi, scritto: serve, copia: copiaDovuta ? remoto : null, vecchi: vecchi,
@@ -1044,6 +1152,15 @@ function sincronizza(motivo: string, opz?: OpzGiro): Promise<boolean> {
       if (leggi(USCITA) && utenteFb) void completaUscita(utenteFb);
       return true;
     } catch (e) {
+      if (e instanceof VersioneVecchia) {
+        /* niente nuovi tentativi: questa versione non deve scrivere. Le
+           modifiche restano qui e partono dopo «Ricarica». */
+        log('avviso', 'nel cloud c’è una versione dell’app più nuova di questa: non scrivo, chiedo di ricaricare');
+        versioneNuova();
+        nascondiAggiornamento();
+        opFine('sincronizzazione', 'error', TESTO_VERSIONE);
+        return false;
+      }
       const rete = eRete(e);
       log(rete ? 'avviso' : 'errore', 'sincronizzazione non riuscita', codice(e) + ' ' + messaggio(e));
       if (rete) nascondiAggiornamento('Senza rete: vedi i dati di questo dispositivo.');
@@ -1228,6 +1345,7 @@ function ascolta(uid: string): void {
       if (!snap.exists()) return;
       const d = snap.data();
       if (!d) return;
+      if (Number(d.versioneMinima) > VERSIONE_APP) { versioneNuova(); return; }
       /* la nostra scrittura confermata. (L'ora del server che porta NON si
          usa per correggere l'orologio: arriva quando arriva — dopo un buco
          di rete anche molto dopo — e scambiare quel ritardo per un orologio
@@ -1290,8 +1408,48 @@ function riprovaSubito(perche: string): void {
    `pagehide`) e per qualche istante la pagina vive ancora. È lì che si
    manda quello che manca, senza aspettare. Se non fa in tempo, la modifica
    resta segnata come «non ancora nel cloud» e parte alla prossima apertura. */
+/* C'È UNA VERSIONE NUOVA: una striscia in alto con «Ricarica». Non si
+   ricarica da sola: potresti essere a metà di una frase. */
+const TESTO_VERSIONE = 'C’è una versione nuova di LifeMax: ricarica la pagina per continuare a salvare nel cloud. Le tue modifiche restano su questo dispositivo.';
+function versioneNuova(perche?: 'pagina'): void {
+  if (!document.body || document.getElementById('lm-versione-nuova')) return;
+  const d = document.createElement('div');
+  d.id = 'lm-versione-nuova';
+  d.setAttribute('role', 'alert');
+  d.style.cssText = 'position:fixed;left:12px;right:12px;top:max(10px,env(safe-area-inset-top));z-index:9998;display:flex;gap:10px;align-items:center;' +
+    'background:var(--superficie,#fff);color:var(--testo,#222);border:1px solid var(--bordo,#ddd);border-radius:14px;padding:10px 12px;' +
+    'font:500 14px/1.35 system-ui,sans-serif;box-shadow:0 4px 18px rgba(0,0,0,.16);max-width:560px;margin:0 auto';
+  const s = document.createElement('span');
+  s.style.flex = '1';
+  s.textContent = perche === 'pagina' ? 'È uscita una versione nuova di LifeMax.' : TESTO_VERSIONE;
+  const b = document.createElement('button');
+  b.type = 'button';
+  b.textContent = 'Ricarica';
+  b.style.cssText = 'font:600 14px system-ui,sans-serif;padding:8px 14px;border-radius:999px;border:0;background:var(--accento,#3b6);color:#fff;cursor:pointer';
+  b.addEventListener('click', function () { location.reload(); });
+  d.appendChild(s); d.appendChild(b);
+  document.body.appendChild(d);
+}
+/* e per le schede aperte da giorni: ogni tanto (tornando sull'app, al
+   massimo ogni dieci minuti) si chiede index.html al server e si guarda se
+   nomina lo stesso pacco di questa pagina. Se no, è uscita una versione
+   nuova. */
+let versioneGuardata = 0;
+function guardaVersione(): void {
+  const mio = document.querySelector('script[src*="pacco/index-"]') as HTMLScriptElement | null;
+  if (!mio || !navigator.onLine || Date.now() - versioneGuardata < 10 * 60000) return;
+  versioneGuardata = Date.now();
+  const nome = (mio.getAttribute('src') || '').replace(/^.*pacco\//, '');
+  void fetch('index.html', { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (h) {
+    const m = /pacco\/(index-[\w-]+\.js)/.exec(h || '');
+    if (m && m[1] !== nome) { log('info', 'sul server c’è una versione nuova dell’app', m[1]); versioneNuova('pagina'); }
+  }).catch(function () { /* senza rete: si riguarda la prossima volta */ });
+}
+setInterval(function () { if (!document.hidden) guardaVersione(); }, 30 * 60000);
+
 document.addEventListener('visibilitychange', function () {
   if (document.hidden) { if (currentUser && sporco) void sincronizza('l’app va in secondo piano'); return; }
+  guardaVersione();
   riprovaSubito('sei tornato sull’app');
   if (currentUser && (sporco || !ascoltoAttivo)) void sincronizza('sei tornato sull’app');
 });
@@ -1344,7 +1502,12 @@ window.addEventListener('offline', function () {
   if (currentUser && sporco) emitSync('attesa');
 });
 window.addEventListener('online', function () {
-  if (currentUser) { log('info', 'rete tornata: riprovo il salvataggio'); attesaSync = 0; void sincronizza('è tornata la rete'); }
+  if (currentUser) {
+    log('info', 'rete tornata: riprovo il salvataggio'); attesaSync = 0;
+    /* l'orologio si rimisura a ogni ritorno della rete (M7): prima, poi il giro */
+    const u = currentUser.uid;
+    void misuraOrologio(u).then(function () { return sincronizza('è tornata la rete'); });
+  }
   else if (leggi(USCITA) && utenteFb) void completaUscita(utenteFb);
   riprovaSubito('è tornata la rete');
 });

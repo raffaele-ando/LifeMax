@@ -136,7 +136,7 @@ export function getFirestore(app) { return wire(R.getFirestore(app)); }`
 }
 
 function orologio(skewMs) {
-  return `(function(){ const D = Date; const sk = ${skewMs | 0};
+  return `(function(){ const D = Date; const sk = ${Math.round(Number(skewMs) || 0)}; /* niente «| 0»: anni di scarto non stanno in 32 bit */
     window.__off = Number((function(){try{return localStorage.getItem('__off')}catch(e){return 0}})() || 0);
     class F extends D { constructor(...a){ if(!a.length) super(D.now() + sk + window.__off); else super(...a); } static now(){ return D.now() + sk + window.__off; } }
     window.Date = F; })();`;

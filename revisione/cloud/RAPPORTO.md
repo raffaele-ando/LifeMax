@@ -229,7 +229,7 @@ Le correzioni sono nel commit `4522b6f`. Sul codice nuovo le tre prove passano, 
 2. In «ID client OAuth 2.0» apri **Web client (auto created by Google Service)**.
 3. In **URI di reindirizzamento autorizzati** → **Aggiungi URI** → `https://lifemax.theproject.world/__/auth/handler`. In **Origini JavaScript autorizzate** controlla che ci sia `https://lifemax.theproject.world` (se no aggiungilo). **Salva**.
 4. Firebase console (console.firebase.google.com) → progetto lifemax-9dc63 → **Authentication** → **Settings** (Impostazioni) → **Authorized domains** (Domini autorizzati): deve esserci `lifemax.theproject.world` (se no **Add domain**).
-5. Controllo: apri `https://lifemax.theproject.world/__/firebase/init.json`. Deve comparire un testo con `"projectId":"lifemax-9dc63"`, non l'app.
+5. Controllo: apri `https://lifemax.theproject.world/__/auth/handler`. Deve comparire una pagina di Firebase (bianca, o con un messaggio d'errore in inglese tipo «The requested action is invalid»), **non l'app**. Se compare l'app, il Worker non sta servendo `/__/auth/*`: fermati qui. (Correzione della verifica 2, M4: prima qui c'era `/__/firebase/init.json`, che risponde 404 anche quando tutto è a posto, perché esiste solo se sul progetto è acceso Firebase Hosting; l'accesso non ne ha bisogno.)
 6. Solo dopo: in `src/nuvola/nuvola.ts` la riga `const ACCESSO_DAL_DOMINIO = false;` diventa `true`, si ricostruisce (`npm run build:nuovo`) e si pubblica.
 
 ### Le regole di Firestore
