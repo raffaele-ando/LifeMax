@@ -373,6 +373,71 @@ const GIORNO = 86400000;
     ok('la sentinella senza sveglia ne ha di nuovo una', ns.istanze.get(h).sveglia !== null);
   }
 
+  /* ============================================== 14 */
+  console.log('\n14. VERIFICA 2: I MINORI (m2 cron a rotazione, m4 proxy di /__/auth, m5 due collegamenti insieme)');
+  {
+    /* m5: due schede collegano Google insieme; il browser ha i due biscotti */
+    const a1 = await chiedi('/api/calendari/google/inizia', { ritorno: SITO + '/' });
+    const a2 = await chiedi('/api/calendari/google/inizia', { ritorno: SITO + '/' });
+    const v1 = await chiedi(new URL(a1.j.url).pathname + new URL(a1.j.url).search);
+    const v2 = await chiedi(new URL(a2.j.url).pathname + new URL(a2.j.url).search);
+    const b1 = (v1.r.headers.get('set-cookie') || '').split(';')[0], b2 = (v2.r.headers.get('set-cookie') || '').split(';')[0];
+    const c1 = W.consenso(v1.r.headers.get('location'));
+    /* come un browser: un biscotto con lo stesso nome sostituisce il primo */
+    const barattolo = new Map();
+    [b1, b2].forEach((b) => { const i = b.indexOf('='); barattolo.set(b.slice(0, i), b.slice(i + 1)); });
+    const r1 = await chiedi(new URL(c1.url).pathname + new URL(c1.url).search, undefined, { biscotto: [...barattolo].map(([k, v]) => k + '=' + v).join('; ') });
+    ok('m5 due collegamenti insieme: il primo non dice «altro browser»', !/altro-browser/.test(r1.r.headers.get('location') || ''), r1.r.headers.get('location'));
+
+    /* m4: il proxy dell'accesso non porta fuori biscotti e credenziali, e
+       non riporta l'HSTS di Google */
+    const vero = globalThis.fetch;
+    let uscite = null;
+    globalThis.fetch = async (url, o) => {
+      const u = typeof url === 'string' ? url : url.url;
+      if (/firebaseapp\.com\/__\/auth\//.test(u)) {
+        uscite = new Headers(o && o.headers);
+        return new Response('<html>handler</html>', { status: 200, headers: { 'Content-Type': 'text/html', 'Set-Cookie': 'g=1; Path=/', 'Strict-Transport-Security': 'max-age=31536000; includeSubDomains; preload' } });
+      }
+      return vero(url, o);
+    };
+    const rh = await worker.fetch(new Request(SITO + '/__/auth/handler?x=1', { headers: { Cookie: 'lmcal_google=segreto; altro=1', Authorization: 'Bearer abc' } }), env, { waitUntil() {} });
+    globalThis.fetch = vero;
+    ok('m4 /__/auth risponde con la pagina di Firebase', rh.status === 200 && /handler/.test(await rh.text()));
+    ok('m4 verso Firebase non escono i biscotti né l’Authorization del nostro dominio', !!uscite && !uscite.get('cookie') && !uscite.get('authorization'), uscite && JSON.stringify([...uscite]));
+    ok('m4 indietro non tornano i biscotti di Firebase né l’HSTS «includeSubDomains; preload»', !rh.headers.get('set-cookie') && !rh.headers.get('strict-transport-security'));
+
+    /* m2: 45 sentinelle con la sveglia persa: in due ore il cron le
+       rimette tutte, non sempre le stesse quaranta */
+    const hh = [];
+    for (let i = 0; i < 45; i++) {
+      const g = gettone('folla-' + i);
+      await collega('google', { gettone: g });
+      hh.push(ns.idFromName('folla-' + i).toString());
+    }
+    for (const [, s] of ns.istanze) s.sveglia = null;
+    const veroAdesso = Date.now;
+    const ora0 = Math.floor(veroAdesso() / 3600000) * 3600000;
+    for (let k = 0; k < 2; k++) {
+      Date.now = () => ora0 + k * 3600000 + 60000;
+      await worker.scheduled({}, env, { waitUntil: (p) => p });
+      await new Promise((r) => setTimeout(r, 50));
+    }
+    Date.now = veroAdesso;
+    const senza = hh.filter((h) => !ns.istanze.get(h) || ns.istanze.get(h).sveglia === null).length;
+    ok('m2 45 sveglie perse: in due giri del cron ripartono tutte', senza === 0, senza + ' ancora senza sveglia');
+
+    /* m3: chi ha il permesso ritirato non fa svegliare la sua sentinella
+       ogni dieci minuti per sempre */
+    const g3 = gettone('ritirato-m3');
+    await collega('google', { gettone: g3 });
+    const h3 = ns.idFromName('ritirato-m3').toString();
+    ns.istanze.get(h3).db.prepare("UPDATE conti SET stato = 'revocato'").run();
+    ns.istanze.get(h3).sveglia = 1;
+    await ns.suona(true);
+    ok('m3 permesso ritirato: dopo il giro la sentinella non si rimette la sveglia', ns.istanze.get(h3).sveglia === null, ns.istanze.get(h3).sveglia);
+  }
+
   console.log(guai ? '\n>>> ' + guai + (guai === 1 ? ' PROBLEMA' : ' PROBLEMI') : '\n>>> TUTTO A POSTO');
   process.exit(guai ? 1 : 0);
 })().catch((e) => { console.error(e); process.exit(1); });

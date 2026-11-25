@@ -129,6 +129,14 @@ export class Sentinella {
     await this.ritentaCoda();
     this.pota();
     this.dopoNovita(cambiati);
+    /* NESSUN CONTO VIVO, NIENTE SVEGLIA (verifica 2, m3). Prima ci si
+       risvegliava ogni dieci minuti per sempre anche per chi aveva il
+       permesso ritirato o scaduto. Con un «Ricollega» il conto torna «ok» e
+       la sveglia si rimette (vedi `conferma`); una modifica in coda ne
+       rimette una da sé (vedi `scrivi`). */
+    const vivi = this.uno('SELECT COUNT(*) AS n FROM conti WHERE stato = ?', 'ok');
+    const inCoda = this.uno('SELECT COUNT(*) AS n FROM coda WHERE stato = ?', 'attesa');
+    if ((!vivi || !vivi.n) && (!inCoda || !inCoda.n)) return;
     await this.state.storage.setAlarm(Date.now() + GIRO_MS + Math.floor(Math.random() * 60000));
   }
 

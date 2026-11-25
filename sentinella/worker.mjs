@@ -69,6 +69,10 @@ function pagina(cfg, testo) {
   { status: 400, headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' } });
 }
 
+/* il nome del biscotto del legame porta un pezzo dello `state`: due
+   collegamenti iniziati insieme (due schede) hanno due biscotti, e il
+   secondo non cancella il primo (verifica 2, m5) */
+function segno(stato) { return String(stato || '').split('.').pop().replace(/[^A-Za-z0-9_-]/g, '').slice(-12); }
 function biscotto(req, p) {
   const m = new RegExp('(?:^|;\\s*)lmcal_' + p + '=([^;]*)').exec(req.headers.get('Cookie') || '');
   return m ? m[1] : '';
@@ -107,10 +111,10 @@ async function api(req, env) {
     const h = stato.split('.')[0] || '';
     let id;
     try { id = env.SENTINELLA.idFromString(h); } catch { return pagina(cfg, 'Questo collegamento non è valido o è scaduto.'); }
-    const r = await alDO(env, id, 'ritorno', '', { p: p, stato: stato, codice: u.searchParams.get('code') || '', errore: u.searchParams.get('error') || '', legame: biscotto(req, p) });
+    const r = await alDO(env, id, 'ritorno', '', { p: p, stato: stato, codice: u.searchParams.get('code') || '', errore: u.searchParams.get('error') || '', legame: biscotto(req, p + '_' + segno(stato)) || biscotto(req, p) });
     const dove = (r.j && r.j.ritorno) || cfg.ritorni[0];
     const testa = new Headers({ Location: aggiungi(dove, { lmcal: p, esito: (r.j && r.j.esito) || 'errore' }), 'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer' });
-    testa.append('Set-Cookie', 'lmcal_' + p + '=; Path=/api/calendari/; Max-Age=0; HttpOnly; Secure; SameSite=Lax');
+    testa.append('Set-Cookie', 'lmcal_' + p + '_' + segno(stato) + '=; Path=/api/calendari/; Max-Age=0; HttpOnly; Secure; SameSite=Lax');
     /* il segreto della conferma resta in QUESTO browser, e da qui non esce:
        l'app lo manda indietro (da sola, è un biscotto) insieme al suo
        gettone, e solo allora il permesso diventa suo (vedi `conferma` in
@@ -130,7 +134,7 @@ async function api(req, env) {
     const r = await alDO(env, id, 'vai', '', { p: p, stato: stato });
     if (!r.j || !r.j.url) return pagina(cfg, 'Questo collegamento è scaduto o è già stato usato: ricomincia da LifeMax.');
     return new Response(null, { status: 302, headers: { Location: r.j.url, 'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer',
-      'Set-Cookie': 'lmcal_' + p + '=' + r.j.legame + '; Path=/api/calendari/; Max-Age=600; HttpOnly; Secure; SameSite=Lax' } });
+      'Set-Cookie': 'lmcal_' + p + '_' + segno(stato) + '=' + r.j.legame + '; Path=/api/calendari/; Max-Age=600; HttpOnly; Secure; SameSite=Lax' } });
   }
 
   if (req.method !== 'POST') return json(cfg, req, { errore: 'metodo' }, 405);
@@ -180,13 +184,23 @@ export async function accessoFirebase(req) {
   const verso = FIREBASE_AUTH + u.pathname + u.search;
   const h = new Headers(req.headers);
   h.delete('host');
+  /* i biscotti e le credenziali di lifemax.theproject.world non sono di
+     Firebase: non escono (verifica 2, m4). Oggi i biscotti di LifeMax stanno
+     solo su /api/calendari/, ma uno futuro su «/» uscirebbe verso Google. */
+  h.delete('cookie');
+  h.delete('authorization');
   const metodo = req.method || 'GET';
   const r = await fetch(verso, {
     method: metodo, headers: h, redirect: 'manual',
     body: (metodo === 'GET' || metodo === 'HEAD') ? undefined : await req.arrayBuffer()
   });
-  /* la risposta torna com'è: intestazioni comprese (anche i biscotti) */
-  return new Response(r.body, { status: r.status, statusText: r.statusText, headers: r.headers });
+  /* la risposta torna com'è, tranne due intestazioni che parlerebbero per
+     tutto il nostro dominio: i biscotti di Firebase (non tornerebbero
+     comunque: vedi sopra) e l'HSTS «includeSubDomains; preload» di Google */
+  const out = new Headers(r.headers);
+  out.delete('set-cookie');
+  out.delete('strict-transport-security');
+  return new Response(r.body, { status: r.status, statusText: r.statusText, headers: out });
 }
 
 export default {
@@ -212,7 +226,14 @@ export default {
     const lavoro = (async function () {
       const el = await alDO(env, env.SENTINELLA.idFromName('__elenco'), 'elenco/lista', '', {});
       const tutte = (el.j && el.j.h) || [];
-      for (const h of tutte.slice(0, 40)) {
+      /* quaranta per ora, A ROTAZIONE (verifica 2, m2): prima erano sempre
+         le prime quaranta, e dalla quarantunesima in poi una sveglia persa
+         restava persa */
+      const quante = Math.min(40, tutte.length);
+      const da = tutte.length ? (Math.floor(Date.now() / 3600000) * 40) % tutte.length : 0;
+      const turno = [];
+      for (let i = 0; i < quante; i++) turno.push(tutte[(da + i) % tutte.length]);
+      for (const h of turno) {
         try { await alDO(env, env.SENTINELLA.idFromString(h), 'sveglia', '', {}); } catch { /* la prossima volta */ }
       }
     })();
