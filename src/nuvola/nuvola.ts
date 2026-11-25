@@ -533,7 +533,7 @@ function sessioneFinita(proprietario: string): void {
      soltanto: torna quando quell'account rientra qui */
   if (leggi(SOSPESO) === proprietario) window.LM.mettiDaParte(proprietario);
   togli(CHI); togli(SOSPESO);
-  window.LM.lasciaAccount();
+  window.LM.lasciaAccount(proprietario);
   sporco = false;
   fette.clear(); orfani = null; revNota = 0;
   window.dispatchEvent(new CustomEvent('lm:sessione-finita'));
@@ -564,7 +564,7 @@ async function esci(): Promise<EsitoUscita> {
   /* prima si dice alle altre schede che l'account non c'è più (smettono di
      sincronizzare), poi si svuota il dispositivo */
   togli(CHI); togli(SOSPESO);
-  window.LM.lasciaAccount();
+  window.LM.lasciaAccount(chi ? chi.uid : '');
   sporco = false;
   fette.clear(); orfani = null; revNota = 0;
   emitAuth(); emitSync('idle');
@@ -652,8 +652,8 @@ async function primaSincronizzazione(uid: string): Promise<void> {
   if (proprietario && proprietario !== uid) {
     log('avviso', 'qui c’erano i dati di un altro account: li tolgo prima di entrare');
     if (leggi(SOSPESO) === proprietario) window.LM.mettiDaParte(proprietario);
-    window.LM.lasciaAccount();
     togli(CHI); togli(SOSPESO);
+    window.LM.lasciaAccount(proprietario);
   }
   let giaUnito = leggi(CHI) === uid;
   /* QUI C'È L'ESEMPIO: CONTA SOLO L'ACCOUNT. L'esempio va in un backup di

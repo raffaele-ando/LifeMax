@@ -105,6 +105,71 @@ const { ok, guai } = em.conto();
       ok('1 Luigi entra nella scheda 1: niente di Mario nel suo account', !!cl && !(cl.azioni || []).some((a) => /Mario/.test(a.testo)), cl && (cl.azioni || []).map((a) => a.testo));
       await T1.ctx.close();
     }
+    /* -------------------- verifica 2, C1: il dispositivo condiviso e i backup */
+    {
+      await N.pulisci();
+      const P = await B.dispositivo('pc-condiviso');
+      await B.accedi(P, 'mario', 'mario@prova.it');
+      /* un calendario «della sentinella» e un permesso della strada del browser,
+         come li lascerebbe l'app collegata */
+      await P.evaluate(() => {
+        LM.aggiungiAzione('PRIVATO-MARIO visita', null);
+        const s = LM.load(); s.profilo.nome = 'PRIVATO-MARIO Rossi'; LM.save();
+        LM.backup('prima-import');
+        localStorage.setItem('lifemax.calendari.specchio', JSON.stringify({ uid: 'mario', ev: { x: { t: 'PRIVATO-MARIO riunione' } } }));
+        localStorage.setItem('lifemax.calendari.google', JSON.stringify({ t: 'PRIVATO-MARIO-token', s: Date.now() + 3600e3 }));
+      });
+      await B.calma(P, 1500);
+      await P.evaluate(() => window.LMCloud.signOut()); await P.waitForTimeout(1500);
+      const dopo = await P.evaluate(() => ({
+        copie: LM.listBackups().length,
+        chiavi: Object.keys(localStorage).filter((k) => (localStorage.getItem(k) || '').indexOf('PRIVATO-MARIO') >= 0)
+      }));
+      ok('C1 dopo «Esci», l’ospite non vede nessuna copia di Mario in «Backup e ripristino»', dopo.copie === 0, dopo.copie);
+      ok('C1 …e nel browser non resta niente di Mario (backup, punti a cui tornare, calendario, permessi)', dopo.chiavi.length === 0, dopo.chiavi);
+      /* dall'interfaccia, come nella verifica: il pannello */
+      const pannello = await P.evaluate(async () => {
+        const { apriBackups } = window.LM_APP || {};
+        void apriBackups;
+        return LM.listBackups().map((b) => b.motivo);
+      });
+      ok('C1 il pannello non ha righe da ripristinare', !pannello.length, pannello);
+      /* entra Luigi: niente di Mario nel suo account */
+      await B.accedi(P, 'luigi', 'luigi@prova.it'); await B.calma(P, 1500);
+      const cl = await N.stato(await B.uidDi(P));
+      ok('C1 Luigi entra sullo stesso browser: niente di Mario nel suo account', !!cl && !JSON.stringify(cl).includes('PRIVATO-MARIO'), cl && (cl.azioni || []).map((a) => a.testo));
+      const luigi = await P.evaluate(() => ({ copie: LM.listBackups().length, prova: (() => { const b = JSON.parse(localStorage.getItem('lifemax.backups.v1') || '[]'); return b.length; })() }));
+      ok('C1 Luigi non vede copie di nessun altro', luigi.copie === 0, luigi);
+      /* la sessione chiusa dal server, con una copia di sicurezza di prima */
+      await P.evaluate(() => { LM.aggiungiAzione('PRIVATO-LUIGI conto', null); LM.backup('prima-import'); });
+      await B.calma(P, 1500);
+      await N.disabilita(await B.uidDi(P));
+      await P.evaluate(() => window.__auth.currentUser.getIdToken(true).catch((e) => e.code));
+      await P.waitForTimeout(2500);
+      await P.evaluate(() => document.querySelectorAll('.avviso-ovl .avv-no').forEach((x) => x.click()));
+      const fine = await P.evaluate(() => ({ copie: LM.listBackups().length, chiavi: Object.keys(localStorage).filter((k) => (localStorage.getItem(k) || '').indexOf('PRIVATO-LUIGI') >= 0) }));
+      ok('C1 sessione chiusa dal server: nessuna copia di Luigi a vista, niente di Luigi nel browser', fine.copie === 0 && fine.chiavi.length === 0, fine);
+      /* le copie di PRIMA, senza proprietario: quelle prese uscendo se ne vanno */
+      const vecchie = await P.evaluate(() => {
+        const st = JSON.stringify({ azioni: [{ id: 'z', testo: 'PRIVATO-VECCHIO' }] });
+        localStorage.setItem('lifemax.backups.v1', JSON.stringify([
+          { ts: 1, motivo: 'uscita-dall-account', data: st },
+          { ts: 2, motivo: 'prima-import', data: st }
+        ]));
+        return { viste: LM.listBackups().length, restano: JSON.parse(localStorage.getItem('lifemax.backups.v1') || '[]').length };
+      });
+      ok('C1 le copie di prima senza proprietario, su un dispositivo che è passato da un account: non si vedono e se ne vanno', vecchie.viste === 0 && vecchie.restano === 0, vecchie);
+      await P.ctx.close();
+      /* un dispositivo che non è mai stato di un account: le sue copie restano sue */
+      const Q = await B.dispositivo('solo-ospite');
+      const ospite = await Q.evaluate(() => {
+        localStorage.removeItem('lifemax.generazione');
+        localStorage.setItem('lifemax.backups.v1', JSON.stringify([{ ts: 5, motivo: 'prima-import', data: JSON.stringify(LM.snapshot()) }]));
+        return LM.listBackups().length;
+      });
+      ok('C1 su un dispositivo usato sempre senza account, le copie di prima restano dell’ospite', ospite === 1, ospite);
+      await Q.ctx.close();
+    }
     /* ------------------------------------------------- 9. «Esci» senza rete */
     {
       await N.pulisci();

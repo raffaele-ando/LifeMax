@@ -110,7 +110,11 @@ function creaLM() {
   interface PuntoRitorno { id: string; da: number; fino: number }
 
   /* una copia di sicurezza locale: quando, perché, e lo stato per intero */
-  interface CopiaSalvata { ts: number; motivo: string; data: string }
+  /* `chi`: di chi sono i dati della copia — l'uid dell'account collegato
+     quando è stata presa, o '' per chi usa l'app senza account (vedi
+     `proprietario`). Le copie senza `chi` sono quelle di prima della verifica
+     del 25 novembre 2026 (vedi `sistemaCopieSenzaProprietario`). */
+  interface CopiaSalvata { ts: number; motivo: string; data: string; chi?: string }
 
   /* quello che si può dire in più mettendo giù un'azione. Tutto facoltativo:
      la strada normale è scrivere il testo e basta, e ogni campo qui è una
@@ -1640,6 +1644,48 @@ function creaLM() {
   function leggiBackups(): CopiaSalvata[] {
     try { return (JSON.parse(String(localStorage.getItem(BACKUP_KEY))) || []) as CopiaSalvata[]; } catch (e) { return []; }
   }
+  /* DI CHI SONO I DATI ADESSO: l'account a cui il dispositivo è unito (lo
+     scrive la nuvola in `lm-account-unito`), o '' per l'ospite. */
+  var CHI_KEY = 'lm-account-unito';
+  function proprietario(): string {
+    try { return localStorage.getItem(CHI_KEY) || ''; } catch (e) { return ''; }
+  }
+  /* LE COPIE DI SICUREZZA HANNO UN PROPRIETARIO (verifica del 25 novembre
+     2026, problema C1). Prima le vedeva e le ripristinava chiunque usasse
+     quel browser: Mario esce, Luigi apre «Backup e ripristino», trova la copia
+     «all'uscita dall'account», la ripristina, e i dati di Mario finiscono
+     nell'account di Luigi. Adesso ognuno vede soltanto le sue.
+     Le copie di prima, senza proprietario, si sistemano una volta sola:
+       · quelle prese uscendo da un account o lasciando l'esempio per entrare
+         in uno («uscita-dall-account», «prima-di-entrare-nell-account»)
+         sono esattamente la fuga: si buttano;
+       · su un dispositivo che oggi è di un account, le altre si danno a lui;
+       · su un dispositivo che non ha mai lasciato un account (nessuna
+         «generazione»: vedi GEN_KEY) sono dell'ospite che lo usa da sempre;
+       · le altre non si possono attribuire, e si buttano. Sono solo copie:
+         i dati veri restano dove sono. */
+  var COPIE_DI_USCITA: Record<string, 1> = { 'uscita-dall-account': 1, 'prima-di-entrare-nell-account': 1 };
+  function sistemaCopieSenzaProprietario(): void {
+    var arr = leggiBackups();
+    if (!arr.some(function (b) { return b && typeof b.chi !== 'string'; })) return;
+    var chi = proprietario();
+    var maiUscito = !leggiGenerazione();
+    var resta: CopiaSalvata[] = [];
+    arr.forEach(function (b) {
+      if (!b) return;
+      if (typeof b.chi === 'string') { resta.push(b); return; }
+      if (COPIE_DI_USCITA[b.motivo]) return;
+      if (chi) { b.chi = chi; resta.push(b); return; }
+      if (maiUscito) { b.chi = ''; resta.push(b); return; }
+    });
+    scriviBackups(resta);
+    if (window.LMLog) window.LMLog.add('info', 'dati', 'copie di sicurezza di prima sistemate', (arr.length - resta.length) + ' tolte, ' + resta.length + ' restano');
+  }
+  function mie(): CopiaSalvata[] {
+    sistemaCopieSenzaProprietario();
+    var chi = proprietario();
+    return leggiBackups().filter(function (b) { return b && (b.chi || '') === chi; });
+  }
   function scriviBackups(arr: CopiaSalvata[]) {
     try { localStorage.setItem(BACKUP_KEY, JSON.stringify(arr)); } catch (e) { /* quota */ }
   }
@@ -1647,20 +1693,23 @@ function creaLM() {
     var raw;
     try { raw = localStorage.getItem(STORAGE_KEY); } catch (e) { raw = null; }
     if (!raw) { try { raw = JSON.stringify(load()); } catch (e) { return; } }
+    sistemaCopieSenzaProprietario();
     var arr = leggiBackups();
+    var chi = proprietario();
     var ultima = arr[0];
-    if (ultima && ultima.data === raw) return; // niente duplicati consecutivi
-    arr.unshift({ ts: Date.now(), motivo: motivo || '', data: raw });
+    if (ultima && ultima.data === raw && (ultima.chi || '') === chi) return; // niente duplicati consecutivi
+    arr.unshift({ ts: Date.now(), motivo: motivo || '', data: raw, chi: chi });
     if (arr.length > 25) arr = arr.slice(0, 25);
     scriviBackups(arr);
   }
   function listBackups() {
-    return leggiBackups().map(function (b) {
+    return mie().map(function (b) {
       return { ts: b.ts, motivo: b.motivo, ricchezza: ricchezza(safeParse(b.data)) };
     });
   }
   function restoreBackup(ts: number) {
-    var b = leggiBackups().find(function (x) { return x.ts === ts; });
+    /* solo una copia di chi c'è adesso: una copia di un altro non si rimette */
+    var b = mie().find(function (x) { return x.ts === ts; });
     if (!b) return false;
     backup('prima-del-ripristino');
     scordaPunti();
@@ -4463,9 +4512,18 @@ function creaLM() {
      niente lapidi, solo l'aspetto scelto e il benvenuto già fatto. È lo
      stato da cui si riparte quando si esce da un account o si lascia
      l'esempio per entrare in uno: quello che c'era prima va nei backup. */
-  function pulito(perche: string): void {
+  /* `uscente`: l'account che se ne va. Uscendo da un account NON si prende
+     una copia di sicurezza dei suoi dati (stanno nel cloud, e quello che non
+     c'era ancora va in `mettiDaParte`, che è per account): era proprio quella
+     copia, lasciata nel browser, la porta della fuga C1. E le sue copie di
+     prima se ne vanno con lui. */
+  function pulito(perche: string, uscente?: string): void {
     var prima = load();
-    backup(perche);
+    if (uscente === undefined) backup(perche);
+    else {
+      sistemaCopieSenzaProprietario();
+      if (uscente) scriviBackups(leggiBackups().filter(function (b) { return b && b.chi !== uscente; }));
+    }
     scordaPunti();
     var nuovo = statoVuoto();
     nuovo.onboarded = true;
@@ -4477,6 +4535,19 @@ function creaLM() {
        è più di questo dispositivo (vedi GEN_KEY) */
     nuovaGenerazione();
     senzaLapidi++; save(); senzaLapidi--;
+    /* il salvataggio qui sopra ha lasciato un «punto a cui tornare» con i
+       dati di prima: via anche quello */
+    scordaPunti();
+    if (uscente !== undefined) {
+      /* E QUELLO CHE I CALENDARI TENEVANO PER QUELL'ACCOUNT: la copia del
+         calendario della sentinella (titoli e orari fino a un anno avanti) e i
+         permessi della strada del browser. Restavano nel browser dopo «Esci»
+         (verifica del 25 novembre 2026, C1 e M3). */
+      ['lifemax.calendari.specchio', 'lifemax.calendari.google', 'lifemax.calendari.microsoft',
+       'lifemax.calendari.microsoft.attesa', 'lifemax.calendari.qui', 'lifemax.calendari.ritorno'].forEach(function (k) {
+        try { localStorage.removeItem(k); } catch (e) { /* niente */ }
+      });
+    }
   }
   /* entrando in un account: se qui c'è l'esempio, si mette da parte tutto */
   function lasciaEsempio(giaUnito?: boolean): boolean {
@@ -4487,7 +4558,7 @@ function creaLM() {
     pulito('prima-di-entrare-nell-account');
     return true;
   }
-  function lasciaAccount(): void { pulito('uscita-dall-account'); }
+  function lasciaAccount(uid?: string): void { pulito('uscita-dall-account', uid || ''); }
 
   /* UNA COPIA DA PARTE PER UN ACCOUNT, quando si esce senza che il cloud
      abbia ancora tutto: «Esci» senza rete, o la sessione chiusa da Firebase
