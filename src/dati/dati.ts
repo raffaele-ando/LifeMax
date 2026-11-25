@@ -4493,9 +4493,19 @@ function creaLM() {
        Quel taglio voleva dire «via quello che avevo qui», e qui non c'era
        niente dell'account: applicato alla fusione, cancellava tutti i dati
        veri dell'altro dispositivo (ed è quello che succedeva). */
-  function primaUnione(): void {
+  function primaUnione(uid?: string): void {
     var st = load();
     var cambiato = false;
+    /* i dati dell'ospite entrano adesso in questo account: con loro le sue
+       copie di sicurezza, che contengono le stesse cose (prima di C1 si
+       vedevano sempre tutte; adesso sono dell'account in cui sono entrati i
+       loro dati, e di nessun altro) */
+    if (uid) {
+      sistemaCopieSenzaProprietario();
+      var copie = leggiBackups(), passate = false;
+      copie.forEach(function (b) { if (b && (b.chi || '') === '') { b.chi = uid; passate = true; } });
+      if (passate) scriviBackups(copie);
+    }
     if (st.esempio) { togliEsempioDa(st, false); cambiato = true; }
     if (st.azzerato) { st.azzerato = 0; cambiato = true; }
     /* le cancellazioni fatte qui da ospite riguardavano righe di qui: nel

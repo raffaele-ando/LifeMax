@@ -661,7 +661,7 @@ async function primaSincronizzazione(uid: string): Promise<void> {
   const eraEsempio = window.LM.lasciaEsempio(giaUnito);
   if (eraEsempio) log('info', 'qui c’erano i dati di esempio', 'messi da parte: conta solo l’account');
   else if (!giaUnito) {
-    window.LM.primaUnione();
+    window.LM.primaUnione(uid);
     log('info', 'prima unione da questo dispositivo', 'esempio tenuto fuori, azzeramento locale non applicato al cloud');
   }
   /* quello che era rimasto da parte per questo account (un'uscita senza
