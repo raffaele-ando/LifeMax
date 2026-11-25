@@ -149,7 +149,11 @@ export interface AccountCalendario {
    i dati di esempio», un backup ripristinato — e nessuna di quelle vuol
    dire «cancella la riunione di martedì su Google». Questo sì, e lo scrive
    soltanto chi elimina un'attività a mano. */
-export interface Tolto { prov: Provenienza; cal: string; id: string; ts: number; fatto?: boolean }
+/* `rifiuti`: quante volte il calendario ha detto di no alla cancellazione
+   (un no vero, non «manca la rete»), contate a distanza di almeno dieci
+   minuti l'una dall'altra (`rifiutoTs` è l'ultima): alla terza si lascia
+   stare, e il Diario lo dice */
+export interface Tolto { prov: Provenienza; cal: string; id: string; ts: number; fatto?: boolean; rifiuti?: number; rifiutoTs?: number }
 
 export interface EsitoCalendari {
   ts: number;

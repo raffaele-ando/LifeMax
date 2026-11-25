@@ -41,6 +41,7 @@ export const DOPO_MS = 400 * 86400000;      /* e avanti più di un anno */
 const PIENO_MS = 24 * 3600000;              /* una lettura completa al giorno (la finestra scorre) */
 const FRESCO_MS = 2 * 60000;                /* aprendo l'app: si rilegge se l'ultima è più vecchia */
 const ATTESA_MS = 10 * 60000;               /* un collegamento iniziato vale dieci minuti */
+const FALLITO_MS = 10 * 60000;              /* un rifiuto definitivo si ricorda dieci minuti, poi si può riprovare */
 const LAPIDI_MS = 30 * 86400000;            /* i «cancellato» si ricordano un mese */
 
 function json(o, stato) {
@@ -265,10 +266,21 @@ export class Sentinella {
     if (!riga) throw new Errore('token', 'non collegato');
     if (riga.stato === 'revocato') throw new Errore('revocato', 'permesso ritirato');
     const uid = this.meta('uid');
-    if (!forza && riga.at && riga.at_scade > Date.now() + 60000) return decifra(this.cfg.chiave, riga.at, uid + '|' + p + '|at');
+    /* UN PERMESSO CHE NON SI DECIFRA PIÙ (la chiave del server è cambiata,
+       verifica 2, M2) è un permesso perso: si dice «revocato», così l'app
+       chiede «Ricollega», invece di un errore generico che lasciava il
+       pannello su «Collegato» e intanto non funzionava niente */
+    const apri = async (scatola, aad) => {
+      try { return await decifra(this.cfg.chiave, scatola, aad); }
+      catch {
+        this.q('UPDATE conti SET stato = ? WHERE p = ?', 'revocato', p);
+        throw new Errore('revocato', 'permesso illeggibile');
+      }
+    };
+    if (!forza && riga.at && riga.at_scade > Date.now() + 60000) return apri(riga.at, uid + '|' + p + '|at');
     if (this.rinnovi.has(p)) return this.rinnovi.get(p);
     const lavoro = (async () => {
-      const rt = await decifra(this.cfg.chiave, riga.rt, uid + '|' + p + '|rt');
+      const rt = await apri(riga.rt, uid + '|' + p + '|rt');
       let t;
       try { t = await FORNITORI[p].rinnova(this.cfg[p], rt); }
       catch (e) {
@@ -391,6 +403,7 @@ export class Sentinella {
     }
     this.setMeta('potato', potato);
     this.q('DELETE FROM coda WHERE stato = ? AND ts < ?', 'fatto', Date.now() - 7 * 86400000);
+    this.q('DELETE FROM coda WHERE stato = ? AND ts < ?', 'fallito', Date.now() - 7 * 86400000);
     this.q('DELETE FROM attese WHERE scade < ?', Date.now());
   }
 
@@ -482,8 +495,18 @@ export class Sentinella {
   }
 
   async esegui(op) {
-    const riga = this.uno('SELECT stato, esito FROM coda WHERE k = ?', op.k);
+    const riga = this.uno('SELECT stato, esito, ts FROM coda WHERE k = ?', op.k);
     if (riga && riga.stato === 'fatto') return JSON.parse(riga.esito);
+    /* UN RIFIUTO NON È PER SEMPRE (verifica 2, G2). Prima un fallimento
+       definitivo si ricordava come «fatto» per sette giorni: chi riprovava la
+       stessa modifica riceveva lo stesso no, e nell'app quel no fermava tutto
+       il calendario. Adesso il rifiuto si ricorda dieci minuti (così chi
+       riprova subito non martella il calendario), poi la modifica si può
+       riprovare: un no di una volta sola non diventa per sempre. */
+    if (riga && riga.stato === 'fallito') {
+      if ((riga.ts || 0) > Date.now() - FALLITO_MS) return JSON.parse(riga.esito);
+      this.q('UPDATE coda SET stato = ?, tent = 0, prossimo = 0, j = ? WHERE k = ?', 'attesa', JSON.stringify(op), op.k);
+    }
     if (this.inVolo.has(op.k)) return this.inVolo.get(op.k);
     if (!riga) this.q('INSERT INTO coda (k, p, j, stato, tent, prossimo, esito, ts) VALUES (?, ?, ?, ?, 0, 0, NULL, ?)', op.k, op.p, JSON.stringify(op), 'attesa', Date.now());
     const lavoro = this.fai(op).finally(() => { this.inVolo.delete(op.k); });
@@ -503,15 +526,17 @@ export class Sentinella {
         const r = this.uno('SELECT tent FROM coda WHERE k = ?', op.k);
         const tent = (r ? r.tent : 0) + 1;
         if (tent >= 20) {
-          const esito = { ok: false, tipo: 'altro' };
-          this.q('UPDATE coda SET stato = ?, esito = ?, ts = ? WHERE k = ?', 'fatto', JSON.stringify(esito), Date.now(), op.k);
+          const esito = { ok: false, tipo: 'altro', definitivo: true };
+          this.q('UPDATE coda SET stato = ?, esito = ?, ts = ? WHERE k = ?', 'fallito', JSON.stringify(esito), Date.now(), op.k);
           return esito;
         }
         this.q('UPDATE coda SET tent = ?, prossimo = ? WHERE k = ?', tent, Date.now() + Math.min(60000 * Math.pow(2, tent), 6 * 3600000), op.k);
         return { ok: false, tipo: tipo === 'revocato' ? 'token' : tipo };
       }
-      const esito = { ok: false, tipo: tipo === 'esiste' ? 'altro' : tipo };
-      this.q('UPDATE coda SET stato = ?, esito = ?, ts = ? WHERE k = ?', 'fatto', JSON.stringify(esito), Date.now(), op.k);
+      const esito = { ok: false, tipo: tipo === 'esiste' ? 'altro' : tipo, definitivo: true };
+      /* «sparito» e «permesso» sono risposte vere e restano; un rifiuto
+         qualunque si parcheggia (vedi `esegui`) */
+      this.q('UPDATE coda SET stato = ?, esito = ?, ts = ? WHERE k = ?', (tipo === 'sparito' || tipo === 'permesso') ? 'fatto' : 'fallito', JSON.stringify(esito), Date.now(), op.k);
       return esito;
     }
   }

@@ -233,9 +233,26 @@ type Op =
   | { t: 'sparito'; id: string }
   | { t: 'collega'; id: string; esterno: Esterno; ev: EventoRemoto }
   | { t: 'tolto'; id: string }
-  | { t: 'lettura'; prov: Provenienza; cal: string };
+  | { t: 'lettura'; prov: Provenienza; cal: string }
+  | { t: 'rifiutato'; prov: Provenienza; testo: string; cosa: 'cancellazione' | 'modifica' | 'creazione'; tolto?: string };
 
-interface Conto { nuove: number; aggiornate: number; spedite: number; tolte: number; conflitti: number }
+interface Conto { nuove: number; aggiornate: number; spedite: number; tolte: number; conflitti: number; rifiutate: number }
+
+/* UN NO SU UNA RIGA NON FERMA LE ALTRE (verifica del 25 novembre 2026, G2).
+   Prima un errore «vero» (non la rete, non il permesso: un 400, un 500 che
+   resta, la sentinella che non riesce più a leggere il permesso) su UNA
+   cancellazione o UNA modifica faceva saltare tutto il giro di quel
+   fornitore: niente eventi nuovi, niente spostamenti, per giorni — e il
+   pannello diceva «Tutto allineato». Adesso quella riga si conta fra le
+   «non accettate», il pannello lo dice, e il giro va avanti. La rete e il
+   permesso scaduto restano errori di tutto il giro: lì non c'è niente da
+   fare riga per riga. */
+const RIFIUTI_MAX = 3;
+const RIPROVA_MS = 10 * 60000;
+function rifiuto(e: unknown): boolean {
+  if (!(e instanceof ErroreCalendario)) return false;
+  return e.tipo === 'altro';
+}
 
 /* UN FORNITORE, TUTTO IL SUO GIRO. Legge, decide, spedisce — ma non tocca
    lo stato: raccoglie le operazioni, e le applica `applica` alla fine, tutte
@@ -266,7 +283,16 @@ async function giroDi(f: Fornitore, ops: Op[], conto: Conto): Promise<void> {
     const sc = acc.calendari[t.cal];
     if (!sc || !sc.lettura) {
       try { await f.togli(t.cal, t.id); conto.tolte++; }
-      catch (e) { if (!(e instanceof ErroreCalendario && e.tipo === 'permesso')) throw e; ops.push({ t: 'lettura', prov: p, cal: t.cal }); }
+      catch (e) {
+        if (rifiuto(e)) {
+          /* resta da fare: si riprova al giro dopo, fino a RIFIUTI_MAX */
+          ops.push({ t: 'rifiutato', prov: p, testo: '', cosa: 'cancellazione', tolto: idA });
+          conto.rifiutate++;
+          continue;
+        }
+        if (!(e instanceof ErroreCalendario && e.tipo === 'permesso')) throw e;
+        ops.push({ t: 'lettura', prov: p, cal: t.cal });
+      }
     }
     ops.push({ t: 'tolto', id: idA });
   }
@@ -320,7 +346,14 @@ async function giroDi(f: Fornitore, ops: Op[], conto: Conto): Promise<void> {
       if (x.esterno !== undefined || !x.ora || x.done || x.dopo || x.data < oggi || x.creata < daQuando) continue;
       const loc = campi(x);
       const tempo = tempoDaScrivere(loc, { testo: '', data: loc.data, ora: null, durata: null }, null);
-      const ev = await f.crea(cal, x.testo, tempo, p === 'google' ? chiaveGoogle(x.id) : x.id);
+      let ev: EventoRemoto;
+      try { ev = await f.crea(cal, x.testo, tempo, p === 'google' ? chiaveGoogle(x.id) : x.id); }
+      catch (e) {
+        if (!rifiuto(e)) throw e;
+        ops.push({ t: 'rifiutato', prov: p, testo: x.testo, cosa: 'creazione' });
+        conto.rifiutate++;
+        continue;
+      }
       ops.push({ t: 'collega', id: x.id, esterno: { prov: p, cal: cal, id: ev.id, istantanea: istDa(ev), invito: ev.invito || 'solo' }, ev: ev });
       conto.spedite++;
     }
@@ -374,12 +407,14 @@ async function confronta(f: Fornitore, az: Azione, ev: EventoRemoto, sc: Calenda
   } catch (e) {
     if (e instanceof ErroreCalendario && e.tipo === 'sparito') { ops.push({ t: 'sparito', id: az.id }); return; }
     if (e instanceof ErroreCalendario && e.tipo === 'permesso') { ops.push({ t: 'lettura', prov: est.prov, cal: est.cal }); return; }
+    if (rifiuto(e)) { ops.push({ t: 'rifiutato', prov: est.prov, testo: az.testo, cosa: 'modifica' }); conto.rifiutate++; return; }
     throw e;
   }
 }
 
 /* LE OPERAZIONI, TUTTE INSIEME, SULLO STATO DI ADESSO. Un salvataggio solo. */
 let applicando = false;
+const detti = new Set<string>();
 function applica(ops: Op[], nomeDi: (p: Provenienza) => string): boolean {
   if (!ops.length) return false;
   const s = LM.load();
@@ -428,6 +463,30 @@ function applica(ops: Op[], nomeDi: (p: Provenienza) => string): boolean {
       const c = s.profilo.calendari || (s.profilo.calendari = {});
       const t = (c.tolti || (c.tolti = {}))[op.id];
       if (t) t.fatto = true;
+    } else if (op.t === 'rifiutato') {
+      const nome = nomeDi(op.prov);
+      if (op.tolto) {
+        const c = s.profilo.calendari || (s.profilo.calendari = {});
+        const t = (c.tolti || (c.tolti = {}))[op.tolto];
+        if (!t || t.fatto) return;
+        /* lo stesso no ripetuto dalla sentinella entro dieci minuti è
+           sempre quello: si conta una volta */
+        if (t.rifiutoTs && ora - t.rifiutoTs < RIPROVA_MS) return;
+        t.rifiutoTs = ora;
+        t.rifiuti = (t.rifiuti || 0) + 1;
+        if (t.rifiuti >= RIFIUTI_MAX) {
+          t.fatto = true;
+          LM.registra('calendario', nome + ' non ha accettato ' + RIFIUTI_MAX + ' volte la cancellazione di un evento' +
+            (op.testo ? ' («' + op.testo + '»)' : '') + ': su ' + nome + ' resta, e se non serve più va tolto da lì.', true);
+        }
+        return;
+      }
+      /* una riga nel Diario una volta sola per sessione, non a ogni giro */
+      const k = op.prov + '|' + op.cosa + '|' + op.testo;
+      if (detti.has(k)) return;
+      detti.add(k);
+      LM.registra('calendario', nome + ' non ha accettato ' + (op.cosa === 'creazione' ? 'il nuovo evento' : 'la modifica') +
+        ' di «' + op.testo + '»: qui resta com’è, e riprovo più tardi.', true);
     } else if (op.t === 'lettura') {
       const c = s.profilo.calendari || (s.profilo.calendari = {});
       const sc = account(c, op.prov).calendari[op.cal];
@@ -454,7 +513,10 @@ function racconta(conto: Conto, intoppi: string[]): string {
   if (conto.aggiornate) pezzi.push(conto.aggiornate + (conto.aggiornate === 1 ? ' aggiornata' : ' aggiornate'));
   if (conto.spedite) pezzi.push(conto.spedite + (conto.spedite === 1 ? ' modifica mandata' : ' modifiche mandate') + ' al calendario');
   if (conto.tolte) pezzi.push(conto.tolte + (conto.tolte === 1 ? ' cancellata' : ' cancellate') + ' anche là');
-  let t = pezzi.length ? pezzi.join(', ') + '.' : 'Tutto allineato.';
+  if (conto.rifiutate) pezzi.push(conto.rifiutate + (conto.rifiutate === 1 ? ' modifica non accettata' : ' modifiche non accettate') + ' dal calendario (riprovo più tardi)');
+  /* «Tutto allineato» solo se è vero: con un intoppo o una modifica non
+     accettata non lo è (G2) */
+  let t = pezzi.length ? pezzi.join(', ') + '.' : (intoppi.length ? '' : 'Tutto allineato.');
   if (conto.conflitti) {
     t += ' ' + (conto.conflitti === 1 ? 'Una era cambiata' : conto.conflitti + ' erano cambiate') +
       ' da tutte e due le parti: ho tenuto la versione del calendario, e nel Diario c’è scritto quale.';
@@ -482,7 +544,7 @@ async function unGiro(perche: string): Promise<void> {
   if (!navigator.onLine) { pendente = true; return; }
   qui.inCorso = true; avvisa();
   const ops: Op[] = [];
-  const conto: Conto = { nuove: 0, aggiornate: 0, spedite: 0, tolte: 0, conflitti: 0 };
+  const conto: Conto = { nuove: 0, aggiornate: 0, spedite: 0, tolte: 0, conflitti: 0, rifiutate: 0 };
   const intoppi: string[] = [];
   const note: string[] = [];
   let rete = false, provati = 0;
@@ -549,7 +611,7 @@ async function unGiro(perche: string): Promise<void> {
     const s = LM.load();
     const c = s.profilo.calendari || (s.profilo.calendari = {});
     sfoltisci(c);
-    if (parlato) c.esito = { ts: Date.now(), ok: !intoppi.length, testo: racconta(conto, intoppi) };
+    if (parlato) c.esito = { ts: Date.now(), ok: !intoppi.length && !conto.rifiutate, testo: racconta(conto, intoppi) };
     LM.save();
   } finally { applicando = false; }
   ultimaFirma = firma();
