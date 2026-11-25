@@ -1,7 +1,4 @@
-/* IL SERVICE WORKER — serve solo ai promemoria.
-   Niente cache: un'app che si sta ancora cambiando ogni giorno, con una cache
-   di mezzo, ti mostra la versione di ieri e non capisci perché. Se un giorno
-   servirà l'offline si aggiunge qui, con un numero di versione.
+/* IL SERVICE WORKER — i promemoria, e l'app anche senza rete.
 
    Sta nella radice del sito perché uno service worker può controllare solo le
    pagine che stanno al suo livello o sotto. */
@@ -9,7 +6,120 @@
 /* appena installato prende servizio, senza aspettare la chiusura di tutte le
    schede: al primo caricamento vogliamo che i promemoria siano già attivi */
 self.addEventListener('install', (e) => self.skipWaiting());
-self.addEventListener('activate', (e) => e.waitUntil(self.clients.claim()));
+self.addEventListener('activate', (e) => e.waitUntil((async () => {
+  /* le cache di una forma vecchia di questo file non servono più */
+  const nomi = await caches.keys();
+  await Promise.all(nomi.filter((n) => n.indexOf('lifemax-') === 0 && n !== CASSA).map((n) => caches.delete(n)));
+  await self.clients.claim();
+  /* la pagina aperta adesso è arrivata prima di questo worker: la si chiede
+     una volta, così anche la prima apertura senza rete trova l'app */
+  try {
+    const r = await fetch(new URL(PAGINA, radice()), { cache: 'no-cache', credentials: 'same-origin' });
+    if (r.ok && r.type === 'basic') await riempi(r);
+  } catch (x) { /* senza rete adesso: ci si riprova alla prossima apertura */ }
+})()));
+
+/* L'APP SENZA RETE (verifica del 25 novembre 2026, G3).
+   Prima questo file non teneva niente, apposta: «un'app che si sta ancora
+   cambiando ogni giorno, con una cache di mezzo, ti mostra la versione di
+   ieri e non capisci perché». Il prezzo era che in metropolitana l'app non
+   si apriva affatto — col telefono pieno delle tue cose. Adesso tiene il
+   minimo, con due regole che rendono impossibile la «versione di ieri»:
+
+   · LA PAGINA (index.html) SEMPRE DALLA RETE. Quella in cassa si usa SOLO
+     se la rete non risponde proprio (non con un 404, non con un 500: quelli
+     vengono dal server, e il server è la verità). Con la rete, si apre
+     sempre la versione nuova; senza rete, l'ultima che si è aperta.
+   · I FILE DEL PACCO DALLA CASSA. Hanno l'impronta del contenuto nel nome
+     (index-BEkSn4cA.js): un nome è sempre lo stesso contenuto, quindi
+     tenerlo non può mai dare una versione sbagliata. Quando arriva una
+     pagina nuova, si mettono in cassa i suoi file (anche quelli che si
+     caricano dopo, come il cloud) e si buttano quelli che nessuna delle due
+     pagine più recenti nomina più.
+
+   Le chiamate al server (/api/, /__/) e tutto quello che sta su altri
+   indirizzi (Firebase, Google) non passano di qui: senza rete non avrebbero
+   senso, e una risposta vecchia di quelle sarebbe una bugia. */
+const CASSA = 'lifemax-app-1';
+const PAGINA = 'index.html';
+
+function radice() { return new URL('./', self.registration.scope); }
+function relativo(u) { const r = radice().href; return u.indexOf(r) === 0 ? u.slice(r.length) : null; }
+
+/* i file del pacco che una pagina (o un file del pacco) nomina */
+function nominati(testo, base) {
+  const out = new Set();
+  const re = base ? /["'`(]\.\/([\w.-]+\.(?:js|css))/g : /(pacco\/[\w.-]+\.(?:js|css))/g;
+  let m;
+  while ((m = re.exec(testo))) out.add(base ? base + m[1] : m[1]);
+  return out;
+}
+
+/* una pagina nuova è arrivata: in cassa lei e tutti i suoi file, e via quelli
+   che non servono più a nessuna delle due pagine più recenti */
+async function riempi(risposta) {
+  try {
+    const cassa = await caches.open(CASSA);
+    const testo = await risposta.clone().text();
+    const vecchia = await cassa.match(PAGINA);
+    const tieni = nominati(testo);
+    if (vecchia) nominati(await vecchia.text()).forEach((x) => tieni.add(x));
+    /* i file caricati dopo (import dinamici) li nomina il codice del pacco */
+    const daGuardare = Array.from(nominati(testo));
+    const visti = new Set();
+    while (daGuardare.length) {
+      const f = daGuardare.shift();
+      if (visti.has(f)) continue;
+      visti.add(f);
+      let r = await cassa.match(f);
+      if (!r) {
+        r = await fetch(new URL(f, radice()), { credentials: 'same-origin' }).catch(() => null);
+        if (!r || !r.ok) continue;
+        await cassa.put(f, r.clone());
+      }
+      tieni.add(f);
+      if (/\.js$/.test(f)) nominati(await r.text(), 'pacco/').forEach((x) => { tieni.add(x); if (!visti.has(x)) daGuardare.push(x); });
+    }
+    /* la pagina per ultima: in cassa c'è una pagina solo quando ci sono tutti
+       i suoi file */
+    await cassa.put(PAGINA, risposta);
+    for (const q of await cassa.keys()) {
+      const k = relativo(q.url);
+      if (k && /^pacco\//.test(k) && !tieni.has(k)) await cassa.delete(q);
+    }
+  } catch (x) { /* la cassa è un di più: se non riesce, l'app va lo stesso */ }
+}
+
+self.addEventListener('fetch', (e) => {
+  const q = e.request;
+  if (q.method !== 'GET') return;
+  const k = relativo(q.url.split('#')[0].split('?')[0]);
+  if (k === null || /^(api|__)\//.test(k)) return;
+  if (q.mode === 'navigate' && (k === '' || k === PAGINA)) {
+    e.respondWith((async () => {
+      try {
+        const r = await fetch(q);
+        if (r.ok && r.type === 'basic') e.waitUntil(riempi(r.clone()));
+        return r;
+      } catch (x) {
+        /* niente rete: l'ultima pagina aperta */
+        const c = await caches.match(PAGINA, { cacheName: CASSA });
+        if (c) return c;
+        throw x;
+      }
+    })());
+    return;
+  }
+  if (/^pacco\//.test(k)) {
+    e.respondWith((async () => {
+      const c = await caches.match(k, { cacheName: CASSA }) || await caches.match(q, { cacheName: CASSA });
+      if (c) return c;
+      const r = await fetch(q);
+      if (r.ok && r.type === 'basic') { const cassa = await caches.open(CASSA); e.waitUntil(cassa.put(k, r.clone()).catch(() => {})); }
+      return r;
+    })());
+  }
+});
 
 /* IL NUMERO SULL'ICONA
    L'unica cosa che resta a vista senza chiedere niente a nessuno: il pallino
