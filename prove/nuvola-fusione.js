@@ -114,6 +114,38 @@ const G = 86400000;
       ok('6 cancellazione offline: arriva a tutti, non risorge, e la cosa nuova dal pc resta', Object.values(r4).every((v) => !v.includes('da cancellare') && v.includes('nuova dal pc') && v.includes('da tenere')), r4);
       await chiudi(D);
     }
+    /* ------------------ verifica 2, G1: due modifiche a campi diversi */
+    {
+      const D = await gruppo(['telefono', 'pc', 'ipad']);
+      const [A, P, C] = D;
+      await P.evaluate(() => LM.aggiungiAzione('X originale', null)); await B.calmaTutti(D, 2000);
+      const riga = (p) => p.evaluate(() => { const a = LM.load().azioni.find((x) => /^X /.test(x.testo)) || {}; return { testo: a.testo, done: !!a.done }; });
+      await A.ctx.setOffline(true); await C.ctx.setOffline(true);
+      await A.evaluate(() => LM.modificaAzione(LM.load().azioni.find((x) => /^X /.test(x.testo)).id, 'X rinominata sul telefono'));
+      await A.waitForTimeout(800);
+      await C.evaluate(() => LM.modificaAzione(LM.load().azioni.find((x) => /^X /.test(x.testo)).id, 'X rinominata sull’iPad'));
+      await C.waitForTimeout(800);
+      await P.evaluate(() => LM.completaAzione(LM.load().azioni.find((x) => /^X /.test(x.testo)).id)); await B.calma(P, 1500);
+      await C.ctx.setOffline(false); await B.calmaTutti([C, P], 3000);
+      await A.ctx.setOffline(false); await B.calmaTutti(D, 5000);
+      const r = { telefono: await riga(A), pc: await riga(P), ipad: await riga(C) };
+      ok('G1 rinomina offline e spunta su un altro dispositivo: restano tutte e due (vince la rinomina più recente), ovunque',
+        Object.values(r).every((v) => v.testo === 'X rinominata sull’iPad' && v.done === true), r);
+      /* lo stesso nella forma del calendario: il titolo cambiato da una parte
+         (come fa la sincronizzazione con Google), la spunta dall'altra */
+      const cal = await A.evaluate(() => {
+        const s0 = LM.statoVuoto(); s0.updatedAt = 1000;
+        s0.azioni.push({ id: 'ev1', areaId: 'altro', testo: 'Impegno', ifThen: '', mit: false, done: false, data: LM.todayKey(), doneAt: null, creata: 500, ora: '10:00', durata: 60, passoDi: null, aggiornata: 900 });
+        const tel = JSON.parse(JSON.stringify(s0)), pc = JSON.parse(JSON.stringify(s0));
+        tel.azioni[0].done = true; tel.azioni[0].doneAt = 3000; tel.azioni[0].aggiornata = 3000; tel.orologi = { 'azioni/iev1/done': 3000, 'azioni/iev1/doneAt': 3000 }; tel.updatedAt = 3000;
+        pc.azioni[0].testo = 'Colloquio (spostato sala B)'; pc.azioni[0].aggiornata = 2000; pc.orologi = { 'azioni/iev1/testo': 2000 }; pc.updatedAt = 2000;
+        const a = LM.unisci(tel, pc).azioni[0], b = LM.unisci(pc, tel).azioni[0];
+        return { a: [a.testo, a.done], b: [b.testo, b.done] };
+      });
+      ok('G1/M9 titolo cambiato nel calendario su un dispositivo e «fatta» sull’altro: tutte e due, da qualunque parte si unisca',
+        JSON.stringify(cal.a) === JSON.stringify(['Colloquio (spostato sala B)', true]) && JSON.stringify(cal.b) === JSON.stringify(cal.a), cal);
+      await chiudi(D);
+    }
     /* ------------------------------------------- 4. annullare arriva e resta */
     {
       const [T, P] = await gruppo(['telefono', 'pc']);

@@ -594,14 +594,34 @@ function creaLM() {
   function unisciRiga(x: unknown, y: unknown, qx: number, qy: number, via?: string, f?: Fusione): unknown {
     if (!eMappa(x) || !eMappa(y)) return (qy >= qx) ? y : x;
     var dx = x, dy = y;
-    var vecchia = (qy >= qx) ? dx : dy, nuova = (qy >= qx) ? dy : dx;
-    var out: Mappa = {};
-    Object.keys(vecchia).forEach(function (k) { out[k] = vecchia[k]; });
-    Object.keys(nuova).forEach(function (k) { out[k] = nuova[k]; });
     var fr: Fusione = { oa: f ? f.oa : NIENTE, ob: f ? f.ob : NIENTE, qa: qx, qb: qy };
-    Object.keys(out).forEach(function (k) {
-      var nx = dx[k], ny = dy[k];
-      if (eMappa(nx) && eMappa(ny)) out[k] = unisciRadice(nx, ny, (via || '?') + '/' + pezzoVia(k), fr, vinceRecente);
+    var base = (via || '?') + '/';
+    var out: Mappa = {};
+    var chiavi = Object.keys(dx);
+    Object.keys(dy).forEach(function (k) { if (!Object.prototype.hasOwnProperty.call(dx, k)) chiavi.push(k); });
+    /* CAMPO PER CAMPO (verifica del 25 novembre 2026, G1). Prima vinceva la
+       riga più recente INTERA: rinominare un'azione sul telefono senza rete e
+       spuntarla poco dopo dal computer faceva sparire la rinomina, ovunque —
+       e lo stesso col titolo cambiato in Google e la spunta data in LifeMax.
+       Adesso ogni campo cambiato ha il suo orologio (`azioni/<id>/testo`,
+       `…/done`: li scrive `segnaOrologi`), e per ogni campo vince chi l'ha
+       toccato per ultimo. Dove nessuna delle due ha un orologio per quel
+       campo (le righe scritte prima), vale la regola di prima: la riga più
+       recente. */
+    chiavi.forEach(function (k) {
+      var inX = Object.prototype.hasOwnProperty.call(dx, k), inY = Object.prototype.hasOwnProperty.call(dy, k);
+      var vx = dx[k], vy = dy[k];
+      if (k === 'aggiornata') { out[k] = Math.max(Number(vx) || 0, Number(vy) || 0) || (inX ? vx : vy); return; }
+      if (eMappa(vx) && eMappa(vy)) { out[k] = unisciRadice(vx, vy, base + pezzoVia(k), fr, vinceRecente); return; }
+      if (inX && inY && stessoValore(vx, vy)) { out[k] = vx; return; }
+      var p = base + pezzoVia(k);
+      var ca = f ? orologioDi(f.oa, p, 0) : 0, cb = f ? orologioDi(f.ob, p, 0) : 0;
+      var daY = ca !== cb ? cb > ca : qy >= qx;
+      var da = daY ? dy : dx, altra = daY ? dx : dy;
+      if (Object.prototype.hasOwnProperty.call(da, k)) out[k] = da[k];
+      /* il campo manca nella versione scelta: se lo decide un orologio vuol
+         dire «tolto», se no (righe di prima) resta quello che c'è */
+      else if (ca === cb && Object.prototype.hasOwnProperty.call(altra, k)) out[k] = altra[k];
     });
     return out;
   }
@@ -937,10 +957,17 @@ function creaLM() {
           r['aggiornata'] = t;
           if (!eMappa(pr)) return;
           var vr = k + '/' + pezzoVia(c), riga = r, primaRiga = pr;
-          Object.keys(riga).forEach(function (cc) {
+          var campi = Object.keys(riga);
+          Object.keys(primaRiga).forEach(function (cc) { if (!Object.prototype.hasOwnProperty.call(riga, cc)) campi.push(cc); });
+          campi.forEach(function (cc) {
+            if (cc === 'aggiornata') return;
             var nv = riga[cc], vv = primaRiga[cc];
-            if ((eMappa(nv) || eMappa(vv)) && !stessoValore(nv, vv)) {
+            if (stessoValore(nv, vv)) return;
+            if (eMappa(nv) || eMappa(vv)) {
               segnaNodo(eMappa(vv) ? vv : {}, eMappa(nv) ? nv : {}, vr + '/' + pezzoVia(cc), o, t, false);
+            } else {
+              /* un orologio per CAMPO: vedi `unisciRiga` */
+              o[vr + '/' + pezzoVia(cc)] = t;
             }
           });
         });
