@@ -189,7 +189,7 @@ Tutti i problemi qui sopra sono stati corretti. Ogni correzione ha una prova che
 
 Sono spiegate in `prove/LEGGIMI.md`. Serve l'emulatore, che non sta nel ramo: `npm i --prefix prove/.emulatore firebase-tools@15 firebase@12.16.0` (e Java).
 
-Sul codice di prima (commit `1a85823`) le tre prove falliscono; su quello nuovo passano. I conti precisi sono in fondo.
+Le correzioni sono nel commit `4522b6f`. Sul codice nuovo le tre prove passano, insieme a tutte le prove già esistenti (impronte, lezioni, dati, cloud, ripristino, pacco, duedispositivi, trasloco, annulla, calendari-server). Sul codice di prima (commit `1a85823`) è stata rilanciata solo `prove/nuvola-account.js`, che fallisce con 15 controlli rossi; le altre due non sono state rilanciate sul codice vecchio. I conti precisi sono in fondo.
 
 ### Come funziona adesso, in breve
 - **I dati nel cloud sono divisi in pezzi** (`src/nuvola/pezzi.ts`): per campo e per trimestre (`azioni.2026q4`, `giorni.2026q4`, `base`…). Il documento principale `users/{uid}` tiene solo l'elenco dei pezzi. Un salvataggio riscrive solo i pezzi cambiati.
