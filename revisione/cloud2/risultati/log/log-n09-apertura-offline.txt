@@ -1,0 +1,5 @@
+  KO  A1 l’app (già usata) riaperta SENZA rete si apre  -> {"serviceWorker":"attivo","errore":"Error: page.reload: net::ERR_INTERNET_DISCONNECTED\nCall log:\n\u001b[2m  - waiting for navigation until \"load\"\u001b[22m\n","testoPagina":"Tap the dino to play\n\nTry:\n\nChecking the network cables, modem, and router\nReconnecting to Wi-Fi\nERR_INTERNET_DISCONNECT"}
+  KO  B1 SDK di Firebase non caricato all’apertura: quando torna, il cloud riparte da solo (senza chiudere l’app)  -> {"allApertura":{"cloud":false,"utente":false},"dopoRitornoRete":{"cloud":false,"utente":false,"pastiglia":false}}
+  KO  B2 …e l’app dice che c’è qualcosa «non ancora nel cloud»  -> {"cloud":false,"utente":false,"pastiglia":false}
+  KO  C1 la modifica fatta in quel momento arriva agli altri senza riaprire l’app  -> ["ieri"]
+  ok  C2 riaprendo l’app (con l’SDK), la modifica arriva

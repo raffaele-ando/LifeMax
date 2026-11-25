@@ -290,11 +290,28 @@ export function completaRitornoServer(): { p: Provenienza; esito: string } | nul
   return { p: p, esito: q.get('esito') || 'errore' };
 }
 
+/* LA CONFERMA DEL COLLEGAMENTO. Tornati da Google o Microsoft con
+   `esito=da-confermare`, il permesso sta ancora in sospeso nella sentinella:
+   diventa di questo account solo se lo conferma questa app, con il suo
+   gettone, dallo stesso browser che è tornato (il biscotto del ritorno lo
+   porta il browser da solo). È la difesa contro il collegamento cominciato
+   da un altro e mandato a te come link (verifica del 25 novembre 2026, C2).
+   Torna l'email del calendario collegato, o l'esito che dice cosa non va. */
+export async function confermaCollegamento(p: Provenienza): Promise<{ esito: string; email: string }> {
+  try {
+    const j = await manda<{ ok?: boolean; email?: string }>(p + '/conferma', {});
+    if (j.ok) return { esito: 'ok', email: j.email || '' };
+    return { esito: j.errore === 'altro-browser' ? 'altro-browser' : 'scaduto', email: '' };
+  } catch {
+    return { esito: 'errore', email: '' };
+  }
+}
+
 export function spiegaEsito(esito: string, nome: string): string {
   if (esito === 'negato') return 'Su ' + nome + ' non è stato dato il permesso.';
   if (esito === 'caselle') return 'Nella finestra di ' + nome + ' servono tutte e due le caselle: l’elenco dei calendari e gli eventi.';
   if (esito === 'scaduto') return 'Il collegamento ci ha messo troppo, o era già stato usato: riprova.';
-  if (esito === 'altro-browser') return 'Il collegamento è tornato su un browser diverso da quello da cui era partito: riprova da qui.';
+  if (esito === 'altro-browser') return 'Questo collegamento non era partito da qui, o non da questo account: per sicurezza non l’ho usato. Se vuoi collegare il calendario, comincia da qui.';
   return nome + ' non ha completato il collegamento: riprova fra poco.';
 }
 

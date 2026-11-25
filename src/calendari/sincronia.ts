@@ -87,7 +87,7 @@ import { google, chiaveGoogle, precarica } from './google';
 import { microsoft, completaRitorno } from './microsoft';
 import type { OpServer } from './server';
 import {
-  viaServer, fornitoreServer, controllaServizio, aggiornaSpecchio, contoServer, completaRitornoServer, spiegaEsito,
+  viaServer, fornitoreServer, controllaServizio, aggiornaSpecchio, contoServer, completaRitornoServer, spiegaEsito, confermaCollegamento,
   spedisciSubito, eventiSpecchio, eventoSpecchio, daNeutro, versioneSpecchio
 } from './server';
 
@@ -807,11 +807,16 @@ export function avviaCalendari(onRitorno?: () => void): void {
   if (daServer) {
     const rp = daServer.p;
     void attendiAccesso().then(function () {
-      if (daServer.esito === 'ok') {
+      /* il permesso è tornato ma non è ancora nostro: lo si conferma, da qui */
+      if (daServer.esito === 'da-confermare') return confermaCollegamento(rp);
+      return { esito: daServer.esito, email: '' };
+    }).then(function (r) {
+      if (r.esito === 'ok') {
         qui.ricollega[rp] = false; qui.nota = '';
+        /* l'email la porta lo specchio, che così si carica subito coi calendari */
         return dopoCollegato(rp, '').then(function () { void sincronizza('collegato'); });
       }
-      qui.errore = spiegaEsito(daServer.esito, NEL_BROWSER[rp].nome);
+      qui.errore = spiegaEsito(r.esito, NEL_BROWSER[rp].nome);
       avvisa();
       return undefined;
     }).then(function () { if (onRitorno) onRitorno(); });

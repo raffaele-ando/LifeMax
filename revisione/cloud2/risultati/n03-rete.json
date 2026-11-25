@@ -1,0 +1,76 @@
+{
+  "script": "n03-rete",
+  "nota": "ricavato dal log (il processo è rimasto appeso alla chiusura del browser per le richieste mai risposte del caso I)",
+  "risultati": [
+    {
+      "ok": true,
+      "scenario": "A1 tre dispositivi, due offline, ritorno in ordine inverso: tutti uguali al cloud",
+      "dettaglio": "{\"telefono\":{\"X\":{\"testo\":\"X originale\",\"done\":true,\"id\":\"idmwvfc08lxbmgzi\"},\"Y\":{\"testo\":\"Y modificata DOPO la cancellazione (online)\",\"done\":false,\"id\":\"idmwvfc08q5ljq5c\"},\"Z\":null},\"ipad\":{\"X\":{\"testo\":\"X originale\",\"done\":true,\"id\":\"idmwvfc08lxbmgzi\"},\"Y\":{\"testo\":\"Y modificata DOPO la cancellazione (online)\",\"done\":false,\"id\":\"idmwvfc08q5ljq5c\"},\"Z\":null},\"pc\":{\"X\":{\"testo\":\"X originale\",\"done\":true,\"id\":\"idmwvfc08lxbmgzi\"},\"Y\":{\"testo\":\"Y modificata DOPO la cancellazione (online)\",\"done\":false,\"id\":\"idmwvfc08q5ljq5c\"},\"Z\":null},\"cloud\":{\"X\":{\"testo\":\"X originale\",\"done\":true},\"Y\":\"Y modificata DOPO la cancellazione (online)\"}}"
+    },
+    {
+      "ok": false,
+      "scenario": "A2 vince la modifica più recente per campo (testo dall’iPad, spunta dal PC)",
+      "dettaglio": "{\"testo\":\"X originale\",\"done\":true,\"id\":\"idmwvfc08lxbmgzi\"}"
+    },
+    {
+      "ok": true,
+      "scenario": "A3 cancellata offline e modificata DOPO online: la modifica vince (resta)",
+      "dettaglio": "{\"testo\":\"Y modificata DOPO la cancellazione (online)\",\"done\":false,\"id\":\"idmwvfc08q5ljq5c\"}"
+    },
+    {
+      "ok": true,
+      "scenario": "A4 cancellata offline DOPO una modifica: resta cancellata",
+      "dettaglio": "null"
+    },
+    {
+      "ok": true,
+      "scenario": "C1 rete ballerina: tutte e 10 le modifiche arrivano nel cloud e sul PC",
+      "dettaglio": "{\"cloud\":10,\"pc\":10,\"richiesteViste\":20}"
+    },
+    {
+      "ok": true,
+      "scenario": "D1 rete lenta: la modifica arriva (e nel frattempo lo stato è «saving»/«attesa»)",
+      "dettaglio": "{\"statoDopo1s\":\"saving\"}"
+    },
+    {
+      "ok": true,
+      "scenario": "E1 dopo il crash il cloud è integro (nessuna fetta mancante)",
+      "dettaglio": "integro"
+    },
+    {
+      "ok": true,
+      "scenario": "E2 riaprendo, la modifica scritta prima del crash arriva al PC",
+      "dettaglio": "saved"
+    },
+    {
+      "ok": true,
+      "scenario": "F1 modifica e chiusura immediata: arriva al PC senza riaprire il telefono (giro o cassetta delle lettere)",
+      "dettaglio": "{\"postaNelPrincipale\":[]}"
+    },
+    {
+      "ok": true,
+      "scenario": "F2 PC con Firestore lento: chiudendo la scheda la modifica parte con la cassetta delle lettere (keepalive)",
+      "dettaglio": "via REST :commit"
+    },
+    {
+      "ok": true,
+      "scenario": "G1 permesso negato: messaggio comprensibile",
+      "dettaglio": "{\"stato\":\"error\",\"errore\":\"Il cloud in questo momento non accetta il salvataggio. I tuoi dati sono al sicuro su questo dispositivo; riprovo da solo.\"}"
+    },
+    {
+      "ok": true,
+      "scenario": "G2 regole tornate: la modifica parte da sola entro 70 s",
+      "dettaglio": "{\"secondi\":12}"
+    },
+    {
+      "ok": true,
+      "scenario": "I1 cloud muto: dopo ~25 s lo dice",
+      "dettaglio": "{\"stato\":\"muto\",\"errore\":\"Il cloud non risponde da un po’. I tuoi dati sono al sicuro su questo dispositivo e partono appena risponde.\",\"pastiglia\":false}"
+    },
+    {
+      "ok": false,
+      "scenario": "I2 il cloud torna a rispondere: la modifica arriva senza ricaricare (entro 90 s)",
+      "dettaglio": "{\"secondi\":90}"
+    }
+  ]
+}

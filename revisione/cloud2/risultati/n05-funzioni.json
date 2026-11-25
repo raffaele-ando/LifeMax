@@ -1,0 +1,152 @@
+{
+  "script": "n05-funzioni",
+  "quando": "2026-11-25T01:39:22.023Z",
+  "radice": "/tmp/claude-0/-home-user-LifeMax/99c3d469-10e9-545a-afc2-1ce7e01478d1/scratchpad/audit-2/wt",
+  "bloccati": [
+    "https://apis.google.com/js/api.js?onload=__iframefcb757372",
+    "https://apis.google.com/js/api.js?onload=__iframefcb685081",
+    "https://www.google.com/images/cleardot.gif?zx=gj22khx88w5x",
+    "https://www.google.com/images/cleardot.gif?zx=n9pmcko82gne",
+    "https://www.google.com/images/cleardot.gif?zx=4r68i0mdtn16",
+    "https://www.google.com/images/cleardot.gif?zx=20d4ov4ou9u5",
+    "https://www.google.com/images/cleardot.gif?zx=5mvkk0m8si8z",
+    "https://www.google.com/images/cleardot.gif?zx=gcbhrtbbzmem",
+    "https://apis.google.com/js/api.js?onload=__iframefcb891924",
+    "https://apis.google.com/js/api.js?onload=__iframefcb109884"
+  ],
+  "nBloccati": 10,
+  "risultati": [
+    {
+      "scenario": "A1 «Azzera tutto»: le cose di prima spariscono ovunque",
+      "ok": true,
+      "dettaglio": {
+        "telefono": [
+          "scritta sull’iPad offline PRIMA dell’azzeramento"
+        ],
+        "pc": [
+          "scritta sull’iPad offline PRIMA dell’azzeramento"
+        ],
+        "ipad": [
+          "scritta sull’iPad offline PRIMA dell’azzeramento"
+        ]
+      }
+    },
+    {
+      "scenario": "A2 «Azzera tutto»: una cosa creata offline PRIMA dell’azzeramento torna (l’azzeramento non la conosceva)",
+      "ok": false,
+      "dettaglio": {
+        "telefono": [
+          "scritta sull’iPad offline PRIMA dell’azzeramento"
+        ],
+        "pc": [
+          "scritta sull’iPad offline PRIMA dell’azzeramento"
+        ],
+        "ipad": [
+          "scritta sull’iPad offline PRIMA dell’azzeramento"
+        ]
+      }
+    },
+    {
+      "scenario": "B1 ripristino del backup di prima dell’azzeramento: torna tutto, su tutti",
+      "ok": true,
+      "dettaglio": {
+        "telefono": [
+          "cosa 0",
+          "cosa 1",
+          "cosa 2",
+          "cosa 3"
+        ],
+        "pc": [
+          "cosa 0",
+          "cosa 1",
+          "cosa 2",
+          "cosa 3"
+        ],
+        "ipad": [
+          "cosa 0",
+          "cosa 1",
+          "cosa 2",
+          "cosa 3"
+        ],
+        "nomePc": "Zoe"
+      }
+    },
+    {
+      "scenario": "C1 «Riprendi il profilo» da una copia nel cloud: torna su tutti",
+      "ok": false,
+      "dettaglio": {
+        "copie": [
+          "copia-del-giorno:"
+        ],
+        "riuscito": false,
+        "nomeT": "Nome rovinato",
+        "visioneP": ""
+      }
+    },
+    {
+      "scenario": "D1 check-in annullato dal Diario sul pc: sparisce anche dal telefono e dall’iPad",
+      "ok": true,
+      "dettaglio": {
+        "annullato": true,
+        "telefono": 0,
+        "ipad": 0
+      }
+    },
+    {
+      "scenario": "E1 esempio sull’iPad, poi accesso: l’esempio NON entra nell’account",
+      "ok": true,
+      "dettaglio": {
+        "esempioPrima": 120,
+        "cloudAzioni": 4,
+        "telefono": 4,
+        "demoNelCloud": false
+      }
+    },
+    {
+      "scenario": "F1 utente nuovissimo: il primo accesso crea il cloud; il secondo dispositivo entra senza errori",
+      "ok": true,
+      "dettaglio": {
+        "primoAvvio": {
+          "benvenuto": true,
+          "azioni": 0
+        },
+        "secondoDispositivo": {
+          "benvenuto": true,
+          "overlay": false
+        },
+        "cloudCreato": true,
+        "errori": []
+      }
+    },
+    {
+      "scenario": "G1 «Sostituisci» con una copia nel cloud: tutti i dispositivi tornano a quella copia",
+      "ok": true,
+      "dettaglio": {
+        "sostituito": true,
+        "copiaDel": "2026-11-25T01:36:55.118Z",
+        "telefono": [],
+        "ipad": []
+      }
+    },
+    {
+      "scenario": "errori in pagina su telefono",
+      "ok": true,
+      "dettaglio": []
+    },
+    {
+      "scenario": "errori in pagina su pc",
+      "ok": true,
+      "dettaglio": []
+    },
+    {
+      "scenario": "errori in pagina su ipad",
+      "ok": true,
+      "dettaglio": []
+    },
+    {
+      "scenario": "errori in pagina su ipad-della-figlia",
+      "ok": true,
+      "dettaglio": []
+    }
+  ]
+}

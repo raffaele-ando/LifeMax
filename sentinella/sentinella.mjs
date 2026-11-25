@@ -71,6 +71,10 @@ export class Sentinella {
     this.sql.exec('CREATE TABLE IF NOT EXISTS coda (k TEXT PRIMARY KEY, p TEXT, j TEXT, stato TEXT, tent INTEGER, prossimo INTEGER, esito TEXT, ts INTEGER)');
     this.sql.exec('CREATE TABLE IF NOT EXISTS attese (s TEXT PRIMARY KEY, p TEXT, ver TEXT, ritorno TEXT, scade INTEGER, legame TEXT, partito INTEGER)');
     this.sql.exec('CREATE TABLE IF NOT EXISTS elenco (h TEXT PRIMARY KEY)');
+    /* i permessi tornati da Google o Microsoft ma non ancora CONFERMATI
+       dall'app che ha cominciato il collegamento (vedi `ritorno` e
+       `conferma`): finché stanno qui non si usano per niente */
+    this.sql.exec('CREATE TABLE IF NOT EXISTS pendenti (p TEXT PRIMARY KEY, segreto TEXT, rt TEXT, at TEXT, at_scade INTEGER, email TEXT, cal TEXT, scade INTEGER)');
     this.pronto = true;
   }
   meta(k) { const r = this.uno('SELECT v FROM meta WHERE k = ?', k); return r ? r.v : ''; }
@@ -98,6 +102,7 @@ export class Sentinella {
       if (!mio) this.setMeta('uid', uid);
       else if (mio !== uid) return json({ errore: 'non tuo' }, 403);
       if (az === 'inizia') return json(await this.inizia(corpo));
+      if (az === 'conferma') return json(await this.conferma(corpo));
       if (az === 'cambi') return json(await this.cambi(corpo));
       if (az === 'calendari') return json(await this.calendari(corpo));
       if (az === 'evento') return json(await this.evento(corpo));
@@ -161,12 +166,15 @@ export class Sentinella {
     return { url: this.cfg.base + '/api/calendari/' + p + '/vai?s=' + encodeURIComponent(stato) };
   }
 
-  /* IL LEGAME COL BROWSER. Lo `state` da solo dice «quale utente», non «quale
-     browser»: qualcuno potrebbe iniziare un collegamento col SUO account,
-     mandarti il link, e se tu dicessi sì a Google il tuo calendario finirebbe
-     nel suo LifeMax. Per questo il passaggio da /vai lascia un biscotto
-     (HttpOnly, solo su /api/calendari/) con un segreto che il ritorno deve
-     riportare: arriva solo dal browser che ha cominciato. Vale una volta. */
+  /* IL LEGAME COL BROWSER. Il passaggio da /vai lascia un biscotto (HttpOnly,
+     solo su /api/calendari/) con un segreto che il ritorno deve riportare:
+     così il ritorno arriva dallo stesso browser che è passato da /vai.
+     ATTENZIONE: questo da solo NON basta, e la verifica del 25 novembre 2026
+     (revisione/cloud2/) l'ha provato. Qualcuno può cominciare un
+     collegamento col SUO account, mandarti l'indirizzo di /vai — che è un
+     indirizzo vero di LifeMax — e se tu lo apri e dici sì a Google, il
+     biscotto ce l'hai TU, quindi il ritorno passa. Il permesso che torna NON
+     si usa: resta «da confermare» (vedi `ritorno` e `conferma`). */
   async vai(o) {
     const riga = this.uno('SELECT * FROM attese WHERE s = ? AND p = ?', String(o.stato || ''), String(o.p || ''));
     if (!riga || riga.partito || riga.scade < Date.now() || !attivo(this.cfg, this.env, riga.p)) return { errore: 'scaduto' };
@@ -187,17 +195,50 @@ export class Sentinella {
     try {
       const F = FORNITORI[p];
       const t = await F.scambia(this.cfg[p], String(o.codice || ''), riga.ver, redirect(this.cfg, p));
-      await this.salvaConto(p, t);
       const elenco = await F.calendari(t.at);
-      this.salvaCalendari(p, elenco);
       const email = await F.email(t.at, elenco);
-      this.q('UPDATE conti SET email = ? WHERE p = ?', email, p);
-      try { await this.elenco('registra'); } catch { /* il cron serve solo da riserva */ }
-      await this.state.storage.setAlarm(Date.now() + GIRO_MS);
-      return { esito: 'ok', ritorno: riga.ritorno };
+      /* IL PERMESSO NON DIVENTA DI QUESTO ACCOUNT ADESSO. Resta in sospeso
+         dieci minuti, cifrato, e serve una conferma che può dare SOLO il
+         browser che è appena tornato da Google (ha il biscotto con un
+         segreto nuovo, che lascia il Worker) E che è dentro LifeMax con
+         questo stesso account (il gettone di Firebase porta qui). Un
+         collegamento cominciato da un altro e aperto da te torna nel TUO
+         browser, che però è dentro col TUO account: la sua conferma arriva
+         alla tua sentinella, non a questa, e qui il permesso scade da solo.
+         Chi ha cominciato, dal suo browser, il biscotto non ce l'ha. */
+      const uid = this.meta('uid');
+      const segreto = caso(32);
+      this.q('DELETE FROM pendenti WHERE scade < ?', Date.now());
+      this.q('INSERT INTO pendenti (p, segreto, rt, at, at_scade, email, cal, scade) VALUES (?, ?, ?, ?, ?, ?, ?, ?) ' +
+        'ON CONFLICT(p) DO UPDATE SET segreto = excluded.segreto, rt = excluded.rt, at = excluded.at, at_scade = excluded.at_scade, email = excluded.email, cal = excluded.cal, scade = excluded.scade',
+        p, segreto, await cifra(this.cfg.chiave, t.rt, uid + '|' + p + '|rt'), await cifra(this.cfg.chiave, t.at, uid + '|' + p + '|at'),
+        t.scade, email, JSON.stringify(elenco), Date.now() + ATTESA_MS);
+      return { esito: 'da-confermare', ritorno: riga.ritorno, conferma: this.state.id.toString() + '.' + segreto };
     } catch (e) {
       return { esito: e instanceof Errore && e.tipo === 'permesso' ? 'caselle' : 'errore', ritorno: riga.ritorno };
     }
+  }
+
+  /* LA CONFERMA: dall'app, col gettone di Firebase (quindi da questo
+     account: il Worker porta qui solo il proprietario) e col biscotto lasciato
+     al ritorno (quindi dal browser che è tornato da Google). Solo così il
+     permesso in sospeso diventa un collegamento. */
+  async conferma(o) {
+    const p = o.p;
+    const pz = String(o.biscotto || '').split('.');
+    const riga = this.uno('SELECT * FROM pendenti WHERE p = ?', String(p || ''));
+    if (!riga || riga.scade < Date.now()) { this.q('DELETE FROM pendenti WHERE p = ?', String(p || '')); return { errore: 'scaduto' }; }
+    if (pz.length !== 2 || pz[0] !== this.state.id.toString() || !pz[1] || pz[1] !== riga.segreto) return { errore: 'altro-browser' };
+    this.q('DELETE FROM pendenti WHERE p = ?', p);
+    this.q('INSERT INTO conti (p, email, rt, at, at_scade, stato, dal) VALUES (?, ?, ?, ?, ?, ?, ?) ' +
+      'ON CONFLICT(p) DO UPDATE SET email = excluded.email, rt = excluded.rt, at = excluded.at, at_scade = excluded.at_scade, stato = excluded.stato',
+      p, riga.email || '', riga.rt, riga.at, riga.at_scade, 'ok', Date.now());
+    let elenco = [];
+    try { elenco = JSON.parse(riga.cal || '[]'); } catch { elenco = []; }
+    this.salvaCalendari(p, elenco);
+    try { await this.elenco('registra'); } catch { /* il cron serve solo da riserva */ }
+    await this.state.storage.setAlarm(Date.now() + GIRO_MS);
+    return { ok: true, email: riga.email || '' };
   }
 
   async salvaConto(p, t) {

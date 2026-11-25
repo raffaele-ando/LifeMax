@@ -109,8 +109,14 @@ async function api(req, env) {
     try { id = env.SENTINELLA.idFromString(h); } catch { return pagina(cfg, 'Questo collegamento non è valido o è scaduto.'); }
     const r = await alDO(env, id, 'ritorno', '', { p: p, stato: stato, codice: u.searchParams.get('code') || '', errore: u.searchParams.get('error') || '', legame: biscotto(req, p) });
     const dove = (r.j && r.j.ritorno) || cfg.ritorni[0];
-    return new Response(null, { status: 302, headers: { Location: aggiungi(dove, { lmcal: p, esito: (r.j && r.j.esito) || 'errore' }), 'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer',
-      'Set-Cookie': 'lmcal_' + p + '=; Path=/api/calendari/; Max-Age=0; HttpOnly; Secure; SameSite=Lax' } });
+    const testa = new Headers({ Location: aggiungi(dove, { lmcal: p, esito: (r.j && r.j.esito) || 'errore' }), 'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer' });
+    testa.append('Set-Cookie', 'lmcal_' + p + '=; Path=/api/calendari/; Max-Age=0; HttpOnly; Secure; SameSite=Lax');
+    /* il segreto della conferma resta in QUESTO browser, e da qui non esce:
+       l'app lo manda indietro (da sola, è un biscotto) insieme al suo
+       gettone, e solo allora il permesso diventa suo (vedi `conferma` in
+       sentinella.mjs) */
+    if (r.j && r.j.conferma) testa.append('Set-Cookie', 'lmcal_ok_' + p + '=' + r.j.conferma + '; Path=/api/calendari/; Max-Age=600; HttpOnly; Secure; SameSite=Lax');
+    return new Response(null, { status: 302, headers: testa });
   }
 
   /* il passaggio dal nostro indirizzo prima di Google o Microsoft: lascia il
@@ -142,14 +148,19 @@ async function api(req, env) {
   const id = env.SENTINELLA.idFromName(uid);
   let az = '';
   if (via.length === 1 && (via[0] === 'cambi' || via[0] === 'scrivi')) az = via[0];
-  else if (via.length === 2 && PROVENIENZE.indexOf(via[0]) >= 0 && ['inizia', 'calendari', 'evento', 'scollega'].indexOf(via[1]) >= 0) {
+  else if (via.length === 2 && PROVENIENZE.indexOf(via[0]) >= 0 && ['inizia', 'conferma', 'calendari', 'evento', 'scollega'].indexOf(via[1]) >= 0) {
     az = via[1]; corpo.p = via[0];
+    /* il biscotto della conferma lo legge solo il Worker: chi chiama non
+       può metterlo nel corpo al posto suo */
+    if (az === 'conferma') corpo.biscotto = biscotto(req, 'ok_' + via[0]);
     if (az !== 'scollega' && !servizio[via[0]]) return json(cfg, req, { errore: 'non-configurato', servizio: servizio }, 409);
   }
   if (!az) return json(cfg, req, { errore: 'non c’è' }, 404);
   const r = await alDO(env, id, az, uid, corpo);
   if (r.j && typeof r.j === 'object') r.j.servizio = servizio;
-  return json(cfg, req, r.j, r.stato);
+  const risp = json(cfg, req, r.j, r.stato);
+  if (az === 'conferma') risp.headers.append('Set-Cookie', 'lmcal_ok_' + corpo.p + '=; Path=/api/calendari/; Max-Age=0; HttpOnly; Secure; SameSite=Lax');
+  return risp;
 }
 
 /* L'ACCESSO CON GOOGLE SERVITO DA QUI (/__/auth/* e /__/firebase/*).

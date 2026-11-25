@@ -1,0 +1,318 @@
+{
+  "script": "c01",
+  "quando": "2026-11-25T00:42:22.611Z",
+  "risultati": [
+    {
+      "scenario": "A1 l’attaccante ottiene un link sul dominio vero di LifeMax",
+      "ok": true,
+      "dettaglio": "https://lifemax.theproject.world/api/calendari/google/vai?s=8e0273b8d816d2600bb433c70e76cc"
+    },
+    {
+      "scenario": "A2 /vai lascia il biscotto del «legame» nel browser della VITTIMA",
+      "ok": true,
+      "dettaglio": "302 lmcal_google=mtDEQI0wG9z-r0EpN"
+    },
+    {
+      "scenario": "A3 il ritorno è accettato (esito=ok), anche se il giro l’ha cominciato un altro",
+      "ok": true,
+      "dettaglio": "https://lifemax.theproject.world/?lmcal=google&esito=ok#/profilo"
+    },
+    {
+      "scenario": "A4 [VULNERABILITÀ se KO] l’attaccante NON legge il calendario della vittima",
+      "ok": false,
+      "dettaglio": {
+        "titoliVisti": [
+          "Visita oncologica (privato)",
+          "Colloquio di lavoro segreto"
+        ],
+        "contoAttaccante": {
+          "collegato": true,
+          "email": "io@esempio.it"
+        }
+      }
+    },
+    {
+      "scenario": "A5 [VULNERABILITÀ se KO] l’attaccante NON scrive nel calendario della vittima",
+      "ok": false,
+      "dettaglio": {
+        "x1": {
+          "ok": true,
+          "e": {
+            "id": "attacco1",
+            "t": "Evento piantato dall’attaccante",
+            "v": "\"g3\"",
+            "via": false,
+            "org": true,
+            "altri": false,
+            "tg": false,
+            "i": 1795826542348,
+            "f": 1795830142348
+          }
+        }
+      }
+    },
+    {
+      "scenario": "A6 e la vittima, nel SUO LifeMax, non vede niente collegato (non sa di niente)",
+      "ok": true,
+      "dettaglio": {
+        "servizio": true,
+        "collegato": false,
+        "revocato": false,
+        "email": "",
+        "calendari": []
+      }
+    },
+    {
+      "scenario": "B1 un terzo con x-lm-uid=attaccante nell’intestazione non vede lo specchio dell’attaccante",
+      "ok": true,
+      "dettaglio": 0
+    },
+    {
+      "scenario": "B2 un uid nel corpo non conta",
+      "ok": true
+    },
+    {
+      "scenario": "B3 gettone che scade fra 30 s: ancora valido (normale, nota)",
+      "ok": true,
+      "dettaglio": 200
+    },
+    {
+      "scenario": "B4 gettone emesso «nel futuro» di un’ora: rifiutato",
+      "ok": true,
+      "dettaglio": 401
+    },
+    {
+      "scenario": "B5 uid più lungo di 128: rifiutato",
+      "ok": true,
+      "dettaglio": 401
+    },
+    {
+      "scenario": "B6 un utente senza collegamento non può cancellare eventi (togli)",
+      "ok": true,
+      "dettaglio": {
+        "esiti": {
+          "y": {
+            "ok": false,
+            "tipo": "token"
+          }
+        },
+        "servizio": {
+          "google": true,
+          "microsoft": true
+        }
+      }
+    },
+    {
+      "scenario": "C1 /vai usato due volte: la seconda è rifiutata",
+      "ok": true,
+      "dettaglio": 400
+    },
+    {
+      "scenario": "C2 ritorno senza biscotto: «altro-browser»",
+      "ok": true,
+      "dettaglio": "https://lifemax.theproject.world/?lmcal=google&esito=altro-browser#/profilo"
+    },
+    {
+      "scenario": "C3 lo stesso ritorno ripetuto col biscotto giusto: «scaduto» (state usa e getta)",
+      "ok": true,
+      "dettaglio": "https://lifemax.theproject.world/?lmcal=google&esito=scaduto#/profilo"
+    },
+    {
+      "scenario": "C4 state con un id di sentinella inventato: niente (scaduto)",
+      "ok": true,
+      "dettaglio": "https://lifemax.theproject.world/?lmcal=google&esito=scaduto#/profilo"
+    },
+    {
+      "scenario": "C5 state malformato: pagina «non valido» (400)",
+      "ok": true,
+      "dettaglio": 400
+    },
+    {
+      "scenario": "C6 ritorno di Google presentato come Microsoft: rifiutato",
+      "ok": true,
+      "dettaglio": "https://lifemax.theproject.world/?lmcal=microsoft&esito=scaduto#/profilo"
+    },
+    {
+      "scenario": "C7 ritorno dopo 11 minuti: scaduto",
+      "ok": true,
+      "dettaglio": "https://lifemax.theproject.world/?lmcal=google&esito=scaduto#/profilo"
+    },
+    {
+      "scenario": "C8 ritorno verso un sito estraneo: rifiutato",
+      "ok": true,
+      "dettaglio": {
+        "errore": "ritorno",
+        "servizio": {
+          "google": true,
+          "microsoft": true
+        }
+      }
+    },
+    {
+      "scenario": "C9 ritorno verso lifemax.theproject.world.cattivo.example: rifiutato",
+      "ok": true,
+      "dettaglio": {
+        "errore": "ritorno",
+        "servizio": {
+          "google": true,
+          "microsoft": true
+        }
+      }
+    },
+    {
+      "scenario": "C10 ritorno verso un ALTRO progetto di raffaele-ando.github.io (prefisso): ACCETTATO",
+      "ok": true,
+      "dettaglio": {
+        "url": "https://lifemax.theproject.world/api/calendari/google/vai?s=0c717dfd81f7e5aa4421cf1ee4d3523503c71be82b601a7856129f3445c4a1df.2_zCtvZ3p9g3jGJQ6F1TVIQ3jZpVQEmU",
+        "servizio": {
+          "google": true,
+          "microsoft": true
+        }
+      }
+    },
+    {
+      "scenario": "D1 la prima scheda finisce il «sì» dopo che la seconda è passata da /vai: fallisce",
+      "ok": true,
+      "dettaglio": "https://lifemax.theproject.world/?lmcal=google&esito=altro-browser#/profilo"
+    },
+    {
+      "scenario": "E1 dopo il cambio di chiave «cambi» risponde 200 e dice ancora collegato/non revocato (l’app non sa che serve Ricollega)",
+      "ok": false,
+      "dettaglio": {
+        "stato": 200,
+        "conto": {
+          "collegato": true,
+          "revocato": false
+        },
+        "eventoNuovoArrivato": false
+      }
+    },
+    {
+      "scenario": "E2 l’evento nuovo arriva lo stesso?",
+      "ok": false,
+      "dettaglio": {
+        "eventoNuovoArrivato": false
+      }
+    },
+    {
+      "scenario": "E3 una scrittura: che errore riceve l’app (tipo «token» → Ricollega; «rete»/«altro» → riprova in silenzio)",
+      "ok": false,
+      "dettaglio": {
+        "http": 200,
+        "esiti": {
+          "e1": {
+            "ok": false,
+            "tipo": "altro"
+          }
+        }
+      }
+    },
+    {
+      "scenario": "F1 dopo invalid_grant il conto risulta «revocato» (l’app può dire Ricollega)",
+      "ok": true,
+      "dettaglio": {
+        "revocato": true
+      }
+    },
+    {
+      "scenario": "F2 la modifica fatta mentre il permesso era scaduto resta in coda (non persa)",
+      "ok": true,
+      "dettaglio": [
+        {
+          "k": "f1",
+          "stato": "attesa",
+          "tent": 1
+        }
+      ]
+    },
+    {
+      "scenario": "F3 nota: sentinelle con sveglia attiva anche se il permesso è revocato",
+      "ok": true,
+      "dettaglio": 3
+    },
+    {
+      "scenario": "G senza GOOGLE_CLIENT_SECRET: stato {\"google\":false,\"microsoft\":true}, cambi 200, scollega 200",
+      "ok": true,
+      "dettaglio": {
+        "cambi": 200,
+        "conti": {
+          "servizio": false,
+          "collegato": true
+        }
+      }
+    },
+    {
+      "scenario": "G senza MICROSOFT_CLIENT_SECRET: stato {\"google\":true,\"microsoft\":false}, cambi 200, scollega 200",
+      "ok": true,
+      "dettaglio": {
+        "cambi": 200,
+        "conti": {
+          "servizio": true,
+          "collegato": true
+        }
+      }
+    },
+    {
+      "scenario": "G CHIAVE_CALENDARI corta (31): stato {\"google\":false,\"microsoft\":false}, cambi 200, scollega 200",
+      "ok": true,
+      "dettaglio": {
+        "cambi": 200,
+        "conti": {
+          "servizio": false,
+          "collegato": true
+        }
+      }
+    },
+    {
+      "scenario": "G senza niente: stato {\"google\":false,\"microsoft\":false}, cambi 200, scollega 200",
+      "ok": true,
+      "dettaglio": {
+        "cambi": 200,
+        "conti": {
+          "servizio": false,
+          "collegato": true
+        }
+      }
+    },
+    {
+      "scenario": "H1 il proxy inoltra a firebaseapp.com i biscotti del dominio (cookie)",
+      "ok": false,
+      "dettaglio": {
+        "cookieInoltrato": "lmcal_google=SEGRETO; altro=1",
+        "authorization": "Bearer abc"
+      }
+    },
+    {
+      "scenario": "H2 e rimanda indietro Set-Cookie/HSTS di firebaseapp.com sul dominio di LifeMax (nota)",
+      "ok": true,
+      "dettaglio": {
+        "setCookie": "x=1; Path=/",
+        "hsts": "max-age=31556926; includeSubDomains; preload"
+      }
+    },
+    {
+      "scenario": "H3 niente traversata fuori da /__/auth",
+      "ok": true,
+      "dettaglio": [
+        "https://lifemax-9dc63.firebaseapp.com/__/auth/handler?apiKey=k"
+      ]
+    },
+    {
+      "scenario": "I1 con 45+ persone e tutte le sveglie perse, il cron le riarma tutte",
+      "ok": false,
+      "dettaglio": {
+        "riarmate": 39
+      }
+    },
+    {
+      "scenario": "J1 spento/riacceso da due dispositivi: il secondo riceve di nuovo gli eventi (completo o tutti)",
+      "ok": true,
+      "dettaglio": {
+        "seq1": 4,
+        "seq3": 8,
+        "eventi": 4,
+        "completo": false
+      }
+    }
+  ]
+}

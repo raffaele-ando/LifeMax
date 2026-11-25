@@ -1,0 +1,15 @@
+  ok  A0 sul vecchio indirizzo compare «LifeMax ha cambiato indirizzo» con «Porta i miei dati»  -> LifeMax ha cambiato indirizzo
+
+Adesso sta su localhost:9311. I tuoi dati sono solo in questo browser, a questo indirizzo: portali con te, con un tocco. Qui non 
+  ok  A1 i dati del vecchio arrivano sul nuovo, uniti a quelli che c’erano  -> {"vecchio":"Fatto: i tuoi dati sono di là\n\nDa adesso usa localhost:9311 (aggiungilo ai prefe","nuovo":{"azioni":["cosa del nuovo","cosa del vecchio 1","cosa del vecchio 2"],"nome":"Nome scritto di recente sul nuovo","visione":"visione vecchia"}}
+  ok  B1 il nome scritto di recente sul nuovo NON viene sostituito da quello vecchio di github.io  -> {"azioni":["cosa del nuovo","cosa del vecchio 1","cosa del vecchio 2"],"nome":"Nome scritto di recente sul nuovo","visione":"visione vecchia"}
+  ok  C1 «Porta i miei dati» premuto due volte: niente doppioni  -> ["cosa del nuovo","cosa del vecchio 1","cosa del vecchio 2"]
+  ok  C2 dopo il trasloco riuscito, riaprendo il vecchio indirizzo la proposta torna ogni volta (nota)  -> {"proposta":true,"traslocato":"1795569868638"}
+  ok  D1 i dati dell’ospite di github.io finiscono nell’account collegato sul nuovo, senza chiedere di chi sono (nota)  -> {"cloudDario":["di Dario, nell’account","di chi usava github.io senza account (magari un’altra persona)"],"haChiesto":""}
+  ok  E1 finestra bloccata (app sulla schermata Home): propone il file  -> Il browser non ha aperto la pagina
+
+Nessun problema: porta i dati con un file.
+
+Scarica il file
+Più tardi
+  ok  F1 con l’account e senza rete: NON si va al nuovo indirizzo finché il cloud non ha tutto  -> {"url":"http://127.0.0.1:9311/index.html","testo":"Alcune modifiche non sono ancora nel cloud\n\nManca la rete, o il cloud non risponde. Resta qui finché partono (lo vedi in alto: «Salvato nel cloud»), oppure portale con un file.\n\nRiprova\nScarica il file\nPiù tardi"}

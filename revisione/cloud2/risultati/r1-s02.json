@@ -1,0 +1,224 @@
+{
+  "script": "r1-s02",
+  "quando": "2026-11-25T00:48:32.369Z",
+  "radice": "/tmp/claude-0/-home-user-LifeMax/99c3d469-10e9-545a-afc2-1ce7e01478d1/scratchpad/audit-2/wt",
+  "bloccati": [
+    "https://apis.google.com/js/api.js?onload=__iframefcb67381",
+    "https://apis.google.com/js/api.js?onload=__iframefcb544519"
+  ],
+  "nBloccati": 2,
+  "risultati": [
+    {
+      "scenario": "S2 aggiungi azione (fatto su telefono)",
+      "ok": true,
+      "dettaglio": "\"Comprare il pane\""
+    },
+    {
+      "scenario": "S2 modifica testo azione (fatto su pc)",
+      "ok": true,
+      "dettaglio": "\"Comprare il pane integrale\""
+    },
+    {
+      "scenario": "S2 completa azione (fatto su ipad)",
+      "ok": true,
+      "dettaglio": "true"
+    },
+    {
+      "scenario": "S2 XP dopo completamento (fatto su telefono)",
+      "ok": true,
+      "dettaglio": "10"
+    },
+    {
+      "scenario": "S2 togli spunta azione (XP torna giù?) (fatto su telefono)",
+      "ok": true,
+      "dettaglio": "[false,0]"
+    },
+    {
+      "scenario": "S2 rimuovi azione (fatto su pc)",
+      "ok": true,
+      "dettaglio": "false"
+    },
+    {
+      "scenario": "S2 cattura in inbox (fatto su ipad)",
+      "ok": true,
+      "dettaglio": "\"idea veloce\""
+    },
+    {
+      "scenario": "S2 backlog: aggiungi + passo (fatto su telefono)",
+      "ok": true,
+      "dettaglio": "[\"Progetto casa\",[\"misurarefalse\",\"comprarefalse\"]]"
+    },
+    {
+      "scenario": "S2 backlog: spunta passo (fatto su pc)",
+      "ok": true,
+      "dettaglio": "[true,false]"
+    },
+    {
+      "scenario": "S2 backlog: togli spunta passo (fatto su ipad)",
+      "ok": true,
+      "dettaglio": "[false,false]"
+    },
+    {
+      "scenario": "S2 abitudine nuova (fatto su telefono)",
+      "ok": true,
+      "dettaglio": "\"Camminare\""
+    },
+    {
+      "scenario": "S2 abitudine: spunta oggi (fatto su pc)",
+      "ok": true,
+      "dettaglio": "1"
+    },
+    {
+      "scenario": "S2 abitudine: TOGLI spunta oggi (fatto su ipad)",
+      "ok": true,
+      "dettaglio": "0"
+    },
+    {
+      "scenario": "S2 abitudine: rinomina (fatto su telefono)",
+      "ok": true,
+      "dettaglio": "\"Camminare 20 min\""
+    },
+    {
+      "scenario": "S2 abitudine: elimina (fatto su pc)",
+      "ok": true,
+      "dettaglio": "false"
+    },
+    {
+      "scenario": "S2 area: rinomina (fatto su ipad)",
+      "ok": true,
+      "dettaglio": "\"Corpo\""
+    },
+    {
+      "scenario": "S2 area: disattiva (fatto su telefono)",
+      "ok": true,
+      "dettaglio": "false"
+    },
+    {
+      "scenario": "S2 area: nuova (fatto su pc)",
+      "ok": true,
+      "dettaglio": "[true,true]"
+    },
+    {
+      "scenario": "S2 area: elimina (fatto su ipad)",
+      "ok": true,
+      "dettaglio": "[false,false]"
+    },
+    {
+      "scenario": "S2 check-in (fatto su telefono)",
+      "ok": true,
+      "dettaglio": "1"
+    },
+    {
+      "scenario": "S2 valutazione area (fatto su pc)",
+      "ok": true,
+      "dettaglio": "\"{\\\"2026-11-25\\\":{\\\"studio\\\":7}}\""
+    },
+    {
+      "scenario": "S2 piano del mattino (fatto su ipad)",
+      "ok": true,
+      "dettaglio": "\"{\\\"2026-11-25\\\":{\\\"compilato\\\":true,\\\"intenzione\\\":\\\"giornata tranquilla\\\",\\\"ts\\\":1795567578743}}\""
+    },
+    {
+      "scenario": "S2 review sera (fatto su telefono)",
+      "ok": false,
+      "dettaglio": {
+        "telefono": "{\"2026-11-25\":{\"ts\":1795567587096,\"vittoria\":\"fatto\",\"blocco\":\"niente\",\"shutdown\":true}}",
+        "pc": "{\"2026-11-25\":{\"blocco\":\"niente\",\"shutdown\":true,\"ts\":1795567587096,\"vittoria\":\"fatto\"}}",
+        "ipad": "{\"2026-11-25\":{\"blocco\":\"niente\",\"shutdown\":true,\"ts\":1795567587096,\"vittoria\":\"fatto\"}}"
+      }
+    },
+    {
+      "scenario": "S2 review settimana (fatto su pc)",
+      "ok": false,
+      "dettaglio": {
+        "telefono": "{\"2026-11-23\":{\"blocchi\":\"b\",\"imparato\":\"c\",\"prossima\":\"d\",\"ts\":1795567595453,\"vittorie\":\"a\"}}",
+        "pc": "{\"2026-11-23\":{\"ts\":1795567595453,\"vittorie\":\"a\",\"blocchi\":\"b\",\"imparato\":\"c\",\"prossima\":\"d\"}}",
+        "ipad": "{\"2026-11-23\":{\"blocchi\":\"b\",\"imparato\":\"c\",\"prossima\":\"d\",\"ts\":1795567595453,\"vittorie\":\"a\"}}"
+      }
+    },
+    {
+      "scenario": "S2 ritmo giorno (sonno) (fatto su ipad)",
+      "ok": false,
+      "dettaglio": {
+        "telefono": "{\"2026-11-25\":{\"pasti\":[{\"durata\":15,\"id\":\"colazione\",\"nome\":\"Colazione\",\"ora\":\"08:00\"},{\"durata\":45,\"id\":\"pranzo\",\"nome\":\"Pranzo\",\"ora\":\"13:00\"},{\"durata\":45,\"id\":\"cena\",\"nome\":\"Cena\",\"ora\":\"20:00\"}],\"sonno\":\"23:30\",\"sveglia\":\"07:00\"}}",
+        "pc": "{\"2026-11-25\":{\"pasti\":[{\"durata\":15,\"id\":\"colazione\",\"nome\":\"Colazione\",\"ora\":\"08:00\"},{\"durata\":45,\"id\":\"pranzo\",\"nome\":\"Pranzo\",\"ora\":\"13:00\"},{\"durata\":45,\"id\":\"cena\",\"nome\":\"Cena\",\"ora\":\"20:00\"}],\"sonno\":\"23:30\",\"sveglia\":\"07:00\"}}",
+        "ipad": "{\"2026-11-25\":{\"sveglia\":\"07:00\",\"sonno\":\"23:30\",\"pasti\":[{\"durata\":15,\"id\":\"colazione\",\"nome\":\"Colazione\",\"ora\":\"08:00\"},{\"durata\":45,\"id\":\"pranzo\",\"nome\":\"Pranzo\",\"ora\":\"13:00\"},{\"durata\":45,\"id\":\"cena\",\"nome\":\"Cena\",\"ora\":\"20:00\"}]}}"
+      }
+    },
+    {
+      "scenario": "S2 ritmo giorno: azzera (fatto su telefono)",
+      "ok": true,
+      "dettaglio": "\"{}\""
+    },
+    {
+      "scenario": "S2 sessione timer registrata (fatto su pc)",
+      "ok": true,
+      "dettaglio": "[25]"
+    },
+    {
+      "scenario": "S2 sessione corretta (40 min) (fatto su ipad)",
+      "ok": true,
+      "dettaglio": "[40]"
+    },
+    {
+      "scenario": "S2 sessione tolta (fatto su telefono)",
+      "ok": true,
+      "dettaglio": "0"
+    },
+    {
+      "scenario": "S2 lezione aggiunta (fatto su pc)",
+      "ok": true,
+      "dettaglio": "\"dormire presto aiuta\""
+    },
+    {
+      "scenario": "S2 lezione rimossa (fatto su ipad)",
+      "ok": true,
+      "dettaglio": "false"
+    },
+    {
+      "scenario": "S2 promemoria impostazioni (fatto su telefono)",
+      "ok": true,
+      "dettaglio": "\"{\\\"server\\\":\\\"\\\",\\\"chiave\\\":\\\"\\\",\\\"fissa\\\":false,\\\"voci\\\":{\\\"mattina\\\":{\\\"on\\\":true,\\\"ora\\\":\\\"08:30\\\"},\\\"checkin\\\":{\\\"o"
+    },
+    {
+      "scenario": "S2 tema/aspetto (profilo.modo) (fatto su pc)",
+      "ok": true,
+      "dettaglio": "\"scuro\""
+    },
+    {
+      "scenario": "S2 profilo.modo di nuovo chiaro (fatto su ipad)",
+      "ok": true,
+      "dettaglio": "\"chiaro\""
+    },
+    {
+      "scenario": "S2 timer avviato (fatto su telefono)",
+      "ok": true,
+      "dettaglio": "true"
+    },
+    {
+      "scenario": "S2 timer fermato su altro dispositivo (fatto su pc)",
+      "ok": true,
+      "dettaglio": "false"
+    },
+    {
+      "scenario": "S2 esperimento creato (fatto su ipad)",
+      "ok": true,
+      "dettaglio": "true"
+    },
+    {
+      "scenario": "S2 nessun errore in pagina su telefono",
+      "ok": true,
+      "dettaglio": []
+    },
+    {
+      "scenario": "S2 nessun errore in pagina su pc",
+      "ok": true,
+      "dettaglio": []
+    },
+    {
+      "scenario": "S2 nessun errore in pagina su ipad",
+      "ok": true,
+      "dettaglio": []
+    }
+  ]
+}

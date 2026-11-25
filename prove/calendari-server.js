@@ -83,7 +83,10 @@ export async function runTransaction(db, f) { const tx = { get: () => Promise.re
       api.push({ via: q.url.split('?')[0], metodo: q.method });
       const risp = await worker.fetch(new Request(SITO + q.url, { method: q.method, headers: h, body: q.method === 'GET' || q.method === 'HEAD' ? undefined : corpo }), env, { waitUntil() {} });
       const testa = {};
-      risp.headers.forEach((v, k) => { testa[k] = v; });
+      risp.headers.forEach((v, k) => { if (k !== 'set-cookie') testa[k] = v; });
+      /* più biscotti nella stessa risposta (il ritorno ne toglie uno e ne lascia un altro) */
+      const biscotti = risp.headers.getSetCookie ? risp.headers.getSetCookie() : [];
+      if (biscotti.length) testa['set-cookie'] = biscotti;
       /* LA PAGINA DI GOOGLE la fa la prova, qui: Playwright non intercetta i
          passaggi di un rimando (302), e il browser andrebbe dal Google vero.
          Il «sì» si dà subito, e si rimanda al ritorno del Worker. */
@@ -160,7 +163,7 @@ export async function runTransaction(db, f) { const tx = { get: () => Promise.re
       nota: (document.getElementById('cal-google-server') || {}).textContent,
       memoria: JSON.stringify(Object.assign({}, localStorage))
     }));
-    ok('il giro è passato da /inizia, /vai e /ritorno', ['/api/calendari/google/inizia', '/api/calendari/google/vai', 'google-consenso', '/api/calendari/google/ritorno'].every((x) => api.some((a) => a.via === x)),
+    ok('il giro è passato da /inizia, /vai, /ritorno e /conferma', ['/api/calendari/google/inizia', '/api/calendari/google/vai', 'google-consenso', '/api/calendari/google/ritorno', '/api/calendari/google/conferma'].every((x) => api.some((a) => a.via === x)),
       api.map((a) => a.via).join(' '));
     ok('si torna all’app, e l’indirizzo è pulito', !/lmcal|esito|code=/.test(v.url), v.url);
     ok('il pannello si riapre da sé', /Calendari collegati/.test(v.titolo || ''), v.titolo);

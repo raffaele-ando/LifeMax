@@ -382,7 +382,7 @@ cancella tutto quello che aveva di quel calendario.
 | `/api/calendari/stato` dice `false` | manca un segreto in Cloudflare | punto S4 |
 | Google dice `redirect_uri_mismatch` dopo «Ricollega» | manca l'indirizzo di ritorno della sentinella | punto S1.3 |
 | Microsoft dice `AADSTS50011` dopo «Ricollega» | manca la piattaforma «Web» | punto S2.2 |
-| «Il collegamento è tornato su un browser diverso» | il «sì» è stato dato in un'altra app o finestra | ricomincia dal pannello, nello stesso browser |
+| «Questo collegamento non era partito da qui» | il «sì» è stato dato in un'altra app o finestra, o il link di collegamento l'ha preparato qualcun altro (la conferma non passa: è la difesa) | ricomincia dal pannello, nello stesso browser |
 | «Ricollega» torna ogni 7 giorni con Google | l'app Google è ancora «In prova» | punto S1.6 |
 
 ---

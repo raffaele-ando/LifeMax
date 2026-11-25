@@ -1,0 +1,6 @@
+  KO  A1 tablet con la data al 2001: la sua rinomina arriva agli altri e resta  -> {"telefono":"A da rinominare sul tablet","tablet":"A da rinominare sul tablet","Bsultelefono":"B da cancellare sul tablet","Bsultablet":"B da cancellare sul tablet","nomeT":"Pia dal tablet","nomeV":"Pia dal tablet"}
+  KO  A2 tablet nel 2001: la sua cancellazione arriva agli altri e resta  -> {"telefono":"A da rinominare sul tablet","tablet":"A da rinominare sul tablet","Bsultelefono":"B da cancellare sul tablet","Bsultablet":"B da cancellare sul tablet","nomeT":"Pia dal tablet","nomeV":"Pia dal tablet"}
+  ok  A3 tablet nel 2001: il nome cambiato resta  -> {"telefono":"A da rinominare sul tablet","tablet":"A da rinominare sul tablet","Bsultelefono":"B da cancellare sul tablet","Bsultablet":"B da cancellare sul tablet","nomeT":"Pia dal tablet","nomeV":"Pia dal tablet"}
+  ok  A4 una cosa scritta sul tablet nel 2001 finisce nel giorno 2001 (non si vede in «oggi»)  -> {"giornoTablet":"2001-01-01","giornoNelCloud":"2001-01-01"}
+  KO  B1 PC con l’anno avanti di 2: una cosa cancellata dal telefono NON risorge  -> {"telefono":null,"pc":"C cancellata dal telefono","lapidiPc":0,"lapidiTel":1}
+  ok  B2 le lapidi nel cloud non vengono buttate dal PC con l’anno sbagliato  -> {"lapidiTelefonoDopo":1,"cloud":0}

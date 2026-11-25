@@ -1,0 +1,58 @@
+{
+  "script": "n09-apertura-offline",
+  "quando": "2026-11-25T01:21:26.280Z",
+  "radice": "/tmp/claude-0/-home-user-LifeMax/99c3d469-10e9-545a-afc2-1ce7e01478d1/scratchpad/audit-2/wt",
+  "bloccati": [
+    "https://apis.google.com/js/api.js?onload=__iframefcb697286",
+    "https://apis.google.com/js/api.js?onload=__iframefcb954339",
+    "https://apis.google.com/js/api.js?onload=__iframefcb346222",
+    "https://apis.google.com/js/api.js?onload=__iframefcb889897"
+  ],
+  "nBloccati": 4,
+  "risultati": [
+    {
+      "scenario": "A1 l’app (già usata) riaperta SENZA rete si apre",
+      "ok": false,
+      "dettaglio": {
+        "serviceWorker": "attivo",
+        "errore": "Error: page.reload: net::ERR_INTERNET_DISCONNECTED\nCall log:\n\u001b[2m  - waiting for navigation until \"load\"\u001b[22m\n",
+        "testoPagina": "Tap the dino to play\n\nTry:\n\nChecking the network cables, modem, and router\nReconnecting to Wi-Fi\nERR_INTERNET_DISCONNECT"
+      }
+    },
+    {
+      "scenario": "B1 SDK di Firebase non caricato all’apertura: quando torna, il cloud riparte da solo (senza chiudere l’app)",
+      "ok": false,
+      "dettaglio": {
+        "allApertura": {
+          "cloud": false,
+          "utente": false
+        },
+        "dopoRitornoRete": {
+          "cloud": false,
+          "utente": false,
+          "pastiglia": false
+        }
+      }
+    },
+    {
+      "scenario": "B2 …e l’app dice che c’è qualcosa «non ancora nel cloud»",
+      "ok": false,
+      "dettaglio": {
+        "cloud": false,
+        "utente": false,
+        "pastiglia": false
+      }
+    },
+    {
+      "scenario": "C1 la modifica fatta in quel momento arriva agli altri senza riaprire l’app",
+      "ok": false,
+      "dettaglio": [
+        "ieri"
+      ]
+    },
+    {
+      "scenario": "C2 riaprendo l’app (con l’SDK), la modifica arriva",
+      "ok": true
+    }
+  ]
+}

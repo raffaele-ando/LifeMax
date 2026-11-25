@@ -1,0 +1,12 @@
+  ok  A0 la versione vecchia scrive il documento unico (campo data)  -> ["__id","data","updatedAt","email","name"]
+  ok  A1 primo accesso con la nuova: dati e profilo arrivano interi  -> {"azioni":["V1 vecchia","V2 fatta[x]"],"nome":"Vera","visione":"una vita semplice","checkins":1}
+  ok  A2 il cloud passa ai pezzi, con una copia «prima di dividere»  -> {"schema":2,"copie":["prima-di-dividere-il-documento"]}
+  ok  B1 scritture alternate vecchia/nuova: il cloud (forma nuova) ha tutto  -> ["B1 dalla scheda vecchia","B2 dalla nuova","B3 dalla scheda vecchia","V1 vecchia","V2 fatta"]
+  ok  B2 la nuova vede quello che scrive la vecchia  -> ["B1 dalla scheda vecchia","B2 dalla nuova","B3 dalla scheda vecchia","V1 vecchia","V2 fatta"]
+  KO  C1 la scheda vecchia riceve le cose scritte dalla nuova  -> ["B1 dalla scheda vecchia","B3 dalla scheda vecchia","V1 vecchia","V2 fatta"]
+  KO  C2 la scheda vecchia viene avvisata che deve ricaricare  -> nessun avviso
+  ok  B3 cancellata sulla nuova, la vecchia (che l’ha ancora) riscrive: NON risorge  -> ["V1 vecchia","V2 fatta","B2 dalla nuova","B3 dalla scheda vecchia","B4 dalla scheda vecchia dopo la cancellazione"]
+  ok  B4 nome cambiato sulla nuova, poi la vecchia riscrive col nome vecchio: resta quello nuovo  -> {"cloud":"Vera Rossi","nuova":"Vera Rossi","vecchia":"Vera"}
+  ok  B5 i punti non si gonfiano a ogni giro vecchia/nuova  -> {"nuova":13,"vecchia":13,"cloud":13}
+  ok  D1 un anno di dati: primo caricamento e un telefono nuovo che entra  -> {"azioni":2562,"telefono":2562,"msPrimoCaricamento":5152,"msTelefono":1442,"fette":22,"fettaPiuGrossaKB":199,"principaleKB":1}
+  ok  D2 una modifica con un anno di dati arriva in pochi secondi  -> {"ms":5904}

@@ -1,0 +1,166 @@
+{
+  "script": "n04-orologi",
+  "quando": "2026-11-25T01:26:34.031Z",
+  "radice": "/tmp/claude-0/-home-user-LifeMax/99c3d469-10e9-545a-afc2-1ce7e01478d1/scratchpad/audit-2/wt",
+  "bloccati": [
+    "https://apis.google.com/js/api.js?onload=__iframefcb398006",
+    "https://www.google.com/images/cleardot.gif?zx=vmsglteymx35",
+    "https://www.google.com/images/cleardot.gif?zx=mjs9qmb8wwoo",
+    "https://www.google.com/images/cleardot.gif?zx=dzkpv7rp2czd",
+    "https://www.google.com/images/cleardot.gif?zx=jbeqxvk1argl",
+    "https://www.google.com/images/cleardot.gif?zx=w545khdpvg21",
+    "https://apis.google.com/js/api.js?onload=__iframefcb41960",
+    "https://www.google.com/images/cleardot.gif?zx=93zyqz4eoz1o",
+    "https://www.google.com/images/cleardot.gif?zx=eyww94kq4jc8",
+    "https://www.google.com/images/cleardot.gif?zx=4hxy6hhma4li",
+    "https://www.google.com/images/cleardot.gif?zx=ryioo22fc9f3",
+    "https://www.google.com/images/cleardot.gif?zx=gzli2fa8svnw",
+    "https://www.google.com/images/cleardot.gif?zx=mehl646wrhxo",
+    "https://www.google.com/images/cleardot.gif?zx=1uvidlbskmq",
+    "https://apis.google.com/js/api.js?onload=__iframefcb22527",
+    "https://apis.google.com/js/api.js?onload=__iframefcb436451",
+    "https://www.google.com/images/cleardot.gif?zx=m79ak9ewm",
+    "https://www.google.com/images/cleardot.gif?zx=bzswu5inxb3z",
+    "https://www.google.com/images/cleardot.gif?zx=fb6fg95vy5md",
+    "https://www.google.com/images/cleardot.gif?zx=p0eky1kvjsir",
+    "https://www.google.com/images/cleardot.gif?zx=ywqrl9sboh3i",
+    "https://www.google.com/images/cleardot.gif?zx=x6sqqvlv29sr",
+    "https://apis.google.com/js/api.js?onload=__iframefcb159111",
+    "https://www.google.com/images/cleardot.gif?zx=fvmb7vkazs8g",
+    "https://www.google.com/images/cleardot.gif?zx=7k8dxypujoxw",
+    "https://www.google.com/images/cleardot.gif?zx=agkrmz1nhas"
+  ],
+  "nBloccati": 26,
+  "risultati": [
+    {
+      "scenario": "A1 orologio +3h (scarto misurato all’accesso): vince la modifica fatta davvero dopo",
+      "ok": true,
+      "dettaglio": {
+        "pc": "A dal pc (DOPO, ora giusta)",
+        "telefono": "A dal pc (DOPO, ora giusta)"
+      }
+    },
+    {
+      "scenario": "A2 orologio +3h e app riaperta col cloud irraggiungibile: vince la modifica fatta davvero dopo",
+      "ok": false,
+      "dettaglio": {
+        "pc": "B dal telefono (PRIMA, app riaperta offline, +3h)",
+        "telefono": "B dal telefono (PRIMA, app riaperta offline, +3h)"
+      }
+    },
+    {
+      "scenario": "A3 orologio -10 min, app riaperta col cloud irraggiungibile: la cancellazione fatta DOPO la modifica vince",
+      "ok": true,
+      "dettaglio": {
+        "pc": null,
+        "tablet": null
+      }
+    },
+    {
+      "scenario": "C1 abitudine spuntata a New York: per Roma in quale giorno cade (nota, non un errore)",
+      "ok": true,
+      "dettaglio": {
+        "oggiNY": "2026-11-24",
+        "oggiRoma": "2026-11-25",
+        "visto": {
+          "fatti": [
+            "2026-11-24"
+          ],
+          "oggiRoma": "2026-11-25",
+          "fattaOggiPerRoma": false
+        }
+      }
+    },
+    {
+      "scenario": "C2 un’azione «alle 20:00» scritta a New York: a Roma resta «alle 20:00» (ora da muro, non istante)",
+      "ok": true,
+      "dettaglio": {
+        "NY": {
+          "id": "idmwvfz7hh51klq7",
+          "data": "2026-11-24",
+          "ora": "20:00"
+        },
+        "Roma": {
+          "data": "2026-11-24",
+          "ora": "20:00"
+        }
+      }
+    },
+    {
+      "scenario": "D1 i conti sui giorni attraverso l’ora legale tornano",
+      "ok": true,
+      "dettaglio": {
+        "marzo": [
+          "2027-03-28",
+          "2027-03-29"
+        ],
+        "ottobre": [
+          "2026-10-25",
+          "2026-10-26"
+        ],
+        "tra": [
+          2,
+          2
+        ]
+      }
+    },
+    {
+      "scenario": "E1 mezzanotte con l’app aperta: il giorno cambia e la cosa nuova va nel giorno nuovo",
+      "ok": true,
+      "dettaglio": {
+        "prima": {
+          "oggi": "2026-11-25",
+          "titolo": "LifeMax"
+        },
+        "dopo": {
+          "oggi": "2026-11-26",
+          "titolo": "LifeMax",
+          "dataAzione": "2026-11-26"
+        }
+      }
+    },
+    {
+      "scenario": "E2 …e lo schermo si aggiorna da solo (intestazione cambiata senza toccare niente)",
+      "ok": false,
+      "dettaglio": {
+        "prima": "LifeMax",
+        "dopo": "LifeMax"
+      }
+    },
+    {
+      "scenario": "F1 modifiche su giorni passati e futuri (anche in altri trimestri) arrivano",
+      "ok": true,
+      "dettaglio": {
+        "ieriFatta": true,
+        "futura": "2027-01-04",
+        "voto": true,
+        "ritmo": true
+      }
+    },
+    {
+      "scenario": "F2 riga spostata di trimestre (pezzo diverso) mentre l’altro la modificava offline: una riga sola, uguale ovunque",
+      "ok": true,
+      "dettaglio": {
+        "pc": [
+          "fra 40 giorni (altro trimestre) @2026-11-28"
+        ],
+        "telefono": [
+          "fra 40 giorni (altro trimestre) @2026-11-28"
+        ]
+      }
+    },
+    {
+      "scenario": "F3 i pezzi nel cloud",
+      "ok": true,
+      "dettaglio": [
+        "base",
+        "giorni.2027q1",
+        "azioni.2026q4",
+        "giorni.2026q3",
+        "giorni.2026q4",
+        "registro.2026q4",
+        "cancellati.2026q4"
+      ]
+    }
+  ]
+}

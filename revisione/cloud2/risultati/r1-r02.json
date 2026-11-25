@@ -1,0 +1,51 @@
+{
+  "script": "r1-r02",
+  "quando": "2026-11-25T00:40:38.575Z",
+  "radice": "/tmp/claude-0/-home-user-LifeMax/99c3d469-10e9-545a-afc2-1ce7e01478d1/scratchpad/audit-2/wt",
+  "bloccati": [
+    "https://apis.google.com/js/api.js?onload=__iframefcb360433"
+  ],
+  "nBloccati": 1,
+  "risultati": [
+    {
+      "scenario": "R02a annullamenti fatti sul telefono arrivano al pc",
+      "ok": true,
+      "dettaglio": {
+        "telefono": {
+          "azioneFatta": false,
+          "xp": 0,
+          "abitudineSpuntata": false,
+          "areaStudioAttiva": false,
+          "orariOggiPersonalizzati": false
+        },
+        "pc": {
+          "azioneFatta": false,
+          "xp": 0,
+          "abitudineSpuntata": false,
+          "areaStudioAttiva": false,
+          "orariOggiPersonalizzati": false
+        }
+      }
+    },
+    {
+      "scenario": "R02b dopo una scrittura qualunque del pc, sul telefono NON tornano spunte/area/orari annullati",
+      "ok": false,
+      "dettaglio": {
+        "telefonoPrima": {
+          "azioneFatta": false,
+          "xp": 0,
+          "abitudineSpuntata": false,
+          "areaStudioAttiva": false,
+          "orariOggiPersonalizzati": false
+        },
+        "telefonoDopo": {
+          "azioneFatta": false,
+          "xp": 1,
+          "abitudineSpuntata": false,
+          "areaStudioAttiva": false,
+          "orariOggiPersonalizzati": false
+        }
+      }
+    }
+  ]
+}

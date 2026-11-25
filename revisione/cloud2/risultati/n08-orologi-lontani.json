@@ -1,0 +1,81 @@
+{
+  "script": "n08-orologi-lontani",
+  "quando": "2026-11-25T01:37:59.476Z",
+  "radice": "/tmp/claude-0/-home-user-LifeMax/99c3d469-10e9-545a-afc2-1ce7e01478d1/scratchpad/audit-2/wt",
+  "bloccati": [
+    "https://apis.google.com/js/api.js?onload=__iframefcb88528",
+    "https://apis.google.com/js/api.js?onload=__iframefcb769566",
+    "https://www.google.com/images/cleardot.gif?zx=avbi875nhywl",
+    "https://www.google.com/images/cleardot.gif?zx=y6n433r16m49",
+    "https://www.google.com/images/cleardot.gif?zx=tkp9o6upda9b",
+    "https://www.google.com/images/cleardot.gif?zx=krf46e1owm2z",
+    "https://www.google.com/images/cleardot.gif?zx=qr0r48s7re5k",
+    "https://www.google.com/images/cleardot.gif?zx=lq1aq03vxqqc",
+    "https://www.google.com/images/cleardot.gif?zx=6xpabj9oclrv"
+  ],
+  "nBloccati": 9,
+  "risultati": [
+    {
+      "scenario": "A1 tablet con la data al 2001: la sua rinomina arriva agli altri e resta",
+      "ok": false,
+      "dettaglio": {
+        "telefono": "A da rinominare sul tablet",
+        "tablet": "A da rinominare sul tablet",
+        "Bsultelefono": "B da cancellare sul tablet",
+        "Bsultablet": "B da cancellare sul tablet",
+        "nomeT": "Pia dal tablet",
+        "nomeV": "Pia dal tablet"
+      }
+    },
+    {
+      "scenario": "A2 tablet nel 2001: la sua cancellazione arriva agli altri e resta",
+      "ok": false,
+      "dettaglio": {
+        "telefono": "A da rinominare sul tablet",
+        "tablet": "A da rinominare sul tablet",
+        "Bsultelefono": "B da cancellare sul tablet",
+        "Bsultablet": "B da cancellare sul tablet",
+        "nomeT": "Pia dal tablet",
+        "nomeV": "Pia dal tablet"
+      }
+    },
+    {
+      "scenario": "A3 tablet nel 2001: il nome cambiato resta",
+      "ok": true,
+      "dettaglio": {
+        "telefono": "A da rinominare sul tablet",
+        "tablet": "A da rinominare sul tablet",
+        "Bsultelefono": "B da cancellare sul tablet",
+        "Bsultablet": "B da cancellare sul tablet",
+        "nomeT": "Pia dal tablet",
+        "nomeV": "Pia dal tablet"
+      }
+    },
+    {
+      "scenario": "A4 una cosa scritta sul tablet nel 2001 finisce nel giorno 2001 (non si vede in «oggi»)",
+      "ok": true,
+      "dettaglio": {
+        "giornoTablet": "2001-01-01",
+        "giornoNelCloud": "2001-01-01"
+      }
+    },
+    {
+      "scenario": "B1 PC con l’anno avanti di 2: una cosa cancellata dal telefono NON risorge",
+      "ok": false,
+      "dettaglio": {
+        "telefono": null,
+        "pc": "C cancellata dal telefono",
+        "lapidiPc": 0,
+        "lapidiTel": 1
+      }
+    },
+    {
+      "scenario": "B2 le lapidi nel cloud non vengono buttate dal PC con l’anno sbagliato",
+      "ok": true,
+      "dettaglio": {
+        "lapidiTelefonoDopo": 1,
+        "cloud": 0
+      }
+    }
+  ]
+}

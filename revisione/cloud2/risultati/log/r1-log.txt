@@ -1,0 +1,215 @@
+=== r01
+   46.285 pezzi nel cloud letti in blocco 0 fette
+   46.286 operazione avviata: sincronizzazione (prima sincronizzazione) in corso: 1
+   46.329 cloud aggiornato 1 pezzi riscritti su 1
+   46.332 Ricevuto aggiornamento da un altro dispositivo 
+   46.332 operazione conclusa: sincronizzazione → saved 
+   46.335 ascolto in tempo reale attivo 
+   47.536 il cloud è cambiato da un altro dispositivo: sincronizzo rev 2
+   47.536 operazione avviata: sincronizzazione (dal cloud) in corso: 1
+   47.616 Ricevuto aggiornamento da un altro dispositivo 
+   47.618 operazione conclusa: sincronizzazione → saved 
+   48.594 operazione avviata: sincronizzazione (modifica) in corso: 1
+   52.388 rete tornata: riprovo il salvataggio 
+   52.419 il cloud è cambiato da un altro dispositivo: sincronizzo rev 3
+   54.595 il cloud non ha ancora confermato dopo 6s online: true
+   55.260 cloud aggiornato 2 pezzi riscritti su 3
+   55.261 Ricevuto aggiornamento da un altro dispositivo 
+   55.335 Ricevuto aggiornamento da un altro dispositivo 
+   55.335 operazione conclusa: sincronizzazione → saved 
+ pc:
+   46.115 SDK Firebase caricato 
+   46.118 Firestore avviato riconoscimento automatico del canale lungo attivo
+   46.129 cloud pronto progetto lifemax-9dc63
+   46.130 nessun account connesso: i dati restano su questo dispositivo 
+   47.369 accesso riscontrato, avvio la prima sincronizzazione uid nYjt2o…
+   47.459 prima unione da questo dispositivo esempio tenuto fuori, azzeramento locale non applicato al cloud
+   47.486 pezzi nel cloud letti in blocco 1 fette
+   47.486 operazione avviata: sincronizzazione (prima sincronizzazione) in corso: 1
+   47.538 cloud aggiornato 1 pezzi riscritti su 1
+   47.539 Ricevuto aggiornamento da un altro dispositivo 
+   47.539 operazione conclusa: sincronizzazione → saved 
+   47.540 ascolto in tempo reale attivo 
+   47.617 copia di sicurezza nel cloud copia-del-giorno · 2 KB
+   49.101 operazione avviata: sincronizzazione (modifica) in corso: 1
+   49.153 cloud aggiornato 3 pezzi riscritti su 3
+   49.153 Ricevuto aggiornamento da un altro dispositivo 
+   49.154 operazione conclusa: sincronizzazione → saved 
+   55.255 il cloud è cambiato da un altro dispositivo: sincronizzo rev 4
+   55.255 operazione avviata: sincronizzazione (dal cloud) in corso: 1
+   55.372 Ricevuto aggiornamento da un altro dispositivo 
+   55.372 operazione conclusa: sincronizzazione → saved 
+=== r02
+dopo preparazione  telefono {
+  azioneFatta: true,
+  xp: 18,
+  abitudineSpuntata: true,
+  areaStudioAttiva: true,
+  orariOggiPersonalizzati: true
+}  pc {
+  azioneFatta: true,
+  xp: 18,
+  abitudineSpuntata: true,
+  areaStudioAttiva: true,
+  orariOggiPersonalizzati: true
+}
+dopo annullare sul telefono  telefono {
+  azioneFatta: false,
+  xp: 0,
+  abitudineSpuntata: false,
+  areaStudioAttiva: false,
+  orariOggiPersonalizzati: false
+}  pc {
+  azioneFatta: false,
+  xp: 0,
+  abitudineSpuntata: false,
+  areaStudioAttiva: false,
+  orariOggiPersonalizzati: false
+}  cloud { fatta: false, xp: 0, area: false }
+  ok  R02a annullamenti fatti sul telefono arrivano al pc  -> {"telefono":{"azioneFatta":false,"xp":0,"abitudineSpuntata":false,"areaStudioAttiva":false,"orariOggiPersonalizzati":false},"pc":{"azioneFatta":false,"xp":0,"abitudineSpuntata":false,"areaStudioAttiva":false,"orariOggiPersonalizzati":false}}
+  KO  R02b dopo una scrittura qualunque del pc, sul telefono NON tornano spunte/area/orari annullati  -> {"telefonoPrima":{"azioneFatta":false,"xp":0,"abitudineSpuntata":false,"areaStudioAttiva":false,"orariOggiPersonalizzati":false},"telefonoDopo":{"azioneFatta":false,"xp":1,"abitudineSpuntata":false,"areaStudioAttiva":false,"orariOggiPersonalizzati":false}}
+=== r03
+  ok  R03 iPad nuovo accede: il profilo del telefono resta (nome, visione, sveglia, timer, tema)  -> {"telefonoPrima":{"nome":"Mario","visione":"Vivere con calma","sveglia":"06:00","pomodoro":50,"modo":"scuro","updatedAt":1795567240828},"iPadAppenaAperto":{"updatedAt":1795567243424,"onboarded":false,"benvenuto":true},"telefonoDopo":{"nome":"Mario","visione":"Vivere con calma","sveglia":"06:00","pomodoro":50,"modo":"scuro","updatedAt":1795567243424},"iPadDopo":{"nome":"Mario","visione":"Vivere con calma","sveglia":"06:00","pomodoro":50,"modo":"scuro","updatedAt":1795567243424}}
+=== r04
+  ok  R04a.1 sessione chiusa da Firebase (account disabilitato): l’utente viene avvisato  -> {"connesso":false,"azioni":0,"avvisi":["La sessione è finita: accedi di nuovo per ritrovare i tuoi dati."]}
+  ok  R04a.2 Luigi accede sullo stesso pc: il suo account NON contiene i dati di Mario  -> {"cloudLuigi":[],"checkinsLuigi":0,"schermoLuigi":""}
+  ok  R04b.1 «Esci» nella scheda 1: dopo 6 s la scheda 2 è disconnessa e vuota  -> {"connesso":false,"azioni":0}
+  ok  R04b.2 dopo una scrittura nella scheda 2, il salvataggio del dispositivo resta pulito  -> []
+  ok  R04b.3 Luigi accede nella scheda 1: nessun dato di Mario nel suo account  -> []
+=== s01
+  ok  S1.1 scritture simultanee (telefono+pc online): tutti vedono X e Y  -> {"telefono":"X da telefono,Y da pc","pc":"X da telefono,Y da pc","ipad":"X da telefono,Y da pc","cloud":"X da telefono,Y da pc"}
+  ok  S1.2 telefono offline aggiunge X, pc aggiunge Y, telefono torna online: tutti vedono X e Y  -> {"telefono":"X offline telefono,Y pc","pc":"X offline telefono,Y pc","ipad":"X offline telefono,Y pc","cloud":"X offline telefono,Y pc"}
+  ok  S1.3 dopo il ritorno: il pc (che ha scritto per ultimo) vede la X del telefono  -> {"telefono":"X solo telefono,Y pc (piu recente)","pc":"X solo telefono,Y pc (piu recente)","ipad":"X solo telefono,Y pc (piu recente)","cloud":"X solo telefono,Y pc (piu recente)","scrittureTelefono":[],"scrittureP":[]}
+  ok  S1.3b il pc scrive ancora: X resta nel cloud e arriva al pc  -> {"telefono":"X solo telefono,Y pc (piu recente),Z pc","pc":"X solo telefono,Y pc (piu recente),Z pc","ipad":"X solo telefono,Y pc (piu recente),Z pc","cloud":"X solo telefono,Y pc (piu recente),Z pc"}
+  ok  S1.3c il telefono non torna più (telefono cambiato): X è ancora nel cloud  -> {"cloud":"W pc,X solo telefono,Y pc (piu recente),Z pc","pc":"W pc,X solo telefono,Y pc (piu recente),Z pc","ipad":"W pc,X solo telefono,Y pc (piu recente),Z pc"}
+  ok  S1.3d ricaricando l’iPad, X ricompare?  -> W pc,X solo telefono,Y pc (piu recente),Z pc
+/tmp/claude-0/-home-user-LifeMax/99c3d469-10e9-545a-afc2-1ce7e01478d1/scratchpad/audit-2/consegna/script/r1/s01-concorrenza.js:65
+  console.log('log pc:\n' + (await L.registroCloud(B, 40)).join('\n'));
+                                     ^
+
+TypeError: L.registroCloud is not a function
+    at /tmp/claude-0/-home-user-LifeMax/99c3d469-10e9-545a-afc2-1ce7e01478d1/scratchpad/audit-2/consegna/script/r1/s01-concorrenza.js:65:38
+
+Node.js v22.23.4
+=== s02
+  ok  S2 aggiungi azione (fatto su telefono)  -> "Comprare il pane"
+  ok  S2 modifica testo azione (fatto su pc)  -> "Comprare il pane integrale"
+  ok  S2 completa azione (fatto su ipad)  -> true
+  ok  S2 XP dopo completamento (fatto su telefono)  -> 10
+  ok  S2 togli spunta azione (XP torna giù?) (fatto su telefono)  -> [false,0]
+  ok  S2 rimuovi azione (fatto su pc)  -> false
+  ok  S2 cattura in inbox (fatto su ipad)  -> "idea veloce"
+  ok  S2 backlog: aggiungi + passo (fatto su telefono)  -> ["Progetto casa",["misurarefalse","comprarefalse"]]
+  ok  S2 backlog: spunta passo (fatto su pc)  -> [true,false]
+  ok  S2 backlog: togli spunta passo (fatto su ipad)  -> [false,false]
+  ok  S2 abitudine nuova (fatto su telefono)  -> "Camminare"
+  ok  S2 abitudine: spunta oggi (fatto su pc)  -> 1
+  ok  S2 abitudine: TOGLI spunta oggi (fatto su ipad)  -> 0
+  ok  S2 abitudine: rinomina (fatto su telefono)  -> "Camminare 20 min"
+  ok  S2 abitudine: elimina (fatto su pc)  -> false
+  ok  S2 area: rinomina (fatto su ipad)  -> "Corpo"
+  ok  S2 area: disattiva (fatto su telefono)  -> false
+  ok  S2 area: nuova (fatto su pc)  -> [true,true]
+  ok  S2 area: elimina (fatto su ipad)  -> [false,false]
+  ok  S2 check-in (fatto su telefono)  -> 1
+  ok  S2 valutazione area (fatto su pc)  -> "{\"2026-11-25\":{\"studio\":7}}"
+  ok  S2 piano del mattino (fatto su ipad)  -> "{\"2026-11-25\":{\"compilato\":true,\"intenzione\":\"giornata tranquilla\",\"ts\":1795567578743}}"
+  KO  S2 review sera (fatto su telefono)  -> {"telefono":"{\"2026-11-25\":{\"ts\":1795567587096,\"vittoria\":\"fatto\",\"blocco\":\"niente\",\"shutdown\":true}}","pc":"{\"2026-11-25\":{\"blocco\":\"niente\",\"shutdown\":true,\"ts\":1795567587096,\"vittoria\":\"fatto\"}}","ipad":"{\"2026-11-25\":{\"blocco\":\"niente\",\"shutdown\":true,\"ts\":1795567587096,\"vittoria\":\"fatto\"}}"}
+  KO  S2 review settimana (fatto su pc)  -> {"telefono":"{\"2026-11-23\":{\"blocchi\":\"b\",\"imparato\":\"c\",\"prossima\":\"d\",\"ts\":1795567595453,\"vittorie\":\"a\"}}","pc":"{\"2026-11-23\":{\"ts\":1795567595453,\"vittorie\":\"a\",\"blocchi\":\"b\",\"imparato\":\"c\",\"prossima\":\"d\"}}","ipad":"{\"2026-11-23\":{\"blocchi\":\"b\",\"imparato\":\"c\",\"prossima\":\"d\",\"ts\":1795567595453,\"vittorie\":\"a\"}}"}
+  KO  S2 ritmo giorno (sonno) (fatto su ipad)  -> {"telefono":"{\"2026-11-25\":{\"pasti\":[{\"durata\":15,\"id\":\"colazione\",\"nome\":\"Colazione\",\"ora\":\"08:00\"},{\"durata\":45,\"id\":\"pranzo\",\"nome\":\"Pranzo\",\"ora\":\"13:00\"},{\"durata\":45,\"id\":\"cena\",\"nome\":\"Cena\",\"ora\":\"20:00\"}],\"sonno\":\"23:30\",\"sveglia\":\"07:00\"}}","pc":"{\"2026-11-25\":{\"pasti\":[{\"durata\":15,\"id\":\"colazione\",\"nome\":\"Colazione\",\"ora\":\"08:00\"},{\"durata\":45,\"id\":\"pranzo\",\"nome\":\"Pranzo\",\"ora\":\"13:00\"},{\"durata\":45,\"id\":\"cena\",\"nome\":\"Cena\",\"ora\":\"20:00\"}],\"sonno\":\"23:30\",\"sveglia\":\"07:00\"}}","ipad":"{\"2026-11-25\":{\"sveglia\":\"07:00\",\"sonno\":\"23:30\",\"pasti\":[{\"durata\":15,\"id
+  ok  S2 ritmo giorno: azzera (fatto su telefono)  -> "{}"
+  ok  S2 sessione timer registrata (fatto su pc)  -> [25]
+  ok  S2 sessione corretta (40 min) (fatto su ipad)  -> [40]
+  ok  S2 sessione tolta (fatto su telefono)  -> 0
+  ok  S2 lezione aggiunta (fatto su pc)  -> "dormire presto aiuta"
+  ok  S2 lezione rimossa (fatto su ipad)  -> false
+  ok  S2 promemoria impostazioni (fatto su telefono)  -> "{\"server\":\"\",\"chiave\":\"\",\"fissa\":false,\"voci\":{\"mattina\":{\"on\":true,\"ora\":\"08:30\"},\"checkin\":{\"o
+  ok  S2 tema/aspetto (profilo.modo) (fatto su pc)  -> "scuro"
+  ok  S2 profilo.modo di nuovo chiaro (fatto su ipad)  -> "chiaro"
+  ok  S2 timer avviato (fatto su telefono)  -> true
+  ok  S2 timer fermato su altro dispositivo (fatto su pc)  -> false
+  ok  S2 esperimento creato (fatto su ipad)  -> true
+  ok  S2 nessun errore in pagina su telefono  -> []
+  ok  S2 nessun errore in pagina su pc  -> []
+  ok  S2 nessun errore in pagina su ipad  -> []
+=== s03
+  ok  S3.1 modifica vs modifica offline (pc modifica per ultimo, torna per ultimo): tutti uguali e vince l’ultima modifica (ORE 9)  -> {"telefono":"Telefonare al medico ORE 9","pc":"Telefonare al medico ORE 9","ipad":"Telefonare al medico ORE 9","cloud":"Telefonare al medico ORE 9"}
+  ok  S3.2 modifica vs modifica offline (pc modifica per ultimo, torna per PRIMO): tutti uguali e vince v-pc-ultima  -> {"telefono":"v-pc-ultima","pc":"v-pc-ultima","ipad":"v-pc-ultima","cloud":"v-pc-ultima"}
+  ok  S3.3 cancella (telefono) vs modifica successiva (pc), offline: tutti uguali (qualunque esito, ma uguale)  -> {"telefono":"modificata dopo la cancellazione","pc":"modificata dopo la cancellazione","ipad":"modificata dopo la cancellazione","cloud":"modificata dopo la cancellazione"}
+  ok  S3.4 cancellazione offline + aggiunta online altrove: nessuno ha più «da cancellare», tutti hanno «nuova dal pc»  -> {"telefono":"da tenere | nuova dal pc","pc":"da tenere | nuova dal pc","ipad":"da tenere | nuova dal pc","cloud":"da tenere | nuova dal pc"}
+  ok  S3.4b dopo un’altra scrittura del pc la cosa cancellata non risorge  -> {"telefono":"da tenere | nuova dal pc","pc":"da tenere | nuova dal pc","ipad":"da tenere | nuova dal pc","cloud":"da tenere | nuova dal pc"}
+  ok  S3.5 stessa cosa creata su due dispositivi offline: tutti uguali (2 righe «Palestra», non deduplicate: atteso)  -> {"telefono":"Palestra | Palestra","pc":"Palestra | Palestra","ipad":"Palestra | Palestra","cloud":"Palestra | Palestra"}
+  ok  S3.6 tre dispositivi offline, ritorno a raffica C→A→B: tutti hanno T1,T2,P1,P2,I1  -> {"telefono":"I1 | P1 | P2 | Palestra | Palestra | T1 | T2","pc":"I1 | P1 | P2 | Palestra | Palestra | T1 | T2","ipad":"I1 | P1 | P2 | Palestra | Palestra | T1 | T2","cloud":"I1 | P1 | P2 | Palestra | Palestra | T1 | T2"}
+  ok  S3.7 pc con orologio 2 min indietro cancella una cosa creata sul telefono: sparisce dappertutto  -> {"telefono":"","pc":"","ipad":"","cloud":""}
+  ok  S3.7b ...e non risorge dopo una scrittura del telefono  -> {"telefono":"","pc":"","ipad":"","cloud":""}
+  ok  S3.8 pc con orologio 3h avanti: il telefono cambia tema DOPO, ma alla prima scrittura del pc vince il pc? (atteso: chiaro ovunque)  -> ["chiaro","chiaro","chiaro"]
+  ok  S3.9 XP guadagnati offline su due dispositivi si sommano (telefono 10 + pc 20)  -> [[30,3],[30,3],[30,3]]
+=== s04
+  ok  S4.1a primo avvio: si vede il benvenuto (onboarding)
+  ok  S4.1b dati da ospite salgono nel nuovo account  -> ["da ospite"]
+  ok  S4.2 nuovo dispositivo, account esistente: prende nome/dati e non ripropone il benvenuto dopo l’accesso  -> {"onb":true,"nome":"Mario","overlay":false,"az":1}
+  ok  S4.2b iPad con dati da ospite entra: i dati ospite finiscono nell’account (comportamento voluto: unione)  -> {"telefono":"da ospite | ospite ipad","nomeTelefono":"Mario"}
+  ok  S4.3 uscita: il pc si svuota, l’ultima modifica è nel cloud  -> {"pc":""}
+  ok  S4.3b rientro sul pc: i dati tornano  -> da ospite | ospite ipad | ultima dal pc prima di uscire
+  ok  S4.4 «Esci» senza rete: l’uscita si completa e lo dice  -> {"esito":"uscito","ms":6015,"dopo":{"user":false,"az":0}}
+  ok  S4.4b tornata la rete: la modifica fatta offline prima di uscire è nel cloud  -> {"pcDopo":{"user":false,"az":[]},"cloud":["da ospite","ospite ipad","ultima dal pc prima di uscire","scritta offline poi esco"]}
+  KO  S4.5a iPad perde la sessione (IndexedDB cancellato): l’app è disconnessa e i dati di Mario restano visibili sul dispositivo  -> {"user":true,"az":4}
+  ok  S4.5b poi entra LUIGI sull’iPad: nel suo account NON devono finire i dati di Mario  -> []
+  ok  S4.6a seconda scheda: già dentro con gli stessi dati  -> da ospite | ospite ipad | scritta offline poi esco | ultima dal pc prima di uscire
+  ok  S4.6b esco nella scheda 1: anche la scheda 2 si svuota e non rimette i dati nel dispositivo  -> {"scheda2":{"user":false,"az":0},"azioniNelSalvataggioDopoScritturaScheda2":0}
+  ok  S4.6c poi Luigi entra in quella finestra: niente dati di Mario nel suo account  -> []
+  KO  S4.7 account disabilitato: l’app lo dice in modo comprensibile e tiene la modifica sul dispositivo  -> {"disable":200,"stato":{"user":false,"sync":{"state":"idle","error":"","at":1795568067927,"inCoda":false},"tokErr":"auth/user-disabled","toast":""}}
+  ok  S4 errori in pagina su telefono  -> []
+  ok  S4 errori in pagina su ipad  -> []
+  ok  S4 errori in pagina su pc2-scheda1  -> []
+  ok  S4 errori in pagina su pc2-scheda2  -> []
+=== s05
+  ok  S5 storia di 90 giorni: 362 KB; nel cloud e sul pc arriva tutto  -> {"KB":362,"sync":"saved ","cloudAzioni":637,"telefono":637,"pc":637,"tempi":{"saveMs":8,"unisciMs":7},"accessoPcMs":1282,"avvisoAllUtente":"Dati aggiornati da un altro dispositivo.","lsKB":734}
+  ok  S5 storia di 180 giorni: 631 KB; nel cloud e sul pc arriva tutto  -> {"KB":631,"sync":"saved ","cloudAzioni":1267,"telefono":1267,"pc":1267,"tempi":{"saveMs":18,"unisciMs":13},"accessoPcMs":1328,"avvisoAllUtente":"Dati aggiornati da un altro dispositivo.","lsKB":1271}
+  ok  S5 storia di 365 giorni: 1180 KB; nel cloud e sul pc arriva tutto  -> {"KB":1180,"sync":"saved ","cloudAzioni":2562,"telefono":2562,"pc":2562,"tempi":{"saveMs":33,"unisciMs":28},"accessoPcMs":1446,"avvisoAllUtente":"Dati aggiornati da un altro dispositivo.","lsKB":2369}
+  ok  S5 storia di 540 giorni: 1700 KB; nel cloud e sul pc arriva tutto  -> {"KB":1700,"sync":"saved ","cloudAzioni":3787,"telefono":3787,"pc":3787,"tempi":{"saveMs":61,"unisciMs":41},"accessoPcMs":1559,"avvisoAllUtente":"Dati aggiornati da un altro dispositivo.","lsKB":3409}
+  ok  S5 storia di 730 giorni: 2266 KB; nel cloud e sul pc arriva tutto  -> {"KB":2266,"sync":"saved ","cloudAzioni":5117,"telefono":5117,"pc":5117,"tempi":{"saveMs":48,"unisciMs":44},"accessoPcMs":1497,"avvisoAllUtente":"Dati aggiornati da un altro dispositivo.","lsKB":4541}
+=== s06
+  ok  S6.0 PC sempre aperto vede le modifiche del telefono (45 giorni dopo)  -> {"telefono":{"azioni":"Rinnovare passaporto (fatto il modulo)","nome":"Mario Rossi","sveglia":"06:15","modo":"scuro","areaStudio":false,"abitudine":"Meditare 10 minuti"},"pc":{"azioni":"Rinnovare passaporto (fatto il modulo)","nome":"Mario Rossi","sveglia":"06:15","modo":"scuro","areaStudio":false,"abitudine":"Meditare 10 minuti"}}
+  ok  S6.1 iPad riaperto dopo 45 giorni: mostra subito i dati vecchi prima di sincronizzare (atteso, ma da sapere)  -> {"primaSchermataIpad":{"azioni":"Rinnovare passaporto | Vecchia cosa da cancellare","nome":"Mario","sveglia":"07:00","modo":"auto","areaStudio":true,"abitudine":"Meditare"}}
+  ok  S6.2 dopo la sincronizzazione TUTTI uguali al telefono (niente cancellazioni risorte, niente modifiche perse, profilo del telefono)  -> {"atteso":{"azioni":"Rinnovare passaporto (fatto il modulo)","nome":"Mario Rossi","sveglia":"06:15","modo":"scuro","areaStudio":false,"abitudine":"Meditare 10 minuti"},"dopo":{"telefono":{"azioni":"Rinnovare passaporto (fatto il modulo)","nome":"Mario Rossi","sveglia":"06:15","modo":"scuro","areaStudio":false,"abitudine":"Meditare 10 minuti"},"pc":{"azioni":"Rinnovare passaporto (fatto il modulo)","nome":"Mario Rossi","sveglia":"06:15","modo":"scuro","areaStudio":false,"abitudine":"Meditare 10 minuti"},"ipad":{"azioni":"Rinnovare passaporto (fatto il modulo)","nome":"Mario Rossi","sveglia":"06:15","modo":"scuro","areaStudio":false,"abitudine":"Meditare 10 minuti"}},"sessioneIpad":true}
+ cloud:  [ 'Rinnovare passaporto (fatto il modulo)' ] Mario Rossi 06:15
+=== s07
+node:internal/process/promises:394
+    triggerUncaughtException(err, true /* fromPromise */);
+    ^
+
+page.fill: Timeout 30000ms exceeded.
+Call log:
+[2m  - waiting for locator('#cal-google-id')[22m
+
+    at /tmp/claude-0/-home-user-LifeMax/99c3d469-10e9-545a-afc2-1ce7e01478d1/scratchpad/audit-2/consegna/script/r1/s07-calendari.js:27:11 {
+  log: [ "  - waiting for locator('#cal-google-id')" ],
+  name: 'TimeoutError'
+}
+
+Node.js v22.23.4
+=== s08
+node:internal/process/promises:394
+    triggerUncaughtException(err, true /* fromPromise */);
+    ^
+
+page.evaluate: TypeError: Cannot read properties of undefined (reading 'id')
+    at eval (eval at evaluate (:311:30), <anonymous>:1:135)
+    at UtilityScript.evaluate (<anonymous>:313:16)
+    at UtilityScript.<anonymous> (<anonymous>:1:44)
+    at /tmp/claude-0/-home-user-LifeMax/99c3d469-10e9-545a-afc2-1ce7e01478d1/scratchpad/audit-2/consegna/script/r1/s08-varie.js:14:11 {
+  log: []
+}
+
+Node.js v22.23.4
+=== s09
+  KO  S9.1 localStorage cancellato (sessione ancora valida): i dati tornano dal cloud, il nome resta, niente benvenuto  -> {"appenaAperto":{"azioni":0,"nome":"","onb":false,"benvenuto":true,"connesso":false},"dopo":{"azioni":0,"nome":"","onb":false,"benvenuto":true,"connesso":false},"pc":{"azioni":4,"nome":"Mario","onb":true,"benvenuto":false,"connesso":true}}
+  ok  S9.2 PWA reinstallata / Safari ha cancellato i dati (7 giorni): dopo l’accesso tutto torna e il nome NON si perde  -> {"appenaAperto":{"azioni":0,"nome":"","onb":false,"benvenuto":true,"connesso":false},"dopo":{"azioni":4,"nome":"Mario","onb":true,"benvenuto":false,"connesso":true},"pc":{"azioni":4,"nome":"Mario","onb":true,"benvenuto":false,"connesso":true}}
+=== s10
+  ok  S10 10 riaperture del telefono con differenze: le copie nel cloud restano poche (o vengono sfoltite)  -> {"copieNelCloud":0,"MBscaricatiAprendoBackup":0,"msPerElencarle":31,"elencate":1}
+=== s11
+  ok  S11.1 dominio nuovo, stesso browser: non è collegato e non ha dati (due copie separate: atteso)  -> {"azioni":"","nome":"","sveglia":"07:30","areaStudio":true,"connesso":false}
+  ok  S11.2 accesso sul dominio nuovo: arrivano tutti i dati e il profilo (nome, sveglia) NON viene azzerato  -> {"dominio":{"azioni":"Bolletta luce | Palestra[x] | Vecchia idea","nome":"Mario","sveglia":"06:00","areaStudio":true,"connesso":true},"github":{"azioni":"Bolletta luce | Palestra[x] | Vecchia idea","nome":"Mario","sveglia":"06:00","areaStudio":true,"connesso":true}}
+  ok  S11.3 vecchio segnalibro github.io riaperto dopo 3 settimane: NON riporta indietro il dominio (cancellazione, spunta tolta, area disattivata restano)  -> {"atteso":{"azioni":"Bolletta luce | Dentista (dal dominio) | Palestra","nome":"Mario","sveglia":"06:00","areaStudio":false,"connesso":true},"primaDiSincronizzare":{"azioni":"Bolletta luce | Palestra[x] | Vecchia idea","nome":"Mario","sveglia":"06:00","areaStudio":true,"connesso":true},"dopo":{"dominio":{"azioni":"Bolletta luce | Dentista (dal dominio) | Palestra","nome":"Mario","sveglia":"06:00","areaStudio":false,"connesso":true},"github":{"azioni":"Bolletta luce | Dentista (dal dominio) | Palestra","nome":"Mario","sveglia":"06:00","areaStudio":false,"connesso":true}},"cloudAzioni":["Bolletta luce","Palestra","Dentista (dal dominio)"]}
+  ok  S11.4 github.io: sessione persa, si scrive da disconnessi, si rientra: la cosa arriva al dominio, senza riportare indietro altro  -> {"dominio":{"azioni":"Bolletta luce | Dentista (dal dominio) | Palestra | scritta su github.io da disconnesso","nome":"Mario","sveglia":"06:00","areaStudio":false,"connesso":true}}

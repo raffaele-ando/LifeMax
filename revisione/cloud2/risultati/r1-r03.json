@@ -1,0 +1,47 @@
+{
+  "script": "r1-r03",
+  "quando": "2026-11-25T00:40:55.184Z",
+  "radice": "/tmp/claude-0/-home-user-LifeMax/99c3d469-10e9-545a-afc2-1ce7e01478d1/scratchpad/audit-2/wt",
+  "bloccati": [
+    "https://apis.google.com/js/api.js?onload=__iframefcb302578",
+    "https://apis.google.com/js/api.js?onload=__iframefcb176919"
+  ],
+  "nBloccati": 2,
+  "risultati": [
+    {
+      "scenario": "R03 iPad nuovo accede: il profilo del telefono resta (nome, visione, sveglia, timer, tema)",
+      "ok": true,
+      "dettaglio": {
+        "telefonoPrima": {
+          "nome": "Mario",
+          "visione": "Vivere con calma",
+          "sveglia": "06:00",
+          "pomodoro": 50,
+          "modo": "scuro",
+          "updatedAt": 1795567240828
+        },
+        "iPadAppenaAperto": {
+          "updatedAt": 1795567243424,
+          "onboarded": false,
+          "benvenuto": true
+        },
+        "telefonoDopo": {
+          "nome": "Mario",
+          "visione": "Vivere con calma",
+          "sveglia": "06:00",
+          "pomodoro": 50,
+          "modo": "scuro",
+          "updatedAt": 1795567243424
+        },
+        "iPadDopo": {
+          "nome": "Mario",
+          "visione": "Vivere con calma",
+          "sveglia": "06:00",
+          "pomodoro": 50,
+          "modo": "scuro",
+          "updatedAt": 1795567243424
+        }
+      }
+    }
+  ]
+}

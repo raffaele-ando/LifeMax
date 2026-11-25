@@ -1,0 +1,47 @@
+{
+  "script": "r1-r04",
+  "quando": "2026-11-25T00:41:27.503Z",
+  "radice": "/tmp/claude-0/-home-user-LifeMax/99c3d469-10e9-545a-afc2-1ce7e01478d1/scratchpad/audit-2/wt",
+  "bloccati": [],
+  "nBloccati": 0,
+  "risultati": [
+    {
+      "scenario": "R04a.1 sessione chiusa da Firebase (account disabilitato): l’utente viene avvisato",
+      "ok": true,
+      "dettaglio": {
+        "connesso": false,
+        "azioni": 0,
+        "avvisi": [
+          "La sessione è finita: accedi di nuovo per ritrovare i tuoi dati."
+        ]
+      }
+    },
+    {
+      "scenario": "R04a.2 Luigi accede sullo stesso pc: il suo account NON contiene i dati di Mario",
+      "ok": true,
+      "dettaglio": {
+        "cloudLuigi": [],
+        "checkinsLuigi": 0,
+        "schermoLuigi": ""
+      }
+    },
+    {
+      "scenario": "R04b.1 «Esci» nella scheda 1: dopo 6 s la scheda 2 è disconnessa e vuota",
+      "ok": true,
+      "dettaglio": {
+        "connesso": false,
+        "azioni": 0
+      }
+    },
+    {
+      "scenario": "R04b.2 dopo una scrittura nella scheda 2, il salvataggio del dispositivo resta pulito",
+      "ok": true,
+      "dettaglio": []
+    },
+    {
+      "scenario": "R04b.3 Luigi accede nella scheda 1: nessun dato di Mario nel suo account",
+      "ok": true,
+      "dettaglio": []
+    }
+  ]
+}

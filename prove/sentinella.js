@@ -63,7 +63,15 @@ const GIORNO = 86400000;
     const biscotto = (vai.r.headers.get('set-cookie') || '').split(';')[0];
     const c = W.consenso(vai.r.headers.get('location'), o.consenso);
     const rit = await chiedi(new URL(c.url).pathname + new URL(c.url).search, undefined, { biscotto: o.senzaBiscotto ? '' : biscotto });
-    return { a, vai, biscotto, c, rit, dove: rit.r.headers.get('location') || '' };
+    /* tornata all'app, l'app CONFERMA: col suo gettone e col biscotto che il
+       ritorno ha lasciato in questo browser (vedi `conferma` in sentinella.mjs) */
+    const okB = (rit.r.headers.getSetCookie ? rit.r.headers.getSetCookie() : []).map((x) => x.split(';')[0]).find((x) => /^lmcal_ok_/.test(x) && !/=$/.test(x)) || '';
+    let conf = null;
+    if (!o.senzaConferma && /esito=da-confermare/.test(rit.r.headers.get('location') || '')) {
+      conf = await chiedi('/api/calendari/' + p + '/conferma', {}, { gettone: o.gettone, biscotto: okB });
+    }
+    const dove = (rit.r.headers.get('location') || '').replace('esito=da-confermare', conf && conf.j && conf.j.ok ? 'esito=ok' : 'esito=non-confermato');
+    return { a, vai, biscotto, c, rit, okB, conf, dove: dove };
   }
   const dump = () => {
     let t = '';
@@ -141,7 +149,10 @@ const GIORNO = 86400000;
     ok('/vai lascia un biscotto HttpOnly, solo per /api/calendari/', /HttpOnly/.test(x.vai.r.headers.get('set-cookie')) && /Path=\/api\/calendari\//.test(x.vai.r.headers.get('set-cookie')));
     const scambio = G.scambi.find((s) => s.grant_type === 'authorization_code');
     ok('il codice si scambia col segreto e con la chiave PKCE', scambio && scambio.client_secret === 'segreto-google-finto' && !!scambio.code_verifier);
-    ok('si torna all’app con «fatto»', /^https:\/\/lifemax\.theproject\.world\/\?lmcal=google&esito=ok#\/profilo$/.test(x.dove), x.dove);
+    ok('si torna all’app con «da confermare»: il permesso non è ancora di nessuno', /^https:\/\/lifemax\.theproject\.world\/\?lmcal=google&esito=da-confermare#\/profilo$/.test(x.rit.r.headers.get('location') || ''), x.rit.r.headers.get('location'));
+    ok('il ritorno lascia il segreto della conferma in un biscotto HttpOnly, solo per /api/calendari/', /^lmcal_ok_google=[0-9a-f]+\.[A-Za-z0-9_-]+$/.test(x.okB) &&
+      (x.rit.r.headers.getSetCookie() || []).some((c) => /^lmcal_ok_google=/.test(c) && /HttpOnly/.test(c) && /Path=\/api\/calendari\//.test(c)), x.okB);
+    ok('e l’app, confermando col suo gettone dallo stesso browser, lo fa suo', !!(x.conf && x.conf.j && x.conf.j.ok), x.conf && x.conf.j);
     ok('e nell’indirizzo non c’è nessun permesso', !/grt-|gat-|code=/.test(x.dove));
     /* lo stesso `state` una seconda volta */
     const di = W.consenso(x.vai.r.headers.get('location'));
@@ -260,6 +271,37 @@ const GIORNO = 86400000;
     await chiedi('/api/calendari/scrivi', { ops: [op('crea-a')] });
     const r = await chiedi('/api/calendari/scrivi', { ops: [op('crea-b')] });
     ok('un evento solo, con l’id scelto da LifeMax', Object.values(G.eventi['lavoro@gruppo']).filter((e) => e.summary === 'Palestra').length === 1 && r.j.esiti['crea-b'].e.id === 'lm1234abcd');
+  }
+
+  /* ======================================== 9b: COLLEGAMENTO CSRF (C2) */
+  console.log('\n9b. UN COLLEGAMENTO COMINCIATO DA UN ALTRO, MANDATO COME LINK (verifica 2, C2)');
+  {
+    /* Il calendario «della vittima» è quello che il Google finto dà a chi
+       dice sì: qui `lavoro@gruppo`. L'attaccante comincia col SUO account e
+       NON apre il link; la vittima lo apre nel suo browser e dice sì. */
+    const tA = gettone('attaccante-c2'), tV = gettone('vittima-c2');
+    const a = await chiedi('/api/calendari/google/inizia', { ritorno: SITO + '/' }, { gettone: tA });
+    const vai = await chiedi(new URL(a.j.url).pathname + new URL(a.j.url).search);
+    const bisV = (vai.r.headers.get('set-cookie') || '').split(';')[0];
+    const c = W.consenso(vai.r.headers.get('location'));
+    const rit = await chiedi(new URL(c.url).pathname + new URL(c.url).search, undefined, { biscotto: bisV });
+    const okV = (rit.r.headers.getSetCookie ? rit.r.headers.getSetCookie() : []).map((x) => x.split(';')[0]).find((x) => /^lmcal_ok_/.test(x) && !/=$/.test(x)) || '';
+    ok('il ritorno nel browser della vittima NON dice «fatto»', !/esito=ok/.test(rit.r.headers.get('location') || ''), rit.r.headers.get('location'));
+    /* l'attaccante prova a confermare dal suo browser (senza il biscotto) */
+    const cA = await chiedi('/api/calendari/google/conferma', {}, { gettone: tA });
+    ok('l’attaccante, dal suo browser, non può confermare', !(cA.j && cA.j.ok), cA.j);
+    /* e anche se avesse il biscotto della vittima, ma col suo gettone */
+    const cA2 = await chiedi('/api/calendari/google/conferma', { biscotto: okV }, { gettone: tA });
+    ok('un biscotto messo nel corpo non conta', !(cA2.j && cA2.j.ok), cA2.j);
+    /* la vittima, nel suo LifeMax, conferma: va alla SUA sentinella, dove non c'è niente */
+    const cV = await chiedi('/api/calendari/google/conferma', {}, { gettone: tV, biscotto: okV });
+    ok('la conferma della vittima non collega il suo calendario all’attaccante', !(cV.j && cV.j.ok), cV.j);
+    const cal = await chiedi('/api/calendari/cambi', { dopo: 0, accesi: { google: ['lavoro@gruppo'] } }, { gettone: tA });
+    ok('l’attaccante NON legge il calendario della vittima', !(cal.j.eventi || []).length && !(cal.j.conti && cal.j.conti.google && cal.j.conti.google.collegato), { eventi: (cal.j.eventi || []).length, conto: cal.j.conti && cal.j.conti.google });
+    const w = await chiedi('/api/calendari/scrivi', { ops: [{ k: 'csrf1', p: 'google', tipo: 'crea', c: 'lavoro@gruppo', testo: 'Piantato dall’attaccante', tempo: { tuttoIlGiorno: false, inizio: Date.now() + 86400000, fine: Date.now() + 90000000, dataInizio: giorni(1), dataFine: giorni(1) }, chiave: 'csrf1' }] }, { gettone: tA });
+    ok('e non ci scrive', !Object.values(G.eventi['lavoro@gruppo']).some((e) => /attaccante/.test(e.summary || '')), w.j && w.j.esiti);
+    const d = dump();
+    ok('il permesso in sospeso resta cifrato nel database', !/grt-|gat-/.test(d));
   }
 
   /* ============================================== 10 */

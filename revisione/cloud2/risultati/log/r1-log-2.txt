@@ -1,0 +1,33 @@
+=== r01
+  ok  R01 (2 dispositivi) dopo il ritorno online del telefono tutti hanno X e Y  -> {"telefono":"X offline telefono,Y pc","pc":"X offline telefono,Y pc","cloud":"X offline telefono,Y pc"}
+ telefono:
+ pc:
+=== s07
+node:internal/process/promises:394
+    triggerUncaughtException(err, true /* fromPromise */);
+    ^
+
+page.fill: Timeout 30000ms exceeded.
+Call log:
+[2m  - waiting for locator('#cal-google-id')[22m
+
+    at /tmp/claude-0/-home-user-LifeMax/99c3d469-10e9-545a-afc2-1ce7e01478d1/scratchpad/audit-2/consegna/script/r1/s07-calendari.js:27:11 {
+  log: [ "  - waiting for locator('#cal-google-id')" ],
+  name: 'TimeoutError'
+}
+
+Node.js v22.23.4
+=== s08
+node:internal/process/promises:394
+    triggerUncaughtException(err, true /* fromPromise */);
+    ^
+
+page.evaluate: TypeError: Cannot read properties of undefined (reading 'id')
+    at eval (eval at evaluate (:311:30), <anonymous>:1:135)
+    at UtilityScript.evaluate (<anonymous>:313:16)
+    at UtilityScript.<anonymous> (<anonymous>:1:44)
+    at /tmp/claude-0/-home-user-LifeMax/99c3d469-10e9-545a-afc2-1ce7e01478d1/scratchpad/audit-2/consegna/script/r1/s08-varie.js:14:11 {
+  log: []
+}
+
+Node.js v22.23.4

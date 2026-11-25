@@ -1,0 +1,98 @@
+{
+  "script": "r1-s11",
+  "quando": "2026-11-25T00:59:40.820Z",
+  "radice": "/tmp/claude-0/-home-user-LifeMax/99c3d469-10e9-545a-afc2-1ce7e01478d1/scratchpad/audit-2/wt",
+  "bloccati": [
+    "https://apis.google.com/js/api.js?onload=__iframefcb85293",
+    "https://apis.google.com/js/api.js?onload=__iframefcb883759",
+    "https://apis.google.com/js/api.js?onload=__iframefcb172274"
+  ],
+  "nBloccati": 3,
+  "risultati": [
+    {
+      "scenario": "S11.1 dominio nuovo, stesso browser: non è collegato e non ha dati (due copie separate: atteso)",
+      "ok": true,
+      "dettaglio": {
+        "azioni": "",
+        "nome": "",
+        "sveglia": "07:30",
+        "areaStudio": true,
+        "connesso": false
+      }
+    },
+    {
+      "scenario": "S11.2 accesso sul dominio nuovo: arrivano tutti i dati e il profilo (nome, sveglia) NON viene azzerato",
+      "ok": true,
+      "dettaglio": {
+        "dominio": {
+          "azioni": "Bolletta luce | Palestra[x] | Vecchia idea",
+          "nome": "Mario",
+          "sveglia": "06:00",
+          "areaStudio": true,
+          "connesso": true
+        },
+        "github": {
+          "azioni": "Bolletta luce | Palestra[x] | Vecchia idea",
+          "nome": "Mario",
+          "sveglia": "06:00",
+          "areaStudio": true,
+          "connesso": true
+        }
+      }
+    },
+    {
+      "scenario": "S11.3 vecchio segnalibro github.io riaperto dopo 3 settimane: NON riporta indietro il dominio (cancellazione, spunta tolta, area disattivata restano)",
+      "ok": true,
+      "dettaglio": {
+        "atteso": {
+          "azioni": "Bolletta luce | Dentista (dal dominio) | Palestra",
+          "nome": "Mario",
+          "sveglia": "06:00",
+          "areaStudio": false,
+          "connesso": true
+        },
+        "primaDiSincronizzare": {
+          "azioni": "Bolletta luce | Palestra[x] | Vecchia idea",
+          "nome": "Mario",
+          "sveglia": "06:00",
+          "areaStudio": true,
+          "connesso": true
+        },
+        "dopo": {
+          "dominio": {
+            "azioni": "Bolletta luce | Dentista (dal dominio) | Palestra",
+            "nome": "Mario",
+            "sveglia": "06:00",
+            "areaStudio": false,
+            "connesso": true
+          },
+          "github": {
+            "azioni": "Bolletta luce | Dentista (dal dominio) | Palestra",
+            "nome": "Mario",
+            "sveglia": "06:00",
+            "areaStudio": false,
+            "connesso": true
+          }
+        },
+        "cloudAzioni": [
+          "Bolletta luce",
+          "Palestra",
+          "Dentista (dal dominio)"
+        ]
+      }
+    },
+    {
+      "scenario": "S11.4 github.io: sessione persa, si scrive da disconnessi, si rientra: la cosa arriva al dominio, senza riportare indietro altro",
+      "ok": true,
+      "dettaglio": {
+        "dominio": {
+          "azioni": "Bolletta luce | Dentista (dal dominio) | Palestra | scritta su github.io da disconnesso",
+          "nome": "Mario",
+          "sveglia": "06:00",
+          "areaStudio": false,
+          "connesso": true
+        }
+      }
+    }
+  ]
+}

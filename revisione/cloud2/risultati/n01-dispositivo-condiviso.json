@@ -1,0 +1,149 @@
+{
+  "script": "n01-dispositivo-condiviso",
+  "quando": "2026-11-25T00:47:03.063Z",
+  "radice": "/tmp/claude-0/-home-user-LifeMax/99c3d469-10e9-545a-afc2-1ce7e01478d1/scratchpad/audit-2/wt",
+  "bloccati": [
+    "https://www.google.com/images/cleardot.gif?zx=ctcq0obcfc7",
+    "https://www.google.com/images/cleardot.gif?zx=zi0jux50818o",
+    "https://www.google.com/images/cleardot.gif?zx=ehoxcvjsdz12",
+    "https://www.google.com/images/cleardot.gif?zx=jhk6cip1agg0",
+    "https://www.google.com/images/cleardot.gif?zx=g0mvpltce0yu",
+    "https://www.google.com/images/cleardot.gif?zx=akhabt8l67zr",
+    "https://www.google.com/images/cleardot.gif?zx=by4cshko64kg",
+    "https://www.google.com/images/cleardot.gif?zx=uhlndyv696ry",
+    "https://www.google.com/images/cleardot.gif?zx=u9jdrz9ih2u4",
+    "https://www.google.com/images/cleardot.gif?zx=xp7p82qfivz7"
+  ],
+  "nBloccati": 10,
+  "risultati": [
+    {
+      "scenario": "A0 i dati di Mario sono nel suo cloud",
+      "ok": true
+    },
+    {
+      "scenario": "A1 dopo «Esci» lo schermo è vuoto",
+      "ok": true,
+      "dettaglio": {
+        "utenteFirebase": false
+      }
+    },
+    {
+      "scenario": "A2 [privacy] dopo «Esci» NESSUNA copia dei dati di Mario resta nel browser",
+      "ok": false,
+      "dettaglio": {
+        "chiaviConDatiDiMario": {
+          "lifemax.annulla.p.pmwvejvj5jov2": 2988,
+          "lifemax.backups.v1": 3541
+        },
+        "backups": [
+          {
+            "ts": 1795567538271,
+            "motivo": "uscita-dall-account",
+            "ricchezza": 3
+          }
+        ]
+      }
+    },
+    {
+      "scenario": "A3 il pannello Backup (aperto da ospite) elenca la copia «all’uscita dall’account»",
+      "ok": false,
+      "dettaglio": false
+    },
+    {
+      "scenario": "B1 [privacy] Luigi ospite NON può riportare in vita i dati di Mario",
+      "ok": false,
+      "dettaglio": {
+        "azione": true,
+        "nome": "Mario Rossi",
+        "sera": true
+      }
+    },
+    {
+      "scenario": "C1 [fuga fra account] l’account di Luigi NON contiene i dati di Mario",
+      "ok": false,
+      "dettaglio": {
+        "azioniLuigi": [
+          "Visita dallo psichiatra (privato Mario)"
+        ],
+        "nomeProfilo": "Mario Rossi"
+      }
+    },
+    {
+      "scenario": "D1 [fuga fra account] Luigi collegato vede nei Backup la copia di Mario e ripristinandola la manda nel SUO cloud",
+      "ok": false,
+      "dettaglio": {
+        "copieInElenco": [
+          "uscita-dall-account:1"
+        ],
+        "cloudLuigi": [
+          "Visita dallo psichiatra (privato Mario)"
+        ]
+      }
+    },
+    {
+      "scenario": "E1 sessione chiusa dal server: schermo vuoto, utente fuori",
+      "ok": true,
+      "dettaglio": {
+        "connesso": false,
+        "schermo": false,
+        "backup": [
+          "uscita-dall-account:1"
+        ]
+      }
+    },
+    {
+      "scenario": "E2 [privacy] …ma la copia «all’uscita dall’account» con i dati di Mario è nel pannello Backup",
+      "ok": false,
+      "dettaglio": [
+        "uscita-dall-account:1"
+      ]
+    },
+    {
+      "scenario": "F1 tre giri Mario/Luigi: ognuno ha solo le sue 3 cose (schermo e cloud)",
+      "ok": true,
+      "dettaglio": {
+        "mario": [
+          "cosa di mario #0",
+          "cosa di mario #1",
+          "cosa di mario #2"
+        ],
+        "luigi": [
+          "cosa di luigi #0",
+          "cosa di luigi #1",
+          "cosa di luigi #2"
+        ]
+      }
+    },
+    {
+      "scenario": "F2 [privacy] backup locali che contengono dati di account usciti (dopo 6 uscite)",
+      "ok": false,
+      "dettaglio": [
+        "uscita-dall-account:3",
+        "uscita-dall-account:3",
+        "uscita-dall-account:3",
+        "uscita-dall-account:2",
+        "uscita-dall-account:2",
+        "uscita-dall-account:1",
+        "uscita-dall-account:1"
+      ]
+    },
+    {
+      "scenario": "G0 «Esci» senza cloud: l’app esce dallo schermo ma la sessione Firebase di Mario resta viva di nascosto",
+      "ok": true,
+      "dettaglio": {
+        "esitoUscita": "in-attesa",
+        "visibile": false,
+        "firebase": "mario@prova.it",
+        "inAttesa": "GlacIbN5Xg9aGOmorNHfTIf7XTRK"
+      }
+    },
+    {
+      "scenario": "G1 la modifica di Mario arriva comunque nel SUO cloud (anche se nel frattempo è entrato Luigi)",
+      "ok": false,
+      "dettaglio": {
+        "cloudMario": [],
+        "copiaDaParteAncoraSulPC": true
+      }
+    }
+  ]
+}
