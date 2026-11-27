@@ -400,30 +400,90 @@ window.addEventListener('offline', function () {
    RIPROVARE VUOL DIRE RICARICARE LA PAGINA: il browser si ricorda che quel
    modulo non è arrivato, e un secondo `import()` dello stesso indirizzo
    fallisce senza nemmeno chiederlo (e l'SDK si importa da sé per indirizzo
-   intero: non si può cambiare con un «?r=2»). Allora si guarda se gstatic
-   adesso risponde e, se sì, si ricarica — ma solo con l'app a vista e
-   nessun campo in cui stai scrivendo: i dati sono già tutti salvati sul
-   dispositivo a ogni modifica. Al massimo una volta al minuto, così una
-   rete che finge di esserci non fa ricaricare all'infinito. */
+   intero: non si può cambiare con un «?r=2»).
+   CON TRE FRENI (verifica 3, N3 e N6). Prima si ricaricava ogni minuto,
+   per sempre, anche per chi non ha l'account e anche quando l'SDK era
+   arrivato ma non partiva (un browser troppo vecchio, un filtro); e la
+   ricarica si portava via la review della sera scritta a metà, se in quel
+   momento il dito era sulle stelline e non sul campo. Adesso:
+     · solo se il dispositivo è di un account (un ospite il cloud non l'ha);
+     · solo se l'errore era di rete (il modulo non è arrivato); se è
+       arrivato e non parte, ricaricare non serve: si dice, una volta;
+     · al massimo tre volte per sessione, dopo uno, cinque e quindici
+       minuti; poi ci si ferma e si dice;
+     · e solo se ricaricare non porta via niente: app a vista, nessun
+       foglio o finestra aperti, nessun campo con dentro qualcosa di
+       scritto. Se no, la striscia con «Ricarica» e decidi tu. */
 let avvioInCorso = false;
 let sdkFallito = false;
+let sdkPerRete = false;
 let sdkRiprova: ReturnType<typeof setInterval> | null = null;
 const RICARICA_SDK = 'lm-ricarica-per-sdk';
+const ATTESE_SDK = [60000, 5 * 60000, 15 * 60000];
 function staiScrivendo(): boolean {
   const a = document.activeElement as HTMLElement | null;
   return !!a && (a.tagName === 'INPUT' || a.tagName === 'TEXTAREA' || a.tagName === 'SELECT' || a.isContentEditable);
 }
+/* ricaricare adesso porta via qualcosa? */
+function ricaricareSicuro(): boolean {
+  if (document.hidden || staiScrivendo()) return false;
+  const visibile = function (el: Element): boolean { return el.getClientRects().length > 0; };
+  const sopra = document.querySelectorAll('.sheet-overlay, .overlay, .avviso-ovl, [role="dialog"], [role="alertdialog"], dialog[open]');
+  for (let i = 0; i < sopra.length; i++) { const el = sopra[i]; if (el && !(el as HTMLElement).hidden && visibile(el)) return false; }
+  const campi = document.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>('textarea, input:not([type]), input[type="text"], input[type="search"], input[type="number"], input[type="time"], input[type="date"], input[type="url"], input[type="email"]');
+  for (let i = 0; i < campi.length; i++) {
+    const c = campi[i];
+    if (c && c.value !== c.defaultValue && c.value !== '') return false;
+  }
+  if ((document.querySelector('[contenteditable="true"]') as HTMLElement | null)?.textContent) return false;
+  return true;
+}
+function leggiRicariche(): { n: number; ts: number } {
+  try { const v = JSON.parse(sessionStorage.getItem(RICARICA_SDK) || 'null'); if (v && typeof v.n === 'number') return v; } catch { /* niente */ }
+  return { n: 0, ts: 0 };
+}
+function cloudFermo(testo: string): void {
+  if (!document.body) { document.addEventListener('DOMContentLoaded', function () { cloudFermo(testo); }); return; }
+  let d = document.getElementById('lm-cloud-fermo');
+  if (d) { const s0 = d.querySelector('span'); if (s0) s0.textContent = testo; return; }
+  d = document.createElement('div');
+  d.id = 'lm-cloud-fermo';
+  d.setAttribute('role', 'status');
+  d.style.cssText = 'position:fixed;left:12px;right:12px;bottom:max(12px,env(safe-area-inset-bottom));z-index:9998;display:flex;gap:10px;align-items:center;' +
+    'background:var(--superficie,#fff);color:var(--testo,#222);border:1px solid var(--bordo,#ddd);border-radius:14px;padding:10px 12px;' +
+    'font:500 14px/1.35 system-ui,sans-serif;box-shadow:0 4px 18px rgba(0,0,0,.16);max-width:560px;margin:0 auto';
+  const s = document.createElement('span');
+  s.style.flex = '1';
+  s.textContent = testo;
+  const b = document.createElement('button');
+  b.type = 'button';
+  b.textContent = 'Ricarica';
+  b.style.cssText = 'font:600 14px system-ui,sans-serif;padding:8px 14px;border-radius:999px;border:0;background:var(--accento,#3b6);color:#fff;cursor:pointer';
+  b.addEventListener('click', function () { location.reload(); });
+  const x = document.createElement('button');
+  x.type = 'button';
+  x.textContent = '×';
+  x.setAttribute('aria-label', 'Chiudi');
+  x.style.cssText = 'font:600 18px system-ui,sans-serif;padding:4px 8px;border:0;background:transparent;color:inherit;cursor:pointer';
+  x.addEventListener('click', function () { if (d) d.remove(); });
+  d.appendChild(s); d.appendChild(b); d.appendChild(x);
+  document.body.appendChild(d);
+}
 function riprovaSdk(perche: string): void {
   if (FSM || avvioInCorso || !navigator.onLine) return;
   if (!sdkFallito) { void init(); return; }
-  if (document.hidden || staiScrivendo()) return;
-  let ultima = 0;
-  try { ultima = Number(sessionStorage.getItem(RICARICA_SDK)) || 0; } catch { ultima = 0; }
-  if (Date.now() - ultima < 60000) return;
+  if (!sdkPerRete || !leggi(CHI)) return;
+  const r = leggiRicariche();
+  if (r.n >= ATTESE_SDK.length) return;
+  if (Date.now() - r.ts < (ATTESE_SDK[r.n] || 60000)) return;
   void fetch(SDK + 'firebase-app.js', { mode: 'no-cors', cache: 'no-store' }).then(function () {
-    if (FSM || document.hidden || staiScrivendo()) return;
-    log('info', 'l’SDK di Firebase adesso arriva: ricarico la pagina per accendere il cloud (' + perche + ')');
-    try { sessionStorage.setItem(RICARICA_SDK, String(Date.now())); } catch { /* niente */ }
+    if (FSM) return;
+    if (!ricaricareSicuro()) {
+      cloudFermo('Il cloud è di nuovo raggiungibile: ricarica la pagina quando hai finito, per salvare anche lì.');
+      return;
+    }
+    log('info', 'l’SDK di Firebase adesso arriva: ricarico la pagina per accendere il cloud (' + perche + ', ' + (r.n + 1) + 'ª volta)');
+    try { sessionStorage.setItem(RICARICA_SDK, JSON.stringify({ n: r.n + 1, ts: Date.now() })); } catch { /* niente */ }
     location.reload();
   }).catch(function () { /* ancora niente: la prossima volta */ });
 }
@@ -605,7 +665,16 @@ async function init(): Promise<void> {
     log('errore', 'SDK Firebase non caricato: si lavora solo in locale (riprovo)', messaggio(e));
     AUTHM = null; FSM = null;
     sdkFallito = true;
+    /* arrivato o no? Un modulo che non arriva è un TypeError con queste
+       parole (Chromium, Safari, Firefox); un SyntaxError vuol dire che è
+       arrivato e questo browser non lo sa eseguire */
+    sdkPerRete = !navigator.onLine || (e instanceof TypeError && /dynamically imported module|Importing a module script failed|error loading dynamically/i.test(messaggio(e)));
     emitUnavailable();
+    if (leggi(CHI)) {
+      const r = leggiRicariche();
+      if (!sdkPerRete) cloudFermo('Il cloud non è partito su questo browser: le tue modifiche restano su questo dispositivo. Prova a ricaricare; se succede ancora, aggiorna il browser.');
+      else if (r.n >= ATTESE_SDK.length) cloudFermo('Il cloud ancora non risponde: le tue modifiche restano su questo dispositivo. Ricarica quando la rete è buona.');
+    }
     armaRiprovaSdk();
   } finally {
     avvioInCorso = false;

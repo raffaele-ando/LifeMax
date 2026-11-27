@@ -162,6 +162,8 @@ function banco(E) {
       const f = route.request().url().split('/').pop();
       const js = (b) => route.fulfill({ status: 200, contentType: 'text/javascript', body: b, headers: { 'access-control-allow-origin': '*' } });
       if (ctx.__sdkKo) return route.abort();
+      /* arrivato ma non eseguibile (un browser troppo vecchio, un filtro): vedi prove/nuvola-ricarica.js */
+      if (ctx.__sdkRotto && f === 'firebase-firestore.js') return js('export const rotto = ;');
       if (f === 'firebase-app.js') return js(inv.app);
       if (f === 'firebase-auth.js') return js(inv.auth);
       if (f === 'firebase-firestore.js') return js(inv.firestore);
