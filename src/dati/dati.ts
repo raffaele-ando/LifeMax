@@ -1731,47 +1731,133 @@ function creaLM() {
      quel browser: Mario esce, Luigi apre «Backup e ripristino», trova la copia
      «all'uscita dall'account», la ripristina, e i dati di Mario finiscono
      nell'account di Luigi. Adesso ognuno vede soltanto le sue.
-     Le copie di prima, senza proprietario, si sistemano una volta sola:
-       · quelle prese uscendo da un account o lasciando l'esempio per entrare
-         in uno («uscita-dall-account», «prima-di-entrare-nell-account»)
-         sono esattamente la fuga: si buttano;
-       · su un dispositivo che oggi è di un account, le altre si danno a lui;
-       · su un dispositivo che non ha mai lasciato un account (nessuna
-         «generazione»: vedi GEN_KEY) sono dell'ospite che lo usa da sempre;
-       · le altre non si possono attribuire, e si buttano. Sono solo copie:
-         i dati veri restano dove sono. */
-  var COPIE_DI_USCITA: Record<string, 1> = { 'uscita-dall-account': 1, 'prima-di-entrare-nell-account': 1 };
-  function sistemaCopieSenzaProprietario(): void {
+
+     LE COPIE DI PRIMA, SENZA PROPRIETARIO (verifica 3, N1 e N5). La prima
+     regola le dava all'account unito al dispositivo ADESSO: ma «adesso» non
+     dice chi c'era quando la copia è stata presa, e su un PC condiviso la
+     copia di Mario finiva a Luigi. Adesso una copia si dà a qualcuno solo con
+     una prova: le cose che contiene sono le sue. Le righe hanno un id a caso
+     (`uid`), e una copia della stessa vita ne ha in comune con lo stato di
+     adesso — o con le sue lapidi, se nel frattempo sono state tolte — almeno
+     metà (`stessaVita`). Senza prova:
+       · quelle prese uscendo da un account («uscita-dall-account») hanno i
+         dati di quell'account, che stanno nel suo cloud: si buttano;
+       · tutte le altre — anche «prima-di-entrare-nell-account», che ha i dati
+         dell'OSPITE che entrava, non di chi usciva — restano «senza
+         proprietario» (`chi: '?'`): non le vede né le ripristina nessuno, ma
+         si trovano in «Backup e ripristino» → «Copie senza proprietario»,
+         con l'avviso, e si possono solo scaricare in un file o eliminare.
+         Mai buttate in silenzio: per un ospite possono essere l'unica copia.
+     Le copie «senza proprietario» si riguardano ogni volta: se un giorno lo
+     stato di chi c'è è la stessa vita, diventano sue.
+     E le copie che la versione del 25 novembre aveva già dato all'account di
+     adesso con la regola vecchia si riguardano una volta con la regola nuova
+     (`RIESAME_KEY`). */
+  var COPIE_DI_USCITA: Record<string, 1> = { 'uscita-dall-account': 1 };
+  var SENZA_PROPRIETARIO = '?';
+  var RIESAME_KEY = 'lm-copie-riesaminate';
+  var LISTE_CON_ID = ['azioni', 'inbox', 'backlog', 'abitudini', 'esperimenti', 'lezioni', 'checkins'];
+  function chiaviDi(st: unknown, conLapidi: boolean): string[] {
+    var out: string[] = [];
+    if (!eMappa(st)) return out;
+    LISTE_CON_ID.forEach(function (k) {
+      var l = (st as Mappa)[k];
+      if (!Array.isArray(l)) return;
+      l.forEach(function (r: unknown) { if (eMappa(r) && r['id'] !== undefined && r['id'] !== null && r['id'] !== '') out.push('i' + String(r['id'])); });
+    });
+    if (conLapidi) {
+      var c = (st as Mappa)['cancellati'];
+      if (Array.isArray(c)) c.forEach(function (x: unknown) { if (eMappa(x) && x['chiave'] !== undefined) out.push(String(x['chiave'])); });
+    }
+    return out;
+  }
+  /* la copia è della stessa vita dello stato di adesso? */
+  function stessaVita(copia: unknown, adesso: unknown): boolean {
+    var sue = chiaviDi(copia, false);
+    if (!sue.length) {
+      /* niente righe: si dà solo se non c'è niente di personale */
+      var p = eMappa(copia) ? (copia as Mappa)['profilo'] : null;
+      var nome = eMappa(p) ? String(p['nome'] || '') : '';
+      return ricchezza(copia) === 0 && !nome;
+    }
+    var qui: Record<string, 1> = {};
+    chiaviDi(adesso, true).forEach(function (k) { qui[k] = 1; });
+    var comuni = 0;
+    sue.forEach(function (k) { if (qui[k]) comuni++; });
+    return comuni * 2 >= sue.length;
+  }
+  /* `diChi`: di chi è lo stato che c'è adesso sul dispositivo, se non è
+     ancora (o non è più) scritto in `lm-account-unito` — all'uscita, lo stato
+     è ancora quello dell'account che esce */
+  function sistemaCopieSenzaProprietario(diChi?: string): void {
     var arr = leggiBackups();
-    if (!arr.some(function (b) { return b && typeof b.chi !== 'string'; })) return;
-    var chi = proprietario();
-    var maiUscito = !leggiGenerazione();
-    var resta: CopiaSalvata[] = [];
+    var riesame = false;
+    try { riesame = !localStorage.getItem(RIESAME_KEY); } catch (e) { riesame = false; }
+    var chi = diChi !== undefined ? diChi : proprietario();
+    var daGuardare = arr.some(function (b) {
+      return b && (typeof b.chi !== 'string' || b.chi === SENZA_PROPRIETARIO || (riesame && !!b.chi && b.chi === chi));
+    });
+    if (!daGuardare) {
+      if (riesame) { try { localStorage.setItem(RIESAME_KEY, String(Date.now())); } catch (e) { /* si riguarda la prossima volta */ } }
+      return;
+    }
+    var adesso: unknown = null;
+    try { adesso = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null'); } catch (e) { adesso = null; }
+    if (!adesso) adesso = state;
+    var resta: CopiaSalvata[] = [], date = 0, tolte = 0, sospese = 0;
     arr.forEach(function (b) {
       if (!b) return;
-      if (typeof b.chi === 'string') { resta.push(b); return; }
-      if (COPIE_DI_USCITA[b.motivo]) return;
-      if (chi) { b.chi = chi; resta.push(b); return; }
-      if (maiUscito) { b.chi = ''; resta.push(b); return; }
+      var senza = typeof b.chi !== 'string' || b.chi === SENZA_PROPRIETARIO;
+      var vecchiaDiAdesso = riesame && !!b.chi && b.chi === chi;
+      if (!senza && !vecchiaDiAdesso) { resta.push(b); return; }
+      if (stessaVita(safeParse(b.data), adesso)) {
+        if (b.chi !== chi) date++;
+        b.chi = chi; resta.push(b); return;
+      }
+      if (typeof b.chi !== 'string' && COPIE_DI_USCITA[b.motivo]) { tolte++; return; }
+      if (b.chi !== SENZA_PROPRIETARIO) sospese++;
+      b.chi = SENZA_PROPRIETARIO; resta.push(b);
     });
     scriviBackups(resta);
-    if (window.LMLog) window.LMLog.add('info', 'dati', 'copie di sicurezza di prima sistemate', (arr.length - resta.length) + ' tolte, ' + resta.length + ' restano');
+    if (riesame) { try { localStorage.setItem(RIESAME_KEY, String(Date.now())); } catch (e) { /* niente */ } }
+    if ((date || tolte || sospese) && window.LMLog) {
+      window.LMLog.add('info', 'dati', 'copie di sicurezza senza proprietario riguardate', date + ' date a chi c’è, ' + tolte + ' tolte, ' + sospese + ' messe da parte senza proprietario');
+    }
   }
   function mie(): CopiaSalvata[] {
     sistemaCopieSenzaProprietario();
     var chi = proprietario();
     return leggiBackups().filter(function (b) { return b && (b.chi || '') === chi; });
   }
+  /* le copie che non sono di nessuno: solo per scaricarle o eliminarle */
+  function copieSenzaProprietario() {
+    sistemaCopieSenzaProprietario();
+    return leggiBackups().filter(function (b) { return b && b.chi === SENZA_PROPRIETARIO; }).map(function (b) {
+      return { ts: b.ts, motivo: b.motivo, ricchezza: ricchezza(safeParse(b.data)) };
+    });
+  }
+  function fileCopiaSenzaProprietario(ts: number): string | null {
+    var b = leggiBackups().find(function (x) { return x && x.chi === SENZA_PROPRIETARIO && x.ts === ts; });
+    if (!b) return null;
+    return JSON.stringify({ app: 'LifeMax', versione: 2, esportato: Date.now(), copiaSenzaProprietario: true, stato: safeParse(b.data) }, null, 2);
+  }
+  function eliminaCopiaSenzaProprietario(ts: number): boolean {
+    var arr = leggiBackups();
+    var resta = arr.filter(function (x) { return !(x && x.chi === SENZA_PROPRIETARIO && x.ts === ts); });
+    if (resta.length === arr.length) return false;
+    scriviBackups(resta);
+    return true;
+  }
   function scriviBackups(arr: CopiaSalvata[]) {
     try { localStorage.setItem(BACKUP_KEY, JSON.stringify(arr)); } catch (e) { /* quota */ }
   }
-  function backup(motivo?: string) {
+  function backup(motivo?: string, perChi?: string) {
     var raw;
     try { raw = localStorage.getItem(STORAGE_KEY); } catch (e) { raw = null; }
     if (!raw) { try { raw = JSON.stringify(load()); } catch (e) { return; } }
     sistemaCopieSenzaProprietario();
     var arr = leggiBackups();
-    var chi = proprietario();
+    var chi = perChi !== undefined ? perChi : proprietario();
     var ultima = arr[0];
     if (ultima && ultima.data === raw && (ultima.chi || '') === chi) return; // niente duplicati consecutivi
     arr.unshift({ ts: Date.now(), motivo: motivo || '', data: raw, chi: chi });
@@ -4603,11 +4689,13 @@ function creaLM() {
      c'era ancora va in `mettiDaParte`, che è per account): era proprio quella
      copia, lasciata nel browser, la porta della fuga C1. E le sue copie di
      prima se ne vanno con lui. */
-  function pulito(perche: string, uscente?: string): void {
+  /* `entrante`: l'account in cui stanno entrando i dati di prima (vedi
+     `lasciaEsempio`): la copia è sua */
+  function pulito(perche: string, uscente?: string, entrante?: string): void {
     var prima = load();
-    if (uscente === undefined) backup(perche);
+    if (uscente === undefined) backup(perche, entrante);
     else {
-      sistemaCopieSenzaProprietario();
+      if (uscente) sistemaCopieSenzaProprietario(uscente);
       if (uscente) scriviBackups(leggiBackups().filter(function (b) { return b && b.chi !== uscente; }));
     }
     scordaPunti();
@@ -4636,12 +4724,16 @@ function creaLM() {
     }
   }
   /* entrando in un account: se qui c'è l'esempio, si mette da parte tutto */
-  function lasciaEsempio(giaUnito?: boolean): boolean {
+  function lasciaEsempio(giaUnito?: boolean, uid?: string): boolean {
     var st = load();
     /* l'esempio caricato QUI (porta l'impronta), oppure — su un dispositivo
        mai unito a quell'account — uno stato che dice di essere l'esempio */
     if (!st.esempio && !(st.demo && !giaUnito)) return false;
-    pulito('prima-di-entrare-nell-account');
+    /* la copia ha l'esempio E quello che l'ospite ci ha scritto sopra: è di
+       chi sta entrando, che la deve poter vedere da dentro l'account
+       (verifica 3, N5; è lo stesso ragionamento delle copie dell'ospite in
+       `primaUnione`). Prima prendeva `chi: ''` e dall'account non si vedeva. */
+    pulito('prima-di-entrare-nell-account', undefined, uid);
     return true;
   }
   function lasciaAccount(uid?: string): void { pulito('uscita-dall-account', uid || ''); }
@@ -4810,7 +4902,8 @@ function creaLM() {
     adesso: adesso, osserva: osserva, impostaScarto: impostaScarto, idDispositivo: idDispositivo, ricarica: ricarica, normalizza: normalizza,
     generazione: function () { load(); return generazione || ''; }, cambiateDopo: cambiateDopo,
     unisci: unisci, recuperi: recuperi, COME_UNIRE: COME_UNIRE, statoVuoto: statoVuoto,
-    backup: backup, listBackups: listBackups, restoreBackup: restoreBackup, ricchezza: ricchezza,
+    backup: backup, listBackups: listBackups, restoreBackup: restoreBackup,
+    copieSenzaProprietario: copieSenzaProprietario, fileCopiaSenzaProprietario: fileCopiaSenzaProprietario, eliminaCopiaSenzaProprietario: eliminaCopiaSenzaProprietario, ricchezza: ricchezza,
     exportJson: exportJson, importJson: importJson, ripristinaStato: ripristinaStato, riprendiCopia: riprendiCopia,
     puntoDiRitorno: puntoDiRitorno, puntiDiRitorno: puntiDiRitorno,
     tornaAlPunto: tornaAlPunto, annullaRecord: annullaRecord, scordaPunti: scordaPunti,

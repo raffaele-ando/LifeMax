@@ -1,0 +1,192 @@
+{
+  "script": "c02",
+  "quando": "2026-11-25T07:28:41.904Z",
+  "risultati": [
+    {
+      "scenario": "1.1 Mario collega Google dalla sentinella e importa",
+      "ok": true,
+      "dettaglio": [
+        "priv",
+        "conf",
+        "canc1",
+        "canc2",
+        "tutto",
+        "rec_1",
+        "rec_2",
+        "poison"
+      ]
+    },
+    {
+      "scenario": "1.2 il fantasma fra 300 giorni si vede",
+      "ok": true,
+      "dettaglio": [
+        "Matrimonio (fra 300 giorni)"
+      ]
+    },
+    {
+      "scenario": "4.1 tutto il giorno su 3 giorni: un’attività senza orario il primo giorno",
+      "ok": true,
+      "dettaglio": {
+        "id": "cal91tg3akalm5mk67wyj28",
+        "ev": "tutto",
+        "testo": "Ferie (tutto il giorno, 3 giorni)",
+        "data": "2026-11-30",
+        "ora": null,
+        "durata": null,
+        "done": false
+      }
+    },
+    {
+      "scenario": "4.2 le occorrenze di un evento ricorrente sono attività separate",
+      "ok": true,
+      "dettaglio": [
+        {
+          "id": "calwwicx8vm54mdj1cf4oo4",
+          "ev": "rec_1",
+          "testo": "Palestra (ricorrente)",
+          "data": "2026-11-28",
+          "ora": "07:00",
+          "durata": 60,
+          "done": false
+        },
+        {
+          "id": "calumia1mliyf1kauckq3j01",
+          "ev": "rec_2",
+          "testo": "Palestra (ricorrente)",
+          "data": "2026-12-05",
+          "ora": "07:00",
+          "durata": 60,
+          "done": false
+        }
+      ]
+    },
+    {
+      "scenario": "4.3 spostata UNA occorrenza in LifeMax: si sposta solo quella in Google",
+      "ok": true,
+      "dettaglio": {
+        "rec1": {
+          "dateTime": "2026-11-29T06:00:00.000Z"
+        },
+        "rec2": {
+          "dateTime": "2026-12-05T07:00:00+01:00"
+        }
+      }
+    },
+    {
+      "scenario": "2.1 cambiata qui e là: vince il calendario, e il Diario lo racconta",
+      "ok": true,
+      "dettaglio": {
+        "riga": {
+          "id": "cal2dq3pu7xun1ibwezrqg0z",
+          "ev": "conf",
+          "testo": "Riunione spostata da loro",
+          "data": "2026-11-27",
+          "ora": "16:00",
+          "durata": 60,
+          "done": false
+        },
+        "diario": [
+          "«Riunione da cambiare» era cambiata qui e anche su Google: ho tenuto la versione del calendario («Riunione spostata da loro»)."
+        ],
+        "google": {
+          "dateTime": "2026-11-27T16:00:00+01:00"
+        }
+      }
+    },
+    {
+      "scenario": "3.1 cancellato là: la non fatta sparisce, la fatta resta staccata",
+      "ok": true,
+      "dettaglio": [
+        {
+          "testo": "Da cancellare là (fatta)",
+          "done": true,
+          "esterno": "staccata"
+        }
+      ]
+    },
+    {
+      "scenario": "5.1 Google rifiuta una cancellazione UNA volta (400): dopo, gli altri cambiamenti continuano ad arrivare",
+      "ok": true,
+      "dettaglio": {
+        "esitoSubito": "1 modifica non accettata dal calendario (riprovo più tardi).",
+        "esitoDopo3Giri": "1 modifica non accettata dal calendario (riprovo più tardi).",
+        "nuovoImportato": true,
+        "eventoAncoraInGoogle": "confirmed"
+      }
+    },
+    {
+      "scenario": "6.1 permesso scaduto/revocato: il pannello dice «Ricollega»",
+      "ok": true,
+      "dettaglio": {
+        "nota": "Il permesso di Google è stato ritirato (o è scaduto): basta un tocco su «Ricollega».",
+        "ricollega": {
+          "google": true,
+          "microsoft": false
+        },
+        "pannello": "Stato\nDa ricollegare\nAccount\nio@esempio.it\nRicollega\nio@esempio.it\nStudio / Università\nSalute & Sport\nRelazioni & Sociale\nFinanze\nAssociazioni\nProgetti Founder\nLavoro\nAltro / Esplorazione\nLavoro\nStudio / Università\nSalute & Sport\nRelazioni & Sociale\nFinanze\nAssociazioni\nProgetti Founder\nLavoro\nAltro / Esplorazione\nScollega"
+      }
+    },
+    {
+      "scenario": "6.2 dopo «Ricollega» si riparte",
+      "ok": true,
+      "dettaglio": {
+        "inCorso": false,
+        "ricollega": {
+          "google": false,
+          "microsoft": false
+        },
+        "errore": "",
+        "nota": "",
+        "ultimo": 1795591715984
+      }
+    },
+    {
+      "scenario": "7.1 chiave dei permessi cambiata: l’app dice di ricollegare (invece di tacere)",
+      "ok": true,
+      "dettaglio": {
+        "importato": false,
+        "nota": "Il permesso di Google è stato ritirato (o è scaduto): basta un tocco su «Ricollega».",
+        "esito": "1 modifica non accettata dal calendario (riprovo più tardi).",
+        "pannello": "Stato\nDa ricollegare\nAccount\nio@esempio.it\nRicollega\nio@esempio.it\nStudio / Università\nSalute & Sport\nRelazioni & Sociale\nFinanze\nAssociazioni\nProgetti Founder\nLavoro\nAltro / Esplorazione\nLavoro\nStudio / Università\nSalute & Sport\nRelazioni & Sociale\nFinanze\nAssociazioni\nProgetti Founder\nLavoro\nAltro / Esplorazione\nScollega"
+      }
+    },
+    {
+      "scenario": "8.1 [privacy] dopo «Esci» il calendario di Mario (titoli degli eventi) NON resta nel browser",
+      "ok": true,
+      "dettaglio": {
+        "chiavi": {},
+        "fantasmiDaOspite": 0
+      }
+    },
+    {
+      "scenario": "8.2 da ospite non si vedono i fantasmi di Mario",
+      "ok": true,
+      "dettaglio": 0
+    },
+    {
+      "scenario": "9.1 Luigi sullo stesso dispositivo: niente calendario di Mario",
+      "ok": true,
+      "dettaglio": {
+        "fantasmi": 0,
+        "collegate": 0,
+        "mario": false
+      }
+    },
+    {
+      "scenario": "9.2 [privacy] ma nei Backup di Luigi c’è la copia di Mario con le attività del calendario",
+      "ok": true,
+      "dettaglio": []
+    },
+    {
+      "scenario": "nessun errore nella pagina",
+      "ok": true,
+      "dettaglio": []
+    },
+    {
+      "scenario": "nessuna richiesta verso fuori (bloccate)",
+      "ok": true,
+      "dettaglio": []
+    }
+  ],
+  "bloccati": []
+}

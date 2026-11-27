@@ -34,7 +34,7 @@ const CALENDARI = [
 ];
 
 module.exports = async function lancia() {
-  const b = await chromium.launch({ executablePath: process.env.CHROMIUM || undefined, args: process.env.PROVE_ARGS ? process.env.PROVE_ARGS.split(' ') : [] });
+  const b = await chromium.launch({ executablePath: process.env.CHROMIUM || undefined, args: require('./chiuso').concat(process.env.PROVE_ARGS ? process.env.PROVE_ARGS.split(' ') : []) });
   const contesto = b.newContext.bind(b);
   b.newContext = async function (opzioni) {
     const c = await contesto(opzioni);

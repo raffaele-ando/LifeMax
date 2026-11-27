@@ -1,0 +1,45 @@
+{
+  "script": "r1-r05",
+  "quando": "2026-11-25T07:32:19.380Z",
+  "radice": "/tmp/claude-0/-home-user-LifeMax/99c3d469-10e9-545a-afc2-1ce7e01478d1/scratchpad/audit-3/wt",
+  "bloccati": [
+    "https://apis.google.com/js/api.js?onload=__iframefcb610082",
+    "https://www.google.com/images/cleardot.gif?zx=483wup9yemrt",
+    "https://www.google.com/images/cleardot.gif?zx=a3yxmnug96wc",
+    "https://apis.google.com/js/api.js?onload=__iframefcb718365",
+    "https://apis.google.com/js/api.js?onload=__iframefcb578900"
+  ],
+  "nBloccati": 5,
+  "risultati": [
+    {
+      "scenario": "R05 PC sempre aperto riceve la cosa scritta in metro dal telefono",
+      "ok": true,
+      "dettaglio": {
+        "telefono": "Scritta in metro (telefono),Scritta in ufficio (pc)",
+        "pc": "Scritta in metro (telefono),Scritta in ufficio (pc)",
+        "cloud": "Scritta in metro (telefono),Scritta in ufficio (pc)",
+        "updatedAtCloud": 1795591856555,
+        "scrittureDelPc": []
+      }
+    },
+    {
+      "scenario": "R05b ...neanche dopo un minuto?",
+      "ok": true,
+      "dettaglio": "Scritta in metro (telefono),Scritta in ufficio (pc)"
+    },
+    {
+      "scenario": "R05c il telefono va in tasca (app chiusa) e il PC scrive ancora: la cosa della metro resta nel cloud",
+      "ok": true,
+      "dettaglio": [
+        "Scritta in ufficio (pc)",
+        "Scritta in metro (telefono)",
+        "Altra cosa dal pc, telefono in tasca"
+      ]
+    },
+    {
+      "scenario": "R05d un iPad che accede adesso vede la cosa della metro",
+      "ok": true,
+      "dettaglio": "Altra cosa dal pc, telefono in tasca,Scritta in metro (telefono),Scritta in ufficio (pc)"
+    }
+  ]
+}

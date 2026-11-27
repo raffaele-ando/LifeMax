@@ -1,0 +1,73 @@
+  ok  il cloud finto è entrato al posto di quello vero  → LMCloud.available
+
+SENZA ACCESSO, IL MENU SI APRE E DICE COME ENTRARE
+  ok  il foglio ha dentro le sue voci  → 5 voci
+  ok  e il tasto «Accedi con Google»
+  ok  col suo marchio disegnato
+  ok  senza un solo errore in pagina
+
+ALL’ACCESSO L’ASCOLTO SI ATTACCA
+  ok  l’ascolto è attaccato una volta sola  → 1 attacchi
+  ok  e l’app lo sa di essere in ascolto  → LM_AUTH.ascolto = true
+  ok  e Firestore è avviato col canale lungo dichiarato  → {"experimentalAutoDetectLongPolling":true}
+
+QUANDO L’ASCOLTO CADE, LO DICE E SI RIATTACCA
+  ok  l’app sa di essere diventata sorda  → LM_AUTH.ascolto = false
+  ok  e lo scrive nel Registro tecnico, non solo in una console  → errore: l’ascolto degli altri dispositivi si è interrotto (1ª volta) | avviso: riprovo a mettermi in ascolto fra 2 secondi
+  ok  si è riattaccato da sé, senza ricaricare la pagina  → 2 attacchi in tutto
+  ok  e l’app lo sa di essere tornata a sentire  → LM_AUTH.ascolto = true
+
+L’ATTESA FRA UN TENTATIVO E L’ALTRO RADDOPPIA
+  ok  le attese raddoppiano: 2, 4, 8 secondi  → [2,4,8]
+  ok  e dopo un dato ricevuto il conto riparte da due secondi  → [2]
+
+TORNANDO SULL’APP RIPROVA SUBITO
+  ok  un ritorno sull’app riattacca subito, senza aspettare il timer  → attacchi 6 → 7
+
+UN DOCUMENTO REMOTO PIÙ POVERO NON CANCELLA NIENTE
+  ok  le scoperte che stavano solo qui ci sono ancora  → 1 → 1
+  ok  e le trenta azioni dell’altro dispositivo sono arrivate  → 30 azioni arrivate
+
+QUELLO CHE ARRIVA SI VEDE, SENZA RICARICARE
+  ok  prima non c’era (se no la prova è muta)
+  ok  la riga arrivata entra nei dati
+  ok  e si vede sullo schermo senza ricaricare niente
+
+MENTRE SCRIVI NON SI RIDISEGNA, MA NON SI DIMENTICA
+  ok  l’aggiornamento è comunque entrato nei dati
+  ok  mentre il campo ha il fuoco lo schermo non si rifà sotto le dita
+  ok  ma appena lo lasci, quello che era arrivato compare
+
+UN GESTO ISOLATO PARTE SUBITO
+  ok  un gesto solo è già partito dopo 250ms  → 1 scritture
+  ok  e otto gesti di fila non fanno otto scritture  → 1 scritture per 8 gesti
+
+CON L’ESEMPIO, ENTRANDO CONTA SOLO L’ACCOUNT; «AZZERA TUTTO» NON CANCELLA IL CLOUD; USCENDO SI RESTA PULITI
+  ok  i dati di esempio portano la loro impronta
+  ok  collegandosi non serve chiedere niente
+  ok  l’esempio non va nel cloud
+  ok  e qui sparisce, al posto dei dati veri dell’account
+  ok  i dati dell’account restano tutti, qui e nel cloud
+  ok  niente di quello fatto dentro l’esempio entra nell’account
+  ok  il profilo dell’esempio non prende il posto del tuo
+  ok  l’esempio resta in un backup di questo dispositivo
+  ok  prima di unire, il documento del cloud è messo da parte  → 1 copie
+  ok  «Azzera tutto» fatto da soli non porta niente verso il cloud
+  ok  ma collegandosi i dati del telefono arrivano qui
+  ok  e restano nel cloud
+  ok  «Togli i dati di esempio» toglie l’esempio  → 472 tolti
+  ok  e lascia quello che hai scritto tu
+  ok  dopo un backup
+  ok  uscendo, sul dispositivo non restano i dati dell’account
+  ok  che restano nel cloud
+  ok  e rientrando tornano
+  ok  se nell’account c’è già l’esempio, all’accesso propone di toglierlo
+  ok  toglie solo quello (anche il diario inventato), e un altro dispositivo non lo rimette  → {"chiesto":true,"mia":true,"esempio":false}
+
+LO «SPENTO» DELLE SCHERMATE NUOVE RESTA SPENTO
+  ok  spegnendolo, l’app usa davvero il codice di prima
+  ok  l’altro dispositivo porta il suo «acceso» nel profilo  → ed è giusto: il profilo si sincronizza
+  ok  ma su QUESTO dispositivo resta spento  → spento come l’avevi lasciato
+  ok  nessun errore in pagina
+
+>>> TUTTO A POSTO

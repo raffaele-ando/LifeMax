@@ -1,0 +1,15 @@
+(node:17054) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok  (preparazione) collegato e importato
+  ok  G2 Google rifiuta una cancellazione: il pannello non dice «Tutto allineato»
+  ok  G2 …e dice che una modifica non è stata accettata
+  ok  G2 dopo il no, gli altri cambiamenti di Google continuano ad arrivare
+  ok  G2 un no di una volta sola non è per sempre: dopo un po’ la cancellazione arriva a Google
+  ok  G2 …e il pannello torna a posto
+  ok  G2 dopo tre no, il Diario dice che l’evento resta su Google
+  ok  G2 …e la cancellazione non si riprova più
+  ok  M2 chiave dei permessi cambiata: l’app chiede «Ricollega» invece di tacere
+  ok  M3 dopo «Esci» niente del calendario di Mario resta nel browser
+  ok  nessun errore nella pagina
+
+tutto a posto

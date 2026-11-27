@@ -1,0 +1,34 @@
+{
+  "script": "v04-versione-minima",
+  "quando": "2026-11-25T07:27:46.734Z",
+  "radice": "/tmp/claude-0/-home-user-LifeMax/99c3d469-10e9-545a-afc2-1ce7e01478d1/scratchpad/audit-3/wt",
+  "bloccati": [
+    "https://apis.google.com/js/api.js?onload=__iframefcb155129"
+  ],
+  "nBloccati": 1,
+  "risultati": [
+    {
+      "scenario": "A1 versione di oggi: due dispositivi scrivono e ricevono, nessuna striscia «versione nuova»",
+      "ok": true,
+      "dettaglio": {
+        "versioneMinimaNelCloud": 1,
+        "pc": [
+          "dal pc",
+          "dal telefono"
+        ],
+        "telefono": [
+          "dal telefono",
+          "dal pc"
+        ]
+      }
+    },
+    {
+      "scenario": "B1 [rischio M5] dopo un rollback la versione 1 (che è quella sul server) torna a salvare dopo «Ricarica»",
+      "ok": false,
+      "dettaglio": {
+        "striscia": "C’è una versione nuova di LifeMax: ricarica la pagina per continuare a salvare nel cloud. Le tue modifiche restano su questo dispositivo.\nRicarica",
+        "versioneMinima": 2
+      }
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+  ok  S4.1a primo avvio: si vede il benvenuto (onboarding)
+  ok  S4.1b dati da ospite salgono nel nuovo account  -> ["da ospite"]
+  ok  S4.2 nuovo dispositivo, account esistente: prende nome/dati e non ripropone il benvenuto dopo l’accesso  -> {"onb":true,"nome":"Mario","overlay":false,"az":1}
+  ok  S4.2b iPad con dati da ospite entra: i dati ospite finiscono nell’account (comportamento voluto: unione)  -> {"telefono":"da ospite | ospite ipad","nomeTelefono":"Mario"}
+  ok  S4.3 uscita: il pc si svuota, l’ultima modifica è nel cloud  -> {"pc":""}
+  ok  S4.3b rientro sul pc: i dati tornano  -> da ospite | ospite ipad | ultima dal pc prima di uscire
+  ok  S4.4 «Esci» senza rete: l’uscita si completa e lo dice  -> {"esito":"uscito","ms":6017,"dopo":{"user":false,"az":0}}
+  ok  S4.4b tornata la rete: la modifica fatta offline prima di uscire è nel cloud  -> {"pcDopo":{"user":false,"az":[]},"cloud":["da ospite","ospite ipad","ultima dal pc prima di uscire","scritta offline poi esco"]}
+  KO  S4.5a iPad perde la sessione (IndexedDB cancellato): l’app è disconnessa e i dati di Mario restano visibili sul dispositivo  -> {"user":true,"az":4}
+  ok  S4.5b poi entra LUIGI sull’iPad: nel suo account NON devono finire i dati di Mario  -> []
+  ok  S4.6a seconda scheda: già dentro con gli stessi dati  -> da ospite | ospite ipad | scritta offline poi esco | ultima dal pc prima di uscire
+  ok  S4.6b esco nella scheda 1: anche la scheda 2 si svuota e non rimette i dati nel dispositivo  -> {"scheda2":{"user":false,"az":0},"azioniNelSalvataggioDopoScritturaScheda2":0}
+  ok  S4.6c poi Luigi entra in quella finestra: niente dati di Mario nel suo account  -> []
+  KO  S4.7 account disabilitato: l’app lo dice in modo comprensibile e tiene la modifica sul dispositivo  -> {"disable":200,"stato":{"user":false,"sync":{"state":"idle","error":"","at":1795592718987,"inCoda":false},"tokErr":"auth/user-disabled","toast":""}}
+  ok  S4 errori in pagina su telefono  -> []
+  ok  S4 errori in pagina su ipad  -> []
+  ok  S4 errori in pagina su pc2-scheda1  -> []
+  ok  S4 errori in pagina su pc2-scheda2  -> []

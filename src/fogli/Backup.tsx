@@ -180,6 +180,44 @@ export default function Backup() {
     ) : (
       <div className="imp-nota" style={{ margin: 0 }}>Non ci sono ancora backup. Vengono creati automaticamente ogni volta che i dati stanno per essere sostituiti.</div>
     )}
+    <SenzaProprietario />
     <div id="bk-cloud"><Cloud /></div>
+  </>);
+}
+
+/* LE COPIE SENZA PROPRIETARIO (verifica 3, N1). Copie prese da una versione
+   di prima su questo dispositivo, che non si sa di chi siano: su un
+   dispositivo condiviso possono essere di un'altra persona. Non si
+   ripristinano (finirebbero nell'account di chi è dentro adesso): si possono
+   solo scaricare in un file — che chi è sicuro che sia suo può importare da
+   «Importa dati» — o eliminare. Si vedono solo se ce ne sono. */
+function SenzaProprietario() {
+  const [, rifai] = useState(0);
+  const lista = LM.copieSenzaProprietario();
+  if (!lista.length) return null;
+  const scarica = (ts: number): void => {
+    const testo = LM.fileCopiaSenzaProprietario(ts);
+    if (!testo) return;
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([testo], { type: 'application/json' }));
+    a.download = 'lifemax-copia-senza-proprietario-' + new Date(ts || Date.now()).toISOString().slice(0, 10) + '.json';
+    document.body.appendChild(a); a.click(); a.remove();
+  };
+  return (<>
+    <div className="lista-eti" id="bk-senza"><Segno nome="archivio" dim={11} />Copie senza proprietario <span>{lista.length}</span></div>
+    <div className="imp-nota" style={{ margin: 0 }}>Copie prese prima dell’aggiornamento di novembre 2026 su questo dispositivo, quando ancora non si segnava di chi erano. <b>Possono essere di un’altra persona che ha usato questo browser.</b> Per questo non si ripristinano: se sei sicuro che una sia tua, scaricala e usa «Importa dati»; altrimenti eliminala.</div>
+    <div className="backup-lista">
+      {lista.map((b) => (
+        <div className="backup-riga" key={'s' + b.ts}>
+          <div><b>{quando(b.ts)}</b><small>{b.ricchezza} elementi{b.motivo && MOTIVI[b.motivo] ? ' · ' + MOTIVI[b.motivo] : ''}</small></div>
+          <Tasto testo="Scarica" misura="mini" dati={{ 'data-senza-scarica': String(b.ts) }} onClick={() => scarica(b.ts)} />
+          <Tasto testo="Elimina" misura="mini" piu="btn-ghost" dati={{ 'data-senza-elimina': String(b.ts) }} onClick={() => {
+            avviso({ titolo: 'Eliminare questa copia?', testo: 'Non si potrà più recuperare.', azione: 'Elimina' }, () => {
+              LM.eliminaCopiaSenzaProprietario(b.ts); rifai((n) => n + 1); toast('Copia eliminata.', 0, 'archivio');
+            });
+          }} />
+        </div>
+      ))}
+    </div>
   </>);
 }

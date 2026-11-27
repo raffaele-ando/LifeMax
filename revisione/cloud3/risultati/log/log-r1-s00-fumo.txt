@@ -1,0 +1,43 @@
+A auth {"user":{"uid":"ffWLyODFdpTdTfPtz6shsLaWtYdI","email":"mario@prova.it","name":"mario@prova.it","photo":""},"available":true,"syncing":false,"ascolto":true} {"state":"saved","error":"","at":1795591723694,"inCoda":false}
+uid ffWLyODFdpTdTfPtz6shsLaWtYdI B azioni [ 'da A' ]
+A azioni [ 'da A', 'da B' ]
+cloud [ 'da A', 'da B' ]
+A sync offline {"state":"attesa","error":"","at":1795591727950,"inCoda":true}
+cloud [ 'da A', 'da B' ]
+cloud dopo [ 'da A', 'da B', 'A offline' ] B [ 'da A', 'da B', 'A offline' ]
+[] [
+  'Failed to load resource: the server responded with a status of 404 (Not Found)',
+  'Failed to load resource: net::ERR_FAILED',
+  'Failed to load resource: net::ERR_INTERNET_DISCONNECTED',
+  'Failed to load resource: net::ERR_INTERNET_DISCONNECTED',
+  'Failed to load resource: net::ERR_INTERNET_DISCONNECTED'
+] {"t":1795591726854,"ms":4064,"liv":"info","can":"cloud","msg":"Ricevuto aggiornamento da un altro dispositivo","dati":""}
+{"t":1795591726854,"ms":4064,"liv":"info","can":"cloud","msg":"operazione conclusa: sincronizzazione → saved","dati":""}
+{"t":1795591726855,"ms":4065,"liv":"info","can":"sync","msg":"stato → saved","dati":""}
+{"t":1795591727353,"ms":4563,"liv":"info","can":"dati","msg":"Modifica salvata sul dispositivo","dati":""}
+{"t":1795591727899,"ms":5109,"liv":"info","can":"cloud","msg":"il cloud è cambiato da un altro dispositivo: sincronizzo","dati":"rev 4"}
+{"t":1795591727899,"ms":5109,"liv":"info","can":"cloud","msg":"operazione avviata: sincronizzazione (dal cloud)","dati":"in corso: 1"}
+{"t":1795591727900,"ms":5110,"liv":"info","can":"sync","msg":"stato → saving","dati":""}
+{"t":1795591727950,"ms":5160,"liv":"info","can":"cloud","msg":"Ricevuto aggiornamento da un altro dispositivo","dati":""}
+{"t":1795591727950,"ms":5160,"liv":"info","can":"cloud","msg":"operazione conclusa: sincronizzazione → saved","dati":""}
+{"t":1795591727950,"ms":5160,"liv":"info","can":"sync","msg":"stato → saved","dati":""}
+{"t":1795591728450,"ms":5660,"liv":"info","can":"dati","msg":"Modifica salvata sul dispositivo","dati":""}
+{"t":1795591733686,"ms":10896,"liv":"avviso","can":"rete","msg":"Rete assente","dati":""}
+{"t":1795591733702,"ms":10912,"liv":"avviso","can":"console","msg":"[2026-11-25T07:28:53.702Z]  @firebase/firestore: Firestore (12.16.0): WebChannelConnection RPC 'Listen' stream 0x42feff9c transport errored. Name:  Mess
+{"t":1795591733709,"ms":10919,"liv":"avviso","can":"console","msg":"[2026-11-25T07:28:53.709Z]  @firebase/firestore: Firestore (12.16.0): WebChannelConnection RPC 'Listen' stream 0x42feff9d transport errored. Name:  Mess
+{"t":1795591733727,"ms":10937,"liv":"info","can":"cloud","msg":"operazione avviata: sincronizzazione (modifica)","dati":"in corso: 1"}
+{"t":1795591733727,"ms":10937,"liv":"avviso","can":"sync","msg":"stato → attesa","dati":""}
+{"t":1795591733733,"ms":10943,"liv":"avviso","can":"console","msg":"[2026-11-25T07:28:53.733Z]  @firebase/firestore: Firestore (12.16.0): RestConnection RPC 'BatchGetDocuments' 0x42feff9e failed with error:  {\"code\":\"
+{"t":1795591734197,"ms":11407,"liv":"info","can":"dati","msg":"Modifica salvata sul dispositivo","dati":""}
+{"t":1795591734465,"ms":11675,"liv":"avviso","can":"console","msg":"[2026-11-25T07:28:54.465Z]  @firebase/firestore: Firestore (12.16.0): WebChannelConnection RPC 'Listen' stream 0x42feffa0 transport errored. Name:  Mess
+{"t":1795591735226,"ms":12436,"liv":"avviso","can":"console","msg":"[2026-11-25T07:28:55.225Z]  @firebase/firestore: Firestore (12.16.0): RestConnection RPC 'BatchGetDocuments' 0x42feffa1 failed with error:  {\"code\":\"
+{"t":1795591736478,"ms":13688,"liv":"avviso","can":"console","msg":"[2026-11-25T07:28:56.478Z]  @firebase/firestore: Firestore (12.16.0): RestConnection RPC 'BatchGetDocuments' 0x42feffa3 failed with error:  {\"code\":\"
+{"t":1795591736702,"ms":13912,"liv":"avviso","can":"console","msg":"[2026-11-25T07:28:56.702Z]  @firebase/firestore: Firestore (12.16.0): WebChannelConnection RPC 'Listen' stream 0x42feffa5 transport errored. Name:  Mess
+{"t":1795591736715,"ms":13925,"liv":"info","can":"rete","msg":"Rete tornata disponibile","dati":""}
+{"t":1795591736715,"ms":13925,"liv":"info","can":"cloud","msg":"rete tornata: riprovo il salvataggio","dati":""}
+{"t":1795591738278,"ms":15488,"liv":"info","can":"cloud","msg":"cloud aggiornato","dati":"2 pezzi riscritti su 3"}
+{"t":1795591738279,"ms":15489,"liv":"info","can":"cloud","msg":"Ricevuto aggiornamento da un altro dispositivo","dati":""}
+{"t":1795591738338,"ms":15548,"liv":"info","can":"cloud","msg":"Ricevuto aggiornamento da un altro dispositivo","dati":""}
+{"t":1795591738338,"ms":15548,"liv":"info","can":"cloud","msg":"operazione conclusa: sincronizzazione → saved","dati":""}
+{"t":1795591738338,"ms":15548,"liv":"info","can":"sync","msg":"stato → saved","dati":""}
+{"t":1795591738839,"ms":16049,"liv":"info","can":"dati","msg":"2 modifiche salvate sul dispositivo","dati":""}

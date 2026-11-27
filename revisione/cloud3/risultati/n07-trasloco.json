@@ -1,0 +1,97 @@
+{
+  "script": "n07-trasloco",
+  "quando": "2026-11-25T07:26:47.217Z",
+  "radice": "/tmp/claude-0/-home-user-LifeMax/99c3d469-10e9-545a-afc2-1ce7e01478d1/scratchpad/audit-3/wt",
+  "bloccati": [
+    "https://apis.google.com/js/api.js?onload=__iframefcb735772",
+    "https://apis.google.com/js/api.js?onload=__iframefcb971152",
+    "https://apis.google.com/js/api.js?onload=__iframefcb866352",
+    "https://apis.google.com/js/api.js?onload=__iframefcb257709",
+    "https://apis.google.com/js/api.js?onload=__iframefcb947700",
+    "https://apis.google.com/js/api.js?onload=__iframefcb908174",
+    "https://apis.google.com/js/api.js?onload=__iframefcb239279",
+    "https://apis.google.com/js/api.js?onload=__iframefcb946927",
+    "https://apis.google.com/js/api.js?onload=__iframefcb729625",
+    "https://apis.google.com/js/api.js?onload=__iframefcb635912",
+    "https://www.google.com/images/cleardot.gif?zx=v6tymwdefhgx",
+    "https://www.google.com/images/cleardot.gif?zx=l6ajhvabk8wh",
+    "https://www.google.com/images/cleardot.gif?zx=dt9goldz31nc"
+  ],
+  "nBloccati": 13,
+  "risultati": [
+    {
+      "scenario": "A0 sul vecchio indirizzo compare «LifeMax ha cambiato indirizzo» con «Porta i miei dati»",
+      "ok": true,
+      "dettaglio": "LifeMax ha cambiato indirizzo\n\nAdesso sta su localhost:9411. I tuoi dati sono solo in questo browser, a questo indirizzo: portali con te, con un tocco. Qui non "
+    },
+    {
+      "scenario": "A1 i dati del vecchio arrivano sul nuovo, uniti a quelli che c’erano",
+      "ok": true,
+      "dettaglio": {
+        "vecchio": "Fatto: i tuoi dati sono di là\n\nDa adesso usa localhost:9411 (aggiungilo ai prefe",
+        "nuovo": {
+          "azioni": [
+            "cosa del nuovo",
+            "cosa del vecchio 1",
+            "cosa del vecchio 2"
+          ],
+          "nome": "Nome scritto di recente sul nuovo",
+          "visione": "visione vecchia"
+        }
+      }
+    },
+    {
+      "scenario": "B1 il nome scritto di recente sul nuovo NON viene sostituito da quello vecchio di github.io",
+      "ok": true,
+      "dettaglio": {
+        "azioni": [
+          "cosa del nuovo",
+          "cosa del vecchio 1",
+          "cosa del vecchio 2"
+        ],
+        "nome": "Nome scritto di recente sul nuovo",
+        "visione": "visione vecchia"
+      }
+    },
+    {
+      "scenario": "C1 «Porta i miei dati» premuto due volte: niente doppioni",
+      "ok": true,
+      "dettaglio": [
+        "cosa del nuovo",
+        "cosa del vecchio 1",
+        "cosa del vecchio 2"
+      ]
+    },
+    {
+      "scenario": "C2 dopo il trasloco riuscito, riaprendo il vecchio indirizzo la proposta torna ogni volta (nota)",
+      "ok": true,
+      "dettaglio": {
+        "proposta": false,
+        "traslocato": null
+      }
+    },
+    {
+      "scenario": "D1 i dati dell’ospite di github.io finiscono nell’account collegato sul nuovo, senza chiedere di chi sono (nota)",
+      "ok": true,
+      "dettaglio": {
+        "cloudDario": [
+          "di Dario, nell’account"
+        ],
+        "haChiesto": ""
+      }
+    },
+    {
+      "scenario": "E1 finestra bloccata (app sulla schermata Home): propone il file",
+      "ok": true,
+      "dettaglio": "Il browser non ha aperto la pagina\n\nNessun problema: porta i dati con un file.\n\nScarica il file\nPiù tardi"
+    },
+    {
+      "scenario": "F1 con l’account e senza rete: NON si va al nuovo indirizzo finché il cloud non ha tutto",
+      "ok": true,
+      "dettaglio": {
+        "url": "http://127.0.0.1:9411/index.html",
+        "testo": "Alcune modifiche non sono ancora nel cloud\n\nManca la rete, o il cloud non risponde. Resta qui finché partono (lo vedi in alto: «Salvato nel cloud»), oppure portale con un file.\n\nRiprova\nScarica il file\nPiù tardi"
+      }
+    }
+  ]
+}

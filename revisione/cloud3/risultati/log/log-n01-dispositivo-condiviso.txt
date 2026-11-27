@@ -1,0 +1,13 @@
+  ok  A0 i dati di Mario sono nel suo cloud
+  ok  A1 dopo «Esci» lo schermo è vuoto  -> {"utenteFirebase":false}
+  ok  A2 [privacy] dopo «Esci» NESSUNA copia dei dati di Mario resta nel browser  -> {"chiaviConDatiDiMario":{},"backups":[]}
+  KO  A3 il pannello Backup (aperto da ospite) elenca la copia «all’uscita dall’account»  -> false
+  ok  B1 [privacy] Luigi ospite NON può riportare in vita i dati di Mario  -> {"azione":false,"nome":"","sera":false}
+  ok  C1 [fuga fra account] l’account di Luigi NON contiene i dati di Mario  -> {"azioniLuigi":[],"nomeProfilo":""}
+  ok  D1 [fuga fra account] Luigi collegato vede nei Backup la copia di Mario e ripristinandola la manda nel SUO cloud  -> {"copieInElenco":[],"cloudLuigi":[]}
+  ok  E1 sessione chiusa dal server: schermo vuoto, utente fuori  -> {"connesso":false,"schermo":false,"backup":[]}
+  ok  E2 [privacy] …ma la copia «all’uscita dall’account» con i dati di Mario è nel pannello Backup  -> []
+  ok  F1 tre giri Mario/Luigi: ognuno ha solo le sue 3 cose (schermo e cloud)  -> {"mario":["cosa di mario #0","cosa di mario #1","cosa di mario #2"],"luigi":["cosa di luigi #0","cosa di luigi #1","cosa di luigi #2"]}
+  ok  F2 [privacy] backup locali che contengono dati di account usciti (dopo 6 uscite)  -> []
+  ok  G0 «Esci» senza cloud: l’app esce dallo schermo ma la sessione Firebase di Mario resta viva di nascosto  -> {"esitoUscita":"in-attesa","visibile":false,"firebase":"mario@prova.it","inAttesa":"gVDIdShDvreoYEeYpJfTFWpXHuRO"}
+  ok  G1 la modifica di Mario arriva comunque nel SUO cloud (anche se nel frattempo è entrato Luigi)  -> {"cloudMario":["Ultima cosa di Mario prima di uscire"],"copiaDaParteAncoraSulPC":false}

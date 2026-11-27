@@ -1,0 +1,48 @@
+  ok  R01 (2 dispositivi) dopo il ritorno online del telefono tutti hanno X e Y  -> {"telefono":"X offline telefono,Y pc","pc":"X offline telefono,Y pc","cloud":"X offline telefono,Y pc"}
+ telefono:
+   10.598 SDK Firebase caricato 
+   10.601 Firestore avviato riconoscimento automatico del canale lungo attivo
+   10.616 cloud pronto progetto lifemax-9dc63
+   10.616 nessun account connesso: i dati restano su questo dispositivo 
+   11.025 accesso riscontrato, avvio la prima sincronizzazione uid 43KTRX…
+   11.101 prima unione da questo dispositivo esempio tenuto fuori, azzeramento locale non applicato al cloud
+   11.124 pezzi nel cloud letti in blocco 0 fette
+   11.124 operazione avviata: sincronizzazione (prima sincronizzazione) in corso: 1
+   11.158 cloud aggiornato 1 pezzi riscritti su 1
+   11.159 Ricevuto aggiornamento da un altro dispositivo 
+   11.160 operazione conclusa: sincronizzazione → saved 
+   11.160 ascolto in tempo reale attivo 
+   12.449 il cloud è cambiato da un altro dispositivo: sincronizzo rev 2
+   12.449 operazione avviata: sincronizzazione (dal cloud) in corso: 1
+   12.522 Ricevuto aggiornamento da un altro dispositivo 
+   12.525 operazione conclusa: sincronizzazione → saved 
+   13.514 operazione avviata: sincronizzazione (modifica) in corso: 1
+   17.309 rete tornata: riprovo il salvataggio 
+   17.362 il cloud è cambiato da un altro dispositivo: sincronizzo rev 3
+   19.515 il cloud non ha ancora confermato dopo 6s online: true
+   19.999 cloud aggiornato 2 pezzi riscritti su 3
+   20.000 Ricevuto aggiornamento da un altro dispositivo 
+   20.062 Ricevuto aggiornamento da un altro dispositivo 
+   20.063 operazione conclusa: sincronizzazione → saved 
+ pc:
+   10.963 SDK Firebase caricato 
+   10.966 Firestore avviato riconoscimento automatico del canale lungo attivo
+   10.981 cloud pronto progetto lifemax-9dc63
+   10.982 nessun account connesso: i dati restano su questo dispositivo 
+   12.209 accesso riscontrato, avvio la prima sincronizzazione uid 43KTRX…
+   12.285 prima unione da questo dispositivo esempio tenuto fuori, azzeramento locale non applicato al cloud
+   12.312 pezzi nel cloud letti in blocco 1 fette
+   12.312 operazione avviata: sincronizzazione (prima sincronizzazione) in corso: 1
+   12.453 cloud aggiornato 1 pezzi riscritti su 1
+   12.457 Ricevuto aggiornamento da un altro dispositivo 
+   12.457 operazione conclusa: sincronizzazione → saved 
+   12.458 ascolto in tempo reale attivo 
+   12.498 copia di sicurezza nel cloud primo-accesso-di-un-dispositivo · 2 KB
+   14.021 operazione avviata: sincronizzazione (modifica) in corso: 1
+   14.054 cloud aggiornato 3 pezzi riscritti su 3
+   14.056 Ricevuto aggiornamento da un altro dispositivo 
+   14.057 operazione conclusa: sincronizzazione → saved 
+   19.986 il cloud è cambiato da un altro dispositivo: sincronizzo rev 4
+   19.986 operazione avviata: sincronizzazione (dal cloud) in corso: 1
+   20.076 Ricevuto aggiornamento da un altro dispositivo 
+   20.076 operazione conclusa: sincronizzazione → saved 

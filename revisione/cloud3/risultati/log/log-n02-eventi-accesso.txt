@@ -1,0 +1,18 @@
+  ok  N02A popup bloccato: redirect 1, avviso «Accesso non riuscito»  -> {"redirect":1,"avvisi":["Accesso non riuscito"],"dialogo":"Accesso non riuscito"}
+  ok  N02B popup chiuso subito dall’utente: redirect 0, avviso «»  -> {"redirect":0,"avvisi":[],"dialogo":""}
+  ok  N02B2 popup chiuso dopo 3 s: redirect 0, avviso «»  -> {"redirect":0,"avvisi":[],"dialogo":""}
+  ok  N02C dominio non autorizzato: redirect 0, avviso «Da qui l’accesso non è attivo»  -> {"redirect":0,"avvisi":["Da qui l’accesso non è attivo"],"dialogo":"Da qui l’accesso non è attivo"}
+  ok  N02D niente rete: redirect 0, avviso «Niente rete»  -> {"redirect":0,"avvisi":["Niente rete"],"dialogo":"Niente rete"}
+  ok  N02D2 errore sconosciuto: redirect 0, avviso «Accesso non riuscito»  -> {"redirect":0,"avvisi":["Accesso non riuscito"],"dialogo":"Accesso non riuscito"}
+  ok  N02B l’utente che chiude il popup appena aperto NON viene mandato a Google col redirect  -> {"redirect":0,"avvisi":[],"dialogo":""}
+  ok  N02E1 account disabilitato: avviso «La sessione è finita», schermo vuoto, la modifica non salita messa da parte  -> {"dentro":false,"schermo":[],"daParte":true,"dialogo":"La sessione è finita"}
+  ok  N02E2 riattivato e rientrato: la modifica fatta in metro arriva nel cloud  -> ["E1 già nel cloud","E2 fatta in metro, non ancora nel cloud"]
+  KO  N02F account cancellato sul server: l’app lo dice (sessione finita)  -> {"dentro":true,"dialogo":""}
+  KO  N02F2 rientrando con lo stesso Google dopo la cancellazione: nuovo uid, i dati del vecchio uid restano orfani in Firestore  -> {"uidPrima":"rmdgXniR9IWgLbuB58uLqbSd2BzC","uidDopo":"a2grJXFfvddKs77CtBXhv5D5KREc","datiNuovo":0,"datiVecchioRestano":true}
+  ok  N02G biscotti cancellati (o sessione Google scaduta): LifeMax resta dentro e i dati ci sono  -> {"dentro":true,"azioni":["G1"],"chiaveAuth":1}
+  ok  N02H1 localStorage cancellato: com’è l’app riaprendo (dentro? dati?)  -> {"dentro":false,"azioni":[],"dialogo":""}
+  ok  N02H2 rientrato: H1 e il nome tornano dal cloud  -> {"azioni":["H1"],"nome":"Hugo"}
+  KO  N02H3 la modifica fatta offline prima della cancellazione: persa (atteso, ma l’app lo può dire?)  -> ["H1"]
+  ok  N02I iPhone svuotato da Safari: riaccede e ritrova tutto, il profilo NON si azzera  -> {"primaDiAccedere":{"dentro":false,"azioni":0,"onboarding":true},"dopo":{"azioni":["I1","I2 dal pc mentre l’iPhone è chiuso"],"nome":"Irene","visione":"calma"}}
+  ok  N02K «Esci» nella scheda B mentre la scheda A ha una modifica non ancora partita: la modifica NON si perde  -> {"esitoEsciInB":"uscito","vistaDaB":{"sospeso":null,"inSospeso":false},"nelCloud":["K1 scritta nella scheda A (rete lenta)"],"messaDaParte":false}
+  ok  N02L la scheda A segue il cambio d’account senza mescolare: Leo non ha cose di Lara  -> {"schedaA":{"chi":null,"azioni":[]},"cloudLeo":["scritta nella scheda A dopo il cambio"]}

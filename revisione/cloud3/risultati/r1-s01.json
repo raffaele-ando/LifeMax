@@ -1,0 +1,82 @@
+{
+  "script": "r1-s01",
+  "quando": "2026-11-25T07:34:09.717Z",
+  "radice": "/tmp/claude-0/-home-user-LifeMax/99c3d469-10e9-545a-afc2-1ce7e01478d1/scratchpad/audit-3/wt",
+  "bloccati": [
+    "https://apis.google.com/js/api.js?onload=__iframefcb963609",
+    "https://apis.google.com/js/api.js?onload=__iframefcb81079",
+    "https://apis.google.com/js/api.js?onload=__iframefcb106549",
+    "https://apis.google.com/js/api.js?onload=__iframefcb536520",
+    "https://www.google.com/images/cleardot.gif?zx=1m04r6t8jigs",
+    "https://www.google.com/images/cleardot.gif?zx=xa76p8icgka",
+    "https://www.google.com/images/cleardot.gif?zx=u079fuoho6p5",
+    "https://www.google.com/images/cleardot.gif?zx=6i3zvwh8owwn",
+    "https://www.google.com/images/cleardot.gif?zx=vnfqpv5tsavx",
+    "https://www.google.com/images/cleardot.gif?zx=5l80534o2nev",
+    "https://apis.google.com/js/api.js?onload=__iframefcb208665",
+    "https://apis.google.com/js/api.js?onload=__iframefcb867232",
+    "https://www.google.com/images/cleardot.gif?zx=8gdpt9vwysey",
+    "https://www.google.com/images/cleardot.gif?zx=488w9sv7f8es",
+    "https://www.google.com/images/cleardot.gif?zx=8izr5ovi44zq",
+    "https://apis.google.com/js/api.js?onload=__iframefcb294450"
+  ],
+  "nBloccati": 16,
+  "risultati": [
+    {
+      "scenario": "S1.1 scritture simultanee (telefono+pc online): tutti vedono X e Y",
+      "ok": true,
+      "dettaglio": {
+        "telefono": "X da telefono,Y da pc",
+        "pc": "X da telefono,Y da pc",
+        "ipad": "X da telefono,Y da pc",
+        "cloud": "X da telefono,Y da pc"
+      }
+    },
+    {
+      "scenario": "S1.2 telefono offline aggiunge X, pc aggiunge Y, telefono torna online: tutti vedono X e Y",
+      "ok": true,
+      "dettaglio": {
+        "telefono": "X offline telefono,Y pc",
+        "pc": "X offline telefono,Y pc",
+        "ipad": "X offline telefono,Y pc",
+        "cloud": "X offline telefono,Y pc"
+      }
+    },
+    {
+      "scenario": "S1.3 dopo il ritorno: il pc (che ha scritto per ultimo) vede la X del telefono",
+      "ok": true,
+      "dettaglio": {
+        "telefono": "X solo telefono,Y pc (piu recente)",
+        "pc": "X solo telefono,Y pc (piu recente)",
+        "ipad": "X solo telefono,Y pc (piu recente)",
+        "cloud": "X solo telefono,Y pc (piu recente)",
+        "scrittureTelefono": [],
+        "scrittureP": []
+      }
+    },
+    {
+      "scenario": "S1.3b il pc scrive ancora: X resta nel cloud e arriva al pc",
+      "ok": true,
+      "dettaglio": {
+        "telefono": "X solo telefono,Y pc (piu recente),Z pc",
+        "pc": "X solo telefono,Y pc (piu recente),Z pc",
+        "ipad": "X solo telefono,Y pc (piu recente),Z pc",
+        "cloud": "X solo telefono,Y pc (piu recente),Z pc"
+      }
+    },
+    {
+      "scenario": "S1.3c il telefono non torna più (telefono cambiato): X è ancora nel cloud",
+      "ok": true,
+      "dettaglio": {
+        "cloud": "W pc,X solo telefono,Y pc (piu recente),Z pc",
+        "pc": "W pc,X solo telefono,Y pc (piu recente),Z pc",
+        "ipad": "W pc,X solo telefono,Y pc (piu recente),Z pc"
+      }
+    },
+    {
+      "scenario": "S1.3d ricaricando l’iPad, X ricompare?",
+      "ok": true,
+      "dettaglio": "W pc,X solo telefono,Y pc (piu recente),Z pc"
+    }
+  ]
+}

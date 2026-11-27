@@ -758,7 +758,7 @@ async function primaSincronizzazione(uid: string): Promise<void> {
   let giaUnito = leggi(CHI) === uid;
   /* QUI C'È L'ESEMPIO: CONTA SOLO L'ACCOUNT. L'esempio va in un backup di
      questo dispositivo e si prende quello che c'è nell'account. */
-  const eraEsempio = window.LM.lasciaEsempio(giaUnito);
+  const eraEsempio = window.LM.lasciaEsempio(giaUnito, uid);
   if (eraEsempio) log('info', 'qui c’erano i dati di esempio', 'messi da parte: conta solo l’account');
   else if (!giaUnito) {
     window.LM.primaUnione(uid);

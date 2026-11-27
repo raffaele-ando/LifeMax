@@ -1,0 +1,159 @@
+{
+  "script": "r1-s04",
+  "quando": "2026-11-25T07:45:40.383Z",
+  "radice": "/tmp/claude-0/-home-user-LifeMax/99c3d469-10e9-545a-afc2-1ce7e01478d1/scratchpad/audit-3/wt",
+  "bloccati": [
+    "https://apis.google.com/js/api.js?onload=__iframefcb920571",
+    "https://apis.google.com/js/api.js?onload=__iframefcb404359",
+    "https://www.google.com/images/cleardot.gif?zx=ndiq17d10ffj",
+    "https://www.google.com/images/cleardot.gif?zx=l7bpg265iqrz",
+    "https://www.google.com/images/cleardot.gif?zx=yh83kmwwkt1m",
+    "https://www.google.com/images/cleardot.gif?zx=gbgs38unupan",
+    "https://www.google.com/images/cleardot.gif?zx=sul48yzc00vc",
+    "https://apis.google.com/js/api.js?onload=__iframefcb305006"
+  ],
+  "nBloccati": 8,
+  "risultati": [
+    {
+      "scenario": "S4.1a primo avvio: si vede il benvenuto (onboarding)",
+      "ok": true
+    },
+    {
+      "scenario": "S4.1b dati da ospite salgono nel nuovo account",
+      "ok": true,
+      "dettaglio": [
+        "da ospite"
+      ]
+    },
+    {
+      "scenario": "S4.2 nuovo dispositivo, account esistente: prende nome/dati e non ripropone il benvenuto dopo l’accesso",
+      "ok": true,
+      "dettaglio": {
+        "onb": true,
+        "nome": "Mario",
+        "overlay": false,
+        "az": 1
+      }
+    },
+    {
+      "scenario": "S4.2b iPad con dati da ospite entra: i dati ospite finiscono nell’account (comportamento voluto: unione)",
+      "ok": true,
+      "dettaglio": {
+        "telefono": "da ospite | ospite ipad",
+        "nomeTelefono": "Mario"
+      }
+    },
+    {
+      "scenario": "S4.3 uscita: il pc si svuota, l’ultima modifica è nel cloud",
+      "ok": true,
+      "dettaglio": {
+        "pc": ""
+      }
+    },
+    {
+      "scenario": "S4.3b rientro sul pc: i dati tornano",
+      "ok": true,
+      "dettaglio": "da ospite | ospite ipad | ultima dal pc prima di uscire"
+    },
+    {
+      "scenario": "S4.4 «Esci» senza rete: l’uscita si completa e lo dice",
+      "ok": true,
+      "dettaglio": {
+        "esito": "uscito",
+        "ms": 6017,
+        "dopo": {
+          "user": false,
+          "az": 0
+        }
+      }
+    },
+    {
+      "scenario": "S4.4b tornata la rete: la modifica fatta offline prima di uscire è nel cloud",
+      "ok": true,
+      "dettaglio": {
+        "pcDopo": {
+          "user": false,
+          "az": []
+        },
+        "cloud": [
+          "da ospite",
+          "ospite ipad",
+          "ultima dal pc prima di uscire",
+          "scritta offline poi esco"
+        ]
+      }
+    },
+    {
+      "scenario": "S4.5a iPad perde la sessione (IndexedDB cancellato): l’app è disconnessa e i dati di Mario restano visibili sul dispositivo",
+      "ok": false,
+      "dettaglio": {
+        "user": true,
+        "az": 4
+      }
+    },
+    {
+      "scenario": "S4.5b poi entra LUIGI sull’iPad: nel suo account NON devono finire i dati di Mario",
+      "ok": true,
+      "dettaglio": []
+    },
+    {
+      "scenario": "S4.6a seconda scheda: già dentro con gli stessi dati",
+      "ok": true,
+      "dettaglio": "da ospite | ospite ipad | scritta offline poi esco | ultima dal pc prima di uscire"
+    },
+    {
+      "scenario": "S4.6b esco nella scheda 1: anche la scheda 2 si svuota e non rimette i dati nel dispositivo",
+      "ok": true,
+      "dettaglio": {
+        "scheda2": {
+          "user": false,
+          "az": 0
+        },
+        "azioniNelSalvataggioDopoScritturaScheda2": 0
+      }
+    },
+    {
+      "scenario": "S4.6c poi Luigi entra in quella finestra: niente dati di Mario nel suo account",
+      "ok": true,
+      "dettaglio": []
+    },
+    {
+      "scenario": "S4.7 account disabilitato: l’app lo dice in modo comprensibile e tiene la modifica sul dispositivo",
+      "ok": false,
+      "dettaglio": {
+        "disable": 200,
+        "stato": {
+          "user": false,
+          "sync": {
+            "state": "idle",
+            "error": "",
+            "at": 1795592718987,
+            "inCoda": false
+          },
+          "tokErr": "auth/user-disabled",
+          "toast": ""
+        }
+      }
+    },
+    {
+      "scenario": "S4 errori in pagina su telefono",
+      "ok": true,
+      "dettaglio": []
+    },
+    {
+      "scenario": "S4 errori in pagina su ipad",
+      "ok": true,
+      "dettaglio": []
+    },
+    {
+      "scenario": "S4 errori in pagina su pc2-scheda1",
+      "ok": true,
+      "dettaglio": []
+    },
+    {
+      "scenario": "S4 errori in pagina su pc2-scheda2",
+      "ok": true,
+      "dettaglio": []
+    }
+  ]
+}

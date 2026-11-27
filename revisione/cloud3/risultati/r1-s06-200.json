@@ -1,0 +1,90 @@
+{
+  "script": "r1-s06-200",
+  "quando": "2026-11-25T07:36:12.529Z",
+  "radice": "/tmp/claude-0/-home-user-LifeMax/99c3d469-10e9-545a-afc2-1ce7e01478d1/scratchpad/audit-3/wt",
+  "bloccati": [
+    "https://apis.google.com/js/api.js?onload=__iframefcb885046",
+    "https://apis.google.com/js/api.js?onload=__iframefcb784200",
+    "https://apis.google.com/js/api.js?onload=__iframefcb850308"
+  ],
+  "nBloccati": 3,
+  "risultati": [
+    {
+      "scenario": "S6.0 PC sempre aperto vede le modifiche del telefono (200 giorni dopo)",
+      "ok": true,
+      "dettaglio": {
+        "telefono": {
+          "azioni": "Rinnovare passaporto (fatto il modulo)",
+          "nome": "Mario Rossi",
+          "sveglia": "06:15",
+          "modo": "scuro",
+          "areaStudio": false,
+          "abitudine": "Meditare 10 minuti"
+        },
+        "pc": {
+          "azioni": "Rinnovare passaporto (fatto il modulo)",
+          "nome": "Mario Rossi",
+          "sveglia": "06:15",
+          "modo": "scuro",
+          "areaStudio": false,
+          "abitudine": "Meditare 10 minuti"
+        }
+      }
+    },
+    {
+      "scenario": "S6.1 iPad riaperto dopo 200 giorni: mostra subito i dati vecchi prima di sincronizzare (atteso, ma da sapere)",
+      "ok": true,
+      "dettaglio": {
+        "primaSchermataIpad": {
+          "azioni": "Rinnovare passaporto | Vecchia cosa da cancellare",
+          "nome": "Mario",
+          "sveglia": "07:00",
+          "modo": "auto",
+          "areaStudio": true,
+          "abitudine": "Meditare"
+        }
+      }
+    },
+    {
+      "scenario": "S6.2 dopo la sincronizzazione TUTTI uguali al telefono (niente cancellazioni risorte, niente modifiche perse, profilo del telefono)",
+      "ok": true,
+      "dettaglio": {
+        "atteso": {
+          "azioni": "Rinnovare passaporto (fatto il modulo)",
+          "nome": "Mario Rossi",
+          "sveglia": "06:15",
+          "modo": "scuro",
+          "areaStudio": false,
+          "abitudine": "Meditare 10 minuti"
+        },
+        "dopo": {
+          "telefono": {
+            "azioni": "Rinnovare passaporto (fatto il modulo)",
+            "nome": "Mario Rossi",
+            "sveglia": "06:15",
+            "modo": "scuro",
+            "areaStudio": false,
+            "abitudine": "Meditare 10 minuti"
+          },
+          "pc": {
+            "azioni": "Rinnovare passaporto (fatto il modulo)",
+            "nome": "Mario Rossi",
+            "sveglia": "06:15",
+            "modo": "scuro",
+            "areaStudio": false,
+            "abitudine": "Meditare 10 minuti"
+          },
+          "ipad": {
+            "azioni": "Rinnovare passaporto (fatto il modulo)",
+            "nome": "Mario Rossi",
+            "sveglia": "06:15",
+            "modo": "scuro",
+            "areaStudio": false,
+            "abitudine": "Meditare 10 minuti"
+          }
+        },
+        "sessioneIpad": true
+      }
+    }
+  ]
+}

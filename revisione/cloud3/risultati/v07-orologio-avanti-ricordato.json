@@ -1,0 +1,33 @@
+{
+  "script": "v07-orologio-avanti-ricordato",
+  "quando": "2026-11-25T07:33:54.283Z",
+  "radice": "/tmp/claude-0/-home-user-LifeMax/99c3d469-10e9-545a-afc2-1ce7e01478d1/scratchpad/audit-3/wt",
+  "bloccati": [
+    "https://apis.google.com/js/api.js?onload=__iframefcb792132",
+    "https://www.google.com/images/cleardot.gif?zx=xi5a0tmu2x7c",
+    "https://www.google.com/images/cleardot.gif?zx=krxnws8ittdj",
+    "https://www.google.com/images/cleardot.gif?zx=v07hwxn69wj6",
+    "https://www.google.com/images/cleardot.gif?zx=cwoi1oo9sfy9",
+    "https://apis.google.com/js/api.js?onload=__iframefcb718772"
+  ],
+  "nBloccati": 6,
+  "risultati": [
+    {
+      "scenario": "V07.0 condizioni: il PC ha scritto con l’orologio avanti, poi l’orologio è stato rimesso e rimisurato",
+      "ok": true,
+      "dettaglio": {
+        "ultimoIstanteRicordato": "2027-12-30T07:33:09.301Z",
+        "scartoDopo": "{\"ms\":0,\"quando\":1795591990442}"
+      }
+    },
+    {
+      "scenario": "V07.1 [M7, regressione?] la modifica fatta DOPO (telefono, 10:02) vince su quella fatta prima (PC, 10:00), su tutti",
+      "ok": false,
+      "dettaglio": {
+        "pc": "Riunione (scritto dal PC alle 10:00)",
+        "telefono": "Riunione (scritto dal PC alle 10:00)",
+        "cloud": "Riunione (scritto dal PC alle 10:00)"
+      }
+    }
+  ]
+}

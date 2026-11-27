@@ -1,0 +1,177 @@
+{
+  "script": "r1-s03",
+  "quando": "2026-11-25T07:44:42.904Z",
+  "radice": "/tmp/claude-0/-home-user-LifeMax/99c3d469-10e9-545a-afc2-1ce7e01478d1/scratchpad/audit-3/wt",
+  "bloccati": [
+    "https://apis.google.com/js/api.js?onload=__iframefcb853258",
+    "https://apis.google.com/js/api.js?onload=__iframefcb392526",
+    "https://www.google.com/images/cleardot.gif?zx=isr5uxstwd2n",
+    "https://www.google.com/images/cleardot.gif?zx=mb1bk01d0az7",
+    "https://www.google.com/images/cleardot.gif?zx=tsisguz48r4g",
+    "https://www.google.com/images/cleardot.gif?zx=4l0awfkx5aw0",
+    "https://www.google.com/images/cleardot.gif?zx=rbcjyz2j93dt",
+    "https://www.google.com/images/cleardot.gif?zx=qtheizpp2sjb",
+    "https://www.google.com/images/cleardot.gif?zx=y8xlpgzw8gb",
+    "https://www.google.com/images/cleardot.gif?zx=29lvqh81rrgm",
+    "https://www.google.com/images/cleardot.gif?zx=voq8kzsom7j3",
+    "https://www.google.com/images/cleardot.gif?zx=lkm553ltd2sn",
+    "https://www.google.com/images/cleardot.gif?zx=j2ijwopj868y",
+    "https://www.google.com/images/cleardot.gif?zx=bog02nkkqps7",
+    "https://www.google.com/images/cleardot.gif?zx=3jnwg4ls70wc",
+    "https://www.google.com/images/cleardot.gif?zx=m4hyqhcl41lf",
+    "https://www.google.com/images/cleardot.gif?zx=13y99eep9jwv",
+    "https://www.google.com/images/cleardot.gif?zx=rm2kwr4t3pc7",
+    "https://www.google.com/images/cleardot.gif?zx=hafq9cdoq07b",
+    "https://www.google.com/images/cleardot.gif?zx=dzie8l1hxq2j",
+    "https://www.google.com/images/cleardot.gif?zx=xi2jago8pgt3",
+    "https://www.google.com/images/cleardot.gif?zx=xv1honinov7",
+    "https://www.google.com/images/cleardot.gif?zx=ux4io71tlryy",
+    "https://www.google.com/images/cleardot.gif?zx=ty75bnkocm63",
+    "https://www.google.com/images/cleardot.gif?zx=po829zar3uho",
+    "https://www.google.com/images/cleardot.gif?zx=ygtp80waraa8",
+    "https://apis.google.com/js/api.js?onload=__iframefcb770570",
+    "https://apis.google.com/js/api.js?onload=__iframefcb484741",
+    "https://www.google.com/images/cleardot.gif?zx=gqzvsgzcw49u",
+    "https://www.google.com/images/cleardot.gif?zx=38k0ppnczb5e",
+    "https://www.google.com/images/cleardot.gif?zx=id0xyfkpn6xq",
+    "https://www.google.com/images/cleardot.gif?zx=3dk9adtwmpy3",
+    "https://www.google.com/images/cleardot.gif?zx=92tkymmulh9f",
+    "https://apis.google.com/js/api.js?onload=__iframefcb818251",
+    "https://apis.google.com/js/api.js?onload=__iframefcb19888",
+    "https://www.google.com/images/cleardot.gif?zx=h2ed7srp2m9o",
+    "https://www.google.com/images/cleardot.gif?zx=t53nm6rmrc25",
+    "https://www.google.com/images/cleardot.gif?zx=qla4l3pubyvj",
+    "https://www.google.com/images/cleardot.gif?zx=kmwdfrnpxpi1",
+    "https://www.google.com/images/cleardot.gif?zx=gnzgk8szany6",
+    "https://www.google.com/images/cleardot.gif?zx=v20tt4flwgni",
+    "https://www.google.com/images/cleardot.gif?zx=9ko9ryauv4o4",
+    "https://www.google.com/images/cleardot.gif?zx=j4h64n932om1",
+    "https://apis.google.com/js/api.js?onload=__iframefcb295695",
+    "https://apis.google.com/js/api.js?onload=__iframefcb609150",
+    "https://apis.google.com/js/api.js?onload=__iframefcb497559",
+    "https://apis.google.com/js/api.js?onload=__iframefcb954941",
+    "https://apis.google.com/js/api.js?onload=__iframefcb339599",
+    "https://apis.google.com/js/api.js?onload=__iframefcb165176",
+    "https://www.google.com/images/cleardot.gif?zx=tsiav0eng22d"
+  ],
+  "nBloccati": 51,
+  "risultati": [
+    {
+      "scenario": "S3.1 modifica vs modifica offline (pc modifica per ultimo, torna per ultimo): tutti uguali e vince l’ultima modifica (ORE 9)",
+      "ok": true,
+      "dettaglio": {
+        "telefono": "Telefonare al medico ORE 9",
+        "pc": "Telefonare al medico ORE 9",
+        "ipad": "Telefonare al medico ORE 9",
+        "cloud": "Telefonare al medico ORE 9"
+      }
+    },
+    {
+      "scenario": "S3.2 modifica vs modifica offline (pc modifica per ultimo, torna per PRIMO): tutti uguali e vince v-pc-ultima",
+      "ok": true,
+      "dettaglio": {
+        "telefono": "v-pc-ultima",
+        "pc": "v-pc-ultima",
+        "ipad": "v-pc-ultima",
+        "cloud": "v-pc-ultima"
+      }
+    },
+    {
+      "scenario": "S3.3 cancella (telefono) vs modifica successiva (pc), offline: tutti uguali (qualunque esito, ma uguale)",
+      "ok": true,
+      "dettaglio": {
+        "telefono": "modificata dopo la cancellazione",
+        "pc": "modificata dopo la cancellazione",
+        "ipad": "modificata dopo la cancellazione",
+        "cloud": "modificata dopo la cancellazione"
+      }
+    },
+    {
+      "scenario": "S3.4 cancellazione offline + aggiunta online altrove: nessuno ha più «da cancellare», tutti hanno «nuova dal pc»",
+      "ok": true,
+      "dettaglio": {
+        "telefono": "da tenere | nuova dal pc",
+        "pc": "da tenere | nuova dal pc",
+        "ipad": "da tenere | nuova dal pc",
+        "cloud": "da tenere | nuova dal pc"
+      }
+    },
+    {
+      "scenario": "S3.4b dopo un’altra scrittura del pc la cosa cancellata non risorge",
+      "ok": true,
+      "dettaglio": {
+        "telefono": "da tenere | nuova dal pc",
+        "pc": "da tenere | nuova dal pc",
+        "ipad": "da tenere | nuova dal pc",
+        "cloud": "da tenere | nuova dal pc"
+      }
+    },
+    {
+      "scenario": "S3.5 stessa cosa creata su due dispositivi offline: tutti uguali (2 righe «Palestra», non deduplicate: atteso)",
+      "ok": true,
+      "dettaglio": {
+        "telefono": "Palestra | Palestra",
+        "pc": "Palestra | Palestra",
+        "ipad": "Palestra | Palestra",
+        "cloud": "Palestra | Palestra"
+      }
+    },
+    {
+      "scenario": "S3.6 tre dispositivi offline, ritorno a raffica C→A→B: tutti hanno T1,T2,P1,P2,I1",
+      "ok": true,
+      "dettaglio": {
+        "telefono": "I1 | P1 | P2 | Palestra | Palestra | T1 | T2",
+        "pc": "I1 | P1 | P2 | Palestra | Palestra | T1 | T2",
+        "ipad": "I1 | P1 | P2 | Palestra | Palestra | T1 | T2",
+        "cloud": "I1 | P1 | P2 | Palestra | Palestra | T1 | T2"
+      }
+    },
+    {
+      "scenario": "S3.7 pc con orologio 2 min indietro cancella una cosa creata sul telefono: sparisce dappertutto",
+      "ok": true,
+      "dettaglio": {
+        "telefono": "",
+        "pc": "",
+        "ipad": "",
+        "cloud": ""
+      }
+    },
+    {
+      "scenario": "S3.7b ...e non risorge dopo una scrittura del telefono",
+      "ok": true,
+      "dettaglio": {
+        "telefono": "",
+        "pc": "",
+        "ipad": "",
+        "cloud": ""
+      }
+    },
+    {
+      "scenario": "S3.8 pc con orologio 3h avanti: il telefono cambia tema DOPO, ma alla prima scrittura del pc vince il pc? (atteso: chiaro ovunque)",
+      "ok": true,
+      "dettaglio": [
+        "chiaro",
+        "chiaro",
+        "chiaro"
+      ]
+    },
+    {
+      "scenario": "S3.9 XP guadagnati offline su due dispositivi si sommano (telefono 10 + pc 20)",
+      "ok": true,
+      "dettaglio": [
+        [
+          30,
+          3
+        ],
+        [
+          30,
+          3
+        ],
+        [
+          30,
+          3
+        ]
+      ]
+    }
+  ]
+}

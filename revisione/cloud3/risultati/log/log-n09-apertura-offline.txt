@@ -1,0 +1,5 @@
+  ok  A1 l’app (già usata) riaperta SENZA rete si apre  -> {"serviceWorker":"attivo","errore":"","testoPagina":"LifeMax\nmartedì 18 agosto\n2 di 3\nStudio · adesso\nRipasso capitolo 4\nFatto\nTimer\nCamminata 20 minuti\nChiamare la nonna\n7 "}
+  ok  B1 SDK di Firebase non caricato all’apertura: quando torna, il cloud riparte da solo (senza chiudere l’app)  -> {"allApertura":{"cloud":false,"utente":false},"dopoRitornoRete":{"cloud":true,"utente":true,"pastiglia":false,"sync":"saved"}}
+  KO  B2 …e l’app dice che c’è qualcosa «non ancora nel cloud»  -> {"cloud":true,"utente":true,"pastiglia":false,"sync":"saved"}
+  ok  C1 la modifica fatta in quel momento arriva agli altri senza riaprire l’app  -> ["ieri","scritta mentre il cloud non si era caricato"]
+  ok  C2 riaprendo l’app (con l’SDK), la modifica arriva

@@ -1,0 +1,19 @@
+nuvola-spazio 0
+nuvola-account 0
+nuvola-fusione 0
+impronte 0
+lezioni 0
+dati 0
+cloud 0
+ripristino 0
+pacco 0
+duedispositivi 0
+trasloco 0
+annulla 0
+calendari-server 0
+sentinella 0
+calendari-intoppi 0
+calendari 0
+senzarete 0
+nuvola-verifica2 0
+FINE

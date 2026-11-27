@@ -1,0 +1,47 @@
+  ok  S1.1 scritture simultanee (telefono+pc online): tutti vedono X e Y  -> {"telefono":"X da telefono,Y da pc","pc":"X da telefono,Y da pc","ipad":"X da telefono,Y da pc","cloud":"X da telefono,Y da pc"}
+  ok  S1.2 telefono offline aggiunge X, pc aggiunge Y, telefono torna online: tutti vedono X e Y  -> {"telefono":"X offline telefono,Y pc","pc":"X offline telefono,Y pc","ipad":"X offline telefono,Y pc","cloud":"X offline telefono,Y pc"}
+  ok  S1.3 dopo il ritorno: il pc (che ha scritto per ultimo) vede la X del telefono  -> {"telefono":"X solo telefono,Y pc (piu recente)","pc":"X solo telefono,Y pc (piu recente)","ipad":"X solo telefono,Y pc (piu recente)","cloud":"X solo telefono,Y pc (piu recente)","scrittureTelefono":[],"scrittureP":[]}
+  ok  S1.3b il pc scrive ancora: X resta nel cloud e arriva al pc  -> {"telefono":"X solo telefono,Y pc (piu recente),Z pc","pc":"X solo telefono,Y pc (piu recente),Z pc","ipad":"X solo telefono,Y pc (piu recente),Z pc","cloud":"X solo telefono,Y pc (piu recente),Z pc"}
+  ok  S1.3c il telefono non torna più (telefono cambiato): X è ancora nel cloud  -> {"cloud":"W pc,X solo telefono,Y pc (piu recente),Z pc","pc":"W pc,X solo telefono,Y pc (piu recente),Z pc","ipad":"W pc,X solo telefono,Y pc (piu recente),Z pc"}
+  ok  S1.3d ricaricando l’iPad, X ricompare?  -> W pc,X solo telefono,Y pc (piu recente),Z pc
+log pc:
+{"t":1795591996520,"ms":1994,"liv":"info","can":"cloud","msg":"ascolto in tempo reale attivo","dati":""}
+{"t":1795591996520,"ms":1994,"liv":"info","can":"account","msg":"connesso come ma***@prova.it","dati":""}
+{"t":1795591996521,"ms":1995,"liv":"info","can":"account","msg":"connesso come ma***@prova.it","dati":""}
+{"t":1795591996584,"ms":2058,"liv":"info","can":"cloud","msg":"copia di sicurezza nel cloud","dati":"primo-accesso-di-un-dispositivo · 2 KB"}
+{"t":1795591997018,"ms":2492,"liv":"info","can":"dati","msg":"Modifica salvata sul dispositivo","dati":""}
+{"t":1795591997687,"ms":3161,"liv":"info","can":"cloud","msg":"il cloud è cambiato da un altro dispositivo: sincronizzo","dati":"rev 3"}
+{"t":1795591997687,"ms":3161,"liv":"info","can":"cloud","msg":"operazione avviata: sincronizzazione (dal cloud)","dati":"in corso: 1"}
+{"t":1795591997687,"ms":3161,"liv":"info","can":"sync","msg":"stato → saving","dati":""}
+{"t":1795591997765,"ms":3239,"liv":"info","can":"cloud","msg":"Ricevuto aggiornamento da un altro dispositivo","dati":""}
+{"t":1795591997765,"ms":3239,"liv":"info","can":"cloud","msg":"operazione conclusa: sincronizzazione → saved","dati":""}
+{"t":1795591997765,"ms":3239,"liv":"info","can":"sync","msg":"stato → saved","dati":""}
+{"t":1795591998264,"ms":3738,"liv":"info","can":"dati","msg":"Modifica salvata sul dispositivo","dati":""}
+{"t":1795591999557,"ms":5031,"liv":"info","can":"cloud","msg":"operazione avviata: sincronizzazione (modifica)","dati":"in corso: 1"}
+{"t":1795591999557,"ms":5031,"liv":"info","can":"sync","msg":"stato → saving","dati":""}
+{"t":1795591999585,"ms":5059,"liv":"info","can":"cloud","msg":"cloud aggiornato","dati":"3 pezzi riscritti su 3"}
+{"t":1795591999585,"ms":5059,"liv":"info","can":"cloud","msg":"Ricevuto aggiornamento da un altro dispositivo","dati":""}
+{"t":1795591999585,"ms":5059,"liv":"info","can":"cloud","msg":"operazione conclusa: sincronizzazione → saved","dati":""}
+{"t":1795591999585,"ms":5059,"liv":"info","can":"sync","msg":"stato → saved","dati":""}
+{"t":1795592000085,"ms":5559,"liv":"info","can":"dati","msg":"2 modifiche salvate sul dispositivo","dati":""}
+{"t":1795592002102,"ms":7576,"liv":"info","can":"cloud","msg":"il cloud è cambiato da un altro dispositivo: sincronizzo","dati":"rev 5"}
+{"t":1795592002102,"ms":7576,"liv":"info","can":"cloud","msg":"operazione avviata: sincronizzazione (dal cloud)","dati":"in corso: 1"}
+{"t":1795592002102,"ms":7576,"liv":"info","can":"sync","msg":"stato → saving","dati":""}
+{"t":1795592002178,"ms":7652,"liv":"info","can":"cloud","msg":"Ricevuto aggiornamento da un altro dispositivo","dati":""}
+{"t":1795592002178,"ms":7652,"liv":"info","can":"cloud","msg":"operazione conclusa: sincronizzazione → saved","dati":""}
+{"t":1795592002179,"ms":7653,"liv":"info","can":"sync","msg":"stato → saved","dati":""}
+{"t":1795592002678,"ms":8152,"liv":"info","can":"dati","msg":"Modifica salvata sul dispositivo","dati":""}
+{"t":1795592023342,"ms":28816,"liv":"info","can":"cloud","msg":"operazione avviata: sincronizzazione (modifica)","dati":"in corso: 1"}
+{"t":1795592023342,"ms":28816,"liv":"info","can":"sync","msg":"stato → saving","dati":""}
+{"t":1795592023390,"ms":28864,"liv":"info","can":"cloud","msg":"cloud aggiornato","dati":"2 pezzi riscritti su 3"}
+{"t":1795592023391,"ms":28865,"liv":"info","can":"cloud","msg":"Ricevuto aggiornamento da un altro dispositivo","dati":""}
+{"t":1795592023391,"ms":28865,"liv":"info","can":"cloud","msg":"operazione conclusa: sincronizzazione → saved","dati":""}
+{"t":1795592023391,"ms":28865,"liv":"info","can":"sync","msg":"stato → saved","dati":""}
+{"t":1795592023891,"ms":29365,"liv":"info","can":"dati","msg":"2 modifiche salvate sul dispositivo","dati":""}
+{"t":1795592036239,"ms":41713,"liv":"info","can":"cloud","msg":"operazione avviata: sincronizzazione (modifica)","dati":"in corso: 1"}
+{"t":1795592036239,"ms":41713,"liv":"info","can":"sync","msg":"stato → saving","dati":""}
+{"t":1795592036268,"ms":41742,"liv":"info","can":"cloud","msg":"cloud aggiornato","dati":"2 pezzi riscritti su 3"}
+{"t":1795592036268,"ms":41742,"liv":"info","can":"cloud","msg":"Ricevuto aggiornamento da un altro dispositivo","dati":""}
+{"t":1795592036269,"ms":41743,"liv":"info","can":"cloud","msg":"operazione conclusa: sincronizzazione → saved","dati":""}
+{"t":1795592036269,"ms":41743,"liv":"info","can":"sync","msg":"stato → saved","dati":""}
+{"t":1795592036768,"ms":42242,"liv":"info","can":"dati","msg":"2 modifiche salvate sul dispositivo","dati":""}

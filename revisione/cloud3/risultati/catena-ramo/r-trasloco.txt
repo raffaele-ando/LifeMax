@@ -1,0 +1,47 @@
+
+IL FILE CHE ESCE È LEGGIBILE E DICE DA DOVE VIENE
+  ok  è JSON valido  → 124 kB
+  ok  dice di che app è  → LifeMax
+  ok  e porta lo stato dentro a «stato»
+  ok  è indentato, così si può aprire e guardare
+
+IL GIRO COMPLETO, SU UN DISPOSITIVO NUOVO, NON PERDE NIENTE
+  ok  prima c’era roba  → 322 elementi
+  ok  sul dispositivo nuovo non c’è niente  → 0 elementi
+  ok  l’import dice di essere riuscito  → {"ok":true,"ricchezza":322,"tagliati":0}
+  ok  e torna tutto quello che c’era  → 322 contro 322 di partenza
+  ok  e non ha tagliato niente, perché non c’era nessun azzeramento  → 0
+
+DOPO UN «AZZERA TUTTO», IL FILE VECCHIO RIENTRA TUTTO
+  ok  rientra tutto  → 322 contro 322
+  ok  e non dice di aver tagliato niente  → 0
+
+IMPORTARE UNISCE, NON SOSTITUISCE
+  ok  quello che avevo solo io resta
+  ok  e non è stato sostituito dal file  → 13 contro 7
+
+PRIMA DI TOCCARE, UNA COPIA
+  ok  la copia di sicurezza c’è  → 2 → 3
+  ok  e dice perché è stata presa  → prima-import
+
+UN FILE SBAGLIATO SI RIFIUTA, E LO DICE
+  ok  non è JSON: rifiutato  → {"ok":false,"err":"File non valido: non è JSON leggibile."}
+  ok  non è JSON: con un motivo che si legge  → File non valido: non è JSON leggibile.
+  ok  non è JSON: e non ha toccato niente
+  ok  JSON ma non è LifeMax: rifiutato  → {"ok":false,"err":"Il file non contiene dati LifeMax."}
+  ok  JSON ma non è LifeMax: con un motivo che si legge  → Il file non contiene dati LifeMax.
+  ok  JSON ma non è LifeMax: e non ha toccato niente
+  ok  vuoto: rifiutato  → {"ok":false,"err":"File non valido: non è JSON leggibile."}
+  ok  vuoto: con un motivo che si legge  → File non valido: non è JSON leggibile.
+  ok  vuoto: e non ha toccato niente
+  ok  un elenco invece di un oggetto: rifiutato  → {"ok":false,"err":"Il file non contiene dati LifeMax."}
+  ok  un elenco invece di un oggetto: con un motivo che si legge  → Il file non contiene dati LifeMax.
+  ok  un elenco invece di un oggetto: e non ha toccato niente
+  ok  lo stato c’è ma è storto: rifiutato  → {"ok":false,"err":"Il file non contiene dati LifeMax."}
+  ok  lo stato c’è ma è storto: con un motivo che si legge  → Il file non contiene dati LifeMax.
+  ok  lo stato c’è ma è storto: e non ha toccato niente
+
+LO STATO NUDO SI ACCETTA LO STESSO
+  ok  un file con dentro solo lo stato passa  → {"ok":true,"ricchezza":322,"tagliati":0}
+
+>>> TUTTO A POSTO

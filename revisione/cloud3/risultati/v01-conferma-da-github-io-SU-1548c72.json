@@ -1,0 +1,47 @@
+{
+  "script": "v01",
+  "quando": "2026-11-25T07:27:59.355Z",
+  "risultati": [
+    {
+      "scenario": "V01.0 controllo: sul dominio nuovo il collegamento si conferma (conto «ok» nella sentinella di Anna)",
+      "ok": false,
+      "dettaglio": {
+        "bottone": true,
+        "url": "https://lifemax.theproject.world/#/profilo",
+        "biscotti": [],
+        "stato": {
+          "errore": "",
+          "pannello": "Stato\nCollegato\nAccount\nio@esempio.it\nio@esempio.it\nStudio / Università\nSalute & Sport\nRelazioni & Sociale\nFinanze\nAssociazioni\nProgetti Founder\nLavoro\nAltro / Esplorazione\nLavoro\nStudio / Università\nSalute & Sport\nRelazioni & Sociale\nFinanze\nAssociazioni\nProgetti Founder\nLavoro\nAltro / Esplorazione"
+        },
+        "conti": [],
+        "errori": []
+      }
+    },
+    {
+      "scenario": "V01.1 [regressione C2] dal vecchio indirizzo github.io il collegamento si conferma",
+      "ok": false,
+      "dettaglio": {
+        "bottone": true,
+        "url": "https://raffaele-ando.github.io/LifeMax/#/profilo",
+        "biscotti": [],
+        "stato": {
+          "errore": "",
+          "pannello": "Stato\nCollegato\nAccount\nio@esempio.it\nio@esempio.it\nStudio / Università\nSalute & Sport\nRelazioni & Sociale\nFinanze\nAssociazioni\nProgetti Founder\nLavoro\nAltro / Esplorazione\nLavoro\nStudio / Università\nSalute & Sport\nRelazioni & Sociale\nFinanze\nAssociazioni\nProgetti Founder\nLavoro\nAltro / Esplorazione"
+        },
+        "conti": [],
+        "errori": []
+      }
+    },
+    {
+      "scenario": "V01.2 la richiesta di conferma da github.io porta il biscotto lmcal_ok_google",
+      "ok": false,
+      "dettaglio": []
+    },
+    {
+      "scenario": "nessuna richiesta verso fuori",
+      "ok": true,
+      "dettaglio": []
+    }
+  ],
+  "bloccati": []
+}

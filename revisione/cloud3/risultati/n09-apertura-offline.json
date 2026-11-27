@@ -1,0 +1,62 @@
+{
+  "script": "n09-apertura-offline",
+  "quando": "2026-11-25T07:28:15.122Z",
+  "radice": "/tmp/claude-0/-home-user-LifeMax/99c3d469-10e9-545a-afc2-1ce7e01478d1/scratchpad/audit-3/wt",
+  "bloccati": [
+    "https://apis.google.com/js/api.js?onload=__iframefcb546484",
+    "https://apis.google.com/js/api.js?onload=__iframefcb737812",
+    "https://apis.google.com/js/api.js?onload=__iframefcb29313",
+    "https://apis.google.com/js/api.js?onload=__iframefcb568449",
+    "https://apis.google.com/js/api.js?onload=__iframefcb772500"
+  ],
+  "nBloccati": 5,
+  "risultati": [
+    {
+      "scenario": "A1 l’app (già usata) riaperta SENZA rete si apre",
+      "ok": true,
+      "dettaglio": {
+        "serviceWorker": "attivo",
+        "errore": "",
+        "testoPagina": "LifeMax\nmartedì 18 agosto\n2 di 3\nStudio · adesso\nRipasso capitolo 4\nFatto\nTimer\nCamminata 20 minuti\nChiamare la nonna\n7 "
+      }
+    },
+    {
+      "scenario": "B1 SDK di Firebase non caricato all’apertura: quando torna, il cloud riparte da solo (senza chiudere l’app)",
+      "ok": true,
+      "dettaglio": {
+        "allApertura": {
+          "cloud": false,
+          "utente": false
+        },
+        "dopoRitornoRete": {
+          "cloud": true,
+          "utente": true,
+          "pastiglia": false,
+          "sync": "saved"
+        }
+      }
+    },
+    {
+      "scenario": "B2 …e l’app dice che c’è qualcosa «non ancora nel cloud»",
+      "ok": false,
+      "dettaglio": {
+        "cloud": true,
+        "utente": true,
+        "pastiglia": false,
+        "sync": "saved"
+      }
+    },
+    {
+      "scenario": "C1 la modifica fatta in quel momento arriva agli altri senza riaprire l’app",
+      "ok": true,
+      "dettaglio": [
+        "ieri",
+        "scritta mentre il cloud non si era caricato"
+      ]
+    },
+    {
+      "scenario": "C2 riaprendo l’app (con l’SDK), la modifica arriva",
+      "ok": true
+    }
+  ]
+}

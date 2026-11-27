@@ -1,0 +1,57 @@
+ANCHE IL PASSATO: le righe di prima si annullano
+  ok  senza nessun punto in memoria ci sono comunque righe annullabili  → 122 righe, punti: 0
+  ok  e ognuna sa qual è il dato da togliere  → [{"tipo":"cattura","chiave":"idmsyiu1rnk1evz5ib0"},{"tipo":"azione","chiave":"idmsyiu1rngq2877550"},{"tipo":"checkin","chiave":"1787043600000"}]
+  ok  le righe di registro vecchie non promettono un annulla che non c’è  → 0
+
+ANNULLO UNA SPUNTA DI UN GIORNO PASSATO
+  ok  nel diario c’è una cosa fatta in un altro giorno  → {"id":"idmsyiu1rmvd3p8e342","data":"2026-07-28","testo":"Spedire la landing v2"}
+  ok  la spunta è via
+  ok  gli XP scendono in totale  → 1874 → 1864
+  ok  e scendono sul giorno giusto, non su oggi  → 32 → 22
+  ok  niente conferma da leggere, e si può rimettere  → ["Annullato.Rimetti"]
+  ok  «Rimetti» rimette la spunta di quel giorno
+
+UNA NOTA VECCHIA SI TOGLIE, GLI ALTRI GIORNI RESTANO
+  ok  c’è una nota annotata da annullare  → idmsyiu4t4tnd08fib0
+  ok  la nota non c’è più  → 6 → 5
+  ok  e non ha portato via nient’altro
+
+FACCIO UNA COSA E LA ANNULLO DAL DIARIO
+  ok  la cosa è fatta e gli XP sono saliti  → 1873 → 1881
+  ok  c’è un punto a cui tornare  → 1
+  ok  un «Annulla» per quella cosa, non due  → 1 tasti per la stessa cosa
+  ok  e nessun’altra riga si prende il punto di ritorno  → 0
+  ok  gli XP tornano come prima  → 1873 → 1873
+  ok  la cosa non è più fatta  → 0 ancora fatte (titolo: Ripasso flashcard)
+  ok  e il messaggio offre di rimettere  → ["Annullato.Rimetti","Annullato.Rimetti"]
+
+L’ANNULLA DELL’ANNULLA
+  ok  rimette com’era  → 1881
+
+UNA COSA VECCHIA: avvisa quante ne rientrano
+  ok  quattro cose fatte = quattro punti  → 4
+        righe annullabili: ["Annotato · Idea: bot che trasforma i voc","Aggiunta a oggi «Tre»Annulla10:30","Aggiunta a oggi «Due»Annulla10:30","Aggiunta a oggi «Uno»Annulla10:30"]
+  ok  la riga di «Uno» si annulla dal punto di ritorno  → ok
+  ok  chiede conferma e dice quante rientrano  → Annullare fin qui?Annullare questa riporta indietro anche quello che hai fatto dopo: 2 cose. Si può rimettere subito dopo.Non oraAnnulla fin qui
+  ok  tornando indietro rientrano tutte e tre  → []
+  ok  e quello di prima resta dov’era
+
+OGNI TIPO DI RIGA HA IL SUO INVERSO
+  ok  inverso di «mattina»  → true
+  ok  inverso di «sera»  → true
+  ok  inverso di «settimana»  → true
+  ok  inverso di «checkin»  → true
+  ok  inverso di «cattura»  → true
+  ok  inverso di «azione»  → true
+  ok  inverso di «abitudine»  → true
+  ok  inverso di «abitudineDueVolte»  → true
+  ok  inverso di «rigaConDisfa»  → true
+  ok  inverso di «inventata»  → true
+  ok  inverso di «tipoIgnoto»  → true
+
+IL LIMITE
+  ok  i punti sono al massimo dodici  → {"punti":12,"byte":757}
+  ok  e non sono nel salvataggio sincronizzato
+  ok  nessun errore JS
+
+>>> TUTTO A POSTO

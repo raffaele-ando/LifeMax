@@ -1,0 +1,19 @@
+(node:16922) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok  1.1 Mario collega Google dalla sentinella e importa  -> ["priv","conf","canc1","canc2","tutto","rec_1","rec_2","poison"]
+  ok  1.2 il fantasma fra 300 giorni si vede  -> ["Matrimonio (fra 300 giorni)"]
+  ok  4.1 tutto il giorno su 3 giorni: un’attività senza orario il primo giorno  -> {"id":"cal91tg3akalm5mk67wyj28","ev":"tutto","testo":"Ferie (tutto il giorno, 3 giorni)","data":"2026-11-30","ora":null,"durata":null,"done":false}
+  ok  4.2 le occorrenze di un evento ricorrente sono attività separate  -> [{"id":"calwwicx8vm54mdj1cf4oo4","ev":"rec_1","testo":"Palestra (ricorrente)","data":"2026-11-28","ora":"07:00","durata":60,"done":false},{"id":"calumia1mliyf1kauckq3j01","ev":"rec_2","testo":"Palestra (ricorrente)","data":"2026-12-05","ora":"07:00","durata":60,"done":false}]
+  ok  4.3 spostata UNA occorrenza in LifeMax: si sposta solo quella in Google  -> {"rec1":{"dateTime":"2026-11-29T06:00:00.000Z"},"rec2":{"dateTime":"2026-12-05T07:00:00+01:00"}}
+  ok  2.1 cambiata qui e là: vince il calendario, e il Diario lo racconta  -> {"riga":{"id":"cal2dq3pu7xun1ibwezrqg0z","ev":"conf","testo":"Riunione spostata da loro","data":"2026-11-27","ora":"16:00","durata":60,"done":false},"diario":["«Riunione da cambiare» era cambiata qui e anche su Google: ho tenuto la versione del calendario («Riunione spostata da loro»)."],"google":{"dateTime":"2026-11-27T16:00:00+01:00"}}
+  ok  3.1 cancellato là: la non fatta sparisce, la fatta resta staccata  -> [{"testo":"Da cancellare là (fatta)","done":true,"esterno":"staccata"}]
+  ok  5.1 Google rifiuta una cancellazione UNA volta (400): dopo, gli altri cambiamenti continuano ad arrivare  -> {"esitoSubito":"1 modifica non accettata dal calendario (riprovo più tardi).","esitoDopo3Giri":"1 modifica non accettata dal calendario (riprovo più tardi).","nuovoImportato":true,"eventoAncoraInGoogle":"confirmed"}
+  ok  6.1 permesso scaduto/revocato: il pannello dice «Ricollega»  -> {"nota":"Il permesso di Google è stato ritirato (o è scaduto): basta un tocco su «Ricollega».","ricollega":{"google":true,"microsoft":false},"pannello":"Stato\nDa ricollegare\nAccount\nio@esempio.it\nRicollega\nio@esempio.it\nStudio / Università\nSalute & Sport\nRelazioni & Sociale\nFinanze\nAssociazioni\nProgetti Founder\nLavoro\nAltro / Esplorazione\nLavoro\nStudio / Università\nSalute & Sport\nRelazioni & Sociale\nFinanze\nAssociazioni\nProgetti Founder\nLavoro\nAltro / Esplorazione\nScollega
+  ok  6.2 dopo «Ricollega» si riparte  -> {"inCorso":false,"ricollega":{"google":false,"microsoft":false},"errore":"","nota":"","ultimo":1795591715984}
+  ok  7.1 chiave dei permessi cambiata: l’app dice di ricollegare (invece di tacere)  -> {"importato":false,"nota":"Il permesso di Google è stato ritirato (o è scaduto): basta un tocco su «Ricollega».","esito":"1 modifica non accettata dal calendario (riprovo più tardi).","pannello":"Stato\nDa ricollegare\nAccount\nio@esempio.it\nRicollega\nio@esempio.it\nStudio / Università\nSalute & Sport\nRelazioni & Sociale\nFinanze\nAssociazioni\nProgetti Founder\nLavoro\nAltro / Esplorazione\nLavoro\nStudio / Università\nSalute & Sport\nRelazioni & Sociale\nFinanze\nAssociazioni\nProgetti Foun
+  ok  8.1 [privacy] dopo «Esci» il calendario di Mario (titoli degli eventi) NON resta nel browser  -> {"chiavi":{},"fantasmiDaOspite":0}
+  ok  8.2 da ospite non si vedono i fantasmi di Mario  -> 0
+  ok  9.1 Luigi sullo stesso dispositivo: niente calendario di Mario  -> {"fantasmi":0,"collegate":0,"mario":false}
+  ok  9.2 [privacy] ma nei Backup di Luigi c’è la copia di Mario con le attività del calendario  -> []
+  ok  nessun errore nella pagina  -> []
+  ok  nessuna richiesta verso fuori (bloccate)  -> []

@@ -1,0 +1,127 @@
+(node:17042) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+1. SENZA SEGRETI: «NON CONFIGURATO», E IL SITO COME PRIMA
+  ok  lo stato dice che il server non gestisce niente  → {"servizio":{"google":false,"microsoft":false}}
+  ok  collegare risponde «non configurato», non un errore  → 409 {"errore":"non-configurato","servizio":{"google":false,"microsoft":false}}
+  ok  senza il posto per i dati: 503 «non configurato»
+  ok  tutto quello che non è /api/ va ai file del sito
+  ok  con i segreti, i due servizi ci sono
+
+2. IL GETTONE DI FIREBASE
+  ok  firmato da un altro: rifiutato
+  ok  scaduto: rifiutato
+  ok  per un altro progetto (aud): rifiutato
+  ok  emesso da un altro (iss): rifiutato
+  ok  con una chiave che non esiste: rifiutato
+  ok  senza firma: rifiutato
+  ok  con «alg: none»: rifiutato
+  ok  senza gettone: rifiutato
+  ok  quello buono passa
+
+3. CORS SOLO PER L’APP
+  ok  lifemax.theproject.world sì
+  ok  raffaele-ando.github.io sì
+  ok  un altro sito no
+  ok  niente si tiene in cache
+
+4. COLLEGARE GOOGLE DAL SERVER
+  ok  l’app riceve un indirizzo NOSTRO, non quello di Google  → https://lifemax.theproject.world/api/calendari/google/vai?s=05d23a195f
+  ok  da /vai si va da Google con PKCE (S256)
+  ok  chiedendo l’accesso «offline» (il refresh token)
+  ok  con i due permessi stretti, non quello pieno  → https://www.googleapis.com/auth/calendar.calendarlist.readonly https://www.googleapis.com/auth/calendar.events
+  ok  e il ritorno al Worker
+  ok  /vai lascia un biscotto HttpOnly, solo per /api/calendari/
+  ok  il codice si scambia col segreto e con la chiave PKCE
+  ok  si torna all’app con «da confermare»: il permesso non è ancora di nessuno  → https://lifemax.theproject.world/?lmcal=google&esito=da-confermare#/profilo
+  ok  il ritorno lascia il segreto della conferma in un biscotto HttpOnly, solo per /api/calendari/  → lmcal_ok_google=05d23a195f8bd03af254deaf87152c58b2cfa9be3535b4f30c260e768f32ffac.5MvrA4xpepuBols7PfVCyXnAsSbSfCkSNorTsuwp8OI
+  ok  e l’app, confermando col suo gettone dallo stesso browser, lo fa suo  → [object Object]
+  ok  e nell’indirizzo non c’è nessun permesso
+  ok  lo stesso `state` non vale due volte  → https://lifemax.theproject.world/?lmcal=google&esito=scaduto#/profilo
+  ok  e nemmeno lo stesso /vai
+  ok  un ritorno da un altro browser (senza il biscotto) non collega niente  → https://lifemax.theproject.world/?lmcal=google&esito=altro-browser#/profilo
+  ok  uno `state` inventato non porta da nessuna parte
+  ok  nel database il permesso è CIFRATO: nessun token in chiaro
+  ok  un altro utente non vede il collegamento del primo
+  ok  il primo sì, con l’email dell’account  → {"servizio":true,"collegato":true,"revocato":false,"email":"io@esempio.it","calendari":[{"id":"io@esempio.it","nome":"io
+  ok  e l’elenco dei calendari
+  ok  ma ancora nessun evento: nessun calendario è acceso
+
+5. LO SPECCHIO
+  ok  acceso un calendario, gli eventi arrivano subito  → v1,v2,v3,lontano
+  ok  anche quelli fra dieci mesi  → {"id":"lontano","t":"Matrimonio di Sara","v":"\"g4\"","via":false,"org":true,"altri":false,"tg":true,"di":"2027-09-21","df":"2027-09-22","i":1821484800000,"f":1821571200000,"p":"google","c":"lavoro@gruppo"}
+  ok  quello fra due anni no (lo specchio guarda 400 giorni)
+  ok  solo tuo: organizzatore, senza altri
+  ok  riunione: organizzatore, con altri (la sala non conta)
+  ok  invito di un altro: non organizzatore
+  ok  degli invitati non si legge né si tiene nessun indirizzo
+  ok  a Google si chiedono solo «self» e «resource» degli invitati  → items(id,status,summary,etag,updated,eventType,start,end,attendees(self,resource,responseStatus),organizer(self)),nextPageToken,nextSyncToken
+  ok  chiedendo di nuovo, niente di nuovo
+
+6. IL PERMESSO BREVE SCADUTO SI RINNOVA DA SOLO
+  ok  l’elenco arriva lo stesso  → 200
+  ok  perché la sentinella ha usato il refresh token
+  ok  e nessun «ricollega»
+
+7. A APP CHIUSA: LA SVEGLIA
+  ok  dopo il collegamento c’è una sveglia
+  ok  legge solo i cambiamenti (syncToken)  → [["singleEvents","maxResults","fields","syncToken"]]
+  ok  e si rimette la sveglia
+  ok  l’app, riaprendo, riceve solo quello che è cambiato  → v1,v3(via)
+  ok  lo spostato con l’ora nuova
+  ok  e il cancellato come cancellato
+  ok  un syncToken scaduto (410): si rilegge tutta la finestra  → ["scaduto","pieno"]
+  ok  e senza novità finte per l’app
+
+8. LA CODA: RITENTA, UNA VOLTA SOLA, E NON SOVRASCRIVE
+  ok  Google giù: la risposta dice «riprovo»  → {"agg-v1-1":{"ok":false,"tipo":"rete"}}
+  ok  la sveglia la ritenta da sola, e va  → 2026-11-26T15:00:00.000Z
+  ok  mandata di nuovo (stessa chiave): risponde la prima volta, senza scrivere
+  ok  due uguali nello stesso istante: una PATCH sola
+  ok  cambiato là nel frattempo: non si sovrascrive, si dice «conflitto»
+  ok  cancellare due volte: la seconda non è un errore
+
+9. UNA CREAZIONE MANDATA DUE VOLTE
+  ok  un evento solo, con l’id scelto da LifeMax
+
+9b. UN COLLEGAMENTO COMINCIATO DA UN ALTRO, MANDATO COME LINK (verifica 2, C2)
+  ok  il ritorno nel browser della vittima NON dice «fatto»  → https://lifemax.theproject.world/?lmcal=google&esito=da-confermare#/profilo
+  ok  l’attaccante, dal suo browser, non può confermare  → [object Object]
+  ok  un biscotto messo nel corpo non conta  → [object Object]
+  ok  la conferma della vittima non collega il suo calendario all’attaccante  → [object Object]
+  ok  l’attaccante NON legge il calendario della vittima  → [object Object]
+  ok  e non ci scrive  → [object Object]
+  ok  il permesso in sospeso resta cifrato nel database
+
+10. MICROSOFT
+  ok  collegato, con il segreto e PKCE  → https://lifemax.theproject.world/?lmcal=microsoft&esito=ok#/profilo
+  ok  chiedendo offline_access
+  ok  gli eventi di Outlook nello specchio, in UTC  → {"id":"m1","t":"Call","v":"k1","via":false,"org":false,"altri":true,"tg":false,"i":1795680000000,"f":1795683600000,"p":"microsoft","c":"AAMkCal1"}
+  ok  e anche qui nessun indirizzo degli invitati
+  ok  scaduto, si rinnova da solo e il refresh token nuovo sostituisce il vecchio
+  ok  e al giro dopo il nuovo funziona  → 200 {"calendari":[{"id":"AAMkCal1","nome":"Calendario","lettura":false,"principale":
+
+11. IL PERMESSO RITIRATO DALLA PAGINA DI GOOGLE
+  ok  la sentinella non può più rinnovare: lo dice  → 500 {"errore":"revocato","messaggio":"permesso ritirato","servizio":{"google":true,"microsoft":true}}
+  ok  e lo stato dice «revocato» (l’app mostra Ricollega)
+  ok  e non riprova all’infinito
+
+12. SCOLLEGARE
+  ok  risponde sì
+  ok  il permesso è stato ritirato presso Google  → grt-1
+  ok  e di Google non resta niente: permesso, calendari, specchio, coda  → 0,0,0,0
+  ok  Microsoft resta collegato
+  ok  scollegato anche quello, la sveglia si spegne
+
+13. IL CRON RIMETTE LE SVEGLIE PERSE
+  ok  la sentinella senza sveglia ne ha di nuovo una
+
+14. VERIFICA 2: I MINORI (m2 cron a rotazione, m4 proxy di /__/auth, m5 due collegamenti insieme)
+  ok  m5 due collegamenti insieme: il primo non dice «altro browser»  → https://lifemax.theproject.world/?lmcal=google&esito=da-confermare#/profilo
+  ok  m4 /__/auth risponde con la pagina di Firebase
+  ok  m4 verso Firebase non escono i biscotti né l’Authorization del nostro dominio  → []
+  ok  m4 indietro non tornano i biscotti di Firebase né l’HSTS «includeSubDomains; preload»
+  ok  m2 45 sveglie perse: in due giri del cron ripartono tutte  → 0 ancora senza sveglia
+  ok  m3 permesso ritirato: dopo il giro la sentinella non si rimette la sveglia  → null
+
+>>> TUTTO A POSTO

@@ -1,0 +1,90 @@
+{
+  "script": "r1-s07",
+  "quando": "2026-11-25T07:49:35.175Z",
+  "radice": "/tmp/claude-0/-home-user-LifeMax/99c3d469-10e9-545a-afc2-1ce7e01478d1/scratchpad/audit-3/wt",
+  "bloccati": [
+    "https://apis.google.com/js/api.js?onload=__iframefcb115718",
+    "https://apis.google.com/js/api.js?onload=__iframefcb729392",
+    "https://apis.google.com/js/api.js?onload=__iframefcb475013",
+    "https://apis.google.com/js/api.js?onload=__iframefcb666188"
+  ],
+  "nBloccati": 4,
+  "risultati": [
+    {
+      "scenario": "C1 telefono importa gli eventi: arrivano a pc e iPad via cloud",
+      "ok": true,
+      "dettaglio": {
+        "telefono": "g3:Dentista | g5:Treno di notte | g7:Impegno",
+        "pc": "g3:Dentista | g5:Treno di notte | g7:Impegno",
+        "ipad": "g3:Dentista | g5:Treno di notte | g7:Impegno",
+        "cloud": "g3:Dentista | g5:Treno di notte | g7:Impegno",
+        "eventiGoogle": "g1:Riunione di progetto | g2:Compleanno di Anna | g3:Dentista | g4:Riunione della settimana scorsa | g5:Treno di notte | g6:Aperitivo che ho rifiutato | g7:undefined"
+      }
+    },
+    {
+      "scenario": "C2 sul pc il pannello dice «collegato su un altro dispositivo»",
+      "ok": true,
+      "dettaglio": "Collegato su un altro dispositivo"
+    },
+    {
+      "scenario": "C3 anche il pc si collega e sincronizza: nessun doppione",
+      "ok": true,
+      "dettaglio": {
+        "tasto": null,
+        "telefono": "g3:Dentista | g5:Treno di notte | g7:Impegno",
+        "pc": "g3:Dentista | g5:Treno di notte | g7:Impegno",
+        "ipad": "g3:Dentista | g5:Treno di notte | g7:Impegno",
+        "cloud": "g3:Dentista | g5:Treno di notte | g7:Impegno",
+        "eventiGoogle": "g1:Riunione di progetto | g2:Compleanno di Anna | g3:Dentista | g4:Riunione della settimana scorsa | g5:Treno di notte | g6:Aperitivo che ho rifiutato | g7:undefined"
+      }
+    },
+    {
+      "scenario": "C4 «Dentista» cancellato nel calendario: sparisce dappertutto e non torna",
+      "ok": true,
+      "dettaglio": {
+        "telefono": "g5:Treno di notte | g7:Impegno",
+        "pc": "g5:Treno di notte | g7:Impegno",
+        "ipad": "g5:Treno di notte | g7:Impegno",
+        "cloud": "g5:Treno di notte | g7:Impegno",
+        "eventiGoogle": "g1:Riunione di progetto | g2:Compleanno di Anna | g4:Riunione della settimana scorsa | g5:Treno di notte | g6:Aperitivo che ho rifiutato | g7:undefined"
+      }
+    },
+    {
+      "scenario": "C5 «Treno di notte» tolto in LifeMax sull’iPad (non collegato): sparisce da tutti e dal calendario, non risorge",
+      "ok": true,
+      "dettaglio": {
+        "telefono": "g7:Impegno",
+        "pc": "g7:Impegno",
+        "ipad": "g7:Impegno",
+        "cloud": "g7:Impegno",
+        "eventiGoogle": "g1:Riunione di progetto | g2:Compleanno di Anna | g4:Riunione della settimana scorsa | g6:Aperitivo che ho rifiutato | g7:undefined"
+      }
+    },
+    {
+      "scenario": "C6 riunione fatta sul telefono + titolo cambiato nel calendario letto dal pc staccato dal cloud: alla fine è «fatta» e col titolo nuovo ovunque",
+      "ok": false,
+      "dettaglio": {
+        "telefono": "g7:Impegno[x]",
+        "pc": "g7:Impegno[x]",
+        "ipad": "g7:Impegno[x]",
+        "cloud": "g7:Impegno[x]",
+        "eventiGoogle": "g1:Riunione di progetto | g2:Compleanno di Anna | g4:Riunione della settimana scorsa | g6:Aperitivo che ho rifiutato | g7:Colloquio (spostato sala B)"
+      }
+    },
+    {
+      "scenario": "C errori in pagina su telefono",
+      "ok": true,
+      "dettaglio": []
+    },
+    {
+      "scenario": "C errori in pagina su pc",
+      "ok": true,
+      "dettaglio": []
+    },
+    {
+      "scenario": "C errori in pagina su ipad",
+      "ok": true,
+      "dettaglio": []
+    }
+  ]
+}

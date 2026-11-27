@@ -1,0 +1,18 @@
+IL SITO IN RADICE È QUELLO CHE USCIREBBE ADESSO DAL BUILD
+  ok  ogni file del build sta in radice  → 31 file
+  ok  e in pacco/ non restano pezzi di build vecchi  → nessuno
+  ok  e ha dentro esattamente quello che uscirebbe adesso  → 28 file, byte per byte
+
+QUELLO CHE NON DEVE FINIRE NEL PEZZO PRINCIPALE
+  ok  c’è un pezzo principale  → index-C0BtCH-d.js
+  ok  il Design lab resta fuori dal pezzo principale  → sessantun kilobyte analizzati a ogni avvio per una pagina in cui non entra quasi nessuno
+  ok  ma c’è, in un pezzo suo  → lab-B41L5MV9.css, lab-QU5x7-U7.js, lab-QU5x7-U7.js.map
+  ok  e la nuvola pure  → nuvola-BPf26p7c.js, nuvola-BPf26p7c.js.map
+  ok  e nessuna chiave privata è finita dentro  → la privata sta in un segreto del Worker, e solo là
+
+IL SORGENTE E IL COSTRUITO NON SI CONFONDONO
+  ok  src/index.html chiama il modulo di avvio
+  ok  e index.html chiama il pezzo costruito  → ./pacco/index-C0BtCH-d.js
+  ok  e lo stile ce l’ha messo il build, con l’impronta nel nome  → ./pacco/index-Bsil6fgq.css
+
+>>> TUTTO A POSTO

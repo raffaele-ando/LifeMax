@@ -154,7 +154,7 @@ function banco(E) {
   const tutti = [];
 
   async function avvia() {
-    browser = await chromium.launch({ executablePath: process.env.CHROMIUM || undefined });
+    browser = await chromium.launch({ executablePath: process.env.CHROMIUM || undefined, args: require('./chiuso') });
     return browser;
   }
   async function instrada(ctx) {

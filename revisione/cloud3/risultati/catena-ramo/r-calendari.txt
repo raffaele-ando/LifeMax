@@ -1,0 +1,107 @@
+
+1. SENZA ID DELL’APP: DA CONFIGURARE, E NIENTE PARTE (ID già nel codice: Google, Microsoft)
+  ok  il pannello si apre dal Profilo  → Calendari collegati
+  ok  Google, con l’ID nel codice, è già «da collegare»  → Da collegare
+  ok  Microsoft, con l’ID nel codice, è già «da collegare»  → Da collegare
+  ok  un link alle istruzioni per ogni ID che manca  → 0
+  ok  e niente da sincronizzare
+  ok  un giro non manda nessuna richiesta  → 0 richieste
+  ok  e non rompe niente
+
+2. GOOGLE: SI COLLEGA, SI SCEGLIE, SI IMPORTA
+  ok  incollato l’ID, Google è «da collegare»  → Da collegare
+  ok  collegato, con l’email dell’account  → Collegato · io@esempio.it
+  ok  l’elenco dei calendari c’è  → io@esempio.it, Lavoro, Festività · solo lettura
+  ok  e nessuno è acceso finché non lo scegli  → 0 accesi
+  ok  il permesso sta in questo browser
+  ok  e NON nei dati che vanno nel cloud
+  ok  gli eventi di oggi in poi sono diventati attività  → g1,g2,g3,g5,g7
+  ok  il passato no
+  ok  e nemmeno quello che hai rifiutato
+  ok  con orario: giorno, ora e durata di qui  → 2026-11-23 10:00 60 min
+  ok  un’ora scritta in UTC arriva nell’ora di Roma  → 15:30
+  ok  tutto il giorno = senza orario, nel suo giorno  → 2026-11-24 null
+  ok  a cavallo della mezzanotte: il giorno in cui comincia, fino alle 24  → 2026-11-26 22:00 120 min
+  ok  un evento senza titolo si chiama «Impegno»  → Impegno
+  ok  nell’area scelta per quel calendario  → lavoro
+  ok  l’id dell’attività nasce dall’evento  → cal2gjtdbf0jy3pcdh7y3yww
+  ok  un giro senza novità non scrive niente nel calendario
+  ok  e non fa doppioni
+  ok  nella Giornata il blocco porta il segno del calendario  → c’è
+
+3. CAMBIATO SUL CALENDARIO → CAMBIA QUI
+  ok  ora, durata e titolo arrivano qui  → 12:00 90 «Riunione di progetto (spostata)»
+  ok  e non si rimanda indietro niente
+
+4. CAMBIATO QUI → PARTE VERSO IL CALENDARIO
+  ok  una PATCH per ognuna  → /calendars/lavoro@gruppo/events/g2, /calendars/lavoro@gruppo/events/g3
+  ok  l’ora nuova, nel fuso giusto: le 17 di Roma sono le 16 UTC  → {"dateTime":"2026-11-25T16:00:00.000Z","date":null}
+  ok  e lo spostamento non accorcia: resta un’ora  → {"dateTime":"2026-11-25T17:00:00.000Z","date":null}
+  ok  spostare non tocca il titolo
+  ok  rinominare manda solo il titolo  → {"summary":"Compleanno di Anna — torta!"}
+  ok  e il giorno intero resta un giorno intero  → {"date":"2026-11-24"}
+  ok  il giro dopo non rispedisce
+  ok  cambiare la durata cambia la fine  → 2026-11-25T16:30:00.000Z
+
+5. LE CANCELLAZIONI, NEI DUE SENSI
+  ok  eliminata qui → cancellata nel calendario  → /calendars/lavoro@gruppo/events/g5
+  ok  e non torna al giro dopo
+  ok  cancellata nel calendario → tolta qui
+  ok  ma una già fatta resta, staccata  → {"done":true,"esterno":null}
+  ok  righe sparite senza un «elimina» non cancellano niente là  → 4 → 4 (tolti chiesti: 1)
+
+6. CAMBIATA DA TUTTE E DUE LE PARTI: VINCE IL CALENDARIO
+  ok  (la riunione è tornata dopo che le righe erano sparite)
+  ok  l’ora è quella del calendario  → 14:00
+  ok  e là non è partito niente
+  ok  il Diario lo racconta  → «Compleanno di Anna — torta!» non c’è più su Google: qui resta, fatta, e non è più collegata. | «Dentista» è stata cance
+  ok  e l’esito lo dice senza allarmi  → 1 aggiornata. Una era cambiata da tutte e due le parti: ho tenuto la versione del calendario, e nel Diario c’è scritto quale.
+
+7. DUE DISPOSITIVI, LO STESSO EVENTO: UNA RIGA SOLA
+  ok  su B la scelta c’è, il permesso no: lo dice  → Collegato su un altro dispositivo
+  ok  e senza permesso B non chiede niente a Google
+  ok  l’hanno importato tutti e due  → A 1, B 1
+  ok  dopo la fusione, una riga per evento  → {"g1":1,"g8":1}
+  ok  e lo stesso su A
+
+8. IL PERMESSO SCADUTO: NESSUNA FINESTRA DA SOLA, UN TOCCO BASTA
+  ok  un giro automatico non apre finestre  → 0 finestre
+  ok  e non chiede niente a Google con un permesso scaduto
+  ok  il pannello dice cosa fare, con calma  → Il permesso di Google su questo dispositivo è scaduto: basta un tocco su «Ricollega».
+  ok  e l’esito comune, che legge anche l’altro dispositivo, non cambia
+  ok  nel pannello c’è «Ricollega»  → Ricollega
+  ok  un tocco apre UNA finestra, senza ri-chiedere il consenso  → {"prompt":"","hint":"io@esempio.it"}
+  ok  e si torna collegati  → Collegato
+  ok  un 401 di Google butta il permesso e chiede «Ricollega»  → Il permesso di Google su questo dispositivo è scaduto: basta un tocco su «Ricollega».
+
+9. LE NUOVE ATTIVITÀ CON ORARIO, NEL CALENDARIO SCELTO
+  ok  la scelta parte da «Nessuno» e mostra solo dove si può scrivere  → Nessuno / Google · Lavoro
+  ok  la nuova con orario è diventata un evento  → {"dateTime":"2026-11-24T18:00:00.000Z","date":null}
+  ok  che dura quanto lei
+  ok  quella senza orario no
+  ok  e nemmeno quelle nate prima della scelta
+  ok  da qui in poi è collegata  → lm69646d77737831756e6f343236667264
+  ok  spedita due volte, resta UN evento
+
+10. OUTLOOK: DAL RIMANDO ALLA PAGINA DI ACCESSO ALLA MODIFICA SPEDITA
+  ok  a Microsoft si chiede il codice con la sfida PKCE  → S256
+  ok  e i due permessi, più quello per rinnovare  → openid profile offline_access User.Read Calendars.ReadWrite
+  ok  il ritorno è la pagina dell’app  → http://localhost:8843/
+  ok  il codice è stato scambiato con la sua chiave  → ["client_id","scope","grant_type","code","redirect_uri","code_verifier"]
+  ok  e tolto dall’indirizzo  → http://localhost:8843/#/profilo
+  ok  al ritorno il pannello si riapre da sé  → Calendari collegati
+  ok  collegato, con l’email  → Collegato · io@contoso.com
+  ok  gli eventi di Outlook sono attività  → m1,m2
+  ok  quelli annullati no
+  ok  le 8 UTC sono le 9 a Roma  → 09:00 45
+  ok  le ferie di più giorni: dal primo giorno, senza orario  → 2026-11-30 null
+  ok  le ore si chiedono in UTC, e le traduce il browser
+  ok  la modifica parte verso Outlook, in UTC  → {"dateTime":"2026-11-24T10:15:00","timeZone":"UTC"}
+  ok  scaduto il permesso breve, si rinnova da solo  → authorization_code,refresh_token
+  ok  scollegare chiede cosa fare delle attività
+  ok  «tienile»: restano, staccate  → {"ms":0,"staccate":2,"token":false,"stato":"Da collegare"}
+  ok  il permesso se ne va  → Da collegare
+  ok  e il calendario non si tocca
+  ok  nessun errore nella pagina, in tutta la prova
+
+>>> TUTTO A POSTO

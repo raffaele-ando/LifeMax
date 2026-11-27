@@ -1,0 +1,14 @@
+  ok  A1 tre dispositivi, due offline, ritorno in ordine inverso: tutti uguali al cloud  -> {"telefono":{"X":{"testo":"X-ipad (dopo)","done":true,"id":"idmwvsfvoaaykqmq"},"Y":{"testo":"Y modificata DOPO la cancellazione (online)","done":false,"id":"idmwvsfvod0i00wr"},"Z":null},"ipad":{"X":{"testo":"X-ipad (dopo)","done":true,"id":"idmwvsfvoaaykqmq"},"Y":{"testo":"Y modificata DOPO la cancellazione (online)","done":false,"id":"idmwvsfvod0i00wr"},"Z":null},"pc":{"X":{"testo":"X-ipad (dopo)","done":true,"id":"idmwvsfvoaaykqmq"},"Y":{"testo":"Y modificata DOPO la cancellazione (online)","done":false,"id":"idmwvsfvod0i00wr"},"Z":null},"cloud":{"X":{"testo":"X-ipad (dopo)","done":true},"Y":"Y modificata DOPO la cancellazione (online)"}}
+  ok  A2 vince la modifica più recente per campo (testo dall’iPad, spunta dal PC)  -> {"testo":"X-ipad (dopo)","done":true,"id":"idmwvsfvoaaykqmq"}
+  ok  A3 cancellata offline e modificata DOPO online: la modifica vince (resta)  -> {"testo":"Y modificata DOPO la cancellazione (online)","done":false,"id":"idmwvsfvod0i00wr"}
+  ok  A4 cancellata offline DOPO una modifica: resta cancellata  -> null
+  ok  C1 rete ballerina: tutte e 10 le modifiche arrivano nel cloud e sul PC  -> {"cloud":10,"pc":10,"richiesteViste":35}
+  ok  D1 rete lenta: la modifica arriva (e nel frattempo lo stato è «saving»/«attesa»)  -> {"statoDopo1s":"saving"}
+  ok  E1 dopo il crash il cloud è integro (nessuna fetta mancante)  -> integro
+  ok  E2 riaprendo, la modifica scritta prima del crash arriva al PC  -> saved
+  ok  F1 modifica e chiusura immediata: arriva al PC senza riaprire il telefono (giro o cassetta delle lettere)  -> {"postaNelPrincipale":[]}
+  ok  F2 PC con Firestore lento: chiudendo la scheda la modifica parte con la cassetta delle lettere (keepalive)  -> via REST :commit
+  ok  G1 permesso negato: messaggio comprensibile  -> {"stato":"error","errore":"Il cloud in questo momento non accetta il salvataggio. I tuoi dati sono al sicuro su questo dispositivo; riprovo da solo."}
+  ok  G2 regole tornate: la modifica parte da sola entro 70 s  -> {"secondi":12}
+  ok  I1 cloud muto: dopo ~25 s lo dice  -> {"stato":"muto","errore":"Il cloud non risponde da un po’. I tuoi dati sono al sicuro su questo dispositivo e partono appena risponde.","pastiglia":false}
+  KO  I2 il cloud torna a rispondere: la modifica arriva senza ricaricare (entro 90 s)  -> {"secondi":90}

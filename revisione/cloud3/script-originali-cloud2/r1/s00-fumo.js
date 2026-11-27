@@ -1,0 +1,24 @@
+const L = require('../lib');
+(async () => {
+  const srv = await L.servi(); await L.avvia(); await L.pulisciTutto();
+  const A = await L.dispositivo('A', { tipo: 'iphone' });
+  const B = await L.dispositivo('B', { tipo: 'pc' });
+  await L.accedi(A, 'mario', 'mario@prova.it');
+  console.log('A auth', await A.evaluate(() => JSON.stringify(window.LM_AUTH)), await A.evaluate(()=>JSON.stringify(window.LM_SYNC)));
+  await A.evaluate(() => LM.aggiungiAzione('da A', null));
+  await L.calma(A, 1500);
+  await L.accedi(B, 'mario', 'mario@prova.it');
+  const uid = await L.uidDi(A);
+  console.log('uid', uid, 'B azioni', await L.testi(B));
+  await B.evaluate(() => LM.aggiungiAzione('da B', null));
+  await L.calmaTutti([A, B], 1500);
+  console.log('A azioni', await L.testi(A));
+  const d = await L.docCloud(uid); console.log('cloud', d && d.stato.azioni.map(x => x.testo));
+  await A.ctx.setOffline(true); await A.evaluate(() => LM.aggiungiAzione('A offline', null)); await A.waitForTimeout(3000);
+  console.log('A sync offline', await A.evaluate(()=>JSON.stringify(window.LM_SYNC)));
+  console.log('cloud', (await L.docCloud(uid)).stato.azioni.map(x => x.testo));
+  await A.ctx.setOffline(false); await L.calmaTutti([A,B],5000);
+  console.log('cloud dopo', (await L.docCloud(uid)).stato.azioni.map(x => x.testo), 'B', await L.testi(B));
+  console.log(A.__err, A.__cons.slice(0,5), (await L.registroCloud(A, 30)).join('\n'));
+  await L.browser().close(); srv.close();
+})();

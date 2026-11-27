@@ -1,0 +1,21 @@
+{
+  "script": "n01b-schermate-backup",
+  "quando": "2026-11-25T07:12:39.502Z",
+  "radice": "/tmp/claude-0/-home-user-LifeMax/99c3d469-10e9-545a-afc2-1ce7e01478d1/scratchpad/audit-3/wt",
+  "bloccati": [],
+  "nBloccati": 0,
+  "risultati": [
+    {
+      "scenario": "il pannello Backup mostra all’ospite la copia «all’uscita dall’account»",
+      "ok": false,
+      "dettaglio": "Su questo dispositivo\nNon ci sono ancora backup. Vengono creati automaticamente ogni volta che i dati stanno per essere sostituiti.\nNel cloud\nNessuna copia online, per ora. Ne faccio una al giorno, e "
+    },
+    {
+      "scenario": "dopo «Ripristina» (tocco nell’interfaccia) l’ospite vede le cose di Mario in «Oggi»",
+      "ok": true,
+      "dettaglio": {
+        "visibile": false
+      }
+    }
+  ]
+}

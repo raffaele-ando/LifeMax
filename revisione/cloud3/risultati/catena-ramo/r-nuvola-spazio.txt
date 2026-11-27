@@ -1,0 +1,34 @@
+  ok  5 420 giorni di storia (1326 KB): il salvataggio riesce
+  ok  5 nessun documento del cloud si avvicina a 1 MiB (il più grosso: 199 KB; il principale: 3 KB)
+  ok  5 un altro dispositivo che entra riceve tutto (5 s)
+  ok  5 una modifica riscrive pochi pezzi (2 su 23), e arriva
+  ok  5 il documento di prima passa da solo alla forma nuova, senza perdere niente
+  ok  5 …dopo aver preso una copia di sicurezza del documento di prima
+  ok  5 e il documento principale dice in che forma sono i dati
+  ok  5 una scheda con la versione vecchia riscrive il cloud: la forma nuova torna da sé, e quello che ha scritto c’è
+  ok  5 …e sul dispositivo anche
+  ok  12 dieci riaperture con differenze: le copie nel cloud restano poche (2)
+  ok  12 oltre trenta copie, le più vecchie se ne vanno
+  ok  12 elencarle è veloce e non scarica le copie intere (42 ms)
+  ok  7 app chiusa subito dopo una modifica: arriva agli altri
+  ok  7 app mandata in secondo piano e chiusa: la modifica arriva
+  ok  7 senza rete si vede «non ancora nel cloud»
+  ok  7 …e riaprendo l’app, col cloud ancora irraggiungibile, lo dice subito
+  ok  7 tornata la rete, parte da sola
+  ok  15 iPad riaperto dopo venti giorni: si vede subito «Aggiornamento dal cloud…», non i dati vecchi come buoni
+  ok  15 …e appena arriva l’aggiornamento la fascia se ne va, coi dati giusti
+  ok  recupero: tra le copie di prima si vede quella col nome giusto
+  ok  recupero: «Riprendi il profilo» rimette nome, visione, sveglia e tema, anche sull’altro dispositivo
+  ok  recupero: …senza toccare il resto (la cosa nuova resta, quella della copia non entra)
+  ok  indirizzi: sul vecchio indirizzo, da ospite, si propone di portare i dati
+  ok  indirizzi: con un tocco i dati arrivano sul nuovo indirizzo
+  ok  indirizzi: …il vecchio lo conferma e non cancella niente
+  ok  indirizzi: sul nuovo indirizzo non compare il trasloco
+  ok  indirizzi: con l’account si propone di andare, e si dice che i dati sono nell’account
+  ok  indirizzi: con l’account e una modifica non ancora nel cloud, NON si parte (e lo dice)
+  ok  indirizzi: tornata la rete, prima la modifica va nel cloud e poi si va al nuovo indirizzo
+  ok  iPhone: il Worker riceve /__/auth/* prima dei file
+  ok  iPhone: /__/auth/handler viene preso da firebaseapp.com, così com’è
+  ok  iPhone: l’app NON usa ancora il dominio per l’accesso (interruttore spento finché non si fanno i passi a mano)
+
+tutto a posto

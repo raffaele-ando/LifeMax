@@ -1,0 +1,31 @@
+  ok  2 il PC sempre aperto riceve la cosa scritta in metro
+  ok  2 e alla scrittura successiva del PC la cosa della metro resta nel cloud
+  ok  2 un iPad che entra adesso la vede
+  ok  2 telefono offline aggiunge X, pc aggiunge Y, il telefono torna: tutti hanno X e Y
+  ok  6 modifica contro modifica offline (torna prima il telefono): vince l’ultima fatta, ovunque
+  ok  6 modifica contro modifica offline (torna prima il pc): vince l’ultima fatta, ovunque
+  ok  6 cancella contro modifica fatta dopo, offline: tutti uguali (vince la modifica, che è dopo)
+  ok  6 cancellazione offline: arriva a tutti, non risorge, e la cosa nuova dal pc resta
+  ok  G1 rinomina offline e spunta su un altro dispositivo: restano tutte e due (vince la rinomina più recente), ovunque
+  ok  G1/M9 titolo cambiato nel calendario su un dispositivo e «fatta» sull’altro: tutte e due, da qualunque parte si unisca
+  ok  4 (preparazione) il telefono vede azione fatta, abitudine spuntata, orari del giorno
+  ok  4 quello annullato sul telefono arriva al pc (spunte, punti, area, orari)
+  ok  4 e dopo una scrittura del pc non torna indietro sul telefono
+  ok  4 «annulla» dal diario (torna al punto prima della spunta) arriva al pc
+  ok  3 un iPad nuovo entra: il profilo resta quello del telefono, ovunque
+  ok  3 il primo accesso dall’altro indirizzo del sito non azzera il profilo
+  ok  3 dati del browser cancellati, si rientra: il nome non si perde
+  ok  3 una modifica al profilo fatta dopo, dal dispositivo nuovo, arriva a tutti
+  ok  8 pc con l’orologio 2 minuti indietro cancella: sparisce dappertutto e non risorge
+  ok  8 pc con l’orologio 3 ore avanti: il tema cambiato DOPO sul telefono resta, ovunque
+  ok  10 i punti guadagnati offline su due dispositivi si sommano (10 + 20)
+  ok  13 «Azzera tutto» con l’account: tutti uguali, senza le cose di prima, senza l’area Musica né la rinomina, aree riaccese, diario vuoto
+  ok  13 …e la cosa scritta offline DOPO l’azzeramento resta
+  ok  13 …e il diario di prima non c’è più
+  ok  sospetto: «Azzera tutto» oltre 3000 righe, poi la fusione con una copia di prima: non torna nessuna riga
+  ok  sospetto: un dispositivo fermo da tre anni non fa risorgere quello che è stato cancellato nel frattempo
+  ok  sospetto: e la nuvola la chiede quando l’ultima sincronizzazione di questo dispositivo è lontana
+  ok  sospetto: un check-in modificato (energia, contesto) resta uno solo, con la modifica, da qualunque parte si unisca
+  ok  sospetto: il diario unito con sé stesso non raddoppia
+
+tutto a posto

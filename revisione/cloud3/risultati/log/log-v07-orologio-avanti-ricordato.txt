@@ -1,0 +1,2 @@
+  ok  V07.0 condizioni: il PC ha scritto con l’orologio avanti, poi l’orologio è stato rimesso e rimisurato  -> {"ultimoIstanteRicordato":"2027-12-30T07:33:09.301Z","scartoDopo":"{\"ms\":0,\"quando\":1795591990442}"}
+  KO  V07.1 [M7, regressione?] la modifica fatta DOPO (telefono, 10:02) vince su quella fatta prima (PC, 10:00), su tutti  -> {"pc":"Riunione (scritto dal PC alle 10:00)","telefono":"Riunione (scritto dal PC alle 10:00)","cloud":"Riunione (scritto dal PC alle 10:00)"}

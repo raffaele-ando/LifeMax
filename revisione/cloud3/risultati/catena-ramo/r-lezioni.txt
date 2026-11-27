@@ -1,0 +1,53 @@
+LA PAGINA: prima quello che hai capito, poi gli esperimenti
+  ok  le righe della demo si vedono, divise nei due mucchi  → {"si":4,"no":4,"righeSi":4,"righeNo":4}
+  ok  e in pagina ce ne sono tante quante nei dati  → {"si":4,"no":4,"righeSi":4,"righeNo":4}
+  ok  la pagina ha due sezioni e si apre sul registro  → {"quante":2,"aperta":"registro","registro":true,"esperimenti":false}
+  ok  e venti righe nel registro non allontanano gli esperimenti  → 149 → 149
+  ok  e la linguetta «Esperimenti» mostra solo quelli  → {"registro":false,"esperimenti":true}
+
+SI SCRIVE IN UNA RIGA, E FINISCE NEL MUCCHIO GIUSTO
+  ok  scritta una riga, sta fra quelle che funzionano  → {"id":"idmwvsuusya6lpcw","testo":"Prova: alzarmi e fare il letto subito","verso":"si","forza":"notato"}
+  ok  e parte da «notato una volta», non da un’affermazione  → notato
+  ok  la lista in pagina si è aggiornata da sé  → {"si":5,"no":4,"righeSi":5,"righeNo":4}
+  ok  la scelta «non mi funziona» manda la riga nell’altro mucchio  → {"id":"idmwvsuv8opwihrs","testo":"Prova: rispondere ai messaggi appena arrivano","verso":"no","forza":"notato"}
+
+SI GIRA: una cosa che funzionava smette di funzionare
+  ok  il tasto a sinistra sposta la riga nell’altro mucchio  → {"verso":"no","inPagina":true}
+  ok  e la riga in pagina cambia segno  → {"verso":"no","inPagina":true}
+  ok  girando non si perde il testo  → Prova: alzarmi e fare il letto subito
+
+LA SCHEDA: come fai a saperlo, area, verso, e si toglie
+  ok  la scheda si apre con tutto quello che c’è da sistemare  → {"aperta":true,"forze":3,"versi":2,"area":true,"testo":true}
+  ok  «lo noto ogni volta» si sceglie con un tocco, e resta scelto  → {"forza":"ripetuto","scelto":true}
+  ok  e la riga lo dice a chi scorre la lista  → lo noto ogni volta
+  ok  la riga si toglie  → {"c":false,"annulla":true}
+  ok  e si può rimettere: il messaggio porta l’annulla  → {"c":false,"annulla":true}
+  ok  annullando torna dov’era
+
+LA REVIEW DELLA SERA LA SA TENERE
+  ok  col campo vuoto il tasto non c’è  → hidden: true
+  ok  appena scrivi, compare
+  ok  la riga della sera diventa una cosa che ti funziona  → {"c":true,"campo":"Prova: studiato col telefono in cucina","tastoVia":true}
+  ok  e la review resta scritta com’era  → Prova: studiato col telefono in cucina
+  ok  il tasto si spegne, così non promette due volte la stessa cosa
+
+UN ESPERIMENTO CHE FINISCE AGGIORNA LA SUA RIGA
+  ok  il verdetto diventa una riga, con scritto che l’hai misurata  → {"quante":12,"misurate":1,"testo":"Allenamento o camminata veloce prima delle 10:00, poi sessione di lavoro."}
+  ok  la seconda volta il tasto dice «aggiorna», non «salva»  → Aggiorna la riga: adesso è misurata
+  ok  e non scrive una seconda riga uguale  → 12 → 12
+
+DALLA RIGA SI PARTE PER L’ESPERIMENTO
+  ok  il modulo si apre già scritto con la riga di partenza  → {"c":true,"nome":"«Studiare in biblioteca invece che in camera»: è vero?","int":"Studiare in biblioteca invece che in camera"}
+  ok  e l’esperimento si ricorda da quale riga è nato  → «Studiare in biblioteca invece che in camera»: è vero?
+
+IL MODULO NON SI PERDE SE LA PAGINA SI RIDISEGNA
+  ok  quello che avevi scritto è ancora lì  → {"c":true,"nome":"Prova: mezza domanda scritta","durata":"7-14"}
+  ok  e anche le scelte fatte nei menù  → {"c":true,"nome":"Prova: mezza domanda scritta","durata":"7-14"}
+  ok  e chiudendolo resta chiuso
+
+I CONTI TORNANO
+  ok  le righe stanno nel salvataggio, non solo in pagina  → 12 salvate · 12 in memoria
+  ok  e ognuna lascia una riga nel diario  → 46 righe
+  ok  nessun errore JS
+
+>>> TUTTO A POSTO

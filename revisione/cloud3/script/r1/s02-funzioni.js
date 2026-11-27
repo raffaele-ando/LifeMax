@@ -1,0 +1,56 @@
+/* Ogni funzione dell'app fatta su un dispositivo, online: arriva identica agli altri due? (sequenziale, senza conflitti) */
+const L = require('../lib');
+(async () => {
+  const srv = await L.servi(); await L.avvia(); await L.pulisciTutto();
+  const A = await L.dispositivo('telefono', { tipo: 'iphone' }), B = await L.dispositivo('pc', { tipo: 'pc' }), C = await L.dispositivo('ipad', { tipo: 'ipad' });
+  for (const p of [A, B, C]) await L.accedi(p, 'mario', 'mario@prova.it');
+  const tutti = [A, B, C];
+  const prova = async (nome, chi, fare, leggere, atteso) => {
+    const r0 = await chi.evaluate(fare);
+    await L.calmaTutti(tutti, 1500);
+    const v = [];
+    for (const p of tutti) v.push(await p.evaluate(leggere, r0));
+    const ok = v.every(x => JSON.stringify(x) === JSON.stringify(v[0])) && (atteso === undefined || JSON.stringify(v[0]) === JSON.stringify(atteso));
+    L.esito('S2 ' + nome + ' (fatto su ' + chi.__nome + ')', ok, ok ? JSON.stringify(v[0]).slice(0, 120) : { telefono: v[0], pc: v[1], ipad: v[2] });
+    return r0;
+  };
+  const az = await prova('aggiungi azione', A, () => LM.aggiungiAzione('Comprare il pane', null).id, (id) => (LM.load().azioni.find(x => x.id === id) || {}).testo, 'Comprare il pane');
+  await prova('modifica testo azione', B, () => { const a = LM.load().azioni[0]; LM.modificaAzione(a.id, 'Comprare il pane integrale'); return a.id; }, (id) => (LM.load().azioni.find(x => x.id === id) || {}).testo, 'Comprare il pane integrale');
+  await prova('completa azione', C, () => { const a = LM.load().azioni[0]; LM.completaAzione(a.id); return a.id; }, (id) => (LM.load().azioni.find(x => x.id === id) || {}).done, true);
+  await prova('XP dopo completamento', A, () => 0, () => LM.load().xp);
+  await prova('togli spunta azione (XP torna giù?)', A, () => { const a = LM.load().azioni[0]; LM.completaAzione(a.id); return a.id; }, (id) => [(LM.load().azioni.find(x => x.id === id) || {}).done, LM.load().xp], [false, 0]);
+  await prova('rimuovi azione', B, () => { const a = LM.load().azioni[0]; LM.rimuoviAzione(a.id); return a.id; }, (id) => !!LM.load().azioni.find(x => x.id === id), false);
+  await prova('cattura in inbox', C, () => LM.cattura('idea veloce') && LM.load().inbox.slice(-1)[0].id, (id) => (LM.load().inbox.find(x => x.id === id) || {}).testo, 'idea veloce');
+  await prova('backlog: aggiungi + passo', A, () => { const b = LM.aggiungiBacklog('Progetto casa', null); LM.aggiungiPasso(b.id, 'misurare'); LM.aggiungiPasso(b.id, 'comprare'); return b.id; }, (id) => { const b = LM.load().backlog.find(x => x.id === id); return b && [b.testo, (b.steps || []).map(s => s.testo + s.done)]; });
+  await prova('backlog: spunta passo', B, () => { const b = LM.load().backlog.find(x=>x.testo==='Progetto casa'); LM.togglePasso(b.id, b.steps[0].id); return b.id; }, (id) => { const b = LM.load().backlog.find(x => x.id === id); return b && b.steps.map(s => s.done); }, [true, false]);
+  await prova('backlog: togli spunta passo', C, () => { const b = LM.load().backlog.find(x=>x.testo==='Progetto casa'); LM.togglePasso(b.id, b.steps[0].id); return b.id; }, (id) => { const b = LM.load().backlog.find(x => x.id === id); return b && b.steps.map(s => s.done); }, [false, false]);
+  const h = await prova('abitudine nuova', A, () => LM.aggiungiAbitudine('Camminare', null, [0,1,2,3,4,5,6]).id, (id) => (LM.load().abitudini.find(x => x.id === id) || {}).testo, 'Camminare');
+  await prova('abitudine: spunta oggi', B, (id) => { const x = LM.load().abitudini.slice(-1)[0]; LM.completaAbitudine(x.id); return x.id; }, (id) => Object.keys((LM.load().abitudini.find(x => x.id === id) || {}).fatti || {}).length, 1);
+  await prova('abitudine: TOGLI spunta oggi', C, (id) => { const x = LM.load().abitudini.slice(-1)[0]; LM.completaAbitudine(x.id); return x.id; }, (id) => Object.keys((LM.load().abitudini.find(x => x.id === id) || {}).fatti || {}).length, 0);
+  await prova('abitudine: rinomina', A, () => { const x = LM.load().abitudini.slice(-1)[0]; LM.modificaAbitudine(x.id, { testo: 'Camminare 20 min' }); return x.id; }, (id) => (LM.load().abitudini.find(x => x.id === id) || {}).testo, 'Camminare 20 min');
+  await prova('abitudine: elimina', B, () => { const x = LM.load().abitudini.slice(-1)[0]; LM.rimuoviAbitudine(x.id); return x.id; }, (id) => !!LM.load().abitudini.find(x => x.id === id), false);
+  await prova('area: rinomina', C, () => { const a = LM.load().aree[0]; LM.rinominaArea(a.id, 'Corpo'); return a.id; }, (id) => (LM.load().aree.find(x => x.id === id) || {}).nome, 'Corpo');
+  await prova('area: disattiva', A, () => { const a = LM.load().aree[1]; LM.toggleArea(a.id, false); return a.id; }, (id) => LM.load().areeAttive.includes(id), false);
+  await prova('area: nuova', B, () => LM.aggiungiArea('Musica', 'music'), (id) => [!!LM.load().aree.find(x => x.id === id), LM.load().areeAttive.includes(id)], [true, true]);
+  await prova('area: elimina', C, () => { const a = LM.load().aree.find(x => x.nome === 'Musica'); LM.rimuoviArea(a.id); return a.id; }, (id) => [!!LM.load().aree.find(x => x.id === id), LM.load().areeAttive.includes(id)], [false, false]);
+  await prova('check-in', A, () => { LM.registraCheckin(4, 3, 5, 'casa'); return LM.load().checkins.length; }, () => LM.load().checkins.length, 1);
+  await prova('valutazione area', B, () => { LM.valutaArea(LM.load().aree[0].id, 7); return 0; }, () => JSON.stringify(LM.load().valutazioni));
+  await prova('piano del mattino', C, () => { LM.salvaPianoMattina('giornata tranquilla'); return 0; }, () => JSON.stringify(LM.load().pianoMattina));
+  await prova('review sera', A, () => { LM.salvaReviewSera({ vittoria: 'fatto', blocco: 'niente', shutdown: true }); return 0; }, () => JSON.stringify(LM.load().reviewSera));
+  await prova('review settimana', B, () => { LM.salvaReviewSettimana({ vittorie: 'a', blocchi: 'b', imparato: 'c', prossima: 'd' }); return 0; }, () => JSON.stringify(LM.load().reviewSettimana));
+  await prova('ritmo giorno (sonno)', C, () => { LM.setRitmoGiorno(LM.todayKey(), { sveglia: '07:00' }); return 0; }, () => JSON.stringify(LM.load().ritmoGiorno));
+  await prova('ritmo giorno: azzera', A, () => { LM.azzeraRitmoGiorno(LM.todayKey()); return 0; }, () => JSON.stringify(LM.load().ritmoGiorno), '{}');
+  await prova('sessione timer registrata', B, () => { LM.registraSessione({ id: 's1', areaId: null, azioneId: null, testo: 'lavoro', tipo: 'libero', inizio: Date.now() - 1500000, minuti: 25 }); return 0; }, () => LM.load().sessioni.map(s => s.minuti));
+  await prova('sessione corretta (40 min)', C, () => { LM.modificaSessione('s1', { minuti: 40 }); return 0; }, () => LM.load().sessioni.map(s => s.minuti), [40]);
+  await prova('sessione tolta', A, () => { LM.togliSessione('s1'); return 0; }, () => LM.load().sessioni.length, 0);
+  await prova('lezione aggiunta', B, () => LM.aggiungiLezione('dormire presto aiuta', 'positivo').id, (id) => (LM.load().lezioni.find(x => x.id === id) || {}).testo);
+  await prova('lezione rimossa', C, () => { const l = LM.load().lezioni.slice(-1)[0]; LM.rimuoviLezione(l.id); return l.id; }, (id) => !!LM.load().lezioni.find(x => x.id === id), false);
+  await prova('promemoria impostazioni', A, () => { LM.impostaPromemoria({ attivi: true, sera: '21:30' }); return 0; }, () => JSON.stringify(LM.load().profilo.promemoria || LM.promemoria()));
+  await prova('tema/aspetto (profilo.modo)', B, () => { const s = LM.load(); s.profilo.modo = 'scuro'; LM.save(); return 0; }, () => LM.load().profilo.modo, 'scuro');
+  await prova('profilo.modo di nuovo chiaro', C, () => { const s = LM.load(); s.profilo.modo = 'chiaro'; LM.save(); return 0; }, () => LM.load().profilo.modo, 'chiaro');
+  await prova('timer avviato', A, () => { LM.avviaTimerDati({ azioneId: null, areaId: null, tipo: 'libero', testo: 'focus', inizio: Date.now(), fine: 0, durata: 0, ciclo: 1, inPausa: false, fermatoA: 0 }); return 0; }, () => !!LM.timerVivo(), true);
+  await prova('timer fermato su altro dispositivo', B, () => { LM.fermaTimerDati(); return 0; }, () => !!LM.timerVivo(), false);
+  await prova('esperimento creato', C, () => LM.creaEsperimento({ titolo: 'caffè', ipotesi: 'meno caffè', metrica: 'energia', inizio: LM.todayKey(), giorni: 7 }).id, (id) => !!(LM.load().esperimenti.find(x => x.id === id)), true);
+  for (const p of tutti) { L.esito('S2 nessun errore in pagina su ' + p.__nome, p.__err.length === 0, p.__err.slice(0, 3)); }
+  L.salvaRisultati('r1-s02'); await L.browser().close(); srv.close();
+})();

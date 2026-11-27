@@ -1,0 +1,5 @@
+  KO  il pannello Backup mostra all’ospite la copia «all’uscita dall’account»  -> Su questo dispositivo
+Non ci sono ancora backup. Vengono creati automaticamente ogni volta che i dati stanno per essere sostituiti.
+Nel cloud
+Nessuna copia online, per ora. Ne faccio una al giorno, e 
+  ok  dopo «Ripristina» (tocco nell’interfaccia) l’ospite vede le cose di Mario in «Oggi»  -> {"visibile":false}

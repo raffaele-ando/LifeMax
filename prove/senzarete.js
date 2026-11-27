@@ -47,7 +47,7 @@ function pagina() {
     });
   });
   await new Promise((r) => srv.listen(PORTA, r));
-  const b = await chromium.launch({ executablePath: process.env.CHROMIUM || '/opt/pw-browsers/chromium-1243/chrome-linux64/chrome' });
+  const b = await chromium.launch({ executablePath: process.env.CHROMIUM || '/opt/pw-browsers/chromium-1243/chrome-linux64/chrome', args: require('./comune/chiuso') });
   const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, locale: 'it-IT', timezoneId: 'Europe/Rome' });
   await ctx.route((u) => new URL(u).hostname !== 'localhost', (r) => r.abort());
   const errori = [];

@@ -1,0 +1,32 @@
+
+K. LA CONFERMA
+  ok  K1 il biscotto della conferma è HttpOnly, Secure, SameSite=Lax, solo su /api/calendari/, 10 minuti  -> lmcal_ok_google=<id>.<segreto>; Path=/api/calendari/; Max-Age=600; HttpOnly; Secure; SameSite=Lax
+  ok  K2 link dell’attaccante aperto dalla vittima: il ritorno dice «da-confermare», non «ok»  -> https://lifemax.theproject.world/?lmcal=google&esito=da-confermare#/profilo
+  ok  K3 la conferma della vittima (suo gettone, suo browser) va alla SUA sentinella e non collega niente  -> {"errore":"scaduto","servizio":{"google":true,"microsoft":true}}
+  ok  K4 l’attaccante non conferma con un biscotto inventato né col segreto nel corpo  -> {"finto":"altro-browser","nelCorpo":"altro-browser","attaccante":{"collegato":false,"revocato":false,"titoli":[]}}
+  ok  K5 la vittima non risulta collegata (nessun effetto collaterale)  -> {"collegato":false,"revocato":false,"titoli":[]}
+  ok  K6 controllo: il giro normale (stesso account, stesso browser) collega e legge  -> {"conferma":{"ok":true,"email":"io@esempio.it","servizio":{"google":true,"microsoft":true}},"conto":{"collegato":true,"revocato":false,"titoli":["Visita oncologica (privato)"]}}
+  ok  K7 dopo la conferma il biscotto si cancella  -> ["lmcal_ok_google=; Path=/api/calendari/; Max-Age=0; HttpOnly; Secure; SameSite=Lax"]
+
+L. I PERMESSI DELLA VITTIMA NELLA SENTINELLA DELL’ATTACCANTE
+  KO  L1 scaduti i dieci minuti (qui: trenta), il refresh token della vittima NON resta nella sentinella dell’attaccante  -> {"pendenti":[{"p":"google","scadeDopoMin":10,"rtCifratoCaratteri":48}],"nota":"la riga si cancella solo a un nuovo ritorno o a una conferma dell’attaccante; è cifrata e senza il segreto non si usa"}
+
+M. IL CRON A ROTAZIONE (45 persone collegate davvero)
+  ok  M1 dopo la conferma, la sentinella è nell’elenco del cron  -> {"iscritti":46}
+  ok  M2 sveglie perse: in due ore il cron le riarma tutte (40 all’ora a rotazione)  -> {"riarmatePerOra":[40,40,40],"diverseInTutto":46,"iscritti":46}
+
+N. CHIAVE CAMBIATA PER SBAGLIO E POI RIMESSA
+  ok  N1 [M2] chiave sbagliata: il conto si segna «revocato» (l’app chiederà Ricollega)  -> {"prima":{"collegato":true,"revocato":false,"titoli":["Visita oncologica (privato)"]},"durante":{"collegato":true,"revocato":true,"titoli":["Visita oncologica (privato)"]}}
+  KO  N2 [rischio] rimessa la chiave giusta, il collegamento riparte da solo (senza Ricollega)  -> {"dopo":{"collegato":true,"revocato":true,"titoli":["Visita oncologica (privato)"]}}
+
+R. m3: PERMESSO RITIRATO, CODA VUOTA → NESSUNA SVEGLIA
+  ok  R1 [m3] conto ritirato e coda vuota: la sentinella non si rimette la sveglia  -> {"sveglia":null}
+  ok  R2 controllo: conto vivo → la sveglia si rimette  -> {"sveglia":1795592393743}
+
+D. m5: DUE COLLEGAMENTI INSIEME (due schede), con un barattolo di biscotti come quello del browser
+  ok  D1b [m5] la prima scheda finisce il «sì» dopo che la seconda è passata da /vai (due biscotti diversi)  -> {"biscotti":["lmcal_google_LWNVdQdfqZdQ","lmcal_google_vPxJjiZPtLpG"],"ritorno":"https://lifemax.theproject.world/?lmcal=google&esito=da-confermare#/profilo"}
+
+P. IL PROXY /__/auth
+  ok  P1 in uscita verso firebaseapp.com: niente Cookie né Authorization (anche scritti in maiuscolo)  -> {"uscita1":["proxy-authorization","x-forwarded-for"],"uscita2":[]}
+  ok  P2 in uscita: Proxy-Authorization (nota: non tolta)  -> {"proxyAuthorization":"Basic xyz"}
+  ok  P3 in entrata: niente Set-Cookie né HSTS sul dominio di LifeMax  -> {"setCookie":null,"hsts":null}

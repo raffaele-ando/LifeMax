@@ -1,0 +1,10 @@
+  ok  1 alla prima apertura, in cassa la pagina e tutto il pacco (anche il cloud e il laboratorio)
+  ok  1 senza rete, l’app già usata si riapre, con le sue cose
+  ok  1 …e anche il pezzo del cloud si carica senza rete
+  ok  2 con la rete si apre la versione appena pubblicata, non quella in cassa
+  ok  2 …e in cassa ci va la versione nuova, coi suoi file
+  ok  2 senza rete, si riapre l’ultima versione aperta (non una più vecchia)
+  ok  2 il service worker non tiene niente del server (/api/, /__/) né di altri indirizzi
+  ok  nessun errore nella pagina
+
+tutto a posto

@@ -1,0 +1,3 @@
+  ok  A0 condizioni: cloud spento all’apertura, testo scritto, fuoco su una stellina (non su un campo)  -> {"cloudAllApertura":false,"campo":"Oggi ho finito il capitolo 3 senza distrazioni","fuoco":"BUTTON","salvato":false}
+  KO  A1 [M6] tornata la rete, quello che stavi scrivendo nella review della sera NON si perde  -> {"ricaricata":true,"dopo":{"campo":"","salvato":false,"cloud":true}}
+  KO  B1 [M6] un SDK che non parte per una ragione che non è la rete NON fa ricaricare la pagina ogni minuto  -> {"ricaricamentiIn":"200 s","ricaricamenti":3,"righeRegistro":4}

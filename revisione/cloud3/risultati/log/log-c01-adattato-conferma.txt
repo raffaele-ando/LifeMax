@@ -1,0 +1,59 @@
+
+A. COLLEGAMENTO A NOME DI UN ALTRO (login CSRF)
+  ok  A1 l’attaccante ottiene un link sul dominio vero di LifeMax  -> https://lifemax.theproject.world/api/calendari/google/vai?s=8e0273b8d816d2600bb433c70e76cc
+  ok  A2 /vai lascia il biscotto del «legame» nel browser della VITTIMA  -> 302 lmcal_google_lj6eJYyMK090=ZJnK
+  KO  A3 il ritorno è accettato (esito=ok), anche se il giro l’ha cominciato un altro  -> https://lifemax.theproject.world/?lmcal=google&esito=da-confermare#/profilo
+  ok  A4 [VULNERABILITÀ se KO] l’attaccante NON legge il calendario della vittima  -> {"titoliVisti":[],"contoAttaccante":{"collegato":false,"email":""}}
+  ok  A5 [VULNERABILITÀ se KO] l’attaccante NON scrive nel calendario della vittima  -> {"x1":{"ok":false,"tipo":"token"}}
+  ok  A6 e la vittima, nel SUO LifeMax, non vede niente collegato (non sa di niente)  -> {"servizio":true,"collegato":false,"revocato":false,"email":"","calendari":[]}
+
+B. GETTONI E UID DI ALTRI
+  ok  B1 un terzo con x-lm-uid=attaccante nell’intestazione non vede lo specchio dell’attaccante  -> 0
+  ok  B2 un uid nel corpo non conta
+  ok  B3 gettone che scade fra 30 s: ancora valido (normale, nota)  -> 200
+  ok  B4 gettone emesso «nel futuro» di un’ora: rifiutato  -> 401
+  ok  B5 uid più lungo di 128: rifiutato  -> 401
+  ok  B6 un utente senza collegamento non può cancellare eventi (togli)  -> {"esiti":{"y":{"ok":false,"tipo":"token"}},"servizio":{"google":true,"microsoft":true}}
+
+C. /vai E /ritorno CON STATE SBAGLIATI
+  ok  C1 /vai usato due volte: la seconda è rifiutata  -> 400
+  ok  C2 ritorno senza biscotto: «altro-browser»  -> https://lifemax.theproject.world/?lmcal=google&esito=altro-browser#/profilo
+  ok  C3 lo stesso ritorno ripetuto col biscotto giusto: «scaduto» (state usa e getta)  -> https://lifemax.theproject.world/?lmcal=google&esito=scaduto#/profilo
+  ok  C4 state con un id di sentinella inventato: niente (scaduto)  -> https://lifemax.theproject.world/?lmcal=google&esito=scaduto#/profilo
+  ok  C5 state malformato: pagina «non valido» (400)  -> 400
+  ok  C6 ritorno di Google presentato come Microsoft: rifiutato  -> https://lifemax.theproject.world/?lmcal=microsoft&esito=scaduto#/profilo
+  ok  C7 ritorno dopo 11 minuti: scaduto  -> https://lifemax.theproject.world/?lmcal=google&esito=scaduto#/profilo
+  ok  C8 ritorno verso un sito estraneo: rifiutato  -> {"errore":"ritorno","servizio":{"google":true,"microsoft":true}}
+  ok  C9 ritorno verso lifemax.theproject.world.cattivo.example: rifiutato  -> {"errore":"ritorno","servizio":{"google":true,"microsoft":true}}
+  ok  C10 ritorno verso un ALTRO progetto di raffaele-ando.github.io (prefisso): ACCETTATO  -> {"url":"https://lifemax.theproject.world/api/calendari/google/vai?s=0c717dfd81f7e5aa4421cf1ee4d3523503c71be82b601a7856129f3445c4a1df.1tsIlaRdCGHtKD9emnoDbeUQCjC4S5P0","servizio":{"google":true,"microsoft":true}}
+
+D. DUE COLLEGAMENTI GOOGLE IN PARALLELO (due schede)
+  ok  D1 la prima scheda finisce il «sì» dopo che la seconda è passata da /vai: fallisce  -> https://lifemax.theproject.world/?lmcal=google&esito=altro-browser#/profilo
+
+E. CHIAVE_CALENDARI CAMBIATA
+  ok  E0 (verifica 3) la vittima conferma il suo collegamento  -> {"ok":true,"email":"io@esempio.it","servizio":{"google":true,"microsoft":true}}
+  ok  E1 dopo il cambio di chiave «cambi» risponde 200 e dice ancora collegato/non revocato (l’app non sa che serve Ricollega)  -> {"stato":200,"conto":{"collegato":true,"revocato":true},"eventoNuovoArrivato":false}
+  KO  E2 l’evento nuovo arriva lo stesso?  -> {"eventoNuovoArrivato":false}
+  ok  E3 una scrittura: che errore riceve l’app (tipo «token» → Ricollega; «rete»/«altro» → riprova in silenzio)  -> {"http":200,"esiti":{"e1":{"ok":false,"tipo":"token"}}}
+
+F. PERMESSO DI GOOGLE SCADUTO (app «In prova»: 7 giorni) O RITIRATO
+  ok  F1 dopo invalid_grant il conto risulta «revocato» (l’app può dire Ricollega)  -> {"revocato":true}
+  ok  F2 la modifica fatta mentre il permesso era scaduto resta in coda (non persa)  -> [{"k":"f1","stato":"attesa","tent":1}]
+  ok  F3 nota: sentinelle con sveglia attiva anche se il permesso è revocato  -> 3
+
+G. SEGRETI MANCANTI
+  ok  G senza GOOGLE_CLIENT_SECRET: stato {"google":false,"microsoft":true}, cambi 200, scollega 200  -> {"cambi":200,"conti":{"servizio":false,"collegato":true}}
+  ok  G senza MICROSOFT_CLIENT_SECRET: stato {"google":true,"microsoft":false}, cambi 200, scollega 200  -> {"cambi":200,"conti":{"servizio":true,"collegato":true}}
+  ok  G CHIAVE_CALENDARI corta (31): stato {"google":false,"microsoft":false}, cambi 200, scollega 200  -> {"cambi":200,"conti":{"servizio":false,"collegato":true}}
+  ok  G senza niente: stato {"google":false,"microsoft":false}, cambi 200, scollega 200  -> {"cambi":200,"conti":{"servizio":false,"collegato":true}}
+
+H. IL PROXY /__/auth (nel Worker, attivo in produzione)
+  ok  H1 il proxy inoltra a firebaseapp.com i biscotti del dominio (cookie)  -> {"cookieInoltrato":"","authorization":""}
+  ok  H2 e rimanda indietro Set-Cookie/HSTS di firebaseapp.com sul dominio di LifeMax (nota)  -> {"setCookie":null,"hsts":null}
+  ok  H3 niente traversata fuori da /__/auth  -> ["https://lifemax-9dc63.firebaseapp.com/__/auth/handler?apiKey=k"]
+
+I. IL CRON DI RISERVA
+  KO  I1 con 45+ persone e tutte le sveglie perse, il cron le riarma tutte  -> {"riarmate":39}
+
+J. CALENDARIO SPENTO E RIACCESO DA DUE DISPOSITIVI
+  ok  J1 spento/riacceso da due dispositivi: il secondo riceve di nuovo gli eventi (completo o tutti)  -> {"seq1":0,"seq3":0,"eventi":0,"completo":true}

@@ -1,0 +1,25 @@
+
+(!) build.outDir must not be the same directory of root or a parent directory of root as this could cause Vite to overwriting source files with build outputs.
+
+vite v8.2.2 building client environment for production...
+transforming...
+✓ 77 modules transformed.
+
+(!) The public directory feature may not work correctly. outDir /tmp/claude-0/-home-user-LifeMax/99c3d469-10e9-545a-afc2-1ce7e01478d1/scratchpad/audit-3/costruzione and publicDir /tmp/claude-0/-home-user-LifeMax/99c3d469-10e9-545a-afc2-1ce7e01478d1/scratchpad/audit-3/costruzione/public are not separate folders.
+
+rendering chunks...
+computing gzip size...
+/index.html                  6.47 kB │ gzip:   2.73 kB
+/pacco/lab-B41L5MV9.css     63.68 kB │ gzip:   9.34 kB
+/pacco/index-Bsil6fgq.css  216.97 kB │ gzip:  40.12 kB
+/pacco/nuvola-BPf26p7c.js   33.02 kB │ gzip:  12.22 kB │ map:   122.46 kB
+/pacco/lab-QU5x7-U7.js      40.47 kB │ gzip:   7.58 kB │ map:    88.01 kB
+/pacco/index-C0BtCH-d.js   680.79 kB │ gzip: 214.34 kB │ map: 2,632.96 kB
+
+[plugin builtin:vite-reporter] 
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rolldownOptions.output.codeSplitting to improve chunking: https://rolldown.rs/reference/OutputOptions.codeSplitting
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 1.90s
+build 0

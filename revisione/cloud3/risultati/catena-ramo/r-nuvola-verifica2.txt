@@ -1,0 +1,20 @@
+  ok  (preparazione) M1 Mario esce col cloud che non risponde: uscita «in attesa»
+  ok  M1 Luigi prova ad accedere: l’app dice che c’è una modifica di chi è uscito, e aspetta
+  ok  M1 …tornato il cloud, la modifica di Mario è nel SUO cloud
+  ok  M1 …e Luigi è dentro, senza niente di Mario
+  ok  M5 il documento principale dice la versione minima che può scrivere
+  ok  M5 la scheda vecchia lo sa subito e chiede di ricaricare
+  ok  M5 …e non scrive più nel cloud (la modifica resta sul dispositivo)
+  ok  M6 SDK non arrivato: la modifica si segna «non ancora nel cloud»
+  ok  M6 tornata la rete, il cloud riparte da solo e la modifica arriva (senza riaprire)
+  ok  M7 lo scarto dell’orologio si ricorda: riaprendo senza cloud le ore restano corrette
+  ok  M7 un orologio nel 2001 non scrive ore del 2001
+  ok  M7 un PC avanti di due anni, non misurato, non butta lapidi né orologi
+  ok  M7 …e nemmeno dopo la misura: conta l’ora del server, non la sua
+  ok  m1 la finestra di Google chiusa subito: niente redirect verso Google
+  ok  m11 un dispositivo nuovo entra: prima, una copia del cloud com’era (col profilo scritto dopo la copia del giorno)
+  ok  m12 sul nuovo indirizzo c’è un account: prima di aggiungere i dati di github.io si chiede, dicendo quanti sono
+  ok  m12 …e dicendo di no, nell’account non entra niente
+  ok  m12 dopo il trasloco, sul vecchio indirizzo solo un promemoria piccolo
+
+tutto a posto

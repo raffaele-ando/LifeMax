@@ -156,9 +156,12 @@ const { ok, guai } = em.conto();
           { ts: 1, motivo: 'uscita-dall-account', data: st },
           { ts: 2, motivo: 'prima-import', data: st }
         ]));
-        return { viste: LM.listBackups().length, restano: JSON.parse(localStorage.getItem('lifemax.backups.v1') || '[]').length };
+        return { viste: LM.listBackups().length, restano: JSON.parse(localStorage.getItem('lifemax.backups.v1') || '[]').map((b) => b.motivo + ':' + b.chi) };
       });
-      ok('C1 le copie di prima senza proprietario, su un dispositivo che è passato da un account: non si vedono e se ne vanno', vecchie.viste === 0 && vecchie.restano === 0, vecchie);
+      /* (verifica 3, N1: quella presa uscendo da un account se ne va; l'altra
+         non si sa di chi sia, e resta «senza proprietario», non vista da
+         nessuno ma non buttata — vedi prove/nuvola-verifica3.js) */
+      ok('C1 le copie di prima senza proprietario, su un dispositivo che è passato da un account: non si vedono; quella presa uscendo se ne va, l’altra resta senza proprietario', vecchie.viste === 0 && vecchie.restano.join(',') === 'prima-import:?', vecchie);
       await P.ctx.close();
       /* un dispositivo che non è mai stato di un account: le sue copie restano sue */
       const Q = await B.dispositivo('solo-ospite');

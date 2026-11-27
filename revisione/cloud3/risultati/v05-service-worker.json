@@ -1,0 +1,67 @@
+{
+  "script": "v05-service-worker",
+  "quando": "2026-11-25T07:32:53.361Z",
+  "radice": "/tmp/claude-0/-home-user-LifeMax/99c3d469-10e9-545a-afc2-1ce7e01478d1/scratchpad/audit-3/wt",
+  "bloccati": [
+    "https://apis.google.com/js/api.js?onload=__iframefcb972260",
+    "https://apis.google.com/js/api.js?onload=__iframefcb747379",
+    "https://apis.google.com/js/api.js?onload=__iframefcb978167",
+    "https://apis.google.com/js/api.js?onload=__iframefcb628559",
+    "https://www.google.com/images/cleardot.gif?zx=4a311xqkfpit",
+    "https://www.google.com/images/cleardot.gif?zx=2f1xl9t59bm6",
+    "https://www.google.com/images/cleardot.gif?zx=dagbsdtptgid",
+    "https://www.google.com/images/cleardot.gif?zx=f25or9oqrobf",
+    "https://apis.google.com/js/api.js?onload=__iframefcb187538"
+  ],
+  "nBloccati": 9,
+  "risultati": [
+    {
+      "scenario": "A1 [G3] rete che finge di esserci (la pagina non risponde): l’app si apre dalla cassa entro 15 s",
+      "ok": false,
+      "dettaglio": {
+        "secondi": 15,
+        "errore": "TimeoutError: page.reload: Timeout 15000ms exceeded.",
+        "cassa": [
+          "pacco/index-C0BtCH-d.js",
+          "pacco/index-Bsil6fgq.css",
+          "pacco/lab-B41L5MV9.css",
+          "pacco/lab-QU5x7-U7.js",
+          "pacco/nuvola-BPf26p7c.js",
+          "index.html"
+        ]
+      }
+    },
+    {
+      "scenario": "B1 senza rete l’app si apre con i dati",
+      "ok": true,
+      "dettaglio": {
+        "testo": "",
+        "azioni": [
+          "scritta ieri"
+        ]
+      }
+    },
+    {
+      "scenario": "B2 senza rete il Laboratorio (caricato dopo) si apre senza errori",
+      "ok": true,
+      "dettaglio": {
+        "errori": [],
+        "lab": ""
+      }
+    },
+    {
+      "scenario": "C1 con la rete, dopo una pubblicazione nuova, una ricarica mostra la nuova",
+      "ok": true,
+      "dettaglio": "2"
+    },
+    {
+      "scenario": "D1 (contesto mai offline) dopo una pubblicazione nuova, la prima ricarica con la rete mostra la nuova",
+      "ok": true,
+      "dettaglio": {
+        "serviceWorker": true,
+        "primaRicarica": "3",
+        "secondaRicarica": "3"
+      }
+    }
+  ]
+}

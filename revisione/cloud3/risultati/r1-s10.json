@@ -1,0 +1,31 @@
+{
+  "script": "r1-s10",
+  "quando": "2026-11-25T07:55:44.454Z",
+  "radice": "/tmp/claude-0/-home-user-LifeMax/99c3d469-10e9-545a-afc2-1ce7e01478d1/scratchpad/audit-3/wt",
+  "bloccati": [
+    "https://apis.google.com/js/api.js?onload=__iframefcb356508",
+    "https://apis.google.com/js/api.js?onload=__iframefcb315580",
+    "https://apis.google.com/js/api.js?onload=__iframefcb128063",
+    "https://apis.google.com/js/api.js?onload=__iframefcb559425",
+    "https://apis.google.com/js/api.js?onload=__iframefcb931000",
+    "https://apis.google.com/js/api.js?onload=__iframefcb735309",
+    "https://apis.google.com/js/api.js?onload=__iframefcb188619",
+    "https://apis.google.com/js/api.js?onload=__iframefcb785138",
+    "https://apis.google.com/js/api.js?onload=__iframefcb517649",
+    "https://apis.google.com/js/api.js?onload=__iframefcb537107",
+    "https://apis.google.com/js/api.js?onload=__iframefcb193782"
+  ],
+  "nBloccati": 11,
+  "risultati": [
+    {
+      "scenario": "S10 10 riaperture del telefono con differenze: le copie nel cloud restano poche (o vengono sfoltite)",
+      "ok": true,
+      "dettaglio": {
+        "copieNelCloud": 0,
+        "MBscaricatiAprendoBackup": 0,
+        "msPerElencarle": 23,
+        "elencate": 2
+      }
+    }
+  ]
+}

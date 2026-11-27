@@ -1,0 +1,156 @@
+{
+  "script": "r1-s08",
+  "quando": "2026-11-25T07:54:17.580Z",
+  "radice": "/tmp/claude-0/-home-user-LifeMax/99c3d469-10e9-545a-afc2-1ce7e01478d1/scratchpad/audit-3/wt",
+  "bloccati": [
+    "https://apis.google.com/js/api.js?onload=__iframefcb335694",
+    "https://apis.google.com/js/api.js?onload=__iframefcb313470",
+    "https://apis.google.com/js/api.js?onload=__iframefcb2279",
+    "https://www.google.com/images/cleardot.gif?zx=pb62b7h5umhc",
+    "https://www.google.com/images/cleardot.gif?zx=coh01q6z6190",
+    "https://www.google.com/images/cleardot.gif?zx=5dghfangl8ar",
+    "https://www.google.com/images/cleardot.gif?zx=fhdl2vkz3w6n",
+    "https://www.google.com/images/cleardot.gif?zx=u6sw3qsd956p",
+    "https://www.google.com/images/cleardot.gif?zx=n5yb2c9dvfqn",
+    "https://apis.google.com/js/api.js?onload=__iframefcb205168",
+    "https://apis.google.com/js/api.js?onload=__iframefcb777162"
+  ],
+  "nBloccati": 11,
+  "risultati": [
+    {
+      "scenario": "S8.0 (round 2) la scheda VECCHIA riceve la cosa scritta dal telefono nuovo",
+      "ok": false,
+      "dettaglio": "dalla scheda vecchia"
+    },
+    {
+      "scenario": "S8.1 scheda della versione vecchia (b3c6d4b) + telefono nuovo: stesse azioni, nessun campo perso, nessun errore",
+      "ok": false,
+      "dettaglio": {
+        "telefono": "dal telefono nuovo | dalla scheda vecchia",
+        "vecchia": "dalla scheda vecchia",
+        "campiMancantiNelCloud": [
+          "esempio",
+          "updatedAt"
+        ],
+        "err": []
+      }
+    },
+    {
+      "scenario": "S8.2 «Azzera tutto» (account) sul telefono: anche pc/iPad si svuotano, l’area «Musica» se ne va, la cosa scritta offline DOPO resta",
+      "ok": true,
+      "dettaglio": {
+        "telefono": {
+          "azioni": "scritta offline sull’iPad prima dell’azzeramento",
+          "checkins": 0,
+          "aree": "Studio / Università,Salute & Sport,Relazioni & Sociale,Finanze,Associazioni,Progetti Founder,Lavoro,Altro / Esplorazione",
+          "valutazioni": 0,
+          "registro": 2
+        },
+        "pc": {
+          "azioni": "scritta offline sull’iPad prima dell’azzeramento",
+          "checkins": 0,
+          "aree": "Studio / Università,Salute & Sport,Relazioni & Sociale,Finanze,Associazioni,Progetti Founder,Lavoro,Altro / Esplorazione",
+          "valutazioni": 0,
+          "registro": 2
+        },
+        "ipad": {
+          "azioni": "scritta offline sull’iPad prima dell’azzeramento",
+          "checkins": 0,
+          "aree": "Studio / Università,Salute & Sport,Relazioni & Sociale,Finanze,Associazioni,Progetti Founder,Lavoro,Altro / Esplorazione",
+          "valutazioni": 0,
+          "registro": 2
+        }
+      }
+    },
+    {
+      "scenario": "S8.3 importazione da file sul telefono: arriva a pc e iPad (unione)",
+      "ok": true,
+      "dettaglio": {
+        "esito": {
+          "ok": true,
+          "ricchezza": 1,
+          "tagliati": 0
+        },
+        "pc": "dal file | scritta offline sull’iPad prima dell’azzeramento"
+      }
+    },
+    {
+      "scenario": "S8.4 app chiusa subito dopo una modifica: arriva lo stesso agli altri (la scrittura parte subito)",
+      "ok": true,
+      "dettaglio": "dal file | scritta offline sull’iPad prima dell’azzeramento | ultima prima di chiudere"
+    },
+    {
+      "scenario": "S8.4b raffica + chiusura dopo 100 ms: l’ultima modifica arriva agli altri senza riaprire il telefono",
+      "ok": true,
+      "dettaglio": "dal file | raffica 1 | raffica 2 (ultima) | scritta offline sull’iPad prima dell’azzeramento | ultima prima di chiudere"
+    },
+    {
+      "scenario": "S8.5 memoria piena sul pc: la modifica arriva comunque al cloud/iPad e l’utente è avvisato",
+      "ok": false,
+      "dettaglio": {
+        "toast": "",
+        "ipad": "dal file | raffica 1 | raffica 2 (ultima) | scritta con memoria piena | scritta offline sull’iPad prima dell’azzeramento | ultima prima di chiudere"
+      }
+    },
+    {
+      "scenario": "S8.5b pc pieno ricaricato: ha i dati (dal cloud) compresa la modifica arrivata mentre era pieno",
+      "ok": true,
+      "dettaglio": "dal file | dall’iPad mentre il pc è pieno | raffica 1 | raffica 2 (ultima) | scritta con memoria piena | scritta offline sull’iPad prima dell’azzeramento | ultima prima di chiudere"
+    },
+    {
+      "scenario": "S8.6 permesso negato dal cloud: l’utente riceve un messaggio comprensibile (non da sviluppatore)",
+      "ok": true,
+      "dettaglio": {
+        "sync": {
+          "state": "error",
+          "error": "Il cloud in questo momento non accetta il salvataggio. I tuoi dati sono al sicuro su questo dispositivo; riprovo da solo.",
+          "at": 1795593070524,
+          "inCoda": false
+        },
+        "toast": "",
+        "ascolto": true
+      }
+    },
+    {
+      "scenario": "S8.6b regole ripristinate: la modifica fatta durante il blocco arriva al cloud senza ricaricare",
+      "ok": true,
+      "dettaglio": {
+        "ascoltoIpad": true,
+        "pc": "con permessi negati | dal file | dall’iPad mentre il pc è pieno | raffica 1 | raffica 2 (ultima) | scritta con memoria piena | scritta offline sull’iPad prima dell’azzeramento | ultima prima di chiudere"
+      }
+    },
+    {
+      "scenario": "S8.6c ...e il pc (ascolto caduto durante il blocco) la riceve entro ~1 minuto",
+      "ok": true,
+      "dettaglio": {
+        "pc": "con permessi negati | dal file | dall’iPad mentre il pc è pieno | raffica 1 | raffica 2 (ultima) | scritta con memoria piena | scritta offline sull’iPad prima dell’azzeramento | ultima prima di chiudere",
+        "ascoltoPc": true
+      }
+    },
+    {
+      "scenario": "S8.7 Firebase non raggiungibile (rete aziendale, blocco contenuti): l’app funziona in locale e non promette il cloud",
+      "ok": true,
+      "dettaglio": {
+        "auth": {
+          "user": null,
+          "available": false,
+          "syncing": false
+        },
+        "testoAccedi": ""
+      }
+    },
+    {
+      "scenario": "S8.8 archiviazione bloccata (Safari privato vecchio / cookie bloccati): l’app si apre e lo dice",
+      "ok": true,
+      "dettaglio": {
+        "errori": [],
+        "avvisi": ""
+      }
+    },
+    {
+      "scenario": "S8.9 popup bloccato: si ripiega sul redirect",
+      "ok": true,
+      "dettaglio": 1
+    }
+  ]
+}

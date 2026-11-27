@@ -82,7 +82,7 @@ export async function runTransaction(db, f) { const tx = { get: () => Promise.re
     fs.readFile(path.join(RADICE, p), (e, d) => { if (e) { r.statusCode = 404; r.end('x'); return; } r.setHeader('Content-Type', T[path.extname(p)] || 'application/octet-stream'); r.end(d); });
   });
   await new Promise((r) => srv.listen(PORTA, r));
-  const b = await chromium.launch({ executablePath: process.env.CHROMIUM || '/opt/pw-browsers/chromium-1243/chrome-linux64/chrome' });
+  const b = await chromium.launch({ executablePath: process.env.CHROMIUM || '/opt/pw-browsers/chromium-1243/chrome-linux64/chrome', args: require('./comune/chiuso') });
   const ctx = await b.newContext({ viewport: { width: 390, height: 900 }, timezoneId: 'Europe/Rome', locale: 'it-IT' });
   await ctx.route((u) => new URL(u).hostname !== 'localhost', (route) => {
     const u = route.request().url();

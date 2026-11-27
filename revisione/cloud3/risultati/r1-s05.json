@@ -1,0 +1,105 @@
+{
+  "script": "r1-s05",
+  "quando": "2026-11-25T07:46:37.614Z",
+  "radice": "/tmp/claude-0/-home-user-LifeMax/99c3d469-10e9-545a-afc2-1ce7e01478d1/scratchpad/audit-3/wt",
+  "bloccati": [
+    "https://apis.google.com/js/api.js?onload=__iframefcb22761",
+    "https://apis.google.com/js/api.js?onload=__iframefcb17075",
+    "https://apis.google.com/js/api.js?onload=__iframefcb149401",
+    "https://apis.google.com/js/api.js?onload=__iframefcb128397",
+    "https://apis.google.com/js/api.js?onload=__iframefcb843101"
+  ],
+  "nBloccati": 5,
+  "risultati": [
+    {
+      "scenario": "S5 storia di 90 giorni: 363 KB; nel cloud e sul pc arriva tutto",
+      "ok": true,
+      "dettaglio": {
+        "KB": 363,
+        "sync": "saved ",
+        "cloudAzioni": 637,
+        "telefono": 637,
+        "pc": 637,
+        "tempi": {
+          "saveMs": 9,
+          "unisciMs": 7
+        },
+        "accessoPcMs": 1231,
+        "avvisoAllUtente": "Dati aggiornati da un altro dispositivo.",
+        "lsKB": 735
+      }
+    },
+    {
+      "scenario": "S5 storia di 180 giorni: 630 KB; nel cloud e sul pc arriva tutto",
+      "ok": true,
+      "dettaglio": {
+        "KB": 630,
+        "sync": "saved ",
+        "cloudAzioni": 1267,
+        "telefono": 1267,
+        "pc": 1267,
+        "tempi": {
+          "saveMs": 18,
+          "unisciMs": 10
+        },
+        "accessoPcMs": 1324,
+        "avvisoAllUtente": "Dati aggiornati da un altro dispositivo.",
+        "lsKB": 1270
+      }
+    },
+    {
+      "scenario": "S5 storia di 365 giorni: 1180 KB; nel cloud e sul pc arriva tutto",
+      "ok": true,
+      "dettaglio": {
+        "KB": 1180,
+        "sync": "saved ",
+        "cloudAzioni": 2562,
+        "telefono": 2562,
+        "pc": 2562,
+        "tempi": {
+          "saveMs": 37,
+          "unisciMs": 21
+        },
+        "accessoPcMs": 1396,
+        "avvisoAllUtente": "Dati aggiornati da un altro dispositivo.",
+        "lsKB": 2369
+      }
+    },
+    {
+      "scenario": "S5 storia di 540 giorni: 1701 KB; nel cloud e sul pc arriva tutto",
+      "ok": true,
+      "dettaglio": {
+        "KB": 1701,
+        "sync": "saved ",
+        "cloudAzioni": 3787,
+        "telefono": 3787,
+        "pc": 3787,
+        "tempi": {
+          "saveMs": 55,
+          "unisciMs": 33
+        },
+        "accessoPcMs": 1385,
+        "avvisoAllUtente": "Dati aggiornati da un altro dispositivo.",
+        "lsKB": 3411
+      }
+    },
+    {
+      "scenario": "S5 storia di 730 giorni: 2266 KB; nel cloud e sul pc arriva tutto",
+      "ok": true,
+      "dettaglio": {
+        "KB": 2266,
+        "sync": "saved ",
+        "cloudAzioni": 5117,
+        "telefono": 5117,
+        "pc": 5117,
+        "tempi": {
+          "saveMs": 63,
+          "unisciMs": 58
+        },
+        "accessoPcMs": 1484,
+        "avvisoAllUtente": "Dati aggiornati da un altro dispositivo.",
+        "lsKB": 4541
+      }
+    }
+  ]
+}

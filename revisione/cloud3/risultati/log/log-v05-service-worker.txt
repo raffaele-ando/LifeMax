@@ -1,0 +1,5 @@
+  KO  A1 [G3] rete che finge di esserci (la pagina non risponde): l’app si apre dalla cassa entro 15 s  -> {"secondi":15,"errore":"TimeoutError: page.reload: Timeout 15000ms exceeded.","cassa":["pacco/index-C0BtCH-d.js","pacco/index-Bsil6fgq.css","pacco/lab-B41L5MV9.css","pacco/lab-QU5x7-U7.js","pacco/nuvola-BPf26p7c.js","index.html"]}
+  ok  B1 senza rete l’app si apre con i dati  -> {"testo":"","azioni":["scritta ieri"]}
+  ok  B2 senza rete il Laboratorio (caricato dopo) si apre senza errori  -> {"errori":[],"lab":""}
+  ok  C1 con la rete, dopo una pubblicazione nuova, una ricarica mostra la nuova  -> 2
+  ok  D1 (contesto mai offline) dopo una pubblicazione nuova, la prima ricarica con la rete mostra la nuova  -> {"serviceWorker":true,"primaRicarica":"3","secondaRicarica":"3"}

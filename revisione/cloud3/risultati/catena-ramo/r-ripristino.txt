@@ -1,0 +1,22 @@
+  ok  il telefono parte con gli stessi dati  → {"az":12,"bk":5,"lz":1,"sera":1,"voti":1}
+
+AZZERA TUTTO, COLLEGATO
+  ok  si svuotano tutti e due  → [{"az":0,"bk":0,"lz":0,"sera":0,"voti":0},{"az":0,"bk":0,"lz":0,"sera":0,"voti":0}]
+
+RIPRISTINO DAL BACKUP DEL COMPUTER
+  ok  il computer torna com’era  → {"az":12,"bk":5,"lz":1,"sera":1,"voti":1}
+  ok  e il telefono lo riceve, senza ripristinare niente  → {"az":12,"bk":5,"lz":1,"sera":1,"voti":1}
+  ok  e dopo qualche giro resta così su tutti e due  → [{"az":12,"bk":5,"lz":1,"sera":1,"voti":1},{"az":12,"bk":5,"lz":1,"sera":1,"voti":1}]
+  ok  dopo un azzeramento, un voto nuovo nello stesso giorno resta
+
+RIPRESO DA UNA COPIA DEL CLOUD, SENZA SOSTITUIRE
+  ok  le righe sepolte tornano, qui e sull’altro  → [{"az":12,"bk":5,"lz":1,"sera":1,"voti":1},{"az":12,"bk":5,"lz":1,"sera":1,"voti":1}]
+
+E UNA CANCELLAZIONE VERA, DOPO, VALE ANCORA
+  ok  la cosa cancellata dopo il ripristino resta cancellata
+
+AZZERARE DA SOLI NON TOCCA L’ACCOUNT
+  ok  niente lapidi né tagli che partano verso il cloud
+  ok  nessun errore in pagina
+
+>>> TUTTO A POSTO

@@ -1,0 +1,11 @@
+  ok  S3.1 modifica vs modifica offline (pc modifica per ultimo, torna per ultimo): tutti uguali e vince l’ultima modifica (ORE 9)  -> {"telefono":"Telefonare al medico ORE 9","pc":"Telefonare al medico ORE 9","ipad":"Telefonare al medico ORE 9","cloud":"Telefonare al medico ORE 9"}
+  ok  S3.2 modifica vs modifica offline (pc modifica per ultimo, torna per PRIMO): tutti uguali e vince v-pc-ultima  -> {"telefono":"v-pc-ultima","pc":"v-pc-ultima","ipad":"v-pc-ultima","cloud":"v-pc-ultima"}
+  ok  S3.3 cancella (telefono) vs modifica successiva (pc), offline: tutti uguali (qualunque esito, ma uguale)  -> {"telefono":"modificata dopo la cancellazione","pc":"modificata dopo la cancellazione","ipad":"modificata dopo la cancellazione","cloud":"modificata dopo la cancellazione"}
+  ok  S3.4 cancellazione offline + aggiunta online altrove: nessuno ha più «da cancellare», tutti hanno «nuova dal pc»  -> {"telefono":"da tenere | nuova dal pc","pc":"da tenere | nuova dal pc","ipad":"da tenere | nuova dal pc","cloud":"da tenere | nuova dal pc"}
+  ok  S3.4b dopo un’altra scrittura del pc la cosa cancellata non risorge  -> {"telefono":"da tenere | nuova dal pc","pc":"da tenere | nuova dal pc","ipad":"da tenere | nuova dal pc","cloud":"da tenere | nuova dal pc"}
+  ok  S3.5 stessa cosa creata su due dispositivi offline: tutti uguali (2 righe «Palestra», non deduplicate: atteso)  -> {"telefono":"Palestra | Palestra","pc":"Palestra | Palestra","ipad":"Palestra | Palestra","cloud":"Palestra | Palestra"}
+  ok  S3.6 tre dispositivi offline, ritorno a raffica C→A→B: tutti hanno T1,T2,P1,P2,I1  -> {"telefono":"I1 | P1 | P2 | Palestra | Palestra | T1 | T2","pc":"I1 | P1 | P2 | Palestra | Palestra | T1 | T2","ipad":"I1 | P1 | P2 | Palestra | Palestra | T1 | T2","cloud":"I1 | P1 | P2 | Palestra | Palestra | T1 | T2"}
+  ok  S3.7 pc con orologio 2 min indietro cancella una cosa creata sul telefono: sparisce dappertutto  -> {"telefono":"","pc":"","ipad":"","cloud":""}
+  ok  S3.7b ...e non risorge dopo una scrittura del telefono  -> {"telefono":"","pc":"","ipad":"","cloud":""}
+  ok  S3.8 pc con orologio 3h avanti: il telefono cambia tema DOPO, ma alla prima scrittura del pc vince il pc? (atteso: chiaro ovunque)  -> ["chiaro","chiaro","chiaro"]
+  ok  S3.9 XP guadagnati offline su due dispositivi si sommano (telefono 10 + pc 20)  -> [[30,3],[30,3],[30,3]]

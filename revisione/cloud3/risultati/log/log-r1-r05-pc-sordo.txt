@@ -1,0 +1,4 @@
+  ok  R05 PC sempre aperto riceve la cosa scritta in metro dal telefono  -> {"telefono":"Scritta in metro (telefono),Scritta in ufficio (pc)","pc":"Scritta in metro (telefono),Scritta in ufficio (pc)","cloud":"Scritta in metro (telefono),Scritta in ufficio (pc)","updatedAtCloud":1795591856555,"scrittureDelPc":[]}
+  ok  R05b ...neanche dopo un minuto?  -> Scritta in metro (telefono),Scritta in ufficio (pc)
+  ok  R05c il telefono va in tasca (app chiusa) e il PC scrive ancora: la cosa della metro resta nel cloud  -> ["Scritta in ufficio (pc)","Scritta in metro (telefono)","Altra cosa dal pc, telefono in tasca"]
+  ok  R05d un iPad che accede adesso vede la cosa della metro  -> Altra cosa dal pc, telefono in tasca,Scritta in metro (telefono),Scritta in ufficio (pc)

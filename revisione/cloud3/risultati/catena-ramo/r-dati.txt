@@ -1,0 +1,43 @@
+OGNI CAMPO DELLO STATO SA COME SI UNISCE
+  ok  nessun campo nasce da una scrittura diretta senza essere dichiarato  → 1 scritture dirette, tutte dichiarate
+  ok  tutti i 34 campi sono nominati in COME_UNIRE  → nessuno scoperto
+  ok  e nessuna regola parla di un campo che non c’è più  → nessuna
+
+QUELLO CHE SI SALVA SI RILEGGE IDENTICO
+  ok  dopo un ricaricamento lo stato è lo stesso, campo per campo  → identico, 80490 caratteri
+
+UNIRE DUE COPIE NON PERDE NIENTE
+  ok  niente si perde, su tutti i 34 campi  → ogni riga e ogni chiave dei due lati è nel risultato
+  ok  e unire due copie uguali non raddoppia niente  → nessun doppione
+
+IL CASO VERO: UN DISPOSITIVO CON LE SCOPERTE E UNO SENZA
+  ok  le otto scoperte sopravvivono al telefono che non le aveva  → 8 scoperte dopo la fusione (prima del rimedio ne restavano 0)
+  ok  e le azioni dei due dispositivi si sommano  → 41 azioni (1 + 40)
+
+LE SPUNTE MESSE SU DUE DISPOSITIVI SI SOMMANO
+  ok  tre giorni spuntati, non uno  → 2026-08-01 · 2026-08-02 · 2026-08-03
+
+UNA RIGA CANCELLATA DAVVERO NON TORNA VIVA
+  ok  la cancellazione ha lasciato la sua lapide  → 1 lapidi
+  ok  e la riga non torna viva quando arriva la copia vecchia  → 0 scoperte dopo la fusione
+
+E VALE PER OGNI ELENCO, NON SOLO PER LE SCOPERTE
+  ok  gli elenchi provati sono tutti quelli che ci sono (se no la prova e muta)  → 11: aree, azioni, inbox, backlog, abitudini, checkins, esperimenti, lezioni, registro, log, sessioni
+  ok  nessuna riga cancellata torna viva, in nessuno dei due versi
+  ok  controprova: senza lapide la riga torna eccome  → 1 righe (se e 0, la fusione non stava unendo niente e il controllo sopra e muto)
+
+«AZZERA TUTTO» FUNZIONA LO STESSO
+  ok  quello che c’era prima dell’azzeramento non torna  → 0 righe vecchie rimaste
+  ok  e quello scritto dopo resta  → 1 righe nuove
+
+UN SALVATAGGIO ILLEGGIBILE NON SI BUTTA VIA
+  ok  il testo che non si legge è messo da parte, non buttato  → 1 pezzi messi da parte, e c’è dentro quello rotto
+
+QUELLO CHE SI FA NELL’APP SOPRAVVIVE A UN RICARICAMENTO
+  ok  tutte e nove le cose fatte sono ancora lì dopo il ricaricamento  → nessuna persa
+
+NESSUN ELENCO DELLO STATO RESTA SENZA COPERTURA
+  ok  ogni elenco e ogni dizionario è stato riempito da qualcosa  → tutti coperti
+  ok  nessun errore in pagina
+
+>>> TUTTO A POSTO

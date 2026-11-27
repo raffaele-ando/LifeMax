@@ -1,0 +1,11 @@
+  ok  A1 orologio +3h (scarto misurato all’accesso): vince la modifica fatta davvero dopo  -> {"pc":"A dal pc (DOPO, ora giusta)","telefono":"A dal pc (DOPO, ora giusta)"}
+  ok  A2 orologio +3h e app riaperta col cloud irraggiungibile: vince la modifica fatta davvero dopo  -> {"pc":"B dal pc (DOPO, ora giusta)","telefono":"B dal pc (DOPO, ora giusta)"}
+  ok  A3 orologio -10 min, app riaperta col cloud irraggiungibile: la cancellazione fatta DOPO la modifica vince  -> {"pc":null,"tablet":null}
+  ok  C1 abitudine spuntata a New York: per Roma in quale giorno cade (nota, non un errore)  -> {"oggiNY":"2026-11-25","oggiRoma":"2026-11-25","visto":{"fatti":["2026-11-25"],"oggiRoma":"2026-11-25","fattaOggiPerRoma":true}}
+  ok  C2 un’azione «alle 20:00» scritta a New York: a Roma resta «alle 20:00» (ora da muro, non istante)  -> {"NY":{"id":"idmwvsofqr8y5jji","data":"2026-11-25","ora":"20:00"},"Roma":{"data":"2026-11-25","ora":"20:00"}}
+  ok  D1 i conti sui giorni attraverso l’ora legale tornano  -> {"marzo":["2027-03-28","2027-03-29"],"ottobre":["2026-10-25","2026-10-26"],"tra":[2,2]}
+  ok  E1 mezzanotte con l’app aperta: il giorno cambia e la cosa nuova va nel giorno nuovo  -> {"prima":{"oggi":"2026-11-25","titolo":"LifeMax"},"dopo":{"oggi":"2026-11-26","titolo":"LifeMax","dataAzione":"2026-11-26"}}
+  KO  E2 …e lo schermo si aggiorna da solo (intestazione cambiata senza toccare niente)  -> {"prima":"LifeMax","dopo":"LifeMax"}
+  ok  F1 modifiche su giorni passati e futuri (anche in altri trimestri) arrivano  -> {"ieriFatta":true,"futura":"2027-01-04","voto":true,"ritmo":true}
+  ok  F2 riga spostata di trimestre (pezzo diverso) mentre l’altro la modificava offline: una riga sola, uguale ovunque  -> {"pc":["fra 40 giorni — testo cambiato offline @2026-11-28"],"telefono":["fra 40 giorni — testo cambiato offline @2026-11-28"]}
+  ok  F3 i pezzi nel cloud  -> ["base","giorni.2027q1","azioni.2026q4","giorni.2026q3","giorni.2026q4","registro.2026q4","cancellati.2026q4","orologi.2026q4"]

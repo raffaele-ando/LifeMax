@@ -1,0 +1,254 @@
+{
+  "script": "n02-eventi-accesso",
+  "quando": "2026-11-25T07:14:19.949Z",
+  "radice": "/tmp/claude-0/-home-user-LifeMax/99c3d469-10e9-545a-afc2-1ce7e01478d1/scratchpad/audit-3/wt",
+  "bloccati": [
+    "https://apis.google.com/js/api.js?onload=__iframefcb111587",
+    "https://apis.google.com/js/api.js?onload=__iframefcb891968",
+    "https://apis.google.com/js/api.js?onload=__iframefcb855121",
+    "https://apis.google.com/js/api.js?onload=__iframefcb733492",
+    "https://apis.google.com/js/api.js?onload=__iframefcb174716",
+    "https://apis.google.com/js/api.js?onload=__iframefcb117561",
+    "https://apis.google.com/js/api.js?onload=__iframefcb741018",
+    "https://www.google.com/images/cleardot.gif?zx=mfb59tehy0fm",
+    "https://www.google.com/images/cleardot.gif?zx=oz7rvgvhjj0d",
+    "https://www.google.com/images/cleardot.gif?zx=4m8dtdbtwlo",
+    "https://www.google.com/images/cleardot.gif?zx=wh0h1ppz2aat",
+    "https://apis.google.com/js/api.js?onload=__iframefcb574341",
+    "https://apis.google.com/js/api.js?onload=__iframefcb928875"
+  ],
+  "nBloccati": 13,
+  "risultati": [
+    {
+      "scenario": "N02A popup bloccato: redirect 1, avviso «Accesso non riuscito»",
+      "ok": true,
+      "dettaglio": {
+        "redirect": 1,
+        "avvisi": [
+          "Accesso non riuscito"
+        ],
+        "dialogo": "Accesso non riuscito"
+      }
+    },
+    {
+      "scenario": "N02B popup chiuso subito dall’utente: redirect 0, avviso «»",
+      "ok": true,
+      "dettaglio": {
+        "redirect": 0,
+        "avvisi": [],
+        "dialogo": ""
+      }
+    },
+    {
+      "scenario": "N02B2 popup chiuso dopo 3 s: redirect 0, avviso «»",
+      "ok": true,
+      "dettaglio": {
+        "redirect": 0,
+        "avvisi": [],
+        "dialogo": ""
+      }
+    },
+    {
+      "scenario": "N02C dominio non autorizzato: redirect 0, avviso «Da qui l’accesso non è attivo»",
+      "ok": true,
+      "dettaglio": {
+        "redirect": 0,
+        "avvisi": [
+          "Da qui l’accesso non è attivo"
+        ],
+        "dialogo": "Da qui l’accesso non è attivo"
+      }
+    },
+    {
+      "scenario": "N02D niente rete: redirect 0, avviso «Niente rete»",
+      "ok": true,
+      "dettaglio": {
+        "redirect": 0,
+        "avvisi": [
+          "Niente rete"
+        ],
+        "dialogo": "Niente rete"
+      }
+    },
+    {
+      "scenario": "N02D2 errore sconosciuto: redirect 0, avviso «Accesso non riuscito»",
+      "ok": true,
+      "dettaglio": {
+        "redirect": 0,
+        "avvisi": [
+          "Accesso non riuscito"
+        ],
+        "dialogo": "Accesso non riuscito"
+      }
+    },
+    {
+      "scenario": "N02B l’utente che chiude il popup appena aperto NON viene mandato a Google col redirect",
+      "ok": true,
+      "dettaglio": {
+        "redirect": 0,
+        "avvisi": [],
+        "dialogo": ""
+      }
+    },
+    {
+      "scenario": "N02E1 account disabilitato: avviso «La sessione è finita», schermo vuoto, la modifica non salita messa da parte",
+      "ok": true,
+      "dettaglio": {
+        "dentro": false,
+        "schermo": [],
+        "daParte": true,
+        "dialogo": "La sessione è finita"
+      }
+    },
+    {
+      "scenario": "N02E2 riattivato e rientrato: la modifica fatta in metro arriva nel cloud",
+      "ok": true,
+      "dettaglio": [
+        "E1 già nel cloud",
+        "E2 fatta in metro, non ancora nel cloud"
+      ]
+    },
+    {
+      "scenario": "N02F account cancellato sul server: l’app lo dice (sessione finita)",
+      "ok": false,
+      "dettaglio": {
+        "dentro": true,
+        "dialogo": ""
+      }
+    },
+    {
+      "scenario": "N02F2 rientrando con lo stesso Google dopo la cancellazione: nuovo uid, i dati del vecchio uid restano orfani in Firestore",
+      "ok": false,
+      "dettaglio": {
+        "uidPrima": "rmdgXniR9IWgLbuB58uLqbSd2BzC",
+        "uidDopo": "a2grJXFfvddKs77CtBXhv5D5KREc",
+        "datiNuovo": 0,
+        "datiVecchioRestano": true
+      }
+    },
+    {
+      "scenario": "N02G biscotti cancellati (o sessione Google scaduta): LifeMax resta dentro e i dati ci sono",
+      "ok": true,
+      "dettaglio": {
+        "dentro": true,
+        "azioni": [
+          "G1"
+        ],
+        "chiaveAuth": 1
+      }
+    },
+    {
+      "scenario": "N02H1 localStorage cancellato: com’è l’app riaprendo (dentro? dati?)",
+      "ok": true,
+      "dettaglio": {
+        "dentro": false,
+        "azioni": [],
+        "dialogo": ""
+      }
+    },
+    {
+      "scenario": "N02H2 rientrato: H1 e il nome tornano dal cloud",
+      "ok": true,
+      "dettaglio": {
+        "azioni": [
+          "H1"
+        ],
+        "nome": "Hugo"
+      }
+    },
+    {
+      "scenario": "N02H3 la modifica fatta offline prima della cancellazione: persa (atteso, ma l’app lo può dire?)",
+      "ok": false,
+      "dettaglio": [
+        "H1"
+      ]
+    },
+    {
+      "scenario": "N02I iPhone svuotato da Safari: riaccede e ritrova tutto, il profilo NON si azzera",
+      "ok": true,
+      "dettaglio": {
+        "primaDiAccedere": {
+          "dentro": false,
+          "azioni": 0,
+          "onboarding": true
+        },
+        "dopo": {
+          "azioni": [
+            "I1",
+            "I2 dal pc mentre l’iPhone è chiuso"
+          ],
+          "nome": "Irene",
+          "visione": "calma"
+        }
+      }
+    },
+    {
+      "scenario": "N02K «Esci» nella scheda B mentre la scheda A ha una modifica non ancora partita: la modifica NON si perde",
+      "ok": true,
+      "dettaglio": {
+        "esitoEsciInB": "uscito",
+        "vistaDaB": {
+          "sospeso": null,
+          "inSospeso": false
+        },
+        "nelCloud": [
+          "K1 scritta nella scheda A (rete lenta)"
+        ],
+        "messaDaParte": false
+      }
+    },
+    {
+      "scenario": "N02L la scheda A segue il cambio d’account senza mescolare: Leo non ha cose di Lara",
+      "ok": true,
+      "dettaglio": {
+        "schedaA": {
+          "chi": null,
+          "azioni": []
+        },
+        "cloudLeo": [
+          "scritta nella scheda A dopo il cambio"
+        ]
+      }
+    }
+  ],
+  "dettagli": {
+    "A popup bloccato": {
+      "redirect": 1,
+      "avvisi": [
+        "Accesso non riuscito"
+      ],
+      "dialogo": "Accesso non riuscito"
+    },
+    "B popup chiuso subito dall’utente": {
+      "redirect": 0,
+      "avvisi": [],
+      "dialogo": ""
+    },
+    "B2 popup chiuso dopo 3 s": {
+      "redirect": 0,
+      "avvisi": [],
+      "dialogo": ""
+    },
+    "C dominio non autorizzato": {
+      "redirect": 0,
+      "avvisi": [
+        "Da qui l’accesso non è attivo"
+      ],
+      "dialogo": "Da qui l’accesso non è attivo"
+    },
+    "D niente rete": {
+      "redirect": 0,
+      "avvisi": [
+        "Niente rete"
+      ],
+      "dialogo": "Niente rete"
+    },
+    "D2 errore sconosciuto": {
+      "redirect": 0,
+      "avvisi": [
+        "Accesso non riuscito"
+      ],
+      "dialogo": "Accesso non riuscito"
+    }
+  }
+}

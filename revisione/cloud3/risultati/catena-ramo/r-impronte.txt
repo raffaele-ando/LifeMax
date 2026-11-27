@@ -1,0 +1,52 @@
+
+LE SETTE SCHERMATE
+  ok  oggi  → 78 elementi
+  ok  giornata  → 270 elementi
+  ok  inbox  → 60 elementi
+  ok  rituali  → 66 elementi
+  ok  plancia  → 250 elementi
+  ok  esperimenti  → 139 elementi
+  ok  scienza  → 177 elementi
+
+I PANNELLI
+  ok  filtri  → 73 elementi
+  ok  filtri: il titolo  → Guarda solo
+  ok  menu  → 26 elementi
+  ok  menu: il titolo  → Menu
+  ok  impostazioni  → 86 elementi
+  ok  impostazioni: il titolo  → Impostazioni
+  ok  aree  → 72 elementi
+  ok  aree: il titolo  → Le tue aree
+  ok  promemoria  → 60 elementi
+  ok  promemoria: il titolo  → Promemoria
+  ok  ritmo  → 107 elementi
+  ok  ritmo: il titolo  → Sonno e pasti
+  ok  backup  → 10 elementi
+  ok  backup: il titolo  → Backup e ripristino
+  ok  quando-passo  → 13 elementi
+  ok  quando-passo: il titolo  → 1 elementi
+  ok  da-abitudine  → 39 elementi
+  ok  da-abitudine: il titolo  → 1 elementi
+  ok  mancata  → 23 elementi
+  ok  mancata: il titolo  → Non del tutto
+  ok  timer  → 26 elementi
+  ok  timer: il titolo  → Timer
+  ok  diagnostica  → 15 elementi
+  ok  diagnostica: il titolo  → Registro tecnico
+  ok  lezione  → 44 elementi
+  ok  lezione: il titolo  → Una cosa che hai capito
+  ok  review  → 655 elementi
+  ok  review: il titolo  → Riflessioni passate
+  ok  guida  → 73 elementi
+  ok  guida: il titolo  → Primi passi
+  ok  scheda (divisa in passi)  → 92 elementi
+  ok  scheda (divisa in passi): il titolo  → 1 elementi
+  ok  scheda (semplice)  → 60 elementi
+  ok  scheda (semplice): il titolo  → 1 elementi
+  ok  abitudine  → 138 elementi
+  ok  abitudine: il titolo  → 1 elementi
+  ok  calendari  → 67 elementi
+  ok  calendari: il titolo  → Calendari collegati
+  ok  nessun errore JS
+
+>>> TUTTO A POSTO

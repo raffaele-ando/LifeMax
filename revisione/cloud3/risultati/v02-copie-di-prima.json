@@ -1,0 +1,103 @@
+{
+  "script": "v02-copie-di-prima",
+  "quando": "2026-11-25T07:17:03.542Z",
+  "radice": "/tmp/claude-0/-home-user-LifeMax/99c3d469-10e9-545a-afc2-1ce7e01478d1/scratchpad/audit-3/wt",
+  "bloccati": [
+    "https://apis.google.com/js/api.js?onload=__iframefcb918559",
+    "https://apis.google.com/js/api.js?onload=__iframefcb375398",
+    "https://apis.google.com/js/api.js?onload=__iframefcb852249",
+    "https://apis.google.com/js/api.js?onload=__iframefcb996970",
+    "https://apis.google.com/js/api.js?onload=__iframefcb943747"
+  ],
+  "nBloccati": 5,
+  "risultati": [
+    {
+      "scenario": "A0 (versione vecchia) nel browser di Luigi c’è una copia senza proprietario con i dati di Mario",
+      "ok": true,
+      "dettaglio": [
+        {
+          "motivo": "prima-di-riprendere-una-copia-dal-cloud"
+        }
+      ]
+    },
+    {
+      "scenario": "A1 [fuga, copie di prima] dopo l’aggiornamento Luigi NON ha fra le sue copie quella con i dati di Mario",
+      "ok": false,
+      "dettaglio": {
+        "copieConDatiDiMario": [
+          {
+            "motivo": "prima-di-riprendere-una-copia-dal-cloud",
+            "chi": "c55JbaWpj6pktdLDYzGnlb334UBX"
+          }
+        ],
+        "elencoLuigi": [
+          {
+            "ts": 1795590996692,
+            "motivo": "prima-di-riprendere-una-copia-dal-cloud",
+            "ricchezza": 1
+          }
+        ]
+      }
+    },
+    {
+      "scenario": "A2 [fuga, copie di prima] ripristinandola, i dati di Mario NON finiscono nel cloud di Luigi",
+      "ok": false,
+      "dettaglio": {
+        "ripristinata": true,
+        "nomeNelCloudDiLuigi": "Mario Rossi"
+      }
+    },
+    {
+      "scenario": "B0 (versione vecchia) entrando, la cosa scritta sopra l’esempio esce dallo schermo e sta SOLO nella copia «prima di entrare nell’account»",
+      "ok": true,
+      "dettaglio": {
+        "sulloSchermo": false,
+        "copie": [
+          {
+            "motivo": "prima-di-entrare-nell-account"
+          }
+        ]
+      }
+    },
+    {
+      "scenario": "B1 [perdita, copie di prima] dopo l’aggiornamento la copia con la cosa sua esiste ancora nel browser",
+      "ok": false,
+      "dettaglio": {
+        "copie": [],
+        "elencoVisibile": [
+          {
+            "ts": 1795591009357,
+            "motivo": "prima-azzeramento",
+            "ricchezza": 0
+          }
+        ]
+      }
+    },
+    {
+      "scenario": "C0 entrando, la cosa scritta sopra l’esempio esce dallo schermo e va in una copia",
+      "ok": true,
+      "dettaglio": {
+        "sulloSchermo": false,
+        "copie": [
+          {
+            "motivo": "prima-di-entrare-nell-account",
+            "chi": ""
+          }
+        ]
+      }
+    },
+    {
+      "scenario": "C1 [regressione C1] quella copia si vede (e si ripristina) da «Backup e ripristino» stando nell’account",
+      "ok": false,
+      "dettaglio": {
+        "elencoNellAccount": [],
+        "proprietarioCopia": [
+          {
+            "motivo": "prima-di-entrare-nell-account",
+            "chi": ""
+          }
+        ]
+      }
+    }
+  ]
+}

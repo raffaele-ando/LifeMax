@@ -1,0 +1,32 @@
+  ok  1 sessione chiusa da Firebase: l’utente viene avvisato
+  ok  1 …e i dati dell’account non restano visibili sul dispositivo
+  ok  1 Luigi entra sullo stesso computer: nel suo account non c’è niente di Mario
+  ok  1 …e sullo schermo di Luigi neanche
+  ok  1 sessione persa (dati di Firebase cancellati dal browser): i dati di Mario non restano a vista
+  ok  1 …poi entra Luigi: niente di Mario nel suo account
+  ok  1 (preparazione) la seconda scheda è dentro con gli stessi dati
+  ok  1 «Esci» nella scheda 1: dopo 6 secondi anche la scheda 2 è fuori e vuota
+  ok  1 una modifica nella scheda 2 non rimette i dati di Mario sul dispositivo
+  ok  1 Luigi entra nella scheda 1: niente di Mario nel suo account
+  ok  C1 dopo «Esci», l’ospite non vede nessuna copia di Mario in «Backup e ripristino»
+  ok  C1 …e nel browser non resta niente di Mario (backup, punti a cui tornare, calendario, permessi)
+  ok  C1 il pannello non ha righe da ripristinare
+  ok  C1 Luigi entra sullo stesso browser: niente di Mario nel suo account
+  ok  C1 Luigi non vede copie di nessun altro
+  ok  C1 sessione chiusa dal server: nessuna copia di Luigi a vista, niente di Luigi nel browser
+  ok  C1 le copie di prima senza proprietario, su un dispositivo che è passato da un account: non si vedono e se ne vanno
+  ok  C1 su un dispositivo usato sempre senza account, le copie di prima restano dell’ospite
+  ok  9 «Esci» senza rete: l’uscita si completa e lo schermo si svuota
+  ok  9 tornata la rete, la modifica fatta prima di uscire è nel cloud (senza riaprire niente)
+  ok  9 …e solo allora la sessione si chiude davvero
+  ok  9 uscito senza rete e app chiusa: alla riapertura la modifica parte, e non si vede niente
+  ok  1 (preparazione) sessione finita: lo schermo è vuoto
+  ok  1 entra Luigi: la modifica di Mario non va a lui
+  ok  1 rientra Mario sullo stesso dispositivo: la sua modifica torna e arriva nel cloud
+  ok  11 il cloud rifiuta: il messaggio non parla di regole, Firestore o console
+  ok  11 regole rimesse a posto: la modifica fatta durante il blocco arriva, senza ricaricare
+  ok  11 accesso da un indirizzo non autorizzato: niente «Firebase» né menu della console
+  ok  14 due schede scrivono insieme: sul dispositivo ci sono tutte e dieci le cose
+  ok  14 …e anche nel cloud, e in tutte e due le schede
+
+tutto a posto

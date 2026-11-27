@@ -1,0 +1,167 @@
+{
+  "script": "n03-rete",
+  "quando": "2026-11-25T07:19:14.885Z",
+  "radice": "/tmp/claude-0/-home-user-LifeMax/99c3d469-10e9-545a-afc2-1ce7e01478d1/scratchpad/audit-3/wt",
+  "bloccati": [
+    "https://apis.google.com/js/api.js?onload=__iframefcb863561",
+    "https://apis.google.com/js/api.js?onload=__iframefcb963948",
+    "https://www.google.com/images/cleardot.gif?zx=o42b2ho792wl",
+    "https://www.google.com/images/cleardot.gif?zx=d5a1ecda45eb",
+    "https://www.google.com/images/cleardot.gif?zx=xm50stms9zps",
+    "https://www.google.com/images/cleardot.gif?zx=ryzjwlqpgezp",
+    "https://www.google.com/images/cleardot.gif?zx=a5qdoah8e1kk",
+    "https://www.google.com/images/cleardot.gif?zx=2osjuy4l6bv",
+    "https://www.google.com/images/cleardot.gif?zx=2b3a3ii2o537",
+    "https://www.google.com/images/cleardot.gif?zx=lyenf7mwx3n7",
+    "https://www.google.com/images/cleardot.gif?zx=xnvmq8tt87e4",
+    "https://www.google.com/images/cleardot.gif?zx=vywzlvu5zqf5",
+    "https://apis.google.com/js/api.js?onload=__iframefcb303714"
+  ],
+  "nBloccati": 13,
+  "risultati": [
+    {
+      "scenario": "A1 tre dispositivi, due offline, ritorno in ordine inverso: tutti uguali al cloud",
+      "ok": true,
+      "dettaglio": {
+        "telefono": {
+          "X": {
+            "testo": "X-ipad (dopo)",
+            "done": true,
+            "id": "idmwvsfvoaaykqmq"
+          },
+          "Y": {
+            "testo": "Y modificata DOPO la cancellazione (online)",
+            "done": false,
+            "id": "idmwvsfvod0i00wr"
+          },
+          "Z": null
+        },
+        "ipad": {
+          "X": {
+            "testo": "X-ipad (dopo)",
+            "done": true,
+            "id": "idmwvsfvoaaykqmq"
+          },
+          "Y": {
+            "testo": "Y modificata DOPO la cancellazione (online)",
+            "done": false,
+            "id": "idmwvsfvod0i00wr"
+          },
+          "Z": null
+        },
+        "pc": {
+          "X": {
+            "testo": "X-ipad (dopo)",
+            "done": true,
+            "id": "idmwvsfvoaaykqmq"
+          },
+          "Y": {
+            "testo": "Y modificata DOPO la cancellazione (online)",
+            "done": false,
+            "id": "idmwvsfvod0i00wr"
+          },
+          "Z": null
+        },
+        "cloud": {
+          "X": {
+            "testo": "X-ipad (dopo)",
+            "done": true
+          },
+          "Y": "Y modificata DOPO la cancellazione (online)"
+        }
+      }
+    },
+    {
+      "scenario": "A2 vince la modifica più recente per campo (testo dall’iPad, spunta dal PC)",
+      "ok": true,
+      "dettaglio": {
+        "testo": "X-ipad (dopo)",
+        "done": true,
+        "id": "idmwvsfvoaaykqmq"
+      }
+    },
+    {
+      "scenario": "A3 cancellata offline e modificata DOPO online: la modifica vince (resta)",
+      "ok": true,
+      "dettaglio": {
+        "testo": "Y modificata DOPO la cancellazione (online)",
+        "done": false,
+        "id": "idmwvsfvod0i00wr"
+      }
+    },
+    {
+      "scenario": "A4 cancellata offline DOPO una modifica: resta cancellata",
+      "ok": true,
+      "dettaglio": null
+    },
+    {
+      "scenario": "C1 rete ballerina: tutte e 10 le modifiche arrivano nel cloud e sul PC",
+      "ok": true,
+      "dettaglio": {
+        "cloud": 10,
+        "pc": 10,
+        "richiesteViste": 35
+      }
+    },
+    {
+      "scenario": "D1 rete lenta: la modifica arriva (e nel frattempo lo stato è «saving»/«attesa»)",
+      "ok": true,
+      "dettaglio": {
+        "statoDopo1s": "saving"
+      }
+    },
+    {
+      "scenario": "E1 dopo il crash il cloud è integro (nessuna fetta mancante)",
+      "ok": true,
+      "dettaglio": "integro"
+    },
+    {
+      "scenario": "E2 riaprendo, la modifica scritta prima del crash arriva al PC",
+      "ok": true,
+      "dettaglio": "saved"
+    },
+    {
+      "scenario": "F1 modifica e chiusura immediata: arriva al PC senza riaprire il telefono (giro o cassetta delle lettere)",
+      "ok": true,
+      "dettaglio": {
+        "postaNelPrincipale": []
+      }
+    },
+    {
+      "scenario": "F2 PC con Firestore lento: chiudendo la scheda la modifica parte con la cassetta delle lettere (keepalive)",
+      "ok": true,
+      "dettaglio": "via REST :commit"
+    },
+    {
+      "scenario": "G1 permesso negato: messaggio comprensibile",
+      "ok": true,
+      "dettaglio": {
+        "stato": "error",
+        "errore": "Il cloud in questo momento non accetta il salvataggio. I tuoi dati sono al sicuro su questo dispositivo; riprovo da solo."
+      }
+    },
+    {
+      "scenario": "G2 regole tornate: la modifica parte da sola entro 70 s",
+      "ok": true,
+      "dettaglio": {
+        "secondi": 12
+      }
+    },
+    {
+      "scenario": "I1 cloud muto: dopo ~25 s lo dice",
+      "ok": true,
+      "dettaglio": {
+        "stato": "muto",
+        "errore": "Il cloud non risponde da un po’. I tuoi dati sono al sicuro su questo dispositivo e partono appena risponde.",
+        "pastiglia": false
+      }
+    },
+    {
+      "scenario": "I2 il cloud torna a rispondere: la modifica arriva senza ricaricare (entro 90 s)",
+      "ok": false,
+      "dettaglio": {
+        "secondi": 90
+      }
+    }
+  ]
+}

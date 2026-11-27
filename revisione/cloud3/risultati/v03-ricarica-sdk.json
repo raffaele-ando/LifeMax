@@ -1,0 +1,43 @@
+{
+  "script": "v03-ricarica-sdk",
+  "quando": "2026-11-25T07:32:15.648Z",
+  "radice": "/tmp/claude-0/-home-user-LifeMax/99c3d469-10e9-545a-afc2-1ce7e01478d1/scratchpad/audit-3/wt",
+  "bloccati": [
+    "https://apis.google.com/js/api.js?onload=__iframefcb130473",
+    "https://apis.google.com/js/api.js?onload=__iframefcb533648"
+  ],
+  "nBloccati": 2,
+  "risultati": [
+    {
+      "scenario": "A0 condizioni: cloud spento all’apertura, testo scritto, fuoco su una stellina (non su un campo)",
+      "ok": true,
+      "dettaglio": {
+        "cloudAllApertura": false,
+        "campo": "Oggi ho finito il capitolo 3 senza distrazioni",
+        "fuoco": "BUTTON",
+        "salvato": false
+      }
+    },
+    {
+      "scenario": "A1 [M6] tornata la rete, quello che stavi scrivendo nella review della sera NON si perde",
+      "ok": false,
+      "dettaglio": {
+        "ricaricata": true,
+        "dopo": {
+          "campo": "",
+          "salvato": false,
+          "cloud": true
+        }
+      }
+    },
+    {
+      "scenario": "B1 [M6] un SDK che non parte per una ragione che non è la rete NON fa ricaricare la pagina ogni minuto",
+      "ok": false,
+      "dettaglio": {
+        "ricaricamentiIn": "200 s",
+        "ricaricamenti": 3,
+        "righeRegistro": 4
+      }
+    }
+  ]
+}

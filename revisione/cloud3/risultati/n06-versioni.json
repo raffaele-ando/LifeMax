@@ -1,0 +1,132 @@
+{
+  "script": "n06-versioni",
+  "quando": "2026-11-25T07:25:43.603Z",
+  "radice": "/tmp/claude-0/-home-user-LifeMax/99c3d469-10e9-545a-afc2-1ce7e01478d1/scratchpad/audit-3/wt",
+  "bloccati": [
+    "https://apis.google.com/js/api.js?onload=__iframefcb889634",
+    "https://apis.google.com/js/api.js?onload=__iframefcb130276"
+  ],
+  "nBloccati": 2,
+  "risultati": [
+    {
+      "scenario": "A0 la versione vecchia scrive il documento unico (campo data)",
+      "ok": true,
+      "dettaglio": [
+        "__id",
+        "data",
+        "updatedAt",
+        "email",
+        "name"
+      ]
+    },
+    {
+      "scenario": "A1 primo accesso con la nuova: dati e profilo arrivano interi",
+      "ok": true,
+      "dettaglio": {
+        "azioni": [
+          "V1 vecchia",
+          "V2 fatta[x]"
+        ],
+        "nome": "Vera",
+        "visione": "una vita semplice",
+        "checkins": 1
+      }
+    },
+    {
+      "scenario": "A2 il cloud passa ai pezzi, con una copia «prima di dividere»",
+      "ok": true,
+      "dettaglio": {
+        "schema": 2,
+        "copie": [
+          "prima-di-dividere-il-documento"
+        ]
+      }
+    },
+    {
+      "scenario": "B1 scritture alternate vecchia/nuova: il cloud (forma nuova) ha tutto",
+      "ok": true,
+      "dettaglio": [
+        "B1 dalla scheda vecchia",
+        "B2 dalla nuova",
+        "B3 dalla scheda vecchia",
+        "V1 vecchia",
+        "V2 fatta"
+      ]
+    },
+    {
+      "scenario": "B2 la nuova vede quello che scrive la vecchia",
+      "ok": true,
+      "dettaglio": [
+        "B1 dalla scheda vecchia",
+        "B2 dalla nuova",
+        "B3 dalla scheda vecchia",
+        "V1 vecchia",
+        "V2 fatta"
+      ]
+    },
+    {
+      "scenario": "C1 la scheda vecchia riceve le cose scritte dalla nuova",
+      "ok": false,
+      "dettaglio": [
+        "B1 dalla scheda vecchia",
+        "B3 dalla scheda vecchia",
+        "V1 vecchia",
+        "V2 fatta"
+      ]
+    },
+    {
+      "scenario": "C2 la scheda vecchia viene avvisata che deve ricaricare",
+      "ok": false,
+      "dettaglio": "nessun avviso"
+    },
+    {
+      "scenario": "B3 cancellata sulla nuova, la vecchia (che l’ha ancora) riscrive: NON risorge",
+      "ok": true,
+      "dettaglio": [
+        "V1 vecchia",
+        "V2 fatta",
+        "B2 dalla nuova",
+        "B3 dalla scheda vecchia",
+        "B4 dalla scheda vecchia dopo la cancellazione"
+      ]
+    },
+    {
+      "scenario": "B4 nome cambiato sulla nuova, poi la vecchia riscrive col nome vecchio: resta quello nuovo",
+      "ok": true,
+      "dettaglio": {
+        "cloud": "Vera Rossi",
+        "nuova": "Vera Rossi",
+        "vecchia": "Vera"
+      }
+    },
+    {
+      "scenario": "B5 i punti non si gonfiano a ogni giro vecchia/nuova",
+      "ok": true,
+      "dettaglio": {
+        "nuova": 13,
+        "vecchia": 13,
+        "cloud": 13
+      }
+    },
+    {
+      "scenario": "D1 un anno di dati: primo caricamento e un telefono nuovo che entra",
+      "ok": true,
+      "dettaglio": {
+        "azioni": 2562,
+        "telefono": 2562,
+        "msPrimoCaricamento": 5117,
+        "msTelefono": 1577,
+        "fette": 22,
+        "fettaPiuGrossaKB": 199,
+        "principaleKB": 1
+      }
+    },
+    {
+      "scenario": "D2 una modifica con un anno di dati arriva in pochi secondi",
+      "ok": true,
+      "dettaglio": {
+        "ms": 5888
+      }
+    }
+  ]
+}

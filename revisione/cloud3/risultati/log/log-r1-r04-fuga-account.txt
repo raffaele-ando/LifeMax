@@ -1,0 +1,5 @@
+  ok  R04a.1 sessione chiusa da Firebase (account disabilitato): l’utente viene avvisato  -> {"connesso":false,"azioni":0,"avvisi":["La sessione è finita: accedi di nuovo per ritrovare i tuoi dati."]}
+  ok  R04a.2 Luigi accede sullo stesso pc: il suo account NON contiene i dati di Mario  -> {"cloudLuigi":[],"checkinsLuigi":0,"schermoLuigi":""}
+  ok  R04b.1 «Esci» nella scheda 1: dopo 6 s la scheda 2 è disconnessa e vuota  -> {"connesso":false,"azioni":0}
+  ok  R04b.2 dopo una scrittura nella scheda 2, il salvataggio del dispositivo resta pulito  -> []
+  ok  R04b.3 Luigi accede nella scheda 1: nessun dato di Mario nel suo account  -> []

@@ -1,0 +1,12 @@
+  ok  A: il tasto Timer avvia subito il pomodoro (predefinito)  → {"tipo":"pomodoro","d":25}
+  ok  B vede il timer di A, in tempo reale  → {"t":true,"conc":true,"cifre":"25:00"}
+  ok  scaduto il blocco: A (che lo fa andare) scrive la sessione e va in pausa  → {"s":1,"pausa":true}
+  ok  B non la scrive due volte  → {"s":0}
+  ok  dopo lo scambio: una sessione sola da 25 minuti  → {"n":1,"m":25}
+  ok  in pausa c’è «Ho continuato a lavorare», e i 3 minuti di pausa diventano lavoro  → {"inPausa":false,"ciclo":2,"giaFatti":4}
+  ok  se A tace, B aspetta e poi, dopo due minuti, scrive lui  → 1 → {"n":2,"t":"d6r2n4rh8"}
+  ok  una sessione si corregge e i minuti del giorno seguono  → {"studio":65}
+  ok  fermando, il messaggio offre «Correggi»  → ["Correggi"]
+  ok  nessun errore in pagina
+
+>>> TUTTO A POSTO

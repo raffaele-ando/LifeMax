@@ -1,0 +1,59 @@
+== n01-dispositivo-condiviso 07:10:31
+n01-dispositivo-condiviso exit=0 ok=12 KO=1
+== n01b-schermate-backup 07:12:27
+n01b-schermate-backup exit=0 ok=1 KO=1
+== n02-eventi-accesso 07:12:39
+n02-eventi-accesso exit=0 ok=15 KO=3
+== n03-rete 07:14:20
+n03-rete exit=0 ok=13 KO=1
+== n04-orologi 07:19:15
+n04-orologi exit=0 ok=10 KO=1
+== n05-funzioni 07:22:07
+n05-funzioni exit=0 ok=10 KO=2
+== n06-versioni 07:24:38
+n06-versioni exit=0 ok=10 KO=2
+== n07-trasloco 07:25:43
+n07-trasloco exit=0 ok=8 KO=0
+== n08-orologi-lontani 07:26:47
+n08-orologi-lontani exit=0 ok=6 KO=0
+== n09-apertura-offline 07:27:41
+n09-apertura-offline exit=0 ok=4 KO=1
+== c01-sentinella-sicurezza 07:28:15
+c01-sentinella-sicurezza exit=0 ok=33 KO=5
+== c02-calendari-app 07:28:15
+c02-calendari-app exit=0 ok=17 KO=0
+== r1/s00-fumo 07:28:42
+r1/s00-fumo exit=0 ok=0 KO=0
+== r1/r01-offline-ritorno 07:29:09
+r1/r01-offline-ritorno exit=0 ok=1 KO=0
+== r1/r02-annullare-risorge 07:29:36
+r1/r02-annullare-risorge exit=0 ok=1 KO=1
+== r1/r03-profilo-nuovo-dispositivo 07:30:03
+r1/r03-profilo-nuovo-dispositivo exit=0 ok=1 KO=0
+== r1/r04-fuga-account 07:30:20
+r1/r04-fuga-account exit=0 ok=5 KO=0
+== r1/r05-pc-sordo 07:30:52
+r1/r05-pc-sordo exit=0 ok=4 KO=0
+== r1/s01-concorrenza 07:32:19
+r1/s01-concorrenza exit=0 ok=6 KO=0
+== r1/s02-funzioni 07:34:09
+r1/s02-funzioni exit=0 ok=37 KO=3
+== r1/s03-conflitti 07:39:24
+r1/s03-conflitti exit=0 ok=11 KO=0
+== r1/s04-account 07:44:43
+r1/s04-account exit=0 ok=16 KO=2
+== r1/s05-tanti-dati 07:45:40
+r1/s05-tanti-dati exit=0 ok=5 KO=0
+== r1/s06-ipad-vecchio 07:46:37
+r1/s06-ipad-vecchio exit=0 ok=3 KO=0
+== r1/s07-calendari 07:47:21
+r1/s07-calendari exit=0 ok=8 KO=1
+== r1/s08-varie 07:49:35
+r1/s08-varie exit=0 ok=11 KO=3
+== r1/s09-memoria-cancellata 07:54:17
+r1/s09-memoria-cancellata exit=0 ok=1 KO=1
+== r1/s10-copie-cloud 07:54:52
+r1/s10-copie-cloud exit=0 ok=1 KO=0
+== r1/s11-due-indirizzi 07:55:44
+r1/s11-due-indirizzi exit=0 ok=4 KO=0
+FINE

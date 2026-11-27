@@ -1,0 +1,2 @@
+  ok  A1 versione di oggi: due dispositivi scrivono e ricevono, nessuna striscia «versione nuova»  -> {"versioneMinimaNelCloud":1,"pc":["dal pc","dal telefono"],"telefono":["dal telefono","dal pc"]}
+  KO  B1 [rischio M5] dopo un rollback la versione 1 (che è quella sul server) torna a salvare dopo «Ricarica»  -> {"striscia":"C’è una versione nuova di LifeMax: ricarica la pagina per continuare a salvare nel cloud. Le tue modifiche restano su questo dispositivo.\nRicarica","versioneMinima":2}

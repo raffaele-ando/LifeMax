@@ -1,0 +1,55 @@
+(node:16450) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+1. IL COLLEGAMENTO PASSA DAL SERVER
+  ok  con la sentinella Google è «da collegare», senza chiedere nessun ID  → Da collegare
+  ok  il giro è passato da /inizia, /vai, /ritorno e /conferma  → /api/calendari/stato /api/calendari/stato /api/calendari/google/inizia /api/calendari/google/vai google-consenso /api/calendari/google/ritorno /api/calendari/stato /api/calendari/google/conferma /api/calendari/cambi /api/calendari/google/calendari /api/calendari/cambi /api/calendari/google/calendari /api/calendari/cambi
+  ok  si torna all’app, e l’indirizzo è pulito  → http://localhost:8861/#/profilo
+  ok  il pannello si riapre da sé  → Calendari collegati
+  ok  collegato, con l’email dell’account  → Collegato · io@esempio.it
+  ok  il pannello dice che resta allineato anche ad app chiusa  → Resta allineato anche ad app chiusa: il permesso lo tiene LifeMax, cifrato, e non scade.
+  ok  nel browser non c’è nessun permesso di Google
+
+2. L’IMPORTAZIONE, CON «CHI C’È»
+  ok  gli eventi vicini sono attività  → solo,riu,inv,dopo
+  ok  all’ora di Roma  → 07:30 45
+  ok  «solo tuo», «con altri», «di altri»  → solo,tua,altrui
+  ok  quello fra dieci mesi NON è un’attività (i dati non si gonfiano)
+  ok  un giro senza novità non scrive niente
+
+3. FRA DIECI MESI, NELLA GIORNATA
+  ok  il giorno lo mostra, come fantasma  → [{"id":"calfsubhwhxqp1gupg8dqx42","testo":"Matrimonio di Sara","f":true}]
+  ok  nella vista del mese, toccando quel giorno, c’è  → Matrimonio di SaraLavoro
+  ok  toccata, è diventata un’attività vera, collegata  → {"est":"lontano","data":"2027-09-21"}
+  ok  e si è aperta (il tocco non si è perso)
+
+4. UNA MODIFICA, E L’APP CHIUSA SUBITO DOPO
+  ok  l’app è chiusa, e Google ha l’ora nuova  → 2026-11-28T16:30:00.000Z
+  ok  con la durata di prima (un’ora)
+
+5. CAMBIATO SUL CALENDARIO MENTRE L’APP È CHIUSA
+  ok  la sentinella si è svegliata da sola e ha letto i cambiamenti
+  ok  riaprendo l’app, lo spostamento c’è  → 2026-11-29 10:00 Dentista (spostato da loro)
+  ok  e anche l’evento nuovo
+  ok  il permesso breve era scaduto: nessun «Ricollega»  →  / Tutto allineato.
+
+6. LA SERA: RIMANDA A DOMANI
+  ok  il tasto «rimanda» c’è
+  ok  l’impegno solo tuo è passato a domani, alla stessa ora  → 2026-11-26 07:30
+  ok  la riunione con altri e l’invito di Luca no
+  ok  restano lì sotto, tutte e due, con le tre risposte  → ["Riunione di squadra","Call di Luca"]
+  ok  con il perché in una riga: «altri invitati»  → Ci sono altri invitati: se la sposti, si sposta per tutti.
+  ok  e «l’ha organizzata qualcun altro»  → L’ha organizzata qualcun altro: nel calendario non la puoi spostare, qui sì.
+  ok  e nel calendario l’impegno solo tuo è a domani, stessa ora e durata  → 2026-11-26T06:30:00.000Z
+  ok  la riunione nel calendario non si è mossa
+  ok  «Sposta…»: la riunione va al giorno scelto, e anche nel calendario  → 2026-11-27 / 2026-11-27T06:00:00.000Z
+  ok  «Saltata»: segnata come non riuscita, il calendario non si tocca
+  ok  e il riquadro è sparito: non resta niente da decidere
+
+7. SCOLLEGARE
+  ok  il permesso è stato ritirato presso Google  → grt-1
+  ok  e nella sentinella non resta niente  → 0
+  ok  il pannello torna «da collegare», e lo specchio qui si svuota  → Da collegare
+  ok  nessun errore nella pagina, in tutta la prova
+
+>>> TUTTO A POSTO

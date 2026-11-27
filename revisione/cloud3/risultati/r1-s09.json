@@ -1,0 +1,67 @@
+{
+  "script": "r1-s09",
+  "quando": "2026-11-25T07:54:51.832Z",
+  "radice": "/tmp/claude-0/-home-user-LifeMax/99c3d469-10e9-545a-afc2-1ce7e01478d1/scratchpad/audit-3/wt",
+  "bloccati": [
+    "https://apis.google.com/js/api.js?onload=__iframefcb726180",
+    "https://apis.google.com/js/api.js?onload=__iframefcb625708",
+    "https://apis.google.com/js/api.js?onload=__iframefcb790830"
+  ],
+  "nBloccati": 3,
+  "risultati": [
+    {
+      "scenario": "S9.1 localStorage cancellato (sessione ancora valida): i dati tornano dal cloud, il nome resta, niente benvenuto",
+      "ok": false,
+      "dettaglio": {
+        "appenaAperto": {
+          "azioni": 0,
+          "nome": "",
+          "onb": false,
+          "benvenuto": true,
+          "connesso": false
+        },
+        "dopo": {
+          "azioni": 0,
+          "nome": "",
+          "onb": false,
+          "benvenuto": true,
+          "connesso": false
+        },
+        "pc": {
+          "azioni": 4,
+          "nome": "Mario",
+          "onb": true,
+          "benvenuto": false,
+          "connesso": true
+        }
+      }
+    },
+    {
+      "scenario": "S9.2 PWA reinstallata / Safari ha cancellato i dati (7 giorni): dopo l’accesso tutto torna e il nome NON si perde",
+      "ok": true,
+      "dettaglio": {
+        "appenaAperto": {
+          "azioni": 0,
+          "nome": "",
+          "onb": false,
+          "benvenuto": true,
+          "connesso": false
+        },
+        "dopo": {
+          "azioni": 4,
+          "nome": "Mario",
+          "onb": true,
+          "benvenuto": false,
+          "connesso": true
+        },
+        "pc": {
+          "azioni": 4,
+          "nome": "Mario",
+          "onb": true,
+          "benvenuto": false,
+          "connesso": true
+        }
+      }
+    }
+  ]
+}

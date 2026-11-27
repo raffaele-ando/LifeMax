@@ -1,0 +1,12 @@
+  ok  A1 «Azzera tutto»: le cose di prima spariscono ovunque  -> {"telefono":["scritta sull’iPad offline PRIMA dell’azzeramento"],"pc":["scritta sull’iPad offline PRIMA dell’azzeramento"],"ipad":["scritta sull’iPad offline PRIMA dell’azzeramento"]}
+  KO  A2 «Azzera tutto»: una cosa creata offline PRIMA dell’azzeramento torna (l’azzeramento non la conosceva)  -> {"telefono":["scritta sull’iPad offline PRIMA dell’azzeramento"],"pc":["scritta sull’iPad offline PRIMA dell’azzeramento"],"ipad":["scritta sull’iPad offline PRIMA dell’azzeramento"]}
+  ok  B1 ripristino del backup di prima dell’azzeramento: torna tutto, su tutti  -> {"telefono":["cosa 0","cosa 1","cosa 2","cosa 3"],"pc":["cosa 0","cosa 1","cosa 2","cosa 3"],"ipad":["cosa 0","cosa 1","cosa 2","cosa 3"],"nomePc":"Zoe"}
+  KO  C1 «Riprendi il profilo» da una copia nel cloud: torna su tutti  -> {"copie":["primo-accesso-di-un-dispositivo:","primo-accesso-di-un-dispositivo:"],"riuscito":false,"nomeT":"Nome rovinato","visioneP":""}
+  ok  D1 check-in annullato dal Diario sul pc: sparisce anche dal telefono e dall’iPad  -> {"annullato":true,"telefono":0,"ipad":0}
+  ok  E1 esempio sull’iPad, poi accesso: l’esempio NON entra nell’account  -> {"esempioPrima":120,"cloudAzioni":4,"telefono":4,"demoNelCloud":false}
+  ok  F1 utente nuovissimo: il primo accesso crea il cloud; il secondo dispositivo entra senza errori  -> {"primoAvvio":{"benvenuto":true,"azioni":0},"secondoDispositivo":{"benvenuto":true,"overlay":false},"cloudCreato":true,"errori":[]}
+  ok  G1 «Sostituisci» con una copia nel cloud: tutti i dispositivi tornano a quella copia  -> {"sostituito":true,"copiaDel":"2026-11-25T07:22:10.431Z","telefono":[],"ipad":[]}
+  ok  errori in pagina su telefono  -> []
+  ok  errori in pagina su pc  -> []
+  ok  errori in pagina su ipad  -> []
+  ok  errori in pagina su ipad-della-figlia  -> []

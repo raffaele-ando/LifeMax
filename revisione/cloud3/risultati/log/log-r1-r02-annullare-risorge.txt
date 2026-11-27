@@ -1,0 +1,28 @@
+dopo preparazione  telefono {
+  azioneFatta: true,
+  xp: 18,
+  abitudineSpuntata: true,
+  areaStudioAttiva: true,
+  orariOggiPersonalizzati: true
+}  pc {
+  azioneFatta: true,
+  xp: 18,
+  abitudineSpuntata: true,
+  areaStudioAttiva: true,
+  orariOggiPersonalizzati: true
+}
+dopo annullare sul telefono  telefono {
+  azioneFatta: false,
+  xp: 0,
+  abitudineSpuntata: false,
+  areaStudioAttiva: false,
+  orariOggiPersonalizzati: false
+}  pc {
+  azioneFatta: false,
+  xp: 0,
+  abitudineSpuntata: false,
+  areaStudioAttiva: false,
+  orariOggiPersonalizzati: false
+}  cloud { fatta: false, xp: 0, area: false }
+  ok  R02a annullamenti fatti sul telefono arrivano al pc  -> {"telefono":{"azioneFatta":false,"xp":0,"abitudineSpuntata":false,"areaStudioAttiva":false,"orariOggiPersonalizzati":false},"pc":{"azioneFatta":false,"xp":0,"abitudineSpuntata":false,"areaStudioAttiva":false,"orariOggiPersonalizzati":false}}
+  KO  R02b dopo una scrittura qualunque del pc, sul telefono NON tornano spunte/area/orari annullati  -> {"telefonoPrima":{"azioneFatta":false,"xp":0,"abitudineSpuntata":false,"areaStudioAttiva":false,"orariOggiPersonalizzati":false},"telefonoDopo":{"azioneFatta":false,"xp":1,"abitudineSpuntata":false,"areaStudioAttiva":false,"orariOggiPersonalizzati":false}}

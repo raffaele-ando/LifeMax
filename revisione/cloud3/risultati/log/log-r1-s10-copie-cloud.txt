@@ -1,0 +1,1 @@
+  ok  S10 10 riaperture del telefono con differenze: le copie nel cloud restano poche (o vengono sfoltite)  -> {"copieNelCloud":0,"MBscaricatiAprendoBackup":0,"msPerElencarle":23,"elencate":2}
