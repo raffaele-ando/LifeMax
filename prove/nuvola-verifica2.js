@@ -124,6 +124,9 @@ const { ok, guai } = em.conto();
       const I = await B.dispositivo('ipad', { ctx: ctx2 });
       const ora = await I.evaluate(() => LM.adesso());
       ok('M7 un orologio nel 2001 non scrive ore del 2001', ora >= Date.UTC(2026, 10, 25), new Date(ora).toISOString());
+      /* (verifica 3, N12) e quello che scrive va nel giorno vero, non nel 1° gennaio 2001 */
+      const giorno = await I.evaluate(() => { LM.aggiungiAzione('scritta sul tablet del 2001', null); return LM.load().azioni.find((a) => a.testo === 'scritta sul tablet del 2001').data; });
+      ok('N12 un orologio nel 2001: quello che scrive va in un giorno di adesso, non nel 1° gennaio 2001', giorno >= '2026-11-25', giorno);
       /* e senza misura le lapidi non scadono: un PC avanti di due anni */
       const tolte = await I.evaluate(() => {
         const s = LM.statoVuoto(); s.cancellati = [{ k: 'azioni', chiave: 'x', ts: Date.UTC(2026, 10, 20), vivo: false }];

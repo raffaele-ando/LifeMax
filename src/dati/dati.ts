@@ -284,7 +284,20 @@ function creaLM() {
     return new Date(+(p[0] || 0), +(p[1] || 1) - 1, +(p[2] || 1));
   }
 
-  function todayKey(): Giorno { return dayKey(new Date()); }
+  /* IL GIORNO DI OGGI SU UN OROLOGIO CERTAMENTE SBAGLIATO (verifica 3, N12).
+     Un tablet tornato al 2001 scriveva le cose nel giorno 1° gennaio 2001, e
+     in «Oggi» non le vedeva nessuno. Solo quando l'orologio è prima del
+     PAVIMENTO — quindi sbagliato di sicuro — il giorno si prende dall'ora
+     corretta (misurata), o se non c'è una misura dall'ultima ora vista
+     arrivare dagli altri. In tutti gli altri casi resta il giorno del
+     dispositivo, come sempre: chi viaggia, o chi ha l'orologio indietro di
+     qualche minuto, vede il suo giorno. */
+  function todayKey(): Giorno {
+    var t = Date.now();
+    if (!(t < PAVIMENTO)) return dayKey(new Date());
+    var vera = scartoMisurato ? t + scartoServer : Math.max(ultimoIstante, PAVIMENTO);
+    return dayKey(new Date(vera));
+  }
 
   function addDays(k: Giorno, n: number): Giorno {
     var d = parseKey(k);
