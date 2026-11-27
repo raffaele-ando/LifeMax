@@ -286,15 +286,17 @@ function creaLM() {
 
   /* IL GIORNO DI OGGI SU UN OROLOGIO CERTAMENTE SBAGLIATO (verifica 3, N12).
      Un tablet tornato al 2001 scriveva le cose nel giorno 1° gennaio 2001, e
-     in «Oggi» non le vedeva nessuno. Solo quando l'orologio è prima del
-     PAVIMENTO — quindi sbagliato di sicuro — il giorno si prende dall'ora
-     corretta (misurata), o se non c'è una misura dall'ultima ora vista
-     arrivare dagli altri. In tutti gli altri casi resta il giorno del
-     dispositivo, come sempre: chi viaggia, o chi ha l'orologio indietro di
-     qualche minuto, vede il suo giorno. */
+     in «Oggi» non le vedeva nessuno. Solo quando l'orologio è più di un
+     anno prima del PAVIMENTO — quindi sbagliato di sicuro, e non un giorno
+     scelto apposta da una prova o da chi rivede una settimana — il giorno si
+     prende dall'ora corretta (misurata), o se non c'è una misura
+     dall'ultima ora vista arrivare dagli altri. In tutti gli altri casi
+     resta il giorno del dispositivo, come sempre: chi viaggia, o chi ha
+     l'orologio indietro di qualche minuto, vede il suo giorno. */
+  var PAVIMENTO_GIORNO = Date.UTC(2025, 10, 25);
   function todayKey(): Giorno {
     var t = Date.now();
-    if (!(t < PAVIMENTO)) return dayKey(new Date());
+    if (!(t < PAVIMENTO_GIORNO)) return dayKey(new Date());
     var vera = scartoMisurato ? t + scartoServer : Math.max(ultimoIstante, PAVIMENTO);
     return dayKey(new Date(vera));
   }
