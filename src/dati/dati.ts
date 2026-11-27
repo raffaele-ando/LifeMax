@@ -1298,9 +1298,9 @@ function creaLM() {
   var senzaLapidi = 0;
   /* ---------- punti a cui tornare ----------
      Ogni cosa che finisce nel diario si può annullare da lì. Un gancio solo,
-     invece di scriverne l'inverso in cinquantuno posti: prima di ogni
-     salvataggio che cambia davvero qualcosa si mette da parte lo stato
-     COM'ERA, e dal diario si torna a quel punto.
+     invece di scriverne l'inverso in cinquantuno posti: a ogni salvataggio
+     che cambia davvero qualcosa si mette da parte COSA è cambiato, e dal
+     diario si disfa quello.
 
      Non basta guardare il registro: completare una cosa non ci scrive niente
      — il diario la ricava dai dati — e proprio quella è la cosa che più
@@ -1309,17 +1309,42 @@ function creaLM() {
      finestra fra il salvataggio precedente e il suo, e una riga che cade in
      quella finestra è roba sua.
 
-     Le copie stanno in contenitori loro, uno per punto, e non dentro lo
+     I punti stanno in contenitori loro, uno per punto, e non dentro lo
      stato: così non finiscono nel cloud, non gonfiano il file esportato, e
-     ogni azione riscrive solo la copia nuova invece di tutta la pila. Se lo
-     spazio finisce si buttano, senza toccare i dati veri.
+     ogni azione riscrive solo il punto nuovo invece di tutta la pila.
 
-     Attenzione a cosa vuol dire: tornare a un punto riporta indietro TUTTO
-     quello che è venuto dopo. Per l'ultima cosa fatta le due cose
-     coincidono; per una più vecchia no, e l'interfaccia lo dice prima. */
+     UN PUNTO È IL GESTO, NON LO STATO DI ALLORA (verifica 4, V4-01). Prima
+     un punto era una copia INTERA dello stato di prima del gesto, e annullare
+     voleva dire rimetterla al posto di tutto. Ma fra il gesto e l'annulla
+     possono arrivare dal cloud le cose fatte sugli altri dispositivi: una
+     cosa nuova scritta sul telefono, una rinomina. Rimettendo la copia di
+     prima sparivano — e, con le lapidi e gli orologi nuovi che il ritorno
+     scriveva, sparivano dal telefono e dal cloud. Il telefono non aveva
+     fatto niente e perdeva il suo lavoro.
+     Adesso un punto è la DIFFERENZA fra prima e dopo il gesto (`Cambio`):
+     le righe nate, tolte e cambiate (campo per campo), le chiavi dei
+     dizionari, le aree accese e spente, i punti dati o tolti. Annullare
+     applica l'inverso di quella differenza allo stato di ADESSO, e il resto
+     resta com'è. Passa da `marcaRitorno`, quindi quello che torna e quello
+     che se ne va prendono lapidi e orologi nuovi, e si fonde con gli altri
+     dispositivi come ogni altra modifica.
+     Se una delle cose che il gesto aveva toccato è stata cambiata dopo
+     (sull'altro dispositivo, di solito), l'inverso esatto non c'è più:
+     rimettere com'era cancellerebbe quel cambiamento. Allora non si tocca
+     niente e si dice perché (`motivoRifiuto`).
+     Pesano poco: una cosa tolta è una riga, non tutto lo stato — ed è anche
+     quello che serviva allo spazio (V4-02).
+
+     Attenzione a cosa vuol dire annullare una cosa vecchia: si disfano anche
+     le cose fatte DOPO su questo dispositivo (i punti più recenti, uno per
+     uno, dal più nuovo), e l'interfaccia lo dice prima. Quello che è
+     arrivato dagli altri dispositivi resta. */
   var PUNTI_KEY = 'lifemax.annulla.v1';
   var PUNTO_PRE = 'lifemax.annulla.p.';
   var PUNTI_MAX = 12;
+  /* un gesto che cambia più di così (togliere l'esempio, rimandare un mese
+     di cose) non diventa un punto: per quelli c'è la copia di sicurezza */
+  var PUNTO_MAX_CARATTERI = 200000;
   var staTornandoIndietro = false;
   var ultimoPuntoFino = 0;
 
@@ -1337,20 +1362,278 @@ function creaLM() {
     try { localStorage.removeItem(PUNTI_KEY); } catch (e) { /* niente */ }
     ultimoPuntoFino = 0;
   }
+  /* i punti scritti dalle versioni di prima sono copie intere dello stato:
+     con quelle non si può annullare senza riportare indietro anche quello
+     che è arrivato dagli altri, e occupano fino a dodici volte lo stato. Al
+     primo avvio di questa versione si buttano. */
+  (function () {
+    try {
+      var arr = leggiIndice();
+      var vecchi = arr.some(function (p) { var v = p ? localStorage.getItem(PUNTO_PRE + p.id) : null; return !v || v.slice(0, 7) !== '{"v":2,'; });
+      if (vecchi) scordaPunti();
+    } catch (e) { /* senza memoria non ci sono punti */ }
+  })();
 
-  /* lo stato è cambiato: si tiene com'era. `prima` è ciò che c'era scritto. */
-  function segnaPunto(prima: string | null, primaNudo: string | null, adessoNudo: string | null) {
-    if (!prima || primaNudo === adessoNudo) return;   /* niente è cambiato davvero */
+  /* ---- la differenza fra due stati: cosa ha toccato un gesto ----
+     `k` è il campo; `r` la riga (la sua chiave, per gli elenchi) e `i` dove
+     stava; `p` la strada dentro la riga o dentro il dizionario. `a` è com'era
+     PRIMA, `d` com'è DOPO; `na`/`nd` dicono «non c'era» / «non c'è più». */
+  interface Tocco { k: string; r?: string; i?: number; p: string[]; a?: unknown; d?: unknown; na?: 1; nd?: 1 }
+  interface Cambio { v: 2; t: Tocco[] }
+  /* quello che non si disfa: la memoria della fusione (lapidi, orologi), il
+     diario (resta, e ci si aggiunge «Annullato…»), i numeri che si ricavano
+     da altro e quelli che per natura non tornano indietro */
+  var FUORI_DAL_GESTO: Record<string, 1> = {
+    cancellati: 1, registro: 1, log: 1, orologi: 1, updatedAt: 1, xp: 1, xpPerGiorno: 1,
+    versione: 1, visto: 1, azzerato: 1, onboarded: 1, demoChiusa: 1, recuperati: 1, esempio: 1
+  };
+  function copiaDi<T>(v: T): T { return v === undefined ? v : JSON.parse(JSON.stringify(v)) as T; }
+  function senzaAggiornata(r: unknown): unknown {
+    if (!eMappa(r) || !Object.prototype.hasOwnProperty.call(r, 'aggiornata')) return r;
+    var c: Mappa = {};
+    Object.keys(r).forEach(function (k) { if (k !== 'aggiornata') c[k] = r[k]; });
+    return c;
+  }
+  function toccoDi(k: string, r: string | undefined, inA: boolean, va: unknown, inB: boolean, vb: unknown, p: string[], out: Tocco[]): void {
+    inA = inA && va !== undefined; inB = inB && vb !== undefined;
+    if (!inA && !inB) return;
+    if (inA && inB && stessoValore(va, vb)) return;
+    if (inA && inB && eMappa(va) && eMappa(vb)) {
+      var a = va, b = vb;
+      var chiavi = Object.keys(a);
+      Object.keys(b).forEach(function (x) { if (!Object.prototype.hasOwnProperty.call(a, x)) chiavi.push(x); });
+      chiavi.forEach(function (x) {
+        toccoDi(k, r, Object.prototype.hasOwnProperty.call(a, x), a[x], Object.prototype.hasOwnProperty.call(b, x), b[x], p.concat([x]), out);
+      });
+      return;
+    }
+    var t: Tocco = { k: k, p: p };
+    if (r !== undefined) t.r = r;
+    if (inA) t.a = copiaDi(va); else t.na = 1;
+    if (inB) t.d = copiaDi(vb); else t.nd = 1;
+    out.push(t);
+  }
+  function differenza(prima: Mappa, dopo: Mappa): Tocco[] {
+    var out: Tocco[] = [];
+    var regoleD = COME_UNIRE as unknown as Record<string, ModoFusione | undefined>;
+    Object.keys(regoleD).forEach(function (k) {
+      var modo = regoleD[k];
+      if (FUORI_DAL_GESTO[k] || modo === 'massimo' || modo === 'oppure' || modo === 'orologi') return;
+      var va = prima[k], vb = dopo[k];
+      if (modo === 'elenco') {
+        var A = Array.isArray(va) ? va : [], B = Array.isArray(vb) ? vb : [];
+        var ia: Record<string, number> = {}, ib: Record<string, number> = {};
+        A.forEach(function (r: unknown, i: number) { ia[chiaveRiga(r)] = i; });
+        B.forEach(function (r: unknown, i: number) { ib[chiaveRiga(r)] = i; });
+        A.forEach(function (r: unknown, i: number) {
+          var c = chiaveRiga(r), j = ib[c];
+          if (j === undefined) { out.push({ k: k, r: c, i: i, p: [], a: copiaDi(r), nd: 1 }); return; }
+          toccoDi(k, c, true, senzaAggiornata(r), true, senzaAggiornata(B[j]), [], out);
+        });
+        B.forEach(function (r: unknown) { var c = chiaveRiga(r); if (ia[c] === undefined) out.push({ k: k, r: c, p: [], na: 1, d: copiaDi(r) }); });
+        return;
+      }
+      if (modo === 'insieme') {
+        var x: Record<string, 1> = {}, y: Record<string, 1> = {};
+        if (Array.isArray(va)) va.forEach(function (v: unknown) { x[String(v)] = 1; });
+        if (Array.isArray(vb)) vb.forEach(function (v: unknown) { y[String(v)] = 1; });
+        Object.keys(x).forEach(function (v) { if (!y[v]) out.push({ k: k, p: [v], a: 1, nd: 1 }); });
+        Object.keys(y).forEach(function (v) { if (!x[v]) out.push({ k: k, p: [v], na: 1, d: 1 }); });
+        return;
+      }
+      toccoDi(k, undefined, va !== undefined, va, vb !== undefined, vb, [], out);
+    });
+    return out;
+  }
+
+  /* ---- l'inverso, applicato allo stato di adesso ---- */
+  function leggiVia(rad: unknown, p: string[]): { c: boolean; v: unknown } {
+    var cur = rad;
+    for (var i = 0; i < p.length; i++) {
+      var pz = p[i] as string;
+      if (!eMappa(cur) || !Object.prototype.hasOwnProperty.call(cur, pz)) return { c: false, v: undefined };
+      cur = cur[pz];
+    }
+    return { c: cur !== undefined, v: cur };
+  }
+  function scriviVia(rad: Mappa, p: string[], c: boolean, v: unknown): void {
+    var cur = rad;
+    for (var i = 0; i < p.length - 1; i++) {
+      var pz = p[i] as string, nx = cur[pz];
+      if (!eMappa(nx)) { if (!c) return; nx = {}; cur[pz] = nx; }
+      cur = nx as Mappa;
+    }
+    var ult = p[p.length - 1] as string;
+    if (c) cur[ult] = copiaDi(v); else delete cur[ult];
+  }
+  /* il valore di adesso è quello (o «non c'è», se `assente`)? */
+  function eCome(c: boolean, v: unknown, assente: boolean, val: unknown, riga: boolean): boolean {
+    if (assente) return !c;
+    return c && stessoValore(riga ? senzaAggiornata(v) : v, riga ? senzaAggiornata(val) : val);
+  }
+  /* i punti per dispositivo crescono e basta (vedi `xpConti`): il contrario
+     di «dati 10 punti» non è riportare il conto a prima — la fusione col
+     più grande li rimetterebbe — ma «tolti 10 punti», e viceversa */
+  function vociConto(v: unknown, p: string[], out: Record<string, [number, number]>): void {
+    if (p.length >= 2) {
+      if (Array.isArray(v)) out[p[0] + '\u0000' + p[1]] = [Number(v[0]) || 0, Number(v[1]) || 0];
+      return;
+    }
+    if (!eMappa(v)) return;
+    var m = v;
+    Object.keys(m).forEach(function (x) { vociConto(m[x], p.concat([x]), out); });
+  }
+  function contrarioConto(W: Mappa, t: Tocco): void {
+    var prima: Record<string, [number, number]> = {}, dopo: Record<string, [number, number]> = {};
+    if (!t.na) vociConto(t.a, t.p, prima);
+    if (!t.nd) vociConto(t.d, t.p, dopo);
+    var conti = eMappa(W['xpConti']) ? W['xpConti'] as Record<string, Record<string, [number, number]>> : (W['xpConti'] = {}) as Record<string, Record<string, [number, number]>>;
+    var mio = idDispositivo();
+    Object.keys(dopo).concat(Object.keys(prima)).forEach(function (chi, i, tutti) {
+      if (tutti.indexOf(chi) !== i) return;
+      var a = prima[chi] || [0, 0], d = dopo[chi] || [0, 0];
+      var dati = Math.max(0, d[0] - a[0]), tolti = Math.max(0, d[1] - a[1]);
+      if (!dati && !tolti) return;
+      var g = chi.split('\u0000')[0] || '';
+      var giornoC = conti[g] || (conti[g] = {});
+      var c = giornoC[mio];
+      if (!Array.isArray(c)) { c = [0, 0]; giornoC[mio] = c; }
+      c[0] += tolti; c[1] += dati;
+    });
+  }
+  var NOMI_FORNITORI: Record<string, string> = { google: 'Google Calendar', microsoft: 'Outlook' };
+  interface Intoppo { tipo: 'cambiata' | 'calendario'; testo: string }
+  function cosaE(t: Tocco, riga: unknown): string {
+    var r = eMappa(riga) ? riga : (eMappa(t.a) ? t.a : (eMappa(t.d) ? t.d : null));
+    var nome = r && typeof r['testo'] === 'string' ? '«' + r['testo'] + '»' : '';
+    return nome || 'una delle cose toccate';
+  }
+  function disfaTocco(W: Mappa, t: Tocco): Intoppo | null {
+    var regoleD = COME_UNIRE as unknown as Record<string, ModoFusione | undefined>;
+    var modo = regoleD[t.k];
+    var vuole = !t.na, era = t.a, ce = !t.nd, eraDopo = t.d;
+    if (modo === 'contatore') { contrarioConto(W, t); return null; }
+    if (modo === 'insieme') {
+      var ins = Array.isArray(W[t.k]) ? W[t.k] as unknown[] : [];
+      var v = t.p[0] || '';
+      var c = ins.some(function (x) { return String(x) === v; });
+      if (vuole && !c) W[t.k] = ins.concat([v]);
+      else if (!vuole && c) W[t.k] = ins.filter(function (x) { return String(x) !== v; });
+      return null;
+    }
+    if (t.r !== undefined) {
+      var lista = Array.isArray(W[t.k]) ? W[t.k] as unknown[] : (W[t.k] = []) as unknown[];
+      var idx = -1;
+      for (var j = 0; j < lista.length; j++) { if (chiaveRiga(lista[j]) === t.r) { idx = j; break; } }
+      var riga = idx >= 0 ? lista[idx] : undefined;
+      if (!t.p.length) {
+        if (eCome(idx >= 0, riga, !vuole, era, true)) return null;            /* già com'era */
+        if (!eCome(idx >= 0, riga, !ce, eraDopo, true)) return { tipo: 'cambiata', testo: cosaE(t, riga) };
+        if (vuole) {
+          /* UNA RIUNIONE DEL CALENDARIO GIÀ CANCELLATA LÀ (V4-05): rimetterla
+             qui e basta la faceva tornare per un giro, e al giro dopo
+             spariva di nuovo — mentre l'app aveva detto «Annullato». */
+          if (t.k === 'azioni' && eMappa(era) && eMappa(era['esterno'])) {
+            var prof = eMappa(W['profilo']) ? W['profilo'] as Mappa : {};
+            var cals = eMappa(prof['calendari']) ? prof['calendari'] as Mappa : {};
+            var tl = eMappa(cals['tolti']) ? cals['tolti'] as Mappa : {};
+            var questo = tl[String(era['id'])];
+            if (eMappa(questo) && questo['fatto']) {
+              var est = era['esterno'] as Mappa;
+              return { tipo: 'calendario', testo: '«' + String(era['testo'] || '') + '» è già stata cancellata anche su ' + (NOMI_FORNITORI[String(est['prov'])] || 'calendario') };
+            }
+          }
+          if (idx >= 0) lista[idx] = copiaDi(era);
+          else lista.splice(Math.min(typeof t.i === 'number' ? t.i : lista.length, lista.length), 0, copiaDi(era));
+        } else lista.splice(idx, 1);
+        return null;
+      }
+      if (!eMappa(riga)) return { tipo: 'cambiata', testo: cosaE(t, null) };   /* la riga non c'è più */
+      var qui = leggiVia(riga, t.p);
+      if (eCome(qui.c, qui.v, !vuole, era, false)) return null;
+      if (!eCome(qui.c, qui.v, !ce, eraDopo, false)) return { tipo: 'cambiata', testo: cosaE(t, riga) };
+      scriviVia(riga, t.p, vuole, era);
+      return null;
+    }
+    if (!t.p.length) {
+      var cc = W[t.k] !== undefined;
+      if (eCome(cc, W[t.k], !vuole, era, false)) return null;
+      if (!eCome(cc, W[t.k], !ce, eraDopo, false)) return { tipo: 'cambiata', testo: cosaE(t, null) };
+      if (vuole) W[t.k] = copiaDi(era); else delete W[t.k];
+      return null;
+    }
+    var q = leggiVia(W[t.k], t.p);
+    if (eCome(q.c, q.v, !vuole, era, false)) return null;
+    if (!eCome(q.c, q.v, !ce, eraDopo, false)) return { tipo: 'cambiata', testo: cosaE(t, null) };
+    if (!eMappa(W[t.k])) { if (!vuole) return null; W[t.k] = {}; }
+    scriviVia(W[t.k] as Mappa, t.p, vuole, era);
+    return null;
+  }
+
+  /* PERCHÉ L'ULTIMO ANNULLA NON SI È FATTO, detto per chi lo legge */
+  var motivoRifiuto = '';
+  function testoRifiuto(x: Intoppo): string {
+    if (x.tipo === 'calendario') return 'Non si può annullare: ' + x.testo + ', e da qui non si rimette là. Se ti serve, ricreala nel calendario.';
+    return 'Non si può annullare esattamente: ' + x.testo + ' è stata cambiata dopo, forse su un altro dispositivo. Non ho toccato niente.';
+  }
+  /* disfa uno o più gesti, dal più nuovo, sullo stato di adesso: o tutto o
+     niente */
+  function disfaCambi(cambi: Cambio[], riga: string | null): boolean {
+    motivoRifiuto = '';
+    var W = copiaDi(load()) as unknown as Mappa;
+    for (var i = 0; i < cambi.length; i++) {
+      var c = cambi[i];
+      if (!c || !Array.isArray(c.t)) { motivoRifiuto = 'Non si può più annullare.'; return false; }
+      for (var j = c.t.length - 1; j >= 0; j--) {
+        var tt = c.t[j];
+        if (!tt) continue;
+        var intoppo = disfaTocco(W, tt);
+        if (intoppo) {
+          motivoRifiuto = testoRifiuto(intoppo);
+          if (window.LMLog) window.LMLog.add('info', 'dati', 'annulla non fatto', intoppo.tipo + ': ' + intoppo.testo);
+          return false;
+        }
+      }
+    }
+    var primaRaw: string | null = ultimoScritto;
+    if (!primaRaw) { try { primaRaw = localStorage.getItem(STORAGE_KEY); } catch (e) { primaRaw = null; } }
+    state = normalizza(W);
+    staTornandoIndietro = true;
+    try {
+      /* quello che torna vince sulla sua lapide, quello che se ne va ne
+         prende una, quello che cambia prende un orologio nuovo: si fonde
+         con gli altri dispositivi come ogni altra modifica */
+      marcaRitorno(primaRaw, load());
+      if (riga) registra('dati', riga, true);
+      save();
+    } finally { staTornandoIndietro = false; }
+    return true;
+  }
+
+  /* lo stato è cambiato: si tiene COSA è cambiato. `prima` è ciò che c'era
+     scritto, `dopo` ciò che c'è adesso. */
+  function segnaPunto(prima: Mappa | null, dopo: Stato) {
+    if (!prima) return;
+    var tocchi = differenza(prima, dopo as unknown as Mappa);
+    if (!tocchi.length) return;   /* niente è cambiato davvero */
+    var testo = JSON.stringify({ v: 2, t: tocchi });
+    if (testo.length > PUNTO_MAX_CARATTERI) {
+      /* troppo grande per un punto: e i punti di prima non si possono più
+         disfare «fin qui» senza disfare anche questo, quindi si scordano */
+      scordaPunti();
+      return;
+    }
     var ora = Date.now();
     var arr = leggiIndice();
     var id = 'p' + ora.toString(36) + Math.random().toString(36).slice(2, 6);
-    try { localStorage.setItem(PUNTO_PRE + id, prima); }
+    try { localStorage.setItem(PUNTO_PRE + id, testo); }
     catch (e) {
-      /* spazio finito: si butta il più vecchio e si riprova una volta sola */
+      /* spazio finito: si butta il più vecchio e si riprova una volta sola;
+         se non basta, niente punti (i dati veri vengono prima) */
       var v = arr.pop();
       if (v) buttaPunto(v.id);
-      try { localStorage.setItem(PUNTO_PRE + id, prima); }
-      catch (e2) { scriviIndice(arr); return; }
+      try { localStorage.setItem(PUNTO_PRE + id, testo); }
+      catch (e2) { scordaPunti(); return; }
     }
     /* La finestra parte dal salvataggio precedente, ma non più di cinque
        secondi indietro: senza questo limite il primo punto aveva `da: 0` e si
@@ -1363,8 +1646,9 @@ function creaLM() {
   }
 
   /* la riga del diario con questo istante appartiene a quale punto?
-     `dopo` dice quante cose sono state fatte DOPO: se è zero, annullare quel
-     punto annulla esattamente quella cosa e nient'altro. */
+     `dopo` dice quante cose sono state fatte DOPO su questo dispositivo: se
+     è zero, annullare quel punto annulla esattamente quella cosa e
+     nient'altro. */
   function puntoDiRitorno(ts: number) {
     var arr = leggiIndice();
     for (var i = 0; i < arr.length; i++) {
@@ -1377,10 +1661,12 @@ function creaLM() {
     return leggiIndice().map(function (p, i) { return { id: p.id, da: p.da, fino: p.fino, dopo: i }; });
   }
 
-  /* Torna a com'era. Il registro NON si conserva: se tornasse indietro anche
-     lui il diario mostrerebbe cose che non sono più vere. Al suo posto resta
-     una riga che dice che sei tornato. */
+  /* Disfa il gesto di quella riga (e quelli fatti dopo qui). Il registro NON
+     torna indietro: se tornasse indietro anche lui il diario mostrerebbe
+     cose che non sono più vere. Al suo posto resta una riga che dice che sei
+     tornato. */
   function tornaAlPunto(ts: number, etichetta?: string) {
+    motivoRifiuto = '';
     var arr = leggiIndice();
     var trovato: PuntoRitorno | null = null;
     var i = -1;
@@ -1399,36 +1685,36 @@ function creaLM() {
       if (!piuVecchio || !questo || questo.fino - piuVecchio.fino > 80) break;
       i++; trovato = piuVecchio;
     }
-    var quello = trovato;
-    var raw: string | null;
-    try { raw = localStorage.getItem(PUNTO_PRE + quello.id); } catch (e) { raw = null; }
-    var vecchio = raw ? safeParse(raw) : null;
-    if (!vecchio) return false;
-    /* i punti da qui in avanti descrivono uno stato che non esiste più */
-    for (var k = 0; k <= i; k++) { var vecchioP = arr[k]; if (vecchioP) buttaPunto(vecchioP.id); }
+    /* dal più nuovo fino a quello: ognuno è un gesto fatto qui */
+    var cambi: Cambio[] = [];
+    for (var k = 0; k <= i; k++) {
+      var pk = arr[k];
+      var raw: string | null = null;
+      try { raw = pk ? localStorage.getItem(PUNTO_PRE + pk.id) : null; } catch (e) { raw = null; }
+      var c: unknown = null;
+      try { c = raw ? JSON.parse(raw) : null; } catch (e) { c = null; }
+      if (!eMappa(c) || c['v'] !== 2 || !Array.isArray(c['t'])) return false;
+      cambi.push(c as unknown as Cambio);
+    }
+    if (!disfaCambi(cambi, 'Annullato: «' + (etichetta || 'una cosa fatta') + '»')) return false;
+    /* i punti disfatti non ci sono più */
+    for (var x = 0; x <= i; x++) { var vecchioP = arr[x]; if (vecchioP) buttaPunto(vecchioP.id); }
     var resto = arr.slice(i + 1);
     scriviIndice(resto);
     var primo = resto[0];
     ultimoPuntoFino = primo ? primo.fino : 0;
-    var primaRaw: string | null = null;
-    try { primaRaw = localStorage.getItem(STORAGE_KEY); } catch (e) { primaRaw = null; }
-    staTornandoIndietro = true;
-    /* SOSTITUISCE. Vedi `ripristinaStato`: unire qui vorrebbe dire tenere sia
-       il prima sia il dopo, cioè non annullare niente. */
-    hydrate(vecchio, true);
-    /* E DEVE VALERE ANCHE PER GLI ALTRI DISPOSITIVI (e per il cloud). Prima
-       si rimetteva lo stato di allora e basta: quello che il ritorno toglieva
-       non lasciava lapidi, e quello che rimetteva aveva ancora la lapide di
-       quando era stato cancellato. Alla prima fusione tornava tutto: annullando
-       «diventa un'abitudine» ci si trovava sia l'attività sia l'abitudine.
-       Adesso ciò che il ritorno toglie prende la sua lapide, e ciò che rimette
-       diventa più recente della lapide che aveva. */
-    marcaRitorno(primaRaw, load());
-    registra('dati', 'Annullato: «' + (etichetta || 'una cosa fatta') + '»', true);
-    save();
-    staTornandoIndietro = false;
     return true;
   }
+
+  /* PER I MESSAGGINI «Annulla» E «Rimetti» (app.ts): una foto di adesso,
+     poi la differenza fra la foto e lo stato dopo il gesto. Annullare
+     disfa quella differenza e basta, come un punto. */
+  function fotografa(): string { return JSON.stringify(load()); }
+  function cambioDa(foto: string): Cambio {
+    var prima = leggiOggetto(foto) || {};
+    return { v: 2, t: differenza(prima, load() as unknown as Mappa) };
+  }
+  function disfa(c: Cambio, riga?: string): boolean { return disfaCambi([c], riga || null); }
 
   /* --- l'inverso esatto di una cosa fatta ---
      I punti di ritorno esistono solo da quando l'app è aperta: le righe già
@@ -1532,6 +1818,7 @@ function creaLM() {
   }
 
   function annullaRecord(tipo: string, chiaveGrezza: string) {
+    motivoRifiuto = '';
     var chiave = giorno(chiaveGrezza);
     var s = load();
     /* la riga «Annullato…» dice anche QUANDO, se non è oggi: annullare la
@@ -1623,8 +1910,8 @@ function creaLM() {
        salvataggio vecchio con lo stato nuovo. Durante un ritorno indietro
        non si segna niente qui: lo fa `marcaRitorno`, che sa com'era prima. */
     var suo = load();
+    var primaObj = prima ? leggiOggetto(prima) : null;
     if (!staTornandoIndietro && !senzaLapidi) {
-      var primaObj = leggiOggetto(prima);
       segnaLapidi(primaObj, suo);
       segnaOrologi(primaObj, suo);
     }
@@ -1689,11 +1976,9 @@ function creaLM() {
        secondo davanti all'ora (corretta, se misurata) — un'ora più avanti
        l'ha inventata un orologio sbagliato (N4) */
     try { localStorage.setItem(ISTANTE_KEY, String(Math.min(ultimoIstante, oraCorretta() + ANTICIPO_MAX))); } catch (e) { /* niente */ }
-    if (!staTornandoIndietro) {
-      /* `updatedAt` cambia a ogni salvataggio: si toglie da entrambi, altrimenti
-         ogni salvataggio sembrerebbe un cambiamento */
-      segnaPunto(prima, senzaOrologio(prima), senzaOrologio(scritto));
-    }
+    /* il punto si segna solo se il salvataggio è riuscito: è la differenza
+       fra quello che c'era scritto e quello che c'è scritto adesso */
+    if (!staTornandoIndietro && ok) segnaPunto(primaObj, suo);
     document.dispatchEvent(new CustomEvent('lm:change'));
   }
   function senzaOrologio(raw: string | null) {
@@ -4936,6 +5221,7 @@ function creaLM() {
     exportJson: exportJson, importJson: importJson, ripristinaStato: ripristinaStato, riprendiCopia: riprendiCopia,
     puntoDiRitorno: puntoDiRitorno, puntiDiRitorno: puntiDiRitorno,
     tornaAlPunto: tornaAlPunto, annullaRecord: annullaRecord, scordaPunti: scordaPunti,
+    fotografa: fotografa, cambioDa: cambioDa, disfa: disfa, motivoRifiuto: function () { return motivoRifiuto; },
     todayKey: todayKey, dayKey: dayKey, addDays: addDays, lastNDays: lastNDays,
     weekKey: weekKey, weekdayShort: weekdayShort, fmtShort: fmtShort, daysBetween: daysBetween,
     coloreArea: coloreArea,

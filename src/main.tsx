@@ -37,7 +37,7 @@ import './nuvola/trasloco';
 import { LM_PROMEMORIA as P } from './promemoria/promemoria';
 import './grafici/grafici';
 import './app/registro-schermi';
-import { avvia, apriFoglio } from './app/app';
+import { avvia, apriFoglio, conAnnulla } from './app/app';
 import { avviaCalendari, CALENDARI } from './calendari/sincronia';
 
 /* la nuvola è un `import()` e non un `import`: quello che c'è dentro fa una
@@ -67,7 +67,11 @@ void import('./nuvola/nuvola');
    nessuno — una porta per le prove che l'app comincia a usare smette di
    essere una porta per le prove e diventa un globale, cioè la cosa da cui
    veniamo. */
-window.__PROVE__ = { promemoria: P, calendari: CALENDARI };
+/* `conAnnulla` (verifica 4, V4-01): il messaggino «Annulla» dei sette
+   secondi, che dall'interfaccia nasce in sette posti diversi; la prova lo
+   chiama da qui con lo stesso gesto, e misura quello che conta — che
+   annullare non porti via quello che nel frattempo è arrivato dal cloud. */
+window.__PROVE__ = { promemoria: P, calendari: CALENDARI, annulla: { conAnnulla: conAnnulla } };
 
 avvia();
 

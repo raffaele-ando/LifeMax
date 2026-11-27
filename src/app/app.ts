@@ -749,11 +749,18 @@ export function toast(testo: string, xp?: number, icona?: string, azione?: Azion
    dieci volte al giorno smette di leggerla. Quindi le cancellazioni
    piccole si fanno subito, e per qualche secondo si possono rimettere a
    posto. Restano dietro un avviso solo quelle che portano via tutto. */
+/* L'ANNULLA DISFA IL GESTO, NON TORNA ALLO STATO DI PRIMA (verifica 4,
+   V4-01). Prima si rimetteva la foto di com'era tutto prima del gesto: in
+   quei sette secondi poteva arrivare dal cloud una cosa fatta sul telefono,
+   e «Annulla» la cancellava ovunque. Adesso si tiene solo la differenza che
+   il gesto ha fatto, e si disfa quella; se nel frattempo una delle cose
+   toccate è cambiata altrove, non si tocca niente e lo si dice. */
 export function conAnnulla(testo: string, icona: string, fai: () => void): void {
-  const prima = JSON.parse(JSON.stringify(LM.load())) as Stato;
+  const foto = LM.fotografa();
   fai();
+  const cambio = LM.cambioDa(foto);
   toast(testo, 0, icona, { eti: 'Annulla', fai: function () {
-    LM.ripristinaStato(prima);
+    if (!LM.disfa(cambio)) { toast(LM.motivoRifiuto() || 'Non si può più annullare.', 0, 'aiuto'); return; }
     render();
     toast('Ripristinato.', 0, 'annulla');
   } });
@@ -5937,12 +5944,16 @@ function annullaDalDiario(ts: number, etichetta: string, tipo?: string, chiave?:
   /* «Rimetti»: lo stato di adesso, messo da parte prima di toccarlo */
   /* torna `false` quando non c'è più niente da disfare: `LM.annullaRecord` e
      `LM.tornaAlPunto` rispondono così, e il messaggio qui sotto ci conta */
+  /* anche «Rimetti» disfa solo quello che l'annulla ha cambiato (V4-01) */
   function conRimetti(fai: () => boolean) {
-    var prima = JSON.parse(JSON.stringify(LM.load()));
-    if (!fai()) { toast('Non si può più annullare.', 0, 'aiuto'); return; }
+    var foto = LM.fotografa();
+    if (!fai()) { toast(LM.motivoRifiuto() || 'Non si può più annullare.', 0, 'aiuto'); return; }
+    var cambio = LM.cambioDa(foto);
     render();
     toast('Annullato.', 0, 'annulla', { eti: 'Rimetti', fai: function () {
-      LM.ripristinaStato(prima);
+      if (!LM.disfa(cambio, 'Rimesso com’era prima di «Annulla»: «' + etichetta + '»')) {
+        toast(LM.motivoRifiuto() || 'Non si può più rimettere.', 0, 'aiuto'); return;
+      }
       render();
       toast('Ripristinato.', 0, 'check');
     } });

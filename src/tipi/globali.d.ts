@@ -41,7 +41,7 @@ declare global {
        là. Dentro a `src/` non la nomina nessuno: `prove/pezzi.js` lo
        controlla, perché una porta per le prove che l'app comincia a usare
        smette di essere una porta e diventa un globale. */
-    __PROVE__?: { promemoria: Promemoria; calendari: typeof CALENDARI };
+    __PROVE__?: { promemoria: Promemoria; calendari: typeof CALENDARI; annulla: { conAnnulla: (testo: string, icona: string, fai: () => void) => void } };
   }
 }
 
