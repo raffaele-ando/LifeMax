@@ -225,12 +225,23 @@ function creaLM() {
     if (typeof ms !== 'number' || !isFinite(ms)) return;
     scartoServer = Math.abs(ms) > 5000 ? Math.round(ms) : 0;
     scartoMisurato = true;
-    /* l'orologio logico NON si riporta indietro, anche se le ore scritte
-       prima della misura erano avanti: una modifica fatta dopo deve sempre
-       avere un'ora più grande di una fatta prima qui, se no al primo giro
-       tornerebbe la versione vecchia. Si allinea da solo quando l'ora vera
-       lo raggiunge. */
+    /* UN OROLOGIO CHE ERA AVANTI NON AVVELENA PIÙ IL DISPOSITIVO (verifica 3,
+       N4). Prima l'orologio logico non si riportava mai indietro: un PC
+       rimasto un momento avanti di 400 giorni scriveva, per 400 giorni, ore
+       che vincevano su tutto quello che gli altri facevano DOPO. La regola
+       «una modifica fatta dopo qui ha un'ora più grande» vale per i
+       secondi, non per un anno: adesso, misurato l'orologio, l'orologio
+       logico si riporta al più a un secondo davanti all'ora vera. Le ore
+       scritte nel frattempo restano quelle che sono. */
+    tetto();
     try { localStorage.setItem(SCARTO_KEY, JSON.stringify({ ms: scartoServer, quando: Date.now() + scartoServer })); } catch (e) { /* vale per questa sessione */ }
+  }
+  /* quanto l'orologio logico può stare davanti all'ora vera (misurata) */
+  var ANTICIPO_MAX = 1000;
+  function tetto(): void {
+    if (!scartoMisurato) return;
+    var limite = Date.now() + scartoServer + ANTICIPO_MAX;
+    if (ultimoIstante > limite) ultimoIstante = limite;
   }
   /* da quando in là lapidi e orologi possono scadere; null = non si sa, e
      allora non scade niente */
@@ -1659,7 +1670,10 @@ function creaLM() {
     var scritto: string | null = null;
     try { scritto = localStorage.getItem(STORAGE_KEY); } catch (e) { scritto = null; }
     if (ok) ultimoScritto = scritto;
-    try { localStorage.setItem(ISTANTE_KEY, String(ultimoIstante)); } catch (e) { /* niente */ }
+    /* si ricorda l'ultima ora vista solo fin dove è credibile: mai più di un
+       secondo davanti all'ora (corretta, se misurata) — un'ora più avanti
+       l'ha inventata un orologio sbagliato (N4) */
+    try { localStorage.setItem(ISTANTE_KEY, String(Math.min(ultimoIstante, oraCorretta() + ANTICIPO_MAX))); } catch (e) { /* niente */ }
     if (!staTornandoIndietro) {
       /* `updatedAt` cambia a ogni salvataggio: si toglie da entrambi, altrimenti
          ogni salvataggio sembrerebbe un cambiamento */

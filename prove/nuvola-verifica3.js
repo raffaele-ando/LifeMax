@@ -5,6 +5,9 @@
          la versione del 25 novembre gli aveva già dato si riguardano
      N5  la copia «prima di entrare nell'account» dell'ospite con l'esempio
          si vede da dentro l'account; e quelle di prima non si buttano
+     N4  un orologio andato avanti una volta sola (+400 giorni, col cloud
+         che non risponde) non fa vincere per 400 giorni quel dispositivo:
+         rimesso giusto e misurato, una modifica fatta DOPO altrove vince
    Le copie «di prima» si scrivono direttamente nella memoria del browser,
    come le lasciava la versione vecchia: senza il campo `chi`.
    node prove/nuvola-verifica3.js     (CHROMIUM=/percorso/di/chrome se serve) */
@@ -99,6 +102,38 @@ const { ok, guai } = em.conto();
       const resta = con(await copie(R), 'idospite1');
       ok('N5 la copia «prima di entrare nell’account» di prima dell’aggiornamento non si butta', resta.length === 1, resta.map((b) => b.chi));
       await R.ctx.close();
+    }
+    /* ------------------------------------------------------------ N4 */
+    {
+      await N.pulisci();
+      const G = 86400000;
+      const FS = 'http://127.0.0.1:' + E.P.firestore + '/**';
+      const P = await B.dispositivo('pc'), T = await B.dispositivo('telefono', { tipo: 'iphone' });
+      await B.accedi(P, 'olga', 'olga@prova.it'); await B.accedi(T, 'olga', 'olga@prova.it');
+      await P.evaluate(() => { LM.aggiungiAzione('Riunione', null); LM.aggiungiAzione('Altra cosa', null); });
+      await B.calmaTutti([P, T], 3000);
+      const id = await P.evaluate(() => LM.load().azioni.find((a) => a.testo === 'Riunione').id);
+      const rinomina = (d, i, x) => d.evaluate(([a, b]) => { const r = LM.load().azioni.find((y) => y.id === a); r.testo = b; LM.save(); }, [i, x]);
+      const riapri = async (d) => { await d.reload(); await d.waitForFunction(() => window.LM, null, { timeout: 20000 }); };
+      /* il PC apre con l'orologio avanti di 400 giorni, il cloud non risponde, e scrive */
+      await P.ctx.route(FS, (r) => r.abort());
+      await B.avanti(P, 400 * G);
+      await riapri(P); await P.waitForTimeout(2500);
+      const altra = await P.evaluate(() => LM.load().azioni.find((x) => x.testo === 'Altra cosa').id);
+      await rinomina(P, altra, 'Altra cosa (dal pc)'); await P.waitForTimeout(800);
+      /* l'orologio torna giusto, il cloud risponde, il PC riapre e misura */
+      await B.avanti(P, -400 * G);
+      await P.ctx.unroute(FS);
+      await riapri(P); await B.calmaTutti([P, T], 4000);
+      await rinomina(P, id, 'Riunione (scritto dal PC prima)');
+      await B.calmaTutti([P, T], 3000); await T.waitForTimeout(2000);
+      await rinomina(T, id, 'Riunione (scritto dal telefono dopo)');
+      await B.calmaTutti([P, T], 4000);
+      await riapri(P); await riapri(T); await B.calmaTutti([P, T], 4000);
+      const fine = { pc: await P.evaluate((i) => LM.load().azioni.find((a) => a.id === i).testo, id), telefono: await T.evaluate((i) => LM.load().azioni.find((a) => a.id === i).testo, id) };
+      fine.cloud = (((await N.stato(await B.uidDi(P))) || {}).azioni || []).filter((a) => a.id === id).map((a) => a.testo)[0];
+      ok('N4 il PC aveva l’orologio avanti di 400 giorni; rimesso giusto, la modifica fatta DOPO sul telefono vince, ovunque', Object.values(fine).every((v) => /telefono/.test(v || '')), fine);
+      await P.ctx.close(); await T.ctx.close();
     }
     for (const p of B.tutti) if (p.__err && p.__err.length) ok('nessun errore in pagina su ' + p.__nome, false, p.__err.slice(0, 2));
   } catch (e) {
