@@ -84,7 +84,23 @@ const AVVISO_SCHEMA = 'I dati stanno in users/{uid}/pezzi (schema 2). Una scheda
    VERSIONE_APP si alza a ogni versione che cambia il modo di salvare;
    VERSIONE_MINIMA solo quando le versioni di prima non devono più scrivere
    (una forma dei dati che non capiscono). Per le schede di PRIMA di questo
-   campo non c'è rimedio: il loro codice è già quello che è. */
+   campo non c'è rimedio: il loro codice è già quello che è.
+
+   ALZARE VERSIONE_MINIMA È SENZA RITORNO, SE NON SI FA COSÌ (verifica 3, N9).
+   Il campo nel cloud sale e non scende (`Math.max` qui sotto): se si
+   pubblica una versione con VERSIONE_MINIMA = 2 e poi si torna alla
+   versione di prima così com'era (VERSIONE_APP = 1), tutte le schede
+   restano ferme su «C'è una versione nuova», per sempre. Per tornare
+   indietro dopo un rialzo:
+     1. si prende il codice della versione a cui si vuole tornare;
+     2. si alza QUI la sua VERSIONE_APP al valore di VERSIONE_MINIMA che
+        c'è nel cloud (lo stesso numero della versione da cui si torna), e
+        si lascia VERSIONE_MINIMA com'è;
+     3. si ricostruisce (`npm run build:nuovo`) e si pubblica.
+   Così la versione di prima può di nuovo scrivere, e chi la pubblica
+   dichiara che la forma dei dati della versione nuova le va bene (se non le
+   va bene, non è un ritorno indietro da fare). Non si cambia niente a mano
+   nel cloud: i documenti sono uno per persona. */
 const VERSIONE_APP = 1;
 const VERSIONE_MINIMA = 1;
 class VersioneVecchia extends Error {
