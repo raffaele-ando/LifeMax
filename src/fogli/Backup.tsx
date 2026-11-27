@@ -27,6 +27,8 @@ const MOTIVI: Record<string, string> = {
   'prima-di-togliere-i-dati-di-esempio': 'prima di togliere i dati di esempio',
   'prima-di-sfoltire-il-registro': 'prima di fare spazio',
   'prima-di-riprendere-il-profilo': 'prima di riprendere il profilo',
+  'prima-di-cambiare-il-profilo': 'prima di cambiare nome o visione',
+  'primo-accesso-di-un-dispositivo': 'prima del primo accesso di un dispositivo',
   'prima-di-dividere-il-documento': 'prima di passare al cloud diviso in pezzi',
   'copia-del-giorno': 'copia del giorno',
   'prima-di-sostituire-con-una-copia': 'prima di sostituire con una copia',

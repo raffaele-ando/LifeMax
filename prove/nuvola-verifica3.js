@@ -8,6 +8,8 @@
      N4  un orologio andato avanti una volta sola (+400 giorni, col cloud
          che non risponde) non fa vincere per 400 giorni quel dispositivo:
          rimesso giusto e misurato, una modifica fatta DOPO altrove vince
+     N11 il nome rovinato lo stesso giorno si riprende: prima di cambiare
+         nome o visione, una copia del cloud com'era
    Le copie «di prima» si scrivono direttamente nella memoria del browser,
    come le lasciava la versione vecchia: senza il campo `chi`.
    node prove/nuvola-verifica3.js     (CHROMIUM=/percorso/di/chrome se serve) */
@@ -134,6 +136,21 @@ const { ok, guai } = em.conto();
       fine.cloud = (((await N.stato(await B.uidDi(P))) || {}).azioni || []).filter((a) => a.id === id).map((a) => a.testo)[0];
       ok('N4 il PC aveva l’orologio avanti di 400 giorni; rimesso giusto, la modifica fatta DOPO sul telefono vince, ovunque', Object.values(fine).every((v) => /telefono/.test(v || '')), fine);
       await P.ctx.close(); await T.ctx.close();
+    }
+    /* ------------------------------------------------------------ N11 */
+    {
+      await N.pulisci();
+      const T = await B.dispositivo('telefono', { tipo: 'iphone' });
+      await B.accedi(T, 'nora', 'nora@prova.it');
+      const nora = await B.uidDi(T);
+      await T.evaluate(() => LM.aggiungiAzione('la prima cosa di oggi', null)); await B.calma(T, 2000);
+      await T.evaluate(() => LM.aggiungiAzione('la seconda', null)); await B.calma(T, 2000);
+      await T.evaluate(() => { const s = LM.load(); s.profilo.nome = 'Nora'; s.profilo.visione = 'Finire la tesi entro giugno'; LM.save(); }); await B.calma(T, 2500);
+      /* lo stesso giorno il profilo si rovina (un dispositivo nuovo vuoto, un errore) */
+      await T.evaluate(() => { const s = LM.load(); s.profilo.nome = ''; s.profilo.visione = ''; LM.save(); }); await B.calma(T, 3000);
+      const copie = await N.elenco('users/' + nora + '/copie');
+      ok('N11 il profilo rovinato lo stesso giorno: nel cloud c’è una copia col nome e la visione di prima', copie.some((c) => c.nome === 'Nora' && /tesi/.test(c.visione || '')), copie.map((c) => c.motivo + ':' + c.nome));
+      await T.ctx.close();
     }
     for (const p of B.tutti) if (p.__err && p.__err.length) ok('nessun errore in pagina su ' + p.__nome, false, p.__err.slice(0, 2));
   } catch (e) {

@@ -656,6 +656,7 @@ async function init(): Promise<void> {
       modifiche++;
       if (!currentUser) return;
       if (!sporco) { sporco = true; scrivi(SOSPESO, currentUser.uid); }
+      guardaProfilo();
       programmaSync();
     });
 
@@ -1119,6 +1120,7 @@ async function giro(uid: string, o: OpzGiro): Promise<void> {
          c'è adesso, perché durante il giro si può aver toccato qualcosa */
       applyingRemote = true;
       try { window.LM.hydrate(fatto.unito); } finally { applyingRemote = false; }
+      profiloNoto = firmaProfilo().firma;
       /* dal cloud è arrivato qualcosa che qui non c'era? */
       const arrivato = !!primaQui && Object.keys(fatto.pezzi).some(function (n) { const a = primaQui[n], b = fatto.pezzi[n]; return !a || !b || a.h !== b.h; });
       if (arrivato) window.dispatchEvent(new CustomEvent('lm:remote'));
@@ -1179,7 +1181,32 @@ function programmaSync(): void {
      diventa una scrittura sola invece di dieci */
   const soli = Date.now() - ultimaPartenza > 2000;
   if (syncTimer) { if (soli) return; clearTimeout(syncTimer); }
-  syncTimer = setTimeout(function () { syncTimer = null; ultimaPartenza = Date.now(); void sincronizza('modifica'); }, soli ? 30 : 700);
+  syncTimer = setTimeout(function () {
+    syncTimer = null; ultimaPartenza = Date.now();
+    const motivo = copiaProfilo; copiaProfilo = '';
+    void sincronizza('modifica', motivo ? { motivoCopia: motivo } : undefined);
+  }, soli ? 30 : 700);
+}
+
+/* PRIMA DI CAMBIARE IL NOME O LA VISIONE, UNA COPIA DEL CLOUD (verifica 3,
+   N11; era m11). La copia del giorno si prende al primo salvataggio della
+   giornata: un profilo rovinato lo stesso giorno, dopo, non c'era in
+   nessuna copia, e «Riprendi il profilo» non aveva da dove riprenderlo.
+   Nome e visione cambiano di rado: quando cambiano (e prima c'erano), il
+   giro dopo prende una copia del cloud com'era — col profilo di prima. */
+let profiloNoto: string | null = null;
+let copiaProfilo = '';
+function firmaProfilo(): { firma: string; pieno: boolean } {
+  try {
+    const p = window.LM.load().profilo as unknown as Record<string, unknown>;
+    const nome = String(p['nome'] || ''), visione = String(p['visione'] || '');
+    return { firma: nome + '\u0000' + visione, pieno: !!(nome || visione) };
+  } catch { return { firma: '', pieno: false }; }
+}
+function guardaProfilo(): void {
+  const f = firmaProfilo();
+  if (profiloNoto !== null && f.firma !== profiloNoto && profiloNoto.replace('\u0000', '') !== '') copiaProfilo = 'prima-di-cambiare-il-profilo';
+  profiloNoto = f.firma;
 }
 
 function sincronizza(motivo: string, opz?: OpzGiro): Promise<boolean> {
