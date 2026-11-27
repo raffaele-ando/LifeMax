@@ -119,11 +119,14 @@ export class Sentinella {
 
   async alarm() {
     this.schema();
+    this.q('DELETE FROM pendenti WHERE scade < ?', Date.now());
     const conti = this.q('SELECT p, stato FROM conti');
     if (!conti.length) return;
     const cambiati = [];
     for (const c of conti) {
-      if (c.stato !== 'ok' || !attivo(this.cfg, this.env, c.p)) continue;
+      /* «illeggibile» si riprova a ogni giro: se la chiave è tornata quella
+         giusta, il conto torna «ok» da solo (vedi `gettone`) */
+      if ((c.stato !== 'ok' && c.stato !== 'illeggibile') || !attivo(this.cfg, this.env, c.p)) continue;
       try { cambiati.push(...(await this.giro(c.p))); } catch { /* si riprova alla prossima sveglia */ }
     }
     await this.ritentaCoda();
@@ -134,7 +137,7 @@ export class Sentinella {
        permesso ritirato o scaduto. Con un «Ricollega» il conto torna «ok» e
        la sveglia si rimette (vedi `conferma`); una modifica in coda ne
        rimette una da sé (vedi `scrivi`). */
-    const vivi = this.uno('SELECT COUNT(*) AS n FROM conti WHERE stato = ?', 'ok');
+    const vivi = this.uno("SELECT COUNT(*) AS n FROM conti WHERE stato IN ('ok', 'illeggibile')");
     const inCoda = this.uno('SELECT COUNT(*) AS n FROM coda WHERE stato = ?', 'attesa');
     if ((!vivi || !vivi.n) && (!inCoda || !inCoda.n)) return;
     await this.state.storage.setAlarm(Date.now() + GIRO_MS + Math.floor(Math.random() * 60000));
@@ -147,7 +150,7 @@ export class Sentinella {
   dopoNovita(_cambiati) { /* per ora niente */ }
 
   async sveglia() {
-    const n = this.uno('SELECT COUNT(*) AS n FROM conti WHERE stato = ?', 'ok');
+    const n = this.uno("SELECT COUNT(*) AS n FROM conti WHERE stato IN ('ok', 'illeggibile')");
     if (!n || !n.n) return;
     const s = await this.state.storage.getAlarm();
     if (s === null || s === undefined) await this.state.storage.setAlarm(Date.now() + 1000);
@@ -222,6 +225,13 @@ export class Sentinella {
         'ON CONFLICT(p) DO UPDATE SET segreto = excluded.segreto, rt = excluded.rt, at = excluded.at, at_scade = excluded.at_scade, email = excluded.email, cal = excluded.cal, scade = excluded.scade',
         p, segreto, await cifra(this.cfg.chiave, t.rt, uid + '|' + p + '|rt'), await cifra(this.cfg.chiave, t.at, uid + '|' + p + '|at'),
         t.scade, email, JSON.stringify(elenco), Date.now() + ATTESA_MS);
+      /* I PERMESSI IN SOSPESO NON RESTANO (verifica 3, N10). Se nessuno
+         conferma — il caso del link preparato da un altro: qui c'è il
+         permesso della vittima, cifrato — la riga se ne va alla scadenza,
+         con una sveglia apposta (vedi `alarm`), invece di restare finché
+         non arriva un altro collegamento */
+      const s = await this.state.storage.getAlarm();
+      if (s === null || s === undefined || s > Date.now() + ATTESA_MS + 5000) await this.state.storage.setAlarm(Date.now() + ATTESA_MS + 1000);
       return { esito: 'da-confermare', ritorno: riga.ritorno, conferma: this.state.id.toString() + '.' + segreto };
     } catch (e) {
       return { esito: e instanceof Errore && e.tipo === 'permesso' ? 'caselle' : 'errore', ritorno: riga.ritorno };
@@ -274,16 +284,22 @@ export class Sentinella {
     if (!riga) throw new Errore('token', 'non collegato');
     if (riga.stato === 'revocato') throw new Errore('revocato', 'permesso ritirato');
     const uid = this.meta('uid');
-    /* UN PERMESSO CHE NON SI DECIFRA PIÙ (la chiave del server è cambiata,
-       verifica 2, M2) è un permesso perso: si dice «revocato», così l'app
-       chiede «Ricollega», invece di un errore generico che lasciava il
-       pannello su «Collegato» e intanto non funzionava niente */
+    /* UN PERMESSO CHE NON SI DECIFRA (la chiave del server è cambiata,
+       verifica 2, M2): l'app deve dire «Ricollega», invece di un errore
+       generico che lasciava il pannello su «Collegato» e intanto non
+       funzionava niente. Ma non è un permesso PERSO (verifica 3, N7): se la
+       chiave era sbagliata per qualche minuto e poi è stata rimessa, il
+       permesso c'è ancora. Allora lo stato è «illeggibile» — l'app lo vede
+       come ritirato — e a ogni tentativo si riprova: decifrato, torna «ok». */
     const apri = async (scatola, aad) => {
-      try { return await decifra(this.cfg.chiave, scatola, aad); }
+      let v;
+      try { v = await decifra(this.cfg.chiave, scatola, aad); }
       catch {
-        this.q('UPDATE conti SET stato = ? WHERE p = ?', 'revocato', p);
+        this.q('UPDATE conti SET stato = ? WHERE p = ?', 'illeggibile', p);
         throw new Errore('revocato', 'permesso illeggibile');
       }
+      if (riga.stato === 'illeggibile') { this.q('UPDATE conti SET stato = ? WHERE p = ?', 'ok', p); riga.stato = 'ok'; }
+      return v;
     };
     if (!forza && riga.at && riga.at_scade > Date.now() + 60000) return apri(riga.at, uid + '|' + p + '|at');
     if (this.rinnovi.has(p)) return this.rinnovi.get(p);
@@ -422,7 +438,7 @@ export class Sentinella {
       out[p] = {
         servizio: attivo(this.cfg, this.env, p),
         collegato: !!c,
-        revocato: !!c && c.stato === 'revocato',
+        revocato: !!c && (c.stato === 'revocato' || c.stato === 'illeggibile'),
         email: c ? c.email || '' : '',
         calendari: c ? this.q('SELECT c, nome, lettura, principale FROM cal WHERE p = ?', p)
           .map(function (r) { return { id: r.c, nome: r.nome, lettura: !!r.lettura, principale: !!r.principale }; }) : []
@@ -450,7 +466,7 @@ export class Sentinella {
           }
         }
       }
-      if (conto.stato !== 'ok' || !attivo(this.cfg, this.env, p)) continue;
+      if ((conto.stato !== 'ok' && conto.stato !== 'illeggibile') || !attivo(this.cfg, this.env, p)) continue;
       const nuovi = this.q('SELECT c FROM cal WHERE p = ? AND acceso = 1 AND pieno = 0', p).length;
       if (nuovi || Date.now() - (+this.meta('giro_' + p) || 0) > FRESCO_MS) {
         try { await this.giro(p); } catch { /* lo specchio di prima resta buono */ }

@@ -438,6 +438,40 @@ const GIORNO = 86400000;
     ok('m3 permesso ritirato: dopo il giro la sentinella non si rimette la sveglia', ns.istanze.get(h3).sveglia === null, ns.istanze.get(h3).sveglia);
   }
 
+  /* ============================================== 15 */
+  console.log('\n15. VERIFICA 3: N7 (chiave sbagliata per poco) e N10 (permessi in sospeso che restano)');
+  {
+    /* N7 */
+    const g7 = gettone('utente-n7');
+    await collega('google', { gettone: g7 });
+    const h7 = ns.idFromName('utente-n7').toString();
+    const conto7 = async () => { const r = await chiedi('/api/calendari/cambi', { dopo: 0, accesi: { google: ['io@esempio.it'] } }, { gettone: g7 }); return r.j && r.j.conti && r.j.conti.google; };
+    const giusta = env.CHIAVE_CALENDARI;
+    const vero = Date.now;
+    env.CHIAVE_CALENDARI = require('crypto').randomBytes(32).toString('base64'); ns.dimentica();
+    ns.istanze.get(h7).db.prepare('UPDATE conti SET at_scade = 0').run();
+    Date.now = () => vero() + 5 * 60000;
+    const c1 = await conto7();
+    ok('N7 chiave sbagliata: l’app sa che serve «Ricollega»', !!c1 && c1.revocato === true, JSON.stringify(c1 && { revocato: c1.revocato }));
+    env.CHIAVE_CALENDARI = giusta; ns.dimentica();
+    Date.now = () => vero() + 10 * 60000;
+    const c2 = await conto7();
+    Date.now = vero;
+    const stato7 = ns.istanze.get(h7).db.prepare("SELECT stato FROM conti WHERE p = 'google'").get();
+    ok('N7 rimessa la chiave giusta, il conto torna «ok» da solo, senza «Ricollega»', !!c2 && c2.revocato === false && stato7 && stato7.stato === 'ok', JSON.stringify({ revocato: c2 && c2.revocato, stato: stato7 && stato7.stato }));
+
+    /* N10: il ritorno di un link preparato da un altro, mai confermato */
+    const g10 = gettone('attaccante-n10');
+    await collega('google', { gettone: g10, senzaConferma: true });
+    const h10 = ns.idFromName('attaccante-n10').toString();
+    const quanti = () => ns.istanze.get(h10).db.prepare('SELECT COUNT(*) AS n FROM pendenti').get().n;
+    const prima10 = quanti();
+    Date.now = () => vero() + 11 * 60000;
+    await ns.suona(false);
+    Date.now = vero;
+    ok('N10 un permesso in sospeso mai confermato se ne va alla scadenza, con la sveglia', prima10 === 1 && quanti() === 0, prima10 + ' → ' + quanti());
+  }
+
   console.log(guai ? '\n>>> ' + guai + (guai === 1 ? ' PROBLEMA' : ' PROBLEMI') : '\n>>> TUTTO A POSTO');
   process.exit(guai ? 1 : 0);
 })().catch((e) => { console.error(e); process.exit(1); });
