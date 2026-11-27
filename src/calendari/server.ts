@@ -271,7 +271,20 @@ export function spedisciSubito(ops: OpServer[]): boolean {
    Si chiede alla sentinella da dove partire, e si va. Si torna all'app con
    `?lmcal=google&esito=ok`: lo legge `completaRitornoServer`. */
 const DOVE_KEY = 'lifemax.calendari.ritorno';
+/* DAL VECCHIO INDIRIZZO (github.io) IL CALENDARIO SI COLLEGA SUL DOMINIO
+   (verifica 3, N2). La conferma del collegamento (C2) si fida solo del
+   biscotto che il ritorno lascia nel browser, e da github.io quel biscotto
+   non torna: sta su un altro sito, ed è `SameSite=Lax` apposta. Metterlo
+   `SameSite=None` per far funzionare github.io indebolirebbe proprio la
+   difesa di C2. Allora da github.io si va sul dominio, dove il giro intero
+   (inizio, ritorno, conferma) sta sullo stesso sito; il collegamento è
+   dell'account, e da lì vale anche qui. */
+const DOMINIO_SENTINELLA = 'https://lifemax.theproject.world';
 async function vai(p: Provenienza): Promise<never> {
+  if (/\.github\.io$/.test(location.hostname)) {
+    location.assign(DOMINIO_SENTINELLA + '/?lmcal=' + p + '&esito=dal-vecchio-indirizzo');
+    return new Promise<never>(function () { /* la pagina se ne va */ });
+  }
   const qui = location.origin + location.pathname.replace(/index\.html$/, '');
   const j = await manda<{ url?: string }>(p + '/inizia', { ritorno: qui });
   if (!j.url) throw new ErroreCalendario('altro', j.errore === 'ritorno' ? 'Questo indirizzo dell’app non è fra quelli che la sentinella conosce.' : 'Il collegamento non è partito.');
@@ -308,6 +321,7 @@ export async function confermaCollegamento(p: Provenienza): Promise<{ esito: str
 }
 
 export function spiegaEsito(esito: string, nome: string): string {
+  if (esito === 'dal-vecchio-indirizzo') return nome + ' si collega da questo indirizzo: accedi con lo stesso account (se non l’hai già fatto) e tocca «Collega». Vale anche sul vecchio indirizzo.';
   if (esito === 'negato') return 'Su ' + nome + ' non è stato dato il permesso.';
   if (esito === 'caselle') return 'Nella finestra di ' + nome + ' servono tutte e due le caselle: l’elenco dei calendari e gli eventi.';
   if (esito === 'scaduto') return 'Il collegamento ci ha messo troppo, o era già stato usato: riprova.';
