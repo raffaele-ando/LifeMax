@@ -1543,7 +1543,10 @@ function creaLM() {
     var nome = r && typeof r['testo'] === 'string' ? '«' + r['testo'] + '»' : '';
     return nome || 'una delle cose toccate';
   }
-  function disfaTocco(W: Mappa, t: Tocco): Intoppo | null {
+  /* `tolti`: le cancellazioni dei calendari com'erano PRIMA di cominciare a
+     disfare — disfacendo anche il giro del calendario che ha segnato
+     «fatto» si perderebbe proprio il segno che serve */
+  function disfaTocco(W: Mappa, t: Tocco, tolti: Mappa): Intoppo | null {
     var regoleD = COME_UNIRE as unknown as Record<string, ModoFusione | undefined>;
     var modo = regoleD[t.k];
     var vuole = !t.na, era = t.a, ce = !t.nd, eraDopo = t.d;
@@ -1569,10 +1572,7 @@ function creaLM() {
              qui e basta la faceva tornare per un giro, e al giro dopo
              spariva di nuovo — mentre l'app aveva detto «Annullato». */
           if (t.k === 'azioni' && eMappa(era) && eMappa(era['esterno'])) {
-            var prof = eMappa(W['profilo']) ? W['profilo'] as Mappa : {};
-            var cals = eMappa(prof['calendari']) ? prof['calendari'] as Mappa : {};
-            var tl = eMappa(cals['tolti']) ? cals['tolti'] as Mappa : {};
-            var questo = tl[String(era['id'])];
+            var questo = tolti[String(era['id'])];
             if (eMappa(questo) && questo['fatto']) {
               var est = era['esterno'] as Mappa;
               return { tipo: 'calendario', testo: '«' + String(era['testo'] || '') + '» è già stata cancellata anche su ' + (NOMI_FORNITORI[String(est['prov'])] || 'calendario') };
@@ -1616,13 +1616,15 @@ function creaLM() {
   function disfaCambi(cambi: Cambio[], riga: string | null): boolean {
     motivoRifiuto = '';
     var W = copiaDi(load()) as unknown as Mappa;
+    var cal = load().profilo.calendari;
+    var tolti = (cal && eMappa(cal.tolti) ? copiaDi(cal.tolti) : {}) as Mappa;
     for (var i = 0; i < cambi.length; i++) {
       var c = cambi[i];
       if (!c || !Array.isArray(c.t)) { motivoRifiuto = 'Non si può più annullare.'; return false; }
       for (var j = c.t.length - 1; j >= 0; j--) {
         var tt = c.t[j];
         if (!tt) continue;
-        var intoppo = disfaTocco(W, tt);
+        var intoppo = disfaTocco(W, tt, tolti);
         if (intoppo) {
           motivoRifiuto = testoRifiuto(intoppo);
           if (window.LMLog) window.LMLog.add('info', 'dati', 'annulla non fatto', intoppo.tipo + ': ' + intoppo.testo);

@@ -356,6 +356,64 @@ window.google = { accounts: { oauth2: {
       await P.ctx.close(); await T.ctx.close();
     }
 
+    /* ============================================================ V4-05 */
+    if (parte('calendario')) {
+      const giorno = (n) => { const d = new Date(); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); };
+      const ora = (g, hh) => ({ dateTime: g + 'T' + hh + ':00+01:00' });
+      G.eventi['lavoro@gruppo'] = {
+        r1: { id: 'r1', summary: 'Riunione di progetto', start: ora(giorno(1), '10:00'), end: ora(giorno(1), '11:00') },
+        r2: { id: 'r2', summary: 'Riunione col cliente', start: ora(giorno(1), '15:00'), end: ora(giorno(1), '16:00') }
+      };
+      Object.values(G.eventi['lavoro@gruppo']).forEach((e) => { e.etag = nuovoEtag(); e.status = 'confirmed'; });
+      await N.pulisci();
+      const ctx = await B.contesto({ tipo: 'iphone' });
+      await ctx.route('https://accounts.google.com/gsi/client', (r) => r.fulfill({ status: 200, contentType: 'text/javascript', body: GIS_FINTA }));
+      await ctx.route('https://accounts.google.com/__permesso', (r) => { const t = 'g-tok-' + (++G.n); G.token.add(t); return rispondi(r, 200, { t }); });
+      await ctx.route('https://www.googleapis.com/**', googleApi);
+      const T = await B.dispositivo('telefono', { ctx });
+      await T.evaluate(() => { const s = LM.load(); s.onboarded = true; LM.save(); });
+      await riapri(T); await T.waitForFunction(() => window.LM && window.LMCloud, null, { timeout: 15000 });
+      await B.accedi(T, 'mario', 'mario@prova.it');
+      await T.evaluate(() => { location.hash = '#/profilo'; }); await T.waitForTimeout(500);
+      await T.evaluate(() => { const r = document.getElementById('imp-calendari'); if (r) r.click(); }); await T.waitForTimeout(700);
+      await T.click('#cal-google-collega'); await T.waitForTimeout(900);
+      await T.click('#cal-google [data-cal="lavoro@gruppo"]'); await T.waitForTimeout(400);
+      const giro = () => T.evaluate(() => window.__PROVE__.calendari.sincronizza('prova'));
+      await giro(); await B.calma(T, 2000);
+      await T.keyboard.press('Escape').catch(() => {});
+      const idDi = (ev) => T.evaluate((e) => (LM.load().azioni.find((a) => a.esterno && a.esterno.id === e) || {}).id, ev);
+      const az1 = await idDi('r1'), az2 = await idDi('r2');
+      ok('V4-05 (preparazione) le due riunioni del calendario sono in LifeMax', !!az1 && !!az2, { az1, az2 });
+      /* tolta, e la cancellazione è già arrivata su Google */
+      await T.evaluate((i) => LM.rimuoviAzione(i), az1);
+      await giro(); await B.calma(T, 1500);
+      ok('V4-05 (preparazione) tolta in LifeMax, è cancellata anche su Google', !G.eventi['lavoro@gruppo'].r1);
+      await alDiario(T);
+      const riga = await annullaRiga(T, 'Rimossa da oggi «Riunione di progetto»');
+      await T.waitForTimeout(500);
+      await T.evaluate(() => { const b = [...document.querySelectorAll('.avviso-ovl button')].find((x) => /Annulla fin qui/.test(x.textContent)); if (b) b.click(); });
+      await T.waitForTimeout(800);
+      const detto = await messaggi(T);
+      await giro(); await B.calma(T, 2000);
+      const dopo = {
+        inLifeMax: await T.evaluate((i) => LM.load().azioni.some((a) => a.id === i), az1),
+        suGoogle: Object.values(G.eventi['lavoro@gruppo']).some((e) => e.summary === 'Riunione di progetto'),
+        diario: await T.evaluate(() => LM.load().registro.slice(-4).map((r) => r.testo)), detto, riga
+      };
+      const onesto = (dopo.inLifeMax && dopo.suGoogle) ||
+        (!dopo.inLifeMax && !dopo.suGoogle && detto.some((x) => /Non si può annullare.*cancellata anche su Google/.test(x)) && !dopo.diario.some((x) => /^Annullato: .*Riunione di progetto/.test(x)) && !detto.some((x) => /^Annullato\./.test(x)));
+      ok('V4-05 annullare dopo che la cancellazione è arrivata su Google: o torna davvero (qui e là), o l’app dice che non si può — mai «Annullato» per poi farla sparire', onesto, dopo);
+      /* prima che la cancellazione parta, invece, l'annulla rimette tutto */
+      await T.evaluate((i) => LM.rimuoviAzione(i), az2);
+      await alDiario(T);
+      await annullaRiga(T, 'Rimossa da oggi «Riunione col cliente»');
+      await T.waitForTimeout(800);
+      await giro(); await B.calma(T, 2000);
+      const r2 = { inLifeMax: await T.evaluate((i) => LM.load().azioni.some((a) => a.id === i && a.esterno), az2), suGoogle: !!G.eventi['lavoro@gruppo'].r2 };
+      ok('V4-05 annullata prima che la cancellazione parta: resta qui, collegata, e su Google', r2.inLifeMax && r2.suGoogle, r2);
+      await ctx.close();
+    }
+
     /* ============================================================ V4-07 */
     if (parte('timer')) {
       await N.pulisci();

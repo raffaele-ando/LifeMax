@@ -232,7 +232,7 @@ type Op =
   | { t: 'istantanea'; id: string; ist: Istantanea; invito?: Esterno['invito'] }
   | { t: 'sparito'; id: string }
   | { t: 'collega'; id: string; esterno: Esterno; ev: EventoRemoto }
-  | { t: 'tolto'; id: string }
+  | { t: 'tolto'; id: string; cancellato?: boolean }
   | { t: 'lettura'; prov: Provenienza; cal: string }
   | { t: 'rifiutato'; prov: Provenienza; testo: string; cosa: 'cancellazione' | 'modifica' | 'creazione'; tolto?: string };
 
@@ -282,7 +282,11 @@ async function giroDi(f: Fornitore, ops: Op[], conto: Conto): Promise<void> {
     if (s.azioni.some(function (x) { return x.id === idA; })) { ops.push({ t: 'tolto', id: idA }); continue; }
     const sc = acc.calendari[t.cal];
     if (!sc || !sc.lettura) {
-      try { await f.togli(t.cal, t.id); conto.tolte++; }
+      try {
+        await f.togli(t.cal, t.id); conto.tolte++;
+        ops.push({ t: 'tolto', id: idA, cancellato: true });
+        continue;
+      }
       catch (e) {
         if (rifiuto(e)) {
           /* resta da fare: si riprova al giro dopo, fino a RIFIUTI_MAX */
@@ -463,6 +467,16 @@ function applica(ops: Op[], nomeDi: (p: Provenienza) => string): boolean {
       const c = s.profilo.calendari || (s.profilo.calendari = {});
       const t = (c.tolti || (c.tolti = {}))[op.id];
       if (t) t.fatto = true;
+      /* TORNATA IN VITA MENTRE LA SI CANCELLAVA LÀ (verifica 4, V4-05): un
+         annulla arrivato fra la lettura e la fine del giro. Là non c'è più:
+         qui resta, staccata, e lo si dice — se restasse legata a un evento
+         che non esiste, il giro dopo la toglierebbe di nuovo. */
+      const viva = op.cancellato ? trova(op.id) : undefined;
+      if (viva && viva.esterno) {
+        LM.registra('calendario', '«' + viva.testo + '» era già stata cancellata su ' + nomeDi(viva.esterno.prov) + ': qui resta, e non è più collegata.', true);
+        viva.esterno = null;
+        viva.aggiornata = ora;
+      }
     } else if (op.t === 'rifiutato') {
       const nome = nomeDi(op.prov);
       if (op.tolto) {
