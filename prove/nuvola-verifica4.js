@@ -25,9 +25,44 @@
 'use strict';
 const em = require('./comune/emulatore');
 const { ok, guai } = em.conto();
-const H = 3600000, G = 24 * H;
+const H = 3600000, GIORNO = 24 * H;
 const scelte = process.argv.slice(2);
 const parte = (n) => !scelte.length || scelte.indexOf(n) >= 0;
+
+/* GOOGLE FINTO, come in prove/nuvola-calendario.js: la libreria GIS e
+   l'API Calendar servite dal banco, un calendario «Lavoro» in memoria */
+const G = { token: new Set(), n: 0, eventi: {} };
+let etag = 0;
+const nuovoEtag = () => '"e' + (++etag) + '"';
+const rispondi = (route, stato, corpo) => route.fulfill({ status: stato, contentType: 'application/json', headers: { 'Access-Control-Allow-Origin': '*' }, body: corpo === undefined ? '' : JSON.stringify(corpo) });
+async function googleApi(route) {
+  const q = route.request(); const u = new URL(q.url()); const metodo = q.method();
+  if (metodo === 'OPTIONS') return route.fulfill({ status: 204, headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': '*', 'Access-Control-Allow-Methods': '*' } });
+  const tok = (q.headers()['authorization'] || '').replace('Bearer ', '');
+  const via = decodeURIComponent(u.pathname.replace('/calendar/v3', ''));
+  const corpo = q.postData() ? JSON.parse(q.postData()) : null;
+  if (!G.token.has(tok)) return rispondi(route, 401, { error: { message: 'Invalid Credentials' } });
+  if (via === '/users/me/calendarList') return rispondi(route, 200, { items: [{ id: 'io@esempio.it', summary: 'io', primary: true, accessRole: 'owner' }, { id: 'lavoro@gruppo', summary: 'Lavoro', accessRole: 'writer' }] });
+  const m = /^\/calendars\/([^/]+)\/events(?:\/(.+))?$/.exec(via);
+  if (!m) return rispondi(route, 404, { error: { message: 'no' } });
+  const cal = G.eventi[m[1]] || (G.eventi[m[1]] = {});
+  const id = m[2];
+  if (!id && metodo === 'GET') return rispondi(route, 200, { items: Object.values(cal) });
+  if (!id && metodo === 'POST') { const nid = corpo.id || ('n' + Date.now()); cal[nid] = Object.assign({ status: 'confirmed' }, corpo, { id: nid, etag: nuovoEtag() }); return rispondi(route, 200, cal[nid]); }
+  const e = cal[id];
+  if (!e) return rispondi(route, 404, { error: { message: 'Not Found' } });
+  if (metodo === 'GET') return rispondi(route, 200, e);
+  if (metodo === 'DELETE') { delete cal[id]; return route.fulfill({ status: 204, headers: { 'Access-Control-Allow-Origin': '*' }, body: '' }); }
+  if (metodo === 'PATCH') { Object.keys(corpo).forEach((k) => { e[k] = corpo[k]; }); e.etag = nuovoEtag(); return rispondi(route, 200, e); }
+  return rispondi(route, 405, {});
+}
+const GIS_FINTA = `
+window.google = { accounts: { oauth2: {
+  initTokenClient: function (cfg) { return { requestAccessToken: function () {
+    fetch('https://accounts.google.com/__permesso').then(function (r) { return r.json(); })
+      .then(function (j) { cfg.callback({ access_token: j.t, expires_in: 3599, scope: cfg.scope }); }); } }; },
+  hasGrantedAllScopes: function () { return true; }, revoke: function () {}
+} } };`;
 
 (async () => {
   const E = await em.accendi(9500);
@@ -232,6 +267,57 @@ const parte = (n) => !scelte.length || scelte.indexOf(n) >= 0;
       await svuota(P);
       await P.ctx.close(); await T.ctx.close();
     }
+    /* ============================================================ V4-03 */
+    if (parte('rete')) {
+      await N.pulisci();
+      const T = await B.dispositivo('telefono', { tipo: 'iphone' });
+      await B.accedi(T, 'gea', 'gea@prova.it');
+      const uid = await B.uidDi(T);
+      await T.evaluate(() => { const s = LM.load(); s.onboarded = true; LM.save(); LM.aggiungiAzione('Prima del buco', null); });
+      await B.calma(T, 2500);
+      /* la rete si appende: quello che va a Firestore non torna più */
+      const appese = []; let appendi = true;
+      await T.ctx.route(FS, (r) => { if (appendi) appese.push(r); else r.continue(); });
+      await T.evaluate(() => LM.aggiungiAzione('Scritta durante il buco', null));
+      await T.waitForTimeout(40000);
+      /* torna la rete buona: le richieste nuove passano, quelle appese restano appese */
+      appendi = false;
+      await T.evaluate(() => window.dispatchEvent(new Event('online')));
+      const nelCloud = async (testo, ms) => {
+        const t0 = Date.now();
+        while (Date.now() - t0 < ms) {
+          const st = await N.stato(uid);
+          if (st && (st.azioni || []).some((a) => a.testo === testo)) return Math.round((Date.now() - t0) / 1000);
+          await T.waitForTimeout(2000);
+        }
+        return -1;
+      };
+      const dopo = await nelCloud('Scritta durante il buco', 60000);
+      ok('V4-03 tornata la rete, la modifica fatta durante il buco arriva nel cloud entro un minuto (senza ricaricare)', dopo >= 0, { secondi: dopo, appese: appese.length, stato: await T.evaluate(() => window.LM_SYNC && window.LM_SYNC.state) });
+      await T.evaluate(() => LM.aggiungiAzione('Scritta dopo il buco', null));
+      const nuova = await nelCloud('Scritta dopo il buco', 45000);
+      ok('V4-03 …e una modifica nuova, a rete buona, arriva', nuova >= 0, { secondi: nuova, stato: await T.evaluate(() => window.LM_SYNC && window.LM_SYNC.state) });
+      /* le richieste appese, se un giorno rispondono, non fanno danni: il
+         giro lasciato non riscrive niente qui */
+      const prima = await testi(T);
+      for (const r of appese) await r.continue().catch(() => {});
+      await T.waitForTimeout(4000); await B.calma(T, 1500);
+      const poi = await testi(T);
+      ok('V4-03 …e le richieste appese che rispondono tardi non riportano indietro niente', ['Prima del buco', 'Scritta durante il buco', 'Scritta dopo il buco'].every((x) => poi.includes(x)) && poi.length === prima.length, { prima, poi });
+      /* e senza nessun segnale dalla rete: la richiesta si appende, la rete
+         torna buona in silenzio, e il giro appeso scade da solo */
+      const appese2 = []; let appendi2 = true;
+      await T.ctx.unroute(FS);
+      await T.ctx.route(FS, (r) => { if (appendi2) appese2.push(r); else r.continue(); });
+      await T.evaluate(() => LM.aggiungiAzione('Scritta nel secondo buco', null));
+      await T.waitForTimeout(5000);
+      appendi2 = false;
+      const sola = await nelCloud('Scritta nel secondo buco', 75000);
+      ok('V4-03 …e anche senza l’evento «online» il giro appeso scade da solo e la modifica arriva', sola >= 0, { secondi: sola, appese: appese2.length });
+      appese2.forEach((r) => r.abort().catch(() => {}));
+      await T.ctx.close();
+    }
+
   } catch (e) { ok('eccezione', false, String(e && e.stack || e)); }
   await B.chiudi(); srv.close(); await E.spegni();
   console.log(guai() ? '\n>>> ' + guai() + ' PROBLEMI' : '\n>>> TUTTO A POSTO');

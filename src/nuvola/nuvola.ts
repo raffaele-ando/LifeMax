@@ -1000,7 +1000,59 @@ function opzioniFusione(): { nuovo?: 'a'; assenzaLunga?: { da: number } } {
   return o;
 }
 
-async function giro(uid: string, o: OpzGiro): Promise<void> {
+/* UNA RICHIESTA APPESA NON FERMA PIÙ TUTTO (verifica 4, V4-03). In metro o
+   su un Wi-Fi «che c'è ma non va» una richiesta parte e non torna mai, e
+   Firestore alla lettura dentro la transazione non mette un tempo massimo:
+   il giro restava in corso per sempre, `sincronizza` accodava tutti gli
+   altri a quello, e niente partiva più — nemmeno a rete tornata buona,
+   finché non si ricaricava la pagina.
+   Adesso un giro ha un tempo massimo (`tempoGiro`, che raddoppia a ogni
+   giro scaduto fino a quattro minuti, per non tagliare un caricamento
+   grande su una rete lenta, e torna giù al primo giro riuscito); scaduto,
+   lo si LASCIA: è un errore di rete come gli altri (stato «attesa», nuovo
+   tentativo), e il giro dopo apre richieste nuove. Quando la rete torna, o
+   si torna sull'app, un giro in corso da un po' si lascia subito.
+   Il giro lasciato, se un giorno risponde, non fa più niente: `lasciato`
+   gli dice di non scrivere nel cloud (si controlla prima delle scritture
+   della transazione, e Firestore rifà la funzione se intanto il documento
+   è cambiato) e di non toccare questo dispositivo dopo. */
+const TEMPO_GIRO_MS = 40000;
+const TEMPO_GIRO_MAX = 4 * 60000;
+let tempoGiro = TEMPO_GIRO_MS;
+let lasciaGiro: ((perche: string) => void) | null = null;
+let giroPartito = 0;
+interface Lasciato { si: boolean }
+class GiroLasciato extends Error {
+  constructor(perche: string) { super('il cloud non risponde (deadline-exceeded): ' + perche); }
+}
+function entroIlTempo(p: Promise<void>, ms: number, lasciato: Lasciato): Promise<void> {
+  return new Promise(function (ok, no) {
+    let finito = false;
+    const chiudi = function (e?: unknown) {
+      if (finito) return;
+      finito = true; clearTimeout(t); lasciaGiro = null;
+      if (e) no(e); else ok();
+    };
+    const t = setTimeout(function () {
+      lasciato.si = true;
+      tempoGiro = Math.min(tempoGiro * 2, TEMPO_GIRO_MAX);
+      chiudi(new GiroLasciato('nessuna risposta in ' + Math.round(ms / 1000) + ' s'));
+    }, ms);
+    lasciaGiro = function (perche: string) { lasciato.si = true; chiudi(new GiroLasciato(perche)); };
+    giroPartito = Date.now();
+    p.then(function () { chiudi(); }, function (e) { chiudi(e || new Error('giro non riuscito')); });
+  });
+}
+/* un giro in corso da più di `ms`: si lascia, e se ne fa uno nuovo */
+function lasciaSeAppeso(ms: number, perche: string): void {
+  if (lasciaGiro && Date.now() - giroPartito > ms) {
+    log('avviso', 'il giro in corso non risponde da ' + Math.round((Date.now() - giroPartito) / 1000) + ' s: lo lascio e ne faccio uno nuovo', perche);
+    lasciaGiro(perche);
+  }
+}
+
+async function giro(uid: string, o: OpzGiro, lasciato?: Lasciato): Promise<void> {
+  const seLasciato = function () { if (lasciato && lasciato.si) throw new GiroLasciato('giro vecchio, lasciato'); };
   if (!FSM || !db) throw new Error('cloud non avviato');
   const inizio = window.LM.adesso() - 1;
   const fs = FSM, base = db;
@@ -1015,10 +1067,12 @@ async function giro(uid: string, o: OpzGiro): Promise<void> {
   const gen0 = window.LM.generazione();
   const caricati = new Set<string>();
   for (let tentativo = 0; tentativo < 4; tentativo++) {
+    seLasciato();
     const tenuto: { e: EsitoGiro | null } = { e: null };
     const scrittore = 'w' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
     try {
       await fs.runTransaction(base, async function (tx) {
+        seLasciato();
         tenuto.e = null;
         const snap = await tx.get(rifPrincipale);
         const m = snap.exists() ? (snap.data() || {}) : null;
@@ -1060,6 +1114,8 @@ async function giro(uid: string, o: OpzGiro): Promise<void> {
         /* la copia del giorno (o quella chiesta prima di un ripristino). Il
            documento di prima ha già avuto la sua, appena presa qui sopra. */
         const copiaDovuta = serve && !!remoto && !vecchio && (!!o.motivoCopia || ora - Number((m && m.ultimaCopia) || 0) > COPIA_OGNI_MS);
+        /* un giro lasciato nel frattempo non scrive (V4-03) */
+        if (lasciato && lasciato.si) throw new GiroLasciato('giro vecchio, lasciato');
         if (serve) {
           daCaricare.forEach(function (n) {
             const p = pezzi[n]; if (!p) return;
@@ -1107,6 +1163,9 @@ async function giro(uid: string, o: OpzGiro): Promise<void> {
       }
       throw e;
     }
+    /* lasciato mentre aspettava: quello che ha letto è vecchio, e qui non
+       si tocca niente (V4-03) */
+    seLasciato();
     const fatto = tenuto.e;
     if (!fatto) return;
     /* quello che si sa adesso del cloud */
@@ -1245,7 +1304,9 @@ function sincronizza(motivo: string, opz?: OpzGiro): Promise<boolean> {
       do {
         syncPendente = false;
         const quante = modifiche;
-        await giro(uid, opz || {});
+        const lasciato: Lasciato = { si: false };
+        await entroIlTempo(giro(uid, opz || {}, lasciato), tempoGiro, lasciato);
+        tempoGiro = TEMPO_GIRO_MS;
         opz = undefined;
         if (!currentUser || currentUser.uid !== uid) break;
         /* la prima unione è riuscita: da qui in poi questo dispositivo è
@@ -1563,6 +1624,7 @@ setInterval(function () { if (!document.hidden) guardaVersione(); }, 30 * 60000)
 document.addEventListener('visibilitychange', function () {
   if (document.hidden) { if (currentUser && sporco) void sincronizza('l’app va in secondo piano'); return; }
   guardaVersione();
+  lasciaSeAppeso(15000, 'sei tornato sull’app');
   riprovaSubito('sei tornato sull’app');
   if (currentUser && (sporco || !ascoltoAttivo)) void sincronizza('sei tornato sull’app');
 });
@@ -1617,6 +1679,9 @@ window.addEventListener('offline', function () {
 window.addEventListener('online', function () {
   if (currentUser) {
     log('info', 'rete tornata: riprovo il salvataggio'); attesaSync = 0;
+    /* un giro partito quando la rete non andava è appeso a una connessione
+       morta: si lascia, e il prossimo apre richieste nuove (V4-03) */
+    lasciaSeAppeso(3000, 'è tornata la rete');
     /* l'orologio si rimisura a ogni ritorno della rete (M7): prima, poi il giro */
     const u = currentUser.uid;
     void misuraOrologio(u).then(function () { return sincronizza('è tornata la rete'); });
