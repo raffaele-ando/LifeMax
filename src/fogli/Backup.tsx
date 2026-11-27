@@ -134,7 +134,7 @@ function Cloud() {
   return (<>
     {eti(stato === 'arrivate' && righe.length ? righe.length : null)}
     {stato === 'attesa' ? <div className="imp-nota" style={{ margin: 0 }}>Sto guardando…</div> : null}
-    {stato === 'arrivate' && !righe.length ? <div className="imp-nota" style={{ margin: 0 }}>Nessuna copia online, per ora. Ne faccio una al giorno, e una prima di ogni ripristino; tengo le ultime trenta.</div> : null}
+    {stato === 'arrivate' && !righe.length ? <div className="imp-nota" style={{ margin: 0 }}>Nessuna copia online, per ora. Ne faccio una al giorno, e una prima di ogni ripristino; tengo le ultime trenta del giorno, e dieci delle altre.</div> : null}
     {righe.length ? (<>
       <div className="imp-nota" style={{ margin: 0 }}>
         <b>Riprendi il profilo</b> rimette solo nome, visione, sveglia, tema e impostazioni.{' '}

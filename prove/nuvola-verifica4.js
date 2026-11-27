@@ -414,6 +414,32 @@ window.google = { accounts: { oauth2: {
       await ctx.close();
     }
 
+    /* ============================================================ V4-06 */
+    if (parte('copie')) {
+      await N.pulisci();
+      const P = await B.dispositivo('pc');
+      await B.accedi(P, 'lia', 'lia@prova.it');
+      const uid = await B.uidDi(P);
+      await P.evaluate(() => { const s = LM.load(); s.onboarded = true; s.profilo.nome = 'Lia'; s.profilo.visione = 'Prima versione'; LM.aggiungiAzione('Cosa di lunedì', null); LM.save(); });
+      await B.calma(P, 2000);
+      for (let g = 1; g <= 2; g++) {
+        await B.avanti(P, GIORNO); await riapri(P); await P.waitForFunction(() => window.LM_AUTH && window.LM_AUTH.user, null, { timeout: 20000 }); await B.calma(P, 1500);
+        await P.evaluate((n) => LM.aggiungiAzione('Cosa del giorno ' + n, null), g); await B.calma(P, 2500);
+      }
+      const delGiorno = async () => (await N.elenco('users/' + uid + '/copie')).filter((c) => c.motivo === 'copia-del-giorno').length;
+      const prima = await delGiorno();
+      for (let i = 1; i <= 30; i++) {
+        await P.evaluate((n) => { const s = LM.load(); s.profilo.visione = 'Visione, ritocco ' + n; LM.save(); }, i);
+        await P.waitForTimeout(2300); await B.calma(P, 200);
+      }
+      await B.calma(P, 3000); await P.waitForTimeout(3000);
+      const tutte = await N.elenco('users/' + uid + '/copie');
+      const conti = {}; tutte.forEach((c) => { conti[c.motivo] = (conti[c.motivo] || 0) + 1; });
+      ok('V4-06 trenta ritocchi alla visione: le copie dei giorni prima restano nel cloud', prima > 0 && await delGiorno() === prima, { prima, conti });
+      ok('V4-06 …e c’è la copia di com’era prima dei ritocchi (N11), una sola', conti['prima-di-cambiare-il-profilo'] === 1, conti);
+      await P.ctx.close();
+    }
+
     /* ============================================================ V4-07 */
     if (parte('timer')) {
       await N.pulisci();

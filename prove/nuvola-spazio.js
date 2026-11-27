@@ -152,12 +152,15 @@ function genera(giorni) {
       const nuove = await N.elenco('users/' + uid + '/copie');
       const vecchie = await N.elenco('users/' + uid + '/backups');
       ok('12 dieci riaperture con differenze: le copie nel cloud restano poche (' + nuove.length + ')', nuove.length <= 3 && vecchie.length === 0, { nuove: nuove.length, vecchie: vecchie.length });
-      /* trentacinque copie: si sfoltiscono alle ultime trenta */
+      /* trentacinque copie del giorno: si sfoltiscono alle ultime trenta */
       for (let i = 0; i < 35; i++) await N.scriviDoc('users/' + uid + '/copie/finta' + i, { ts: Date.now() - (40 - i) * G, salvato: Date.now() - (40 - i) * G, motivo: 'copia-del-giorno', ricchezza: 1, n: 0, nome: 'Mario' });
       const ok1 = await P.evaluate(() => window.LMCloud.backups().then((l) => l[0] && window.LMCloud.riprendiBackup(l[0].id)));
       await P.waitForTimeout(3000);
       const dopo = await N.elenco('users/' + uid + '/copie');
-      ok('12 oltre trenta copie, le più vecchie se ne vanno', !!ok1 && dopo.length <= 30, dopo.length);
+      /* le copie del giorno hanno trenta posti loro, le «prima di…» dieci a
+         parte (verifica 4, V4-06) */
+      const delGiorno = dopo.filter((c) => c.motivo === 'copia-del-giorno').length;
+      ok('12 oltre trenta copie, le più vecchie se ne vanno', !!ok1 && delGiorno <= 30 && dopo.length <= 40, { delGiorno, tutte: dopo.length });
       const t0 = Date.now();
       const elenco = await P.evaluate(() => window.LMCloud.backups().then((l) => l.map((c) => ({ n: c.nome, r: c.ricchezza }))));
       ok('12 elencarle è veloce e non scarica le copie intere (' + (Date.now() - t0) + ' ms)', elenco.length === dopo.length && dopo.every((d) => d.__byte < 4000), { elencate: elenco.length });

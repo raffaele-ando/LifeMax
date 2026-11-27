@@ -106,8 +106,15 @@ const VERSIONE_MINIMA = 1;
 class VersioneVecchia extends Error {
   constructor() { super('versione dell’app troppo vecchia per questi dati'); }
 }
-/* quante copie di sicurezza tenere nel cloud, e ogni quanto farne una */
+/* quante copie di sicurezza tenere nel cloud, e ogni quanto farne una.
+   LE COPIE DEL GIORNO HANNO I LORO POSTI (verifica 4, V4-06): prima le
+   trenta erano di qualunque tipo, e trenta ritocchi alla visione (una copia
+   «prima di cambiare il profilo» ciascuno) buttavano fuori tutte le copie
+   dei giorni prima — proprio quelle da cui ripartire. Adesso le copie del
+   giorno sono trenta per conto loro, e tutte le altre («prima di…») dieci
+   a parte. */
 const COPIE_DA_TENERE = 30;
+const COPIE_PRIMA_DI = 10;
 const COPIA_OGNI_MS = 20 * 3600 * 1000;
 /* oltre questo, un dispositivo che torna è «assente da molto» (vedi
    `assenzaLunga` in dati.ts): le lapidi durano due anni */
@@ -1271,6 +1278,11 @@ function programmaSync(): void {
    giro dopo prende una copia del cloud com'era — col profilo di prima. */
 let profiloNoto: string | null = null;
 let copiaProfilo = '';
+/* AL PIÙ UNA OGNI ORA (V4-06): chi sistema la visione un po' alla volta la
+   ritocca dieci volte di fila, e la copia che serve è quella di PRIMA del
+   primo ritocco, non una per ritocco */
+const COPIA_PROFILO = 'lm-copia-profilo';
+const COPIA_PROFILO_OGNI_MS = 3600 * 1000;
 function firmaProfilo(): { firma: string; pieno: boolean } {
   try {
     const p = window.LM.load().profilo as unknown as Record<string, unknown>;
@@ -1280,7 +1292,13 @@ function firmaProfilo(): { firma: string; pieno: boolean } {
 }
 function guardaProfilo(): void {
   const f = firmaProfilo();
-  if (profiloNoto !== null && f.firma !== profiloNoto && profiloNoto.replace('\u0000', '') !== '') copiaProfilo = 'prima-di-cambiare-il-profilo';
+  if (profiloNoto !== null && f.firma !== profiloNoto && profiloNoto.replace('\u0000', '') !== '') {
+    const ultima = Number(leggi(COPIA_PROFILO)) || 0, ora = Date.now();
+    if (!ultima || ora - ultima > COPIA_PROFILO_OGNI_MS || ora < ultima) {
+      copiaProfilo = 'prima-di-cambiare-il-profilo';
+      scrivi(COPIA_PROFILO, String(ora));
+    }
+  }
   profiloNoto = f.firma;
 }
 
@@ -1368,7 +1386,8 @@ function conTempo<T>(p: Promise<T>, ms: number): Promise<T | false> {
    leggere solo i documenti piccoli: prima, per aprire «Backup», si
    scaricavano tutte intere — cinque megabyte dopo dieci riaperture.
    Si fanno al massimo una volta al giorno (più quelle prima di un
-   ripristino), e ne restano le ultime trenta. */
+   ripristino), e ne restano le ultime trenta del giorno e dieci delle
+   altre (vedi `COPIE_PRIMA_DI`). */
 async function scriviCopia(uid: string, stato: Record<string, unknown>, motivo: string): Promise<void> {
   if (!FSM || !db) return;
   const fs = FSM, base = db;
@@ -1394,10 +1413,11 @@ async function potaCopie(uid: string): Promise<void> {
   const fs = FSM, base = db;
   try {
     const q = await fs.getDocs(fs.collection(base, 'users', uid, 'copie'));
-    const tutte: { id: string; salvato: number; n: number }[] = [];
-    q.forEach(function (d) { const v = d.data() || {}; tutte.push({ id: d.id, salvato: Number(v.salvato) || 0, n: Number(v.n) || 0 }); });
+    const tutte: { id: string; salvato: number; n: number; delGiorno: boolean }[] = [];
+    q.forEach(function (d) { const v = d.data() || {}; tutte.push({ id: d.id, salvato: Number(v.salvato) || 0, n: Number(v.n) || 0, delGiorno: v.motivo === 'copia-del-giorno' }); });
     tutte.sort(function (a, b) { return b.salvato - a.salvato; });
-    const via = tutte.slice(COPIE_DA_TENERE);
+    const via = tutte.filter(function (c) { return c.delGiorno; }).slice(COPIE_DA_TENERE)
+      .concat(tutte.filter(function (c) { return !c.delGiorno; }).slice(COPIE_PRIMA_DI));
     if (!via.length) return;
     const b = fs.writeBatch(base);
     via.forEach(function (c) {
@@ -1405,7 +1425,7 @@ async function potaCopie(uid: string): Promise<void> {
       b.delete(fs.doc(base, 'users', uid, 'copie', c.id));
     });
     await b.commit();
-    log('info', 'copie di sicurezza nel cloud sfoltite', via.length + ' tolte, ne restano ' + COPIE_DA_TENERE);
+    log('info', 'copie di sicurezza nel cloud sfoltite', via.length + ' tolte, ne restano ' + (tutte.length - via.length));
   } catch (e) { log('avviso', 'non riesco a sfoltire le copie nel cloud', messaggio(e)); }
 }
 
