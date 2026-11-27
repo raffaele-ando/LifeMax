@@ -318,6 +318,71 @@ window.google = { accounts: { oauth2: {
       await T.ctx.close();
     }
 
+    /* ============================================================ V4-04 */
+    if (parte('orologio')) {
+      const testo = (d, i) => d.evaluate((x) => (LM.load().azioni.find((a) => a.id === x) || {}).testo, i);
+      const rinomina = (d, i, x) => d.evaluate(([a, b]) => { const r = LM.load().azioni.find((y) => y.id === a); r.testo = b; LM.save(); }, [i, x]);
+      await N.pulisci();
+      const P = await B.dispositivo('pc'), T = await B.dispositivo('telefono', { tipo: 'iphone' });
+      await B.accedi(P, 'ugo', 'ugo@prova.it'); await B.accedi(T, 'ugo', 'ugo@prova.it');
+      const uid = await B.uidDi(P);
+      await P.evaluate(() => LM.aggiungiAzione('Dentista', null));
+      await B.calmaTutti([P, T], 3000);
+      const id = await P.evaluate(() => LM.load().azioni.find((a) => a.testo === 'Dentista').id);
+      /* il PC, senza cloud, con la data avanti di due giorni, rinomina */
+      await P.ctx.route(FS, (r) => r.abort());
+      await B.avanti(P, 2 * GIORNO);
+      await riapri(P); await P.waitForTimeout(2500);
+      await rinomina(P, id, 'Dentista (PC con la data sbagliata)'); await P.waitForTimeout(800);
+      /* l'orologio torna giusto, il cloud torna */
+      await B.avanti(P, -2 * GIORNO);
+      await P.ctx.unroute(FS);
+      await riapri(P); await B.calmaTutti([P, T], 4000);
+      await rinomina(T, id, 'Dentista giovedì (telefono, dopo)');
+      await B.calmaTutti([P, T], 4000); await riapri(P); await riapri(T); await B.calmaTutti([P, T], 4000);
+      const b1 = { pc: await testo(P, id), telefono: await testo(T, id) };
+      b1.cloud = (((await N.stato(uid)) || {}).azioni || []).filter((x) => x.id === id).map((x) => x.testo)[0];
+      ok('V4-04 orologio del PC avanti di due giorni e poi rimesso: la modifica fatta dopo sul telefono vince, ovunque', Object.values(b1).every((v) => /giovedì/.test(v || '')), b1);
+      await rinomina(P, id, 'Dentista spostato a venerdì (PC, orologio giusto)');
+      const subito = await testo(P, id);
+      await B.calmaTutti([P, T], 4000); await B.calmaTutti([P, T], 1000);
+      const b2 = { subitoDopoLaModifica: subito, pc: await testo(P, id), telefono: await testo(T, id) };
+      ok('V4-04 …e la modifica nuova del PC stesso resta (non torna indietro sotto gli occhi)', Object.values(b2).every((v) => /venerdì/.test(v || '')), b2);
+      /* e una cancellazione fatta dopo, dal telefono, cancella davvero */
+      await T.evaluate((i) => LM.rimuoviAzione(i), id);
+      await B.calmaTutti([P, T], 4000); await riapri(P); await B.calmaTutti([P, T], 3000);
+      const via = { pc: await testo(P, id), telefono: await testo(T, id) };
+      ok('V4-04 …e una cancellazione fatta dopo vince anche su una riga «del futuro»', !via.pc && !via.telefono, via);
+      await P.ctx.close(); await T.ctx.close();
+    }
+
+    /* ============================================================ V4-07 */
+    if (parte('timer')) {
+      await N.pulisci();
+      const T = await B.dispositivo('telefono', { tipo: 'iphone' }), P = await B.dispositivo('pc');
+      await B.accedi(T, 'teo', 'teo@prova.it'); await B.accedi(P, 'teo', 'teo@prova.it');
+      await T.evaluate(() => { const s = LM.load(); s.onboarded = true; LM.save(); LM.aggiungiAzione('Scrivere il capitolo', null); LM.aggiungiAzione('Pagare la bolletta', null); });
+      await B.calmaTutti([T, P], 3000);
+      await T.ctx.route(FS, (r) => r.abort());
+      await T.evaluate(() => window.dispatchEvent(new Event('offline')));
+      await T.evaluate(() => { const ora = Date.now(); LM.avviaTimerDati({ azioneId: null, areaId: null, tipo: 'blocco', testo: 'Scrivere il capitolo', inizio: ora, fine: ora + 50 * 60000, durata: 50, ciclo: 0, inPausa: false, fermatoA: 0 }); });
+      await T.waitForTimeout(1500);
+      ok('V4-07 (preparazione) il timer gira sul telefono, senza rete', await T.evaluate(() => !!LM.timerVivo()));
+      await P.waitForTimeout(1500);
+      await P.evaluate(() => { const a = LM.load().azioni.find((x) => x.testo === 'Pagare la bolletta'); LM.completaAzione(a.id); });
+      await B.calma(P, 2500);
+      await T.ctx.unroute(FS);
+      await T.evaluate(() => window.dispatchEvent(new Event('online')));
+      await B.calmaTutti([T, P], 4000); await B.calmaTutti([T, P], 2000);
+      const dopo = { telefono: await T.evaluate(() => !!LM.timerVivo()), pc: await P.evaluate(() => !!LM.timerVivo()), spunta: await T.evaluate(() => LM.load().azioni.find((x) => x.testo === 'Pagare la bolletta').done) };
+      ok('V4-07 tornata la rete, il timer del telefono gira ancora (e il PC lo vede), e la spunta del PC resta', dopo.telefono && dopo.pc && dopo.spunta, dopo);
+      /* e fermarlo dopo, da un altro dispositivo, lo ferma ovunque */
+      await P.evaluate(() => LM.fermaTimerDati());
+      await B.calmaTutti([T, P], 3000); await B.calmaTutti([T, P], 1500);
+      const fermo = { telefono: await T.evaluate(() => !!LM.timerVivo()), pc: await P.evaluate(() => !!LM.timerVivo()) };
+      ok('V4-07 …e fermato dopo sul PC, si ferma anche sul telefono', !fermo.telefono && !fermo.pc, fermo);
+      await T.ctx.close(); await P.ctx.close();
+    }
   } catch (e) { ok('eccezione', false, String(e && e.stack || e)); }
   await B.chiudi(); srv.close(); await E.spegni();
   console.log(guai() ? '\n>>> ' + guai() + ' PROBLEMI' : '\n>>> TUTTO A POSTO');

@@ -898,7 +898,12 @@ function creaLM() {
         }
         case 'massimo': out[k] = Math.max(Number(va as number) || 0, Number(vb as number) || 0); break;
         case 'oppure':  out[k] = !!(va || vb); break;
-        case 'recente': out[k] = (qb >= qa) ? vb : va; break;
+        case 'recente': {
+          /* con un orologio (V4-07) decide lui; senza, il documento più recente */
+          var ra = Number(oa[k]) || 0, rb = Number(ob[k]) || 0;
+          out[k] = ra !== rb ? (rb > ra ? vb : va) : ((qb >= qa) ? vb : va);
+          break;
+        }
         default:        out[k] = (qb >= qa) ? vb : va;
       }
     });
@@ -964,7 +969,9 @@ function creaLM() {
       era.forEach(function (r: unknown) {
         var c = chiaveRiga(r);
         if (restano[c]) return;
-        nate.push({ k: k, chiave: c, ts: ora, vivo: false });
+        /* una riga con un'ora «del futuro» (V4-04) si cancella lo stesso */
+        var mr = momentoRiga(r, 0);
+        nate.push({ k: k, chiave: c, ts: mr >= ora ? mr + 1 : ora, vivo: false });
       });
     });
     /* una sola voce per chiave: la più recente (una lapide nuova prende il
@@ -994,19 +1001,36 @@ function creaLM() {
     while (i > 0) { if (o[via.slice(0, i)]) return true; i = via.lastIndexOf('/', i - 1); }
     return false;
   }
+  /* UNA MODIFICA FATTA DOPO AVER VISTO UN VALORE VINCE SU QUEL VALORE
+     (verifica 4, V4-04). Un dispositivo con l'orologio avanti di giorni,
+     anche una volta sola e senza rete, lasciava nei dati orologi «del
+     futuro»: rimesso giusto l'orologio (N4), le modifiche fatte DOPO su
+     quella chiave — dagli altri e, da N4, anche da lui — avevano un'ora più
+     piccola e perdevano, per tutto lo scarto. Adesso, se la chiave (o un
+     ramo sopra di lei) ha già un orologio più avanti dell'ora di adesso, la
+     modifica nuova prende quello più uno: chi cambia una cosa dopo averla
+     vista ha sempre l'ultima parola, qualunque cosa dica l'orologio di chi
+     l'aveva scritta. Vale solo per quella chiave: l'orologio del
+     dispositivo non si sposta (N4 resta com'è). */
+  function dopoDi(o: Record<string, number>, via: string, t: number): number {
+    var max = Number(o[via]) || 0;
+    var i = via.lastIndexOf('/');
+    while (i > 0) { var v = Number(o[via.slice(0, i)]) || 0; if (v > max) max = v; i = via.lastIndexOf('/', i - 1); }
+    return max >= t ? max + 1 : t;
+  }
   function segnaNodo(a: unknown, b: unknown, via: string, o: Record<string, number>, t: number, soloStruttura: boolean): void {
-    if (!eMappa(a) || !eMappa(b)) { if (!stessoValore(a, b) && !soloStruttura) o[via] = t; return; }
+    if (!eMappa(a) || !eMappa(b)) { if (!stessoValore(a, b) && !soloStruttura) o[via] = dopoDi(o, via, t); return; }
     var ka = Object.keys(a), kb = Object.keys(b);
     var tolte = ka.filter(function (k) { return !Object.prototype.hasOwnProperty.call(b, k); });
-    if (tolte.length > 20 && tolte.length === ka.length) { o[via] = t; return; }
-    tolte.forEach(function (k) { o[via + '/' + pezzoVia(k)] = t; });
+    if (tolte.length > 20 && tolte.length === ka.length) { o[via] = dopoDi(o, via, t); return; }
+    tolte.forEach(function (k) { var p0 = via + '/' + pezzoVia(k); o[p0] = dopoDi(o, p0, t); });
     kb.forEach(function (k) {
       var p = via + '/' + pezzoVia(k);
-      if (!Object.prototype.hasOwnProperty.call(a, k)) { if (haOrologio(o, p)) o[p] = t; return; }
+      if (!Object.prototype.hasOwnProperty.call(a, k)) { if (haOrologio(o, p)) o[p] = dopoDi(o, p, t); return; }
       var va = a[k], vb = b[k];
       if (stessoValore(va, vb)) return;
       if (eMappa(va) && eMappa(vb)) segnaNodo(va, vb, p, o, t, soloStruttura);
-      else if (!soloStruttura) o[p] = t;
+      else if (!soloStruttura) o[p] = dopoDi(o, p, t);
     });
   }
   function segnaOrologi(primaRaw: string | Mappa | null, s: Stato): void {
@@ -1031,7 +1055,8 @@ function creaLM() {
              del timer: la usano anche per metterle in fila) la tiene */
           if (pr === undefined) { if (typeof r['aggiornata'] !== 'number') r['aggiornata'] = t; return; }
           if (stessoValore(pr, r)) return;
-          r['aggiornata'] = t;
+          var agPrima = eMappa(pr) ? Number(pr['aggiornata']) || 0 : 0;
+          r['aggiornata'] = agPrima >= t ? agPrima + 1 : t;   /* vedi `dopoDi` */
           if (!eMappa(pr)) return;
           var vr = k + '/' + pezzoVia(c), riga = r, primaRiga = pr;
           var campi = Object.keys(riga);
@@ -1044,7 +1069,8 @@ function creaLM() {
               segnaNodo(eMappa(vv) ? vv : {}, eMappa(nv) ? nv : {}, vr + '/' + pezzoVia(cc), o, t, false);
             } else {
               /* un orologio per CAMPO: vedi `unisciRiga` */
-              o[vr + '/' + pezzoVia(cc)] = t;
+              var pc = vr + '/' + pezzoVia(cc);
+              o[pc] = dopoDi(o, pc, t);
             }
           });
         });
@@ -1055,8 +1081,14 @@ function creaLM() {
         var x: Record<string, 1> = {}, y: Record<string, 1> = {};
         if (Array.isArray(era)) era.forEach(function (v: unknown) { x[String(v)] = 1; });
         if (Array.isArray(ce)) ce.forEach(function (v: unknown) { y[String(v)] = 1; });
-        Object.keys(x).forEach(function (v) { if (!y[v]) o[k + '/' + pezzoVia(v)] = t; });
-        Object.keys(y).forEach(function (v) { if (!x[v]) o[k + '/' + pezzoVia(v)] = t; });
+        Object.keys(x).forEach(function (v) { if (!y[v]) { var p1 = k + '/' + pezzoVia(v); o[p1] = dopoDi(o, p1, t); } });
+        Object.keys(y).forEach(function (v) { if (!x[v]) { var p2 = k + '/' + pezzoVia(v); o[p2] = dopoDi(o, p2, t); } });
+      } else if (modo === 'recente') {
+        /* UN OROLOGIO ANCHE PER I CAMPI «RECENTE» (verifica 4, V4-07): il
+           timer vinceva col documento salvato per ultimo, e un timer avviato
+           senza rete lo spegneva una spunta qualunque fatta dopo su un altro
+           dispositivo. Adesso vince chi ha toccato il TIMER per ultimo. */
+        if (!stessoValore(era, ce)) o[k] = dopoDi(o, k, t);
       }
     });
   }

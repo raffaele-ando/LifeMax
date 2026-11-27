@@ -602,7 +602,9 @@ export interface ImprontaEsempio {
    `ramo`    un oggetto di preferenze: campo per campo, vince il più recente
    `massimo` un numero che non torna indietro (un'ora, un contatore)
    `oppure`  un sì che non torna un no (chiusa una volta, resta chiusa)
-   `recente` vince quello del documento più recente, e basta
+   `recente` vince chi l'ha toccato per ultimo (il suo orologio, scritto
+             da `segnaOrologi`; verifica 4, V4-07); senza orologio, il
+             documento più recente
    `orologi` le ore delle chiavi: per ognuna la più grande
    `contatore` i punti per dispositivo: per ognuno il più grande dei due
              conti, che non tornano mai indietro                         */
