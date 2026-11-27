@@ -25,6 +25,8 @@ const ok = (n, c, d) => { if (!c) guai++; console.log('  ' + (c ? 'ok  ' : 'KO  
 /* «la versione nuova»: la stessa pagina con un segno in più, e un file del
    pacco che prima non c'era */
 let versione = 1;
+/* la «rete che finge di esserci»: la pagina non risponde mai */
+let appeso = false;
 const NUOVO = 'pacco/prova-v2-0123abcd.js';
 function pagina() {
   let h = fs.readFileSync(path.join(RADICE, 'index.html'), 'utf8');
@@ -38,7 +40,7 @@ function pagina() {
     let p = decodeURIComponent(q.url.split('?')[0]); if (p === '/') p = '/index.html';
     const pac = /^\/pacco\//.test(p);
     r.setHeader('Cache-Control', pac ? 'public, max-age=31536000, immutable' : 'public, max-age=0, must-revalidate');
-    if (p === '/index.html') { r.setHeader('Content-Type', 'text/html'); r.end(pagina()); return; }
+    if (p === '/index.html') { if (appeso) return; r.setHeader('Content-Type', 'text/html'); r.end(pagina()); return; }
     if (p === '/' + NUOVO) { r.setHeader('Content-Type', 'text/javascript'); r.end('window.__v2 = true;'); return; }
     fs.readFile(path.join(RADICE, p), (e, d) => {
       if (e) { r.statusCode = 404; r.end('x'); return; }
@@ -92,13 +94,24 @@ function pagina() {
   ok('2 senza rete, si riapre l’ultima versione aperta (non una più vecchia)', v2 === '2', v2);
   await ctx.setOffline(false);
 
+  /* 3. la rete che finge di esserci (metro, treno): il server non risponde
+     alla pagina, né sì né no. In pochi secondi si apre lo stesso */
+  appeso = true;
+  const t0 = Date.now();
+  let apertaAppesa = false;
+  try { await p.reload({ waitUntil: 'load', timeout: 12000 }); apertaAppesa = await p.evaluate(() => !!window.LM); } catch (e) { apertaAppesa = false; }
+  const quanto = Date.now() - t0;
+  appeso = false;
+  if (!apertaAppesa) await p.goto(SITO + '/index.html').catch(() => {});
+  ok('3 con la rete che finge di esserci, l’app si apre lo stesso dalla cassa, in pochi secondi', apertaAppesa && quanto < 8000, { apertaAppesa, quanto });
+
   /* un file sparito dal server (404) non si serve dalla cassa al posto della
      pagina: con la rete, la verità è il server */
   const sw = await p.evaluate(async () => (await fetch('sw.js')).text());
   ok('2 il service worker non tiene niente del server (/api/, /__/) né di altri indirizzi', /\^\(api\|__\)/.test(sw), '');
 
   ok('nessun errore nella pagina', !errori.length, errori.slice(0, 5));
-  await b.close(); srv.close();
+  await b.close(); if (srv.closeAllConnections) srv.closeAllConnections(); srv.close();
   console.log(guai ? '\n' + guai + ' cose da sistemare' : '\ntutto a posto');
   process.exit(guai ? 1 : 0);
 })().catch((e) => { console.error(e); process.exit(1); });

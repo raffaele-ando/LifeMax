@@ -27,9 +27,10 @@ self.addEventListener('activate', (e) => e.waitUntil((async () => {
    minimo, con due regole che rendono impossibile la «versione di ieri»:
 
    · LA PAGINA (index.html) SEMPRE DALLA RETE. Quella in cassa si usa SOLO
-     se la rete non risponde proprio (non con un 404, non con un 500: quelli
-     vengono dal server, e il server è la verità). Con la rete, si apre
-     sempre la versione nuova; senza rete, l'ultima che si è aperta.
+     se la rete non risponde (non con un 404, non con un 500: quelli
+     vengono dal server, e il server è la verità) o non risponde in tre
+     secondi e mezzo. Con la rete, si apre sempre la versione nuova; senza
+     rete, l'ultima che si è aperta.
    · I FILE DEL PACCO DALLA CASSA. Hanno l'impronta del contenuto nel nome
      (index-BEkSn4cA.js): un nome è sempre lo stesso contenuto, quindi
      tenerlo non può mai dare una versione sbagliata. Quando arriva una
@@ -42,6 +43,7 @@ self.addEventListener('activate', (e) => e.waitUntil((async () => {
    senso, e una risposta vecchia di quelle sarebbe una bugia. */
 const CASSA = 'lifemax-app-1';
 const PAGINA = 'index.html';
+const ATTESA_PAGINA = 3500;
 
 function radice() { return new URL('./', self.registration.scope); }
 function relativo(u) { const r = radice().href; return u.indexOf(r) === 0 ? u.slice(r.length) : null; }
@@ -96,16 +98,32 @@ self.addEventListener('fetch', (e) => {
   const k = relativo(q.url.split('#')[0].split('?')[0]);
   if (k === null || /^(api|__)\//.test(k)) return;
   if (q.mode === 'navigate' && (k === '' || k === PAGINA)) {
+    /* LA RETE CHE FINGE DI ESSERCI (verifica 3, N8): in metro e in treno il
+       segnale c'è e i dati no, e la richiesta resta appesa senza fallire.
+       Se dopo ATTESA_PAGINA la pagina non è arrivata e in cassa ce n'è una,
+       si apre quella; la richiesta però continua, e se arriva la pagina
+       nuova va in cassa per la volta dopo (e la striscia «C'è una versione
+       nuova», vedi nuvola.ts, lo dice anche alla scheda aperta). */
+    const dallaRete = fetch(q).then((r) => {
+      if (r.ok && r.type === 'basic') e.waitUntil(riempi(r.clone()));
+      return r;
+    });
+    e.waitUntil(dallaRete.catch(() => null));
     e.respondWith((async () => {
+      const inCassa = await caches.match(PAGINA, { cacheName: CASSA });
+      if (!inCassa) return dallaRete;
+      let timer = null;
+      const tempo = new Promise((ok) => { timer = setTimeout(() => ok(null), ATTESA_PAGINA); });
       try {
-        const r = await fetch(q);
-        if (r.ok && r.type === 'basic') e.waitUntil(riempi(r.clone()));
-        return r;
+        const r = await Promise.race([dallaRete, tempo]);
+        if (r) return r;
+        /* troppo lenta: l'ultima pagina aperta */
+        return inCassa;
       } catch (x) {
         /* niente rete: l'ultima pagina aperta */
-        const c = await caches.match(PAGINA, { cacheName: CASSA });
-        if (c) return c;
-        throw x;
+        return inCassa;
+      } finally {
+        if (timer) clearTimeout(timer);
       }
     })());
     return;
