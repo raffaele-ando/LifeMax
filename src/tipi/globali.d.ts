@@ -86,5 +86,8 @@ declare global {
     'lm:errore-salvataggio': CustomEvent<void>;
     /* quello che c'era salvato non si legge: JSON rotto */
     'lm:dati-illeggibili': CustomEvent<void>;
+    /* una copia di sicurezza non si è scritta (memoria piena): il motivo
+       della copia (verifica 4, V4-02) */
+    'lm:copia-non-scritta': CustomEvent<string>;
   }
 }

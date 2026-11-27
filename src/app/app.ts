@@ -468,8 +468,9 @@ export function caricaDemo(): void {
     titolo: 'Sostituire i dati con quelli di esempio?',
     testo: 'I dati attuali verranno sostituiti da otto settimane di esempio. Ne resta una copia in Backup e ripristino.',
     azione: 'Carica l’esempio'
-  }, function () {
-    LM.seedDemo(); applicaTema(); chiudiSheet(); render();
+  }, function carica() {
+    if (!LM.seedDemo()) { senzaSpazio('caricare l’esempio', carica); return; }
+    applicaTema(); chiudiSheet(); render();
     toast('Dati di esempio caricati.', 0, 'sparkles');
   });
 }
@@ -480,8 +481,9 @@ export function azzeraTutto(): void {
       ? 'Sei collegato: si cancellano anche dall’account, su tutti i tuoi dispositivi. Prima ne resta una copia in «Backup e ripristino»: ripristinandola torna tutto, anche sugli altri dispositivi. Se volevi togliere solo i dati di esempio, usa «Togli i dati di esempio».'
       : 'Riparti da zero, su questo dispositivo. Se volevi togliere solo i dati di esempio, usa «Togli i dati di esempio».',
     azione: 'Cancella tutto', pericolo: true
-  }, function () {
-    LM.reset(!!(window.LM_AUTH && window.LM_AUTH.user)); chiudiSheet(); location.hash = '#/oggi'; render();
+  }, function azzera() {
+    if (!LM.reset(!!(window.LM_AUTH && window.LM_AUTH.user))) { senzaSpazio('cancellare tutto', azzera); return; }
+    chiudiSheet(); location.hash = '#/oggi'; render();
   });
 }
 
@@ -2343,8 +2345,9 @@ export function wireAspettoDati(root: HTMLElement): void {
   var te = root.querySelector<HTMLElement>('#imp-togli-esempio');
   if (te) te.addEventListener('click', function () {
     const n = LM.contaEsempio();
-    avviso({ titolo: 'Togliere i dati di esempio?', testo: 'Tolgo ' + n + ' cose d’esempio. Quello che hai scritto tu resta. Prima faccio un backup.', azione: 'Rimuovi' }, function () {
+    avviso({ titolo: 'Togliere i dati di esempio?', testo: 'Tolgo ' + n + ' cose d’esempio. Quello che hai scritto tu resta. Prima faccio un backup.', azione: 'Rimuovi' }, function togli() {
       const tolte = LM.togliEsempio();
+      if (tolte < 0) { senzaSpazio('togliere l’esempio', togli); return; }
       chiudiSheet(); render();
       toast('Tolti ' + tolte + ' dati di esempio', 0, 'sparkles');
     });
@@ -2380,8 +2383,9 @@ export function wireAspettoDati(root: HTMLElement): void {
     campoFile.addEventListener('change', function () {
       const f = campoFile.files && campoFile.files[0]; if (!f) return;
       const reader = new FileReader();
-      reader.onload = function () {
+      reader.onload = function importa() {
         const r = LM.importJson(String(reader.result));
+        if (!r.ok && r.spazio) { senzaSpazio('importare il file', importa); return; }
         if (r.ok) {
           chiudiSheet(); applicaTema(); render();
           /* QUANDO IL FILE È PIÙ VECCHIO DI UN «AZZERA TUTTO», va detto qui e
@@ -2418,6 +2422,24 @@ export function esportaDati(): void {
     LM.registra('dati', 'Dati esportati in un file .json', true); LM.save();
     toast('Dati esportati nel file .json.', 0, 'download');
   } catch (e) { toast('Esportazione non riuscita.', 0, 'avviso'); }
+}
+
+/* NON C'È POSTO PER LA COPIA DI SICUREZZA (verifica 4, V4-02). Prima
+   «Ripristina», «Importa», «Azzera», «Togli l'esempio» andavano avanti lo
+   stesso, senza la copia che promettevano: se l'operazione era sbagliata,
+   quello che c'era prima non si riprendeva più. Adesso si fermano (`LM`
+   torna `false`, o `-1`) e qui si propone l'unica copia che si può ancora
+   fare: un file. Scaricato quello, l'operazione riparte da sé. */
+export function senzaSpazio(cosa: string, rifai: () => void): void {
+  avviso({
+    titolo: 'Non c’è spazio per la copia di sicurezza',
+    testo: 'La memoria di questo browser è piena: prima di ' + cosa + ' non riesco a salvare la copia di com’è adesso, e senza copia non lo faccio. Scarica i tuoi dati in un file: è quella la copia, e poi continuo.',
+    azione: 'Scarica e continua', annulla: 'Non ora'
+  }, function () {
+    esportaDati();
+    LM.copiaScaricata();
+    rifai();
+  });
 }
 
 export function apriBackups() {
@@ -2776,8 +2798,13 @@ function bandaDemo(): void {
   misura();
   /* il tasto è dentro all'HTML che abbiamo appena scritto due righe sopra */
   presa(document.getElementById('banda-togli')).addEventListener('click', function () {
-    const tolte = LM.togliEsempio(); scriviSe(banda, ''); misura(); render();
-    toast('Tolti ' + tolte + ' dati di esempio', 0, 'sparkles');
+    const togli = function () {
+      const tolte = LM.togliEsempio();
+      if (tolte < 0) { senzaSpazio('togliere l’esempio', togli); return; }
+      scriviSe(banda, ''); misura(); render();
+      toast('Tolti ' + tolte + ' dati di esempio', 0, 'sparkles');
+    };
+    togli();
   });
   presa(document.getElementById('banda-x')).addEventListener('click', function () {
     LM.load().demoChiusa = true; LM.save(); scriviSe(banda, ''); misura();
@@ -8441,8 +8468,10 @@ window.addEventListener('lm:esempio-nell-account', function (e) {
     testo: 'Trovati ' + n + ' elementi di esempio. Vuoi rimuoverli? I tuoi dati restano.',
     azione: 'Rimuovi',
     annulla: 'Non ora'
-  }, function () {
-    var tolte = LM.togliEsempio(); render();
+  }, function togli() {
+    var tolte = LM.togliEsempio();
+    if (tolte < 0) { senzaSpazio('togliere l’esempio', togli); return; }
+    render();
     toast(tolte ? 'Tolti i dati di esempio.' : 'Niente da togliere.', 0, 'sparkles');
   }, function () {
     try { localStorage.setItem('lm-esempio-lasciato', String(n)); } catch (_e) { /* pazienza */ }
@@ -8511,6 +8540,15 @@ document.addEventListener('keydown', function (e) {
    così puoi esportare i dati prima di perderli */
 document.addEventListener('lm:errore-salvataggio', function () {
   toast('Impossibile salvare su questo dispositivo. Esporta i dati da Impostazioni.', 0, 'cloud');
+});
+/* una copia di sicurezza non si è scritta (V4-02): prima succedeva in
+   silenzio. Dove l'operazione si ferma lo dice già `senzaSpazio`; qui per
+   quelle che non si fermano (entrare in un account, uscirne). */
+document.addEventListener('lm:copia-non-scritta', function () {
+  setTimeout(function () {
+    if (avvisoAperto) return;
+    toast('Copia di sicurezza non salvata: la memoria del browser è piena. Scarica i tuoi dati da Impostazioni.', 0, 'avviso');
+  }, 0);
 });
 
 /* chrome statico */

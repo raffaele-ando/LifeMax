@@ -216,6 +216,13 @@ function ricevi(): void {
   function importa(json: string): void {
     if (!genitore) return;
     const r = window.LM.importJson(json);
+    /* senza spazio per la copia di sicurezza non si importa (verifica 4,
+       V4-02): prima si scarica un file con i dati di qui, poi si riprova */
+    if (r && !r.ok && r.spazio) {
+      mostra('Non c’è spazio per la copia di sicurezza', 'La memoria di questo browser è piena: prima di aggiungere i dati non riesco a salvare la copia di quelli di qui. Scarica un file con i tuoi dati di qui, e poi li aggiungo.',
+        [{ eti: 'Scarica e continua', primo: true, fai: function () { scaricaFile(); window.LM.copiaScaricata(); importa(json); } }, { eti: 'Più tardi', fai: chiudi }]);
+      return;
+    }
     if (r && r.ok) {
       genitore.postMessage({ tipo: 'lifemax-trasloco-ricevuti', n: r.ricchezza || 0 }, dove.vecchio);
       mostra('I tuoi dati sono arrivati', 'Sono stati aggiunti a quelli che c’erano qui. Da adesso usa questo indirizzo.', [{ eti: 'Bene', primo: true, fai: function () { chiudi(); location.reload(); } }]);

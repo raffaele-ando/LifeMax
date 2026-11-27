@@ -125,6 +125,113 @@ const parte = (n) => !scelte.length || scelte.indexOf(n) >= 0;
       ok('V4-01 se la cosa toccata è cambiata altrove dopo, l’annulla non la riporta indietro e dice perché', esito.r === false && /cambiata dopo/.test(esito.motivo) && ['pc', 'telefono'].every((k) => nomi[k].includes('Relazione (rinominata dal telefono, dopo)')), { esito, nomi });
       await P.ctx.close(); await T.ctx.close();
     }
+    /* ============================================================ V4-02 */
+    if (parte('spazio')) {
+      await N.pulisci();
+      const P = await B.dispositivo('pc'), T = await B.dispositivo('telefono', { tipo: 'iphone' });
+      await B.accedi(P, 'pia', 'pia@prova.it'); await B.accedi(T, 'pia', 'pia@prova.it');
+      /* otto mesi di uso: sei cose al giorno, un check-in, un voto, la
+         review e otto righe di diario */
+      const dim = await P.evaluate(() => {
+        const s = LM.load(); s.onboarded = true;
+        const oggi = new Date();
+        for (let g = 0; g < 240; g++) {
+          const d = new Date(oggi.getTime() - g * 86400000); const k = LM.dayKey(d);
+          for (let i = 0; i < 6; i++) s.azioni.push({ id: 'a' + g + '_' + i + Math.random().toString(36).slice(2, 6), areaId: 'lavoro', testo: 'Cosa numero ' + i + ' del giorno ' + k + ' con un po’ di descrizione', ifThen: '', mit: i === 0, done: i % 2 === 0, data: k, doneAt: i % 2 === 0 ? d.getTime() : null, creata: d.getTime(), ora: null, durata: null, passoDi: null, aggiornata: d.getTime() });
+          s.checkins.push({ id: 'c' + g, data: k, ts: d.getTime(), energia: 3, focus: 3, umore: 4, contesto: 'ufficio' });
+          s.reviewSera[k] = { vittoria: 'Ho finito la parte ' + g, blocco: 'Interruzioni', shutdown: true, ts: d.getTime() };
+          s.valutazioni[k] = { lavoro: 4, salute: 3 };
+          for (let r = 0; r < 8; r++) s.registro.push({ ts: d.getTime() + r, cat: 'azione', testo: 'Riga di diario ' + r + ' del ' + k, imp: false });
+        }
+        LM.save();
+        return localStorage.getItem('lifemax.v2').length;
+      });
+      await B.calmaTutti([P, T], 4000);
+      /* qualche settimana di vita: dodici operazioni che prendono una copia */
+      const giri = await P.evaluate(() => {
+        const out = [];
+        for (let n = 0; n < 12; n++) {
+          const prima = LM.listBackups().length;
+          const fatta = LM.backup('prima-import');
+          const s = LM.load(); s.azioni.push({ id: 'nuova' + n + Math.random().toString(36).slice(2, 6), areaId: 'lavoro', testo: 'Nuova ' + n, ifThen: '', mit: false, done: false, data: LM.todayKey(), doneAt: null, creata: Date.now(), ora: null, durata: null, passoDi: null }); LM.save();
+          out.push({ prima, fatta, dopo: LM.listBackups().length });
+        }
+        let usato = 0; for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); usato += k.length + (localStorage.getItem(k) || '').length; }
+        return { out, usato };
+      });
+      ok('V4-02 con otto mesi di dati ogni operazione che promette «prima faccio una copia» la fa', giri.out.every((g) => g.fatta === true && g.dopo === g.prima + 1), { stato: dim, giri });
+      ok('V4-02 …e la memoria del browser resta lontana dal pieno', giri.usato < 3500000, giri.usato);
+      const rip = await P.evaluate(() => {
+        const el = LM.listBackups(); const ts = el[el.length - 1].ts;
+        const n0 = LM.load().azioni.length; const fatto = LM.restoreBackup(ts);
+        return { fatto, n0, n: LM.load().azioni.length, primaDelRipristino: LM.listBackups().some((b) => b.motivo === 'prima-del-ripristino') };
+      });
+      ok('V4-02 dopo «Ripristina» c’è la copia «prima di un ripristino»', rip.fatto && rip.primaDelRipristino && rip.n !== rip.n0, rip);
+      const punti = await P.evaluate(() => { const s = LM.load(); s.azioni[0].testo = 'cambiata per l’annulla'; LM.save(); return LM.puntiDiRitorno().length; });
+      ok('V4-02 …e i punti dell’annulla si scrivono ancora', punti >= 1, punti);
+      await B.calmaTutti([P, T], 3000);
+
+      /* la memoria del browser riempita d'altro, finché non entra più niente */
+      const riempi = (d) => d.evaluate(() => {
+        let n = 0; const pezzo = (q) => 'x'.repeat(q);
+        for (const q of [400000, 100000, 20000, 4000, 500, 50, 5]) {
+          for (;;) { try { localStorage.setItem('zavorra.' + (n++), pezzo(q)); } catch (e) { break; } }
+        }
+        return n;
+      });
+      const svuota = (d) => d.evaluate(() => { Object.keys(localStorage).filter((k) => k.indexOf('zavorra.') === 0).forEach((k) => localStorage.removeItem(k)); });
+      /* LA FUSIONE DAL CLOUD CON LA MEMORIA PIENA (l'ipotesi della verifica):
+         quello che arriva dal telefono non deve diventare, al salvataggio
+         dopo, una modifica fatta sul PC adesso */
+      const idx = await T.evaluate(() => LM.load().azioni.find((a) => !a.done && /Cosa numero 1 /.test(a.testo)).id);
+      await riempi(P);
+      await T.evaluate((i) => { LM.modificaAzione(i, 'Rinominata sul telefono'); }, idx);
+      await B.calma(T, 2500);
+      await P.waitForFunction((i) => (LM.load().azioni.find((a) => a.id === i) || {}).testo === 'Rinominata sul telefono', idx, { timeout: 20000 }).catch(() => {});
+      const orologioT = await T.evaluate((i) => { const o = LM.load().orologi; return o['azioni/i' + i + '/testo']; }, idx);
+      await P.waitForTimeout(1500);
+      await P.evaluate(() => { const s = LM.load(); s.profilo.nome = 'Pia'; LM.save(); });
+      const orologioP = await P.evaluate((i) => { const o = LM.load().orologi; return o['azioni/i' + i + '/testo']; }, idx);
+      ok('V4-02 memoria piena durante una fusione: la rinomina del telefono non diventa una modifica del PC', !!orologioT && orologioP === orologioT, { telefono: orologioT, pc: orologioP });
+      await svuota(P); await B.calmaTutti([P, T], 3000);
+
+      /* LA MEMORIA PROPRIO PIENA: una copia sola, piccola (com'era
+         all'inizio), e la memoria riempita d'altro finché non entra niente:
+         anche togliendo tutte le copie che si possono togliere, quella di
+         adesso non entra */
+      const piccola = () => P.evaluate(() => {
+        const arr = JSON.parse(localStorage.getItem('lifemax.backups.v1') || '[]');
+        const chi = arr[0].chi;
+        localStorage.setItem('lifemax.backups.v1', JSON.stringify([{ ts: Date.now() - 60000, motivo: 'prima-import', data: JSON.stringify({ azioni: [], profilo: {} }), chi: chi }]));
+        LM.scordaPunti();
+      });
+      await piccola(); await riempi(P);
+      const fermo = await P.evaluate(() => {
+        const el = LM.listBackups(); const ts = el[el.length - 1].ts;
+        const n0 = LM.load().azioni.length;
+        const r = LM.restoreBackup(ts);
+        return { r, motivo: LM.motivoFermo(), n0, n: LM.load().azioni.length };
+      });
+      ok('V4-02 memoria piena: «Ripristina» senza posto per la copia di adesso si ferma, e non tocca i dati', fermo.r === false && fermo.motivo === 'spazio' && fermo.n === fermo.n0, fermo);
+      /* dall'interfaccia: la proposta di scaricare un file, e poi si va avanti */
+      await P.evaluate(() => { location.hash = '#/profilo'; }); await P.waitForTimeout(600);
+      await P.evaluate(() => { const b = document.getElementById('imp-tutte'); if (b) b.click(); }); await P.waitForTimeout(700);
+      await P.evaluate(() => { const b = document.getElementById('imp-backup'); if (b) b.click(); }); await P.waitForTimeout(900);
+      const n0 = await P.evaluate(() => LM.load().azioni.length);
+      await P.evaluate(() => { const b = [...document.querySelectorAll('[data-ts]')].pop(); if (b) b.click(); }); await P.waitForTimeout(500);
+      await P.evaluate(() => { const b = document.querySelector('.avv-si'); if (b) b.click(); }); await P.waitForTimeout(700);
+      const proposta = await P.evaluate(() => { const a = document.querySelector('.avviso'); return a ? a.textContent.replace(/\s+/g, ' ').trim() : null; });
+      ok('V4-02 …e dall’interfaccia propone di scaricare un file invece di andare avanti', !!proposta && /spazio per la copia/.test(proposta) && /Scarica e continua/.test(proposta) && await P.evaluate(() => LM.load().azioni.length) === n0, proposta);
+      const scaricato = P.waitForEvent('download', { timeout: 10000 }).then((d) => d.suggestedFilename(), () => null);
+      await P.evaluate(() => { const b = document.querySelector('.avv-si'); if (b) b.click(); });
+      const file = await scaricato; await P.waitForTimeout(800);
+      const n1 = await P.evaluate(() => LM.load().azioni.length);
+      ok('V4-02 «Scarica e continua»: il file si scarica, e poi il ripristino si fa', !!file && /lifemax-.*\.json/.test(file) && n1 !== n0, { file, n0, n1 });
+      await P.keyboard.press('Escape').catch(() => {});
+
+      await svuota(P);
+      await P.ctx.close(); await T.ctx.close();
+    }
   } catch (e) { ok('eccezione', false, String(e && e.stack || e)); }
   await B.chiudi(); srv.close(); await E.spegni();
   console.log(guai() ? '\n>>> ' + guai() + ' PROBLEMI' : '\n>>> TUTTO A POSTO');

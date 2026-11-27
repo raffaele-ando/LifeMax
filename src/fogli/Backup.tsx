@@ -12,7 +12,7 @@ import type { ReactNode } from 'react';
 import { Segno, Tasto } from '../pezzi/pezzi';
 import { LM } from '../dati/dati';
 import type { CopiaNelCloud } from '../nuvola/nuvola';
-import { avviso, chiudiSheet, applicaTema, render, toast } from '../app/app';
+import { avviso, chiudiSheet, applicaTema, render, toast, senzaSpazio } from '../app/app';
 
 const MOTIVI: Record<string, string> = {
   'prima-azzeramento': 'prima della cancellazione',
@@ -62,8 +62,9 @@ function RigaCopia({ b, puo }: { b: CopiaNelCloud; puo: Puo }) {
           titolo: 'Riprendere il profilo di questa copia?',
           testo: 'Tornano il nome' + (b.nome ? ' (' + b.nome + ')' : '') + ', la visione, la sveglia, il tema e le altre impostazioni di quella copia, su tutti i tuoi dispositivi. Le cose fatte, i voti e il diario restano come sono adesso. Prima faccio un backup.',
           azione: 'Riprendi il profilo'
-        }, () => {
+        }, function vai() {
           void puo.profilo(b.id, !!b.vecchia).then((fatto) => {
+            if (!fatto && LM.motivoFermo() === 'spazio') { senzaSpazio('riprendere il profilo', vai); return; }
             chiudiSheet(); applicaTema(); render();
             toast(fatto ? 'Profilo ripreso.' : 'Non sono riuscito a riprenderlo.', 0, fatto ? 'cloudCheck' : 'alert');
           });
@@ -74,8 +75,9 @@ function RigaCopia({ b, puo }: { b: CopiaNelCloud; puo: Puo }) {
           titolo: 'Riprendere tutta questa copia?',
           testo: 'Quello che c’è nella copia e adesso manca viene aggiunto, su tutti i tuoi dispositivi. Non viene tolto niente.',
           azione: 'Riprendi tutto'
-        }, () => {
+        }, function vai() {
           void puo.riprendi(b.id, !!b.vecchia).then((fatto) => {
+            if (!fatto && LM.motivoFermo() === 'spazio') { senzaSpazio('riprendere la copia', vai); return; }
             chiudiSheet(); render();
             toast(fatto ? 'Copia ripresa e unita.' : 'Non sono riuscito a riprenderla.', 0, fatto ? 'cloudCheck' : 'alert');
           });
@@ -86,8 +88,9 @@ function RigaCopia({ b, puo }: { b: CopiaNelCloud; puo: Puo }) {
           titolo: 'Sostituire con questa copia?',
           testo: 'I dati attuali verranno salvati in un backup e sostituiti da questa copia, su tutti i tuoi dispositivi. Quello che hai fatto dopo quella data non ci sarà più (resta nel backup).',
           azione: 'Sostituisci', pericolo: true
-        }, () => {
+        }, function vai() {
           void puo.sostituisci(b.id, !!b.vecchia).then((fatto) => {
+            if (!fatto && LM.motivoFermo() === 'spazio') { senzaSpazio('sostituire i dati', vai); return; }
             chiudiSheet(); applicaTema(); render();
             toast(fatto ? 'Fatto: adesso ci sono solo i dati di quella copia.' : 'Non sono riuscito a sostituire.',
               0, fatto ? 'cloudCheck' : 'alert');
@@ -171,8 +174,14 @@ export default function Backup() {
                 titolo: 'Ripristinare questo backup?',
                 testo: 'I dati attuali verranno salvati in un nuovo backup.',
                 azione: 'Ripristina'
-              }, () => {
-                LM.restoreBackup(b.ts); chiudiSheet(); applicaTema(); render();
+              }, function ripristina() {
+                /* senza spazio per la copia di adesso non si ripristina (V4-02) */
+                if (!LM.restoreBackup(b.ts)) {
+                  if (LM.motivoFermo() === 'spazio') senzaSpazio('ripristinare', ripristina);
+                  else toast('Non sono riuscito a ripristinarlo.', 0, 'alert');
+                  return;
+                }
+                chiudiSheet(); applicaTema(); render();
                 toast('Backup ripristinato.', 0, 'archivio');
               });
             }} />

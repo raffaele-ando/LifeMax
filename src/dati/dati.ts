@@ -114,7 +114,10 @@ function creaLM() {
      quando è stata presa, o '' per chi usa l'app senza account (vedi
      `proprietario`). Le copie senza `chi` sono quelle di prima della verifica
      del 25 novembre 2026 (vedi `sistemaCopieSenzaProprietario`). */
-  interface CopiaSalvata { ts: number; motivo: string; data: string; chi?: string }
+  /* `z` (verifica 4, V4-02): lo stato COMPRESSO (vedi `comprimi`); le copie
+     scritte prima hanno `data`, il testo così com'è. `r` è la ricchezza,
+     messa da parte per non dover aprire ogni copia per elencarle. */
+  interface CopiaSalvata { ts: number; motivo: string; data?: string; z?: string; r?: number; chi?: string }
 
   /* quello che si può dire in più mettendo giù un'azione. Tutto facoltativo:
      la strada normale è scrivere il testo e basta, e ogni campo qui è una
@@ -1943,9 +1946,14 @@ function creaLM() {
       try { scordaPunti(); localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); ok = true; }
       catch (e2) { /* ancora niente */ }
       if (!ok) {
+        /* le copie più vecchie, una alla volta (mai quelle senza proprietario:
+           per qualcuno possono essere l'unica copia) */
         try {
-          var bk = leggiBackups();
-          if (bk.length > 3) { scriviBackups(bk.slice(0, 3)); localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); ok = true; }
+          var bk = leggiBackups(), testoSt = JSON.stringify(state);
+          while (!ok && togliPiuVecchia(bk, 3)) {
+            if (!scriviBackups(bk)) continue;
+            try { localStorage.setItem(STORAGE_KEY, testoSt); ok = true; } catch (e3) { /* ancora niente */ }
+          }
         } catch (e3) { /* ancora niente */ }
       }
       if (!ok) {
@@ -1997,8 +2005,8 @@ function creaLM() {
      traccia; il diario, che `save()` lascia fuori apposta perché si accorcia
      da sé, prende le lapidi qui. Restano invece le lapidi e gli orologi di
      prima: sono la memoria di quello che era già stato tolto. */
-  function reset(perAccount?: boolean) {
-    backup('prima-azzeramento');
+  function reset(perAccount?: boolean): boolean {
+    if (!copiaPrima('prima-azzeramento')) return false;
     scordaPunti();
     var prima = load();
     var nuovo = statoVuoto();
@@ -2016,12 +2024,13 @@ function creaLM() {
     nuovo.profilo.modo = prima.profilo.modo;
     state = nuovo;
     registra('dati', perAccount ? 'Dati azzerati, anche nell’account' : 'Dati azzerati su questo dispositivo', true);
-    if (perAccount) { save(); return; }
+    if (perAccount) { save(); return true; }
     /* DA SOLI, SOLO QUI: niente lapidi e niente orologi, che un giorno
        potrebbero andare in un account e togliere dati veri */
     nuovo.cancellati = [];
     nuovo.orologi = {};
     senzaLapidi++; save(); senzaLapidi--;
+    return true;
   }
 
   /* ---------- backup, ricchezza, export/import ----------
@@ -2124,7 +2133,7 @@ function creaLM() {
       var senza = typeof b.chi !== 'string' || b.chi === SENZA_PROPRIETARIO;
       var vecchiaDiAdesso = riesame && !!b.chi && b.chi === chi;
       if (!senza && !vecchiaDiAdesso) { resta.push(b); return; }
-      if (stessaVita(safeParse(b.data), adesso)) {
+      if (stessaVita(safeParse(datiCopia(b)), adesso)) {
         if (b.chi !== chi) date++;
         b.chi = chi; resta.push(b); return;
       }
@@ -2147,13 +2156,13 @@ function creaLM() {
   function copieSenzaProprietario() {
     sistemaCopieSenzaProprietario();
     return leggiBackups().filter(function (b) { return b && b.chi === SENZA_PROPRIETARIO; }).map(function (b) {
-      return { ts: b.ts, motivo: b.motivo, ricchezza: ricchezza(safeParse(b.data)) };
+      return { ts: b.ts, motivo: b.motivo, ricchezza: typeof b.r === 'number' ? b.r : ricchezza(safeParse(datiCopia(b))) };
     });
   }
   function fileCopiaSenzaProprietario(ts: number): string | null {
     var b = leggiBackups().find(function (x) { return x && x.chi === SENZA_PROPRIETARIO && x.ts === ts; });
     if (!b) return null;
-    return JSON.stringify({ app: 'LifeMax', versione: 2, esportato: Date.now(), copiaSenzaProprietario: true, stato: safeParse(b.data) }, null, 2);
+    return JSON.stringify({ app: 'LifeMax', versione: 2, esportato: Date.now(), copiaSenzaProprietario: true, stato: safeParse(datiCopia(b)) }, null, 2);
   }
   function eliminaCopiaSenzaProprietario(ts: number): boolean {
     var arr = leggiBackups();
@@ -2162,32 +2171,179 @@ function creaLM() {
     scriviBackups(resta);
     return true;
   }
-  function scriviBackups(arr: CopiaSalvata[]) {
-    try { localStorage.setItem(BACKUP_KEY, JSON.stringify(arr)); } catch (e) { /* quota */ }
+  function scriviBackups(arr: CopiaSalvata[]): boolean {
+    try { localStorage.setItem(BACKUP_KEY, JSON.stringify(arr)); return true; } catch (e) { return false; }
   }
-  function backup(motivo?: string, perChi?: string) {
+
+  /* ==================================================================
+     LO SPAZIO DELLE COPIE (verifica 4, V4-02)
+     ==================================================================
+     Tutto sta nella memoria del browser, circa cinque milioni di caratteri
+     per sito. Prima c'erano lo stato, fino a VENTICINQUE copie intere e
+     fino a DODICI copie intere per l'annulla: con qualche mese di dati la
+     memoria si riempiva, `scriviBackups` ingoiava l'errore, e «Ripristina»,
+     «Importa», «Azzera» andavano avanti senza la copia che promettevano.
+     Adesso:
+       · l'annulla tiene solo le differenze (vedi `segnaPunto`), che pesano
+         una riga e non uno stato;
+       · le copie si scrivono COMPRESSE (`comprimi`: un LZW che scrive
+         quindici bit per carattere, mai fuori dai caratteri «normali»): uno
+         stato di mesi pesa un decimo;
+       · le copie stanno dentro un tetto in caratteri (`TETTO_COPIE`, un
+         terzo della memoria), e oltre si tolgono le più vecchie — mai la
+         nuova, mai quelle senza proprietario, mai sotto le ultime tre;
+       · se la copia non si scrive nemmeno così, prima si fa spazio (le copie
+         più vecchie, poi i punti dell'annulla) e si riprova; se ancora no,
+         `backup` lo dice (torna `false`), e chi stava per sostituire i dati
+         si FERMA: `copiaPrima` (qui sotto) e, nell'interfaccia, la proposta
+         di scaricare un file prima di continuare. */
+  var TETTO_COPIE = 1700000;
+  var COPIE_MAX = 25;
+  function bitsPer(n: number): number { var b = 1; while ((1 << b) <= n) b++; return b; }
+  function comprimi(testo: string): string {
+    var dict = new Map<string, number>(); var next = 2;
+    var out: string[] = []; var buf = 0, nb = 0;
+    function emetti(v: number, n: number) {
+      for (var i = n - 1; i >= 0; i--) {
+        buf = (buf << 1) | ((v >>> i) & 1); nb++;
+        if (nb === 15) { out.push(String.fromCharCode(buf + 32)); buf = 0; nb = 0; }
+      }
+    }
+    /* 0 = «segue un carattere nuovo», 1 = «fine» */
+    function letterale(c: string) { emetti(0, bitsPer(next)); emetti(c.charCodeAt(0), 16); dict.set(c, next++); }
+    var w = '';
+    for (var i = 0; i < testo.length; i++) {
+      var c = testo.charAt(i);
+      if (w === '') { if (dict.has(c)) w = c; else letterale(c); continue; }
+      var wc = w + c;
+      if (dict.has(wc)) { w = wc; continue; }
+      emetti(dict.get(w) || 0, bitsPer(next)); dict.set(wc, next++);
+      if (dict.has(c)) w = c; else { letterale(c); w = ''; }
+    }
+    if (w !== '') { emetti(dict.get(w) || 0, bitsPer(next)); next++; }
+    emetti(1, bitsPer(next));
+    if (nb > 0) emetti(0, 15 - nb);
+    return out.join('');
+  }
+  function decomprimi(z: string): string {
+    var pos = 0, buf = 0, nb = 0;
+    function leggi(n: number): number {
+      var v = 0;
+      for (var i = 0; i < n; i++) {
+        if (nb === 0) { if (pos >= z.length) throw new Error('copia troncata'); buf = z.charCodeAt(pos++) - 32; nb = 15; }
+        nb--; v = (v * 2) + ((buf >>> nb) & 1);
+      }
+      return v;
+    }
+    var tab: (string | undefined)[] = ['', '']; var next = 2; var pezzi: string[] = [];
+    var prima = '', sospeso = -1;
+    for (;;) {
+      var cod = leggi(bitsPer(next));
+      if (cod === 1) break;
+      if (cod === 0) {
+        var c = String.fromCharCode(leggi(16));
+        if (sospeso >= 0) { tab[sospeso] = prima + c; sospeso = -1; }
+        tab[next++] = c; pezzi.push(c); prima = '';
+        continue;
+      }
+      var cur: string;
+      var noto = tab[cod];
+      if (cod === sospeso) cur = prima + prima.charAt(0);
+      else if (noto !== undefined && cod < next) cur = noto;
+      else throw new Error('copia rovinata');
+      if (sospeso >= 0) tab[sospeso] = prima + cur.charAt(0);
+      pezzi.push(cur);
+      sospeso = next++; tab[sospeso] = undefined;
+      prima = cur;
+    }
+    return pezzi.join('');
+  }
+  /* il testo dello stato di una copia, compressa o no */
+  function datiCopia(b: CopiaSalvata | undefined | null): string | null {
+    if (!b) return null;
+    if (typeof b.data === 'string') return b.data;
+    if (typeof b.z === 'string') { try { return decomprimi(b.z); } catch (e) { return null; } }
+    return null;
+  }
+  function pesoCopia(b: CopiaSalvata | undefined | null): number {
+    return b ? (b.data ? b.data.length : 0) + (b.z ? b.z.length : 0) + 120 : 0;
+  }
+  /* toglie la copia più vecchia che si può togliere: mai le prime `tieni`
+     (le più nuove), mai una senza proprietario. Torna se ne ha tolta una. */
+  function togliPiuVecchia(arr: CopiaSalvata[], tieni: number): boolean {
+    for (var i = arr.length - 1; i >= tieni; i--) {
+      var b = arr[i];
+      if (b && b.chi === SENZA_PROPRIETARIO) continue;
+      arr.splice(i, 1);
+      return true;
+    }
+    return false;
+  }
+  /* PERCHÉ L'ULTIMA OPERAZIONE CHE SOSTITUISCE I DATI SI È FERMATA */
+  var motivoFermo = '';
+  /* l'ultima volta che si è scaricato un file con tutti i dati, apposta per
+     andare avanti senza la copia sul dispositivo (vedi `copiaScaricata`) */
+  var scaricataAlle = 0;
+  function backup(motivo?: string, perChi?: string): boolean {
     var raw;
     try { raw = localStorage.getItem(STORAGE_KEY); } catch (e) { raw = null; }
-    if (!raw) { try { raw = JSON.stringify(load()); } catch (e) { return; } }
+    if (!raw) { try { raw = JSON.stringify(load()); } catch (e) { return false; } }
     sistemaCopieSenzaProprietario();
     var arr = leggiBackups();
     var chi = perChi !== undefined ? perChi : proprietario();
     var ultima = arr[0];
-    if (ultima && ultima.data === raw && (ultima.chi || '') === chi) return; // niente duplicati consecutivi
-    arr.unshift({ ts: Date.now(), motivo: motivo || '', data: raw, chi: chi });
-    if (arr.length > 25) arr = arr.slice(0, 25);
-    scriviBackups(arr);
+    if (ultima && (ultima.chi || '') === chi && datiCopia(ultima) === raw) return true; // niente duplicati consecutivi
+    var nuova: CopiaSalvata = { ts: Date.now(), motivo: motivo || '', z: comprimi(raw), r: ricchezza(safeParse(raw)), chi: chi };
+    arr.unshift(nuova);
+    /* il tetto: in numero e in caratteri */
+    while (arr.length > COPIE_MAX && togliPiuVecchia(arr, 1)) { /* via la più vecchia */ }
+    var peso = 0;
+    arr.forEach(function (b) { peso += pesoCopia(b); });
+    while (peso > TETTO_COPIE && arr.length > 3) {
+      var prima = arr.length;
+      if (!togliPiuVecchia(arr, 3)) break;
+      if (arr.length === prima) break;
+      peso = 0; arr.forEach(function (b) { peso += pesoCopia(b); });
+    }
+    if (scriviBackups(arr)) return true;
+    /* NON C'È POSTO: si fa spazio, nell'ordine — le copie più vecchie, una
+       alla volta, poi i punti dell'annulla — e si riprova ogni volta */
+    while (togliPiuVecchia(arr, 1)) { if (scriviBackups(arr)) return true; }
+    scordaPunti();
+    if (scriviBackups(arr)) return true;
+    motivoFermo = 'spazio';
+    if (window.LMLog) window.LMLog.errore('dati', 'copia di sicurezza «' + (motivo || '') + '» non scritta: la memoria del browser è piena (' + raw.length + ' caratteri di stato)');
+    try { document.dispatchEvent(new CustomEvent('lm:copia-non-scritta', { detail: motivo || '' })); } catch (e) { /* niente */ }
+    return false;
   }
+  /* PRIMA DI SOSTITUIRE I DATI, LA COPIA. Se non si scrive, si va avanti
+     solo se un istante fa si è scaricato un file con tutto (l'interfaccia
+     lo propone: «Scarica e continua»), e quel permesso vale una volta. */
+  function copiaPrima(motivo: string): boolean {
+    motivoFermo = '';
+    if (backup(motivo)) return true;
+    if (scaricataAlle && Date.now() - scaricataAlle < 120000) {
+      scaricataAlle = 0;
+      if (window.LMLog) window.LMLog.add('avviso', 'dati', 'vado avanti senza la copia sul dispositivo: è stato appena scaricato un file con tutti i dati', motivo);
+      motivoFermo = '';
+      return true;
+    }
+    motivoFermo = 'spazio';
+    return false;
+  }
+  function copiaScaricata(): void { scaricataAlle = Date.now(); }
   function listBackups() {
     return mie().map(function (b) {
-      return { ts: b.ts, motivo: b.motivo, ricchezza: ricchezza(safeParse(b.data)) };
+      return { ts: b.ts, motivo: b.motivo, ricchezza: typeof b.r === 'number' ? b.r : ricchezza(safeParse(datiCopia(b))) };
     });
   }
   function restoreBackup(ts: number) {
     /* solo una copia di chi c'è adesso: una copia di un altro non si rimette */
     var b = mie().find(function (x) { return x.ts === ts; });
     if (!b) return false;
-    backup('prima-del-ripristino');
+    var testoB = datiCopia(b);
+    if (!testoB) return false;
+    if (!copiaPrima('prima-del-ripristino')) return false;
     scordaPunti();
     /* RIPRISTINARE SOSTITUISCE, e qui è giusto: chi torna a una copia di
        sicurezza sta dicendo «rivoglio esattamente com'era», non «aggiungi
@@ -2196,7 +2352,7 @@ function creaLM() {
     /* e chi torna, torna per tutti: senza `marcaRitorno` le righe del backup
        restavano sotto le lapidi degli altri dispositivi, e il telefono
        restava vuoto mentre il computer era a posto */
-    ripristinaStato(safeParse(b.data));
+    ripristinaStato(safeParse(testoB));
     registra('dati', 'Ripristinato un backup', true);
     save();
     return true;
@@ -2257,7 +2413,7 @@ function creaLM() {
     if (!st || typeof st !== 'object' || !Array.isArray(st.azioni)) {
       return { ok: false, err: 'Il file non contiene dati LifeMax.' };
     }
-    backup('prima-import');
+    if (!copiaPrima('prima-import')) return { ok: false, spazio: true, err: 'Non c’è spazio per la copia di sicurezza: scarica prima i tuoi dati in un file.' };
     scordaPunti();
     st.updatedAt = Date.now();
     /* IMPORTARE AGGIUNGE, NON SOSTITUISCE. Un file portato da un altro
@@ -2336,12 +2492,33 @@ function creaLM() {
     if (eMappa(fuso.orologi)) { var mx = 0; Object.keys(fuso.orologi).forEach(function (k) { var t = fuso && fuso.orologi[k] || 0; if (t > mx) mx = t; }); osserva(mx); }
     senzaLapidi++;
     state = normalizza(fuso);
-    try {
-      var testo = JSON.stringify(state);
-      localStorage.setItem(STORAGE_KEY, testo);
-      ultimoScritto = testo;
-    } catch (e) { /* ignora */ }
+    var testo = JSON.stringify(state);
+    /* LA FUSIONE CHE NON SI SCRIVE (verifica 4, ipotesi di V4-02). Qui
+       l'errore di spazio si ignorava: lo stato unito restava solo in
+       memoria, e `ultimoScritto` restava quello di prima della fusione —
+       così il salvataggio dopo prendeva tutto quello che era arrivato dagli
+       altri per un cambiamento fatto QUI, adesso, e gli dava orologi nuovi.
+       Adesso si fa spazio come in `save()` (i punti dell'annulla, le copie
+       più vecchie) e si riprova; e in ogni caso «com'era prima» per il
+       prossimo salvataggio è lo stato unito, quello che questa finestra ha
+       in mano. Se non si scrive, lo si dice. */
+    var scrittoOk = false;
+    try { localStorage.setItem(STORAGE_KEY, testo); scrittoOk = true; } catch (e) { scrittoOk = false; }
+    if (!scrittoOk) {
+      scordaPunti();
+      try { localStorage.setItem(STORAGE_KEY, testo); scrittoOk = true; } catch (e) { scrittoOk = false; }
+      var bkH = leggiBackups();
+      while (!scrittoOk && togliPiuVecchia(bkH, 3)) {
+        if (!scriviBackups(bkH)) continue;
+        try { localStorage.setItem(STORAGE_KEY, testo); scrittoOk = true; } catch (e) { scrittoOk = false; }
+      }
+    }
+    ultimoScritto = testo;
     senzaLapidi--;
+    if (!scrittoOk) {
+      if (window.LMLog) window.LMLog.errore('dati', 'fusione dal cloud non salvata sul dispositivo: memoria piena (' + testo.length + ' caratteri)');
+      if (!salvataggioRotto) { salvataggioRotto = true; document.dispatchEvent(new CustomEvent('lm:errore-salvataggio')); }
+    }
     document.dispatchEvent(new CustomEvent('lm:change'));
   }
 
@@ -4506,8 +4683,8 @@ function creaLM() {
     };
   }
 
-  function seedDemo() {
-    reset();
+  function seedDemo(): boolean {
+    if (!reset()) return false;
     /* `load()` e non `state`: dicono la stessa cosa — `reset()` ha appena
        riempito lo stato — ma `state` è «forse niente» per tutta la vita del
        modulo, e leggerlo qui costringeva a quarantasei controlli inutili in
@@ -4788,6 +4965,7 @@ function creaLM() {
     s.registro = []; // la demo parte con un diario-registro pulito
     s.esempio = improntaEsempio(s);
     save();
+    return true;
   }
 
   /* ==================================================================
@@ -4951,7 +5129,8 @@ function creaLM() {
   }
   /* il tasto «Togli i dati di esempio» */
   function togliEsempio(): number {
-    backup('prima-di-togliere-i-dati-di-esempio');
+    /* -1: fermata, non c'è spazio per la copia (vedi `copiaPrima`) */
+    if (!copiaPrima('prima-di-togliere-i-dati-di-esempio')) return -1;
     var n = togliEsempioDa(load(), true);
     registra('dati', 'Tolti i dati di esempio (' + n + ')', true);
     save();
@@ -5142,7 +5321,7 @@ function creaLM() {
      ogni campo rimesso prende il suo orologio e vince su tutti i dispositivi. */
   function riprendiProfilo(profilo: unknown): boolean {
     if (!eMappa(profilo)) return false;
-    backup('prima-di-riprendere-il-profilo');
+    if (!copiaPrima('prima-di-riprendere-il-profilo')) return false;
     var s = load();
     var sopra = function (dove: Mappa, da: Mappa) {
       Object.keys(da).forEach(function (k) {
@@ -5217,6 +5396,7 @@ function creaLM() {
     generazione: function () { load(); return generazione || ''; }, cambiateDopo: cambiateDopo,
     unisci: unisci, recuperi: recuperi, COME_UNIRE: COME_UNIRE, statoVuoto: statoVuoto,
     backup: backup, listBackups: listBackups, restoreBackup: restoreBackup,
+    copiaPrima: copiaPrima, copiaScaricata: copiaScaricata, motivoFermo: function () { var m = motivoFermo; motivoFermo = ''; return m; },
     copieSenzaProprietario: copieSenzaProprietario, fileCopiaSenzaProprietario: fileCopiaSenzaProprietario, eliminaCopiaSenzaProprietario: eliminaCopiaSenzaProprietario, ricchezza: ricchezza,
     exportJson: exportJson, importJson: importJson, ripristinaStato: ripristinaStato, riprendiCopia: riprendiCopia,
     puntoDiRitorno: puntoDiRitorno, puntiDiRitorno: puntiDiRitorno,

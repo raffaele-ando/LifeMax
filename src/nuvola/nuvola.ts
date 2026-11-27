@@ -1417,7 +1417,8 @@ async function daCopia(id: string, modo: 'riprendi' | 'sostituisci' | 'profilo',
     if (modo === 'profilo') {
       if (!window.LM.riprendiProfilo(obj['profilo'])) return false;
     } else {
-      window.LM.backup(modo === 'sostituisci' ? 'prima-di-sostituire-con-una-copia-dal-cloud' : 'prima-di-riprendere-una-copia-dal-cloud');
+      /* senza la copia di com'è adesso non si tocca niente (verifica 4, V4-02) */
+      if (!window.LM.copiaPrima(modo === 'sostituisci' ? 'prima-di-sostituire-con-una-copia-dal-cloud' : 'prima-di-riprendere-una-copia-dal-cloud')) return false;
       if (window.LM.scordaPunti) window.LM.scordaPunti();
       if (modo === 'sostituisci') window.LM.ripristinaStato(obj); else window.LM.riprendiCopia(obj);
     }
